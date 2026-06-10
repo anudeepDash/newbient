@@ -248,10 +248,7 @@ const LivePreview = ({ type, data, categories = [], hideDecorations = false, onA
                                 </div>
                             </div>
 
-                            {/* Ticket Perforation Line */}
-                            <div className="absolute top-[62%] -left-3 w-6 h-6 bg-[#020202] rounded-full border border-white/5 z-20" />
-                            <div className="absolute top-[62%] -right-3 w-6 h-6 bg-[#020202] rounded-full border border-white/5 z-20" />
-                            <div className="absolute top-[63%] left-4 right-4 h-px border-t border-dashed border-white/10 z-20" />
+
 
                             {/* Content Body */}
                             <div className="absolute inset-x-6 bottom-7 z-30 space-y-5 w-full pr-12">

@@ -89,7 +89,7 @@ const OTPVerificationSuccess = () => {
                     initial={{ opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.3 }}
-                    className="text-xl font-black font-heading tracking-widest uppercase italic text-neon-green"
+                    className="text-xl font-extrabold font-heading tracking-tight text-neon-green"
                 >
                     Phone Verified
                 </motion.h4>
@@ -799,92 +799,69 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
                     isEmbedded ? "h-full w-full border-0 shadow-none rounded-0" : "max-w-5xl h-[95vh] md:h-[800px] rounded-t-[2.5rem] md:rounded-[4rem]"
                 )}
             >
-            {/* Left Sidebar: Event Brief & Guidelines */}
-            {!isEmbedded && (
-                <div className="hidden lg:flex w-[320px] bg-black border-r border-white/5 shrink-0 flex-col relative overflow-hidden">
-                    <img 
-                        src={event?.hubImage || event?.image} 
-                        className="absolute inset-0 w-full h-full object-cover opacity-40 grayscale hover:grayscale-0 transition-all duration-1000" 
-                        alt="Event" 
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black via-black/80 to-transparent" />
-                    <div className="relative z-10 p-8 flex flex-col h-full">
-                        <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 w-fit mb-6">
-                            <Zap size={10} className="text-neon-blue" />
-                            <span className="text-[9px] font-black text-white uppercase tracking-widest">OFFICIAL TICKETS</span>
-                        </div>
-                        
-                        <h3 className="text-3xl font-black font-heading text-white italic uppercase tracking-tighter leading-none mb-8">{event?.title}</h3>
-                        
-                        <div className="space-y-6 flex-1">
-                            <div className="space-y-4">
-                                <div className="flex items-center gap-3 text-gray-400">
-                                    <Calendar size={14} className="text-neon-blue" />
-                                    <span className="text-[10px] font-black uppercase tracking-widest">{event?.date ? new Date(event.date).toLocaleDateString() : 'TBA'}</span>
-                                </div>
-                                <div className="flex items-center gap-3 text-gray-400">
-                                    <MapPin size={14} className="text-neon-pink" />
-                                    <span className="text-[10px] font-black uppercase tracking-widest">{event?.location || 'VENUE TBA'}</span>
-                                </div>
-                            </div>
-
-                            <div className="pt-6 border-t border-white/5 space-y-4">
-                                <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest flex items-center gap-2">
-                                    <ShieldCheck size={12} className="text-neon-green" /> GUIDELINES
-                                </p>
-                                <p className="text-[10px] text-gray-400 leading-relaxed italic">{event?.ticketingDescription || "Standard venue protocols apply. Carry valid ID."}</p>
-                            </div>
-                        </div>
-
-                        <div className="pt-8 border-t border-white/5">
-                            <div className="flex items-center gap-4 text-white/20">
-                                <p className="text-[10px] font-black uppercase tracking-[0.3em]">NEWBI ENT.</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
-
             {/* Main Content Area */}
-            <div className="flex-1 flex flex-col relative overflow-hidden bg-zinc-950/50 backdrop-blur-xl">
-                {!isEmbedded && (
+            <div className="flex-1 flex flex-col relative overflow-hidden bg-zinc-950/50 backdrop-blur-xl h-full">
+                {isEmbedded ? (
+                    <div className="w-full h-16 shrink-0 border-b border-white/5 bg-zinc-950/40 px-6 md:px-12 flex items-center justify-between z-30 select-none">
+                        <button 
+                            type="button"
+                            onClick={onClose}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-[9px] font-black text-gray-300 hover:text-white uppercase tracking-widest transition-all"
+                        >
+                            <ChevronLeft size={12} className="text-neon-green" />
+                            <span>Back to Event</span>
+                        </button>
+                        
+                        <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-[0.4em] hidden sm:inline truncate max-w-[200px] md:max-w-[400px]">
+                            {event?.title}
+                        </span>
+
+                        <button 
+                            type="button"
+                            onClick={onClose}
+                            className="w-9 h-9 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center text-gray-400 hover:text-white transition-all"
+                        >
+                            <X size={16} />
+                        </button>
+                    </div>
+                ) : (
                     <button onClick={onClose} className="absolute top-8 right-8 z-50 w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-gray-500 hover:text-white hover:bg-white/10 transition-all group">
                         <X size={20} className="group-hover:rotate-90 transition-transform duration-500" />
                     </button>
                 )}
 
-                <div className={cn(
-                    "flex-1 overflow-y-auto p-4 md:p-12 scrollbar-hide",
-                    isEmbedded && "pt-12 md:pt-16"
-                )}>
-                    {step !== 'success' && (
-                        <div className="w-full h-1 bg-white/5 rounded-full overflow-hidden mb-12 shrink-0">
+                {step !== 'success' && (
+                    <div className="w-full px-6 md:px-12 pt-6 shrink-0">
+                        <div className="w-full h-1 bg-white/5 rounded-full overflow-hidden">
                             <motion.div 
                                 initial={{ width: 0 }}
                                 animate={{ width: `${progressPercent}%` }}
                                 transition={{ duration: 0.3 }}
-                                className="h-full bg-gradient-to-r from-neon-blue to-neon-pink"
+                                className="h-full bg-gradient-to-r from-neon-green to-white"
                             />
                         </div>
-                    )}
+                    </div>
+                )}
+
+                <div className="flex-1 min-h-0 flex flex-col p-6 md:p-12 pt-6 md:pt-8 overflow-hidden relative">
                     <AnimatePresence mode="wait">
                         {/* LOGIN GATE */}
                         {step === 'login' && (
-                            <motion.div key="login" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="flex-1 flex flex-col items-center justify-center text-center px-4 py-12">
+                            <motion.div key="login" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="flex-1 flex flex-col items-center justify-center text-center px-4 py-12 overflow-y-auto overflow-x-hidden scrollbar-hide">
                                 <div className="relative mb-10">
                                     <motion.div
                                         initial={{ scale: 0 }}
                                         animate={{ scale: 1 }}
                                         transition={{ type: 'spring', stiffness: 200, damping: 15 }}
-                                        className="w-24 h-24 rounded-[2rem] bg-gradient-to-br from-neon-blue/20 to-neon-pink/20 border border-white/10 flex items-center justify-center shadow-[0_20px_60px_rgba(46,191,255,0.2)]"
+                                        className="w-24 h-24 rounded-2xl bg-gradient-to-br from-neon-green/20 to-white/10 border border-white/10 flex items-center justify-center shadow-[0_15px_30px_rgba(57,255,20,0.1)]"
                                     >
-                                        <Lock size={36} className="text-neon-blue" />
+                                        <Lock size={36} className="text-neon-green" />
                                     </motion.div>
                                     <motion.div
                                         initial={{ scale: 0.5, opacity: 1 }}
                                         animate={{ scale: 2, opacity: 0 }}
                                         transition={{ duration: 2, repeat: Infinity, ease: 'easeOut' }}
-                                        className="absolute inset-0 w-24 h-24 rounded-[2rem] border border-neon-blue/30"
+                                        className="absolute inset-0 w-24 h-24 rounded-2xl border border-neon-green/30"
                                     />
                                 </div>
 
@@ -892,7 +869,7 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
                                     initial={{ opacity: 0, y: 10 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     transition={{ delay: 0.2 }}
-                                    className="text-3xl md:text-4xl font-black font-heading text-white italic uppercase tracking-tighter mb-4"
+                                    className="text-3xl font-extrabold font-heading text-white tracking-tight mb-4"
                                 >
                                     Sign In Required
                                 </motion.h3>
@@ -900,7 +877,7 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
                                     initial={{ opacity: 0 }}
                                     animate={{ opacity: 1 }}
                                     transition={{ delay: 0.35 }}
-                                    className="text-[11px] text-gray-500 uppercase tracking-[0.2em] font-bold mb-10 max-w-sm leading-relaxed"
+                                    className="text-[11px] text-zinc-500 uppercase tracking-[0.2em] font-bold mb-10 max-w-sm leading-relaxed"
                                 >
                                     Create an account or sign in to {activeTab === 'guestlist' ? (event?.guestlistMode === 'rsvp' ? 'RSVP for' : 'join the guestlist for') : 'purchase tickets for'} this event.
                                 </motion.p>
@@ -913,12 +890,12 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
                                 >
                                     <Button
                                         onClick={() => setAuthModal(true)}
-                                        className="h-16 md:h-20 bg-neon-blue text-black font-black uppercase tracking-[0.2em] text-xs rounded-[1.5rem] shadow-[0_20px_60px_rgba(46,191,255,0.4)] hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-4 w-full"
+                                        className="h-14 bg-neon-green text-black font-bold uppercase tracking-wider text-xs rounded-xl shadow-[0_15px_30px_rgba(57,255,20,0.15)] hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-4 w-full"
                                     >
-                                        <ShieldCheck size={20} />
-                                        SIGN IN TO CONTINUE
+                                        <ShieldCheck size={18} />
+                                        Sign In to Continue
                                     </Button>
-                                    <p className="text-[9px] text-gray-600 uppercase tracking-[0.15em] font-bold">
+                                    <p className="text-[9px] text-zinc-600 uppercase tracking-[0.15em] font-bold">
                                         Your booking will be linked to your account
                                     </p>
                                 </motion.div>
@@ -949,11 +926,11 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
                         )}
 
                         {step === 'map' && (
-                            <motion.div key="map" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="h-full flex flex-col">
-                                <div className="flex items-center justify-between gap-4 mb-6 md:mb-10">
-                                    <div className="space-y-1 md:space-y-4">
-                                        <h3 className="text-2xl md:text-4xl font-black font-heading text-white italic uppercase tracking-tighter">Select Tickets</h3>
-                                        <p className="text-[9px] md:text-xs text-gray-500 uppercase tracking-widest italic leading-relaxed">Choose your preferred ticket categories and quantity below.</p>
+                            <motion.div key="map" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="flex-1 flex flex-col min-h-0 overflow-hidden">
+                                <div className="flex items-center justify-between gap-4 mb-6 shrink-0">
+                                    <div className="space-y-1">
+                                        <h3 className="text-2xl md:text-3xl font-extrabold font-heading text-white tracking-tight">Select Tickets</h3>
+                                        <p className="text-[9px] md:text-xs text-gray-500 uppercase tracking-widest leading-relaxed">Choose your preferred ticket categories and quantity below.</p>
                                     </div>
                                     <button 
                                         onClick={() => setStep('selection')}
@@ -963,12 +940,12 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
                                     </button>
                                 </div>
 
-                                <div className="flex-1 bg-black/40 rounded-[2rem] md:rounded-[2.5rem] border border-white/10 p-0 overflow-auto scrollbar-hide relative shadow-2xl group/map mb-8 min-h-[400px] md:min-h-[450px] flex items-center justify-center">
+                                <div className="flex-1 bg-black/40 rounded-3xl border border-white/10 p-0 overflow-auto scrollbar-hide relative shadow-2xl group/map mb-6 flex items-center justify-center min-h-0">
                                     {/* Instruction Badge */}
                                     <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-[60] pointer-events-none w-full px-4 flex justify-center">
                                         <div className="px-4 py-2 bg-black/80 backdrop-blur-md border border-white/10 rounded-full flex items-center gap-2 shadow-2xl">
-                                            <Info size={12} className="text-neon-blue" />
-                                            <span className="text-[8px] md:text-[9px] font-black text-white uppercase tracking-widest whitespace-nowrap">
+                                            <Info size={12} className="text-neon-green" />
+                                            <span className="text-[8px] md:text-[9px] font-bold text-white uppercase tracking-widest whitespace-nowrap">
                                                 Tap zones to select • Toggle List View if needed
                                             </span>
                                         </div>
@@ -976,13 +953,13 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
 
                                     {/* Zoom Controls */}
                                     <div className="absolute top-4 right-4 flex flex-col gap-2 z-[60]">
-                                        <button onClick={handleZoomIn} className="w-10 h-10 rounded-xl bg-black/60 border border-white/10 flex items-center justify-center text-white backdrop-blur-md hover:bg-neon-blue hover:text-black transition-all shadow-xl">
+                                        <button onClick={handleZoomIn} className="w-10 h-10 rounded-xl bg-black/60 border border-white/10 flex items-center justify-center text-white backdrop-blur-md hover:bg-neon-green hover:text-black transition-all shadow-xl">
                                             <ZoomIn size={18} />
                                         </button>
-                                        <button onClick={handleZoomOut} className="w-10 h-10 rounded-xl bg-black/60 border border-white/10 flex items-center justify-center text-white backdrop-blur-md hover:bg-neon-blue hover:text-black transition-all shadow-xl">
+                                        <button onClick={handleZoomOut} className="w-10 h-10 rounded-xl bg-black/60 border border-white/10 flex items-center justify-center text-white backdrop-blur-md hover:bg-neon-green hover:text-black transition-all shadow-xl">
                                             <ZoomOut size={18} />
                                         </button>
-                                        <button onClick={handleReset} className="w-10 h-10 rounded-xl bg-black/60 border border-white/10 flex items-center justify-center text-white backdrop-blur-md hover:bg-neon-blue hover:text-black transition-all shadow-xl">
+                                        <button onClick={handleReset} className="w-10 h-10 rounded-xl bg-black/60 border border-white/10 flex items-center justify-center text-white backdrop-blur-md hover:bg-neon-green hover:text-black transition-all shadow-xl">
                                             <Maximize2 size={18} />
                                         </button>
                                     </div>
@@ -1030,42 +1007,42 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
                                 <Button 
                                     onClick={handleNext} 
                                     disabled={cartTotalCount === 0}
-                                    className="h-16 md:h-20 bg-neon-blue text-black font-black uppercase tracking-[0.2em] text-[10px] md:text-xs rounded-2xl md:rounded-3xl shadow-2xl hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-4"
+                                    className="shrink-0 h-14 bg-neon-green text-black font-bold uppercase tracking-wider text-xs rounded-xl shadow-[0_15px_30px_rgba(57,255,20,0.15)] hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-4"
                                 >
-                                    PROCEED TO TICKETS
-                                    <ArrowRight size={20} />
+                                    Proceed to Tickets
+                                    <ArrowRight size={18} />
                                 </Button>
                             </motion.div>
                         )}
 
                         {step === 'selection' && (
-                            <motion.div key="selection" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="h-full flex, flex-col">
+                            <motion.div key="selection" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="flex-1 flex flex-col min-h-0 overflow-hidden">
                                 {hasLayout && activeTab === 'tickets' && (
-                                    <button onClick={handleBack} className="flex items-center gap-2 text-[10px] font-black text-gray-500 hover:text-white uppercase tracking-widest transition-all mb-8">
+                                    <button onClick={handleBack} className="flex items-center gap-2 text-[10px] font-black text-gray-500 hover:text-white uppercase tracking-widest transition-all mb-6 shrink-0">
                                         <ChevronLeft size={14} /> Back to Map
                                     </button>
                                 )}
 
                                 {hasTickets && hasGuestlist && (
-                                    <div className="flex p-1 bg-white/5 rounded-2xl border border-white/10 mb-8 w-fit mx-auto">
-                                        <button onClick={() => setActiveTab('tickets')} className={cn("px-8 h-10 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all", activeTab === 'tickets' ? "bg-neon-blue text-black" : "text-gray-500 hover:text-white")}>TICKETS</button>
-                                        <button onClick={() => setActiveTab('guestlist')} className={cn("px-8 h-10 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all", activeTab === 'guestlist' ? "bg-neon-pink text-black" : "text-gray-500 hover:text-white")}>GUESTLIST</button>
+                                    <div className="flex p-1 bg-white/5 rounded-2xl border border-white/10 mb-6 w-fit mx-auto shrink-0">
+                                        <button onClick={() => setActiveTab('tickets')} className={cn("px-8 h-10 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all", activeTab === 'tickets' ? "bg-neon-green text-black" : "text-zinc-500 hover:text-white")}>TICKETS</button>
+                                        <button onClick={() => setActiveTab('guestlist')} className={cn("px-8 h-10 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all", activeTab === 'guestlist' ? "bg-white text-black" : "text-zinc-500 hover:text-white")}>GUESTLIST</button>
                                     </div>
                                 )}
 
-                                <div className="flex flex-col gap-8 flex-1 min-h-0">
-                                    <div className="relative z-10 flex flex-col h-full p-4 md:p-12 pt-6 md:pt-12 overflow-y-auto scrollbar-hide space-y-8 pr-2">
+                                <div className="flex-1 min-h-0 flex flex-col overflow-hidden justify-between">
+                                    <div className="flex-1 overflow-y-auto overflow-x-hidden scrollbar-hide space-y-6 pr-2 mb-4">
                                         {/* Event Brief & Rules */}
                                         {(event?.ticketingDescription || event?.ticketingRules) && (
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                 {event?.ticketingDescription && (
-                                                    <div className="p-6 bg-white/[0.03] border border-white/5 rounded-3xl space-y-3 group/info hover:bg-white/[0.05] transition-all cursor-default">
-                                                        <div className="flex items-center gap-2 text-neon-blue opacity-50 group-hover/info:opacity-100 transition-all">
+                                                    <div className="p-6 bg-white/[0.03] border border-white/5 rounded-2xl space-y-3 group/info hover:bg-white/[0.05] transition-all cursor-default">
+                                                        <div className="flex items-center gap-2 text-neon-green opacity-70 group-hover/info:opacity-100 transition-all">
                                                             <Info size={14} />
-                                                            <span className="text-[9px] font-black uppercase tracking-[0.2em]">Overview</span>
+                                                            <span className="text-[9px] font-bold uppercase tracking-[0.2em]">Overview</span>
                                                         </div>
                                                         <div className="relative">
-                                                            <p className="text-[11px] text-gray-400 leading-relaxed italic line-clamp-3">
+                                                            <p className="text-[11px] text-zinc-400 leading-relaxed font-medium line-clamp-3">
                                                                 {event.ticketingDescription}
                                                             </p>
                                                             {event.ticketingDescription.length > 100 && (
@@ -1074,9 +1051,9 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
                                                                         title: 'Event Overview', 
                                                                         content: event.ticketingDescription, 
                                                                         icon: <Info size={24}/>, 
-                                                                        color: 'text-neon-blue' 
+                                                                        color: 'text-neon-green' 
                                                                     })}
-                                                                    className="text-[9px] font-black text-neon-blue uppercase tracking-widest mt-2 hover:underline flex items-center gap-1"
+                                                                    className="text-[9px] font-bold text-neon-green uppercase tracking-widest mt-2 hover:underline flex items-center gap-1"
                                                                 >
                                                                     Read More <Maximize2 size={10} />
                                                                 </button>
@@ -1085,13 +1062,13 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
                                                     </div>
                                                 )}
                                                 {event?.ticketingRules && (
-                                                    <div className="p-6 bg-white/[0.03] border border-white/5 rounded-3xl space-y-3 group/rules hover:bg-white/[0.05] transition-all cursor-default">
-                                                        <div className="flex items-center gap-2 text-neon-pink opacity-50 group-hover/rules:opacity-100 transition-all">
+                                                    <div className="p-6 bg-white/[0.03] border border-white/5 rounded-2xl space-y-3 group/rules hover:bg-white/[0.05] transition-all cursor-default">
+                                                        <div className="flex items-center gap-2 text-neon-green opacity-70 group-hover/rules:opacity-100 transition-all">
                                                             <ShieldCheck size={14} />
-                                                            <span className="text-[9px] font-black uppercase tracking-[0.2em]">Rules & Policy</span>
+                                                            <span className="text-[9px] font-bold uppercase tracking-[0.2em]">Rules & Policy</span>
                                                         </div>
                                                         <div className="relative">
-                                                            <div className="text-[11px] text-gray-400 leading-relaxed italic line-clamp-3 whitespace-pre-line">
+                                                            <div className="text-[11px] text-zinc-400 leading-relaxed font-medium line-clamp-3 whitespace-pre-line">
                                                                 {event.ticketingRules}
                                                             </div>
                                                             {event.ticketingRules.length > 100 && (
@@ -1100,9 +1077,9 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
                                                                         title: 'Rules & Policy', 
                                                                         content: event.ticketingRules, 
                                                                         icon: <ShieldCheck size={24}/>, 
-                                                                        color: 'text-neon-pink' 
+                                                                        color: 'text-neon-green' 
                                                                     })}
-                                                                    className="text-[9px] font-black text-neon-pink uppercase tracking-widest mt-2 hover:underline flex items-center gap-1"
+                                                                    className="text-[9px] font-bold text-neon-green uppercase tracking-widest mt-2 hover:underline flex items-center gap-1"
                                                                 >
                                                                     Read More <Maximize2 size={10} />
                                                                 </button>
@@ -1113,15 +1090,15 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
                                             </div>
                                         )}
                                         {activeTab === 'guestlist' ? (
-                                            <div className="p-10 bg-white/5 border border-white/10 rounded-[3rem] flex flex-col items-center gap-10">
+                                            <div className="p-8 bg-white/5 border border-white/10 rounded-3xl flex flex-col items-center gap-8">
                                                 <div className="text-center">
-                                                    <h4 className="text-xs font-black text-white uppercase tracking-widest mb-2">Number of Guests</h4>
-                                                    <p className="text-[10px] text-gray-500 uppercase tracking-widest">Maximum {event?.perUserLimit || 5} per entry</p>
+                                                    <h4 className="text-xs font-bold text-white uppercase tracking-widest mb-2">Number of Guests</h4>
+                                                    <p className="text-[10px] text-zinc-500 uppercase tracking-widest">Maximum {event?.perUserLimit || 5} per entry</p>
                                                 </div>
-                                                <span className="text-8xl font-black italic tracking-tighter tabular-nums text-neon-pink drop-shadow-[0_0_20px_rgba(255,46,191,0.3)]">{guestCount}</span>
-                                                <div className="flex gap-10">
-                                                    <button onClick={() => setGuestCount(g => Math.max(1, g - 1))} className="w-20 h-20 rounded-full border border-white/10 flex items-center justify-center hover:bg-white/5 transition-all"><Minus size={28}/></button>
-                                                    <button onClick={() => setGuestCount(g => Math.min(event?.perUserLimit || 5, g + 1))} className="w-20 h-20 rounded-full bg-neon-pink/10 border border-neon-pink/20 flex items-center justify-center text-neon-pink hover:bg-neon-pink hover:text-black transition-all"><Plus size={28}/></button>
+                                                <span className="text-7xl font-bold tracking-tight tabular-nums text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.1)]">{guestCount}</span>
+                                                <div className="flex gap-8">
+                                                    <button onClick={() => setGuestCount(g => Math.max(1, g - 1))} className="w-16 h-16 rounded-full border border-white/10 flex items-center justify-center hover:bg-white/5 transition-all text-white"><Minus size={24}/></button>
+                                                    <button onClick={() => setGuestCount(g => Math.min(event?.perUserLimit || 5, g + 1))} className="w-16 h-16 rounded-full bg-neon-green/10 border border-neon-green/20 flex items-center justify-center text-neon-green hover:bg-neon-green hover:text-black transition-all"><Plus size={24}/></button>
                                                 </div>
                                             </div>
                                         ) : (
@@ -1129,28 +1106,28 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
                                                 !hasLayout || cartTotalCount === 0 || cart[cat.id]
                                             ).map(cat => (
                                                 <div key={cat.id} className={cn(
-                                                    "p-4 md:p-8 bg-white/5 border transition-all rounded-[1.25rem] md:rounded-[2rem] flex items-center justify-between group",
-                                                    (selectedMapCategory === cat.id || (cart[cat.id] || 0) > 0) ? "border-neon-blue bg-neon-blue/5" : "border-white/10 hover:border-white/20"
+                                                    "p-4 md:p-6 bg-white/5 border transition-all rounded-2xl flex items-center justify-between group",
+                                                    (selectedMapCategory === cat.id || (cart[cat.id] || 0) > 0) ? "border-neon-green bg-neon-green/5" : "border-white/10 hover:border-white/20"
                                                 )}>
-                                                    <div className="flex items-center gap-3 md:gap-6">
-                                                        <div className="w-3 h-3 md:w-4 md:h-4 rounded-full shrink-0" style={{ backgroundColor: cat.color || '#2ebfff' }} />
-                                                        <div>
-                                                            <div className="font-black text-white uppercase text-xs md:text-base italic tracking-widest leading-none mb-1">{cat.name}</div>
-                                                            <div className="text-neon-green font-black text-xl md:text-2xl tracking-tighter">₹{cat.price}</div>
+                                                    <div className="flex items-center gap-3 md:gap-4">
+                                                        <div className="w-3 h-3 md:w-4 md:h-4 rounded-full shrink-0" style={{ backgroundColor: cat.color || '#39FF14' }} />
+                                                        <div className="text-left">
+                                                            <div className="font-bold text-white uppercase text-xs md:text-sm tracking-wider leading-none mb-1">{cat.name}</div>
+                                                            <div className="text-neon-green font-bold text-lg md:text-xl tracking-tight">₹{cat.price}</div>
                                                         </div>
                                                     </div>
-                                                    <div className="flex items-center gap-4 md:gap-6 bg-black/40 p-2 rounded-2xl border border-white/5">
-                                                        <button onClick={() => updateCart(cat.id, -1)} className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-white/5 flex items-center justify-center hover:bg-white/10 transition-colors"><Minus size={16}/></button>
-                                                        <span className="w-8 md:w-10 text-center font-black text-lg md:text-xl tabular-nums">{cart[cat.id] || 0}</span>
-                                                        <button onClick={() => updateCart(cat.id, 1)} className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-white/10 flex items-center justify-center hover:bg-neon-blue hover:text-black transition-all"><Plus size={16}/></button>
+                                                    <div className="flex items-center gap-3 md:gap-4 bg-black/40 p-1.5 rounded-xl border border-white/5">
+                                                        <button onClick={() => updateCart(cat.id, -1)} className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center hover:bg-white/10 transition-colors text-white"><Minus size={14}/></button>
+                                                        <span className="w-6 text-center font-bold text-sm md:text-base tabular-nums text-white">{cart[cat.id] || 0}</span>
+                                                        <button onClick={() => updateCart(cat.id, 1)} className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center hover:bg-neon-green hover:text-black transition-all text-white"><Plus size={14}/></button>
                                                     </div>
                                                 </div>
                                             )) : (
-                                                <div className="p-10 bg-white/5 border border-white/10 rounded-[3rem] flex flex-col items-center gap-10">
-                                                    <span className="text-7xl font-black italic tabular-nums text-neon-green drop-shadow-[0_0_20px_rgba(43,217,62,0.3)]">{ticketCount}</span>
-                                                    <div className="flex gap-10">
-                                                        <button onClick={() => setTicketCount(g => Math.max(1, g - 1))} className="w-18 h-18 rounded-full border border-white/10 flex items-center justify-center"><Minus size={24}/></button>
-                                                        <button onClick={() => setTicketCount(g => Math.min(10, g + 1))} className="w-18 h-18 rounded-full bg-neon-green/20 text-neon-green flex items-center justify-center"><Plus size={24}/></button>
+                                                <div className="p-8 bg-white/5 border border-white/10 rounded-3xl flex flex-col items-center gap-8">
+                                                    <span className="text-6xl font-bold tracking-tight tabular-nums text-neon-green drop-shadow-[0_0_15px_rgba(57,255,20,0.2)]">{ticketCount}</span>
+                                                    <div className="flex gap-8">
+                                                        <button onClick={() => setTicketCount(g => Math.max(1, g - 1))} className="w-14 h-14 rounded-full border border-white/10 flex items-center justify-center text-white"><Minus size={20}/></button>
+                                                        <button onClick={() => setTicketCount(g => Math.min(10, g + 1))} className="w-14 h-14 rounded-full bg-neon-green/20 text-neon-green flex items-center justify-center"><Plus size={20}/></button>
                                                     </div>
                                                 </div>
                                             )
@@ -1158,17 +1135,17 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
                                     </div>
 
                                     {/* Checkout Bar */}
-                                    <div className="flex flex-col gap-4">
-                                        <div className="p-6 md:p-10 bg-zinc-900/80 border border-white/10 rounded-[2rem] md:rounded-[3rem] flex flex-col lg:flex-row items-center justify-between gap-6 shadow-2xl relative">
-                                            <div className="flex flex-col sm:flex-row items-center gap-6 md:gap-12 w-full lg:w-auto">
+                                    <div className="shrink-0 pt-4 border-t border-white/5 bg-zinc-950/20 rounded-t-3xl">
+                                        <div className="p-6 md:p-8 bg-zinc-900/80 border border-white/10 rounded-3xl flex flex-col lg:flex-row items-center justify-between gap-6 shadow-2xl relative">
+                                            <div className="flex flex-col sm:flex-row items-center gap-6 md:gap-12 w-full lg:w-auto text-left">
                                                 <div className="space-y-1 text-center sm:text-left shrink-0">
-                                                    <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Final Total</p>
+                                                    <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Final Total</p>
                                                     <div className="flex items-baseline gap-2">
-                                                        <p className="text-3xl md:text-5xl font-black text-white italic tracking-tighter tabular-nums drop-shadow-lg">
+                                                        <p className="text-3xl md:text-4xl font-bold text-white tracking-tight tabular-nums drop-shadow-lg">
                                                             ₹{activeTab === 'guestlist' ? '0' : Math.floor(totalAmount)}
                                                         </p>
                                                         {appliedCoupon && (
-                                                            <span className="text-[10px] font-black text-neon-green uppercase tracking-widest animate-pulse lg:hidden">Applied</span>
+                                                            <span className="text-[10px] font-bold text-neon-green uppercase tracking-widest animate-pulse lg:hidden">Applied</span>
                                                         )}
                                                     </div>
                                                 </div>
@@ -1178,20 +1155,20 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
                                                     <div className="flex-1 w-full sm:w-64 flex flex-col gap-2">
                                                         <div className="px-5 py-3 bg-white/5 border border-white/10 rounded-2xl flex items-center gap-3 group/coupon focus-within:border-white/20 transition-all">
                                                             <div className="flex-1 min-w-0">
-                                                                <p className="text-[7px] font-black text-gray-500 uppercase tracking-widest leading-none mb-1">Coupon Code</p>
+                                                                <p className="text-[7px] font-bold text-zinc-500 uppercase tracking-widest leading-none mb-1">Coupon Code</p>
                                                                 <input 
                                                                     type="text" 
                                                                     value={couponInput}
                                                                     onChange={e => setCouponInput(e.target.value.toUpperCase())}
                                                                     placeholder="ENTER CODE"
                                                                     disabled={appliedCoupon}
-                                                                    className="w-full bg-transparent border-0 text-[10px] font-black uppercase tracking-widest text-white placeholder:text-gray-700 outline-none p-0 h-4"
+                                                                    className="w-full bg-transparent border-0 text-[10px] font-bold uppercase tracking-widest text-white placeholder:text-zinc-700 outline-none p-0 h-4"
                                                                 />
                                                             </div>
                                                             {appliedCoupon ? (
                                                                 <button 
                                                                     onClick={removeCoupon}
-                                                                    className="px-3 py-1.5 rounded-lg bg-red-500/10 text-red-500 text-[8px] font-black uppercase tracking-widest hover:bg-red-500 hover:text-white transition-all shrink-0"
+                                                                    className="px-3 py-1.5 rounded-lg bg-red-500/10 text-red-500 text-[8px] font-bold uppercase tracking-widest hover:bg-red-500 hover:text-white transition-all shrink-0"
                                                                 >
                                                                     Remove
                                                                 </button>
@@ -1199,14 +1176,14 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
                                                                 <button 
                                                                     onClick={handleApplyCoupon}
                                                                     disabled={isValidatingCoupon || !couponInput.trim()}
-                                                                    className="px-4 py-1.5 rounded-lg bg-white/10 text-white text-[8px] font-black uppercase tracking-widest hover:bg-white hover:text-black transition-all disabled:opacity-30 shrink-0"
+                                                                    className="px-4 py-1.5 rounded-lg bg-white/10 text-white text-[8px] font-bold uppercase tracking-widest hover:bg-white hover:text-black transition-all disabled:opacity-30 shrink-0"
                                                                 >
                                                                     {isValidatingCoupon ? <LoadingSpinner size="xs" color="#FFFFFF" /> : 'Apply'}
                                                                 </button>
                                                             )}
                                                         </div>
                                                         {appliedCoupon && (
-                                                            <span className="text-[9px] font-black text-neon-green uppercase tracking-[0.2em] animate-pulse italic whitespace-nowrap ml-1">
+                                                            <span className="text-[9px] font-bold text-neon-green uppercase tracking-[0.2em] animate-pulse whitespace-nowrap ml-1">
                                                                 {appliedCoupon.code} Applied!
                                                             </span>
                                                         )}
@@ -1218,10 +1195,10 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
                                                 <Button 
                                                     onClick={handleNext} 
                                                     disabled={loading || (activeTab === 'tickets' && totalAmount === 0 && hasCategories && !appliedCoupon)}
-                                                    className="w-full sm:w-auto h-16 md:h-20 px-10 md:px-16 rounded-[1.25rem] md:rounded-[1.5rem] bg-neon-blue text-black font-black uppercase tracking-[0.2em] text-[10px] md:text-xs shadow-[0_20px_60px_rgba(46,191,255,0.4)] hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-4"
+                                                    className="w-full sm:w-auto h-14 px-10 md:px-16 rounded-xl bg-neon-green text-black font-bold uppercase tracking-wider text-xs shadow-[0_15px_30px_rgba(57,255,20,0.15)] hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-4"
                                                 >
-                                                    {loading ? <LoadingSpinner size="xs" color="#000000" /> : 'CONTINUE'}
-                                                    <ArrowRight size={20} />
+                                                    {loading ? <LoadingSpinner size="xs" color="#000000" /> : 'Continue'}
+                                                    <ArrowRight size={18} />
                                                 </Button>
                                             </div>
                                         </div>
@@ -1237,32 +1214,34 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
                                 animate={{ opacity: 1, y: 0 }} 
                                 exit={{ opacity: 0, y: -30 }}
                                 transition={{ duration: 0.4, ease: "easeOut" }}
-                                className="flex flex-col justify-center h-full space-y-8"
+                                className="flex-1 flex flex-col justify-between min-h-0 overflow-y-auto overflow-x-hidden space-y-8 py-4"
                             >
-                                <div className="space-y-2">
-                                    <span className="text-[10px] font-black text-neon-pink uppercase tracking-[0.3em]">STEP 1 OF 3</span>
-                                    <h3 className="text-3xl md:text-4xl font-black font-heading uppercase italic tracking-tight text-white leading-tight">
-                                        What is your full name?
-                                    </h3>
-                                    <p className="text-xs font-bold text-gray-500 uppercase tracking-widest">Stage or Legal Name for the pass</p>
-                                </div>
-                                <div className="relative">
-                                    <Input 
-                                        name="name" 
-                                        value={formData.name} 
-                                        onChange={e => setFormData({ ...formData, name: e.target.value })} 
-                                        placeholder="Full Name" 
-                                        className="h-16 sm:h-20 bg-white/[0.02] border-white/10 rounded-2xl text-lg sm:text-xl font-bold px-6 sm:px-8 focus:border-neon-blue" 
-                                        autoFocus
-                                    />
-                                    <span className="absolute right-6 top-1/2 -translate-y-1/2 text-[9px] font-bold text-gray-500 uppercase tracking-widest hidden sm:inline">press Enter ↵</span>
+                                <div className="space-y-6">
+                                    <div className="space-y-2 text-left">
+                                        <span className="text-[10px] font-bold text-neon-green uppercase tracking-[0.3em]">Step 1 of 3</span>
+                                        <h3 className="text-2xl md:text-3xl font-extrabold font-heading text-white tracking-tight leading-tight">
+                                            What is your full name?
+                                        </h3>
+                                        <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Stage or Legal Name for the pass</p>
+                                    </div>
+                                    <div className="relative">
+                                        <Input 
+                                            name="name" 
+                                            value={formData.name} 
+                                            onChange={e => setFormData({ ...formData, name: e.target.value })} 
+                                            placeholder="Full Name" 
+                                            className="h-14 bg-white/[0.02] border-white/10 rounded-xl text-base font-bold px-6 focus:border-neon-green" 
+                                            autoFocus
+                                        />
+                                        <span className="absolute right-6 top-1/2 -translate-y-1/2 text-[9px] font-bold text-zinc-500 uppercase tracking-widest hidden sm:inline">press Enter ↵</span>
+                                    </div>
                                 </div>
                                 
                                 <div className="flex justify-between items-center pt-8 border-t border-white/5 shrink-0 select-none">
                                     <button 
                                         type="button" 
                                         onClick={handleBack} 
-                                        className="text-[10px] font-black text-gray-500 hover:text-white uppercase tracking-[0.3em] transition-colors flex items-center gap-2"
+                                        className="text-[10px] font-bold text-zinc-500 hover:text-white uppercase tracking-[0.3em] transition-colors flex items-center gap-2"
                                     >
                                         <ChevronLeft size={14} /> Back
                                     </button>
@@ -1275,7 +1254,7 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
                                             }
                                             setStep('identity-email');
                                         }}
-                                        className="h-16 px-10 rounded-2xl text-[10px] font-black font-heading uppercase tracking-[0.2em] bg-white text-black hover:bg-neon-blue hover:scale-105 active:scale-95 transition-all flex items-center gap-3"
+                                        className="h-12 px-8 rounded-xl text-[10px] font-bold uppercase tracking-wider bg-white text-black hover:bg-neon-green hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-2"
                                     >
                                         Continue <ArrowRight size={14} />
                                     </button>
@@ -1290,33 +1269,35 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
                                 animate={{ opacity: 1, y: 0 }} 
                                 exit={{ opacity: 0, y: -30 }}
                                 transition={{ duration: 0.4, ease: "easeOut" }}
-                                className="flex flex-col justify-center h-full space-y-8"
+                                className="flex-1 flex flex-col justify-between min-h-0 overflow-y-auto overflow-x-hidden space-y-8 py-4"
                             >
-                                <div className="space-y-2">
-                                    <span className="text-[10px] font-black text-neon-pink uppercase tracking-[0.3em]">STEP 2 OF 3</span>
-                                    <h3 className="text-3xl md:text-4xl font-black font-heading uppercase italic tracking-tight text-white leading-tight">
-                                        What is your email address?
-                                    </h3>
-                                    <p className="text-xs font-bold text-gray-500 uppercase tracking-widest">We will send your ticket confirmation here</p>
-                                </div>
-                                <div className="relative">
-                                    <Input 
-                                        type="email"
-                                        name="email" 
-                                        value={formData.email} 
-                                        onChange={e => setFormData({ ...formData, email: e.target.value })} 
-                                        placeholder="email@example.com" 
-                                        className="h-16 sm:h-20 bg-white/[0.02] border-white/10 rounded-2xl text-lg sm:text-xl font-bold px-6 sm:px-8 focus:border-neon-blue" 
-                                        autoFocus
-                                    />
-                                    <span className="absolute right-6 top-1/2 -translate-y-1/2 text-[9px] font-bold text-gray-500 uppercase tracking-widest hidden sm:inline">press Enter ↵</span>
+                                <div className="space-y-6">
+                                    <div className="space-y-2 text-left">
+                                        <span className="text-[10px] font-bold text-neon-green uppercase tracking-[0.3em]">Step 2 of 3</span>
+                                        <h3 className="text-2xl md:text-3xl font-extrabold font-heading text-white tracking-tight leading-tight">
+                                            What is your email address?
+                                        </h3>
+                                        <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest">We will send your ticket confirmation here</p>
+                                    </div>
+                                    <div className="relative">
+                                        <Input 
+                                            type="email"
+                                            name="email" 
+                                            value={formData.email} 
+                                            onChange={e => setFormData({ ...formData, email: e.target.value })} 
+                                            placeholder="email@example.com" 
+                                            className="h-14 bg-white/[0.02] border-white/10 rounded-xl text-base font-bold px-6 focus:border-neon-green" 
+                                            autoFocus
+                                        />
+                                        <span className="absolute right-6 top-1/2 -translate-y-1/2 text-[9px] font-bold text-zinc-500 uppercase tracking-widest hidden sm:inline">press Enter ↵</span>
+                                    </div>
                                 </div>
                                 
                                 <div className="flex justify-between items-center pt-8 border-t border-white/5 shrink-0 select-none">
                                     <button 
                                         type="button" 
                                         onClick={handleBack} 
-                                        className="text-[10px] font-black text-gray-500 hover:text-white uppercase tracking-[0.3em] transition-colors flex items-center gap-2"
+                                        className="text-[10px] font-bold text-zinc-500 hover:text-white uppercase tracking-[0.3em] transition-colors flex items-center gap-2"
                                     >
                                         <ChevronLeft size={14} /> Back
                                     </button>
@@ -1330,7 +1311,7 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
                                             }
                                             setStep('identity-phone');
                                         }}
-                                        className="h-16 px-10 rounded-2xl text-[10px] font-black font-heading uppercase tracking-[0.2em] bg-white text-black hover:bg-neon-blue hover:scale-105 active:scale-95 transition-all flex items-center gap-3"
+                                        className="h-12 px-8 rounded-xl text-[10px] font-bold uppercase tracking-wider bg-white text-black hover:bg-neon-green hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-2"
                                     >
                                         Continue <ArrowRight size={14} />
                                     </button>
@@ -1345,258 +1326,272 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
                                 animate={{ opacity: 1, y: 0 }} 
                                 exit={{ opacity: 0, y: -30 }}
                                 transition={{ duration: 0.4, ease: "easeOut" }}
-                                className="flex flex-col justify-center h-full space-y-8"
+                                className="flex-1 flex flex-col justify-between min-h-0 overflow-y-auto overflow-x-hidden space-y-8 py-4"
                             >
-                                <div className="space-y-2">
-                                    <span className="text-[10px] font-black text-neon-pink uppercase tracking-[0.3em]">STEP 3 OF 3</span>
-                                    <h3 className="text-3xl md:text-4xl font-black font-heading uppercase italic tracking-tight text-white leading-tight">
-                                        {!otpSent ? "What is your contact number?" : "Verify Phone"}
-                                    </h3>
-                                    <p className="text-xs font-bold text-gray-500 uppercase tracking-widest">
-                                        {!otpSent ? "We will verify this number via SMS OTP" : `Enter the code sent to ${countryCode} ${formData.phone}`}
-                                    </p>
-                                </div>
+                                <div className="space-y-6">
+                                    <div className="space-y-2 text-left">
+                                        <span className="text-[10px] font-bold text-neon-green uppercase tracking-[0.3em]">Step 3 of 3</span>
+                                        <h3 className="text-2xl md:text-3xl font-extrabold font-heading text-white tracking-tight leading-tight">
+                                            {!otpSent ? "What is your contact number?" : "Verify Phone"}
+                                        </h3>
+                                        <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest">
+                                            {!otpSent ? "We will verify this number via SMS OTP" : `Enter the code sent to ${countryCode} ${formData.phone}`}
+                                        </p>
+                                    </div>
 
-                                {!otpSent ? (
-                                    <div className="space-y-6">
-                                        <div className="flex gap-4">
-                                            <select 
-                                                value={countryCode} 
-                                                onChange={(e) => setCountryCode(e.target.value)} 
-                                                disabled={isPhoneVerified}
-                                                className="w-24 sm:w-36 h-16 bg-white/[0.02] border border-white/10 rounded-2xl text-white text-base sm:text-lg font-bold px-3 outline-none focus:border-neon-blue transition-all disabled:opacity-50"
-                                            >
-                                                <option value="+91" className="bg-zinc-900">🇮🇳 +91</option>
-                                                <option value="+1" className="bg-zinc-900">🇺🇸 +1</option>
-                                                <option value="+44" className="bg-zinc-900">🇬🇧 +44</option>
-                                                <option value="+971" className="bg-zinc-900">🇦🇪 +971</option>
-                                                <option value="+61" className="bg-zinc-900">🇦🇺 +61</option>
-                                            </select>
-                                            <div className="relative flex-1">
-                                                <Input 
-                                                    type="tel"
-                                                    name="phone" 
-                                                    value={formData.phone} 
-                                                    onChange={e => setFormData({ ...formData, phone: e.target.value.replace(/\D/g, '') })} 
+                                    {!otpSent ? (
+                                        <div className="space-y-6">
+                                            <div className="flex gap-4">
+                                                <select 
+                                                    value={countryCode} 
+                                                    onChange={(e) => setCountryCode(e.target.value)} 
                                                     disabled={isPhoneVerified}
-                                                    placeholder="99999 99999" 
-                                                    className="h-16 sm:h-20 bg-white/[0.02] border-white/10 rounded-2xl text-lg sm:text-xl font-bold px-6 sm:px-8 focus:border-neon-blue disabled:opacity-70" 
-                                                    autoFocus
-                                                />
-                                                {isPhoneVerified && (
-                                                    <span className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-1 text-neon-green text-[9px] font-black tracking-widest bg-neon-green/10 border border-neon-green/20 px-2.5 py-1 rounded-md">
-                                                        <ShieldCheck size={10} /> VERIFIED
-                                                    </span>
+                                                    className="w-24 sm:w-36 h-14 bg-white/[0.02] border border-white/10 rounded-xl text-white text-base font-bold px-3 outline-none focus:border-neon-green transition-all disabled:opacity-50"
+                                                >
+                                                    <option value="+91" className="bg-zinc-900">🇮🇳 +91</option>
+                                                    <option value="+1" className="bg-zinc-900">🇺🇸 +1</option>
+                                                    <option value="+44" className="bg-zinc-900">🇬🇧 +44</option>
+                                                    <option value="+971" className="bg-zinc-900">🇦🇪 +971</option>
+                                                    <option value="+61" className="bg-zinc-900">🇦🇺 +61</option>
+                                                </select>
+                                                <div className="relative flex-1">
+                                                    <Input 
+                                                        type="tel"
+                                                        name="phone" 
+                                                        value={formData.phone} 
+                                                        onChange={e => setFormData({ ...formData, phone: e.target.value.replace(/\D/g, '') })} 
+                                                        disabled={isPhoneVerified}
+                                                        placeholder="99999 99999" 
+                                                        className="h-14 bg-white/[0.02] border-white/10 rounded-xl text-base font-bold px-6 focus:border-neon-green disabled:opacity-70" 
+                                                        autoFocus
+                                                    />
+                                                    {isPhoneVerified && (
+                                                        <span className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-1 text-neon-green text-[9px] font-bold tracking-widest bg-neon-green/10 border border-neon-green/20 px-2.5 py-1 rounded-md">
+                                                            <ShieldCheck size={10} /> VERIFIED
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            
+                                            {isPhoneVerified && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setIsPhoneVerified(false)}
+                                                    className="text-xs text-gray-500 hover:text-white font-bold uppercase tracking-widest underline"
+                                                >
+                                                    Change Phone Number
+                                                </button>
+                                            )}
+                                            
+                                            <div className="flex justify-between items-center pt-8 border-t border-white/5 shrink-0 select-none">
+                                                <button 
+                                                    type="button" 
+                                                    onClick={handleBack} 
+                                                    className="text-[10px] font-bold text-zinc-500 hover:text-white uppercase tracking-[0.3em] transition-colors flex items-center gap-2"
+                                                >
+                                                    <ChevronLeft size={14} /> Back
+                                                </button>
+
+                                                {isPhoneVerified ? (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            const currentAmount = totalAmount;
+                                                            if (activeTab === 'tickets') {
+                                                                if (currentAmount === 0) {
+                                                                    submitTickets();
+                                                                } else {
+                                                                    setLockedAmount(currentAmount);
+                                                                    setStep('payment');
+                                                                }
+                                                            } else {
+                                                                submitGuestlist();
+                                                            }
+                                                        }}
+                                                        className="h-12 px-8 rounded-xl text-[10px] font-bold uppercase tracking-wider bg-neon-green text-black hover:bg-white hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-2 shadow-[0_0_20px_rgba(57,255,20,0.2)]"
+                                                    >
+                                                        Continue <ArrowRight size={14} />
+                                                    </button>
+                                                ) : (
+                                                    <button
+                                                        type="button"
+                                                        onClick={handleSendOTP}
+                                                        disabled={loading || !formData.phone || formData.phone.length < 10}
+                                                        className="h-12 px-8 rounded-xl text-[10px] font-bold uppercase tracking-wider bg-white text-black hover:bg-neon-green hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-2 disabled:opacity-30"
+                                                    >
+                                                        {loading ? <LoadingSpinner size="xs" color="black" /> : 'Send OTP'}
+                                                    </button>
                                                 )}
                                             </div>
                                         </div>
-                                        
-                                        {isPhoneVerified && (
-                                            <button
-                                                type="button"
-                                                onClick={() => setIsPhoneVerified(false)}
-                                                className="text-xs text-gray-500 hover:text-white font-bold uppercase tracking-widest underline"
-                                            >
-                                                Change Phone Number
-                                            </button>
-                                        )}
-                                        
-                                        <div className="flex justify-between items-center pt-8 border-t border-white/5 shrink-0 select-none">
-                                            <button 
-                                                type="button" 
-                                                onClick={handleBack} 
-                                                className="text-[10px] font-black text-gray-500 hover:text-white uppercase tracking-[0.3em] transition-colors flex items-center gap-2"
-                                            >
-                                                <ChevronLeft size={14} /> Back
-                                            </button>
-
+                                    ) : (
+                                        <div className="space-y-6 text-left">
                                             {isPhoneVerified ? (
-                                                <button
-                                                    type="button"
-                                                    onClick={() => {
-                                                        const currentAmount = totalAmount;
-                                                        if (activeTab === 'tickets') {
-                                                            if (currentAmount === 0) {
-                                                                submitTickets();
-                                                            } else {
-                                                                setLockedAmount(currentAmount);
-                                                                setStep('payment');
-                                                            }
-                                                        } else {
-                                                            submitGuestlist();
-                                                        }
-                                                    }}
-                                                    className="h-16 px-10 rounded-2xl text-[10px] font-black font-heading uppercase tracking-[0.2em] bg-neon-green text-black hover:bg-neon-blue hover:scale-105 active:scale-95 transition-all flex items-center gap-3 shadow-[0_0_20px_rgba(57,255,20,0.3)] animate-pulse"
-                                                >
-                                                    Continue <ArrowRight size={14} />
-                                                </button>
+                                                <OTPVerificationSuccess />
                                             ) : (
-                                                <button
-                                                    type="button"
-                                                    onClick={handleSendOTP}
-                                                    disabled={loading || !formData.phone || formData.phone.length < 10}
-                                                    className="h-16 px-10 rounded-2xl text-[10px] font-black font-heading uppercase tracking-[0.2em] bg-white text-black hover:bg-neon-blue hover:scale-105 active:scale-95 transition-all flex items-center gap-3 disabled:opacity-30 disabled:pointer-events-none"
-                                                >
-                                                    {loading ? <LoadingSpinner size="xs" color="black" /> : 'Send OTP'}
-                                                </button>
+                                                <div className="flex flex-col gap-6">
+                                                    <div className="relative flex gap-1.5 sm:gap-3 p-1">
+                                                        {verifying && (
+                                                            <motion.div 
+                                                                initial={{ top: '0%' }}
+                                                                animate={{ top: ['0%', '100%', '0%'] }}
+                                                                transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+                                                                className="absolute left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-neon-green to-transparent shadow-[0_0_12px_rgba(57,255,20,0.8)] z-20 pointer-events-none"
+                                                            />
+                                                        )}
+                                                        {otpValues.map((digit, idx) => (
+                                                            <input
+                                                                key={idx}
+                                                                ref={el => otpRefs.current[idx] = el}
+                                                                type="text"
+                                                                maxLength={1}
+                                                                value={digit}
+                                                                disabled={verifying}
+                                                                onChange={e => handleOtpChange(e.target.value, idx)}
+                                                                onKeyDown={e => handleOtpKeyDown(e, idx)}
+                                                                onPaste={handleOtpPaste}
+                                                                className={cn(
+                                                                    "w-9 h-12 sm:w-14 sm:h-16 bg-white/[0.02] border border-white/10 rounded-xl text-center text-lg font-bold text-white focus:border-neon-green focus:shadow-[0_0_25px_rgba(57,255,20,0.15)] focus:outline-none transition-all",
+                                                                    verifying ? "border-neon-green/40 animate-pulse" : "border-white/10"
+                                                                )}
+                                                                autoFocus={idx === 0}
+                                                            />
+                                                        ))}
+                                                    </div>
+
+                                                    <div className="flex justify-between items-center pt-8 border-t border-white/5 shrink-0 select-none">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => { setOtpSent(false); setOtpValues(['','','','','','']); }}
+                                                            className="text-[10px] font-bold text-zinc-500 hover:text-white uppercase tracking-[0.3em]"
+                                                        >
+                                                            Back / Resend
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleVerifyOTP()}
+                                                            disabled={verifying || otpValues.join('').length !== 6}
+                                                            className="h-12 px-8 rounded-xl text-[10px] font-bold uppercase tracking-wider bg-neon-green text-black hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-30"
+                                                        >
+                                                            {verifying ? <LoadingSpinner size="xs" color="black" /> : 'Confirm Code'}
+                                                        </button>
+                                                    </div>
+                                                </div>
                                             )}
                                         </div>
-                                    </div>
-                                ) : (
-                                    <div className="space-y-6">
-                                        {isPhoneVerified ? (
-                                            <OTPVerificationSuccess />
-                                        ) : (
-                                            <div className="flex flex-col gap-6">
-                                                <div className="relative flex gap-1.5 sm:gap-3 p-1">
-                                                    {verifying && (
-                                                        <motion.div 
-                                                            initial={{ top: '0%' }}
-                                                            animate={{ top: ['0%', '100%', '0%'] }}
-                                                            transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
-                                                            className="absolute left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-neon-pink to-transparent shadow-[0_0_12px_rgba(255,0,127,0.8)] z-20 pointer-events-none"
-                                                        />
-                                                    )}
-                                                    {otpValues.map((digit, idx) => (
-                                                        <input
-                                                            key={idx}
-                                                            ref={el => otpRefs.current[idx] = el}
-                                                            type="text"
-                                                            maxLength={1}
-                                                            value={digit}
-                                                            disabled={verifying}
-                                                            onChange={e => handleOtpChange(e.target.value, idx)}
-                                                            onKeyDown={e => handleOtpKeyDown(e, idx)}
-                                                            onPaste={handleOtpPaste}
-                                                            className={cn(
-                                                                "w-9 h-12 sm:w-14 sm:h-16 md:w-16 md:h-20 bg-white/[0.02] border-2 rounded-xl sm:rounded-2xl text-center text-lg sm:text-2xl font-black text-white focus:border-neon-blue focus:shadow-[0_0_25px_rgba(0,240,255,0.2)] focus:outline-none transition-all",
-                                                                verifying ? "border-neon-pink/40 animate-pulse" : "border-white/10"
-                                                            )}
-                                                            autoFocus={idx === 0}
-                                                        />
-                                                    ))}
-                                                </div>
-
-                                                <div className="flex justify-between items-center pt-8 border-t border-white/5 shrink-0 select-none">
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => { setOtpSent(false); setOtpValues(['','','','','','']); }}
-                                                        className="text-[10px] font-black text-gray-500 hover:text-white uppercase tracking-[0.3em]"
-                                                    >
-                                                        Back / Resend
-                                                    </button>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => handleVerifyOTP()}
-                                                        disabled={verifying || otpValues.join('').length !== 6}
-                                                        className="h-16 px-10 rounded-2xl text-[10px] font-black font-heading uppercase tracking-[0.2em] bg-neon-pink text-black hover:scale-105 active:scale-95 transition-all disabled:opacity-30"
-                                                    >
-                                                        {verifying ? <LoadingSpinner size="xs" color="black" /> : 'Confirm Code'}
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
+                                    )}
+                                </div>
                             </motion.div>
                         )}
 
                         {step === 'payment' && (
-                            <motion.div key="payment" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col h-full overflow-y-auto scrollbar-hide pb-10">
-                                <div className="text-center space-y-4 mb-10 shrink-0">
-                                    <h3 className="text-3xl md:text-5xl font-black font-heading italic uppercase text-white tracking-tighter">Payment</h3>
-                                    <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Scan the QR or use the UPI app to pay, then enter Transaction ID.</p>
+                            <motion.div 
+                                key="payment" 
+                                initial={{ opacity: 0 }} 
+                                animate={{ opacity: 1 }} 
+                                className="flex-1 flex flex-col min-h-0 overflow-hidden"
+                            >
+                                <div className="text-center space-y-2 mb-6 shrink-0">
+                                    <h3 className="text-2xl md:text-3xl font-extrabold font-heading text-white tracking-tight">Payment</h3>
+                                    <p className="text-[10px] md:text-xs font-bold text-zinc-500 uppercase tracking-widest leading-relaxed">Scan the QR or use the UPI app to pay, then enter Transaction ID.</p>
                                 </div>
-                                {event?.gatewayUrl && (
-                                    <div className="w-full mb-8 shrink-0">
-                                        <a 
-                                            href={event.gatewayUrl} 
-                                            target="_blank" 
-                                            rel="noopener noreferrer"
-                                            className="w-full h-16 rounded-2xl bg-gradient-to-r from-neon-blue to-neon-green text-black font-black uppercase tracking-[0.2em] text-[10px] flex items-center justify-center gap-3 hover:scale-[1.02] active:scale-95 transition-all shadow-[0_0_30px_rgba(46,191,255,0.3)]"
-                                        >
-                                            <CreditCard size={14} />
-                                            PROCEED TO SECURE CHECKOUT
-                                        </a>
-                                        <div className="relative flex py-4 items-center w-full">
-                                            <div className="flex-grow border-t border-white/10"></div>
-                                            <span className="flex-shrink mx-4 text-gray-500 text-[9px] font-black uppercase tracking-widest">Or Pay Manually via UPI</span>
-                                            <div className="flex-grow border-t border-white/10"></div>
-                                        </div>
-                                    </div>
-                                )}
-
-                                <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-10">
-                                    <div className="bg-white rounded-[2rem] p-8 flex flex-col items-center gap-4 shadow-2xl">
-                                        <img 
-                                            src={qrCodeUrl || `/api/qr?size=300&text=${encodeURIComponent(`upi://pay?pa=${upiId}&pn=NewBi&am=${totalAmount}`)}`} 
-                                            alt="QR" 
-                                            className="w-48 h-48 md:w-56 md:h-56 object-contain" 
-                                        />
-                                        <p className="font-mono font-bold text-gray-900 text-[10px] md:text-xs tracking-tight">{upiId}</p>
-                                        
-                                        {/* Pay with UPI Button - Mobile Only */}
-                                        <a 
-                                            href={`upi://pay?pa=${upiId}&pn=NewBi&am=${totalAmount}`}
-                                            className="w-full h-14 rounded-xl bg-neon-blue text-black font-black uppercase tracking-widest text-[10px] flex items-center justify-center gap-2 md:hidden"
-                                        >
-                                            <Zap size={14} />
-                                            PAY VIA UPI APP
-                                        </a>
-                                    </div>
-                                    <div className="flex flex-col justify-center space-y-6">
-                                        <div className="p-6 bg-white/5 border border-white/10 rounded-2xl space-y-1">
-                                            <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Amount to Pay</p>
-                                            <p className="text-3xl md:text-4xl font-black text-neon-green italic tabular-nums">₹{totalAmount}</p>
-                                        </div>
-                                        <div className="space-y-4">
-                                            <div className="space-y-3">
-                                                <div className="flex items-center justify-between px-2">
-                                                    <p className="text-[10px] font-black text-gray-600 uppercase tracking-widest">Transaction ID / Ref No.</p>
-                                                    <button 
-                                                        onClick={() => setShowUpiGuide(!showUpiGuide)}
-                                                        className="text-[9px] font-black text-neon-blue hover:underline uppercase tracking-widest flex items-center gap-1"
-                                                    >
-                                                        <Info size={10} />
-                                                        How to find?
-                                                    </button>
-                                                </div>
-
-                                                <AnimatePresence>
-                                                    {showUpiGuide && (
-                                                        <motion.div 
-                                                            initial={{ opacity: 0, height: 0 }}
-                                                            animate={{ opacity: 1, height: 'auto' }}
-                                                            exit={{ opacity: 0, height: 0 }}
-                                                            className="overflow-hidden"
-                                                        >
-                                                            <div className="p-4 bg-white/5 border border-dashed border-white/20 rounded-xl space-y-3 mb-4">
-                                                                <div className="space-y-2">
-                                                                    <div className="flex items-center gap-2">
-                                                                        <div className="w-1.5 h-1.5 rounded-full bg-neon-blue" />
-                                                                        <p className="text-[9px] text-white/70 font-bold uppercase"><span className="text-neon-blue">GPay:</span> History &gt; Tap Payment &gt; UPI Transaction ID</p>
-                                                                    </div>
-                                                                    <div className="flex items-center gap-2">
-                                                                        <div className="w-1.5 h-1.5 rounded-full bg-neon-pink" />
-                                                                        <p className="text-[9px] text-white/70 font-bold uppercase"><span className="text-neon-pink">PhonePe:</span> History &gt; Tap Payment &gt; UTR Number</p>
-                                                                    </div>
-                                                                    <div className="flex items-center gap-2">
-                                                                        <div className="w-1.5 h-1.5 rounded-full bg-neon-green" />
-                                                                        <p className="text-[9px] text-white/70 font-bold uppercase"><span className="text-neon-green">Paytm:</span> Balance &amp; History &gt; Tap Payment &gt; UPI Ref No.</p>
-                                                                    </div>
-                                                                </div>
-                                                                <p className="text-[8px] text-gray-500 italic border-t border-white/5 pt-2">Note: It is always a 12-digit number.</p>
-                                                            </div>
-                                                        </motion.div>
-                                                    )}
-                                                </AnimatePresence>
-
-                                                <Input value={paymentRef} onChange={e => setPaymentRef(e.target.value)} className="h-14 bg-white/5 border-white/10 text-xs tracking-widest rounded-xl" placeholder="ENTER 12-DIGIT ID" />
+                                
+                                <div className="flex-1 overflow-y-auto overflow-x-hidden scrollbar-hide pr-1 space-y-6 pb-4">
+                                    {event?.gatewayUrl && (
+                                        <div className="w-full shrink-0">
+                                            <a 
+                                                href={event.gatewayUrl} 
+                                                target="_blank" 
+                                                rel="noopener noreferrer"
+                                                className="w-full h-14 rounded-xl bg-gradient-to-r from-neon-green to-white text-black font-bold uppercase tracking-wider text-xs flex items-center justify-center gap-3 hover:scale-[1.02] active:scale-[0.98] transition-all shadow-[0_15px_30px_rgba(57,255,20,0.15)]"
+                                            >
+                                                <CreditCard size={14} />
+                                                Proceed to Secure Checkout
+                                            </a>
+                                            <div className="relative flex py-4 items-center w-full">
+                                                <div className="flex-grow border-t border-white/10"></div>
+                                                <span className="flex-shrink mx-4 text-zinc-500 text-[9px] font-bold uppercase tracking-widest">Or Pay Manually via UPI</span>
+                                                <div className="flex-grow border-t border-white/10"></div>
                                             </div>
-                                            <Button onClick={submitTickets} disabled={loading || !paymentRef} className="w-full h-16 bg-white text-black font-black uppercase tracking-[0.2em] text-[10px] rounded-2xl shadow-2xl hover:scale-105 active:scale-95 transition-all">
-                                                {loading ? <LoadingSpinner size="xs" color="#000000" /> : 'CONFIRM PAYMENT'}
-                                            </Button>
                                         </div>
+                                    )}
+
+                                    <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-10">
+                                        <div className="bg-white rounded-3xl p-6 flex flex-col items-center gap-3 shadow-2xl">
+                                            <img 
+                                                src={qrCodeUrl || `/api/qr?size=300&text=${encodeURIComponent(`upi://pay?pa=${upiId}&pn=NewBi&am=${totalAmount}`)}`} 
+                                                alt="QR" 
+                                                className="w-48 h-48 md:w-56 md:h-56 object-contain" 
+                                            />
+                                            <p className="font-mono font-bold text-gray-900 text-[10px] md:text-xs tracking-tight">{upiId}</p>
+                                            
+                                            {/* Pay with UPI Button - Mobile Only */}
+                                            <a 
+                                                href={`upi://pay?pa=${upiId}&pn=NewBi&am=${totalAmount}`}
+                                                className="w-full h-12 rounded-xl bg-neon-green text-black font-bold uppercase tracking-wider text-xs flex items-center justify-center gap-2 md:hidden"
+                                            >
+                                                <Zap size={14} />
+                                                PAY VIA UPI APP
+                                            </a>
+                                        </div>
+                                        <div className="flex flex-col justify-center space-y-6 text-left">
+                                            <div className="p-6 bg-white/5 border border-white/10 rounded-2xl space-y-1">
+                                                <p className="text-[8px] font-bold text-zinc-500 uppercase tracking-widest">Amount to Pay</p>
+                                                <p className="text-3xl font-bold text-neon-green tabular-nums">₹{totalAmount}</p>
+                                            </div>
+                                            <div className="space-y-4">
+                                                <div className="space-y-3">
+                                                    <div className="flex items-center justify-between px-2">
+                                                        <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Transaction ID / Ref No.</p>
+                                                        <button 
+                                                            onClick={() => setShowUpiGuide(!showUpiGuide)}
+                                                            className="text-[10px] font-bold text-neon-green hover:underline uppercase tracking-widest flex items-center gap-1"
+                                                        >
+                                                            <Info size={10} />
+                                                            How to find?
+                                                        </button>
+                                                    </div>
+
+                                                    <AnimatePresence>
+                                                        {showUpiGuide && (
+                                                            <motion.div 
+                                                                initial={{ opacity: 0, height: 0 }}
+                                                                animate={{ opacity: 1, height: 'auto' }}
+                                                                exit={{ opacity: 0, height: 0 }}
+                                                                className="overflow-hidden"
+                                                            >
+                                                                <div className="p-4 bg-white/5 border border-dashed border-white/20 rounded-xl space-y-3 mb-4">
+                                                                    <div className="space-y-2">
+                                                                        <div className="flex items-center gap-2">
+                                                                            <div className="w-1.5 h-1.5 rounded-full bg-neon-green" />
+                                                                            <p className="text-[9px] text-white/70 font-bold uppercase"><span className="text-neon-green">GPay:</span> History &gt; Tap Payment &gt; UPI Transaction ID</p>
+                                                                        </div>
+                                                                        <div className="flex items-center gap-2">
+                                                                            <div className="w-1.5 h-1.5 rounded-full bg-zinc-400" />
+                                                                            <p className="text-[9px] text-white/70 font-bold uppercase"><span className="text-zinc-400">PhonePe:</span> History &gt; Tap Payment &gt; UTR Number</p>
+                                                                        </div>
+                                                                        <div className="flex items-center gap-2">
+                                                                            <div className="w-1.5 h-1.5 rounded-full bg-neon-green" />
+                                                                            <p className="text-[9px] text-white/70 font-bold uppercase"><span className="text-neon-green">Paytm:</span> Balance &amp; History &gt; Tap Payment &gt; UPI Ref No.</p>
+                                                                        </div>
+                                                                    </div>
+                                                                    <p className="text-[8px] text-zinc-500 italic border-t border-white/5 pt-2">Note: It is always a 12-digit number.</p>
+                                                                </div>
+                                                            </motion.div>
+                                                        )}
+                                                    </AnimatePresence>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="shrink-0 pt-4 border-t border-white/5 bg-zinc-950/20 w-full select-none">
+                                    <div className="max-w-md mx-auto space-y-3">
+                                        <Input value={paymentRef} onChange={e => setPaymentRef(e.target.value)} className="h-14 bg-white/5 border-white/10 text-xs tracking-widest rounded-xl focus:border-neon-green" placeholder="ENTER 12-DIGIT ID" />
+                                        <Button onClick={submitTickets} disabled={loading || !paymentRef} className="w-full h-14 bg-white text-black font-bold uppercase tracking-wider text-xs rounded-xl shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all">
+                                            {loading ? <LoadingSpinner size="xs" color="#000000" /> : 'Confirm Payment'}
+                                        </Button>
                                     </div>
                                 </div>
                             </motion.div>
@@ -1610,11 +1605,11 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
                                         <CheckCircle2 size={48} />
                                     </div>
                                     <div className="space-y-3">
-                                        <h3 className="text-3xl md:text-5xl font-black font-heading text-white italic uppercase tracking-tighter">
+                                        <h3 className="text-3xl md:text-5xl font-extrabold font-heading text-white tracking-tight">
                                             {isRSVPOnly ? 'RSVP Confirmed' : 'Booking Successful'}
                                         </h3>
                                         <div className="flex items-center justify-center gap-3">
-                                            <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Booking Reference:</span>
+                                            <span className="text-[10px] font-semibold text-gray-500 tracking-widest">Booking Reference:</span>
                                             <span className="text-white font-mono text-sm font-bold tracking-widest px-3 py-1 bg-white/5 rounded-lg border border-white/10">{bookingRef}</span>
                                         </div>
                                     </div>
@@ -1622,27 +1617,27 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
                                     {isRSVPOnly ? (
                                         <div className="w-full max-w-sm space-y-6">
                                             <div className="p-8 bg-neon-pink/10 border border-neon-pink/20 rounded-[2.5rem] max-w-sm relative overflow-hidden group">
-                                                <p className="text-[11px] font-black text-neon-pink uppercase tracking-[0.2em] leading-relaxed italic">
+                                                <p className="text-xs font-semibold text-neon-pink tracking-wide leading-relaxed">
                                                     Your RSVP is confirmed. No QR code is required. We have sent a confirmation email to you.
                                                 </p>
                                             </div>
-                                            <Button onClick={onClose} className="w-full h-16 bg-white text-black uppercase font-black rounded-2xl tracking-[0.2em] text-[10px] shadow-2xl hover:scale-105 active:scale-95 transition-all">
+                                            <Button onClick={onClose} className="w-full h-16 bg-white text-black font-bold rounded-2xl tracking-wider text-xs shadow-2xl hover:scale-105 active:scale-95 transition-all">
                                                 CLOSE
                                             </Button>
                                         </div>
                                     ) : totalAmount > 0 ? (
                                         <div className="p-10 bg-neon-blue/10 border border-neon-blue/20 rounded-[3rem] max-w-sm relative overflow-hidden group">
                                             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:animate-[shimmer_3s_infinite] pointer-events-none" />
-                                            <p className="text-[12px] font-black text-neon-blue uppercase tracking-[0.2em] leading-relaxed italic">
+                                            <p className="text-xs font-semibold text-neon-blue tracking-wide leading-relaxed">
                                                 Passes will be available after payment verification in the profile section.
                                             </p>
                                         </div>
                                     ) : (
                                         <div className="w-full max-w-sm space-y-6">
-                                            <Button onClick={handleDownloadTicket} className="w-full h-16 md:h-20 bg-neon-green text-black uppercase font-black rounded-2xl md:rounded-3xl tracking-[0.2em] text-[10px] md:text-xs shadow-[0_30px_60px_rgba(43,217,62,0.3)] hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-4">
+                                            <Button onClick={handleDownloadTicket} className="w-full h-16 md:h-20 bg-neon-green text-black font-bold rounded-2xl md:rounded-3xl tracking-wider text-xs shadow-[0_30px_60px_rgba(43,217,62,0.3)] hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-4">
                                                 DOWNLOAD PASS <ArrowRight size={20} />
                                             </Button>
-                                            <p className="text-[10px] font-black text-gray-600 uppercase tracking-widest italic">Ready for offline use.</p>
+                                            <p className="text-xs font-semibold text-zinc-500 tracking-wider">Ready for offline use.</p>
                                         </div>
                                     )}
 

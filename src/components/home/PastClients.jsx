@@ -11,25 +11,18 @@ const PastClients = () => {
     const duplicatedClients = [...clients, ...clients, ...clients];
 
     return (
-        <section className="py-10 md:py-16 bg-[#020202] relative overflow-hidden border-t border-white/5">
+        <section className="py-10 md:py-16 bg-dark relative overflow-hidden border-t border-white/5">
             <div className="max-w-7xl mx-auto px-4 mb-10 md:mb-12">
                 <div className="flex flex-col md:flex-row md:items-end justify-between gap-8">
                     <div>
-                        <motion.div
-                            initial={{ opacity: 0, scale: 0.9 }}
-                            whileInView={{ opacity: 1, scale: 1 }}
-                            viewport={{ once: true }}
-                            className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 mb-4"
-                        >
-                            <span className="text-[10px] font-black uppercase tracking-widest text-gray-500">Industry Trust</span>
-                        </motion.div>
+
                         <motion.h2
                             initial={{ opacity: 0, y: 20 }}
                             whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: true }}
                             className="font-heading text-4xl md:text-5xl font-black text-white tracking-tight"
                         >
-                            GLOBAL <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-500">PARTNERS.</span>
+                            Global <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-neon-green">Partners</span>
                         </motion.h2>
                     </div>
                     <motion.p
@@ -45,8 +38,8 @@ const PastClients = () => {
 
             {/* Premium Infinite Marquee */}
             <div className="relative w-full overflow-hidden flex items-center h-40">
-                <div className="absolute left-0 top-0 w-32 md:w-96 h-full bg-gradient-to-r from-[#020202] to-transparent z-10 pointer-events-none"></div>
-                <div className="absolute right-0 top-0 w-32 md:w-96 h-full bg-gradient-to-l from-[#020202] to-transparent z-10 pointer-events-none"></div>
+                <div className="absolute left-0 top-0 w-32 md:w-96 h-full bg-gradient-to-r from-dark to-transparent z-10 pointer-events-none"></div>
+                <div className="absolute right-0 top-0 w-32 md:w-96 h-full bg-gradient-to-l from-dark to-transparent z-10 pointer-events-none"></div>
 
                 <div className="flex animate-marquee whitespace-nowrap gap-12 md:gap-24 items-center">
                     {duplicatedClients.map((client, index) => (

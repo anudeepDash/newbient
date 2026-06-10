@@ -22,22 +22,29 @@ const UpcomingEvents = () => {
         }
     };
 
-    const [isAutoScrolling, setIsAutoScrolling] = useState(true);
+    const [isPaused, setIsPaused] = useState(false);
 
     useEffect(() => {
-        if (!isAutoScrolling || upcomingEvents.length <= 1) return;
+        if (isPaused || upcomingEvents.length <= 1) return;
+
         const interval = setInterval(() => {
             if (carouselRef.current) {
-                const { scrollLeft, scrollWidth, clientWidth } = carouselRef.current;
-                if (scrollLeft + clientWidth >= scrollWidth - 10) {
-                    carouselRef.current.scrollTo({ left: 0, behavior: 'smooth' });
+                const el = carouselRef.current;
+                const cardWidth = el.querySelector('[id^="event-card-"]')?.offsetWidth || 380;
+                const gap = window.innerWidth >= 768 ? 32 : 16;
+                const scrollStep = cardWidth + gap;
+                
+                const isAtEnd = el.scrollLeft + el.clientWidth >= el.scrollWidth - 15;
+                if (isAtEnd) {
+                    el.scrollTo({ left: 0, behavior: 'smooth' });
                 } else {
-                    carouselRef.current.scrollBy({ left: 400, behavior: 'smooth' });
+                    el.scrollBy({ left: scrollStep, behavior: 'smooth' });
                 }
             }
-        }, 4000);
+        }, 3500);
+
         return () => clearInterval(interval);
-    }, [isAutoScrolling, upcomingEvents.length]);
+    }, [isPaused, upcomingEvents]);
 
     useEffect(() => {
         const params = new URLSearchParams(window.location.search);
@@ -181,31 +188,21 @@ const UpcomingEvents = () => {
     return (
         <section
             id="upcoming-events"
-            className="relative py-10 md:py-16 scroll-mt-24 bg-[#020202] text-white overflow-hidden border-t border-white/5"
-            onMouseEnter={() => setIsAutoScrolling(false)}
-            onMouseLeave={() => setIsAutoScrolling(true)}
+            className="relative py-10 md:py-16 scroll-mt-24 bg-dark text-white overflow-hidden border-t border-white/5"
         >
             {/* Atmosphere */}
-            <div className="absolute top-1/2 left-0 w-[400px] h-[400px] bg-neon-blue/5 blur-[120px] rounded-full pointer-events-none" />
 
             <div className="max-w-7xl mx-auto px-4 relative z-10">
                 <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 md:mb-12 gap-8">
                     <div className="max-w-xl">
-                        <motion.div
-                            initial={{ opacity: 0, x: -20 }}
-                            whileInView={{ opacity: 1, x: 0 }}
-                            viewport={{ once: true }}
-                            className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 mb-4"
-                        >
-                            <span className="text-[10px] font-black uppercase tracking-widest text-neon-blue">Live Energy</span>
-                        </motion.div>
+
                         <motion.h2
                             initial={{ opacity: 0, y: 20 }}
                             whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: true }}
-                            className="font-heading text-4xl md:text-6xl font-black tracking-tight italic"
+                            className="font-heading text-4xl md:text-6xl font-extrabold tracking-tight text-white"
                         >
-                            Upcoming <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-blue via-cyan-400 to-neon-green not-italic">Events.</span>
+                            Upcoming <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-neon-green">Events</span>
                         </motion.h2>
                     </div>
                 </div>
@@ -217,13 +214,13 @@ const UpcomingEvents = () => {
                         <div className="hidden lg:block">
                             <button 
                                 onClick={() => scroll('left')}
-                                className="absolute -left-12 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white hover:bg-neon-blue hover:text-black transition-all z-30 backdrop-blur-md opacity-0 group-hover/nav:opacity-100 -translate-x-4 group-hover/nav:translate-x-0"
+                                className="absolute -left-12 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white hover:bg-neon-green hover:text-black transition-all z-30 backdrop-blur-md opacity-0 group-hover/nav:opacity-100 -translate-x-4 group-hover/nav:translate-x-0"
                             >
                                 <ChevronLeft size={20} />
                             </button>
                             <button 
                                 onClick={() => scroll('right')}
-                                className="absolute -right-12 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white hover:bg-neon-blue hover:text-black transition-all z-30 backdrop-blur-md opacity-0 group-hover/nav:opacity-100 translate-x-4 group-hover/nav:translate-x-0"
+                                className="absolute -right-12 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white hover:bg-neon-green hover:text-black transition-all z-30 backdrop-blur-md opacity-0 group-hover/nav:opacity-100 translate-x-4 group-hover/nav:translate-x-0"
                             >
                                 <ChevronRight size={20} />
                             </button>
@@ -232,6 +229,10 @@ const UpcomingEvents = () => {
 
                     <div 
                         ref={carouselRef}
+                        onMouseEnter={() => setIsPaused(true)}
+                        onMouseLeave={() => setIsPaused(false)}
+                        onTouchStart={() => setIsPaused(true)}
+                        onTouchEnd={() => setIsPaused(false)}
                         className="flex overflow-x-auto gap-4 md:gap-8 pb-12 snap-x horizontal-scrollbar scroll-smooth px-8 md:px-0"
                         style={{ scrollbarWidth: 'auto', msOverflowStyle: 'auto' }}
                     >
@@ -267,6 +268,22 @@ const UpcomingEvents = () => {
                             );
                         })}
                     </div>
+                    {upcomingEvents.length > 1 && (
+                        <div className="flex md:hidden items-center justify-center gap-4 mt-2">
+                            <button 
+                                onClick={() => scroll('left')}
+                                className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-white active:bg-white active:text-black transition-all"
+                            >
+                                <ChevronLeft size={16} />
+                            </button>
+                            <button 
+                                onClick={() => scroll('right')}
+                                className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-white active:bg-white active:text-black transition-all"
+                            >
+                                <ChevronRight size={16} />
+                            </button>
+                        </div>
+                    )}
                 </div>
             </div>
 

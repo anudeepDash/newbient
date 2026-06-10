@@ -272,7 +272,7 @@ const ArtistAnt = () => {
     const isFormView = view === 'artist_form' || view === 'client_form';
 
     return (
-        <div className="min-h-screen bg-[#050505] text-white relative font-outfit scroll-smooth">
+        <div className="min-h-screen bg-dark text-white relative font-outfit scroll-smooth">
             <Helmet>
                 <title>Artistant — the ultimate creative link-up.</title>
                 <meta name="description" content="Artistant is India's premier artist booking platform. Connect verified live performers — singers, DJs, bands, comedians — with event organizers. Book talent instantly." />
@@ -361,7 +361,7 @@ const ArtistAnt = () => {
                             <div className="absolute inset-0 z-0">
                                 <div className="absolute top-[-15%] left-[-10%] w-[60%] h-[60%] bg-[#FF6B6B]/5 rounded-full blur-[220px] animate-pulse" />
                                 <div className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] bg-[#7B61FF]/3 rounded-full blur-[220px] animate-pulse delay-700" />
-                                <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,#050505_100%)] z-10" />
+                                <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,#0B0F17_100%)] z-10" />
                                 <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff03_1px,transparent_1px),linear-gradient(to_bottom,#ffffff03_1px,transparent_1px)] bg-[size:60px_60px] opacity-[0.08]" />
                             </div>
 
@@ -390,8 +390,8 @@ const ArtistAnt = () => {
                                         transition={{ duration: 0.8, delay: 0.4 }}
                                         className="relative z-30 w-full mx-auto px-4"
                                     >
-                                        <h1 className="text-[20px] sm:text-2xl md:text-3xl lg:text-4xl font-black font-heading tracking-[0.1em] sm:tracking-[0.25em] uppercase italic leading-none text-white opacity-90 drop-shadow-[0_4px_10px_rgba(0,0,0,0.8)]">
-                                            THE ULTIMATE <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF6B6B] via-white to-[#7B61FF] not-italic">CREATIVE LINK-UP.</span>
+                                        <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight leading-none text-white">
+                                            The Ultimate <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF6B6B] via-white to-[#7B61FF]">Creative Link-Up.</span>
                                         </h1>
 
                                     </motion.div>
@@ -448,9 +448,9 @@ const ArtistAnt = () => {
                                     transition={{ delay: 0.9 }}
                                     className="flex flex-col items-center gap-4"
                                 >
-                                    <div className="flex items-center gap-2.5 px-5 py-2.5 rounded-full bg-white/5 border border-white/10 backdrop-blur-3xl group hover:border-[#FF6B6B]/30 transition-all cursor-default">
+                                    <div className="flex items-center gap-2.5 group cursor-default">
                                         <Rocket size={12} className="text-[#FF6B6B] animate-bounce" />
-                                        <p className="text-[10px] md:text-[11px] font-black uppercase tracking-[0.3em] text-gray-500 group-hover:text-white transition-colors">
+                                        <p className="text-[10px] md:text-[11px] font-bold uppercase tracking-[0.3em] text-gray-500 group-hover:text-white transition-colors">
                                             Join the waitlist now. Preview live for onboarding and connecting now.
                                         </p>
                                     </div>
@@ -459,12 +459,12 @@ const ArtistAnt = () => {
                         </section>
 
                         {/* TALENT SPECTRUM SECTION (Moved Up) */}
-                        <section className="relative py-16 md:py-20 px-6 md:px-8 bg-[#050505]">
+                        <section className="relative py-16 md:py-20 px-6 md:px-8 bg-dark">
                             <div className="max-w-7xl mx-auto">
                                 <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-12 md:mb-16">
                                     <div className="space-y-4 text-left">
-                                        <h2 className="text-3xl sm:text-4xl md:text-6xl font-black font-heading uppercase italic tracking-tighter leading-none">
-                                            THE TALENT <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF6B6B] to-[#7B61FF]">SPECTRUM.</span>
+                                        <h2 className="text-2xl sm:text-4xl md:text-5xl font-extrabold tracking-tight leading-none text-white">
+                                            The Talent <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF6B6B] to-[#7B61FF]">Spectrum.</span>
                                         </h2>
 
                                         <p className="text-gray-600 text-[10px] md:text-base font-bold uppercase tracking-widest">Bridging every performance vertical with precision matching.</p>
@@ -503,7 +503,7 @@ const ArtistAnt = () => {
                                             whileInView={{ opacity: 1, y: 0 }}
                                             viewport={{ once: true }}
                                             transition={{ delay: i * 0.1 }}
-                                            className="group flex-shrink-0 w-[280px] md:w-[320px] p-8 bg-zinc-900/20 border border-white/5 rounded-[2.5rem] hover:bg-zinc-900/40 hover:border-[#FF6B6B]/20 transition-all cursor-default snap-center"
+                                            className="group flex-shrink-0 w-[280px] md:w-[320px] p-8 bg-slate-900/30 border border-white/5 rounded-[2.5rem] hover:bg-slate-900/50 hover:border-[#FF6B6B]/20 transition-all duration-300 cursor-default snap-center hover:-translate-y-1"
                                         >
                                             <div className="w-16 h-16 bg-white/5 rounded-2xl flex items-center justify-center text-[#FF6B6B] mb-8 group-hover:scale-110 group-hover:bg-[#FF6B6B]/10 transition-all duration-500">
                                                 {React.cloneElement(cat.icon, { size: 28 })}
@@ -517,15 +517,15 @@ const ArtistAnt = () => {
                         </section>
 
                         {/* THE BOOKABILITY ENGINE SECTION */}
-                        <section className="relative py-16 md:py-24 px-6 md:px-8 bg-[#020202] border-t border-white/5">
+                        <section className="relative py-16 md:py-24 px-6 md:px-8 bg-dark border-t border-white/5">
                             <div className="max-w-7xl mx-auto text-center space-y-12 md:space-y-16">
                                 <div className="space-y-6">
-                                    <div className="inline-flex items-center gap-3 px-6 py-2.5 rounded-full bg-[#FF6B6B]/10 border border-[#FF6B6B]/20 backdrop-blur-3xl mb-4">
-                                        <Shield size={16} className="text-[#FF6B6B]" />
-                                        <span className="text-[10px] font-black uppercase tracking-[0.4em] text-[#FF6B6B]">The Bookability Engine™</span>
+                                    <div className="flex items-center justify-center gap-2.5 text-[#FF6B6B] font-black tracking-[0.4em] text-[10px] uppercase mb-4">
+                                        <Shield size={14} className="text-[#FF6B6B]" />
+                                        <span>The Bookability Engine™</span>
                                     </div>
-                                    <h2 className="text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-black font-heading uppercase italic tracking-tighter leading-none">
-                                        CONNECTING SUPPLY AND DEMAND <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF6B6B] to-[#7B61FF]">SECURELY.</span>
+                                    <h2 className="text-2xl sm:text-4xl md:text-5xl font-extrabold tracking-tight leading-none text-white">
+                                        Secure bookings, <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF6B6B] to-[#7B61FF]">seamless coordination.</span>
                                     </h2>
 
                                     <p className="text-gray-400 text-base md:text-xl font-bold uppercase tracking-widest max-w-3xl mx-auto">
@@ -536,7 +536,7 @@ const ArtistAnt = () => {
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-10">
                                     <button 
                                         onClick={() => setView('artist_form')}
-                                        className="p-6 md:p-10 bg-zinc-900/20 border border-white/10 rounded-3xl md:rounded-[3rem] text-left space-y-8 group hover:border-[#FF6B6B]/30 transition-all hover:bg-zinc-900/40 outline-none"
+                                        className="p-6 md:p-10 bg-slate-900/30 border border-white/5 rounded-3xl md:rounded-[3rem] text-left space-y-8 group hover:border-[#FF6B6B]/20 transition-all duration-300 hover:bg-slate-900/50 outline-none"
                                     >
                                         <div className="w-12 h-12 md:w-16 md:h-16 bg-[#FF6B6B]/10 rounded-2xl flex items-center justify-center text-[#FF6B6B] group-hover:scale-110 transition-transform">
                                             <UserCheck size={28} />
@@ -554,7 +554,7 @@ const ArtistAnt = () => {
 
                                     <button 
                                         onClick={() => setView('client_form')}
-                                        className="p-6 md:p-10 bg-zinc-900/20 border border-white/10 rounded-3xl md:rounded-[3rem] text-left space-y-8 group hover:border-[#7B61FF]/30 transition-all hover:bg-zinc-900/40 outline-none"
+                                        className="p-6 md:p-10 bg-slate-900/30 border border-white/5 rounded-3xl md:rounded-[3rem] text-left space-y-8 group hover:border-[#7B61FF]/20 transition-all duration-300 hover:bg-slate-900/50 outline-none"
                                     >
                                         <div className="w-12 h-12 md:w-16 md:h-16 bg-[#7B61FF]/10 rounded-2xl flex items-center justify-center text-[#7B61FF] group-hover:scale-110 transition-transform">
                                             <Search size={28} />
@@ -575,15 +575,15 @@ const ArtistAnt = () => {
 
 
                         {/* LAUNCHING SOON SECTION */}
-                        <section className="relative py-16 md:py-24 px-6 md:px-8 bg-[#020202] border-t border-white/5">
+                        <section className="relative py-16 md:py-24 px-6 md:px-8 bg-dark border-t border-white/5">
                             <div className="max-w-7xl mx-auto">
                                 <div className="text-center mb-16 md:mb-24 space-y-6 md:space-y-8">
-                                    <div className="inline-flex items-center gap-3 px-6 py-2.5 rounded-full bg-white/5 border border-white/10 backdrop-blur-3xl">
-                                        <div className="w-2 h-2 bg-[#FF6B6B] rounded-full animate-ping" />
-                                        <span className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-400">Launching Soon</span>
+                                    <div className="flex items-center justify-center gap-2.5 text-gray-400 font-black tracking-[0.4em] text-[10px] uppercase mb-6">
+                                        <div className="w-2 h-2 bg-[#FF6B6B] rounded-full animate-pulse" />
+                                        <span>Launching Soon</span>
                                     </div>
-                                    <h2 className="text-3xl sm:text-5xl md:text-8xl font-black font-heading uppercase italic tracking-tighter leading-none">
-                                        THE COMPLETE <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF6B6B] to-[#7B61FF]">ECOSYSTEM.</span>
+                                    <h2 className="text-3xl sm:text-5xl md:text-6xl font-extrabold tracking-tight leading-none text-white">
+                                        The Performance <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF6B6B] to-[#7B61FF]">Ecosystem.</span>
                                     </h2>
 
                                     <p className="text-gray-400 text-base md:text-xl font-bold uppercase tracking-widest max-w-4xl mx-auto">
@@ -599,7 +599,7 @@ const ArtistAnt = () => {
                                             whileInView={{ opacity: 1, scale: 1 }}
                                             viewport={{ once: true }}
                                             transition={{ delay: i * 0.1 }}
-                                            className="p-8 md:p-10 bg-zinc-900/30 border border-white/5 rounded-[2.5rem] md:rounded-[3rem] space-y-8 md:space-y-10 group hover:border-[#7B61FF]/30 transition-all hover:bg-zinc-900/50"
+                                            className="p-8 md:p-10 bg-slate-900/20 border border-white/5 rounded-[2.5rem] md:rounded-[3rem] space-y-8 md:space-y-10 group hover:border-[#7B61FF]/20 transition-all duration-300 hover:bg-slate-900/40 hover:-translate-y-1"
                                         >
                                             <div className="space-y-6">
                                                 <div className="flex items-center justify-between">
@@ -985,10 +985,10 @@ const FormField = ({ label, isTextArea, ...props }) => (
             ) : (
                 <input 
                     {...props} 
-                    className="w-full h-16 md:h-20 bg-white/[0.02] border border-white/5 rounded-full px-8 md:px-10 text-[13px] md:text-[14px] font-black outline-none focus:border-[#FF6B6B]/30 transition-all text-white placeholder:text-white/10 shadow-2xl focus:bg-white/[0.04]" 
+                    className="w-full h-16 md:h-20 bg-white/[0.02] border border-white/5 rounded-2xl px-8 md:px-10 text-[13px] md:text-[14px] font-black outline-none focus:border-[#FF6B6B]/30 transition-all text-white placeholder:text-white/10 shadow-2xl focus:bg-white/[0.04]" 
                 />
             )}
-            <div className="absolute inset-0 rounded-full border border-[#FF6B6B]/0 group-focus-within:border-[#FF6B6B]/20 pointer-events-none transition-all duration-500" />
+            <div className="absolute inset-0 rounded-2xl border border-[#FF6B6B]/0 group-focus-within:border-[#FF6B6B]/20 pointer-events-none transition-all duration-500" />
         </div>
     </div>
 );
@@ -1005,14 +1005,14 @@ const FormSelect = ({ label, options, value, ...props }) => {
                     onFocus={() => setIsOpen(true)}
                     onBlur={() => setIsOpen(false)}
                     className={cn(
-                        "w-full h-20 bg-white/[0.02] border border-white/5 rounded-full px-10 text-[14px] font-black outline-none appearance-none cursor-pointer transition-all shadow-2xl focus:bg-white/[0.04] focus:border-[#FF6B6B]/30",
+                        "w-full h-20 bg-white/[0.02] border border-white/5 rounded-2xl px-10 text-[14px] font-black outline-none appearance-none cursor-pointer transition-all shadow-2xl focus:bg-white/[0.04] focus:border-[#FF6B6B]/30",
                         !value ? "text-white/10" : "text-white"
                     )}
                 >
                     <option value="" disabled className="bg-[#050505] text-white/10">Please select an option</option>
                     {options.map(o => <option key={o} value={o} className="bg-[#050505] font-bold text-white">{o.toUpperCase()}</option>)}
                 </select>
-                <div className="absolute inset-0 rounded-full border border-[#FF6B6B]/0 group-focus-within:border-[#FF6B6B]/20 pointer-events-none transition-all duration-500" />
+                <div className="absolute inset-0 rounded-2xl border border-[#FF6B6B]/0 group-focus-within:border-[#FF6B6B]/20 pointer-events-none transition-all duration-500" />
                 <ChevronDown className={cn("absolute right-8 top-1/2 -translate-y-1/2 text-gray-700 pointer-events-none transition-transform duration-300", isOpen ? "rotate-180 text-[#FF6B6B]" : "rotate-0")} size={18} />
             </div>
         </div>

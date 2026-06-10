@@ -405,7 +405,7 @@ const CreatorSettingsView = ({ profile }) => {
                 <div className="py-20 flex flex-col items-center justify-center space-y-8 bg-red-500/5 border border-red-500/10 rounded-[3rem] p-12">
                     <div className="text-center space-y-4">
                         <AlertCircle size={64} className="text-red-500 mx-auto" />
-                        <h4 className="text-4xl font-black font-heading uppercase italic tracking-tighter text-white">Delete Profile</h4>
+                        <h4 className="text-3xl font-extrabold font-heading tracking-tight text-white">Delete Profile</h4>
                         <p className="text-[12px] font-bold text-gray-500 uppercase tracking-widest leading-relaxed max-w-md mx-auto">
                             Warning: This will permanently remove your creator profile and all associated data. This action is irreversible.
                         </p>
@@ -432,14 +432,13 @@ const CreatorSettingsView = ({ profile }) => {
                     <div className="lg:col-span-7 space-y-8">
                         <form onSubmit={handleSave} className="space-y-8">
                             <div className="bg-zinc-950/45 border border-white/[0.08] backdrop-blur-3xl shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)] rounded-[2rem] sm:rounded-[3rem] p-6 sm:p-10 space-y-8 relative overflow-hidden">
-                                <div className="absolute top-0 right-0 w-64 h-64 bg-neon-blue/5 blur-[100px] -mr-32 -mt-32 pointer-events-none" />
                                 
                                 <div className="flex items-center gap-6 mb-4">
-                                    <div className="w-14 h-14 rounded-2xl bg-white/5 flex items-center justify-center border border-white/10 text-neon-blue">
+                                    <div className="w-14 h-14 rounded-2xl bg-white/5 flex items-center justify-center border border-white/10 text-neon-green">
                                         <Users size={24} />
                                     </div>
                                     <div>
-                                        <h3 className="text-2xl font-black font-heading uppercase italic tracking-tighter">Profile Details</h3>
+                                        <h3 className="text-2xl font-extrabold font-heading tracking-tight text-white">Profile Details</h3>
                                         <p className="text-[10px] font-black text-gray-600 uppercase tracking-widest">Your public profile information</p>
                                     </div>
                                 </div>
@@ -447,7 +446,7 @@ const CreatorSettingsView = ({ profile }) => {
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div className="space-y-3">
                                         <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Full Name</label>
-                                        <input required name="name" value={form.name} onChange={handleChange} className="w-full h-14 bg-black/60 border border-white/10 rounded-xl px-4 text-sm font-bold focus:border-neon-blue transition-all" />
+                                        <input required name="name" value={form.name} onChange={handleChange} className="w-full h-14 bg-black/60 border border-white/10 rounded-xl px-4 text-sm font-bold focus:border-neon-green transition-all" />
                                     </div>
                                     <div className="space-y-3">
                                         <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Contact Number</label>
@@ -456,7 +455,7 @@ const CreatorSettingsView = ({ profile }) => {
                                                 <select
                                                     value={countryCode}
                                                     onChange={(e) => setCountryCode(e.target.value)}
-                                                    className="h-14 bg-black/40 border border-white/10 rounded-xl px-3 text-sm font-bold focus:border-neon-blue transition-all appearance-none cursor-pointer text-white w-24"
+                                                    className="h-14 bg-black/40 border border-white/10 rounded-xl px-3 text-sm font-bold focus:border-neon-green transition-all appearance-none cursor-pointer text-white w-24"
                                                 >
                                                     <option value="+91" className="bg-zinc-900">🇮🇳 +91</option>
                                                     <option value="+1" className="bg-zinc-900">🇺🇸 +1</option>
@@ -473,7 +472,7 @@ const CreatorSettingsView = ({ profile }) => {
                                                     value={form.phone} 
                                                     onChange={handleChange} 
                                                     disabled={isPhoneVerified || otpSent}
-                                                    className="w-full h-14 bg-black/40 border border-white/10 rounded-xl px-4 text-sm font-bold focus:border-neon-blue transition-all disabled:opacity-75" 
+                                                    className="w-full h-14 bg-black/40 border border-white/10 rounded-xl px-4 text-sm font-bold focus:border-neon-green transition-all disabled:opacity-75" 
                                                 />
                                                 {isPhoneVerified && (
                                                     <span className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-1 text-neon-green text-[9px] font-black tracking-widest bg-neon-green/10 border border-neon-green/20 px-2.5 py-1 rounded-md">
@@ -492,7 +491,7 @@ const CreatorSettingsView = ({ profile }) => {
                                                         type="button"
                                                         onClick={handleSendOTP}
                                                         disabled={isSendingOtp || !form.phone}
-                                                        className="h-12 px-6 bg-neon-blue text-black font-black uppercase tracking-widest text-[9px] rounded-xl flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50"
+                                                        className="h-12 px-6 bg-neon-green text-black font-black uppercase tracking-widest text-[9px] rounded-xl flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50"
                                                     >
                                                         {isSendingOtp ? <LoadingSpinner size="xs" color="black" /> : 'Send Verification OTP'}
                                                     </button>
@@ -513,7 +512,7 @@ const CreatorSettingsView = ({ profile }) => {
                                                                     onChange={e => handleOtpChange(e.target.value, idx)}
                                                                     onKeyDown={e => handleOtpKeyDown(e, idx)}
                                                                     onPaste={handleOtpPaste}
-                                                                    className="w-8 h-10 sm:w-10 sm:h-12 bg-black/60 border border-white/10 rounded-xl text-center text-sm sm:text-lg font-black text-white focus:border-neon-blue focus:outline-none transition-all"
+                                                                    className="w-8 h-10 sm:w-10 sm:h-12 bg-black/60 border border-white/10 rounded-xl text-center text-sm sm:text-lg font-black text-white focus:border-neon-green focus:outline-none transition-all"
                                                                 />
                                                             ))}
                                                         </div>
@@ -522,7 +521,7 @@ const CreatorSettingsView = ({ profile }) => {
                                                                 type="button"
                                                                 onClick={handleVerifyOTP}
                                                                 disabled={isVerifyingOtp || otpValues.join('').length !== 6}
-                                                                className="h-10 px-5 bg-neon-pink text-black font-black uppercase tracking-widest text-[9px] rounded-xl flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-30"
+                                                                className="h-10 px-5 bg-neon-green text-black font-black uppercase tracking-widest text-[9px] rounded-xl flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-30"
                                                             >
                                                                 {isVerifyingOtp ? <LoadingSpinner size="xs" color="black" /> : 'Confirm Code'}
                                                             </button>
@@ -544,13 +543,13 @@ const CreatorSettingsView = ({ profile }) => {
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div className="space-y-3">
                                         <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Email Address</label>
-                                        <input required name="email" type="email" value={form.email} onChange={handleChange} className="w-full h-14 bg-black/40 border border-white/10 rounded-xl px-4 text-sm font-bold focus:border-neon-blue transition-all" />
+                                        <input required name="email" type="email" value={form.email} onChange={handleChange} className="w-full h-14 bg-black/40 border border-white/10 rounded-xl px-4 text-sm font-bold focus:border-neon-green transition-all" />
                                     </div>
                                     <div className="space-y-3">
                                         <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Operational Hub (City)</label>
                                         <select
                                             required name="city" value={form.city} onChange={handleChange}
-                                            className="w-full h-14 bg-black/40 border border-white/10 rounded-xl px-4 text-sm font-bold focus:border-neon-blue transition-all appearance-none cursor-pointer text-white"
+                                            className="w-full h-14 bg-black/40 border border-white/10 rounded-xl px-4 text-sm font-bold focus:border-neon-green transition-all appearance-none cursor-pointer text-white"
                                         >
                                             <option value="" disabled>Select Universal Hub</option>
                                             {PREDEFINED_CITIES.map(c => <option key={c} value={c} className="bg-zinc-900">{c.toUpperCase()}</option>)}
@@ -561,7 +560,7 @@ const CreatorSettingsView = ({ profile }) => {
                                 {form.city === 'Others' && (
                                     <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="space-y-3">
                                         <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Specify City Name</label>
-                                        <input required name="customCity" value={form.customCity} onChange={handleChange} className="w-full h-14 bg-black/40 border border-white/10 rounded-xl px-4 text-sm font-bold focus:border-neon-blue transition-all" />
+                                        <input required name="customCity" value={form.customCity} onChange={handleChange} className="w-full h-14 bg-black/40 border border-white/10 rounded-xl px-4 text-sm font-bold focus:border-neon-green transition-all" />
                                     </motion.div>
                                 )}
 
@@ -570,7 +569,7 @@ const CreatorSettingsView = ({ profile }) => {
                                         <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Niche / Specialization</label>
                                         <select
                                             required name="specializations" value={form.specializations} onChange={handleChange}
-                                            className="w-full h-14 bg-black/40 border border-white/10 rounded-xl px-4 text-sm font-bold focus:border-neon-blue transition-all appearance-none cursor-pointer text-white"
+                                            className="w-full h-14 bg-black/40 border border-white/10 rounded-xl px-4 text-sm font-bold focus:border-neon-green transition-all appearance-none cursor-pointer text-white"
                                         >
                                             <option value="" disabled>Select Niche</option>
                                             {NICHES.map(n => <option key={n} value={n} className="bg-zinc-900">{n.toUpperCase()}</option>)}
@@ -586,7 +585,7 @@ const CreatorSettingsView = ({ profile }) => {
                                             value={form.collegeName} 
                                             onChange={handleChange} 
                                             placeholder={showCollegeField ? 'e.g. Delhi University, IIT' : 'e.g. Delhi University, IIT (Optional)'}
-                                            className="w-full h-14 bg-black/40 border border-white/10 rounded-xl px-4 text-sm font-bold focus:border-neon-blue transition-all text-white" 
+                                            className="w-full h-14 bg-black/40 border border-white/10 rounded-xl px-4 text-sm font-bold focus:border-neon-green transition-all text-white" 
                                         />
                                         <p className="text-[9px] font-bold text-gray-500 uppercase tracking-wider pl-1 mt-1 leading-normal">
                                             Why fill this? Matching your college helps us connect you with exclusive regional/campus campaigns and college events.
@@ -597,7 +596,7 @@ const CreatorSettingsView = ({ profile }) => {
                                 {form.specializations === 'Others' && (
                                     <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="space-y-3">
                                         <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Specify Content Niche</label>
-                                        <input required name="customNiche" value={form.customNiche} onChange={handleChange} className="w-full h-14 bg-black/40 border border-white/10 rounded-xl px-4 text-sm font-bold focus:border-neon-blue transition-all" />
+                                        <input required name="customNiche" value={form.customNiche} onChange={handleChange} className="w-full h-14 bg-black/40 border border-white/10 rounded-xl px-4 text-sm font-bold focus:border-neon-green transition-all" />
                                     </motion.div>
                                 )}
 
@@ -606,7 +605,7 @@ const CreatorSettingsView = ({ profile }) => {
                                         <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Barter Collaborations</label>
                                         <select
                                             required name="doBarter" value={form.doBarter} onChange={handleChange}
-                                            className="w-full h-14 bg-black/40 border border-white/10 rounded-xl px-4 text-sm font-bold focus:border-neon-blue transition-all appearance-none cursor-pointer text-white"
+                                            className="w-full h-14 bg-black/40 border border-white/10 rounded-xl px-4 text-sm font-bold focus:border-neon-green transition-all appearance-none cursor-pointer text-white"
                                         >
                                             <option value="" disabled>Select Preference</option>
                                             <option value="yes" className="bg-zinc-900">YES</option>
@@ -622,17 +621,17 @@ const CreatorSettingsView = ({ profile }) => {
                                             value={form.commercials} 
                                             onChange={handleChange} 
                                             placeholder="e.g. 5k/Reel, 2k/Story or Open to discuss"
-                                            className="w-full h-14 bg-black/40 border border-white/10 rounded-xl px-4 text-sm font-bold focus:border-neon-blue transition-all text-white" 
+                                            className="w-full h-14 bg-black/40 border border-white/10 rounded-xl px-4 text-sm font-bold focus:border-neon-green transition-all text-white" 
                                         />
                                     </div>
                                 </div>
 
                                 <div className="space-y-3">
                                     <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Strategic Bio</label>
-                                    <textarea required name="bio" value={form.bio} onChange={handleChange} className="w-full h-40 bg-black/40 border border-white/10 rounded-xl p-4 text-sm font-bold focus:border-neon-blue transition-all resize-none shadow-inner leading-relaxed" />
+                                    <textarea required name="bio" value={form.bio} onChange={handleChange} className="w-full h-40 bg-black/40 border border-white/10 rounded-xl p-4 text-sm font-bold focus:border-neon-green transition-all resize-none shadow-inner leading-relaxed" />
                                 </div>
 
-                                <button type="submit" disabled={isSaving} className="w-full h-16 bg-white text-black font-black uppercase tracking-widest rounded-2xl hover:bg-neon-blue transition-all shadow-xl flex items-center justify-center gap-3">
+                                <button type="submit" disabled={isSaving} className="w-full h-16 bg-white text-black font-black uppercase tracking-widest rounded-2xl hover:bg-neon-green transition-all shadow-xl flex items-center justify-center gap-3">
                                     {isSaving ? <LoadingSpinner size="xs" color="#000000" /> : <><RefreshCw size={18} /> Save Changes</>}
                                 </button>
                             </div>
@@ -647,35 +646,35 @@ const CreatorSettingsView = ({ profile }) => {
                                     <ImageIcon size={24} />
                                 </div>
                                 <div>
-                                    <h3 className="text-2xl font-black font-heading uppercase italic tracking-tighter">Profile Photo</h3>
+                                    <h3 className="text-2xl font-extrabold font-heading tracking-tight">Profile Photo</h3>
                                     <p className="text-[10px] font-black text-gray-600 uppercase tracking-widest">Your display picture</p>
                                 </div>
                             </div>
 
                             <div className="flex flex-col items-center gap-8 py-4">
                                 <div className="relative group">
-                                    <div className="w-48 h-48 rounded-[3.5rem] bg-black border-2 border-white/10 flex items-center justify-center overflow-hidden transition-all group-hover:border-neon-blue/40 shadow-2xl">
+                                    <div className="w-48 h-48 rounded-3xl bg-black border-2 border-white/10 flex items-center justify-center overflow-hidden transition-all group-hover:border-neon-green/40 shadow-2xl">
                                         {form.profilePicture ? (
                                             <img src={form.profilePicture} alt="Preview" className="w-full h-full object-cover" />
                                         ) : (
                                             <Camera size={48} className="text-gray-700" />
                                         )}
                                     </div>
-                                    <label className="absolute -bottom-2 -right-2 w-14 h-14 bg-neon-blue text-black rounded-2xl flex items-center justify-center cursor-pointer hover:scale-110 active:scale-95 transition-all shadow-xl">
+                                    <label className="absolute -bottom-2 -right-2 w-14 h-14 bg-neon-green text-black rounded-2xl flex items-center justify-center cursor-pointer hover:scale-110 active:scale-95 transition-all shadow-xl">
                                         <Upload size={24} />
                                         <input type="file" className="hidden" accept="image/*" onChange={handleImageUpload} />
                                     </label>
                                 </div>
                                 <div className="text-center">
                                     <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Verification Status</p>
-                                    <div className="mt-3 px-6 py-2 bg-neon-green/10 text-neon-green border border-neon-green/20 rounded-full text-[10px] font-black tracking-widest inline-block">
+                                    <div className="mt-3 px-6 py-2 bg-neon-green/10 text-neon-green border border-neon-green/20 rounded-xl text-[10px] font-black tracking-widest inline-block">
                                         {profile.profileStatus?.toUpperCase() || 'ACTIVE'}
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        <div className="bg-red-950/20 border border-red-500/20 backdrop-blur-3xl shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)] rounded-[2rem] sm:rounded-[3rem] p-6 sm:p-10 space-y-6">
+                        <div className="bg-red-950/20 border border-red-500/20 backdrop-blur-3xl shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)] rounded-3xl p-6 sm:p-10 space-y-6">
                             <h4 className="text-[10px] font-black text-red-500 uppercase tracking-[0.5em] mb-4 text-center">DANGER ZONE</h4>
                             <button onClick={() => setShowDeleteConfirm(true)} type="button" className="w-full h-16 rounded-2xl border border-red-500/20 text-red-500 text-[10px] font-black uppercase tracking-widest hover:bg-red-500 hover:text-white transition-all flex items-center justify-center gap-3">
                                 <AlertCircle size={16} /> Deactivate Creator Profile
@@ -749,14 +748,13 @@ const CreatorReferralsView = ({ profile }) => {
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
                 {/* Link Card */}
                 <div className="lg:col-span-7 bg-zinc-950/45 border border-white/[0.08] backdrop-blur-3xl p-8 rounded-[2.5rem] relative overflow-hidden flex flex-col justify-between shadow-2xl">
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-neon-blue/5 blur-[100px] pointer-events-none" />
                     
                     <div className="space-y-4">
-                        <div className="flex items-center gap-3 text-neon-blue font-black tracking-widest text-[10px] uppercase">
-                            <Link2 size={14} className="animate-pulse" />
+                        <div className="flex items-center gap-3 text-neon-green font-black tracking-widest text-[10px] uppercase">
+                            <Link2 size={14} className="" />
                             YOUR PERSONAL REFERRAL LINK
                         </div>
-                        <h3 className="text-2xl sm:text-3xl font-black font-heading uppercase italic tracking-tight">INVITE OTHER CREATORS</h3>
+                        <h3 className="text-2xl sm:text-3xl font-extrabold font-heading tracking-tight text-white">Invite Other Creators</h3>
                         <p className="text-gray-400 text-xs sm:text-sm font-medium leading-relaxed max-w-xl">
                             Share this link with fellow creators. When they register on Newbi using your link, they will be registered as your referral and you will rise on the dashboard leaderboard!
                         </p>
@@ -768,7 +766,7 @@ const CreatorReferralsView = ({ profile }) => {
                         </div>
                         <Button 
                             onClick={handleCopy}
-                            className="h-14 px-8 rounded-xl bg-white text-black font-black uppercase tracking-widest text-[10px] hover:bg-neon-blue transition-all flex items-center justify-center gap-2 shadow-lg shrink-0"
+                            className="h-14 px-8 rounded-xl bg-white text-black font-black uppercase tracking-widest text-[10px] hover:bg-neon-green transition-all flex items-center justify-center gap-2 shadow-lg shrink-0"
                         >
                             {copied ? <CheckCircle2 size={14} className="text-neon-green" /> : <Copy size={14} />}
                             <span>{copied ? 'Copied' : 'Copy Link'}</span>
@@ -778,9 +776,8 @@ const CreatorReferralsView = ({ profile }) => {
 
                 {/* Stats Card */}
                 <div className="lg:col-span-5 bg-zinc-950/45 border border-white/[0.08] backdrop-blur-3xl p-8 rounded-[2.5rem] flex flex-col justify-between relative overflow-hidden shadow-2xl">
-                    <div className="absolute bottom-0 right-0 w-48 h-48 bg-neon-pink/5 blur-[100px] pointer-events-none" />
                     
-                    <div className="flex items-center gap-3 text-neon-pink font-black tracking-widest text-[10px] uppercase">
+                    <div className="flex items-center gap-3 text-neon-green font-black tracking-widest text-[10px] uppercase">
                         <TrendingUp size={14} />
                         REFERRAL ANALYTICS
                     </div>
@@ -795,7 +792,7 @@ const CreatorReferralsView = ({ profile }) => {
                             <span className="text-[7px] font-black text-gray-500 uppercase tracking-widest mt-2">Verified</span>
                         </div>
                         <div className="flex flex-col items-center justify-center px-2">
-                            <span className="text-2xl sm:text-3xl font-black text-neon-blue italic leading-none">
+                            <span className="text-2xl sm:text-3xl font-black text-neon-green italic leading-none">
                                 {myRank > 0 ? `#${myRank}` : 'Unranked'}
                             </span>
                             <span className="text-[7px] font-black text-gray-500 uppercase tracking-widest mt-2">Rank</span>
@@ -816,7 +813,7 @@ const CreatorReferralsView = ({ profile }) => {
                 {/* Leaderboard Table */}
                 <div className="lg:col-span-8 bg-zinc-950/45 border border-white/[0.08] backdrop-blur-3xl p-6 sm:p-8 rounded-[2.5rem] space-y-6 shadow-2xl">
                     <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-neon-blue/10 border border-neon-blue/20 flex items-center justify-center text-neon-blue shadow-inner">
+                        <div className="w-10 h-10 rounded-xl bg-neon-green/10 border border-neon-green/20 flex items-center justify-center text-neon-green shadow-inner">
                             <Award size={18} />
                         </div>
                         <div>
@@ -843,7 +840,7 @@ const CreatorReferralsView = ({ profile }) => {
                                     // Custom colors/styles for top 3
                                     let rankBadge = `${rank}`;
                                     let rankColor = "text-gray-400";
-                                    let rowBg = isMe ? "bg-white/[0.02] border-l-2 border-l-neon-blue" : "hover:bg-white/[0.01]";
+                                    let rowBg = isMe ? "bg-white/[0.02] border-l-2 border-l-neon-green" : "hover:bg-white/[0.01]";
 
                                     if (rank === 1) {
                                         rankBadge = "🥇";
@@ -871,11 +868,11 @@ const CreatorReferralsView = ({ profile }) => {
                                                         )}
                                                     </div>
                                                     <div>
-                                                        <span className={cn("text-xs font-bold uppercase tracking-wide block truncate max-w-[120px] sm:max-w-none", isMe ? "text-neon-blue font-black" : "text-white")}>
+                                                        <span className={cn("text-xs font-bold uppercase tracking-wide block truncate max-w-[120px] sm:max-w-none", isMe ? "text-neon-green font-black" : "text-white")}>
                                                             {creator.name} {isMe && "(You)"}
                                                         </span>
                                                         <span className="text-[9px] text-gray-500 uppercase tracking-widest mt-0.5 block flex items-center gap-1">
-                                                            <Instagram size={8} className="text-neon-pink" /> @{creator.instagram}
+                                                            <Instagram size={8} className="text-neon-green" /> @{creator.instagram}
                                                         </span>
                                                     </div>
                                                 </div>
@@ -910,7 +907,7 @@ const CreatorReferralsView = ({ profile }) => {
                 <div className="lg:col-span-4 bg-zinc-950/45 border border-white/[0.08] backdrop-blur-3xl p-6 sm:p-8 rounded-[2.5rem] space-y-6 shadow-2xl flex flex-col justify-between">
                     <div className="space-y-6">
                         <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-neon-pink/10 border border-neon-pink/20 flex items-center justify-center text-neon-pink shadow-inner">
+                            <div className="w-10 h-10 rounded-xl bg-neon-green/10 border border-neon-green/20 flex items-center justify-center text-neon-green shadow-inner">
                                 <Users size={18} />
                             </div>
                             <div>
@@ -1007,7 +1004,7 @@ const CreatorDashboard = () => {
     }, [user, authInitialized, loading, creators, navigate]);
 
 
-    if (!profile) return <GlobalLoader color="#38b6ff" />;
+    if (!profile) return <GlobalLoader color="#39ff14" />;
 
     const availableCampaigns = campaigns.filter(c => {
         const isOpen = c.status === 'Open';
@@ -1034,8 +1031,8 @@ const CreatorDashboard = () => {
         <div className="min-h-screen bg-[#020202] text-white pt-24 pb-20 relative overflow-hidden">
             {/* Cinematic Background Atmosphere */}
             <div className="fixed inset-0 z-0 pointer-events-none">
-                <div className="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] bg-neon-blue/10 rounded-full blur-[150px] animate-pulse" />
-                <div className="absolute bottom-[-10%] right-[-5%] w-[50%] h-[50%] bg-neon-pink/5 rounded-full blur-[150px] animate-pulse delay-700" />
+                <div className="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] bg-neon-green/10 rounded-full blur-[150px] " />
+                <div className="absolute bottom-[-10%] right-[-5%] w-[50%] h-[50%] bg-neon-green/5 rounded-full blur-[150px]  delay-700" />
                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-gradient-radial from-transparent via-black/40 to-black z-10" />
                 <div className="absolute inset-0 opacity-[0.02]" style={{ backgroundImage: 'linear-gradient(to right, #ffffff 1px, transparent 1px), linear-gradient(to bottom, #ffffff 1px, transparent 1px)', backgroundSize: '80px 80px' }}></div>
             </div>
@@ -1044,19 +1041,19 @@ const CreatorDashboard = () => {
                 {/* STUDIO NAVIGATION TABS */}
                 {/* STUDIO NAVIGATION TABS */}
                 <div className="flex justify-center mb-16 overflow-x-auto scrollbar-hide py-4 px-2">
-                    <div className="flex items-center gap-1.5 md:gap-3 bg-white/[0.02] p-1.5 rounded-[2.5rem] border border-white/5 backdrop-blur-3xl shadow-2xl min-w-max">
-                        <div className="flex items-center p-1 bg-black/20 rounded-full border border-white/5">
+                    <div className="flex items-center gap-1.5 md:gap-3 bg-white/[0.02] p-1.5 rounded-2xl border border-white/5 backdrop-blur-3xl shadow-2xl min-w-max">
+                        <div className="flex items-center p-1 bg-black/20 rounded-xl border border-white/5">
                             <button 
                                 onClick={() => navigate('/creator-dashboard')}
                                 className={cn(
-                                    "px-5 md:px-8 py-3 rounded-full text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] transition-all relative z-10",
+                                    "px-5 md:px-8 py-3 rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] transition-all relative z-10",
                                     activeDashboardTab === 'workspace' ? "text-black" : "text-gray-500 hover:text-white"
                                 )}
                             >
                                 {activeDashboardTab === 'workspace' && (
                                     <motion.div 
                                         layoutId="dashboard-tab-pill"
-                                        className="absolute inset-0 bg-white rounded-full -z-10 shadow-[0_0_20px_rgba(255,255,255,0.3)]"
+                                        className="absolute inset-0 bg-white rounded-xl -z-10 shadow-lg"
                                         transition={{ type: "spring", bounce: 0.15, duration: 0.5 }}
                                     />
                                 )}
@@ -1065,14 +1062,14 @@ const CreatorDashboard = () => {
                             <button 
                                 onClick={() => navigate('/creator-dashboard/settings')}
                                 className={cn(
-                                    "px-5 md:px-8 py-3 rounded-full text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] transition-all relative z-10",
+                                    "px-5 md:px-8 py-3 rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] transition-all relative z-10",
                                     activeDashboardTab === 'settings' ? "text-black" : "text-gray-500 hover:text-white"
                                 )}
                             >
                                 {activeDashboardTab === 'settings' && (
                                     <motion.div 
                                         layoutId="dashboard-tab-pill"
-                                        className="absolute inset-0 bg-white rounded-full -z-10 shadow-[0_0_20px_rgba(255,255,255,0.3)]"
+                                        className="absolute inset-0 bg-white rounded-xl -z-10 shadow-lg"
                                         transition={{ type: "spring", bounce: 0.15, duration: 0.5 }}
                                     />
                                 )}
@@ -1084,13 +1081,13 @@ const CreatorDashboard = () => {
 
                         <button 
                             onClick={() => setIsWorkspacePanelOpen(true)}
-                            className="h-11 px-5 md:px-8 rounded-full bg-white/[0.03] border border-white/10 flex items-center gap-3 md:gap-4 text-gray-500 hover:text-neon-blue hover:bg-white/5 hover:border-neon-blue/30 transition-all group shadow-xl"
+                            className="h-11 px-5 md:px-8 rounded-xl bg-white/[0.03] border border-white/10 flex items-center gap-3 md:gap-4 text-gray-500 hover:text-neon-green hover:bg-white/5 hover:border-neon-green/30 transition-all group shadow-xl"
                         >
                             <LayoutDashboard size={14} className="group-hover:rotate-12 transition-transform" />
                             <span className="text-[9px] md:text-[10px] font-black uppercase tracking-widest">Hub</span>
                             <div className="relative">
-                                <div className="w-1.5 h-1.5 bg-neon-blue rounded-full shadow-[0_0_8px_rgba(46,191,255,0.6)]" />
-                                <div className="absolute inset-0 w-1.5 h-1.5 bg-neon-blue rounded-full animate-ping opacity-75" />
+                                <div className="w-1.5 h-1.5 bg-neon-green rounded-full shadow-[0_0_8px_rgba(57,255,20,0.4)]" />
+                                <div className="absolute inset-0 w-1.5 h-1.5 bg-neon-green rounded-full  opacity-75" />
                             </div>
                         </button>
                     </div>
@@ -1115,43 +1112,44 @@ const CreatorDashboard = () => {
                     >
                         <div className="flex flex-col sm:flex-row items-center sm:items-center text-center sm:text-left gap-6 md:gap-8">
                             <div className="relative shrink-0">
-                                <div className="absolute -inset-1.5 bg-gradient-to-r from-neon-blue to-neon-purple rounded-[2.5rem] md:rounded-[3.25rem] blur opacity-25" />
-                                <div className="relative w-28 h-28 md:w-36 md:h-36 rounded-[2.25rem] md:rounded-[2.85rem] bg-zinc-900 border border-white/10 overflow-hidden shadow-2xl flex items-center justify-center">
-                                    {profile?.profilePicture ? (
-                                        <img src={profile.profilePicture} alt="" className="w-full h-full object-cover" />
-                                    ) : (
-                                        <div className="w-full h-full flex items-center justify-center text-4xl md:text-5xl font-black text-white italic">
-                                            {profile?.name?.charAt(0) || 'C'}
-                                        </div>
-                                    )}
+                                <div className="relative w-28 h-28 md:w-36 md:h-36 rounded-3xl bg-zinc-950/60 border border-neon-green/30 p-1.5 shadow-[0_0_20px_rgba(57,255,20,0.15)] flex items-center justify-center">
+                                    <div className="w-full h-full rounded-2xl overflow-hidden bg-zinc-900 border border-white/5 flex items-center justify-center">
+                                        {profile?.profilePicture ? (
+                                            <img src={profile.profilePicture} alt="" className="w-full h-full object-cover" />
+                                        ) : (
+                                            <div className="w-full h-full flex items-center justify-center text-4xl md:text-5xl font-extrabold text-white">
+                                                {profile?.name?.charAt(0) || 'C'}
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
-                                <div className="absolute bottom-0 right-0 w-9 h-9 bg-[#020202] rounded-full flex items-center justify-center border border-white/5 shadow-2xl">
+                                <div className="absolute bottom-0 right-0 w-9 h-9 bg-[#020202] rounded-xl flex items-center justify-center border border-white/5 shadow-2xl">
                                     {profile?.profileStatus === 'approved' ? (
-                                        <div className="w-6.5 h-6.5 rounded-full bg-neon-green flex items-center justify-center shadow-[0_0_15px_rgba(57,255,20,0.4)]" title="Verified Creator">
+                                        <div className="w-6.5 h-6.5 rounded-full bg-neon-green flex items-center justify-center " title="Verified Creator">
                                             <CheckCircle2 size={14} className="text-black" />
                                         </div>
                                     ) : (
-                                        <div className="w-6.5 h-6.5 rounded-full bg-yellow-500 flex items-center justify-center shadow-[0_0_15px_rgba(234,179,8,0.4)]" title="Pending Verification">
-                                            <Clock size={14} className="text-black animate-pulse" />
+                                        <div className="w-6.5 h-6.5 rounded-full bg-yellow-500 flex items-center justify-center " title="Pending Verification">
+                                            <Clock size={14} className="text-black " />
                                         </div>
                                     )}
                                 </div>
                             </div>
                             <div>
-                                <div className="flex flex-wrap items-center justify-center sm:justify-start gap-3 text-neon-blue font-black tracking-[0.4em] text-[10px] uppercase mb-2">
-                                    <span className="flex items-center gap-1.5"><Zap size={14} className="animate-pulse" /> Creator Dashboard</span>
+                                <div className="flex flex-wrap items-center justify-center sm:justify-start gap-3 text-neon-green font-black tracking-[0.4em] text-[10px] uppercase mb-2">
+                                    <span className="flex items-center gap-1.5"><Zap size={14} className="" /> Creator Dashboard</span>
                                     {profile?.profileStatus === 'approved' ? (
-                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-neon-green/10 border border-neon-green/30 text-neon-green text-[8px] font-black tracking-widest uppercase ml-1">
+                                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-neon-green/10 border border-neon-green/30 text-neon-green text-[8px] font-black tracking-widest uppercase ml-1">
                                             <ShieldCheck size={10} /> Verified
                                         </span>
                                     ) : (
-                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-yellow-500/10 border border-yellow-500/30 text-yellow-500 text-[8px] font-black tracking-widest uppercase ml-1">
+                                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-yellow-500/10 border border-yellow-500/30 text-yellow-500 text-[8px] font-black tracking-widest uppercase ml-1">
                                             <Clock size={10} /> Pending Verification
                                         </span>
                                     )}
                                 </div>
-                                <h2 className="text-2xl sm:text-4xl md:text-6xl font-black font-heading tracking-tight uppercase italic leading-tight text-white pr-4 overflow-visible whitespace-nowrap">
-                                    Hello, <span className="inline pr-12 -mr-12 italic text-transparent bg-clip-text bg-gradient-to-r from-white via-white to-gray-500">{profile?.name?.split(' ')[0] || 'Creator'}</span>
+                                <h2 className="text-2xl sm:text-4xl md:text-6xl font-extrabold font-heading tracking-tight leading-tight text-white pr-4 overflow-visible whitespace-nowrap">
+                                    Hello, <span className="inline pr-12 -mr-12 text-transparent bg-clip-text bg-gradient-to-r from-white via-white to-gray-500">{profile?.name?.split(' ')[0] || 'Creator'}</span>
                                 </h2>
                                 
                                 {/* Dynamic Milestones & Admin Badges */}
@@ -1169,7 +1167,7 @@ const CreatorDashboard = () => {
                                     {(profile.adminBadges || []).map((badge, idx) => (
                                         <span 
                                             key={`custom-${idx}`} 
-                                            className="inline-flex items-center gap-1.5 px-3 py-1 bg-neon-purple/10 border border-neon-purple/35 text-neon-purple rounded-xl text-[9px] font-black uppercase tracking-widest shadow-[0_0_20px_rgba(168,85,247,0.15)] hover:scale-[1.02] transition-all"
+                                            className="inline-flex items-center gap-1.5 px-3 py-1 bg-neon-green/10 border border-neon-green/35 text-neon-green rounded-xl text-[9px] font-black uppercase tracking-widest shadow-md hover:scale-[1.02] transition-all"
                                             title={`Assigned by Newbi Admin: ${badge}`}
                                         >
                                             <span>🏅</span>
@@ -1185,7 +1183,7 @@ const CreatorDashboard = () => {
                                             href={profile.instagram.includes('instagram.com') ? profile.instagram : `https://instagram.com/${profile.instagram.replace(/^@/, '').trim()}`}
                                             target="_blank"
                                             rel="noopener noreferrer"
-                                            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-neon-pink/5 hover:bg-neon-pink/15 border border-neon-pink/20 text-neon-pink text-[9px] font-black uppercase tracking-widest transition-all"
+                                            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-neon-green/5 hover:bg-neon-green/15 border border-neon-green/20 text-neon-green text-[9px] font-black uppercase tracking-widest transition-all"
                                         >
                                             <Instagram size={11} />
                                             <span>Instagram</span>
@@ -1196,7 +1194,7 @@ const CreatorDashboard = () => {
                                             href={profile.linkedin.includes('http') ? profile.linkedin : `https://${profile.linkedin}`}
                                             target="_blank"
                                             rel="noopener noreferrer"
-                                            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-neon-blue/5 hover:bg-neon-blue/15 border border-neon-blue/20 text-neon-blue text-[9px] font-black uppercase tracking-widest transition-all"
+                                            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-neon-green/5 hover:bg-neon-green/15 border border-neon-green/20 text-neon-green text-[9px] font-black uppercase tracking-widest transition-all"
                                         >
                                             <Linkedin size={11} />
                                             <span>LinkedIn</span>
@@ -1234,7 +1232,7 @@ const CreatorDashboard = () => {
                                         className="px-3 py-1.5 rounded-xl bg-white/[0.03] hover:bg-white/[0.08] border border-white/10 text-gray-300 font-mono text-[10px] font-bold uppercase tracking-widest flex items-center gap-2 transition-all active:scale-95 shadow-inner"
                                         title="Click to copy Creator ID"
                                     >
-                                        <span className="text-[8px] font-black text-neon-blue tracking-wider">CREATOR ID:</span>
+                                        <span className="text-[8px] font-black text-neon-green tracking-wider">CREATOR ID:</span>
                                         {profile.creatorId || profile.uid.slice(0, 8).toUpperCase()}
                                     </button>
                                     <div className="hidden sm:block w-1 h-4 bg-white/10" />
@@ -1252,24 +1250,24 @@ const CreatorDashboard = () => {
                         transition={{ delay: 0.2 }}
                         className="lg:col-span-5"
                     >
-                        <div className="bg-zinc-950/45 border border-white/[0.08] backdrop-blur-3xl shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)] rounded-[2rem] sm:rounded-[2.5rem] p-1.5 sm:p-2 flex items-center overflow-hidden group">
+                        <div className="bg-zinc-950/45 border border-white/[0.08] backdrop-blur-3xl shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)] rounded-3xl p-1.5 sm:p-2 flex items-center overflow-hidden group">
                             <div className="flex-1 grid grid-cols-3 divide-x divide-white/5 py-4">
                                 <div className="flex flex-col items-center justify-center px-4">
-                                    <span className="text-xl sm:text-2xl font-black text-white italic leading-none">{joinedCampaignsList.length}</span>
+                                    <span className="text-xl sm:text-2xl font-extrabold text-white leading-none">{joinedCampaignsList.length}</span>
                                     <span className="text-[7px] font-black text-gray-500 uppercase tracking-widest mt-2">Campaigns</span>
                                 </div>
                                 <div className="flex flex-col items-center justify-center px-4">
-                                    <span className="text-xl sm:text-2xl font-black text-white italic leading-none">{approvedTasks}</span>
+                                    <span className="text-xl sm:text-2xl font-extrabold text-white leading-none">{approvedTasks}</span>
                                     <span className="text-[7px] font-black text-gray-500 uppercase tracking-widest mt-2">Deliverables</span>
                                 </div>
                                 <div className="flex flex-col items-center justify-center px-4">
-                                    <span className="text-xl sm:text-2xl font-black text-neon-blue italic leading-none">{totalTasks > 0 ? Math.round((approvedTasks / totalTasks) * 100) : 0}%</span>
+                                    <span className="text-xl sm:text-2xl font-extrabold text-neon-green leading-none">{totalTasks > 0 ? Math.round((approvedTasks / totalTasks) * 100) : 0}%</span>
                                     <span className="text-[7px] font-black text-gray-500 uppercase tracking-widest mt-2">Efficiency</span>
                                 </div>
                             </div>
                             <button 
                                 onClick={() => navigate('/creator-dashboard/settings')}
-                                className="w-12 h-12 sm:w-16 sm:h-16 bg-white/5 hover:bg-white hover:text-black rounded-xl sm:rounded-2xl flex items-center justify-center shrink-0 transition-all m-0.5 sm:m-1 group/btn border border-white/5 shadow-inner"
+                                className="w-12 h-12 sm:w-16 sm:h-16 bg-white/5 hover:bg-white hover:text-black rounded-2xl flex items-center justify-center shrink-0 transition-all m-0.5 sm:m-1 group/btn border border-white/5 shadow-inner"
                             >
                                 <Settings size={16} className="sm:w-5 sm:h-5 group-hover/btn:rotate-90 transition-transform duration-500" />
                             </button>
@@ -1283,20 +1281,20 @@ const CreatorDashboard = () => {
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="bg-zinc-950/40 border border-white/[0.06] backdrop-blur-3xl p-8 rounded-[2rem] relative overflow-hidden shadow-2xl flex flex-col md:flex-row items-center justify-between gap-8 group"
+                        className="bg-zinc-950/40 border border-white/[0.06] backdrop-blur-3xl p-8 rounded-3xl relative overflow-hidden shadow-2xl flex flex-col md:flex-row items-center justify-between gap-8 group"
                     >
-                        <div className="absolute top-0 left-0 w-80 h-80 bg-neon-blue/5 blur-[120px] pointer-events-none" />
-                        <div className="absolute bottom-0 right-0 w-64 h-64 bg-neon-pink/5 blur-[100px] pointer-events-none" />
+                        <div className="absolute top-0 left-0 w-80 h-80 bg-neon-green/5 blur-[120px] pointer-events-none" />
+                        <div className="absolute bottom-0 right-0 w-64 h-64 bg-neon-green/5 blur-[100px] pointer-events-none" />
 
                         <div className="flex items-center gap-6 relative z-10 w-full md:w-auto">
-                            <div className="w-16 h-16 rounded-[2rem] bg-gradient-to-br from-neon-blue/15 to-neon-pink/5 border border-white/[0.08] flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform shrink-0">
-                                <Award className="text-neon-blue animate-pulse" size={28} />
+                            <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-neon-green/15 to-neon-green/5 border border-white/[0.08] flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform shrink-0">
+                                <Award className="text-neon-green " size={28} />
                             </div>
                             <div className="space-y-2">
-                                <span className="text-[10px] font-black uppercase tracking-[0.3em] text-transparent bg-clip-text bg-gradient-to-r from-neon-blue to-neon-pink">
+                                <span className="text-[10px] font-black uppercase tracking-[0.3em] text-transparent bg-clip-text bg-gradient-to-r from-neon-green to-neon-green">
                                     Creator Referral Program
                                 </span>
-                                <h3 className="text-xl md:text-2xl font-black font-heading uppercase tracking-tight italic text-white">
+                                <h3 className="text-xl md:text-2xl font-extrabold font-heading tracking-tight text-white">
                                     Invite Creators, Climb the Leaderboard
                                 </h3>
                                 <p className="text-gray-400 text-xs font-medium max-w-md">
@@ -1307,18 +1305,18 @@ const CreatorDashboard = () => {
 
                         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 w-full md:w-auto relative z-10 shrink-0">
                             {/* Copy Link Field */}
-                            <div className="flex items-center bg-black/45 border border-white/10 rounded-2xl p-1.5 pl-4 grow md:grow-0 md:w-80">
-                                <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest select-none truncate">
-                                    {profile.creatorId || profile.uid.slice(0, 8).toUpperCase()}
+                            <div className="flex items-center bg-black/45 border border-white/10 rounded-2xl p-1.5 pl-4 grow md:grow-0 md:w-[26rem]">
+                                <span className="text-[10px] font-mono font-medium text-gray-400 select-none truncate">
+                                    {window.location.host}/creator/join?ref={profile.creatorId || profile.uid.slice(0, 8).toUpperCase()}
                                 </span>
-                                <div className="w-px h-4 bg-white/15 mx-3" />
+                                <div className="w-px h-4 bg-white/15 mx-3 animate-pulse" />
                                 <button
                                     onClick={() => {
                                         const referralLink = `${window.location.origin}/creator/join?ref=${profile.creatorId || profile.uid.slice(0, 8).toUpperCase()}`;
                                         navigator.clipboard.writeText(referralLink);
                                         useStore.getState().addToast("Referral link copied!", "success");
                                     }}
-                                    className="ml-auto px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white hover:text-black border border-white/5 text-[9px] font-black uppercase tracking-widest transition-all flex items-center gap-2"
+                                    className="ml-auto px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white hover:text-black border border-white/5 text-[9px] font-black uppercase tracking-widest transition-all flex items-center gap-2 shrink-0"
                                 >
                                     <Copy size={12} />
                                     Copy Link
@@ -1328,7 +1326,7 @@ const CreatorDashboard = () => {
                             {/* View Leaderboard Button */}
                             <button
                                 onClick={() => setActiveTab('referrals')}
-                                className="px-6 py-4 rounded-2xl bg-white text-black hover:bg-neon-blue hover:text-white font-black uppercase tracking-widest text-[9px] transition-all flex items-center justify-center gap-2 shadow-xl shrink-0"
+                                className="px-6 py-4 rounded-2xl bg-white text-black hover:bg-neon-green hover:text-white font-black uppercase tracking-widest text-[9px] transition-all flex items-center justify-center gap-2 shadow-xl shrink-0"
                             >
                                 <Users size={12} />
                                 Leaderboard
@@ -1346,21 +1344,21 @@ const CreatorDashboard = () => {
                         >
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-4">
-                                    <div className="w-16 h-16 rounded-[2rem] bg-neon-blue/10 border border-neon-blue/20 flex items-center justify-center shadow-[0_0_40px_rgba(46,191,255,0.1)]">
-                                        <Briefcase className="text-neon-blue" size={28} />
+                                    <div className="w-16 h-16 rounded-xl bg-neon-green/10 border border-neon-green/20 flex items-center justify-center ">
+                                        <Briefcase className="text-neon-green" size={28} />
                                     </div>
                                     <div>
-                                        <h3 className="text-3xl font-black font-heading uppercase italic text-white tracking-tighter pr-4">Active Campaigns</h3>
+                                        <h3 className="text-3xl font-extrabold font-heading text-white tracking-tight pr-4">Active Campaigns</h3>
                                         <p className="text-[11px] text-gray-500 font-bold uppercase tracking-[0.3em] mt-1">Campaigns you've been shortlisted for</p>
                                     </div>
                                 </div>
 
                                 {/* Navigation Arrows */}
                                 <div className="flex items-center gap-2 md:hidden">
-                                    <button onClick={() => scrollContainer('priority-campaigns-scroll', 'left')} className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-gray-400 hover:bg-white/10 hover:text-white transition-all">
+                                    <button onClick={() => scrollContainer('priority-campaigns-scroll', 'left')} className="w-8 h-8 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-gray-400 hover:bg-white/10 hover:text-white transition-all">
                                         <ChevronRight className="rotate-180" size={16} />
                                     </button>
-                                    <button onClick={() => scrollContainer('priority-campaigns-scroll', 'right')} className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-gray-400 hover:bg-white/10 hover:text-white transition-all">
+                                    <button onClick={() => scrollContainer('priority-campaigns-scroll', 'right')} className="w-8 h-8 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-gray-400 hover:bg-white/10 hover:text-white transition-all">
                                         <ChevronRight size={16} />
                                     </button>
                                 </div>
@@ -1387,12 +1385,12 @@ const CreatorDashboard = () => {
                             <div className="flex items-center gap-4 w-full md:w-auto relative group/nav">
                                 {/* Navigation Arrows */}
                                 <div className="absolute -left-4 top-1/2 -translate-y-1/2 flex items-center gap-2 opacity-0 group-hover/nav:opacity-100 transition-opacity z-20 pointer-events-none md:hidden">
-                                    <button onClick={(e) => { e.stopPropagation(); scrollContainer('nav-tabs', 'left'); }} className="w-8 h-8 rounded-full bg-black/80 border border-white/10 flex items-center justify-center text-white pointer-events-auto shadow-2xl">
+                                    <button onClick={(e) => { e.stopPropagation(); scrollContainer('nav-tabs', 'left'); }} className="w-8 h-8 rounded-xl bg-black/80 border border-white/10 flex items-center justify-center text-white pointer-events-auto shadow-2xl">
                                         <ChevronRight className="rotate-180" size={16} />
                                     </button>
                                 </div>
                                 <div className="absolute -right-4 top-1/2 -translate-y-1/2 flex items-center gap-2 opacity-0 group-hover/nav:opacity-100 transition-opacity z-20 pointer-events-none md:hidden">
-                                    <button onClick={(e) => { e.stopPropagation(); scrollContainer('nav-tabs', 'right'); }} className="w-8 h-8 rounded-full bg-black/80 border border-white/10 flex items-center justify-center text-white pointer-events-auto shadow-2xl">
+                                    <button onClick={(e) => { e.stopPropagation(); scrollContainer('nav-tabs', 'right'); }} className="w-8 h-8 rounded-xl bg-black/80 border border-white/10 flex items-center justify-center text-white pointer-events-auto shadow-2xl">
                                         <ChevronRight size={16} />
                                     </button>
                                 </div>
@@ -1403,7 +1401,7 @@ const CreatorDashboard = () => {
                                             key={tab}
                                             onClick={() => setActiveTab(tab)}
                                             className={cn(
-                                                "text-lg md:text-xl font-black font-heading uppercase tracking-tighter transition-all relative pb-3 shrink-0 snap-start",
+                                                "text-lg md:text-xl font-extrabold font-heading tracking-tight transition-all relative pb-3 shrink-0 snap-start",
                                                 activeTab === tab ? "text-white" : "text-gray-700 hover:text-gray-500"
                                             )}
                                         >
@@ -1411,7 +1409,7 @@ const CreatorDashboard = () => {
                                             {activeTab === tab && (
                                                 <motion.div 
                                                     layoutId="tab-underline" 
-                                                    className="absolute bottom-0 left-0 w-full h-1 bg-neon-blue shadow-[0_4px_20px_rgba(46,191,255,0.4)]" 
+                                                    className="absolute bottom-0 left-0 w-full h-1 bg-neon-green " 
                                                 />
                                             )}
                                         </button>
@@ -1421,17 +1419,17 @@ const CreatorDashboard = () => {
 
                             {activeTab !== 'referrals' && (
                                 <div className="flex items-center gap-4 w-full md:w-auto justify-end">
-                                    <div className="px-5 py-2 rounded-full bg-white/5 border border-white/10 text-[9px] font-black uppercase tracking-widest text-gray-400 mr-auto md:mr-0">
+                                    <div className="px-5 py-2 rounded-xl bg-white/5 border border-white/10 text-[9px] font-black uppercase tracking-widest text-gray-400 mr-auto md:mr-0">
                                         <span className="text-white mr-2">{activeTab === 'opportunities' ? availableCampaigns.length : joinedCampaignsList.length}</span>
-                                        {activeTab === 'opportunities' ? 'GIGS DISCOVERED' : 'CAMPAIGNS TRACKED'}
+                                        {activeTab === 'opportunities' ? 'Gigs Discovered' : 'Campaigns Tracked'}
                                     </div>
 
                                     {/* Navigation Arrows */}
                                     <div className="flex items-center gap-2 md:hidden">
-                                        <button onClick={() => scrollContainer('opportunities-scroll', 'left')} className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-gray-400 hover:bg-white/10 hover:text-white transition-all">
+                                        <button onClick={() => scrollContainer('opportunities-scroll', 'left')} className="w-8 h-8 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-gray-400 hover:bg-white/10 hover:text-white transition-all">
                                             <ChevronRight className="rotate-180" size={16} />
                                         </button>
-                                        <button onClick={() => scrollContainer('opportunities-scroll', 'right')} className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-gray-400 hover:bg-white/10 hover:text-white transition-all">
+                                        <button onClick={() => scrollContainer('opportunities-scroll', 'right')} className="w-8 h-8 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-gray-400 hover:bg-white/10 hover:text-white transition-all">
                                             <ChevronRight size={16} />
                                         </button>
                                     </div>
@@ -1470,7 +1468,7 @@ const CreatorDashboard = () => {
                                         <div className="w-24 h-24 rounded-[2.5rem] bg-white/5 border border-white/10 flex items-center justify-center mx-auto mb-8 text-gray-700">
                                             <Zap size={40} />
                                         </div>
-                                        <h4 className="text-2xl font-black font-heading uppercase italic tracking-tighter text-gray-600 pr-4">No campaigns yet.</h4>
+                                        <h4 className="text-xl font-extrabold font-heading tracking-tight text-gray-600 pr-4">No campaigns yet.</h4>
                                         <p className="text-[11px] font-black text-gray-700 uppercase tracking-widest mt-2 px-10">New campaigns matching your city and niche will appear here when available.</p>
                                     </div>
                                 )}
@@ -1487,7 +1485,7 @@ const CreatorDashboard = () => {
                         exit={{ opacity: 0, y: -20 }}
                         className="space-y-16"
                     >
-                        <div className="flex items-center gap-4 text-neon-pink font-black tracking-[0.5em] text-[10px] uppercase mb-12">
+                        <div className="flex items-center gap-4 text-neon-green font-black tracking-[0.5em] text-[10px] uppercase mb-12">
                             <Settings size={14} className="animate-spin-slow" />
                             Profile Settings
                         </div>
@@ -1553,7 +1551,7 @@ const WorkspaceOverviewPanel = ({ profile, stats, onClose }) => {
             >
                 <div className="p-8 border-b border-white/5 flex items-center justify-between shrink-0">
                     <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-2xl bg-neon-blue/10 border border-neon-blue/20 flex items-center justify-center text-neon-blue">
+                        <div className="w-12 h-12 rounded-2xl bg-neon-green/10 border border-neon-green/20 flex items-center justify-center text-neon-green">
                             <LayoutDashboard size={24} />
                         </div>
                         <div>
@@ -1569,15 +1567,15 @@ const WorkspaceOverviewPanel = ({ profile, stats, onClose }) => {
                 <div className="flex-1 overflow-y-auto p-8 space-y-10 custom-scrollbar">
                     {/* Workspace Banner - Redesigned for Side Panel */}
                     <div className="relative group overflow-hidden p-8 bg-zinc-950/45 border border-white/[0.08] backdrop-blur-3xl shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)] rounded-[3rem]">
-                        <div className="absolute top-0 right-0 w-32 h-32 bg-neon-blue/5 blur-3xl pointer-events-none" />
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-neon-green/5 blur-3xl pointer-events-none" />
                         
                         <div className="relative z-10 flex flex-col gap-8">
                             <div className="space-y-2">
                                 <div className="flex items-center gap-3">
-                                    <div className="w-2 h-2 rounded-full bg-neon-blue animate-pulse shadow-[0_0_10px_#38b6ff]" />
-                                    <p className="text-[10px] font-black text-neon-blue uppercase tracking-[0.4em]">Your Stats</p>
+                                    <div className="w-2 h-2 rounded-full bg-neon-green  " />
+                                    <p className="text-[10px] font-black text-neon-green uppercase tracking-[0.4em]">Your Stats</p>
                                 </div>
-                                <h4 className="text-3xl font-black font-heading uppercase italic tracking-tighter text-white pr-4">Dashboard Overview</h4>
+                                <h4 className="text-2xl font-extrabold font-heading tracking-tight text-white pr-4">Dashboard Overview</h4>
                             </div>
 
                             <div className="grid grid-cols-1 gap-4">
@@ -1598,7 +1596,7 @@ const WorkspaceOverviewPanel = ({ profile, stats, onClose }) => {
                                 {/* Efficiency & Metrics */}
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="p-6 bg-zinc-950/45 border border-white/[0.08] backdrop-blur-3xl shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)] rounded-[2rem] flex flex-col gap-4">
-                                        <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-neon-blue">
+                                        <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-neon-green">
                                             <Zap size={18} />
                                         </div>
                                         <div>
@@ -1627,7 +1625,7 @@ const WorkspaceOverviewPanel = ({ profile, stats, onClose }) => {
                                         <motion.div 
                                             initial={{ width: 0 }}
                                             animate={{ width: `${stats.efficiency}%` }}
-                                            className="h-full bg-gradient-to-r from-neon-blue to-neon-purple shadow-[0_0_10px_rgba(56,182,255,0.3)]"
+                                            className="h-full bg-gradient-to-r from-neon-green to-neon-green "
                                         />
                                     </div>
                                 </div>
@@ -1647,7 +1645,7 @@ const WorkspaceOverviewPanel = ({ profile, stats, onClose }) => {
                         <div className="space-y-3">
                             {[
                                 { title: 'ACCOUNT VERIFIED', date: '5/6/2026', tag: 'SYSTEM', icon: <ShieldCheck size={16} />, color: 'text-neon-green' },
-                                { title: 'SECURITY ALERT', date: '4/30/2026', tag: 'AUTH', icon: <AlertCircle size={16} />, color: 'text-neon-blue' },
+                                { title: 'SECURITY ALERT', date: '4/30/2026', tag: 'AUTH', icon: <AlertCircle size={16} />, color: 'text-neon-green' },
                                 { title: 'TASK UPDATED', date: '4/17/2026', tag: 'DATA', icon: <CheckCircle2 size={16} />, color: 'text-neon-green' }
                             ].map((act, i) => (
                                 <div key={i} className="group p-5 bg-zinc-950/45 border border-white/[0.08] backdrop-blur-3xl shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)] rounded-2xl flex items-center gap-4 hover:bg-white/[0.08] transition-all">
@@ -1667,7 +1665,7 @@ const WorkspaceOverviewPanel = ({ profile, stats, onClose }) => {
                 </div>
 
                 <div className="p-8 border-t border-white/5 bg-black/40">
-                    <button onClick={() => window.location.reload()} className="w-full h-14 rounded-2xl bg-white text-black font-black uppercase tracking-[0.2em] text-[10px] hover:bg-neon-blue transition-all flex items-center justify-center gap-3 shadow-xl">
+                    <button onClick={() => window.location.reload()} className="w-full h-14 rounded-2xl bg-white text-black font-black uppercase tracking-[0.2em] text-[10px] hover:bg-neon-green transition-all flex items-center justify-center gap-3 shadow-xl">
                         <RefreshCw size={14} /> Refresh Workspace
                     </button>
                 </div>

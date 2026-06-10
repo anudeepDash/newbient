@@ -4,12 +4,12 @@ import { motion } from 'framer-motion';
 import { Clock, User, ArrowUpRight, Calendar, Star, Eye } from 'lucide-react';
 
 const CATEGORY_COLORS = {
-    'Live Events': '#00ffff', // neon-blue
-    'Artists': '#e11d48',    // rose-600
-    'Guides': '#a855f7',     // purple
-    'Buzz': '#facc15',       // yellow
-    'Community': '#10b981',   // green
-    'default': '#00ffff'
+    'Live Events': '#39FF14', // neon-green
+    'Artists': '#ffffff',    // white
+    'Guides': '#39FF14',     // neon-green
+    'Buzz': '#a1a1aa',       // zinc
+    'Community': '#39FF14',   // neon-green
+    'default': '#39FF14'
 };
 
 const isRawVideo = (url) => {
@@ -56,7 +56,7 @@ const BlogCard = ({ post, variant = 'standard', index = 0 }) => {
                 initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                className="relative group w-full h-[550px] md:h-[850px] rounded-[3rem] md:rounded-[4rem] overflow-hidden shadow-[0_40px_80px_rgba(0,0,0,0.6)]"
+                className="relative group w-full h-[550px] md:h-[850px] rounded-3xl overflow-hidden shadow-[0_40px_80px_rgba(0,0,0,0.6)]"
             >
                 <Link to={detailPath} className="block w-full h-full">
                     {post.videoUrl ? (
@@ -76,7 +76,7 @@ const BlogCard = ({ post, variant = 'standard', index = 0 }) => {
                                     className="absolute top-1/2 left-1/2 w-[130%] h-[130%] -translate-x-1/2 -translate-y-1/2 pointer-events-none object-cover border-none" 
                                     allow="autoplay; encrypted-media" 
                                     title={post.title}
-                                />
+                                  />
                             </div>
                         )
                     ) : (
@@ -91,7 +91,7 @@ const BlogCard = ({ post, variant = 'standard', index = 0 }) => {
                     {/* Immersive Badge System */}
                     <div className="absolute top-8 left-8 md:top-16 md:left-16 flex flex-wrap items-center gap-4 md:gap-6">
                         <span 
-                            className="px-6 md:px-8 py-2 md:py-3 text-black text-[11px] md:text-[14px] font-black uppercase tracking-[0.2em] rounded-xl md:rounded-2xl italic"
+                            className="px-6 md:px-8 py-2 md:py-3 text-black text-[11px] md:text-[14px] font-black uppercase tracking-[0.2em] rounded-xl md:rounded-2xl"
                             style={{ backgroundColor: accentColor, boxShadow: `0 20px 40px ${accentColor}66` }}
                         >
                             {post.category}
@@ -110,14 +110,14 @@ const BlogCard = ({ post, variant = 'standard', index = 0 }) => {
                                 initial={{ opacity: 0, x: -30 }}
                                 whileInView={{ opacity: 1, x: 0 }}
                                 transition={{ delay: 0.3 }}
-                                className="text-4xl md:text-8xl lg:text-[10rem] font-black font-heading uppercase leading-[1] md:leading-[0.8] tracking-tighter italic transition-all duration-700"
+                                className="text-4xl md:text-7xl lg:text-[7rem] font-extrabold font-heading leading-tight tracking-tight transition-all duration-700"
                                 style={{ 
                                     '--hover-color': accentColor 
                                 }}
                             >
                                 {post.title}
                             </motion.h2>
-                            <p className="text-gray-300 text-base md:text-2xl font-medium max-w-3xl line-clamp-2 opacity-60 group-hover:opacity-100 transition-opacity duration-500 leading-relaxed italic">
+                            <p className="text-gray-300 text-base md:text-2xl font-medium max-w-3xl line-clamp-2 opacity-60 group-hover:opacity-100 transition-opacity duration-500 leading-relaxed">
                                 {post.shortDescription}
                             </p>
                             <div className="flex flex-wrap items-center gap-6 md:gap-10 text-[11px] md:text-[13px] font-black uppercase tracking-[0.4em] text-white/40">
@@ -136,7 +136,7 @@ const BlogCard = ({ post, variant = 'standard', index = 0 }) => {
                     </div>
                     
                     {/* Hover Interaction Hub */}
-                    <div className="absolute bottom-16 right-16 w-24 h-24 bg-white text-black rounded-[2.5rem] flex items-center justify-center opacity-0 translate-y-10 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-700 shadow-[0_30px_60px_rgba(255,255,255,0.3)]">
+                    <div className="absolute bottom-16 right-16 w-24 h-24 bg-white text-black rounded-2xl flex items-center justify-center opacity-0 translate-y-10 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-700 shadow-[0_30px_60px_rgba(255,255,255,0.3)]">
                         <ArrowUpRight size={40} className="group-hover:rotate-45 transition-transform duration-500" />
                     </div>
                 </Link>
@@ -147,7 +147,7 @@ const BlogCard = ({ post, variant = 'standard', index = 0 }) => {
                 initial={{ opacity: 0, scale: 0.98 }}
                 whileInView={{ opacity: 1, scale: 1 }}
                 viewport={{ once: true }}
-                className="group relative h-full min-h-[550px] bg-zinc-900/30 border border-white/5 rounded-[3.5rem] overflow-hidden backdrop-blur-3xl transition-all duration-700 shadow-2xl"
+                className="group relative h-full min-h-[550px] bg-zinc-900/30 border border-white/5 rounded-3xl overflow-hidden backdrop-blur-3xl transition-all duration-700 shadow-2xl"
                 style={{ '--hover-border': `${accentColor}4D` }}
             >
                 <Link to={detailPath} className="flex flex-col h-full">
@@ -181,13 +181,13 @@ const BlogCard = ({ post, variant = 'standard', index = 0 }) => {
                         )}
                         <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-80" />
                         <div className="absolute top-8 left-8">
-                            <span className="px-6 py-2 bg-black/60 backdrop-blur-2xl border border-white/10 rounded-2xl text-[10px] font-black uppercase tracking-[0.3em] text-white italic">
+                            <span className="px-6 py-2 bg-black/60 backdrop-blur-2xl border border-white/10 rounded-xl text-[10px] font-bold text-white">
                                 {post.category}
                             </span>
                         </div>
                         {post.featured && (
                             <div 
-                                className="absolute top-8 right-8 w-12 h-12 text-white rounded-2xl flex items-center justify-center"
+                                className="absolute top-8 right-8 w-12 h-12 text-white rounded-xl flex items-center justify-center"
                                 style={{ backgroundColor: accentColor, boxShadow: `0 10px 20px ${accentColor}66` }}
                             >
                                 <Star size={18} fill="currentColor" />
@@ -202,10 +202,10 @@ const BlogCard = ({ post, variant = 'standard', index = 0 }) => {
                             <div className="w-[1px] h-3 md:h-4 bg-white/10" />
                             <div>{new Date(post.publishDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</div>
                         </div>
-                        <h3 className="text-3xl md:text-5xl font-black font-heading uppercase leading-[1] md:leading-[0.9] tracking-tighter mb-4 md:mb-6 group-hover:text-neon-blue transition-colors line-clamp-3 italic">
+                        <h3 className="text-2xl md:text-4xl font-extrabold font-heading leading-tight tracking-tight mb-4 md:mb-6 group-hover:text-neon-green transition-colors line-clamp-3">
                             {post.title}
                         </h3>
-                        <p className="text-gray-400 text-sm md:text-base font-medium line-clamp-2 mb-8 md:mb-10 opacity-60 group-hover:opacity-100 transition-opacity leading-relaxed italic">
+                        <p className="text-gray-400 text-sm md:text-base font-medium line-clamp-2 mb-8 md:mb-10 opacity-60 group-hover:opacity-100 transition-opacity leading-relaxed">
                             {post.shortDescription}
                         </p>
                         <div className="flex items-center justify-between mt-auto pt-6 md:pt-8 border-t border-white/5">
@@ -218,7 +218,7 @@ const BlogCard = ({ post, variant = 'standard', index = 0 }) => {
                                 </span>
                             </div>
                             <div 
-                                className="w-10 h-10 md:w-12 md:h-12 rounded-full border border-white/10 flex items-center justify-center transition-all duration-500 group-hover:text-black"
+                                className="w-10 h-10 md:w-12 md:h-12 rounded-xl border border-white/10 flex items-center justify-center transition-all duration-500 group-hover:text-black"
                                 style={{ '--hover-bg': accentColor }}
                             >
                                 <ArrowUpRight size={18} className="md:size-[20px]" />
@@ -234,7 +234,7 @@ const BlogCard = ({ post, variant = 'standard', index = 0 }) => {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: index * 0.1 }}
-                className="group relative flex flex-col h-full bg-zinc-900/20 border border-white/5 rounded-[2.5rem] overflow-hidden backdrop-blur-md hover:bg-white/[0.03] hover:border-white/10 transition-all duration-500 shadow-xl"
+                className="group relative flex flex-col h-[460px] md:h-full bg-zinc-900/20 border border-white/5 rounded-3xl overflow-hidden backdrop-blur-md hover:bg-white/[0.03] hover:border-white/10 transition-all duration-500 shadow-xl"
             >
                 <Link to={detailPath} className="flex flex-col h-full">
                     <div className="relative aspect-[16/10] overflow-hidden">
@@ -253,13 +253,13 @@ const BlogCard = ({ post, variant = 'standard', index = 0 }) => {
                     <div className="p-8 md:p-10 flex flex-col flex-grow">
                         <div className="flex items-center gap-4 text-gray-600 text-[10px] font-black uppercase tracking-[0.3em] mb-5">
                             <div className="flex items-center gap-2"><Clock size={12} /> {post.readingTime || 5} MIN</div>
-                            <div className="w-1 h-1 rounded-full bg-white/20" />
+                            <div className="w-1.5 h-1.5 rounded-full bg-white/20" />
                             <div className="flex items-center gap-2"><Eye size={12} /> {post.viewCount || 0}</div>
-                            <div className="w-1 h-1 rounded-full bg-white/20" />
+                            <div className="w-1.5 h-1.5 rounded-full bg-white/20" />
                             <div>{new Date(post.publishDate).toLocaleDateString()}</div>
                         </div>
                         <h3 
-                            className="text-2xl md:text-3xl font-black font-heading uppercase leading-[1.1] tracking-tighter mb-6 transition-colors line-clamp-2 italic" 
+                            className="text-2xl md:text-3xl font-extrabold font-heading leading-snug tracking-tight mb-6 transition-colors line-clamp-2" 
                             style={{ color: 'white', transition: 'color 0.3s ease' }}
                             onMouseEnter={(e) => e.currentTarget.style.color = accentColor}
                             onMouseLeave={(e) => e.currentTarget.style.color = 'white'}
@@ -288,8 +288,8 @@ const BlogCard = ({ post, variant = 'standard', index = 0 }) => {
                 viewport={{ once: true }}
                 className="group relative"
             >
-                <Link to={detailPath} className="flex gap-4 md:gap-8 items-center p-4 md:p-6 bg-white/[0.02] border border-white/5 rounded-2xl md:rounded-[2.5rem] hover:bg-white/[0.05] hover:border-white/10 transition-all duration-500">
-                    <div className="w-20 h-20 md:w-28 md:h-28 shrink-0 rounded-xl md:rounded-[2rem] overflow-hidden border border-white/10 shadow-lg">
+                <Link to={detailPath} className="flex gap-4 md:gap-8 items-center p-4 md:p-6 bg-white/[0.02] border border-white/5 rounded-2xl hover:bg-white/[0.05] hover:border-white/10 transition-all duration-500">
+                    <div className="w-20 h-20 md:w-28 md:h-28 shrink-0 rounded-xl overflow-hidden border border-white/10 shadow-lg">
                         <img src={post.coverImage} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" alt="" />
                     </div>
                     <div className="flex flex-col gap-2 md:gap-3 overflow-hidden">
@@ -299,7 +299,7 @@ const BlogCard = ({ post, variant = 'standard', index = 0 }) => {
                             <span className="text-[8px] md:text-[9px] font-bold text-gray-500 uppercase tracking-widest whitespace-nowrap flex items-center gap-1.5"><Eye size={10} className="md:size-[12px]" /> {post.viewCount || 0}</span>
                         </div>
                         <h4 
-                            className="text-lg md:text-2xl font-black font-heading uppercase leading-[1.1] transition-colors line-clamp-2 italic tracking-tighter" 
+                            className="text-lg md:text-2xl font-extrabold font-heading leading-snug transition-colors line-clamp-2 tracking-tight" 
                             style={{ color: 'white', transition: 'color 0.3s ease' }}
                             onMouseEnter={(e) => e.currentTarget.style.color = accentColor}
                             onMouseLeave={(e) => e.currentTarget.style.color = 'white'}

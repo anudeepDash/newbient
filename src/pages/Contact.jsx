@@ -52,9 +52,6 @@ const Contact = () => {
                 'message'
             );
 
-            // Optional: Auto-reply (requires EmailJS setup)
-            // await sendContactAutoReply(formData.name, formData.email, formData.message);
-
             useStore.getState().addToast('Message sent! We will get back to you soon.', 'success');
             setFormData({ name: '', email: '', message: '' });
         } catch (error) {
@@ -66,27 +63,28 @@ const Contact = () => {
     };
 
     return (
-        <div className="relative min-h-screen bg-[#020202] text-white pt-32 pb-32 md:pb-20 px-4 overflow-hidden w-full max-w-[100vw]">
+        <div className="relative min-h-screen bg-dark text-white pt-32 pb-32 md:pb-20 px-4 overflow-hidden w-full max-w-[100vw]">
             {/* Background Atmosphere */}
             <div className="absolute top-0 right-[-10%] w-[120%] aspect-square md:w-[800px] md:h-[800px] bg-neon-blue/5 blur-[100px] rounded-full pointer-events-none" />
             <div className="absolute bottom-0 left-[-10%] w-[120%] aspect-square md:w-[600px] md:h-[600px] bg-neon-green/5 blur-[100px] rounded-full pointer-events-none" />
 
             <div className="max-w-7xl mx-auto relative z-10">
                 {/* Header Section */}
-                <div className="flex flex-col md:flex-row items-center justify-between mb-12 md:mb-32 gap-12">
-                    <div className="max-w-2xl text-center md:text-left">
+                <div className="flex flex-col md:flex-row items-center justify-between mb-12 md:mb-16 gap-12">
+                    <div className="max-w-xl text-center md:text-left">
                         <motion.h1
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
-                            className="text-[12vw] sm:text-5xl md:text-8xl font-black font-heading tracking-tighter leading-none mb-8 break-words overflow-wrap-anywhere whitespace-normal hyphens-auto"
+                            className="text-[8vw] sm:text-4xl md:text-6xl font-extrabold font-heading tracking-tight leading-tight mb-6 break-words overflow-wrap-anywhere whitespace-normal hyphens-auto"
                         >
-                            GET IN <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-blue via-white to-neon-green">TOUCH.</span>
+                            Let's build <br className="hidden md:inline" />
+                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-white to-gray-400">something remarkable.</span>
                         </motion.h1>
                         <motion.p
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             transition={{ delay: 0.2 }}
-                            className="text-gray-400 text-lg md:text-2xl font-medium max-w-xl leading-relaxed"
+                            className="text-gray-400 text-sm sm:text-base md:text-lg font-medium max-w-lg leading-relaxed"
                         >
                             Ready to elevate your brand or event? Our team is ready to help.
                         </motion.p>
@@ -103,10 +101,10 @@ const Contact = () => {
                                 initial={{ opacity: 0, scale: 0.9 }}
                                 animate={{ opacity: 1, scale: 1 }}
                                 transition={{ delay: 0.1 * i }}
-                                className="p-4 sm:p-8 bg-white/5 border border-white/10 rounded-[1.5rem] sm:rounded-[2.5rem] backdrop-blur-3xl text-center"
+                                className="p-4 sm:p-5 bg-slate-900/30 border border-white/5 rounded-2xl backdrop-blur-3xl text-center hover:border-white/10 transition-all duration-300"
                             >
-                                <p className="text-[10px] font-black uppercase tracking-widest text-neon-blue mb-2">{stat.label}</p>
-                                <p className="text-3xl font-black font-heading text-white tracking-tight">{stat.val}</p>
+                                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-1.5">{stat.label}</p>
+                                <p className="text-2xl sm:text-3xl font-extrabold font-heading text-white tracking-tight">{stat.val}</p>
                             </motion.div>
                         ))}
                     </div>
@@ -120,7 +118,7 @@ const Contact = () => {
                         className="space-y-12"
                     >
                         <div className="space-y-6">
-                            <h3 className="text-2xl font-black font-heading tracking-tight text-white mb-8 italic">"CONTACT US TODAY."</h3>
+                            <h3 className="text-2xl font-bold font-heading tracking-tight text-white mb-8">Get in Touch</h3>
                             
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <ContactMethod 
@@ -142,7 +140,7 @@ const Contact = () => {
                                     icon={Instagram} 
                                     label="Social" 
                                     val="@newbi.live" 
-                                    href={siteDetails.instagram} 
+                                    revealVal={siteDetails.instagram} 
                                     accent="neon-pink"
                                 />
                                 <ContactMethod 
@@ -157,15 +155,15 @@ const Contact = () => {
                         </div>
 
                         {/* Interactive Element: Live Status Indicator */}
-                        <div className="p-6 bg-white/5 border border-white/10 rounded-[2rem] backdrop-blur-3xl relative overflow-hidden group transition-all hover:bg-white/10">
+                        <div className="p-6 bg-slate-900/30 border border-white/5 rounded-2xl backdrop-blur-3xl relative overflow-hidden group transition-all duration-300 hover:border-white/10 hover:bg-slate-900/40">
                            <div className="flex items-center gap-6 relative z-10">
                                 <div className="relative flex h-3 w-3">
-                                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-neon-green opacity-75"></span>
-                                  <span className="relative inline-flex rounded-full h-3 w-3 bg-neon-green"></span>
+                                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-75"></span>
+                                  <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
                                 </div>
                                 <div>
                                     <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1">Availability</p>
-                                    <p className="text-lg font-black text-white uppercase tracking-tight">Accepting New Projects</p>
+                                    <p className="text-lg font-extrabold text-white tracking-tight">Accepting New Projects</p>
                                 </div>
                            </div>
                         </div>
@@ -179,14 +177,14 @@ const Contact = () => {
                         className="relative"
                     >
                         {/* Glassmorphic Form Container */}
-                        <div className="p-5 sm:p-12 md:p-16 bg-zinc-900/60 border border-white/10 rounded-[1.5rem] sm:rounded-[2.5rem] md:rounded-[4rem] backdrop-blur-[100px] shadow-2xl relative overflow-hidden">
+                        <div className="p-5 sm:p-12 md:p-16 bg-slate-900/40 border border-white/5 rounded-3xl backdrop-blur-3xl shadow-2xl relative overflow-hidden">
                             <form onSubmit={handleSubmit} className="space-y-10 relative z-10">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-10">
                                     <div className="space-y-4">
-                                        <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 ml-2">Full Name</label>
+                                        <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-500 ml-2">Full Name</label>
                                         <input
                                             type="text"
-                                            className="w-full h-16 bg-white/5 border border-white/10 rounded-2xl px-6 font-medium text-white focus:outline-none focus:border-neon-blue transition-all"
+                                            className="w-full h-16 bg-slate-950/40 border border-white/5 rounded-2xl px-6 font-medium text-white focus:outline-none focus:border-slate-500/40 focus:bg-slate-950/60 transition-all"
                                             placeholder="Name"
                                             value={formData.name}
                                             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
@@ -194,10 +192,10 @@ const Contact = () => {
                                         />
                                     </div>
                                     <div className="space-y-4">
-                                        <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 ml-2">Email Address</label>
+                                        <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-500 ml-2">Email Address</label>
                                         <input
                                             type="email"
-                                            className="w-full h-16 bg-white/5 border border-white/10 rounded-2xl px-6 font-medium text-white focus:outline-none focus:border-neon-blue transition-all"
+                                            className="w-full h-16 bg-slate-950/40 border border-white/5 rounded-2xl px-6 font-medium text-white focus:outline-none focus:border-slate-500/40 focus:bg-slate-950/60 transition-all"
                                             placeholder="email@newbi.live"
                                             value={formData.email}
                                             onChange={(e) => setFormData({ ...formData, email: e.target.value })}
@@ -207,9 +205,9 @@ const Contact = () => {
                                 </div>
 
                                 <div className="space-y-4">
-                                    <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 ml-2">Tell us about your project</label>
+                                    <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-500 ml-2">Tell us about your project</label>
                                     <textarea
-                                        className="w-full h-48 bg-white/5 border border-white/10 rounded-[2rem] p-8 font-medium text-white focus:outline-none focus:border-neon-blue transition-all resize-none"
+                                        className="w-full h-48 bg-slate-950/40 border border-white/5 rounded-2xl p-6 font-medium text-white focus:outline-none focus:border-slate-500/40 focus:bg-slate-950/60 transition-all resize-none"
                                         placeholder="Tell us about your project requirements..."
                                         value={formData.message}
                                         onChange={(e) => setFormData({ ...formData, message: e.target.value })}
@@ -220,12 +218,12 @@ const Contact = () => {
                                 <button
                                     type="submit"
                                     disabled={sending}
-                                    className="w-full h-16 sm:h-24 bg-white text-black rounded-2xl sm:rounded-[2.2rem] flex items-center justify-center gap-4 font-black font-heading tracking-[0.3em] uppercase text-xs sm:text-sm hover:scale-[1.02] active:scale-95 transition-all shadow-[0_20px_50px_rgba(255,255,255,0.1)] disabled:opacity-50"
+                                    className="w-full h-16 bg-white text-black rounded-xl flex items-center justify-center gap-4 font-bold font-heading tracking-[0.2em] uppercase text-xs sm:text-sm hover:scale-[1.02] active:scale-95 transition-all shadow-[0_20px_50px_rgba(255,255,255,0.1)] disabled:opacity-50"
                                 >
-                                    {sending ? 'SENDING...' : (
+                                    {sending ? 'Sending...' : (
                                         <>
-                                            SEND MESSAGE
-                                            <Zap size={20} className="fill-black" />
+                                            Send Message
+                                            <Zap size={16} className="fill-black text-black" />
                                         </>
                                     )}
                                 </button>
@@ -243,22 +241,22 @@ const ContactMethod = ({ icon: Icon, label, val, revealVal, href, accent }) => (
         href={href} 
         target="_blank" 
         rel="noopener noreferrer"
-        className="group p-5 md:p-8 bg-white/5 border border-white/5 rounded-[2rem] md:rounded-[3rem] hover:border-white/10 hover:bg-white/10 transition-all duration-500 block"
+        className="group p-5 md:p-8 bg-slate-900/20 border border-white/5 rounded-2xl hover:border-white/10 hover:bg-slate-900/40 transition-all duration-500 block"
     >
         <div className={cn(
             "w-10 h-10 md:w-12 md:h-12 rounded-2xl flex items-center justify-center mb-4 md:mb-6 transition-all duration-500 group-hover:scale-110",
-            accent === 'neon-green' ? 'bg-neon-green/10 text-neon-green' : (accent === 'neon-blue' ? 'bg-neon-blue/10 text-neon-blue' : (accent === 'neon-pink' ? 'bg-neon-pink/10 text-neon-pink' : 'bg-white/10 text-white'))
+            accent === 'neon-green' ? 'bg-emerald-500/10 text-emerald-400' : (accent === 'neon-blue' ? 'bg-sky-500/10 text-sky-400' : (accent === 'neon-pink' ? 'bg-pink-500/10 text-pink-400' : 'bg-white/10 text-white'))
         )}>
             <Icon size={20} className="md:w-6 md:h-6" />
         </div>
         <div>
-            <p className="text-[10px] font-black uppercase tracking-widest text-gray-500 mb-1">{label}</p>
-            <p className="text-sm font-black text-white truncate">{val}</p>
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-500 mb-1">{label}</p>
+            <p className="text-sm font-bold text-white truncate">{val}</p>
             {revealVal && (
                 <p className={cn(
                     "text-[11px] font-medium leading-snug mt-2 transition-all duration-500 overflow-hidden",
                     "max-h-20 opacity-100 md:max-h-0 md:opacity-0 md:group-hover:max-h-20 md:group-hover:opacity-100",
-                    accent === 'neon-green' ? 'text-neon-green' : (accent === 'neon-blue' ? 'text-neon-blue' : (accent === 'neon-pink' ? 'text-neon-pink' : 'text-gray-300'))
+                    accent === 'neon-green' ? 'text-emerald-400' : (accent === 'neon-blue' ? 'text-sky-400' : (accent === 'neon-pink' ? 'text-pink-400' : 'text-gray-300'))
                 )}>
                     {revealVal}
                 </p>

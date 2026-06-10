@@ -157,7 +157,7 @@ const MiniCard = ({ post, isActive, progress = 0 }) => {
                     <div className="w-1 h-1 rounded-full bg-white/10" />
                     <span className="text-[8px] font-black uppercase tracking-[0.2em] text-gray-600">{post.readingTime || 5} MIN</span>
                 </div>
-                <h4 className={cn("text-sm font-black leading-tight uppercase italic tracking-tighter transition-colors line-clamp-2", isActive ? "text-white" : "text-white/60 group-hover:text-white")}>{post.title}</h4>
+                <h4 className={cn("text-sm font-bold leading-tight tracking-tight transition-colors line-clamp-2", isActive ? "text-white" : "text-white/60 group-hover:text-white")}>{post.title}</h4>
             </div>
         </Link>
     );
@@ -167,10 +167,7 @@ const MiniCard = ({ post, isActive, progress = 0 }) => {
 const StoryCard = ({ post }) => {
     const slug = post.category?.toLowerCase().replace(' ', '-') || 'news';
     return (
-        <Link to={`/concertzone/${slug}/${post.slug}`} className="group flex flex-col h-full relative bg-zinc-900/40 backdrop-blur-3xl border border-white/5 rounded-[2rem] overflow-hidden hover:border-white/20 transition-all duration-700">
-            {/* Visual Perforations */}
-            <div className="absolute top-1/2 -left-2 w-4 h-4 bg-[#060606] rounded-full border border-white/5 z-20 group-hover:scale-110 transition-transform" />
-            <div className="absolute top-1/2 -right-2 w-4 h-4 bg-[#060606] rounded-full border border-white/5 z-20 group-hover:scale-110 transition-transform" />
+        <Link to={`/concertzone/${slug}/${post.slug}`} className="group flex flex-col h-full relative bg-slate-900/30 backdrop-blur-3xl border border-white/5 rounded-[2rem] overflow-hidden hover:border-white/15 transition-all duration-500 hover:-translate-y-1">
 
             <div className="relative aspect-[16/10] overflow-hidden">
                 <img 
@@ -185,7 +182,7 @@ const StoryCard = ({ post }) => {
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-[#060606]/80 via-transparent to-transparent" />
                 <div className="absolute top-4 left-4 flex items-center gap-2">
-                    <span className="px-3 py-1 bg-black/60 backdrop-blur-md text-[8px] font-black uppercase tracking-[0.2em] rounded-full border border-white/10 text-white/90">{post.category}</span>
+                    <span className="px-3 py-1 bg-black/60 backdrop-blur-md text-[8px] font-black uppercase tracking-[0.2em] rounded-xl border border-white/10 text-white/90">{post.category}</span>
                 </div>
             </div>
             
@@ -198,7 +195,7 @@ const StoryCard = ({ post }) => {
                     <span>{new Date(post.publishDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
                 </div>
                 
-                <h3 className="text-lg md:text-xl font-black leading-tight uppercase italic tracking-tighter mb-4 group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-neon-blue group-hover:to-neon-pink transition-all duration-500 line-clamp-2">
+                <h3 className="text-lg md:text-xl font-extrabold leading-tight tracking-tight mb-4 group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-white group-hover:to-neon-blue transition-all duration-500 line-clamp-2">
                     {post.title}
                 </h3>
                 
@@ -315,7 +312,7 @@ const ConcertZoneBlog = () => {
     const leadSlug = leadPost?.category?.toLowerCase().replace(' ', '-') || 'news';
 
     return (
-        <div className="min-h-screen bg-[#060606] text-white pb-32 relative selection:bg-neon-blue selection:text-black">
+        <div className="min-h-screen bg-dark text-white pb-32 relative selection:bg-neon-blue selection:text-black">
 
 
             {/* Anchored Top Bar (Ticker + Navigation) */}
@@ -350,7 +347,7 @@ const ConcertZoneBlog = () => {
                 {/* Dynamic Glows */}
                 <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-neon-blue/10 rounded-full blur-[120px]" />
                 <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-neon-pink/10 rounded-full blur-[120px]" />
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-gradient-radial from-transparent via-black/40 to-[#060606] z-10" />
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-gradient-radial from-transparent via-black/40 to-dark z-10" />
 
                 {/* Animated Grid / Mesh Pattern */}
                 <div className="absolute inset-0 opacity-[0.02]" style={{ backgroundImage: 'linear-gradient(to right, #ffffff 1px, transparent 1px), linear-gradient(to bottom, #ffffff 1px, transparent 1px)', backgroundSize: '60px 60px' }}></div>
@@ -365,10 +362,10 @@ const ConcertZoneBlog = () => {
 
             {/* Floating Bottom Nav */}
             <nav className={`fixed bottom-8 left-1/2 -translate-x-1/2 z-[100] transition-all duration-500 ${scrolled ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10 pointer-events-none'}`}>
-                <div className="bg-black/80 backdrop-blur-2xl border border-white/10 rounded-full px-2 py-1.5 flex items-center gap-1 shadow-2xl">
+                <div className="bg-slate-900/40 backdrop-blur-3xl border border-white/5 rounded-2xl px-2 py-1.5 flex items-center gap-1 shadow-inner">
                     {CATEGORIES.map((cat) => (
                         <button key={cat.id} onClick={() => handleCategoryChange(cat.id)}
-                            className={cn("h-8 px-4 rounded-full flex items-center gap-1.5 transition-all text-[8px] font-bold uppercase tracking-wider",
+                            className={cn("h-8 px-4 rounded-xl flex items-center gap-1.5 transition-all text-[8px] font-bold uppercase tracking-wider",
                                 activeCategory === cat.id ? "bg-white text-black" : "text-gray-500 hover:text-white hover:bg-white/5"
                             )}>
                             <cat.icon size={10} />
@@ -393,8 +390,8 @@ const ConcertZoneBlog = () => {
                         <div className="w-1.5 h-1.5 rounded-full bg-neon-blue shadow-[0_0_10px_#00ffff]" />
                         <span className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-500">The Editorial Hub</span>
                     </div>
-                    <h1 className="text-5xl sm:text-7xl md:text-8xl lg:text-[10rem] font-black font-heading uppercase italic tracking-tighter leading-[0.85] text-white flex flex-row flex-wrap md:flex-nowrap items-center justify-start gap-x-3 md:gap-8 w-full overflow-hidden text-left">
-                        <span>CONCERT</span> <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-blue to-white">ZONE.</span>
+                    <h1 className="text-5xl sm:text-7xl md:text-8xl lg:text-[8rem] font-extrabold font-heading uppercase tracking-tight leading-[0.95] text-white flex flex-row flex-wrap md:flex-nowrap items-center justify-start gap-x-3 md:gap-8 w-full overflow-hidden text-left">
+                        <span>Concert</span> <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-white to-neon-blue">Zone.</span>
                     </h1>
                 </motion.div>
 
@@ -403,8 +400,8 @@ const ConcertZoneBlog = () => {
                     {/* Category Bar — Floating Glass Pill Aesthetic */}
                     <div className="flex-1 overflow-hidden relative group w-full">
                         {/* Fade Edges for Scroll Suggestion */}
-                        <div className="absolute left-0 top-0 bottom-0 w-12 bg-gradient-to-r from-[#060606] via-[#060606]/80 to-transparent z-20 pointer-events-none md:hidden" />
-                        <div className="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-[#060606] via-[#060606]/80 to-transparent z-20 pointer-events-none md:hidden" />
+                        <div className="absolute left-0 top-0 bottom-0 w-12 bg-gradient-to-r from-dark via-dark/80 to-transparent z-20 pointer-events-none md:hidden" />
+                        <div className="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-dark via-dark/80 to-transparent z-20 pointer-events-none md:hidden" />
                         
                         <div className="flex items-center gap-3 md:gap-4 overflow-x-auto no-scrollbar pb-6 -mb-6 px-4 md:px-0 scroll-smooth">
                             {CATEGORIES.map((cat) => (
@@ -432,7 +429,7 @@ const ConcertZoneBlog = () => {
                             placeholder="SEARCH ARTICLES..." 
                             value={searchQuery} 
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="bg-zinc-900/40 border border-white/5 rounded-full pl-20 pr-8 h-16 w-full text-[10px] font-black uppercase tracking-widest focus:outline-none focus:border-neon-blue/30 transition-all placeholder:text-gray-600 backdrop-blur-3xl"
+                            className="bg-slate-950/40 border border-white/5 rounded-2xl pl-20 pr-8 h-16 w-full text-[11px] font-black uppercase tracking-widest focus:outline-none focus:border-neon-blue/20 focus:bg-slate-950/60 transition-all placeholder:text-gray-500 backdrop-blur-3xl"
                         />
                     </div>
                 </div>
@@ -501,10 +498,10 @@ const ConcertZoneBlog = () => {
                                             <motion.h2 
                                                 initial={{ opacity: 0, y: 20 }}
                                                 animate={{ opacity: 1, y: 0 }}
-                                                className="text-3xl sm:text-4xl md:text-7xl font-black font-heading uppercase tracking-tighter leading-[0.9] mb-4 md:mb-6 italic group-hover:translate-x-4 transition-transform duration-700"
+                                                className="text-3xl sm:text-4xl md:text-6xl font-extrabold font-heading tracking-tight leading-[1.05] mb-4 md:mb-6 group-hover:translate-x-2 transition-transform duration-700"
                                             >
                                                 {leadPost.title.split(' ').map((word, i) => (
-                                                    <span key={i} className={i % 2 === 1 ? "text-transparent bg-clip-text bg-gradient-to-r from-neon-blue to-white not-italic" : "text-white"}>
+                                                    <span key={i} className={i % 2 === 1 ? "text-transparent bg-clip-text bg-gradient-to-r from-white to-neon-blue" : "text-white"}>
                                                         {word}{' '}
                                                     </span>
                                                 ))}
@@ -527,7 +524,7 @@ const ConcertZoneBlog = () => {
 
                         {/* Sidebar — 1/3 width */}
                         <div className="lg:col-span-1">
-                            <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-2 md:p-4 h-full">
+                            <div className="bg-slate-900/20 border border-white/5 rounded-2xl p-2 md:p-4 h-full">
                                 <div className="flex items-center gap-2 mb-3 py-3 px-2 border-b border-white/5">
                                     <div className="w-1.5 h-1.5 rounded-full bg-neon-pink shadow-[0_0_10px_rgba(255,0,85,0.5)]" />
                                     <span className="text-[10px] font-bold uppercase tracking-widest text-white">Featured Stories</span>
@@ -559,8 +556,8 @@ const ConcertZoneBlog = () => {
 
                         <div className="relative group">
                             {/* Mobile Scroll Indicators */}
-                            <div className="absolute left-0 top-0 bottom-0 w-12 bg-gradient-to-r from-[#060606] via-[#060606]/80 to-transparent z-20 pointer-events-none md:hidden" />
-                            <div className="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-[#060606] via-[#060606]/80 to-transparent z-20 pointer-events-none md:hidden" />
+                            <div className="absolute left-0 top-0 bottom-0 w-12 bg-gradient-to-r from-dark via-dark/80 to-transparent z-20 pointer-events-none md:hidden" />
+                            <div className="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-dark via-dark/80 to-transparent z-20 pointer-events-none md:hidden" />
 
                             <div className="flex flex-row flex-nowrap overflow-x-auto no-scrollbar lg:grid lg:grid-cols-3 gap-6 md:gap-10 px-0 pb-12 -mb-8 snap-x snap-mandatory scroll-smooth w-full">
                                 <AnimatePresence mode="popLayout">
@@ -606,7 +603,7 @@ const ConcertZoneBlog = () => {
                 <AdSlot className="mb-10" format="horizontal" slot={import.meta.env.VITE_ADSENSE_SLOT_HUB_BOTTOM} />
 
                 {/* Newsletter */}
-                <section className="rounded-[3rem] bg-white/[0.01] border border-white/5 p-8 md:p-20 overflow-hidden relative">
+                <section className="rounded-[3rem] bg-slate-900/10 border border-white/5 p-8 md:p-20 overflow-hidden relative">
                     <div className="absolute top-0 left-0 w-[600px] h-[600px] bg-neon-blue/5 blur-[200px] rounded-full pointer-events-none -translate-x-1/2 -translate-y-1/2" />
                     
                     <div className="max-w-4xl mx-auto relative z-10">

@@ -47,7 +47,7 @@ const Navbar = () => {
         <>
             {/* Global Maintenance Bypass Banner for Developer */}
             {(maintenanceState.global && user?.role === 'developer') && (
-                <div className="fixed top-0 left-0 right-0 z-[60] bg-red-600 text-white text-[10px] font-black uppercase tracking-[0.2em] py-1 text-center animate-pulse">
+                <div className="fixed top-0 left-0 right-0 z-[60] bg-red-600 text-white text-[10px] font-black uppercase tracking-[0.2em] py-1 text-center ">
                     ⚠️ Global Maintenance Active - Bypassing as {user.role?.replace('_', ' ')} ⚠️
                 </div>
             )}
@@ -60,20 +60,14 @@ const Navbar = () => {
                     className="fixed top-0 left-0 right-0 z-[55] bg-zinc-950/20 backdrop-blur-2xl border-b border-white/5 py-4 px-6 text-center shadow-[0_4px_30px_rgba(0,0,0,0.5)] overflow-hidden group"
                 >
                     {/* Animated Neon Underline */}
-                    <motion.div 
-                        initial={{ x: '-100%' }}
-                        animate={{ x: '100%' }}
-                        transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
-                        className="absolute bottom-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-neon-pink to-transparent opacity-50"
-                    />
 
                     {(() => {
                         const destination = pinnedAnnouncement.link || (pinnedAnnouncement.linkedEventId ? `/?event=${pinnedAnnouncement.linkedEventId}` : null);
                         const content = (
                             <div className="flex items-center justify-center gap-3">
-                                <Star size={12} className="text-neon-pink animate-pulse" />
+                                <Star size={12} className="text-neon-green " />
                                 <p className="text-[10px] md:text-xs font-black uppercase tracking-[0.2em] text-white/90">
-                                    <span className="text-neon-pink mr-2">{pinnedAnnouncement.title}</span>
+                                    <span className="text-neon-green mr-2">{pinnedAnnouncement.title}</span>
                                     <span className="opacity-60">{pinnedAnnouncement.content}</span>
                                 </p>
                             </div>
@@ -91,115 +85,98 @@ const Navbar = () => {
             )}
 
             {/* Top Navbar - Hidden on Document Engines */}
+            {/* Top Navbar - Hidden on Document Engines */}
             {!location.pathname.includes('/admin/create-') && !location.pathname.includes('/admin/edit-') && !location.pathname.includes('/admin/agreements/') && (
                 <nav className={cn(
-                    "fixed left-1/2 -translate-x-1/2 z-50 transition-all duration-500 w-full max-w-[1800px] px-4 md:px-6 flex items-center justify-center",
+                    "fixed left-1/2 -translate-x-1/2 z-50 transition-all duration-500 w-full max-w-7xl px-4",
                 (maintenanceState.global && user?.role === 'developer') 
-                    ? "top-14 md:top-14" 
+                    ? "top-14" 
                     : pinnedAnnouncement 
-                        ? "top-14 md:top-14" 
+                        ? "top-14" 
                         : "top-4 md:top-6"
             )}>
-                {/* Main Menu Pill */}
-                <div className="relative rounded-full px-4 md:px-6 shadow-[0_8px_32px_rgba(0,0,0,0.4)]">
-                    <div className="absolute inset-0 bg-white/[0.03] backdrop-blur-2xl rounded-full border border-white/10 -z-10" />
-                    <div className="flex items-center h-14 relative z-10">
-                        {/* Logo */}
-                        <Link to="/" className="flex-shrink-0 hover:opacity-80 transition-opacity mr-0 md:mr-6 px-2">
+                {/* Redesigned Floating Header Navigation - Unified Glassmorphic Capsule */}
+                <header className="w-full h-16 bg-zinc-950/35 backdrop-blur-3xl border border-white/[0.08] rounded-2xl px-6 md:px-8 flex items-center justify-between shadow-[0_25px_60px_-15px_rgba(0,0,0,0.8)] select-none">
+                    {/* Left: Logo */}
+                    <div className="flex items-center gap-3">
+                        <Link to="/" className="flex items-center gap-3 group">
                             <img src={logo} alt="Newbi Entertainments" className="h-6 w-auto" />
                         </Link>
-
-                        {/* Desktop Menu */}
-                        <div className="hidden md:block">
-                            <div className="flex items-center space-x-1">
-                                {allLinks.map((link) => {
-                                    const isUnderMaintenance = link.featureId && (maintenanceState.global || maintenanceState.pages?.[link.featureId]);
-                                    const isActive = link.matchPaths ? link.matchPaths.includes(location.pathname) : location.pathname === link.path;
-                                    const isClickable = !isUnderMaintenance || user?.role === 'developer';
-                                    
-                                    return (
-                                        <Link
-                                            key={link.name}
-                                            to={isClickable ? link.path : '#'}
-                                            className={cn(
-                                                'px-4 py-2 text-[10px] font-black uppercase tracking-widest transition-all rounded-full relative group flex items-center gap-2',
-                                                isActive ? 'text-white' : 'text-gray-400 hover:text-white',
-                                                isUnderMaintenance && !isClickable && 'opacity-60 cursor-not-allowed grayscale'
-                                            )}
-                                        >
-                                            {link.name}
-                                            {isUnderMaintenance && (
-                                                <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.5)]" title="Under Maintenance" />
-                                            )}
-                                            {isActive && (
-                                                <motion.div 
-                                                    layoutId="nav-active"
-                                                    className="absolute inset-0 bg-white/10 rounded-full -z-10"
-                                                    transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-                                                />
-                                            )}
-                                        </Link>
-                                    );
-                                })}
-                            </div>
-                        </div>
-
-                        {/* Top Right Actions (Mobile) */}
-                        <div className="md:hidden ml-auto flex items-center gap-2">
-                            <NotificationBell />
-                            {user && (
-                                <div className="h-4 w-px bg-white/10 mx-1" />
-                            )}
-                            {user && (
-                                <div className="flex items-center gap-2">
-                                    <button 
-                                        onClick={() => setIsProfileOpen(true)}
-                                        className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 transition-all outline-none"
-                                    >
-                                        <UserIcon size={14} className="text-gray-400" />
-                                    </button>
-                                </div>
-                            )}
-                        </div>
                     </div>
-                </div>
 
-                {/* Right Action/User Pill (Desktop Only) */}
-                <div className="rounded-full px-4 shadow-[0_8px_32px_rgba(0,0,0,0.4)] hidden md:block absolute right-6">
-                    <div className="absolute inset-0 bg-white/[0.03] backdrop-blur-2xl rounded-full border border-white/10 -z-10" />
-                    <div className="flex items-center h-14 gap-4 relative z-10">
-                        {user && ['developer', 'super_admin', 'founder'].includes(user.role) && (
-                            <Link to="/admin/system-command" className="p-1.5 rounded-full hover:bg-white/10 text-gray-400 hover:text-white transition-all">
-                                <Settings size={14} />
-                            </Link>
-                        )}
-                        {user && <div className="h-4 w-px bg-white/10" />}
-                        {user && ['developer', 'super_admin', 'founder'].includes(user.role) && (
-                            <Link 
-                                to="/admin" 
-                                className="p-2 rounded-xl bg-neon-blue/10 border border-neon-blue/20 text-neon-blue hover:bg-neon-blue hover:text-black transition-all"
-                                title="Open Admin"
-                            >
-                                <LayoutGrid size={16} />
-                            </Link>
-                        )}
+                    {/* Center: Desktop Menu */}
+                    <div className="hidden md:flex items-center gap-1 bg-black/20 p-1.5 rounded-full border border-white/5 backdrop-blur-3xl">
+                        {allLinks.map((link) => {
+                            const isUnderMaintenance = link.featureId && (maintenanceState.global || maintenanceState.pages?.[link.featureId]);
+                            const isActive = link.matchPaths ? link.matchPaths.includes(location.pathname) : location.pathname === link.path;
+                            const isClickable = !isUnderMaintenance || user?.role === 'developer';
+                            
+                            return (
+                                <Link
+                                    key={link.name}
+                                    to={isClickable ? link.path : '#'}
+                                    className={cn(
+                                        'px-4 py-2.5 text-[10px] font-black uppercase tracking-widest transition-all rounded-full relative group flex items-center gap-2',
+                                        isActive ? 'text-black' : 'text-zinc-400 hover:text-white',
+                                        isUnderMaintenance && !isClickable && 'opacity-60 cursor-not-allowed grayscale'
+                                    )}
+                                >
+                                    <span className="relative z-10">{link.name}</span>
+                                    {isUnderMaintenance && (
+                                        <div className="w-1.5 h-1.5 rounded-full bg-red-500 relative z-10" title="Under Maintenance" />
+                                    )}
+                                    {isActive && (
+                                        <motion.div 
+                                            layoutId="nav-active"
+                                            className="absolute inset-0 bg-white rounded-full"
+                                            transition={{ type: "spring", bounce: 0.15, duration: 0.5 }}
+                                        />
+                                    )}
+                                </Link>
+                            );
+                        })}
+                    </div>
+
+                    {/* Right: Actions */}
+                    <div className="flex items-center gap-2 sm:gap-3">
+                        {/* Desktop Only Settings & Admin links */}
+                        <div className="hidden md:flex items-center gap-3">
+                            {user && ['developer', 'super_admin', 'founder'].includes(user.role) && (
+                                <Link to="/admin/system-command" className="p-1.5 rounded-full hover:bg-white/10 text-gray-400 hover:text-white transition-all">
+                                    <Settings size={14} />
+                                </Link>
+                            )}
+                            {user && ['developer', 'super_admin', 'founder'].includes(user.role) && (
+                                <Link 
+                                    to="/admin" 
+                                    className="p-2 rounded-xl bg-neon-green/10 border border-neon-green/20 text-neon-green hover:bg-neon-green hover:text-black transition-all"
+                                    title="Open Admin"
+                                >
+                                    <LayoutGrid size={16} />
+                                </Link>
+                            )}
+                        </div>
+
                         <NotificationBell />
+
+                        {user && <div className="h-4 w-px bg-white/10 mx-0.5" />}
+
                         {user ? (
                             <div 
-                                className="flex items-center gap-3 cursor-pointer"
+                                className="flex items-center gap-3 cursor-pointer select-none group/avatar"
                                 onClick={() => setIsProfileOpen(true)}
                             >
-                                <div className="flex items-center gap-2 pr-2 group">
-                                    <div className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center shrink-0 group-hover:border-neon-blue transition-all">
-                                        <span className="text-white font-black text-[11px] uppercase group-hover:text-neon-blue">
+                                <div className="flex items-center gap-2">
+                                    <div className="w-8 h-8 rounded-full bg-zinc-900 border border-white/10 flex items-center justify-center shrink-0 p-0.5 group-hover/avatar:border-neon-green/50 transition-all shadow-md">
+                                        <div className="w-full h-full rounded-full bg-white/5 flex items-center justify-center font-black text-[10px] text-white group-hover/avatar:text-neon-green">
                                             {user.displayName ? user.displayName.charAt(0) : 'U'}
-                                        </span>
+                                        </div>
                                     </div>
-                                    <div className="text-left flex flex-col justify-center">
-                                        <span className="text-[11px] font-bold text-white leading-none capitalize tracking-tight group-hover:text-neon-blue transition-colors">
+                                    <div className="text-left flex flex-col justify-center hidden md:flex">
+                                        <span className="text-[10px] font-bold text-white leading-none capitalize tracking-tight group-hover/avatar:text-neon-green transition-colors">
                                             {user.displayName?.split(' ')[0] || 'Member'}
                                         </span>
-                                        <span className="text-[8px] text-neon-blue uppercase tracking-[0.2em] font-black mt-1">
+                                        <span className="text-[7px] text-neon-green uppercase tracking-[0.15em] font-black mt-0.5">
                                             {(() => {
                                                 if (user.role === 'developer') return 'DEV';
                                                 if (user.role === 'founder') return 'FOUNDER';
@@ -217,13 +194,13 @@ const Navbar = () => {
                         ) : (
                             <button
                                 onClick={() => useStore.getState().setAuthModal(true)}
-                                className="px-5 py-2 rounded-full bg-white text-black text-[10px] font-black uppercase tracking-widest hover:scale-105 active:scale-95 transition-all"
+                                className="h-10 px-5 rounded-xl bg-white text-black text-[9px] font-black uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-lg shrink-0"
                             >
                                 Login
                             </button>
                         )}
                     </div>
-                </div>
+                </header>
             </nav>
             )}
 
@@ -264,14 +241,14 @@ const Navbar = () => {
                                     <div className="relative">
                                         <Icon size={20} />
                                         {isUnderMaintenance && (
-                                            <div className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full border border-black animate-pulse" />
+                                            <div className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full border border-black " />
                                         )}
                                     </div>
                                     <span className="text-[8px] font-black uppercase tracking-tighter">{link.name}</span>
                                     {isActive && (
                                         <motion.div 
                                             layoutId="bottom-nav-active"
-                                            className="absolute -bottom-1 w-1 h-1 bg-neon-green rounded-full shadow-[0_0_8px_#00E6A8]"
+                                            className="absolute -bottom-1 w-1 h-1 bg-neon-green rounded-full "
                                         />
                                     )}
                                 </Link>
@@ -331,7 +308,7 @@ const Navbar = () => {
                                             )}>
                                                 <Icon size={22} />
                                                 {isUnderMaintenance && (
-                                                    <div className="absolute -top-1 -right-1 px-1.5 py-0.5 bg-red-500 text-[8px] font-black text-white rounded-md animate-pulse">
+                                                    <div className="absolute -top-1 -right-1 px-1.5 py-0.5 bg-red-500 text-[8px] font-black text-white rounded-md ">
                                                         OFFLINE
                                                     </div>
                                                 )}
@@ -356,11 +333,11 @@ const Navbar = () => {
                                             className="flex items-center gap-4 flex-1 min-w-0 pr-2 cursor-pointer group/profile"
                                             onClick={() => { setIsProfileOpen(true); setIsOpen(false); }}
                                         >
-                                            <div className="w-12 h-12 rounded-full bg-neon-blue/10 border border-neon-blue/20 flex items-center justify-center text-neon-blue shrink-0">
+                                            <div className="w-12 h-12 rounded-full bg-neon-green/10 border border-neon-blue/20 flex items-center justify-center text-neon-green shrink-0">
                                                 <UserIcon size={20} />
                                             </div>
                                             <div className="flex flex-col flex-1 min-w-0">
-                                                <span className="text-lg font-black text-white italic capitalize truncate group-hover/profile:text-neon-blue transition-colors">{user.displayName || 'Tribe Member'}</span>
+                                                <span className="text-lg font-black text-white italic capitalize truncate group-hover/profile:text-neon-green transition-colors">{user.displayName || 'Tribe Member'}</span>
                                                 <span className="text-[10px] text-gray-500 uppercase tracking-widest truncate">
                                                     {(() => {
                                                         if (user.role === 'developer') return 'DEV';
@@ -397,7 +374,7 @@ const Navbar = () => {
                             ) : (
                                 <button
                                     onClick={() => { useStore.getState().setAuthModal(true); setIsOpen(false); }}
-                                    className="w-full h-16 rounded-2xl bg-neon-blue text-black font-black uppercase tracking-widest text-sm hover:scale-105 active:scale-95 transition-all shadow-[0_0_30px_rgba(56,182,255,0.3)]"
+                                    className="w-full h-16 rounded-2xl bg-neon-green text-black font-black uppercase tracking-widest text-sm hover:scale-105 active:scale-95 transition-all shadow-[0_0_30px_rgba(57,255,20,0.3)]"
                                 >
                                     Get Started
                                 </button>

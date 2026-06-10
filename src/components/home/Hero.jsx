@@ -1,31 +1,30 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { ArrowRight, Zap, Target, Star } from 'lucide-react';
+import { ArrowRight, Zap, Star } from 'lucide-react';
 import logo from '../../assets/logo.png';
+
 const Hero = () => {
     return (
-        <section className="relative min-h-screen flex flex-col justify-center overflow-hidden pt-32 md:pt-40 pb-16 md:pb-24 bg-[#020202]">
+        <section className="relative min-h-screen flex flex-col justify-center overflow-hidden pt-32 md:pt-40 pb-16 md:pb-24 bg-dark">
             {/* Immersive Background Effects */}
             <div className="absolute inset-0 z-0">
-                {/* Dynamic Glows */}
-                <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-neon-green/10 rounded-full blur-[120px] animate-pulse" />
-                <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-neon-blue/10 rounded-full blur-[120px] animate-pulse delay-700" />
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-gradient-radial from-transparent via-black/40 to-black z-10" />
+                {/* Subtle Ambient Spotlights */}
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-gradient-radial from-transparent via-black/45 to-black z-10" />
 
-                {/* Animated Grid / Mesh Pattern */}
+                {/* Subtle Modern Mesh Grid */}
                 <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'linear-gradient(to right, #ffffff 1px, transparent 1px), linear-gradient(to bottom, #ffffff 1px, transparent 1px)', backgroundSize: '60px 60px' }}></div>
 
-                {/* Abstract Glass Elements with Icons */}
+                {/* Abstract Glass Elements with Icons (Hidden on Mobile) */}
                 <motion.div
                     animate={{ 
                         y: [0, -20, 0],
                         rotate: [0, 5, 0]
                     }}
                     transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
-                    className="absolute top-[18%] right-[10%] w-56 h-56 bg-white/[0.01] border border-white/5 backdrop-blur-3xl rounded-[3.5rem] -rotate-12 hidden md:flex items-center justify-center group"
+                    className="absolute top-[18%] right-[10%] w-56 h-56 bg-white/[0.01] border border-white/5 backdrop-blur-3xl rounded-3xl -rotate-12 hidden md:flex items-center justify-center group"
                 >
                     <div className="opacity-20 group-hover:opacity-100 transition-opacity duration-700">
-                        <Zap className="text-neon-green w-16 h-16" />
+                        <Zap className="text-white/20 w-16 h-16 " />
                     </div>
                 </motion.div>
 
@@ -35,100 +34,86 @@ const Hero = () => {
                         rotate: [45, 40, 45]
                     }}
                     transition={{ duration: 10, repeat: Infinity, ease: "easeInOut", delay: 1 }}
-                    className="absolute bottom-[25%] left-[8%] w-48 h-48 bg-white/[0.01] border border-white/5 backdrop-blur-2xl rounded-[3rem] rotate-[45deg] hidden md:flex items-center justify-center group"
+                    className="absolute bottom-[25%] left-[8%] w-48 h-48 bg-white/[0.01] border border-white/5 backdrop-blur-2xl rounded-3xl rotate-[45deg] hidden md:flex items-center justify-center group"
                 >
                     <div className="opacity-20 group-hover:opacity-100 transition-opacity duration-700 -rotate-[45deg]">
-                        <Star className="text-neon-blue w-14 h-14" />
+                        <Star className="text-white/20 w-14 h-14 " />
                     </div>
                 </motion.div>
-
-                <motion.div
-                    animate={{ 
-                        scale: [1, 1.1, 1],
-                        opacity: [0.1, 0.2, 0.1]
-                    }}
-                    transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
-                    className="absolute top-[40%] left-[15%] w-32 h-32 bg-neon-pink/10 rounded-full blur-[60px] hidden md:block"
-                />
             </div>
 
             {/* Content Container */}
-            <div className="relative z-10 w-full max-w-[1400px] mx-auto px-4 md:px-8 text-center pt-0 md:pt-4 pb-28 md:pb-32">
-                {/* Floating Logo with Aura */}
+            <div className="relative z-10 w-full max-w-[1400px] mx-auto px-4 sm:px-6 md:px-8 text-center pt-0 md:pt-4 pb-16 md:pb-20">
+                {/* Brand Logo with Premium Glow */}
                 <motion.div
                     initial={{ opacity: 0, y: -20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 1, ease: "easeOut" }}
                     className="mb-8 md:mb-12 relative flex justify-center"
                 >
-                    <div className="absolute inset-0 bg-neon-green/20 blur-[60px] rounded-full scale-75 animate-pulse"></div>
-                    <img src={logo} alt="NewBi Entertainment" className="h-20 md:h-40 lg:h-48 w-auto relative z-10 drop-shadow-[0_0_20px_rgba(57,255,20,0.3)]" />
+                    <img src={logo} alt="NewBi Entertainment" className="h-24 md:h-40 w-auto relative z-10 filter drop-shadow-[0_10px_20px_rgba(255,255,255,0.05)]" />
                 </motion.div>
 
-                {/* Cyberpunk Title */}
-                <div className="mb-8 space-y-4">
-
-
+                {/* Sophisticated Display Title */}
+                <div className="space-y-4 mb-6 overflow-visible">
                     <motion.h1
                         initial={{ opacity: 0, y: 30 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.8, delay: 0.4 }}
-                        className="font-heading text-4xl md:text-8xl lg:text-9xl font-black tracking-tighter leading-[0.85] text-white italic"
+                        transition={{ duration: 1, delay: 0.2, ease: "easeOut" }}
+                        className="font-heading text-[6.8vw] xs:text-[7vw] sm:text-6xl md:text-7xl lg:text-8xl xl:text-9xl font-black tracking-tight leading-none text-white whitespace-nowrap overflow-visible select-none py-2"
                     >
-                        PULSE OF <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-green via-white to-neon-blue not-italic">YOUTH.</span>
+                        The Pulse of <span className="bg-gradient-to-r from-white via-neutral-100 to-gray-400 bg-clip-text text-transparent">Youth.</span>
                     </motion.h1>
                 </div>
 
+                {/* Refined Description */}
                 <motion.p
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.8, delay: 0.5 }}
-                    className="text-base md:text-2xl text-gray-400 mb-12 md:mb-16 max-w-3xl mx-auto font-medium leading-relaxed px-4"
+                    transition={{ duration: 1, delay: 0.4, ease: "easeOut" }}
+                    className="text-base sm:text-lg md:text-xl text-gray-400 max-w-2xl mx-auto font-medium leading-relaxed mb-10 px-4"
                 >
-                    India's leading specialized agency for <span className="text-white">College Activations</span>, high-impact marketing, and <span className="text-white">Revolutionary Events</span>.
+                    India's leading specialized agency building premium experiences, high-impact college activations, and revolutionary digital campaigns.
                 </motion.p>
 
-                {/* Premium Buttons */}
+                {/* Actions */}
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.8, delay: 0.6 }}
-                    className="flex flex-col sm:flex-row items-center justify-center gap-4 md:gap-8 px-6"
+                    transition={{ duration: 1, delay: 0.5, ease: "easeOut" }}
+                    className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-10 px-6 sm:px-0"
                 >
                     <a
                         href="/contact"
-                        className="group relative w-full sm:w-auto h-14 md:h-20 px-8 md:px-12 flex items-center justify-center bg-white text-black font-black font-heading uppercase tracking-[0.2em] text-[10px] md:text-sm rounded-2xl transition-all duration-300 hover:scale-105 active:scale-95 shadow-[0_0_50px_rgba(255,255,255,0.2)]"
+                        className="group relative w-full sm:w-auto h-14 md:h-16 px-10 flex items-center justify-center bg-white text-black font-bold uppercase tracking-[0.2em] text-[10px] md:text-xs rounded-xl transition-all duration-300 hover:bg-neutral-100 hover:scale-[1.02] active:scale-95 shadow-xl"
                     >
                         CONTACT US
-                        <ArrowRight className="ml-3 w-4 h-4 md:w-5 md:h-5 group-hover:translate-x-1 transition-transform" />
+                        <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
                     </a>
 
                     <a
                         href="/community"
-                        className="group relative w-full sm:w-auto h-14 md:h-20 px-8 md:px-12 flex items-center justify-center bg-zinc-900 border border-white/10 text-white font-black font-heading uppercase tracking-[0.2em] text-[10px] md:text-sm rounded-2xl transition-all duration-300 hover:border-neon-blue/50 hover:shadow-[0_0_40px_rgba(0,255,255,0.1)] overflow-hidden"
+                        className="group relative w-full sm:w-auto h-14 md:h-16 px-10 flex items-center justify-center bg-slate-900/40 border border-white/10 text-white font-bold uppercase tracking-[0.2em] text-[10px] md:text-xs rounded-xl transition-all duration-300 hover:border-white/20 hover:bg-slate-900/60 active:scale-95 shadow-inner"
                     >
-                        <span className="relative z-10">JOIN OUR COMMUNITY</span>
-                        <div className="absolute inset-0 bg-gradient-to-r from-neon-blue/0 via-neon-blue/5 to-neon-blue/0 opacity-0 group-hover:opacity-100 transition-opacity" />
+                        JOIN OUR COMMUNITY
                     </a>
                 </motion.div>
             </div>
 
-            {/* High-Tech Scroll Indicator */}
+            {/* Premium Minimalist Scroll Cue */}
             <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                transition={{ delay: 1.5, duration: 1 }}
-                className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 md:gap-4"
+                transition={{ delay: 1.2, duration: 1 }}
+                className="absolute bottom-6 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 pointer-events-none"
             >
-                <div className="flex flex-col items-center gap-1">
-                    <span className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-500">SCROLL TO EXPLORE</span>
-                    <div className="w-px h-10 md:h-16 bg-gradient-to-b from-neon-green via-neon-green/20 to-transparent relative">
-                        <motion.div 
-                            animate={{ y: [0, 24, 0] }}
-                            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                            className="absolute top-0 left-[-1px] w-[3px] h-4 bg-neon-green blur-[1px] rounded-full"
-                        />
-                    </div>
+                <span className="text-[9px] font-black uppercase tracking-[0.4em] text-gray-500">SCROLL TO EXPLORE</span>
+                <div className="w-px h-10 bg-gradient-to-b from-white/30 via-white/10 to-transparent relative">
+                    <motion.div 
+                        animate={{ y: [0, 16, 0] }}
+                        transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                        className="absolute top-0 left-[-1px] w-[3px] h-3 bg-white/60 rounded-full"
+                    />
                 </div>
             </motion.div>
         </section>

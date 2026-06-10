@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
     X, Calendar, MapPin, Users, ArrowRight, Share2, 
     Ticket, ExternalLink, Megaphone, ClipboardList, Info, 
-    ChevronRight, Zap, Star, Play
+    ChevronRight, Zap, Star, Play, ChevronDown
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useStore } from '../../lib/store';
@@ -88,198 +88,240 @@ const EventHubModal = ({ event, isOpen, onClose }) => {
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         onClick={onClose}
-                        className="absolute inset-0 bg-black/90 backdrop-blur-3xl transition-all"
+                        className="absolute inset-0 bg-black/75 backdrop-blur-md transition-all"
                     />
 
                     {/* Modal Content */}
                     <motion.div
-                        initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                        initial={{ opacity: 0, scale: 0.95, y: 20 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                        exit={{ opacity: 0, scale: 0.95, y: 20 }}
                         className={cn(
-                            "relative w-full max-w-7xl bg-zinc-950 border border-white/10 shadow-[0_50px_100px_rgba(0,0,0,0.8)] overflow-hidden flex flex-col md:flex-row h-full md:h-[700px] md:rounded-[3rem]",
-                            activeView === 'ticketing' && "max-w-4xl"
+                            "relative w-full max-w-4xl bg-[#020202]/60 backdrop-blur-3xl border border-white/10 shadow-[0_30px_70px_rgba(0,0,0,0.8)] overflow-hidden flex flex-col h-full md:h-auto md:max-h-[92vh] md:rounded-3xl z-10 transition-all duration-300",
+                            activeView === 'ticketing' && "max-w-3xl"
                         )}
                     >
                         <AnimatePresence mode="wait">
                             {activeView === 'hub' ? (
                                 <motion.div 
                                     key="hub"
-                                    initial={{ opacity: 0, x: -20 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    exit={{ opacity: 0, x: -20 }}
-                                    className="flex flex-col md:flex-row w-full h-full overflow-y-auto md:overflow-hidden scrollbar-hide"
+                                    initial={{ opacity: 0, y: 15 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -15 }}
+                                    className="flex flex-col w-full flex-1 min-h-0 overflow-y-auto scrollbar-hide"
                                 >
-                                    {/* Left Sidebar (Banner + Title on Mobile) */}
-                                    <div className="w-full md:w-[500px] bg-black md:border-r border-white/10 shrink-0 relative flex flex-col">
-                                        <div className="relative z-10 flex flex-col">
-                                            {/* Event Hub Banner */}
-                                            <div className="w-full aspect-video overflow-hidden border-b border-white/10 relative shrink-0">
-                                                <img 
-                                                    src={event.hubImage || event.image} 
-                                                    alt={event.title} 
-                                                    className="w-full h-full object-cover" 
-                                                    style={{
-                                                        transform: `scale(${event.hubImageTransform?.scale || event.imageTransform?.scale || 1})`,
-                                                        objectPosition: `${50 + (event.hubImageTransform?.x || event.imageTransform?.x || 0)}% ${50 + (event.hubImageTransform?.y || event.imageTransform?.y || 0)}%`
-                                                    }}
-                                                />
-                                                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-                                                
-                                                <button onClick={onClose} className="md:hidden absolute top-6 right-6 w-10 h-10 rounded-full bg-black/50 border border-white/10 flex items-center justify-center text-white/50 z-50">
-                                                    <X size={20} />
-                                                </button>
-                                            </div>
+                                    {/* Top Cinematic Header Banner */}
+                                    <div className="relative w-full overflow-hidden border-b border-white/5 shrink-0">
+                                        <img 
+                                            src={event.hubImage || event.image} 
+                                            alt={event.title} 
+                                            className="w-full h-auto block" 
+                                            style={{
+                                                transform: `scale(${event.hubImageTransform?.scale || event.imageTransform?.scale || 1})`,
+                                                objectPosition: `${50 + (event.hubImageTransform?.x || event.imageTransform?.x || 0)}% ${50 + (event.hubImageTransform?.y || event.imageTransform?.y || 0)}%`
+                                            }}
+                                        />
+                                        <div className="absolute inset-0 bg-gradient-to-t from-[#020202] via-[#020202]/45 to-transparent" />
+                                        
+                                        {/* Cinematic Title overlay */}
+                                        <div className="absolute bottom-6 left-6 right-6 text-left flex flex-col justify-end">
+                                            <h2 className="text-2xl md:text-4xl font-extrabold font-heading text-white tracking-tight leading-tight">
+                                                {event.title}
+                                            </h2>
+                                        </div>
 
-                                            {/* Shared Title Section (Visible on both PC & Mobile in Sidebar) */}
-                                            <div className="p-8 pb-0 space-y-4">
-                                                <div className="flex items-center gap-4 text-neon-blue">
-                                                    <div className="w-10 h-[1px] bg-current" />
-                                                    <span className="text-[10px] font-black uppercase tracking-[0.5em]">EVENT HUB</span>
-                                                </div>
-                                                <h2 className="text-4xl md:text-5xl font-black font-heading text-white italic uppercase tracking-tighter leading-none">
-                                                    {event.title}
-                                                </h2>
-                                                <div className="flex flex-wrap gap-4">
-                                                    <div className="flex items-center gap-2 text-gray-500 text-[10px] font-black uppercase tracking-widest">
-                                                        <Calendar size={14} className="text-neon-green" /> 
+                                        {/* Close Button on Banner */}
+                                        <button 
+                                            onClick={onClose} 
+                                            className="absolute top-6 right-6 w-10 h-10 rounded-xl bg-black/60 border border-white/10 flex items-center justify-center text-zinc-400 hover:text-white hover:bg-white/10 hover:border-white/20 transition-all z-50 group"
+                                        >
+                                            <X size={20} className="group-hover:rotate-90 transition-transform duration-300" />
+                                        </button>
+                                    </div>
+
+                                    {/* Unified Scrolling content */}
+                                    <div className="flex-1 p-6 md:p-8 space-y-8 text-left pb-28">
+                                        {/* Meta Row: Date, Location, Share button */}
+                                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-white/5">
+                                            <div className="flex flex-wrap gap-6 items-center">
+                                                <div className="flex items-center gap-2.5 text-zinc-400 text-xs font-semibold tracking-wider uppercase">
+                                                    <Calendar size={14} className="text-neon-green shrink-0" /> 
+                                                    <span>
                                                         {event.date ? new Date(event.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }) : 'TBA'}
-                                                    </div>
-                                                    <div className="flex items-center gap-2 text-gray-500 text-[10px] font-black uppercase tracking-widest">
-                                                        <MapPin size={14} className="text-neon-pink" /> 
-                                                        {event.location || 'VENUE TBA'}
-                                                    </div>
+                                                    </span>
+                                                </div>
+                                                <div className="flex items-center gap-2.5 text-zinc-400 text-xs font-semibold tracking-wider uppercase">
+                                                    <MapPin size={14} className="text-neon-green shrink-0" /> 
+                                                    <span>{event.location || 'VENUE TBA'}</span>
+                                                </div>
+                                                {/* Bouncing Scroll Cue beside Location */}
+                                                <div className="flex items-center gap-1.5 text-neon-green text-[9px] font-black uppercase tracking-[0.2em] animate-bounce select-none">
+                                                    <ChevronDown size={12} className="shrink-0" />
+                                                    <span>Scroll</span>
                                                 </div>
                                             </div>
+                                            <button 
+                                                onClick={handleShare}
+                                                className="h-10 px-4 rounded-xl bg-white/5 border border-white/10 text-white font-black uppercase tracking-widest text-[9px] hover:bg-white hover:text-black hover:border-white transition-all flex items-center justify-center gap-2 shrink-0 select-none"
+                                            >
+                                                <Share2 size={12} className="text-neon-green" />
+                                                <span>Share Event</span>
+                                            </button>
+                                        </div>
 
-                                            {/* Action Buttons */}
-                                            <div className="p-8 md:p-10 space-y-4">
-                                                {hasInternalOps && (
-                                                    <button 
-                                                        onClick={handleInternalAction}
-                                                        className="w-full h-20 rounded-[1.5rem] bg-neon-blue/10 border-2 border-neon-blue text-neon-blue font-black uppercase tracking-[0.2em] text-[10px] flex items-center justify-center gap-6 hover:bg-neon-blue hover:text-black transition-all shadow-[0_0_40px_rgba(46,191,255,0.4)] backdrop-blur-xl group"
-                                                    >
-                                                        <Ticket size={24} className="group-hover:rotate-12 transition-transform" />
-                                                        <span className="truncate">{event.isTicketed ? "BOOK TICKETS" : "RSVP NOW"}</span>
-                                                        <ArrowRight size={20} className="group-hover:translate-x-2 transition-transform" />
-                                                    </button>
+                                        {/* Grid Details */}
+                                        <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-start">
+                                            {/* Left details pane */}
+                                            <div className="md:col-span-7 space-y-8">
+                                                {/* Description */}
+                                                <div className="space-y-3">
+                                                    <div className="flex items-center gap-3 text-zinc-500">
+                                                        <div className="w-6 h-[1px] bg-current" />
+                                                        <span className="text-[9px] font-bold uppercase tracking-[0.3em]">Event Details</span>
+                                                    </div>
+                                                    <div className={cn(
+                                                        "text-zinc-300 text-sm leading-relaxed whitespace-pre-wrap font-medium border-l-2 border-neon-green/40 pl-5 transition-all duration-500",
+                                                        !isDescriptionExpanded && "line-clamp-6"
+                                                    )}>
+                                                        {event.description || "No detailed briefing provided for this event. Standard parameters apply."}
+                                                    </div>
+                                                    {event.description && event.description.length > 200 && (
+                                                        <button 
+                                                            onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)} 
+                                                            className="text-[10px] font-bold uppercase tracking-[0.2em] text-neon-green hover:text-white pl-5 transition-colors"
+                                                        >
+                                                            {isDescriptionExpanded ? "Show Less" : "Read More"}
+                                                        </button>
+                                                    )}
+                                                </div>
+
+                                                {/* Video Highlight */}
+                                                {event.videoUrl && (
+                                                    <div className="space-y-4">
+                                                        <div className="flex items-center gap-3 text-zinc-500">
+                                                            <div className="w-6 h-[1px] bg-current" />
+                                                            <span className="text-[9px] font-bold uppercase tracking-[0.3em]">Video Highlight</span>
+                                                        </div>
+                                                        <div className="aspect-video rounded-2xl overflow-hidden bg-black/60 border border-white/5 shadow-2xl relative group">
+                                                            {(event.videoUrl.match(/\.(mp4|webm|ogg)$/i) || event.videoUrl.includes('cloudinary.com')) ? (
+                                                                <video src={event.videoUrl} controls autoPlay muted className="w-full h-full object-cover" poster={event.image} />
+                                                            ) : (
+                                                                <iframe src={getVideoEmbedUrl(event.videoUrl)} className="w-full h-full border-none" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />
+                                                            )}
+                                                        </div>
+                                                    </div>
                                                 )}
-                                                <button 
-                                                    onClick={handleShare}
-                                                    className="w-full h-16 rounded-[1.25rem] bg-white/5 border border-white/10 text-white font-black uppercase tracking-[0.15em] text-[9px] flex items-center justify-center gap-3 hover:bg-white/10 transition-all backdrop-blur-xl group"
-                                                >
-                                                    <Share2 size={14} className="text-neon-green" />
-                                                    SHARE EVENT
-                                                </button>
+
+                                                {/* Artist Lineup */}
+                                                {event.artists && event.artists.length > 0 && (
+                                                    <div className="space-y-4">
+                                                        <div className="flex items-center gap-3 text-zinc-500">
+                                                            <div className="w-6 h-[1px] bg-current" />
+                                                            <span className="text-[9px] font-bold uppercase tracking-[0.3em]">Artist Lineup</span>
+                                                        </div>
+                                                        <div className="flex flex-wrap gap-2">
+                                                            {event.artists.map((artist, idx) => (
+                                                                <div key={idx} className="px-4 py-2 rounded-xl bg-white/5 border border-white/10 flex items-center gap-2 group/artist hover:border-neon-green/30 transition-colors">
+                                                                    <div className="w-1.5 h-1.5 rounded-full bg-neon-green" />
+                                                                    <span className="text-[9px] font-bold uppercase tracking-widest text-zinc-300 group-hover/artist:text-white transition-colors">{artist}</span>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            {/* Right ticketing & opportunities panel */}
+                                            <div className="md:col-span-5 space-y-6">
+                                                {/* Opportunities */}
+                                                {(volunteerGig || campaign || artistForm) && (
+                                                    <div className="space-y-4">
+                                                        <div className="flex items-center gap-3 text-zinc-500">
+                                                            <div className="w-6 h-[1px] bg-current" />
+                                                            <span className="text-[9px] font-bold uppercase tracking-[0.3em]">Opportunities</span>
+                                                        </div>
+                                                        <div className="space-y-3">
+                                                            {volunteerGig && (
+                                                                <a href="/volunteer" className="p-4 rounded-xl bg-white/[0.01] border border-white/10 hover:bg-neon-green/5 hover:border-neon-green/20 transition-all group flex items-center justify-between">
+                                                                    <div className="flex items-center gap-3">
+                                                                        <div className="w-8 h-8 rounded-lg bg-neon-green/10 flex items-center justify-center text-neon-green"><Users size={14} /></div>
+                                                                        <div className="text-left">
+                                                                            <p className="text-[7px] font-bold text-neon-green uppercase tracking-wider">Volunteer</p>
+                                                                            <p className="text-[10px] font-bold text-white uppercase truncate max-w-[160px]">{volunteerGig.title}</p>
+                                                                        </div>
+                                                                    </div>
+                                                                    <ChevronRight size={14} className="text-zinc-600 group-hover:text-neon-green transition-all group-hover:translate-x-1" />
+                                                                </a>
+                                                            )}
+                                                            {campaign && (
+                                                                <a href="/creator" className="p-4 rounded-xl bg-white/[0.01] border border-white/10 hover:bg-neon-green/5 hover:border-neon-green/20 transition-all group flex items-center justify-between">
+                                                                    <div className="flex items-center gap-3">
+                                                                        <div className="w-8 h-8 rounded-lg bg-neon-green/10 flex items-center justify-center text-neon-green"><Megaphone size={14} /></div>
+                                                                        <div className="text-left">
+                                                                            <p className="text-[7px] font-bold text-neon-green uppercase tracking-wider">Creator Campaign</p>
+                                                                            <p className="text-[10px] font-bold text-white uppercase truncate max-w-[160px]">{campaign.title}</p>
+                                                                        </div>
+                                                                    </div>
+                                                                    <ChevronRight size={14} className="text-zinc-600 group-hover:text-neon-green transition-all group-hover:translate-x-1" />
+                                                                </a>
+                                                            )}
+                                                            {artistForm && (
+                                                                <a href="/artist-ant" className="p-4 rounded-xl bg-white/[0.01] border border-white/10 hover:bg-neon-green/5 hover:border-neon-green/20 transition-all group flex items-center justify-between">
+                                                                    <div className="flex items-center gap-3">
+                                                                        <div className="w-8 h-8 rounded-lg bg-neon-green/10 flex items-center justify-center text-neon-green"><Zap size={14} /></div>
+                                                                        <div className="text-left">
+                                                                            <p className="text-[7px] font-bold text-neon-green uppercase tracking-wider">Artist Form</p>
+                                                                            <p className="text-[10px] font-bold text-white uppercase truncate max-w-[160px]">{artistForm.title}</p>
+                                                                        </div>
+                                                                    </div>
+                                                                    <ChevronRight size={14} className="text-zinc-600 group-hover:text-neon-green transition-all group-hover:translate-x-1" />
+                                                                </a>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
                                     </div>
 
-                                    {/* Main Content Area */}
-                                    <div className="flex-1 flex flex-col bg-zinc-950 relative">
-                                        <button onClick={onClose} className="hidden md:flex absolute top-8 right-8 w-12 h-12 rounded-full bg-white/5 border border-white/10 items-center justify-center text-gray-500 hover:text-white transition-all hover:bg-white/10 z-50 group">
-                                            <X size={24} className="group-hover:rotate-90 transition-transform duration-500" />
-                                        </button>
-
-                                        <div className="flex-1 p-8 md:p-12 space-y-12 md:overflow-y-auto scrollbar-hide">
-                                            {/* Video Highlight */}
-                                            {event.videoUrl && (
-                                                <div className="space-y-6">
-                                                    <div className="flex items-center gap-4 text-neon-pink">
-                                                        <div className="w-10 h-[1px] bg-current" />
-                                                        <span className="text-[10px] font-black uppercase tracking-[0.5em]">VIDEO HIGHLIGHT</span>
-                                                    </div>
-                                                    <div className="aspect-video rounded-[2.5rem] overflow-hidden bg-black border border-white/10 shadow-2xl relative group">
-                                                        {(event.videoUrl.match(/\.(mp4|webm|ogg)$/i) || event.videoUrl.includes('cloudinary.com')) ? (
-                                                            <video src={event.videoUrl} controls autoPlay muted className="w-full h-full object-cover" poster={event.image} />
-                                                        ) : (
-                                                            <iframe src={getVideoEmbedUrl(event.videoUrl)} className="w-full h-full border-none" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            )}
-
-                                            {/* Description */}
-                                            <div className="space-y-4">
-                                                <div className="flex items-center gap-4 text-neon-blue">
-                                                    <div className="w-10 h-[1px] bg-current" />
-                                                    <span className="text-[10px] font-black uppercase tracking-[0.5em]">EVENT DETAILS</span>
-                                                </div>
-                                                <div className={cn(
-                                                    "text-gray-400 text-sm leading-relaxed whitespace-pre-wrap italic font-medium border-l-2 border-white/10 pl-6 transition-all duration-500",
-                                                    !isDescriptionExpanded && "line-clamp-6"
-                                                )}>
-                                                    {event.description || "No detailed briefing provided for this event. Standard parameters apply."}
-                                                </div>
-                                                {event.description && event.description.length > 150 && (
-                                                    <button onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)} className="text-[9px] font-black uppercase tracking-[0.2em] text-neon-blue/60 hover:text-neon-blue pl-6">
-                                                        {isDescriptionExpanded ? "Show Less" : "Read More"}
-                                                    </button>
-                                                )}
+                                    {/* Sticky Bottom Bar for mobile & desktop */}
+                                    {(hasInternalOps || hasExternalLinks) && (
+                                        <div className="sticky bottom-0 left-0 right-0 p-4 sm:p-6 bg-zinc-950/90 border-t border-white/10 backdrop-blur-3xl z-40 flex items-center justify-between gap-4 shrink-0 shadow-[0_-10px_30px_rgba(0,0,0,0.8)] md:rounded-b-3xl">
+                                            <div className="text-left min-w-0">
+                                                <p className="text-[8px] font-black text-zinc-500 uppercase tracking-widest mb-0.5">
+                                                    {event.isTicketed ? "Tickets Available" : (event.isGuestlistEnabled ? "Guestlist Open" : "External Booking")}
+                                                </p>
+                                                <p className="text-xs sm:text-sm font-bold text-white truncate">{event.title}</p>
                                             </div>
-
-                                            {/* Artist Lineup */}
-                                            {event.artists && event.artists.length > 0 && (
-                                                <div className="flex flex-wrap gap-2">
-                                                    {event.artists.map((artist, idx) => (
-                                                        <div key={idx} className="px-4 py-2 rounded-xl bg-white/5 border border-white/10 flex items-center gap-2 group/artist hover:border-neon-blue/40 transition-colors">
-                                                            <div className="w-1.5 h-1.5 rounded-full bg-neon-blue group-hover/artist:animate-ping" />
-                                                            <span className="text-[10px] font-black uppercase tracking-widest text-white/70 group-hover/artist:text-white transition-colors">{artist}</span>
-                                                        </div>
-                                                    ))}
-                                                </div>
+                                            {hasInternalOps ? (
+                                                <button 
+                                                    onClick={handleInternalAction}
+                                                    className="h-11 sm:h-12 px-5 sm:px-8 rounded-xl bg-white text-black font-black uppercase tracking-[0.15em] text-[9px] sm:text-xs flex items-center justify-center gap-2 hover:bg-neon-green active:scale-95 transition-all shadow-lg shrink-0 animate-pulse hover:animate-none"
+                                                >
+                                                    <Ticket size={14} />
+                                                    <span>{event.isTicketed ? "Book Tickets" : "Register / RSVP"}</span>
+                                                </button>
+                                            ) : (
+                                                <a 
+                                                    href={event.externalTicketingLinks[0]?.url}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="h-11 sm:h-12 px-5 sm:px-8 rounded-xl bg-white text-black font-black uppercase tracking-[0.15em] text-[9px] sm:text-xs flex items-center justify-center gap-2 hover:bg-neon-green active:scale-95 transition-all shadow-lg shrink-0"
+                                                >
+                                                    <ExternalLink size={14} />
+                                                    <span>{event.externalTicketingLinks[0]?.platform || "Book Now"}</span>
+                                                </a>
                                             )}
-
-                                            {/* Opportunities */}
-                                            {(volunteerGig || campaign || artistForm) && (
-                                                <div className="space-y-6 pt-8 border-t border-white/5">
-                                                    <div className="flex items-center gap-4 text-white/20">
-                                                        <div className="w-10 h-[1px] bg-current" />
-                                                        <span className="text-[10px] font-black uppercase tracking-[0.5em]">RELATED OPPORTUNITIES</span>
-                                                    </div>
-                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                        {volunteerGig && (
-                                                            <a href="/volunteer" className="p-6 rounded-3xl bg-white/[0.03] border border-white/10 hover:bg-neon-green/5 hover:border-neon-green/20 transition-all group">
-                                                                <div className="flex items-center justify-between mb-4">
-                                                                    <div className="w-10 h-10 rounded-xl bg-neon-green/10 flex items-center justify-center text-neon-green"><Users size={20} /></div>
-                                                                    <ChevronRight size={16} className="text-gray-600 group-hover:text-neon-green transition-all group-hover:translate-x-1" />
-                                                                </div>
-                                                                <p className="text-[8px] font-black text-neon-green uppercase tracking-widest mb-1">VOLUNTEER GIG</p>
-                                                                <p className="text-[11px] font-black text-white uppercase italic">{volunteerGig.title}</p>
-                                                            </a>
-                                                        )}
-                                                        {campaign && (
-                                                            <a href="/creator" className="p-6 rounded-3xl bg-white/[0.03] border border-white/10 hover:bg-neon-pink/5 hover:border-neon-pink/20 transition-all group">
-                                                                <div className="flex items-center justify-between mb-4">
-                                                                    <div className="w-10 h-10 rounded-xl bg-neon-pink/10 flex items-center justify-center text-neon-pink"><Megaphone size={20} /></div>
-                                                                    <ChevronRight size={16} className="text-gray-600 group-hover:text-neon-pink transition-all group-hover:translate-x-1" />
-                                                                </div>
-                                                                <p className="text-[8px] font-black text-neon-pink uppercase tracking-widest mb-1">CREATOR CAMPAIGN</p>
-                                                                <p className="text-[11px] font-black text-white uppercase italic">{campaign.title}</p>
-                                                            </a>
-                                                        )}
-                                                        {artistForm && (
-                                                            <a href="/artist-ant" className="p-6 rounded-3xl bg-white/[0.03] border border-white/10 hover:bg-neon-blue/5 hover:border-neon-blue/20 transition-all group">
-                                                                <div className="flex items-center justify-between mb-4">
-                                                                    <div className="w-10 h-10 rounded-xl bg-neon-blue/10 flex items-center justify-center text-neon-blue"><Zap size={20} /></div>
-                                                                    <ChevronRight size={16} className="text-gray-600 group-hover:text-neon-blue transition-all group-hover:translate-x-1" />
-                                                                </div>
-                                                                <p className="text-[8px] font-black text-neon-blue uppercase tracking-widest mb-1">ARTIST REGISTRATION</p>
-                                                                <p className="text-[11px] font-black text-white uppercase italic">{artistForm.title}</p>
-                                                            </a>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            )}
-
-                                            <div className="p-8 border-t border-white/5 bg-black/20 flex items-center justify-center rounded-3xl">
-                                                <span className="text-[8px] font-black text-white/10 uppercase tracking-[0.5em] italic">NEWBI ENT.</span>
-                                            </div>
                                         </div>
+                                    )}
+
+                                    {/* Footer */}
+                                    <div className="p-4 border-t border-white/5 bg-[#020202]/40 flex items-center justify-center shrink-0">
+                                        <span className="text-[8px] font-bold text-zinc-600 tracking-[0.5em] uppercase">NEWBI ENT.</span>
                                     </div>
                                 </motion.div>
                             ) : (
-                                <motion.div key="ticketing" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} className="w-full h-full relative">
+                                <motion.div key="ticketing" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} className="w-full flex-1 min-h-0 relative">
                                     <EventTicketingModal event={event} isOpen={activeView === 'ticketing'} onClose={() => setActiveView('hub')} isEmbedded={true} />
                                 </motion.div>
                             )}

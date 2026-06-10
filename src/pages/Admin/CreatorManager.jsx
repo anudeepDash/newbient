@@ -103,6 +103,7 @@ const CreatorManager = ({ showLeaderboardOnly = false }) => {
     const [filterCity, setFilterCity] = useState('All');
     const [filterStatus, setFilterStatus] = useState('All');
     const [filterNiche, setFilterNiche] = useState('All');
+    const [filterPlatform, setFilterPlatform] = useState('All');
     const [minFollowers, setMinFollowers] = useState('');
     const [maxFollowers, setMaxFollowers] = useState('');
     const [isFollowersOpen, setIsFollowersOpen] = useState(false);
@@ -259,9 +260,14 @@ const CreatorManager = ({ showLeaderboardOnly = false }) => {
             const matchesMax = !maxFollowers || followers <= Number(maxFollowers);
             const matchesFollowers = matchesMin && matchesMax;
 
-            return matchesSearch && matchesCity && matchesStatus && matchesNiche && matchesFollowers;
+            const matchesPlatform = filterPlatform === 'All' ||
+                (filterPlatform === 'instagram' && c.instagram && c.instagram.trim() !== '') ||
+                (filterPlatform === 'linkedin' && c.linkedin && c.linkedin.trim() !== '') ||
+                (filterPlatform === 'youtube' && c.youtube && c.youtube.trim() !== '');
+
+            return matchesSearch && matchesCity && matchesStatus && matchesNiche && matchesFollowers && matchesPlatform;
         });
-    }, [creators, searchTerm, filterCity, filterStatus, filterNiche, minFollowers, maxFollowers]);
+    }, [creators, searchTerm, filterCity, filterStatus, filterNiche, minFollowers, maxFollowers, filterPlatform]);
 
     const getFollowersLabel = () => {
         if (!minFollowers && !maxFollowers) return 'FOLLOWERS (ANY)';
@@ -286,7 +292,7 @@ const CreatorManager = ({ showLeaderboardOnly = false }) => {
 
     useEffect(() => {
         setCurrentPage(1);
-    }, [searchTerm, filterCity, filterStatus, filterNiche, minFollowers, maxFollowers]);
+    }, [searchTerm, filterCity, filterStatus, filterNiche, minFollowers, maxFollowers, filterPlatform]);
 
     const stats = useMemo(() => {
         const approvedCount = creators.filter(c => c.profileStatus === 'approved').length;
@@ -538,6 +544,23 @@ const CreatorManager = ({ showLeaderboardOnly = false }) => {
                                 onChange={setFilterStatus} 
                                 className="h-12 md:h-14 rounded-xl md:rounded-full border-white/10 bg-black/60" 
                                 accentColor="neon-green" 
+                                classNamePrefix="studio-select"
+                            />
+                        </div>
+
+                        {/* Platform Filter */}
+                        <div className="w-full lg:w-[150px]">
+                            <StudioSelect 
+                                value={filterPlatform} 
+                                options={[
+                                    { value: 'All', label: 'PLATFORM' }, 
+                                    { value: 'instagram', label: 'INSTAGRAM' }, 
+                                    { value: 'linkedin', label: 'LINKEDIN' },
+                                    { value: 'youtube', label: 'YOUTUBE' }
+                                ]} 
+                                onChange={setFilterPlatform} 
+                                className="h-12 md:h-14 rounded-xl md:rounded-full border-white/10 bg-black/60" 
+                                accentColor="neon-blue" 
                                 classNamePrefix="studio-select"
                             />
                         </div>
