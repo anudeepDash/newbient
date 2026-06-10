@@ -123,6 +123,17 @@ const CreatorManager = ({ showLeaderboardOnly = false }) => {
     const [isDeleting, setIsDeleting] = useState(false);
     const [viewMode, setViewMode] = useState('grid'); 
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+    const [selectedUids, setSelectedUids] = useState([]);
+    const [isBulkEmailModalOpen, setIsBulkEmailModalOpen] = useState(false);
+
+    const handleToggleSelect = (uid) => {
+        setSelectedUids(prev => 
+            prev.includes(uid) 
+                ? prev.filter(id => id !== uid) 
+                : [...prev, uid]
+        );
+    };
+    const handleDeselectAll = () => setSelectedUids([]);
 
     const handleImportCSV = (e) => {
         const file = e.target.files[0];
@@ -645,6 +656,8 @@ const CreatorManager = ({ showLeaderboardOnly = false }) => {
                                                     <CreatorBadgeCard 
                                                         creator={creator} 
                                                         onSelect={() => navigate(`/admin/creators/${creator.uid}`)} 
+                                                        isSelected={selectedUids.includes(creator.uid)}
+                                                        onToggleSelect={handleToggleSelect}
                                                     />
                                                 </motion.div>
                                             ))}
@@ -653,6 +666,7 @@ const CreatorManager = ({ showLeaderboardOnly = false }) => {
                                 ) : (
                                     <div className="flex flex-col gap-3">
                                         <div className="flex items-center gap-6 px-10 py-6 text-[10px] font-black text-gray-600 uppercase tracking-[0.4em] border-b border-white/5">
+                                            <div className="w-6 shrink-0" />
                                             <div className="w-16 shrink-0">Identity</div>
                                             <div className="flex-1 pl-1">Profile Details</div>
                                             <div className="w-48 hidden md:block">Specialization</div>
@@ -668,7 +682,12 @@ const CreatorManager = ({ showLeaderboardOnly = false }) => {
                                                 animate={{ opacity: 1, x: 0 }}
                                                 transition={{ delay: idx * 0.03 }}
                                             >
-                                                <CreatorListItem creator={creator} onSelect={() => navigate(`/admin/creators/${creator.uid}`)} />
+                                                <CreatorListItem 
+                                                    creator={creator} 
+                                                    onSelect={() => navigate(`/admin/creators/${creator.uid}`)} 
+                                                    isSelected={selectedUids.includes(creator.uid)}
+                                                    onToggleSelect={handleToggleSelect}
+                                                />
                                             </motion.div>
                                         ))}
                                     </div>
@@ -769,6 +788,61 @@ const CreatorManager = ({ showLeaderboardOnly = false }) => {
                 {isAddModalOpen && (
                     <AddCreatorModal onClose={() => setIsAddModalOpen(false)} />
                 )}
+                {isBulkEmailModalOpen && (
+                    <BulkEmailModal
+                        selectedUids={selectedUids}
+                        creators={creators}
+                        onClose={() => {
+                            setIsBulkEmailModalOpen(false);
+                            setSelectedUids([]);
+                        }}
+                    />
+                )}
+                {selectedUids.length > 0 && !isLeaderboardRoute && (
+                    <motion.div
+                        initial={{ y: 100, x: '-50%', opacity: 0 }}
+                        animate={{ y: 0, x: '-50%', opacity: 1 }}
+                        exit={{ y: 100, x: '-50%', opacity: 0 }}
+                        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                        className="fixed bottom-8 left-1/2 z-[100] w-[90%] max-w-2xl bg-black/60 backdrop-blur-2xl border border-white/10 rounded-3xl px-6 py-4 flex flex-col md:flex-row items-center justify-between gap-4 shadow-[0_20px_50px_rgba(0,0,0,0.5)] border-t-white/20"
+                    >
+                        <div className="flex items-center gap-3">
+                            <span className="w-3 h-3 rounded-full bg-neon-pink animate-pulse" />
+                            <span className="text-[10px] font-black uppercase tracking-widest text-white">
+                                {selectedUids.length} Creator{selectedUids.length > 1 ? 's' : ''} Selected
+                            </span>
+                        </div>
+                        <div className="flex items-center gap-3 w-full md:w-auto">
+                            <button
+                                onClick={() => {
+                                    const pageUids = paginatedCreators.map(c => c.uid);
+                                    setSelectedUids(prev => {
+                                        const newUids = [...prev];
+                                        pageUids.forEach(uid => {
+                                            if (!newUids.includes(uid)) newUids.push(uid);
+                                        });
+                                        return newUids;
+                                    });
+                                }}
+                                className="flex-1 md:flex-none h-10 px-4 bg-white/5 border border-white/10 hover:border-white/20 text-white font-black text-[9px] uppercase tracking-widest rounded-xl transition-all"
+                            >
+                                Select Page
+                            </button>
+                            <button
+                                onClick={handleDeselectAll}
+                                className="flex-1 md:flex-none h-10 px-4 bg-white/5 border border-white/10 hover:border-white/20 text-white font-black text-[9px] uppercase tracking-widest rounded-xl transition-all"
+                            >
+                                Deselect All
+                            </button>
+                            <button
+                                onClick={() => setIsBulkEmailModalOpen(true)}
+                                className="flex-1 md:flex-none h-10 px-6 bg-neon-pink text-black hover:bg-neon-pink/90 font-black text-[9px] uppercase tracking-widest rounded-xl transition-all flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(255,0,127,0.3)]"
+                            >
+                                <Mail size={12} /> Email Selected
+                            </button>
+                        </div>
+                    </motion.div>
+                )}
             </AnimatePresence>
         </AdminCommunityHubLayout>
     );
@@ -829,7 +903,7 @@ const StatCard = ({ icon, label, value, color, description, compact = false }) =
     );
 };
 
-const CreatorBadgeCard = ({ creator, onSelect }) => {
+const CreatorBadgeCard = ({ creator, onSelect, isSelected, onToggleSelect }) => {
     const { creators, campaigns } = useStore();
     const instagramUrl = creator.instagram 
         ? (creator.instagram.includes('instagram.com') ? creator.instagram : `https://instagram.com/${creator.instagram.replace(/^@/, '').trim()}`)
@@ -845,12 +919,24 @@ const CreatorBadgeCard = ({ creator, onSelect }) => {
         <motion.div 
             layout
             onClick={onSelect}
-            className="group relative bg-zinc-950/45 border border-white/[0.08] backdrop-blur-3xl rounded-[2.5rem] p-6 cursor-pointer overflow-hidden transition-all duration-700 hover:-translate-y-2 hover:shadow-[inset_0_1px_1px_rgba(255,255,255,0.2),0_40px_80px_rgba(0,0,0,0.7)] hover:border-white/20 flex flex-col h-full min-h-[560px] shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)]"
+            className={cn(
+                "group relative bg-zinc-950/45 border backdrop-blur-3xl rounded-[2.5rem] p-6 cursor-pointer overflow-hidden transition-all duration-700 hover:-translate-y-2 hover:shadow-[inset_0_1px_1px_rgba(255,255,255,0.2),0_40px_80px_rgba(0,0,0,0.7)] hover:border-white/20 flex flex-col h-full min-h-[560px] shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)]",
+                isSelected ? "border-neon-pink/50 shadow-[0_0_30px_rgba(255,0,127,0.15)] bg-zinc-900/60" : "border-white/[0.08]"
+            )}
         >
             <div className="absolute inset-0 bg-gradient-to-br from-neon-pink/5 via-transparent to-neon-blue/5 opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
             
             <div className="relative mb-6 group-hover:scale-[1.01] transition-transform duration-700">
                 <div className="aspect-[1/1] rounded-[2rem] overflow-hidden bg-black/40 border border-white/[0.08] relative flex items-center justify-center">
+                    {/* Checkbox overlay in the top-left */}
+                    <div className="absolute top-4 left-4 z-30 flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
+                        <input
+                            type="checkbox"
+                            checked={isSelected || false}
+                            onChange={() => onToggleSelect(creator.uid)}
+                            className="w-5 h-5 rounded-lg border-white/20 bg-black text-neon-pink focus:ring-0 cursor-pointer shadow-lg transition-transform hover:scale-105 active:scale-95"
+                        />
+                    </div>
                     {creator.profilePicture ? (
                         <img src={creator.profilePicture} alt={creator.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000" />
                     ) : (
@@ -999,7 +1085,7 @@ const CreatorBadgeCard = ({ creator, onSelect }) => {
     );
 };
 
-const CreatorListItem = ({ creator, onSelect }) => {
+const CreatorListItem = ({ creator, onSelect, isSelected, onToggleSelect }) => {
     const instagramUrl = creator.instagram 
         ? (creator.instagram.includes('instagram.com') ? creator.instagram : `https://instagram.com/${creator.instagram.replace(/^@/, '').trim()}`)
         : '';
@@ -1010,9 +1096,20 @@ const CreatorListItem = ({ creator, onSelect }) => {
     return (
         <div 
             onClick={onSelect}
-            className="group flex flex-col lg:flex-row items-start lg:items-center p-6 bg-zinc-950/45 backdrop-blur-3xl border border-white/[0.08] shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)] hover:border-white/20 hover:bg-zinc-900/60 rounded-3xl cursor-pointer transition-all duration-300 gap-6"
+            className={cn(
+                "group flex flex-col lg:flex-row items-start lg:items-center p-6 bg-zinc-950/45 backdrop-blur-3xl border shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)] hover:border-white/20 hover:bg-zinc-900/60 rounded-3xl cursor-pointer transition-all duration-300 gap-6",
+                isSelected ? "border-neon-pink/50 bg-zinc-900/60" : "border-white/[0.08]"
+            )}
         >
             <div className="flex items-center gap-4 w-full lg:w-auto min-w-0">
+                <div onClick={(e) => e.stopPropagation()} className="shrink-0 flex items-center justify-center pr-2">
+                    <input
+                        type="checkbox"
+                        checked={isSelected || false}
+                        onChange={() => onToggleSelect(creator.uid)}
+                        className="w-5 h-5 rounded border-white/20 bg-black text-neon-pink focus:ring-0 cursor-pointer transition-transform hover:scale-105 active:scale-95"
+                    />
+                </div>
                 <div className="w-14 h-14 bg-black/40 border border-white/[0.08] rounded-2xl flex items-center justify-center font-black text-white group-hover:border-neon-pink/40 overflow-hidden shrink-0 transition-all group-hover:scale-105">
                     {creator.profilePicture ? (
                         <img src={creator.profilePicture} alt={creator.name} className="w-full h-full object-cover" />
@@ -2123,6 +2220,127 @@ const ReferralLeaderboard = ({ creators, onSelectCreator }) => {
                 </div>
             </div>
         </div>
+    );
+};
+
+const BulkEmailModal = ({ selectedUids, creators, onClose }) => {
+    const [emailSubject, setEmailSubject] = useState('Partnership Update - Newbi Entertainment');
+    const [emailBody, setEmailBody] = useState('');
+    const [isSending, setIsSending] = useState(false);
+    const [progress, setProgress] = useState({ current: 0, total: 0 });
+    const selectedCreators = useMemo(() => creators.filter(c => selectedUids.includes(c.uid)), [creators, selectedUids]);
+
+    const handleSendBulkEmail = async (e) => {
+        e.preventDefault();
+        if (!emailSubject.trim() || !emailBody.trim()) {
+            useStore.getState().addToast("Please fill in subject and body.", 'warning');
+            return;
+        }
+
+        setIsSending(true);
+        setProgress({ current: 0, total: selectedCreators.length });
+
+        let successCount = 0;
+        let failCount = 0;
+
+        for (let i = 0; i < selectedCreators.length; i++) {
+            const creator = selectedCreators[i];
+            setProgress({ current: i + 1, total: selectedCreators.length });
+            try {
+                const res = await sendCreatorDirectEmail(creator.email, emailSubject, emailBody, creator.name);
+                if (res.success) {
+                    successCount++;
+                } else {
+                    failCount++;
+                }
+            } catch (err) {
+                failCount++;
+            }
+        }
+
+        setIsSending(false);
+        useStore.getState().addToast(`Bulk email process completed: ${successCount} sent, ${failCount} failed.`, 'success');
+        onClose();
+    };
+
+    return createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 md:p-10 bg-black/50 backdrop-blur-md overflow-y-auto">
+            <div className="fixed inset-0 bg-black/80" onClick={onClose} />
+            <motion.div 
+                initial={{ scale: 0.95, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                className="relative bg-[#050505] border border-white/10 rounded-[3rem] w-full max-w-2xl max-h-[90vh] overflow-y-auto p-8 md:p-10 shadow-2xl z-10 custom-scrollbar"
+            >
+                <div className="flex items-center justify-between border-b border-white/5 pb-4 mb-6">
+                    <div>
+                        <h3 className="text-2xl font-black font-heading uppercase italic tracking-tighter">BULK PARTNERSHIP EMAIL</h3>
+                        <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest mt-1">Sending to {selectedCreators.length} recipients</p>
+                    </div>
+                    <button onClick={onClose} className="w-10 h-10 rounded-full bg-white/5 border border-white/10 text-gray-400 hover:text-white flex items-center justify-center">
+                        <X size={18} />
+                    </button>
+                </div>
+
+                {isSending ? (
+                    <div className="py-12 flex flex-col items-center justify-center space-y-6 text-center">
+                        <LoadingSpinner size="md" color="#FF007F" />
+                        <div className="space-y-1">
+                            <h4 className="text-lg font-black uppercase tracking-wider text-white">Dispatched {progress.current} of {progress.total}</h4>
+                            <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Generating and transmitting official branded emails...</p>
+                        </div>
+                        <div className="w-full bg-white/5 h-2 rounded-full overflow-hidden max-w-md">
+                            <div 
+                                className="bg-neon-pink h-full transition-all duration-300"
+                                style={{ width: `${(progress.current / progress.total) * 100}%` }}
+                            />
+                        </div>
+                    </div>
+                ) : (
+                    <form onSubmit={handleSendBulkEmail} className="space-y-6">
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Recipients Preview</label>
+                            <div className="bg-[#0A0A0A] border border-white/5 p-4 rounded-2xl max-h-[120px] overflow-y-auto custom-scrollbar flex flex-wrap gap-2">
+                                {selectedCreators.map(c => (
+                                    <span key={c.uid} className="px-3 py-1 bg-white/5 rounded-lg text-[9px] font-black text-gray-300 border border-white/5">
+                                        {c.name} ({c.email || 'No email'})
+                                    </span>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Email Subject</label>
+                            <input 
+                                required
+                                type="text" 
+                                value={emailSubject}
+                                onChange={(e) => setEmailSubject(e.target.value)}
+                                className="w-full h-12 bg-black border border-white/10 rounded-xl px-4 text-xs font-bold text-white focus:border-neon-pink outline-none transition-all"
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Email Body</label>
+                            <textarea 
+                                required
+                                value={emailBody}
+                                onChange={(e) => setEmailBody(e.target.value)}
+                                placeholder="WRITE YOUR BULK CORRESPONDENCE MESSAGE HERE..."
+                                className="w-full h-64 bg-black border border-white/10 rounded-xl p-4 text-xs font-bold text-white focus:border-neon-pink outline-none transition-all resize-none placeholder:text-gray-700"
+                            />
+                        </div>
+
+                        <button 
+                            type="submit"
+                            className="w-full h-16 bg-neon-pink text-black font-black uppercase tracking-widest text-xs rounded-2xl hover:bg-neon-pink/90 transition-all flex items-center justify-center gap-2 shadow-[0_15px_40px_rgba(255,0,127,0.3)]"
+                        >
+                            <Mail size={16} /> SEND BULK CAMPAIGN
+                        </button>
+                    </form>
+                )}
+            </motion.div>
+        </div>,
+        document.body
     );
 };
 
