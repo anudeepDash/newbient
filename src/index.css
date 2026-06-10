@@ -662,9 +662,9 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover {
 .admin-hub-content-container div[class*="bg-[#0a0a0a]"],
 .admin-hub-content-container div[class*="bg-[#050505]/"],
 .admin-hub-content-container div[class*="bg-zinc-900"] {
-  background: rgba(10, 10, 10, 0.35) !important;
+  background: rgba(9, 9, 11, 0.35) !important;
   backdrop-filter: blur(24px) !important;
-  border: 1px solid rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
   border-radius: 2rem !important;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5) !important;
 }
