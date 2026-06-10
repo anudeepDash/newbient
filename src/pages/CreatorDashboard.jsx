@@ -145,6 +145,8 @@ const CreatorSettingsView = ({ profile }) => {
         customNiche: isPredefinedNiche ? '' : initialSpecialization,
         collegeName: profile.collegeName || '',
         bio: profile.bio || '',
+        doBarter: profile.doBarter || '',
+        commercials: profile.commercials || '',
         profilePicture: profile.profilePicture || ''
     });
 
@@ -369,6 +371,8 @@ const CreatorSettingsView = ({ profile }) => {
                 categories: finalNiche,
                 collegeName: form.collegeName || '',
                 bio: form.bio,
+                doBarter: form.doBarter,
+                commercials: form.commercials,
                 profilePicture: form.profilePicture,
                 isPhoneVerified: isPhoneVerified
             });
@@ -596,6 +600,32 @@ const CreatorSettingsView = ({ profile }) => {
                                         <input required name="customNiche" value={form.customNiche} onChange={handleChange} className="w-full h-14 bg-black/40 border border-white/10 rounded-xl px-4 text-sm font-bold focus:border-neon-blue transition-all" />
                                     </motion.div>
                                 )}
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="space-y-3">
+                                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Barter Collaborations</label>
+                                        <select
+                                            required name="doBarter" value={form.doBarter} onChange={handleChange}
+                                            className="w-full h-14 bg-black/40 border border-white/10 rounded-xl px-4 text-sm font-bold focus:border-neon-blue transition-all appearance-none cursor-pointer text-white"
+                                        >
+                                            <option value="" disabled>Select Preference</option>
+                                            <option value="yes" className="bg-zinc-900">YES</option>
+                                            <option value="no" className="bg-zinc-900">NO (ONLY PAID)</option>
+                                            <option value="selective" className="bg-zinc-900">SELECTIVE (DEPENDS ON BRAND/PRODUCT)</option>
+                                        </select>
+                                    </div>
+                                    <div className="space-y-3">
+                                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Commercial Rates</label>
+                                        <input 
+                                            required 
+                                            name="commercials" 
+                                            value={form.commercials} 
+                                            onChange={handleChange} 
+                                            placeholder="e.g. 5k/Reel, 2k/Story or Open to discuss"
+                                            className="w-full h-14 bg-black/40 border border-white/10 rounded-xl px-4 text-sm font-bold focus:border-neon-blue transition-all text-white" 
+                                        />
+                                    </div>
+                                </div>
 
                                 <div className="space-y-3">
                                     <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Strategic Bio</label>

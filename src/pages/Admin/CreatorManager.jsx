@@ -798,53 +798,57 @@ const CreatorManager = ({ showLeaderboardOnly = false }) => {
                         }}
                     />
                 )}
-                {selectedUids.length > 0 && !isLeaderboardRoute && createPortal(
-                    <motion.div
-                        initial={{ y: 100, x: '-50%', opacity: 0 }}
-                        animate={{ y: 0, x: '-50%', opacity: 1 }}
-                        exit={{ y: 100, x: '-50%', opacity: 0 }}
-                        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-                        className="fixed bottom-8 left-1/2 z-[100] w-[90%] max-w-2xl bg-black/60 backdrop-blur-2xl border border-white/10 rounded-3xl px-6 py-4 flex flex-col md:flex-row items-center justify-between gap-4 shadow-[0_20px_50px_rgba(0,0,0,0.5)] border-t-white/20"
-                    >
-                        <div className="flex items-center gap-3">
-                            <span className="w-3 h-3 rounded-full bg-neon-pink animate-pulse" />
-                            <span className="text-[10px] font-black uppercase tracking-widest text-white">
-                                {selectedUids.length} Creator{selectedUids.length > 1 ? 's' : ''} Selected
-                            </span>
-                        </div>
-                        <div className="flex items-center gap-3 w-full md:w-auto">
-                            <button
-                                onClick={() => {
-                                    const pageUids = paginatedCreators.map(c => c.uid);
-                                    setSelectedUids(prev => {
-                                        const newUids = [...prev];
-                                        pageUids.forEach(uid => {
-                                            if (!newUids.includes(uid)) newUids.push(uid);
-                                        });
-                                        return newUids;
-                                    });
-                                }}
-                                className="flex-1 md:flex-none h-10 px-4 bg-white/5 border border-white/10 hover:border-white/20 text-white font-black text-[9px] uppercase tracking-widest rounded-xl transition-all"
-                            >
-                                Select Page
-                            </button>
-                            <button
-                                onClick={handleDeselectAll}
-                                className="flex-1 md:flex-none h-10 px-4 bg-white/5 border border-white/10 hover:border-white/20 text-white font-black text-[9px] uppercase tracking-widest rounded-xl transition-all"
-                            >
-                                Deselect All
-                            </button>
-                            <button
-                                onClick={() => setIsBulkEmailModalOpen(true)}
-                                className="flex-1 md:flex-none h-10 px-6 bg-neon-pink text-black hover:bg-neon-pink/90 font-black text-[9px] uppercase tracking-widest rounded-xl transition-all flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(255,0,127,0.3)]"
-                            >
-                                <Mail size={12} /> Email Selected
-                            </button>
-                        </div>
-                    </motion.div>,
-                    document.body
-                )}
             </AnimatePresence>
+            {createPortal(
+                <AnimatePresence>
+                    {selectedUids.length > 0 && !isLeaderboardRoute && (
+                        <motion.div
+                            initial={{ y: 100, x: '-50%', opacity: 0 }}
+                            animate={{ y: 0, x: '-50%', opacity: 1 }}
+                            exit={{ y: 100, x: '-50%', opacity: 0 }}
+                            transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                            className="fixed bottom-8 left-1/2 z-[100] w-[90%] max-w-2xl bg-black/60 backdrop-blur-2xl border border-white/10 rounded-3xl px-6 py-4 flex flex-col md:flex-row items-center justify-between gap-4 shadow-[0_20px_50px_rgba(0,0,0,0.5)] border-t-white/20"
+                        >
+                            <div className="flex items-center gap-3">
+                                <span className="w-3 h-3 rounded-full bg-neon-pink animate-pulse" />
+                                <span className="text-[10px] font-black uppercase tracking-widest text-white">
+                                    {selectedUids.length} Creator{selectedUids.length > 1 ? 's' : ''} Selected
+                                </span>
+                            </div>
+                            <div className="flex items-center gap-3 w-full md:w-auto">
+                                <button
+                                    onClick={() => {
+                                        const pageUids = paginatedCreators.map(c => c.uid);
+                                        setSelectedUids(prev => {
+                                            const newUids = [...prev];
+                                            pageUids.forEach(uid => {
+                                                if (!newUids.includes(uid)) newUids.push(uid);
+                                            });
+                                            return newUids;
+                                        });
+                                    }}
+                                    className="flex-1 md:flex-none h-10 px-4 bg-white/5 border border-white/10 hover:border-white/20 text-white font-black text-[9px] uppercase tracking-widest rounded-xl transition-all"
+                                >
+                                    Select Page
+                                </button>
+                                <button
+                                    onClick={handleDeselectAll}
+                                    className="flex-1 md:flex-none h-10 px-4 bg-white/5 border border-white/10 hover:border-white/20 text-white font-black text-[9px] uppercase tracking-widest rounded-xl transition-all"
+                                >
+                                    Deselect All
+                                </button>
+                                <button
+                                    onClick={() => setIsBulkEmailModalOpen(true)}
+                                    className="flex-1 md:flex-none h-10 px-6 bg-neon-pink text-black hover:bg-neon-pink/90 font-black text-[9px] uppercase tracking-widest rounded-xl transition-all flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(255,0,127,0.3)]"
+                                >
+                                    <Mail size={12} /> Email Selected
+                                </button>
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>,
+                document.body
+            )}
         </AdminCommunityHubLayout>
     );
 };
@@ -1572,6 +1576,25 @@ const CreatorDetailModal = ({ creator, onClose, onUpdateStatus, onDelete, isUpda
                             </div>
                         </section>
 
+                        <section className="space-y-3">
+                            <div className="flex items-center gap-4">
+                                <h3 className="text-[10px] font-black text-gray-500 uppercase tracking-[0.4em] whitespace-nowrap">COLLABORATION PREFERENCES</h3>
+                                <div className="w-full h-px bg-gradient-to-r from-white/10 to-transparent" />
+                            </div>
+                            <div className="grid grid-cols-2 gap-4 text-[9px] font-black uppercase tracking-[0.1em]">
+                                <div className="p-4 bg-[#0A0A0A] border border-white/5 rounded-2xl">
+                                    <p className="text-[7px] font-black text-gray-600 uppercase tracking-widest mb-1">Barter Collaborations</p>
+                                    <p className="text-white text-xs">
+                                        {creator.doBarter === 'yes' ? 'YES' : creator.doBarter === 'no' ? 'NO (ONLY PAID)' : creator.doBarter === 'selective' ? 'SELECTIVE' : (creator.doBarter?.toUpperCase() || 'N/A')}
+                                    </p>
+                                </div>
+                                <div className="p-4 bg-[#0A0A0A] border border-white/5 rounded-2xl">
+                                    <p className="text-[7px] font-black text-gray-600 uppercase tracking-widest mb-1">Commercial Rates</p>
+                                    <p className="text-white text-xs normal-case">{creator.commercials || 'N/A'}</p>
+                                </div>
+                            </div>
+                        </section>
+
                         {/* Admin Badge & Promotion Controls */}
                         <section className="space-y-4 bg-[#0A0A0A] border border-white/5 p-6 rounded-3xl">
                             <div className="flex items-center justify-between border-b border-white/5 pb-3">
@@ -1748,7 +1771,9 @@ const AddCreatorModal = ({ onClose }) => {
         twitter: '',
         linkedin: '',
         linkedinFollowers: '',
-        profilePicture: ''
+        profilePicture: '',
+        doBarter: '',
+        commercials: ''
     });
 
     const handleChange = (e) => setForm({...form, [e.target.name]: e.target.value});
@@ -1805,6 +1830,8 @@ const AddCreatorModal = ({ onClose }) => {
                 linkedin: form.linkedin || '',
                 linkedinFollowers: form.linkedinFollowers || '0',
                 profilePicture: form.profilePicture || '',
+                doBarter: form.doBarter || '',
+                commercials: form.commercials || '',
                 profileStatus: 'approved',
                 isPhoneVerified: true
             }, sendWelcomeMail);
@@ -1935,6 +1962,25 @@ const AddCreatorModal = ({ onClose }) => {
                         <div className="space-y-1.5">
                             <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Twitter / X URL</label>
                             <input name="twitter" value={form.twitter} onChange={handleChange} placeholder="https://twitter.com/..." className="w-full h-12 bg-black border border-white/10 rounded-xl px-4 text-sm font-bold text-white focus:border-neon-blue outline-none transition-all" />
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-1.5">
+                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Barter Collaborations</label>
+                            <select
+                                name="doBarter" value={form.doBarter} onChange={handleChange}
+                                className="w-full h-12 bg-black border border-white/10 rounded-xl px-4 text-sm font-bold text-white focus:border-neon-blue outline-none transition-all appearance-none cursor-pointer"
+                            >
+                                <option value="">Select Preference</option>
+                                <option value="yes" className="bg-zinc-950">YES</option>
+                                <option value="no" className="bg-zinc-950">NO (ONLY PAID)</option>
+                                <option value="selective" className="bg-zinc-950">SELECTIVE</option>
+                            </select>
+                        </div>
+                        <div className="space-y-1.5">
+                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Commercial Rates</label>
+                            <input name="commercials" value={form.commercials} onChange={handleChange} placeholder="e.g. 5k/Reel, 2k/Story" className="w-full h-12 bg-black border border-white/10 rounded-xl px-4 text-sm font-bold text-white focus:border-neon-blue outline-none transition-all" />
                         </div>
                     </div>
 
