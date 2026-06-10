@@ -155,7 +155,6 @@ export default async function handler(req, res) {
 
         const info = await transporter.sendMail({
             from: fromAddress,
-            sender: smtpUser, // Envelope sender to prevent SMTP auth sender mismatch errors
             to,
             bcc,
             subject,

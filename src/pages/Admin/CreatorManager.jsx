@@ -798,7 +798,7 @@ const CreatorManager = ({ showLeaderboardOnly = false }) => {
                         }}
                     />
                 )}
-                {selectedUids.length > 0 && !isLeaderboardRoute && (
+                {selectedUids.length > 0 && !isLeaderboardRoute && createPortal(
                     <motion.div
                         initial={{ y: 100, x: '-50%', opacity: 0 }}
                         animate={{ y: 0, x: '-50%', opacity: 1 }}
@@ -841,7 +841,8 @@ const CreatorManager = ({ showLeaderboardOnly = false }) => {
                                 <Mail size={12} /> Email Selected
                             </button>
                         </div>
-                    </motion.div>
+                    </motion.div>,
+                    document.body
                 )}
             </AnimatePresence>
         </AdminCommunityHubLayout>
