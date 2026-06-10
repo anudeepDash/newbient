@@ -47,6 +47,11 @@ import StudioSelect from '../../components/ui/StudioSelect';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import Plus from 'lucide-react/dist/esm/icons/plus';
 import Upload from 'lucide-react/dist/esm/icons/upload';
+import Trophy from 'lucide-react/dist/esm/icons/trophy';
+import MessageSquare from 'lucide-react/dist/esm/icons/message-square';
+import Send from 'lucide-react/dist/esm/icons/send';
+import { getEarnedBadges, getVerifiedTasksCount, getReferralsForCreator } from '../../lib/badges';
+import { sendCreatorDirectEmail } from '../../lib/email';
 
 const getPageNumbers = (currentPage, totalPages) => {
     const pages = [];
@@ -83,11 +88,12 @@ const getPageNumbers = (currentPage, totalPages) => {
     return pages;
 };
 
-const CreatorManager = () => {
-    const { creators, updateCreator, deleteCreator } = useStore();
+const CreatorManager = ({ showLeaderboardOnly = false }) => {
+    const { creators, campaigns, updateCreator, deleteCreator } = useStore();
     const navigate = useNavigate();
     const location = useLocation();
     const params = useParams();
+    const isLeaderboardRoute = location.pathname.includes('/leaderboard') || showLeaderboardOnly;
     const [searchTerm, setSearchTerm] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 12;
@@ -204,6 +210,7 @@ const CreatorManager = () => {
     const personnelTabs = [
         { name: 'Creators', path: '/admin/creators', icon: Star },
         { name: 'Campaigns', path: '/admin/campaigns', icon: Target },
+        { name: 'Leaderboard', path: '/admin/creators/leaderboard', icon: Trophy },
     ];
 
     const cities = ['All', ...new Set([...PREDEFINED_CITIES, ...creators.map(c => c.city)])];
@@ -336,8 +343,17 @@ const CreatorManager = () => {
         document.body.removeChild(link);
     };
 
-    const renderContent = () => (
-        <div className="relative z-10 max-w-[1700px] mx-auto pb-20">
+    const renderContent = () => {
+        if (isLeaderboardRoute) {
+            return (
+                <ReferralLeaderboard 
+                    creators={creators} 
+                    onSelectCreator={(c) => navigate(`/admin/creators/${c.uid}`)} 
+                />
+            );
+        }
+        return (
+            <div className="relative z-10 max-w-[1700px] mx-auto pb-20">
             <div>
                 {/* Control Panel */}
                 <div className="relative z-50 bg-[#0A0A0A]/80 backdrop-blur-3xl border border-white/10 rounded-[1.5rem] md:rounded-[2rem] p-1.5 md:p-2.5 md:pr-6 mb-8 md:mb-16 shadow-[0_30px_100px_rgba(0,0,0,0.8)] flex flex-col 2xl:flex-row 2xl:flex-wrap 2xl:items-center gap-2 md:gap-3">
@@ -708,7 +724,8 @@ const CreatorManager = () => {
                 </div>
             </div>
         </div>
-    );
+        );
+    };
 
     return (
         <AdminCommunityHubLayout
@@ -809,12 +826,16 @@ const StatCard = ({ icon, label, value, color, description, compact = false }) =
 };
 
 const CreatorBadgeCard = ({ creator, onSelect }) => {
+    const { creators, campaigns } = useStore();
     const instagramUrl = creator.instagram 
         ? (creator.instagram.includes('instagram.com') ? creator.instagram : `https://instagram.com/${creator.instagram.replace(/^@/, '').trim()}`)
         : '';
     const instagramHandle = creator.instagram 
         ? `@${creator.instagram.replace(/^@/, '').trim()}`
         : '';
+
+    const earnedBadges = getEarnedBadges(creator, creators, campaigns);
+    const customBadges = creator.adminBadges || [];
 
     return (
         <motion.div 
@@ -847,9 +868,33 @@ const CreatorBadgeCard = ({ creator, onSelect }) => {
             <div className="flex-1 flex flex-col">
                 <div className="mb-4">
                     <p className="text-[10px] font-black text-neon-pink uppercase tracking-[0.4em] mb-2">{(creator.niches || creator.specializations || [])[0] || 'CREATOR'}</p>
-                    <h3 className="text-3xl font-black text-white tracking-tighter uppercase italic leading-[0.9] group-hover:text-neon-pink transition-colors duration-500 line-clamp-2">
+                    <h3 className="text-3xl font-black text-white tracking-tighter uppercase italic leading-[0.9] group-hover:text-neon-pink transition-colors duration-500 line-clamp-2 mb-3">
                         {creator.name}
                     </h3>
+                    
+                    {/* Badges Row */}
+                    <div className="flex flex-wrap gap-1.5 max-h-[36px] overflow-hidden">
+                        {earnedBadges.slice(0, 3).map(badge => (
+                            <span 
+                                key={badge.id} 
+                                title={badge.desc}
+                                className={cn("inline-flex items-center gap-0.5 px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-widest border", badge.bg)}
+                            >
+                                <span>{badge.icon}</span>
+                                <span className="text-[7px]">{badge.label.split(' ')[0]}</span>
+                            </span>
+                        ))}
+                        {customBadges.slice(0, 2).map((badge, idx) => (
+                            <span 
+                                key={`custom-${idx}`} 
+                                className="inline-flex items-center gap-0.5 px-2 py-0.5 bg-neon-purple/10 border border-neon-purple/35 text-neon-purple rounded-md text-[8px] font-black uppercase tracking-widest"
+                                title={`Custom badge: ${badge}`}
+                            >
+                                <span>🏅</span>
+                                <span className="text-[7px] truncate max-w-[45px]">{badge}</span>
+                            </span>
+                        ))}
+                    </div>
                 </div>
 
                 <div className="space-y-2 mb-6">
@@ -1020,6 +1065,114 @@ const StatusPill = ({ status }) => {
 };
 
 const CreatorDetailModal = ({ creator, onClose, onUpdateStatus, onDelete, isUpdating, isDeleting }) => {
+    const { updateCreator, addNotification, creators, campaigns } = useStore();
+    
+    // States
+    const [isFeatured, setIsFeatured] = useState(creator.isFeatured || false);
+    const [customBadgeText, setCustomBadgeText] = useState('');
+    const [adminBadges, setAdminBadges] = useState(creator.adminBadges || []);
+    const [communicationTab, setCommunicationTab] = useState('email'); // 'email' or 'message'
+    const [emailSubject, setEmailSubject] = useState('Partnership Update - Newbi Entertainment');
+    const [emailBody, setEmailBody] = useState('');
+    const [messageText, setMessageText] = useState('');
+    const [sendingEmail, setSendingEmail] = useState(false);
+    const [sendingMessage, setSendingMessage] = useState(false);
+
+    // Synchronize states with creator changes
+    useEffect(() => {
+        setIsFeatured(creator.isFeatured || false);
+        setAdminBadges(creator.adminBadges || []);
+    }, [creator]);
+
+    const handleToggleFeatured = async () => {
+        const nextVal = !isFeatured;
+        setIsFeatured(nextVal);
+        try {
+            await updateCreator(creator.uid, { isFeatured: nextVal });
+            useStore.getState().addToast(`Creator ${nextVal ? 'featured' : 'unfeatured'} successfully!`, 'success');
+        } catch (err) {
+            setIsFeatured(!nextVal); // Rollback
+            useStore.getState().addToast("Failed to update featured status.", 'error');
+        }
+    };
+
+    const handleAddBadge = async (e) => {
+        e.preventDefault();
+        const cleanBadge = customBadgeText.trim();
+        if (!cleanBadge) return;
+        if (adminBadges.includes(cleanBadge)) {
+            useStore.getState().addToast("Badge already exists.", 'warning');
+            return;
+        }
+        const nextBadges = [...adminBadges, cleanBadge];
+        try {
+            await updateCreator(creator.uid, { adminBadges: nextBadges });
+            setAdminBadges(nextBadges);
+            setCustomBadgeText('');
+            useStore.getState().addToast("Custom badge added!", 'success');
+        } catch (err) {
+            useStore.getState().addToast("Failed to add custom badge.", 'error');
+        }
+    };
+
+    const handleRemoveBadge = async (badgeToRemove) => {
+        const nextBadges = adminBadges.filter(b => b !== badgeToRemove);
+        try {
+            await updateCreator(creator.uid, { adminBadges: nextBadges });
+            setAdminBadges(nextBadges);
+            useStore.getState().addToast("Custom badge removed.", 'success');
+        } catch (err) {
+            useStore.getState().addToast("Failed to remove custom badge.", 'error');
+        }
+    };
+
+    const handleSendEmail = async (e) => {
+        e.preventDefault();
+        if (!emailSubject.trim() || !emailBody.trim()) {
+            useStore.getState().addToast("Please fill in subject and body.", 'warning');
+            return;
+        }
+        setSendingEmail(true);
+        try {
+            const res = await sendCreatorDirectEmail(creator.email, emailSubject, emailBody, creator.name);
+            if (res.success) {
+                useStore.getState().addToast("Direct email sent successfully!", 'success');
+                setEmailBody('');
+            } else {
+                useStore.getState().addToast(res.error || "Failed to send email.", 'error');
+            }
+        } catch (err) {
+            useStore.getState().addToast("Failed to send email.", 'error');
+        } finally {
+            setSendingEmail(false);
+        }
+    };
+
+    const handleSendMessage = async (e) => {
+        e.preventDefault();
+        if (!messageText.trim()) {
+            useStore.getState().addToast("Please enter a notification message.", 'warning');
+            return;
+        }
+        setSendingMessage(true);
+        try {
+            await addNotification({
+                userId: creator.uid,
+                title: "Admin Announcement ✉️",
+                message: messageText.trim(),
+                type: "info"
+            });
+            useStore.getState().addToast("In-app notification sent successfully!", 'success');
+            setMessageText('');
+        } catch (err) {
+            useStore.getState().addToast("Failed to send notification.", 'error');
+        } finally {
+            setSendingMessage(false);
+        }
+    };
+
+    const earnedBadges = getEarnedBadges(creator, creators, campaigns);
+
     return createPortal(
         <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 md:p-10 bg-black/50 backdrop-blur-md">
             <motion.div 
@@ -1067,6 +1220,37 @@ const CreatorDetailModal = ({ creator, onClose, onUpdateStatus, onDelete, isUpda
                                 <h2 className="text-3xl font-black font-heading tracking-tighter uppercase italic leading-[0.9] text-white break-words">
                                     {creator.name}
                                 </h2>
+                                
+                                {/* Badges Row */}
+                                <div className="flex flex-wrap gap-1.5 justify-center lg:justify-start mt-2">
+                                    {earnedBadges.map(badge => (
+                                        <span 
+                                            key={badge.id} 
+                                            title={badge.desc}
+                                            className={cn("inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-widest border", badge.bg)}
+                                        >
+                                            <span>{badge.icon}</span>
+                                            <span className="text-[7px]">{badge.label}</span>
+                                        </span>
+                                    ))}
+                                    {adminBadges.map((badge, idx) => (
+                                        <span 
+                                            key={`custom-${idx}`} 
+                                            className="inline-flex items-center gap-1 px-2 py-0.5 bg-neon-purple/10 border border-neon-purple/35 text-neon-purple rounded-md text-[8px] font-black uppercase tracking-widest shadow-[0_0_15px_rgba(168,85,247,0.1)]"
+                                            title={`Custom badge: ${badge}`}
+                                        >
+                                            <span>🏅</span>
+                                            <span className="text-[7px]">{badge}</span>
+                                            <button 
+                                                onClick={() => handleRemoveBadge(badge)}
+                                                className="ml-1 text-red-500 hover:text-white font-black"
+                                                title="Remove Badge"
+                                            >
+                                                ×
+                                            </button>
+                                        </span>
+                                    ))}
+                                </div>
                             </div>
 
                             {/* Meta Grid */}
@@ -1143,8 +1327,8 @@ const CreatorDetailModal = ({ creator, onClose, onUpdateStatus, onDelete, isUpda
                         </div>
                     </div>
 
-                    {/* Right Side: Dossier, Socials, Specialization */}
-                    <div className="flex-1 flex flex-col gap-6 overflow-y-auto custom-scrollbar pr-2">
+                    {/* Right Side: Dossier, Socials, Specialization, Badge Manager & Direct Communication */}
+                    <div className="flex-1 flex flex-col gap-6 overflow-y-auto custom-scrollbar pr-2 pb-6">
                         <section className="space-y-3">
                             <div className="flex items-center gap-4">
                                 <h3 className="text-[10px] font-black text-neon-pink uppercase tracking-[0.4em] whitespace-nowrap">STRATEGIC DOSSIER</h3>
@@ -1208,10 +1392,130 @@ const CreatorDetailModal = ({ creator, onClose, onUpdateStatus, onDelete, isUpda
                             </div>
                         </section>
 
+                        {/* Admin Badge & Promotion Controls */}
+                        <section className="space-y-4 bg-[#0A0A0A] border border-white/5 p-6 rounded-3xl">
+                            <div className="flex items-center justify-between border-b border-white/5 pb-3">
+                                <h3 className="text-[10px] font-black text-neon-blue uppercase tracking-[0.4em]">PROMOTIONS & BADGES</h3>
+                                <div className="flex items-center gap-3">
+                                    <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Feature Creator</span>
+                                    <button 
+                                        onClick={handleToggleFeatured}
+                                        className={cn(
+                                            "w-12 h-6 rounded-full p-1 transition-all duration-300 flex items-center",
+                                            isFeatured ? "bg-neon-pink justify-end" : "bg-white/10 justify-start"
+                                        )}
+                                    >
+                                        <motion.div layout className="w-4 h-4 rounded-full bg-black shadow-md" />
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <form onSubmit={handleAddBadge} className="flex gap-2">
+                                <input 
+                                    type="text" 
+                                    value={customBadgeText}
+                                    onChange={(e) => setCustomBadgeText(e.target.value)}
+                                    placeholder="ENTER CUSTOM BADGE NAME (E.G. CAMPUS LEAD)..."
+                                    className="flex-1 h-12 bg-black border border-white/10 rounded-xl px-4 text-xs font-bold text-white focus:border-neon-purple outline-none transition-all placeholder:text-gray-700"
+                                />
+                                <button 
+                                    type="submit"
+                                    className="px-6 h-12 bg-neon-purple text-white rounded-xl text-[10px] font-black uppercase tracking-wider hover:scale-[1.02] active:scale-95 transition-all"
+                                >
+                                    ADD BADGE
+                                </button>
+                            </form>
+                        </section>
+
+                        {/* Direct Mailing & Messaging unit */}
+                        <section className="space-y-4 bg-[#0A0A0A] border border-white/5 p-6 rounded-3xl">
+                            <div className="flex items-center justify-between border-b border-white/5 pb-3">
+                                <h3 className="text-[10px] font-black text-neon-green uppercase tracking-[0.4em]">DIRECT COMMUNICATION UNIT</h3>
+                                <div className="flex bg-black p-1 rounded-xl border border-white/10 h-10 items-center">
+                                    <button 
+                                        onClick={() => setCommunicationTab('email')} 
+                                        className={cn(
+                                            "px-4 h-8 rounded-lg text-[8px] font-black uppercase tracking-wider transition-all",
+                                            communicationTab === 'email' ? "bg-white text-black" : "text-gray-500 hover:text-white"
+                                        )}
+                                    >
+                                        Email
+                                    </button>
+                                    <button 
+                                        onClick={() => setCommunicationTab('message')} 
+                                        className={cn(
+                                            "px-4 h-8 rounded-lg text-[8px] font-black uppercase tracking-wider transition-all",
+                                            communicationTab === 'message' ? "bg-white text-black" : "text-gray-500 hover:text-white"
+                                        )}
+                                    >
+                                        Notification
+                                    </button>
+                                </div>
+                            </div>
+
+                            {communicationTab === 'email' ? (
+                                <form onSubmit={handleSendEmail} className="space-y-3">
+                                    <div className="space-y-1">
+                                        <label className="text-[8px] font-black text-gray-600 uppercase tracking-widest pl-1">Subject</label>
+                                        <input 
+                                            type="text" 
+                                            value={emailSubject}
+                                            onChange={(e) => setEmailSubject(e.target.value)}
+                                            placeholder="EMAIL SUBJECT..." 
+                                            className="w-full h-11 bg-black border border-white/10 rounded-xl px-4 text-xs font-bold text-white focus:border-neon-green outline-none transition-all"
+                                        />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <label className="text-[8px] font-black text-gray-600 uppercase tracking-widest pl-1">Message Body</label>
+                                        <textarea 
+                                            value={emailBody}
+                                            onChange={(e) => setEmailBody(e.target.value)}
+                                            placeholder="WRITE EMAIL BODY HERE..." 
+                                            className="w-full h-28 bg-black border border-white/10 rounded-xl p-4 text-xs font-bold text-white focus:border-neon-green outline-none transition-all resize-none"
+                                        />
+                                    </div>
+                                    <button 
+                                        type="submit"
+                                        disabled={sendingEmail}
+                                        className="w-full h-12 bg-neon-green hover:bg-neon-green/90 text-black rounded-xl text-[10px] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-2 transition-all hover:scale-[1.01] active:scale-95 disabled:opacity-50"
+                                    >
+                                        {sendingEmail ? <LoadingSpinner size="xs" color="black" /> : (
+                                            <>
+                                                <Send size={12} /> SEND OFFICIAL PARTNERSHIP EMAIL
+                                            </>
+                                        )}
+                                    </button>
+                                </form>
+                            ) : (
+                                <form onSubmit={handleSendMessage} className="space-y-3">
+                                    <div className="space-y-1">
+                                        <label className="text-[8px] font-black text-gray-600 uppercase tracking-widest pl-1">In-App Notification Text</label>
+                                        <textarea 
+                                            value={messageText}
+                                            onChange={(e) => setMessageText(e.target.value)}
+                                            placeholder="WRITE IN-APP PUSH NOTIFICATION MESSAGE HERE..." 
+                                            className="w-full h-28 bg-black border border-white/10 rounded-xl p-4 text-xs font-bold text-white focus:border-neon-green outline-none transition-all resize-none"
+                                        />
+                                    </div>
+                                    <button 
+                                        type="submit"
+                                        disabled={sendingMessage}
+                                        className="w-full h-12 bg-neon-green hover:bg-neon-green/90 text-black rounded-xl text-[10px] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-2 transition-all hover:scale-[1.01] active:scale-95 disabled:opacity-50"
+                                    >
+                                        {sendingMessage ? <LoadingSpinner size="xs" color="black" /> : (
+                                            <>
+                                                <MessageSquare size={12} /> BROADCAST REAL-TIME NOTIFICATION
+                                            </>
+                                        )}
+                                    </button>
+                                </form>
+                            )}
+                        </section>
+
                         {creator.portfolioInfo && (
                             <button 
                                 onClick={() => window.open(creator.portfolioInfo.includes('http') ? creator.portfolioInfo : `https://${creator.portfolioInfo}`, '_blank')}
-                                className="w-full h-14 bg-white text-black rounded-2xl font-black uppercase tracking-[0.2em] text-[9px] shadow-lg flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-95 transition-all overflow-hidden relative group"
+                                className="w-full h-14 bg-white text-black rounded-2xl font-black uppercase tracking-[0.2em] text-[9px] shadow-lg flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-95 transition-all overflow-hidden relative group mt-2 shrink-0"
                             >
                                 <div className="absolute inset-0 bg-gradient-to-r from-neon-pink to-neon-blue opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                                 <span className="relative z-10 flex items-center gap-2 group-hover:text-white transition-colors duration-500">
@@ -1456,4 +1760,262 @@ const AddCreatorModal = ({ onClose }) => {
     );
 };
 
+/**
+ * Referral Leaderboard Sub-component
+ */
+const ReferralLeaderboard = ({ creators, onSelectCreator }) => {
+    const [searchTerm, setSearchTerm] = useState('');
+    const [expandedUid, setExpandedUid] = useState(null);
+
+    // Calculate leaderboard
+    const leaderboard = useMemo(() => {
+        const counts = {};
+        const referredList = {};
+
+        creators.forEach(c => {
+            if (c.referredBy) {
+                // Find referrer
+                const referrer = creators.find(rc => 
+                    rc.uid === c.referredBy || 
+                    (rc.creatorId && rc.creatorId.toUpperCase() === c.referredBy.toUpperCase()) ||
+                    (rc.instagram && rc.instagram.toLowerCase() === c.referredBy.toLowerCase())
+                );
+                if (referrer) {
+                    counts[referrer.uid] = (counts[referrer.uid] || 0) + 1;
+                    if (!referredList[referrer.uid]) referredList[referrer.uid] = [];
+                    referredList[referrer.uid].push(c);
+                }
+            }
+        });
+
+        return creators
+            .map(c => ({
+                ...c,
+                referralCount: counts[c.uid] || 0,
+                referredCreators: referredList[c.uid] || []
+            }))
+            .filter(c => c.referralCount > 0)
+            .sort((a, b) => b.referralCount - a.referralCount);
+    }, [creators]);
+
+    const filteredLeaderboard = useMemo(() => {
+        return leaderboard.filter(c => 
+            c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (c.instagram && c.instagram.toLowerCase().includes(searchTerm.toLowerCase()))
+        );
+    }, [leaderboard, searchTerm]);
+
+    const stats = useMemo(() => {
+        const totalReferred = creators.filter(c => c.referredBy).length;
+        const topReferrer = leaderboard[0];
+        const totalNetworkFollowers = leaderboard.reduce((acc, c) => {
+            const referredFollowers = c.referredCreators.reduce((sum, rc) => {
+                return sum + Math.max(Number(rc.instagramFollowers || 0), Number(rc.youtubeSubscribers || 0));
+            }, 0);
+            return acc + referredFollowers;
+        }, 0);
+
+        return {
+            totalReferred,
+            topReferrerName: topReferrer ? topReferrer.name : 'N/A',
+            topReferrerCount: topReferrer ? topReferrer.referralCount : 0,
+            networkFollowers: totalNetworkFollowers
+        };
+    }, [creators, leaderboard]);
+
+    const toggleExpand = (uid) => {
+        setExpandedUid(expandedUid === uid ? null : uid);
+    };
+
+    return (
+        <div className="space-y-8 relative z-10 max-w-[1700px] mx-auto pb-20">
+            {/* Stats Overview */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="bg-[#0A0A0A] border border-white/5 p-6 rounded-[2rem] shadow-xl flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-xl bg-neon-pink/10 border border-neon-pink/20 flex items-center justify-center text-neon-pink shrink-0">
+                        <Users size={20} />
+                    </div>
+                    <div>
+                        <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest leading-none mb-1">TOTAL REFERRED</p>
+                        <h3 className="text-3xl font-black text-white italic">{stats.totalReferred}</h3>
+                    </div>
+                </div>
+                
+                <div className="bg-[#0A0A0A] border border-white/5 p-6 rounded-[2rem] shadow-xl flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-xl bg-neon-blue/10 border border-neon-blue/20 flex items-center justify-center text-neon-blue shrink-0">
+                        <Trophy size={20} />
+                    </div>
+                    <div>
+                        <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest leading-none mb-1">TOP REFERRER</p>
+                        <h3 className="text-xl font-black text-white truncate max-w-[200px] italic">
+                            {stats.topReferrerName} ({stats.topReferrerCount})
+                        </h3>
+                    </div>
+                </div>
+
+                <div className="bg-[#0A0A0A] border border-white/5 p-6 rounded-[2rem] shadow-xl flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-xl bg-neon-green/10 border border-neon-green/20 flex items-center justify-center text-neon-green shrink-0">
+                        <TrendingUp size={20} />
+                    </div>
+                    <div>
+                        <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest leading-none mb-1">NETWORK REACH</p>
+                        <h3 className="text-3xl font-black text-white italic">{stats.networkFollowers.toLocaleString()} FLW</h3>
+                    </div>
+                </div>
+            </div>
+
+            {/* Filter Search */}
+            <div className="relative group">
+                <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-neon-pink transition-colors" size={16} />
+                <input
+                    type="text"
+                    placeholder="SEARCH REFERRERS..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full h-14 pl-14 pr-6 bg-black/60 border border-white/10 group-hover:border-white/20 focus:border-neon-pink/60 rounded-full text-[10px] font-black uppercase tracking-[0.2em] outline-none transition-all placeholder:text-gray-700 text-white"
+                />
+            </div>
+
+            {/* Leaderboard Table */}
+            <div className="bg-[#050505]/40 rounded-[2.5rem] border border-white/5 overflow-hidden shadow-2xl">
+                <div className="overflow-x-auto">
+                    <table className="w-full border-collapse text-left">
+                        <thead>
+                            <tr className="border-b border-white/5 text-[9px] font-black text-gray-500 uppercase tracking-[0.3em]">
+                                <th className="py-6 px-8 w-16 text-center">Rank</th>
+                                <th className="py-6 px-6">Creator</th>
+                                <th className="py-6 px-6 text-center">Invites</th>
+                                <th className="py-6 px-6 text-right">Network Reach</th>
+                                <th className="py-6 px-8 text-center">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {filteredLeaderboard.map((referrer, index) => {
+                                const isExpanded = expandedUid === referrer.uid;
+                                const totalReach = referrer.referredCreators.reduce((sum, rc) => {
+                                    return sum + Math.max(Number(rc.instagramFollowers || 0), Number(rc.youtubeSubscribers || 0));
+                                }, 0);
+
+                                let medal = `${index + 1}`;
+                                if (index === 0) medal = '🥇';
+                                else if (index === 1) medal = '🥈';
+                                else if (index === 2) medal = '🥉';
+
+                                return (
+                                    <React.Fragment key={referrer.uid}>
+                                        <tr 
+                                            className={cn(
+                                                "border-b border-white/[0.03] transition-colors hover:bg-white/[0.02]",
+                                                isExpanded && "bg-white/[0.01]"
+                                            )}
+                                        >
+                                            <td className="py-5 px-8 text-center font-black text-lg italic">{medal}</td>
+                                            <td className="py-5 px-6">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-10 h-10 rounded-xl bg-zinc-900 border border-white/5 overflow-hidden flex items-center justify-center shrink-0">
+                                                        {referrer.profilePicture ? (
+                                                            <img src={referrer.profilePicture} alt="" className="w-full h-full object-cover" />
+                                                        ) : (
+                                                            <span className="text-[12px] font-black text-white italic">{referrer.name?.charAt(0)}</span>
+                                                        )}
+                                                    </div>
+                                                    <div>
+                                                        <h4 className="text-sm font-black text-white uppercase italic tracking-tight leading-tight">{referrer.name}</h4>
+                                                        <p className="text-[8px] text-gray-500 uppercase tracking-widest mt-0.5">@{referrer.instagram || 'N/A'}</p>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td className="py-5 px-6 text-center">
+                                                <span className="inline-flex items-center justify-center px-4 py-1.5 rounded-full bg-neon-pink/15 border border-neon-pink/20 text-neon-pink text-sm font-black tabular-nums">
+                                                    {referrer.referralCount}
+                                                </span>
+                                            </td>
+                                            <td className="py-5 px-6 text-right font-black text-sm text-gray-400 tabular-nums">
+                                                {totalReach.toLocaleString()} FLW
+                                            </td>
+                                            <td className="py-5 px-8 text-center">
+                                                <div className="flex items-center justify-center gap-2">
+                                                    <button 
+                                                        onClick={() => toggleExpand(referrer.uid)}
+                                                        className="h-10 px-4 rounded-xl bg-white/5 border border-white/10 text-[9px] font-black uppercase tracking-wider text-gray-400 hover:text-white hover:bg-white/10 transition-all flex items-center gap-1.5 animate-none"
+                                                    >
+                                                        <span>Invites ({referrer.referredCreators.length})</span>
+                                                        {isExpanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+                                                    </button>
+                                                    <button 
+                                                        onClick={() => onSelectCreator(referrer)}
+                                                        className="w-10 h-10 rounded-xl bg-white text-black hover:bg-neon-pink hover:text-white transition-all flex items-center justify-center"
+                                                        title="View Profile"
+                                                    >
+                                                        <ChevronRight size={16} />
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+
+                                        {/* Expandable referrals row */}
+                                        {isExpanded && (
+                                            <tr>
+                                                <td colSpan={5} className="bg-black/30 p-8 border-b border-white/5">
+                                                    <div className="space-y-4">
+                                                        <div className="flex items-center justify-between border-b border-white/5 pb-2">
+                                                            <h5 className="text-[9px] font-black text-neon-pink uppercase tracking-widest">INVITED CREATORS BY {referrer.name.toUpperCase()}</h5>
+                                                        </div>
+                                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                                            {referrer.referredCreators.map(rc => {
+                                                                const isApproved = rc.profileStatus === 'approved';
+                                                                return (
+                                                                    <div 
+                                                                        key={rc.uid}
+                                                                        onClick={() => onSelectCreator(rc)}
+                                                                        className="p-4 bg-zinc-950/60 border border-white/5 hover:border-white/10 hover:bg-zinc-950 rounded-2xl flex items-center justify-between cursor-pointer transition-all group"
+                                                                    >
+                                                                        <div className="flex items-center gap-3 min-w-0">
+                                                                            <div className="w-8 h-8 rounded-lg bg-zinc-900 border border-white/5 overflow-hidden flex items-center justify-center shrink-0">
+                                                                                {rc.profilePicture ? (
+                                                                                    <img src={rc.profilePicture} alt="" className="w-full h-full object-cover" />
+                                                                                ) : (
+                                                                                    <span className="text-[10px] font-black text-white italic">{rc.name?.charAt(0)}</span>
+                                                                                )}
+                                                                            </div>
+                                                                            <div className="min-w-0">
+                                                                                <h6 className="text-xs font-bold text-white uppercase tracking-tight truncate leading-tight group-hover:text-neon-pink transition-colors">{rc.name}</h6>
+                                                                                <p className="text-[8px] text-gray-500 uppercase tracking-widest mt-0.5 truncate">@{rc.instagram || 'N/A'}</p>
+                                                                            </div>
+                                                                        </div>
+                                                                        <div className={cn(
+                                                                            "px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest border shrink-0",
+                                                                            isApproved ? "bg-neon-green/10 text-neon-green border-neon-green/20" : "bg-yellow-500/10 text-yellow-500 border-yellow-500/20"
+                                                                        )}>
+                                                                            {isApproved ? "Verified" : "Pending"}
+                                                                        </div>
+                                                                    </div>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        )}
+                                    </React.Fragment>
+                                );
+                            })}
+                            {filteredLeaderboard.length === 0 && (
+                                <tr>
+                                    <td colSpan={5} className="py-20 text-center">
+                                        <Trophy size={48} className="text-gray-700 mx-auto mb-4 animate-pulse" />
+                                        <h4 className="text-lg font-black text-gray-500 uppercase tracking-widest italic">No Leaderboard Data</h4>
+                                        <p className="text-[10px] text-gray-700 uppercase tracking-wider mt-1">No referrals have been made by creators yet.</p>
+                                    </td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 export default CreatorManager;
+
