@@ -1061,7 +1061,7 @@ const CreatorDetailModal = ({ creator, onClose, onUpdateStatus, onDelete, isUpda
                                 <div className="flex flex-wrap justify-center lg:justify-start gap-2 items-center">
                                     <StatusPill status={creator.profileStatus} />
                                     <span className="px-3 py-1 bg-white/5 border border-white/5 rounded-full text-[8px] font-black text-gray-500 tracking-[0.2em] uppercase">
-                                        ID: {creator.uid.slice(0, 8)}
+                                        ID: {creator.creatorId || creator.uid.slice(0, 8).toUpperCase()}
                                     </span>
                                 </div>
                                 <h2 className="text-3xl font-black font-heading tracking-tighter uppercase italic leading-[0.9] text-white break-words">

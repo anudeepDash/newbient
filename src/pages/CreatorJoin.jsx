@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useStore } from '../lib/store';
+import confetti from 'canvas-confetti';
 import { PREDEFINED_CITIES } from '../lib/constants';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
@@ -298,12 +299,14 @@ const CreatorJoin = () => {
         youtube: '',
         twitter: '',
         portfolioInfo: '',
-        profilePicture: ''
+        profilePicture: '',
+        referredBy: ''
     });
 
     const [countryCode, setCountryCode] = useState('+91');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [hasJoined, setHasJoined] = useState(false);
+    const [isReferralCodeLocked, setIsReferralCodeLocked] = useState(false);
 
     // OTP verification states
     const [otpValues, setOtpValues] = useState(['', '', '', '', '', '']);
@@ -362,6 +365,16 @@ const CreatorJoin = () => {
             }
         }
     }, [user, creators, loading, navigate]);
+
+    // Parse referral code from URL parameters
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        const refParam = params.get('ref') || params.get('referral');
+        if (refParam) {
+            setFormData(prev => ({ ...prev, referredBy: refParam }));
+            setIsReferralCodeLocked(true);
+        }
+    }, []);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -549,6 +562,7 @@ const CreatorJoin = () => {
         { id: 'twitter', label: 'X / Website URL', type: 'text', field: 'twitter', placeholder: 'X handle or link (Optional)', description: 'What is your Twitter/X or website link? (Optional)', required: false },
         { id: 'bio', label: 'Professional Bio', type: 'textarea', field: 'bio', placeholder: 'Describe your content niche and why brands should collaborate with you...', description: 'Tell us about yourself (Bio)', required: true },
         { id: 'profilePicture', label: 'Profile Picture', type: 'image', field: 'profilePicture', description: 'Upload your profile picture', required: false },
+        { id: 'referredBy', label: 'Referral Code', type: 'text', field: 'referredBy', placeholder: 'UID or Username of referrer (Optional)', description: 'Were you referred by another creator? (Optional)', required: false },
         { id: 'submit', label: 'Review & Submit', type: 'submit' }
     ];
 
@@ -667,6 +681,15 @@ const CreatorJoin = () => {
                 isPhoneVerified: true
             });
             setHasJoined(true);
+            try {
+                confetti({
+                    particleCount: 150,
+                    spread: 80,
+                    origin: { y: 0.6 }
+                });
+            } catch (confettiErr) {
+                console.error("Confetti launch failed:", confettiErr);
+            }
         } catch (error) {
             console.error("Error joining creator hub:", error);
             useStore.getState().addToast("Couldn't submit your application. Please try again.", 'error');
@@ -776,7 +799,7 @@ const CreatorJoin = () => {
 
                                                 <button 
                                                     onClick={() => setCurrentQuestionIndex(1)}
-                                                    className="h-16 px-12 rounded-2xl bg-white text-black font-black font-heading uppercase tracking-[0.2em] text-xs hover:bg-neon-blue hover:scale-105 active:scale-95 transition-all flex items-center gap-3 mx-auto shadow-2xl"
+                                                    className="h-14 sm:h-16 px-8 sm:px-12 rounded-xl sm:rounded-2xl bg-white text-black font-black font-heading uppercase tracking-[0.2em] text-xs hover:bg-neon-blue hover:scale-105 active:scale-95 transition-all flex items-center gap-3 mx-auto shadow-2xl"
                                                 >
                                                     Get Started <ArrowRight size={16} />
                                                 </button>
@@ -797,11 +820,21 @@ const CreatorJoin = () => {
                                                         value={formData[currentQuestion.field]} 
                                                         onChange={handleChange} 
                                                         placeholder={currentQuestion.placeholder} 
-                                                        className="h-16 sm:h-20 bg-white/[0.02] border-white/10 rounded-2xl text-lg sm:text-xl font-bold px-6 sm:px-8 focus:border-neon-blue" 
-                                                        autoFocus
+                                                        className="h-16 sm:h-20 bg-white/[0.02] border-white/10 rounded-2xl text-lg sm:text-xl font-bold px-6 sm:px-8 focus:border-neon-blue disabled:opacity-60 disabled:cursor-not-allowed" 
+                                                        autoFocus={!(currentQuestion.field === 'referredBy' && isReferralCodeLocked)}
+                                                        disabled={currentQuestion.field === 'referredBy' && isReferralCodeLocked}
                                                     />
-                                                    <span className="absolute right-6 top-1/2 -translate-y-1/2 text-[9px] font-bold text-gray-500 uppercase tracking-widest hidden sm:inline">press Enter ↵</span>
+                                                    {currentQuestion.field === 'referredBy' && isReferralCodeLocked ? (
+                                                        <span className="absolute right-6 top-1/2 -translate-y-1/2 text-[9px] font-black text-neon-blue uppercase tracking-widest">LOCKED 🔒</span>
+                                                    ) : (
+                                                        <span className="absolute right-6 top-1/2 -translate-y-1/2 text-[9px] font-bold text-gray-500 uppercase tracking-widest hidden sm:inline">press Enter ↵</span>
+                                                    )}
                                                 </div>
+                                                {currentQuestion.field === 'referredBy' && isReferralCodeLocked && (
+                                                    <p className="text-[10px] font-bold text-neon-blue uppercase tracking-widest mt-1 pl-1">
+                                                        This referral code was loaded from your invite link and cannot be changed.
+                                                    </p>
+                                                )}
                                             </div>
                                         )}
 
@@ -905,7 +938,7 @@ const CreatorJoin = () => {
                                                                 type="button"
                                                                 onClick={handleSendOTP}
                                                                 disabled={isSendingOtp || !formData.phone}
-                                                                className="h-16 px-10 rounded-xl bg-neon-blue text-black font-black uppercase tracking-widest text-xs flex items-center justify-center gap-3 hover:scale-105 active:scale-95 transition-all disabled:opacity-50"
+                                                                className="h-14 sm:h-16 px-6 sm:px-10 rounded-lg sm:rounded-xl bg-neon-blue text-black font-black uppercase tracking-widest text-xs flex items-center justify-center gap-3 hover:scale-105 active:scale-95 transition-all disabled:opacity-50"
                                                             >
                                                                 {isSendingOtp ? <LoadingSpinner size="xs" color="black" /> : 'Send OTP Code'}
                                                             </button>
@@ -959,7 +992,7 @@ const CreatorJoin = () => {
                                                                         type="button"
                                                                         onClick={handleVerifyOTP}
                                                                         disabled={isVerifyingOtp || otpValues.join('').length !== 6}
-                                                                        className="h-16 px-10 rounded-xl bg-neon-pink text-black font-black uppercase tracking-widest text-xs flex items-center justify-center gap-3 hover:scale-105 active:scale-95 transition-all disabled:opacity-30"
+                                                                        className="h-14 sm:h-16 px-6 sm:px-10 rounded-lg sm:rounded-xl bg-neon-pink text-black font-black uppercase tracking-widest text-xs flex items-center justify-center gap-3 hover:scale-105 active:scale-95 transition-all disabled:opacity-30"
                                                                     >
                                                                         {isVerifyingOtp ? <LoadingSpinner size="xs" color="black" /> : 'Confirm Code'}
                                                                     </button>
@@ -1191,12 +1224,29 @@ const CreatorJoin = () => {
                                                         <p className="text-[9px] font-black text-gray-600 uppercase tracking-widest">Instagram</p>
                                                         <p className="font-bold text-neon-pink text-base truncate">{formData.instagram} ({Number(formData.instagramFollowers).toLocaleString()} followers)</p>
                                                     </div>
+                                                    {(() => {
+                                                        if (!formData.referredBy) return null;
+                                                        const referrer = creators.find(c => 
+                                                            c.uid === formData.referredBy.trim() || 
+                                                            (c.creatorId && c.creatorId.toUpperCase() === formData.referredBy.trim().toUpperCase()) ||
+                                                            (c.instagram && c.instagram.toLowerCase() === formData.referredBy.trim().toLowerCase())
+                                                        );
+                                                        const displayValue = referrer 
+                                                            ? `${referrer.displayName || referrer.name || 'Creator'} (@${referrer.instagram || 'no_handle'})`
+                                                            : formData.referredBy;
+                                                        return (
+                                                            <div className="space-y-1.5 p-3 rounded-xl hover:bg-white/[0.02] transition-all">
+                                                                <p className="text-[9px] font-black text-gray-600 uppercase tracking-widest">Referred By</p>
+                                                                <p className="font-bold text-neon-blue text-base truncate">{displayValue}</p>
+                                                            </div>
+                                                        );
+                                                    })()}
                                                 </div>
 
                                                 <button 
                                                     onClick={handleSubmit} 
                                                     disabled={isSubmitting}
-                                                    className="w-full h-20 rounded-2xl font-black font-heading uppercase tracking-[0.2em] bg-neon-blue text-black hover:shadow-[0_0_50px_rgba(0,240,255,0.4)] transition-all flex items-center justify-center gap-4 disabled:opacity-50"
+                                                    className="w-full h-16 sm:h-20 rounded-2xl font-black font-heading uppercase tracking-[0.2em] bg-neon-blue text-black hover:shadow-[0_0_50px_rgba(0,240,255,0.4)] transition-all flex items-center justify-center gap-4 disabled:opacity-50"
                                                 >
                                                     {isSubmitting ? <LoadingSpinner size="xs" color="black" /> : 'Finalize Registration'}
                                                     {!isSubmitting && <ArrowRight size={20} />}
@@ -1223,7 +1273,7 @@ const CreatorJoin = () => {
                                             type="button"
                                             onClick={handleNext}
                                             disabled={currentQuestion.type === 'phone' && !isPhoneVerified}
-                                            className="h-16 px-10 rounded-2xl text-[10px] font-black font-heading uppercase tracking-[0.2em] bg-white text-black hover:bg-neon-blue hover:scale-105 active:scale-95 transition-all flex items-center gap-3 disabled:opacity-30 disabled:pointer-events-none"
+                                            className="h-14 sm:h-16 px-6 sm:px-10 rounded-xl sm:rounded-2xl text-[10px] font-black font-heading uppercase tracking-[0.2em] bg-white text-black hover:bg-neon-blue hover:scale-105 active:scale-95 transition-all flex items-center gap-3 disabled:opacity-30 disabled:pointer-events-none"
                                         >
                                             Continue <ArrowRight size={14} />
                                         </button>

@@ -1585,12 +1585,48 @@ export const useStore = create((set, get) => ({
 
     // Creators / Influencers
     addCreator: async (creator, sendWelcome = true) => {
-        await setDoc(doc(db, 'creators', creator.uid), { ...creator, createdAt: new Date().toISOString() });
+        const creatorId = (creator.creatorId || creator.uid.slice(0, 8)).toUpperCase();
+        const finalCreator = {
+            ...creator,
+            creatorId,
+            createdAt: new Date().toISOString()
+        };
+
+        await setDoc(doc(db, 'creators', creator.uid), finalCreator);
+
+        if (creator.referredBy) {
+            const referredBy = creator.referredBy.trim();
+            const { creators } = get();
+            
+            const referrer = creators.find(c => 
+                c.uid === referredBy || 
+                (c.creatorId && c.creatorId.toUpperCase() === referredBy.toUpperCase()) ||
+                (c.instagram && c.instagram.toLowerCase() === referredBy.toLowerCase())
+            );
+
+            if (referrer) {
+                try {
+                    await addDoc(collection(db, 'notifications'), {
+                        userId: referrer.uid,
+                        title: "New Creator Referral! 🚀",
+                        message: `${creator.displayName || creator.name || 'A creator'} joined Newbi using your referral link!`,
+                        type: "info",
+                        isRead: false,
+                        createdAt: new Date().toISOString()
+                    });
+                } catch (notiErr) {
+                    console.error("Failed to add referral notification:", notiErr);
+                }
+            }
+        }
+
         if (sendWelcome && creator.email) {
             sendCreatorWelcomeEmail(creator.email, creator.displayName || creator.name || 'Creator')
                 .catch(err => console.error("Error sending welcome email to creator:", err));
         }
     },
+
+
     updateCreator: async (uid, updates) => {
         const creatorRef = doc(db, 'creators', uid);
         let prevStatus = null;
