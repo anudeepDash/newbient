@@ -140,7 +140,7 @@ const EventHubModal = ({ event, isOpen, onClose }) => {
                                     </div>
 
                                     {/* Unified Scrolling content */}
-                                    <div className="flex-1 p-6 md:p-8 space-y-8 text-left pb-28">
+                                    <div className="flex-1 p-6 md:p-8 space-y-8 text-left pb-28 md:pb-8">
                                         {/* Meta Row: Date, Location, Share button */}
                                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-white/5">
                                             <div className="flex flex-wrap gap-6 items-center">
@@ -233,6 +233,37 @@ const EventHubModal = ({ event, isOpen, onClose }) => {
 
                                             {/* Right ticketing & opportunities panel */}
                                             <div className="md:col-span-5 space-y-6">
+                                                {/* Inline RSVP / Booking Card - PC Only */}
+                                                {(hasInternalOps || hasExternalLinks) && (
+                                                    <div className="hidden md:block p-6 bg-white/[0.02] border border-white/10 rounded-2xl space-y-4">
+                                                        <div className="text-left">
+                                                            <p className="text-[8px] font-black text-neon-green uppercase tracking-widest mb-1">
+                                                                {event.isTicketed ? "Tickets Available" : (event.isGuestlistEnabled ? "Guestlist Open" : "External Booking")}
+                                                            </p>
+                                                            <p className="text-sm font-bold text-white leading-tight">{event.title}</p>
+                                                        </div>
+                                                        {hasInternalOps ? (
+                                                            <button 
+                                                                onClick={handleInternalAction}
+                                                                className="w-full h-12 rounded-xl bg-white text-black font-black uppercase tracking-[0.15em] text-xs flex items-center justify-center gap-2 hover:bg-neon-green active:scale-95 transition-all shadow-lg shrink-0"
+                                                            >
+                                                                <Ticket size={16} />
+                                                                <span>{event.isTicketed ? "Book Tickets" : "Register / RSVP"}</span>
+                                                            </button>
+                                                        ) : (
+                                                            <a 
+                                                                href={event.externalTicketingLinks[0]?.url}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="w-full h-12 rounded-xl bg-white text-black font-black uppercase tracking-[0.15em] text-xs flex items-center justify-center gap-2 hover:bg-neon-green active:scale-95 transition-all shadow-lg shrink-0"
+                                                            >
+                                                                <ExternalLink size={16} />
+                                                                <span>{event.externalTicketingLinks[0]?.platform || "Book Now"}</span>
+                                                            </a>
+                                                        )}
+                                                    </div>
+                                                )}
+
                                                 {/* Opportunities */}
                                                 {(volunteerGig || campaign || artistForm) && (
                                                     <div className="space-y-4">
@@ -284,9 +315,9 @@ const EventHubModal = ({ event, isOpen, onClose }) => {
                                         </div>
                                     </div>
 
-                                    {/* Sticky Bottom Bar for mobile & desktop */}
+                                    {/* Sticky Bottom Bar for mobile only */}
                                     {(hasInternalOps || hasExternalLinks) && (
-                                        <div className="sticky bottom-0 left-0 right-0 p-4 sm:p-6 bg-zinc-950/90 border-t border-white/10 backdrop-blur-3xl z-40 flex items-center justify-between gap-4 shrink-0 shadow-[0_-10px_30px_rgba(0,0,0,0.8)] md:rounded-b-3xl">
+                                        <div className="sticky bottom-0 left-0 right-0 p-4 sm:p-6 bg-zinc-950/90 border-t border-white/10 backdrop-blur-3xl z-40 flex items-center justify-between gap-4 shrink-0 shadow-[0_-10px_30px_rgba(0,0,0,0.8)] md:hidden">
                                             <div className="text-left min-w-0">
                                                 <p className="text-[8px] font-black text-zinc-500 uppercase tracking-widest mb-0.5">
                                                     {event.isTicketed ? "Tickets Available" : (event.isGuestlistEnabled ? "Guestlist Open" : "External Booking")}
