@@ -62,7 +62,7 @@ const DashboardSection = ({ title, gradient, children, icon }) => (
                 <div className={cn("p-2.5 rounded-xl bg-white/5 border border-white/10 text-white/40 transition-colors duration-500", gradient.includes('neon-green') ? 'group-hover:text-neon-green' : (gradient.includes('neon-pink') ? 'group-hover:text-neon-pink' : 'group-hover:text-neon-blue'))}>
                     {icon}
                 </div>
-                <h2 className={cn("text-xl md:text-3xl font-black font-heading tracking-tighter uppercase italic bg-clip-text text-transparent bg-gradient-to-r pr-6", gradient)}>
+                <h2 className={cn("text-xl md:text-3xl font-extrabold font-heading tracking-tight bg-clip-text text-transparent bg-gradient-to-r pr-6", gradient)}>
                     {title}
                 </h2>
             </div>
@@ -122,12 +122,12 @@ const ControlCard = ({ title, desc, icon: IconComponent, logo, color, link, coun
         <Link to={(isHidden || comingSoon) ? '#' : (link || '#')} className={cn("group relative block h-full", (isHidden || comingSoon) && "pointer-events-none")}>
             {/* Glow Effect */}
             <div className={cn(
-                "absolute inset-0 rounded-3xl md:rounded-[2.5rem] opacity-0 group-hover:opacity-15 transition-all duration-700 blur-2xl",
+                "absolute inset-0 rounded-3xl opacity-0 group-hover:opacity-15 transition-all duration-700 blur-2xl",
                 getGlowColor()
             )} />
         
             <div className={cn(
-                "relative p-5 sm:p-8 md:p-10 h-full border transition-all duration-500 rounded-3xl md:rounded-[2.5rem] flex flex-col items-center text-center group overflow-hidden backdrop-blur-3xl shadow-[0_20px_50px_rgba(0,0,0,0.5)]",
+                "relative p-5 sm:p-8 md:p-10 h-full border transition-all duration-500 rounded-3xl flex flex-col items-center text-center group overflow-hidden backdrop-blur-3xl shadow-[0_20px_50px_rgba(0,0,0,0.5)]",
                 isHidden 
                     ? "bg-black/40 border-white/5 opacity-40 grayscale" 
                     : (comingSoon 
@@ -168,7 +168,7 @@ const ControlCard = ({ title, desc, icon: IconComponent, logo, color, link, coun
                     )}
                 </div>
 
-                <h3 className="text-base sm:text-lg md:text-2xl font-black font-heading text-white mb-2 md:mb-3 tracking-tighter uppercase italic group-hover:text-neon-green transition-colors">{title}</h3>
+                <h3 className="text-base sm:text-lg md:text-xl font-extrabold font-heading text-white mb-2 md:mb-3 tracking-tight group-hover:text-neon-green transition-colors">{title}</h3>
                 <p className="text-gray-500 text-[9px] md:text-[11px] font-bold leading-relaxed px-2 uppercase tracking-wide opacity-80 group-hover:opacity-100 transition-opacity">{desc}</p>
                 
                 {count !== undefined && (
@@ -198,7 +198,7 @@ const AuthSection = ({ email, setEmail, password, setPassword, isResetting, setI
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-neon-pink/10 blur-[150px] rounded-full animate-pulse" />
         <div className="absolute top-[20%] right-[20%] w-[300px] h-[300px] bg-neon-blue/5 blur-[120px] rounded-full animate-pulse delay-1000" />
         
-        <div className="p-8 sm:p-12 w-full max-w-lg border border-white/[0.08] bg-zinc-950/35 backdrop-blur-3xl rounded-[2.5rem] sm:rounded-[3.5rem] relative z-10 shadow-[0_50px_100px_rgba(0,0,0,0.9)] overflow-hidden">
+        <div className="p-8 sm:p-12 w-full max-w-lg border border-white/5 bg-zinc-950/35 backdrop-blur-3xl rounded-3xl relative z-10 shadow-[0_50px_100px_rgba(0,0,0,0.9)] overflow-hidden">
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-neon-pink to-transparent" />
             
             <div className="text-center mb-8 sm:mb-12">
@@ -206,8 +206,8 @@ const AuthSection = ({ email, setEmail, password, setPassword, isResetting, setI
                     <div className="absolute inset-0 bg-neon-pink/20 blur-xl opacity-0 group-hover:opacity-100 transition-opacity" />
                     <Shield size={32} className="text-neon-pink relative z-10 sm:w-10 sm:h-10" />
                 </div>
-                <h1 className="text-2xl sm:text-4xl lg:text-5xl font-black font-heading text-white uppercase tracking-tighter italic leading-none">
-                    {isResetting ? 'RESTORE ACCESS' : (isRegistering ? 'NEW CLEARANCE' : 'SECURE LOGIN')}
+                <h1 className="text-2xl sm:text-3xl font-extrabold font-heading text-white tracking-tight leading-none">
+                    {isResetting ? 'Restore Access' : (isRegistering ? 'New Clearance' : 'Secure Login')}
                 </h1>
                 <p className="text-gray-500 text-[8px] sm:text-[10px] font-black uppercase tracking-[0.4em] mt-3 sm:mt-4">Command Staff Authorization Required</p>
             </div>
@@ -238,7 +238,7 @@ const BootstrapAlert = ({ onClaim }) => (
     <motion.div 
         initial={{ opacity: 0, y: 20 }} 
         animate={{ opacity: 1, y: 0 }} 
-        className="mb-16 p-10 bg-gradient-to-r from-neon-green/10 via-black/40 to-black/60 border border-neon-green/30 rounded-[3rem] flex flex-col lg:flex-row items-center justify-between gap-10 backdrop-blur-3xl relative overflow-hidden shadow-2xl"
+        className="mb-16 p-10 bg-gradient-to-r from-neon-green/10 via-black/40 to-black/60 border border-neon-green/30 rounded-3xl flex flex-col lg:flex-row items-center justify-between gap-10 backdrop-blur-3xl relative overflow-hidden shadow-2xl"
     >
         <div className="absolute inset-0 bg-neon-green/5 blur-[100px] pointer-events-none" />
         <div className="flex items-center gap-8 relative z-10">
@@ -246,7 +246,7 @@ const BootstrapAlert = ({ onClaim }) => (
                 <Sparkles size={40} className="animate-pulse" />
             </div>
             <div>
-                <h2 className="text-2xl md:text-3xl font-black font-heading text-white uppercase tracking-tighter italic">System Root Uninitialized</h2>
+                <h2 className="text-2xl md:text-3xl font-extrabold font-heading text-white tracking-tight">System Root Uninitialized</h2>
                 <p className="text-gray-400 text-sm mt-2 font-medium uppercase tracking-widest">No primary administrator detected. Claim <span className="text-neon-green">SUPER_ADMIN</span> status to begin.</p>
             </div>
         </div>
@@ -387,7 +387,7 @@ const Dashboard = () => {
                             </div>
                         </div>
 
-                        <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black font-heading tracking-tighter uppercase italic leading-tight">
+                        <h1 className="text-2xl sm:text-3xl md:text-5xl font-extrabold font-heading tracking-tight leading-tight">
                             OPERATIONS <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-green via-white to-neon-blue">DASHBOARD.</span>
                         </h1>
 
@@ -405,7 +405,7 @@ const Dashboard = () => {
                     <motion.div 
                         initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
-                        className="flex items-center gap-2 bg-[#0a0a0a]/60 border border-white/10 p-2 rounded-[2.5rem] backdrop-blur-3xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] self-start xl:self-auto"
+                        className="flex items-center gap-2 bg-[#0a0a0a]/60 border border-white/10 p-2 rounded-3xl backdrop-blur-3xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] self-start xl:self-auto"
                     >
                         <div className="flex items-center gap-1">
                             {user.role === 'developer' && (
@@ -467,14 +467,14 @@ const Dashboard = () => {
                                 className="group relative min-w-[85vw] md:min-w-0 snap-center"
                             >
                                 <Link to={stat.link}>
-                                    <div className={cn("absolute -inset-px rounded-3xl md:rounded-[2.5rem] opacity-0 group-hover:opacity-15 transition-opacity blur-xl bg-gradient-to-br", 
+                                    <div className={cn("absolute -inset-px rounded-3xl opacity-0 group-hover:opacity-15 transition-opacity blur-xl bg-gradient-to-br", 
                                         stat.color === 'neon-green' ? 'from-neon-green to-emerald-500' : 
                                         (stat.color === 'neon-blue' ? 'from-neon-blue to-cyan-500' : 
                                         (stat.color === 'neon-purple' ? 'from-neon-purple to-indigo-500' : 
                                         (stat.color === 'neon-pink' ? 'from-neon-pink to-purple-500' : 'from-yellow-400 to-orange-500')))
                                     )} />
                                     <div className={cn(
-                                        "p-6 md:p-8 h-full bg-zinc-950/35 backdrop-blur-3xl border border-white/[0.08] transition-all duration-500 rounded-3xl md:rounded-[2.5rem] flex flex-col justify-between overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.5)]",
+                                        "p-6 md:p-8 h-full bg-zinc-950/35 backdrop-blur-3xl border border-white/5 transition-all duration-500 rounded-3xl flex flex-col justify-between overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.5)]",
                                         hoverBorder
                                     )}>
                                         <div className="flex items-start justify-between mb-8">
@@ -488,7 +488,7 @@ const Dashboard = () => {
                                             </div>
                                         </div>
                                         <div>
-                                            <h3 className="text-3xl md:text-5xl font-black font-heading tracking-tighter text-white mb-2 leading-none uppercase italic">{stat.value}</h3>
+                                            <h3 className="text-3xl md:text-5xl font-extrabold font-heading tracking-tight text-white mb-2 leading-none">{stat.value}</h3>
                                             <p className="text-gray-500 text-[9px] font-black uppercase tracking-[0.3em]">{stat.label}</p>
                                             <div className="mt-6 pt-6 border-t border-white/5 flex items-center justify-between">
                                                 <p className="text-gray-600 text-[9px] font-bold uppercase tracking-widest">{stat.detail}</p>

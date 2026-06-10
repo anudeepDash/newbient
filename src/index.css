@@ -12,7 +12,7 @@
 
 @layer utilities {
   .glass-card {
-    @apply bg-glass backdrop-blur-md border border-white/10 rounded-xl;
+    @apply bg-zinc-950/35 backdrop-blur-3xl border border-white/5 rounded-3xl;
   }
 
   .text-glow-green {
@@ -664,8 +664,8 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover {
 .admin-hub-content-container div[class*="bg-zinc-900"] {
   background: rgba(9, 9, 11, 0.35) !important;
   backdrop-filter: blur(24px) !important;
-  border: 1px solid rgba(255, 255, 255, 0.08) !important;
-  border-radius: 2rem !important;
+  border: 1px solid rgba(255, 255, 255, 0.05) !important;
+  border-radius: 1.5rem !important;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5) !important;
 }
 
@@ -678,11 +678,11 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover {
 .admin-hub-content-container input[type="time"],
 .admin-hub-content-container select,
 .admin-hub-content-container textarea {
-  background: rgba(0, 0, 0, 0.4) !important;
-  border: 1px solid rgba(255, 255, 255, 0.08) !important;
-  border-radius: 1rem !important;
+  background: rgba(2, 6, 23, 0.4) !important;
+  border: 1px solid rgba(255, 255, 255, 0.05) !important;
+  border-radius: 0.75rem !important;
   color: #ffffff !important;
-  font-size: 11px !important;
+  font-size: 13px !important;
   font-weight: 600 !important;
   padding: 0.75rem 1rem !important;
   transition: all 0.3s ease !important;
@@ -691,8 +691,9 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover {
 .admin-hub-content-container input:focus,
 .admin-hub-content-container select:focus,
 .admin-hub-content-container textarea:focus {
-  border-color: rgba(0, 240, 255, 0.4) !important;
-  box-shadow: 0 0 15px rgba(0, 240, 255, 0.05) !important;
+  border-color: rgba(148, 163, 184, 0.4) !important;
+  box-shadow: 0 0 15px rgba(148, 163, 184, 0.05) !important;
+  background: rgba(2, 6, 23, 0.6) !important;
   outline: none !important;
 }
 
@@ -706,9 +707,10 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover {
 .admin-hub-content-container table th {
   padding: 1.25rem 1.5rem !important;
   font-size: 9px !important;
-  font-weight: 900 !important;
+  font-weight: 700 !important;
+  font-family: 'Outfit', sans-serif !important;
   text-transform: uppercase !important;
-  letter-spacing: 0.25em !important;
+  letter-spacing: 0.2em !important;
   color: #9ca3af !important;
   border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
 }
@@ -730,11 +732,9 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover {
 /* Upgrade buttons to capsule pills */
 .admin-hub-content-container button,
 .admin-hub-content-container input[type="submit"] {
-  border-radius: 9999px !important;
+  border-radius: 0.75rem !important;
   font-family: 'Outfit', sans-serif !important;
-  font-weight: 900 !important;
-  text-transform: uppercase !important;
-  letter-spacing: 0.15em !important;
+  font-weight: 700 !important;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 
@@ -761,10 +761,10 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover {
 .admin-hub-content-container h3,
 .admin-hub-content-container h4 {
   font-family: 'Outfit', sans-serif !important;
-  font-weight: 900 !important;
-  text-transform: uppercase !important;
-  font-style: italic !important;
-  letter-spacing: 0.05em !important;
+  font-weight: 800 !important;
+  text-transform: none !important;
+  font-style: normal !important;
+  letter-spacing: -0.02em !important;
 }
 
 
