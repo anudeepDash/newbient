@@ -232,8 +232,8 @@ const UnifiedGuestlistModal = ({ isOpen, onClose, guestlist }) => {
                         transition={{ type: "spring", stiffness: 250, damping: 30 }}
                         className={cn(
                             "relative w-full overflow-hidden bg-black/40 border-white/5 shadow-[0_50px_100px_rgba(0,0,0,0.9)] backdrop-blur-3xl flex flex-col sm:flex-row",
-                            "md:max-w-3xl md:h-[480px] md:rounded-[2.5rem] md:border", // desktop: Balanced 4:5 card
-                            "h-[92%] rounded-t-[3.5rem] border-t" // mobile: High bottom sheet
+                            "md:max-w-3xl md:h-[480px] md:rounded-3xl md:border", // desktop: Balanced 4:5 card
+                            "h-[92%] rounded-t-3xl border-t" // mobile: High bottom sheet
                         )}
                     >
                         {/* High-Impact Visual Sidebar / Header Image */}
@@ -258,7 +258,7 @@ const UnifiedGuestlistModal = ({ isOpen, onClose, guestlist }) => {
                             <div className="absolute inset-0 p-8 sm:p-12 flex flex-col justify-end gap-4 sm:gap-8">
                                 <div className="space-y-4">
                                     <div 
-                                        className="inline-flex items-center gap-3 px-4 py-2 rounded-full border text-[9px] font-black uppercase tracking-[0.3em]"
+                                        className="inline-flex items-center gap-3 px-4 py-2 rounded-xl border text-[9px] font-black uppercase tracking-[0.3em]"
                                         style={{ 
                                             backgroundColor: `${guestlist.highlightColor || '#2ebfff'}10`,
                                             borderColor: `${guestlist.highlightColor || '#2ebfff'}20`,
@@ -310,12 +310,12 @@ const UnifiedGuestlistModal = ({ isOpen, onClose, guestlist }) => {
 
                                             {/* Unified Selection Tool */}
                                             <div className="space-y-8">
-                                                <div className="p-1.5 bg-black/40 rounded-[3rem] border border-white/5 flex items-center justify-between gap-4">
+                                                <div className="p-1.5 bg-black/40 rounded-3xl border border-white/5 flex items-center justify-between gap-4">
                                                     <button 
                                                         disabled={!canDecrement} 
                                                         onClick={() => setGuestsCount(g => g - 1)} 
                                                         className={cn(
-                                                            "w-16 h-16 sm:w-20 sm:h-20 rounded-full flex items-center justify-center transition-all text-xl",
+                                                            "w-16 h-16 sm:w-20 sm:h-20 rounded-2xl flex items-center justify-center transition-all text-xl",
                                                             canDecrement ? "bg-white/5 text-white hover:bg-white/10" : "bg-transparent text-zinc-900 cursor-not-allowed"
                                                         )}
                                                     >
@@ -329,7 +329,7 @@ const UnifiedGuestlistModal = ({ isOpen, onClose, guestlist }) => {
                                                         disabled={!canIncrement} 
                                                         onClick={() => setGuestsCount(g => g + 1)} 
                                                         className={cn(
-                                                            "w-16 h-16 sm:w-20 sm:h-20 rounded-full flex items-center justify-center transition-all text-xl",
+                                                            "w-16 h-16 sm:w-20 sm:h-20 rounded-2xl flex items-center justify-center transition-all text-xl",
                                                             canIncrement ? "text-black hover:scale-105" : "bg-transparent text-zinc-900 cursor-not-allowed"
                                                         )}
                                                         style={{ 
@@ -355,7 +355,7 @@ const UnifiedGuestlistModal = ({ isOpen, onClose, guestlist }) => {
                                             <Button 
                                                 disabled={isFull} 
                                                 onClick={() => setStep('details')} 
-                                                className="w-full h-20 sm:h-24 rounded-[2.5rem] bg-white text-black font-black uppercase italic tracking-[0.3em] text-[10px] sm:text-xs hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-4 group"
+                                                className="w-full h-20 sm:h-24 rounded-2xl bg-white text-black font-black uppercase italic tracking-[0.3em] text-[10px] sm:text-xs hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-4 group"
                                             >
                                                 {isFull ? 'FULL' : 'ENTER DETAILS'} <ArrowRight size={18} className="group-hover:translate-x-2 transition-transform" />
                                             </Button>
@@ -365,7 +365,7 @@ const UnifiedGuestlistModal = ({ isOpen, onClose, guestlist }) => {
                                     {step === 'details' && (
                                         <motion.div key="details" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-8 sm:space-y-10">
                                             <div className="flex items-center gap-4">
-                                                <button onClick={() => setStep('selection')} className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-gray-500 hover:text-white transition-colors">
+                                                <button onClick={() => setStep('selection')} className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-gray-500 hover:text-white transition-colors">
                                                     <ChevronLeft size={20} />
                                                 </button>
                                                 <h3 className="text-3xl sm:text-4xl font-black font-heading text-white italic tracking-tighter uppercase leading-[0.9]">
@@ -377,7 +377,7 @@ const UnifiedGuestlistModal = ({ isOpen, onClose, guestlist }) => {
                                                 <div className="grid grid-cols-1 gap-5">
                                                     <div className="space-y-2">
                                                         <label className="text-[8px] font-black text-gray-600 uppercase tracking-widest pl-3">Full Legal Identity</label>
-                                                        <input required name="name" value={formData.name} onChange={handleInputChange} placeholder="ALEX_WAYNE" className="w-full h-16 sm:h-20 bg-white/5 border border-white/5 rounded-[2rem] px-8 text-xs font-black uppercase tracking-widest focus:border-neon-blue/40 focus:bg-white/10 outline-none transition-all placeholder:text-gray-800 italic" />
+                                                        <input required name="name" value={formData.name} onChange={handleInputChange} placeholder="ALEX_WAYNE" className="w-full h-16 sm:h-20 bg-white/5 border border-white/5 rounded-2xl px-8 text-xs font-black uppercase tracking-widest focus:border-neon-blue/40 focus:bg-white/10 outline-none transition-all placeholder:text-gray-800 italic" />
                                                     </div>
                                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                                                         <div className="space-y-2">
@@ -391,7 +391,7 @@ const UnifiedGuestlistModal = ({ isOpen, onClose, guestlist }) => {
                                                     </div>
                                                 </div>
 
-                                                <Button type="submit" className="w-full h-20 sm:h-24 rounded-[2.5rem] bg-neon-blue text-black font-black uppercase italic tracking-[0.3em] text-[10px] sm:text-xs hover:scale-[1.02] active:scale-95 transition-all shadow-[0_20px_50px_rgba(0,255,255,0.2)] flex items-center justify-center gap-4 group">
+                                                <Button type="submit" className="w-full h-20 sm:h-24 rounded-2xl bg-neon-blue text-black font-black uppercase italic tracking-[0.3em] text-[10px] sm:text-xs hover:scale-[1.02] active:scale-95 transition-all shadow-[0_20px_50px_rgba(0,255,255,0.2)] flex items-center justify-center gap-4 group">
                                                     REGISTER NOW <ArrowRight size={18} className="group-hover:translate-x-2 transition-transform" />
                                                 </Button>
                                             </form>
@@ -507,8 +507,8 @@ const UnifiedGuestlistModal = ({ isOpen, onClose, guestlist }) => {
                                                                 </div>
 
                                                                 {/* QR and Code */}
-                                                                <div className="flex items-center gap-16 p-12 bg-zinc-900/50 rounded-[4rem] border border-white/5">
-                                                                    <div className="bg-white p-8 rounded-[3rem]">
+                                                                <div className="flex items-center gap-16 p-12 bg-zinc-900/50 rounded-3xl border border-white/5">
+                                                                    <div className="bg-white p-8 rounded-2xl">
                                                                         <img 
                                                                             src={`https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(bookingRef)}`} 
                                                                             alt="QR" 

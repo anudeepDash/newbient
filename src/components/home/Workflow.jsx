@@ -21,9 +21,9 @@ const Workflow = () => {
                         initial={{ opacity: 0, y: 20 }}
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true }}
-                        className="font-heading text-4xl md:text-5xl font-bold mb-4 tracking-tight uppercase text-white"
+                        className="font-heading text-4xl md:text-5xl font-extrabold mb-4 tracking-tight text-white"
                     >
-                        Want us for your <span className="text-neon-green">event?</span>
+                        Want Us For Your <span className="text-neon-green">Event</span>
                     </motion.h2>
                     <p className="text-gray-400 max-w-2xl mx-auto">
                         From initial consultation to post-event success. Our proven process ensures flawless execution.

@@ -1,150 +1,208 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import Shield from 'lucide-react/dist/esm/icons/shield';
-import FileText from 'lucide-react/dist/esm/icons/file-text';
-import Scale from 'lucide-react/dist/esm/icons/scale';
-import Clock from 'lucide-react/dist/esm/icons/clock';
-import AlertCircle from 'lucide-react/dist/esm/icons/alert-circle';
-import CreditCard from 'lucide-react/dist/esm/icons/credit-card';
-import ExternalLink from 'lucide-react/dist/esm/icons/external-link';
-import Gavel from 'lucide-react/dist/esm/icons/gavel';
-import RefreshCw from 'lucide-react/dist/esm/icons/refresh-cw';
+import { 
+    Shield, Scale, FileText, Gavel, CreditCard, 
+    AlertCircle, ExternalLink, RefreshCw, Clock, Key, Users, AlertTriangle
+} from 'lucide-react';
 
 const Terms = () => {
+    const [activeSection, setActiveSection] = useState(null);
+
     const termsList = [
         {
-            icon: <Shield size={24} />,
-            title: "1. Account Responsibility",
-            color: "neon-blue",
-            content: "To access and use the Services, you agree to provide true, accurate and complete information to us during and after registration, and you shall be responsible for all acts done through the use of your registered account."
+            icon: <Key size={22} className="text-neon-blue" />,
+            title: "1. Account Security & Verification",
+            color: "blue",
+            bgGlow: "rgba(59,130,246,0.06)",
+            content: "You are responsible for keeping your account details accurate. To register or perform transactions, you must verify your phone number via SMS or WhatsApp OTP. Bypassing OTP systems or using virtual/throwaway numbers is strictly prohibited and will result in account termination."
         },
         {
-            icon: <AlertCircle size={24} />,
-            title: "2. Information Accuracy",
-            color: "neon-green",
-            content: "Neither we nor any third parties provide any warranty or guarantee as to the accuracy, timeliness, performance, completeness or suitability of the information and materials offered on this website or through the Services, for any specific purpose. You acknowledge that such information and materials may contain inaccuracies or errors and we expressly exclude liability for any such inaccuracies or errors to the fullest extent permitted by law."
+            icon: <CreditCard size={22} className="text-neon-green" />,
+            title: "2. Booking Payments & UTR Matching",
+            color: "green",
+            bgGlow: "rgba(16,185,129,0.06)",
+            content: "When using manual UPI checkout, you must provide the exact 12-digit UTR (Transaction ID) within the payment step. Submitting false, expired, or duplicate UTR codes constitutes fraud and will result in the immediate cancellation of your booking without refund, and potential suspension of your profile."
         },
         {
-            icon: <Scale size={24} />,
-            title: "3. User Risk",
-            color: "neon-pink",
-            content: "Your use of our Services and the website is solely at your own risk and discretion. You are required to independently assess and ensure that the Services meet your requirements."
+            icon: <Users size={22} className="text-neon-pink" />,
+            title: "3. Creator Referrals & Leaderboard Rules",
+            color: "pink",
+            bgGlow: "rgba(236,72,153,0.06)",
+            content: "The Referral Program is designed for genuine creators. Any manipulation of referrals—including registering duplicate accounts, using bot networks, or presenting invalid social handles (Instagram/LinkedIn)—will result in disqualification from the leaderboard and the removal of referral rewards."
         },
         {
-            icon: <FileText size={24} />,
-            title: "4. Proprietary Rights",
+            icon: <FileText size={22} className="text-white" />,
+            title: "4. Intellectual Property Rights",
             color: "white",
-            content: "The contents of the Website and the Services are proprietary to Us and you will not have any authority to claim any intellectual property rights, title, or interest in its contents."
+            bgGlow: "rgba(255,255,255,0.03)",
+            content: "All content, designs, graphics, code, and interfaces on the website and the services are proprietary to Newbi Entertainment. You may not copy, scrape, modify, or repurpose any assets without our express written consent."
         },
         {
-            icon: <Gavel size={24} />,
-            title: "5. Unauthorized Use",
-            color: "neon-blue",
-            content: "You acknowledge that unauthorized use of the Website or the Services may lead to action against you as per these Terms or applicable laws."
+            icon: <Scale size={22} className="text-neon-blue" />,
+            title: "5. Information Accuracy Warranty",
+            color: "blue",
+            bgGlow: "rgba(59,130,246,0.06)",
+            content: "While we strive for accurate details regarding events and creator campaigns, neither we nor any third parties guarantee the complete accuracy, timeliness, or performance of site listings. Listings are subject to modifications without notice."
         },
         {
-            icon: <CreditCard size={24} />,
-            title: "6. Service Charges",
-            color: "neon-green",
-            content: "You agree to pay us the charges associated with availing the Services."
+            icon: <AlertTriangle size={22} className="text-neon-green" />,
+            title: "6. Prohibited Activities",
+            color: "green",
+            bgGlow: "rgba(16,185,129,0.06)",
+            content: "You agree not to use our systems for unlawful purposes, to host spam, or to attack our API endpoints. Disrupting services for other users will result in immediate bans and potential legal reports to local cyber cells."
         },
         {
-            icon: <AlertCircle size={24} />,
-            title: "7. Unlawful Purpose",
-            color: "neon-pink",
-            content: "You agree not to use the website and/ or Services for any purpose that is unlawful, illegal or forbidden by these Terms, or Indian or local laws that might apply to you."
+            icon: <ExternalLink size={22} className="text-neon-pink" />,
+            title: "7. Third-Party Links & Portal Integration",
+            color: "pink",
+            bgGlow: "rgba(236,72,153,0.06)",
+            content: "Our services might redirect you to external payment processors, social sites, or map coordinates. We are not responsible for the privacy practices, content, or transaction compliance of these external portals."
         },
         {
-            icon: <ExternalLink size={24} />,
-            title: "8. Third Party Links",
+            icon: <RefreshCw size={22} className="text-white" />,
+            title: "8. Refunds & Cancellations",
             color: "white",
-            content: "You agree and acknowledge that website and the Services may contain links to other third party websites. On accessing these links, you will be governed by the terms of use, privacy policy and such other policies of such third party websites."
+            bgGlow: "rgba(255,255,255,0.03)",
+            content: "Bookings and tickets are generally non-refundable unless an event is officially cancelled by the organizers. If you are eligible for a refund, it will be processed through the original payment medium within our stipulated window (typically 5-7 business days)."
         },
         {
-            icon: <FileText size={24} />,
-            title: "9. Binding Contract",
-            color: "neon-blue",
-            content: "You understand that upon initiating a transaction for availing the Services you are entering into a legally binding and enforceable contract with the us for the Services."
+            icon: <Clock size={22} className="text-neon-blue" />,
+            title: "9. Force Majeure & Cancellations",
+            color: "blue",
+            bgGlow: "rgba(59,130,246,0.06)",
+            content: "Neither party will be liable for failures to perform duties under these terms due to extreme acts of nature, pandemics, strikes, power outages, or other events beyond reasonable control."
         },
         {
-            icon: <RefreshCw size={24} />,
-            title: "10. Refunds",
-            color: "neon-green",
-            content: "You shall be entitled to claim a refund of the payment made by you in case we are not able to provide the Service. The timelines for such return and refund will be according to the specific Service you have availed or within the time period provided in our policies (as applicable). In case you do not raise a refund claim within the stipulated time, then this would make you ineligible for a refund."
-        },
-        {
-            icon: <Clock size={24} />,
-            title: "11. Force Majeure",
-            color: "neon-pink",
-            content: "Notwithstanding anything contained in these Terms, the parties shall not be liable for any failure to perform an obligation under these Terms if performance is prevented or delayed by a force majeure event."
-        },
-        {
-            icon: <Gavel size={24} />,
-            title: "12. Governing Law",
-            color: "white",
-            content: "These Terms and any dispute or claim relating to it, or its enforceability, shall be governed by and construed in accordance with the laws of India."
+            icon: <Gavel size={22} className="text-neon-green" />,
+            title: "10. Governing Law & Jurisdictional Claims",
+            color: "green",
+            bgGlow: "rgba(16,185,129,0.06)",
+            content: "These terms and all related claims will be governed by the laws of India. Any litigation or legal filings must be processed through the courts of our registered corporate location."
         }
     ];
 
+    const scrollToSection = (idx) => {
+        const el = document.getElementById(`term-${idx}`);
+        if (el) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            setActiveSection(idx);
+        }
+    };
+
     return (
-        <div className="min-h-screen bg-black pt-32 pb-20 px-6">
-            <div className="max-w-4xl mx-auto">
+        <div className="min-h-screen bg-black pt-32 pb-24 px-6 md:px-12 relative overflow-hidden">
+            {/* Background Ambient Glows */}
+            <div className="absolute top-0 right-1/4 w-[500px] h-[500px] bg-neon-blue/5 blur-[150px] pointer-events-none rounded-full" />
+            <div className="absolute bottom-0 left-1/4 w-[600px] h-[600px] bg-neon-green/5 blur-[180px] pointer-events-none rounded-full" />
+
+            <div className="max-w-4xl mx-auto space-y-16 relative z-10">
+                {/* Hero Header */}
                 <motion.div 
-                    initial={{ opacity: 0, y: 20 }}
+                    initial={{ opacity: 0, y: 30 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="mb-16 text-center"
+                    className="text-center space-y-6"
                 >
-                    <h1 className="text-5xl md:text-7xl font-black italic tracking-tighter text-white mb-6 uppercase pr-4">
+                    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-[9px] font-black uppercase tracking-widest text-zinc-400">
+                        <Scale size={10} className="text-neon-blue" />
+                        <span>LEGALLY BINDING AGREEMENT</span>
+                    </div>
+                    
+                    <h1 className="text-4xl sm:text-6xl md:text-7xl font-black font-heading tracking-tight text-white leading-none">
                         Terms & <span className="text-neon-blue">Conditions</span>
                     </h1>
-                    <p className="text-gray-400 text-lg md:text-xl font-medium tracking-tight">
-                        Last updated on 05-05-2026 15:17:18
+                    
+                    <p className="text-gray-500 text-xs sm:text-sm font-bold uppercase tracking-widest">
+                        Last Updated: June 10, 2026
                     </p>
-                    <div className="mt-8 p-6 bg-white/5 border border-white/10 rounded-2xl inline-block">
-                        <p className="text-gray-400 text-sm md:text-base leading-relaxed">
-                            These Terms and Conditions, along with privacy policy or other terms (“Terms”) constitute a binding agreement by and between <span className="text-white font-bold text-neon-blue">Newbi Entertainment & Marketing LLP</span> (“Website Owner” or “we” or “us” or “our”) and you (“you” or “your”) and relate to your use of our website, goods (as applicable) or services (as applicable) (collectively, “Services”).
+
+                    <div className="mt-8 p-6 bg-zinc-950/50 border border-white/[0.08] backdrop-blur-3xl rounded-[2rem] max-w-2xl mx-auto text-left shadow-2xl relative overflow-hidden">
+                        <div className="absolute top-0 right-0 w-24 h-24 bg-neon-blue/5 blur-2xl" />
+                        <p className="text-gray-400 text-xs sm:text-sm leading-relaxed">
+                            These Terms and Conditions, along with the privacy policy, constitute a binding agreement between <span className="text-white font-bold">Newbi Entertainment & Marketing LLP</span> (“Website Owner”, “we”, “us”, “our”) and you (“you”, “your”) regarding your access to services, tickets, and panels.
                         </p>
                     </div>
-
                 </motion.div>
 
-                <div className="mb-12 p-8 bg-neon-blue/5 border border-neon-blue/20 rounded-3xl backdrop-blur-xl">
-                    <p className="text-gray-300 leading-relaxed text-lg">
-                        By using our website and availing the Services, you agree that you have read and accepted these Terms (including the Privacy Policy). We reserve the right to modify these Terms at any time and without assigning any reason. It is your responsibility to periodically review these Terms to stay informed of updates.
-                    </p>
+                {/* Quick Navigation Pills */}
+                <div className="flex flex-wrap justify-center gap-2.5 pb-4 border-b border-white/5 select-none">
+                    {termsList.map((term, idx) => (
+                        <button
+                            key={idx}
+                            onClick={() => scrollToSection(idx)}
+                            className={`px-3 py-1.5 rounded-xl text-[9px] font-bold uppercase tracking-wider transition-all border ${
+                                activeSection === idx 
+                                    ? "bg-white text-black border-white" 
+                                    : "bg-white/5 text-zinc-400 border-white/5 hover:border-white/10 hover:text-white"
+                            }`}
+                        >
+                            {term.title.split('. ')[1]}
+                        </button>
+                    ))}
                 </div>
 
-                <div className="grid grid-cols-1 gap-8">
-                    {termsList.map((term, index) => (
-                        <motion.section 
-                            key={index}
-                            initial={{ opacity: 0, x: index % 2 === 0 ? -20 : 20 }}
-                            whileInView={{ opacity: 1, x: 0 }}
-                            viewport={{ once: true }}
-                            className="bg-white/5 border border-white/10 rounded-3xl p-8 md:p-10 backdrop-blur-xl relative overflow-hidden group"
+                {/* Important Notice Banner */}
+                <div className="p-8 bg-neon-blue/5 border border-neon-blue/20 rounded-[2.5rem] backdrop-blur-xl flex items-start gap-4">
+                    <AlertCircle size={24} className="text-neon-blue shrink-0 mt-0.5" />
+                    <div className="space-y-1">
+                        <h4 className="text-sm font-bold text-white uppercase tracking-wider">Please Read Carefully</h4>
+                        <p className="text-gray-400 text-xs sm:text-sm leading-relaxed">
+                            By continuing to access our website and using the services, you acknowledge that you accept all sections of these Terms. We reserve the right to revise these terms without assigning reason. Periodic reviews are recommended.
+                        </p>
+                    </div>
+                </div>
+
+                {/* Terms List Cards */}
+                <div className="space-y-8">
+                    {termsList.map((term, idx) => (
+                        <motion.section
+                            id={`term-${idx}`}
+                            key={idx}
+                            initial={{ opacity: 0, y: 40 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            viewport={{ once: true, margin: '-100px' }}
+                            transition={{ duration: 0.6, delay: idx * 0.05 }}
+                            onViewportEnter={() => setActiveSection(idx)}
+                            className="bg-zinc-950/45 border border-white/[0.08] backdrop-blur-3xl rounded-[2.5rem] p-8 md:p-10 shadow-2xl relative overflow-hidden group hover:border-white/15 transition-all duration-500"
                         >
-                            <div className={`absolute top-0 right-0 w-32 h-32 bg-${term.color}/10 blur-[60px] -mr-16 -mt-16 group-hover:bg-${term.color}/20 transition-all duration-700`} />
-                            <div className="flex items-center gap-6 mb-6">
-                                <div className={`w-14 h-14 rounded-2xl bg-${term.color}/20 flex items-center justify-center text-${term.color} group-hover:scale-110 transition-transform duration-500`}>
+                            {/* Decorative Radial Glow */}
+                            <div 
+                                className="absolute top-0 right-0 w-48 h-48 blur-[80px] -mr-24 -mt-24 pointer-events-none group-hover:scale-110 transition-transform duration-700" 
+                                style={{ backgroundColor: term.bgGlow }}
+                            />
+                            
+                            <div className="flex items-center gap-4 mb-6">
+                                <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center group-hover:scale-105 transition-transform duration-500">
                                     {term.icon}
                                 </div>
-                                <h2 className="text-xl md:text-2xl font-black uppercase tracking-wider text-white">{term.title}</h2>
+                                <h2 className="text-xl md:text-2xl font-extrabold font-heading text-white tracking-tight">
+                                    {term.title}
+                                </h2>
                             </div>
-                            <p className="text-gray-400 leading-relaxed text-lg relative z-10">
+
+                            <p className="text-gray-400 font-medium text-xs sm:text-sm leading-relaxed relative z-10">
                                 {term.content}
                             </p>
                         </motion.section>
                     ))}
                 </div>
 
+                {/* Legal Contact Footer */}
                 <motion.div 
                     initial={{ opacity: 0 }}
                     whileInView={{ opacity: 1 }}
                     className="mt-20 text-center border-t border-white/5 pt-12"
                 >
-                    <p className="text-gray-500 text-sm font-black uppercase tracking-[0.2em]">
-                        For legal inquiries, contact us at <a href="mailto:legal@newbi.live" className="text-white hover:text-neon-blue transition-colors">legal@newbi.live</a>
-                    </p>
+                    <div className="inline-flex flex-col items-center gap-4">
+                        <p className="text-zinc-500 text-[10px] font-black uppercase tracking-[0.25em]">
+                            For legal disputes or corporate clarification, reach us at
+                        </p>
+                        <a 
+                            href="mailto:legal@newbi.live" 
+                            className="px-6 py-3 rounded-xl bg-white/5 hover:bg-white hover:text-black border border-white/10 text-xs font-bold text-white transition-all shadow-xl"
+                        >
+                            legal@newbi.live
+                        </a>
+                    </div>
                 </motion.div>
             </div>
         </div>

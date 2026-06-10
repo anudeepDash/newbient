@@ -37,7 +37,7 @@ const CampaignCard = ({ campaign, profile, type, onOpenMission }) => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             onClick={() => onOpenMission(campaign)}
-            className="bg-zinc-950/45 border border-white/[0.08] backdrop-blur-3xl shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)] hover:border-white/20 hover:shadow-[inset_0_1px_1px_rgba(255,255,255,0.2),0_40px_80px_rgba(0,0,0,0.7)] rounded-[2rem] overflow-hidden flex flex-col group transition-all duration-500 h-full relative cursor-pointer active:scale-[0.98]"
+            className="bg-zinc-950/45 border border-white/[0.08] backdrop-blur-3xl shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)] hover:border-white/20 hover:shadow-[inset_0_1px_1px_rgba(255,255,255,0.2),0_40px_80px_rgba(0,0,0,0.7)] rounded-3xl overflow-hidden flex flex-col group transition-all duration-500 h-full relative cursor-pointer active:scale-[0.98]"
         >
             {/* Progress Strip */}
             {isJoined && (
@@ -45,7 +45,7 @@ const CampaignCard = ({ campaign, profile, type, onOpenMission }) => {
                     <motion.div 
                         initial={{ width: 0 }}
                         animate={{ width: `${progress}%` }}
-                        className={cn("h-full transition-all duration-1000 shadow-[0_0_12px_rgba(46,191,255,0.5)]", isFullyComplete ? "bg-neon-green shadow-[0_0_12px_rgba(57,255,20,0.5)]" : "bg-neon-blue")}
+                        className={cn("h-full transition-all duration-1000 shadow-[0_0_12px_rgba(57,255,20,0.5)] bg-neon-green")}
                     />
                 </div>
             )}
@@ -60,25 +60,25 @@ const CampaignCard = ({ campaign, profile, type, onOpenMission }) => {
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a]/20 to-transparent pointer-events-none" />
                     <div className="absolute top-4 left-4 flex items-center gap-2 z-10">
-                        <div className="p-2 rounded-xl bg-black/60 backdrop-blur-md border border-white/10 text-neon-blue shadow-lg">
+                        <div className="p-2 rounded-xl bg-black/60 backdrop-blur-md border border-white/10 text-neon-green shadow-lg">
                             <Instagram size={16} />
                         </div>
                         <div className="px-3 py-1.5 rounded-xl bg-black/60 backdrop-blur-md border border-white/10 text-[9px] font-black uppercase tracking-widest text-white shadow-lg flex items-center gap-1.5">
-                            <MapPin size={10} className="text-neon-pink" /> {campaign.targetCity || 'Universal'}
+                            <MapPin size={10} className="text-zinc-500" /> {campaign.targetCity || 'Universal'}
                         </div>
                     </div>
                 </div>
             ) : (
-                <div className="h-32 relative overflow-hidden bg-gradient-to-r from-neon-blue/20 via-neon-purple/20 to-[#0a0a0a] border-b border-white/5 flex items-center px-6 shrink-0">
-                    <div className="absolute -right-10 -top-10 w-40 h-40 bg-neon-blue/10 rounded-full blur-3xl pointer-events-none" />
+                <div className="h-32 relative overflow-hidden bg-gradient-to-r from-neon-green/10 via-zinc-800/10 to-[#0a0a0a] border-b border-white/5 flex items-center px-6 shrink-0">
+                    <div className="absolute -right-10 -top-10 w-40 h-40 bg-neon-green/5 rounded-full blur-3xl pointer-events-none" />
                     <div className="flex items-center gap-4 z-10">
-                        <div className="p-3.5 rounded-2xl bg-black/60 backdrop-blur-xl border border-white/10 text-neon-blue shadow-2xl group-hover:scale-110 transition-transform">
+                        <div className="p-3.5 rounded-2xl bg-black/60 backdrop-blur-xl border border-white/10 text-neon-green shadow-2xl group-hover:scale-110 transition-transform">
                             <Instagram size={24} />
                         </div>
                         <div>
-                            <span className="text-[9px] font-black text-neon-blue uppercase tracking-[0.4em] block mb-1">Creator Opportunity</span>
+                            <span className="text-[9px] font-black text-neon-green uppercase tracking-[0.4em] block mb-1">Creator Opportunity</span>
                             <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-white">
-                                <MapPin size={12} className="text-neon-pink" /> {campaign.targetCity || 'Universal'}
+                                <MapPin size={12} className="text-zinc-500" /> {campaign.targetCity || 'Universal'}
                             </div>
                         </div>
                     </div>
@@ -91,7 +91,7 @@ const CampaignCard = ({ campaign, profile, type, onOpenMission }) => {
                 <div className="flex items-center justify-between gap-2 mb-6">
                     <div className="flex items-center gap-2">
                         <span className="px-3 py-1 rounded-xl bg-white/5 border border-white/10 text-[9px] font-black uppercase tracking-widest text-gray-400 flex items-center gap-1.5 backdrop-blur-md">
-                            <Users size={10} className="text-neon-blue" /> {Number(campaign.minInstagramFollowers || 0).toLocaleString()} FLW
+                            <Users size={10} className="text-neon-green" /> {Number(campaign.minInstagramFollowers || 0).toLocaleString()} FLW
                         </span>
                     </div>
                     
@@ -110,10 +110,10 @@ const CampaignCard = ({ campaign, profile, type, onOpenMission }) => {
                             <div className={cn(
                                 "px-3 py-1 rounded-xl text-[8px] font-black uppercase tracking-widest border backdrop-blur-md shadow-lg flex items-center gap-1.5",
                                 isFullyComplete ? "bg-neon-green/10 text-neon-green border-neon-green/20" :
-                                isShortlisted ? "bg-neon-blue/10 text-neon-blue border-neon-blue/20" : 
+                                isShortlisted ? "bg-neon-green/10 text-neon-green border-neon-green/20" : 
                                 "bg-zinc-800/50 text-gray-400 border-white/5"
                             )}>
-                                <span className={cn("w-1.5 h-1.5 rounded-full animate-pulse", isFullyComplete ? "bg-neon-green" : isShortlisted ? "bg-neon-blue" : "bg-gray-400")} />
+                                <span className={cn("w-1.5 h-1.5 rounded-full animate-pulse", isFullyComplete ? "bg-neon-green" : isShortlisted ? "bg-neon-green" : "bg-gray-400")} />
                                 {isFullyComplete ? 'Completed' : isShortlisted ? 'Ongoing' : 'Awaiting Approval'}
                             </div>
                         )}
@@ -122,7 +122,7 @@ const CampaignCard = ({ campaign, profile, type, onOpenMission }) => {
 
                 {/* Title & Description */}
                 <div className="flex-1 mb-8">
-                    <h3 className="text-xl md:text-2xl font-black font-heading mb-3 text-white tracking-tighter uppercase group-hover:text-neon-blue transition-colors italic leading-tight">
+                    <h3 className="text-xl md:text-2xl font-extrabold font-heading mb-3 text-white tracking-tight group-hover:text-neon-green transition-colors leading-tight">
                         {campaign.title}
                     </h3>
                     <p className="text-gray-400 text-xs line-clamp-2 leading-relaxed font-medium pr-4">
@@ -140,7 +140,7 @@ const CampaignCard = ({ campaign, profile, type, onOpenMission }) => {
                     </div>
                     <div className="flex flex-col items-center justify-center text-center border-r border-white/5 px-1 sm:px-2">
                         <span className="text-[7px] sm:text-[8px] font-black text-gray-500 uppercase tracking-widest mb-1 flex items-center gap-0.5 sm:gap-1">
-                            <FileText size={9} className="text-neon-blue sm:w-2.5 sm:h-2.5" /> TASKS
+                            <FileText size={9} className="text-neon-green sm:w-2.5 sm:h-2.5" /> TASKS
                         </span>
                         <span className="text-white text-[10px] sm:text-xs font-black">
                             {isJoined && isShortlisted ? `${approvedTotal}/${campaignTasks.length}` : `${campaignTasks.length} Tasks`}
@@ -148,21 +148,21 @@ const CampaignCard = ({ campaign, profile, type, onOpenMission }) => {
                     </div>
                     <div className="flex flex-col items-center justify-center text-center pl-1 sm:pl-2">
                         <span className="text-[7px] sm:text-[8px] font-black text-gray-500 uppercase tracking-widest mb-1 flex items-center gap-0.5 sm:gap-1">
-                            <Zap size={9} className="text-neon-pink sm:w-2.5 sm:h-2.5" /> STATUS
+                            <Zap size={9} className="text-zinc-500 sm:w-2.5 sm:h-2.5" /> STATUS
                         </span>
-                        <span className={cn("text-[10px] sm:text-xs font-black", isFullyComplete ? 'text-neon-green' : 'text-neon-blue')}>
+                        <span className={cn("text-[10px] sm:text-xs font-black", isFullyComplete ? 'text-neon-green' : 'text-neon-green')}>
                             {isJoined && isShortlisted ? `${Math.round(progress)}%` : 'Open'}
                         </span>
                     </div>
                 </div>
 
                 {/* Interactive Footer Button */}
-                <div className="mt-auto pt-4 border-t border-white/5 flex items-center justify-between px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl bg-zinc-950/40 border border-white/[0.06] shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)] group-hover:bg-neon-blue group-hover:text-black transition-all duration-300 shadow-lg">
+                <div className="mt-auto pt-4 border-t border-white/5 flex items-center justify-between px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl bg-zinc-950/40 border border-white/[0.06] shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)] group-hover:bg-neon-green group-hover:text-black transition-all duration-300 shadow-lg">
                     <div className="text-[8px] sm:text-[9px] font-black uppercase tracking-[0.15em] sm:tracking-[0.2em] flex items-center gap-1.5 sm:gap-2 group-hover:text-black text-gray-400 transition-colors">
                         <FileText size={10} className="sm:w-3 sm:h-3" /> 
                         {isJoined && isShortlisted ? 'Open Campaign Page' : 'View Opportunity'}
                     </div>
-                    <ArrowRight className="text-gray-600 group-hover:text-black group-hover:translate-x-1 transition-all" size={14} sm:size={16} />
+                    <ArrowRight className="text-gray-600 group-hover:text-black group-hover:translate-x-1 transition-all" size={14} />
                 </div>
             </div>
         </motion.div>

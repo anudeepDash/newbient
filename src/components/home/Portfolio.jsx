@@ -10,8 +10,32 @@ const Portfolio = () => {
 
     const categories = portfolioCategories.length > 0 ? portfolioCategories : [];
     const [activeTab, setActiveTab] = useState('');
-    const [isAutoPlaying, setIsAutoPlaying] = useState(true);
-    const [isAutoScrolling, setIsAutoScrolling] = useState(true);
+    const [isPaused, setIsPaused] = useState(false);
+
+    const filteredItems = portfolio.filter(item => item.category === activeTab);
+
+    useEffect(() => {
+        if (isPaused || filteredItems.length <= 1) return;
+
+        const interval = setInterval(() => {
+            if (carouselRef.current) {
+                const el = carouselRef.current;
+                const cardEl = el.querySelector('.flex-shrink-0');
+                const cardWidth = cardEl?.offsetWidth || 280;
+                const gap = window.innerWidth >= 768 ? 32 : 24;
+                const scrollStep = cardWidth + gap;
+
+                const isAtEnd = el.scrollLeft + el.clientWidth >= el.scrollWidth - 15;
+                if (isAtEnd) {
+                    el.scrollTo({ left: 0, behavior: 'smooth' });
+                } else {
+                    el.scrollBy({ left: scrollStep, behavior: 'smooth' });
+                }
+            }
+        }, 3500);
+
+        return () => clearInterval(interval);
+    }, [isPaused, filteredItems]);
 
     // Sync active tab when categories load
     useEffect(() => {
@@ -20,54 +44,21 @@ const Portfolio = () => {
         }
     }, [categories, activeTab]);
 
-    // Auto-rotate categories
-    useEffect(() => {
-        if (!isAutoPlaying || categories.length <= 1) return;
-        const interval = setInterval(() => {
-            setActiveTab(prev => {
-                const currentIndex = categories.findIndex(c => c.id === prev);
-                const nextIndex = (currentIndex + 1) % categories.length;
-                return categories[nextIndex].id;
-            });
-        }, 8000);
-        return () => clearInterval(interval);
-    }, [isAutoPlaying, categories]);
-
-    // Auto-scroll carousel cards
-    useEffect(() => {
-        if (!isAutoScrolling) return;
-        const interval = setInterval(() => {
-            if (carouselRef.current) {
-                const { scrollLeft, scrollWidth, clientWidth } = carouselRef.current;
-                if (scrollLeft + clientWidth >= scrollWidth - 10) {
-                    carouselRef.current.scrollTo({ left: 0, behavior: 'smooth' });
-                } else {
-                    carouselRef.current.scrollBy({ left: 400, behavior: 'smooth' });
-                }
-            }
-        }, 4000);
-        return () => clearInterval(interval);
-    }, [isAutoScrolling, activeTab]);
-
     const scroll = (direction) => {
         if (carouselRef.current) {
             carouselRef.current.scrollBy({ left: direction === 'left' ? -400 : 400, behavior: 'smooth' });
         }
     };
 
-    const filteredItems = portfolio.filter(item => item.category === activeTab);
-
     if (portfolio.length === 0 && portfolioCategories.length === 0) return null;
 
     return (
         <section
-            className="py-10 md:py-16 bg-[#020202] text-white relative overflow-hidden border-t border-white/5"
-            onMouseEnter={() => { setIsAutoPlaying(false); setIsAutoScrolling(false); }}
-            onMouseLeave={() => { setIsAutoPlaying(true); setIsAutoScrolling(true); }}
+            className="py-10 md:py-16 bg-dark text-white relative overflow-hidden border-t border-white/5"
         >
             {/* ── Atmosphere ── */}
             <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-neon-green/[0.04] blur-[180px] rounded-full pointer-events-none" />
-            <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-neon-blue/[0.04] blur-[150px] rounded-full pointer-events-none" />
+            <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-zinc-800/10 blur-[150px] rounded-full pointer-events-none" />
             <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff02_1px,transparent_1px),linear-gradient(to_bottom,#ffffff02_1px,transparent_1px)] bg-[size:80px_80px] pointer-events-none" />
 
             <div className="max-w-7xl mx-auto px-4 md:px-8 relative z-10">
@@ -75,26 +66,18 @@ const Portfolio = () => {
                 {/* ── Section Header ── */}
                 <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 md:mb-12 gap-8 md:gap-12">
                     <div className="max-w-2xl">
-                        <motion.div
-                            initial={{ opacity: 0, x: -20 }}
-                            whileInView={{ opacity: 1, x: 0 }}
-                            viewport={{ once: true }}
-                            className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 backdrop-blur-xl mb-6"
-                        >
-                            <LayoutGrid size={12} className="text-neon-green" />
-                            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-neon-green">Portfolio Archive</span>
-                        </motion.div>
+
 
                         <motion.h2
                             initial={{ opacity: 0, y: 20 }}
                             whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: true }}
                             transition={{ delay: 0.1 }}
-                            className="font-heading text-4xl md:text-6xl lg:text-7xl font-black tracking-tighter uppercase italic leading-none"
+                            className="font-heading text-4xl md:text-6xl lg:text-7xl font-extrabold tracking-tight text-white leading-none"
                         >
-                            OUR{' '}
-                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-green via-white to-neon-blue">
-                                IMPACT.
+                            Our{' '}
+                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-neon-green">
+                                Impact
                             </span>
                         </motion.h2>
 
@@ -123,7 +106,7 @@ const Portfolio = () => {
                                 return (
                                     <button
                                         key={cat.id}
-                                        onClick={() => { setActiveTab(cat.id); setIsAutoPlaying(false); }}
+                                        onClick={() => { setActiveTab(cat.id); }}
                                         className={`relative flex-shrink-0 px-6 py-2.5 rounded-[1.4rem] font-black text-[10px] uppercase tracking-[0.25em] transition-all duration-500 overflow-hidden ${
                                             isActive
                                                 ? 'bg-white text-black shadow-lg'
@@ -131,15 +114,6 @@ const Portfolio = () => {
                                         }`}
                                     >
                                         <span className="relative z-10">{cat.label}</span>
-                                        {isActive && isAutoPlaying && (
-                                            <motion.div
-                                                key={cat.id + '-bar'}
-                                                className="absolute bottom-0 left-0 h-[3px] bg-neon-green rounded-full"
-                                                initial={{ width: '0%' }}
-                                                animate={{ width: '100%' }}
-                                                transition={{ duration: 8, ease: 'linear' }}
-                                            />
-                                        )}
                                     </button>
                                 );
                             })}
@@ -161,13 +135,13 @@ const Portfolio = () => {
                         {filteredItems.length > 2 && (
                             <div className="hidden lg:block">
                                 <button
-                                    onClick={() => { scroll('left'); setIsAutoScrolling(false); }}
+                                    onClick={() => { scroll('left'); }}
                                     className="absolute -left-12 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white hover:bg-neon-green hover:text-black transition-all z-30 backdrop-blur-md opacity-0 group-hover/nav:opacity-100 -translate-x-4 group-hover/nav:translate-x-0 duration-300"
                                 >
                                     <ChevronLeft size={20} />
                                 </button>
                                 <button
-                                    onClick={() => { scroll('right'); setIsAutoScrolling(false); }}
+                                    onClick={() => { scroll('right'); }}
                                     className="absolute -right-12 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white hover:bg-neon-green hover:text-black transition-all z-30 backdrop-blur-md opacity-0 group-hover/nav:opacity-100 translate-x-4 group-hover/nav:translate-x-0 duration-300"
                                 >
                                     <ChevronRight size={20} />
@@ -176,17 +150,39 @@ const Portfolio = () => {
                         )}
 
                         {filteredItems.length > 0 ? (
-                            <div
-                                ref={carouselRef}
-                                className="flex gap-6 md:gap-8 overflow-x-auto pb-6 md:pb-10 horizontal-scrollbar snap-x snap-mandatory scroll-smooth px-4 md:px-0"
-                                style={{ scrollbarWidth: 'auto', msOverflowStyle: 'auto' }}
-                            >
-                                {filteredItems.map((item, index) => (
-                                    <div key={item.id} className="flex-shrink-0 w-[85vw] sm:w-[360px] md:w-[380px] snap-start">
-                                        <PortfolioCard item={item} categories={categories} index={index} />
+                            <>
+                                <div
+                                    ref={carouselRef}
+                                    onMouseEnter={() => setIsPaused(true)}
+                                    onMouseLeave={() => setIsPaused(false)}
+                                    onTouchStart={() => setIsPaused(true)}
+                                    onTouchEnd={() => setIsPaused(false)}
+                                    className="flex gap-6 md:gap-8 overflow-x-auto pb-6 md:pb-10 horizontal-scrollbar snap-x snap-mandatory scroll-smooth px-4 md:px-0"
+                                    style={{ scrollbarWidth: 'auto', msOverflowStyle: 'auto' }}
+                                >
+                                    {filteredItems.map((item, index) => (
+                                        <div key={item.id} className="flex-shrink-0 w-[280px] sm:w-[360px] md:w-[380px] snap-start">
+                                            <PortfolioCard item={item} categories={categories} index={index} />
+                                        </div>
+                                    ))}
+                                </div>
+                                {filteredItems.length > 1 && (
+                                    <div className="flex md:hidden items-center justify-center gap-4 mt-2">
+                                        <button 
+                                            onClick={() => scroll('left')}
+                                            className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-white active:bg-white active:text-black transition-all"
+                                        >
+                                            <ChevronLeft size={16} />
+                                        </button>
+                                        <button 
+                                            onClick={() => scroll('right')}
+                                            className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-white active:bg-white active:text-black transition-all"
+                                        >
+                                            <ChevronRight size={16} />
+                                        </button>
                                     </div>
-                                ))}
-                            </div>
+                                )}
+                            </>
                         ) : (
                             <div className="py-32 flex flex-col items-center justify-center gap-6 bg-white/[0.02] rounded-[3rem] border-2 border-dashed border-white/5">
                                 <div className="w-16 h-16 rounded-full border border-white/10 flex items-center justify-center text-gray-700 animate-pulse">
@@ -264,15 +260,12 @@ const PortfolioCard = ({ item, categories, index }) => {
                 )}
             </div>
 
-            {/* ── Ticket Perforation Line ── */}
-            <div className="absolute top-[62%] -left-3 w-6 h-6 bg-[#020202] rounded-full border border-white/5 z-20" />
-            <div className="absolute top-[62%] -right-3 w-6 h-6 bg-[#020202] rounded-full border border-white/5 z-20" />
-            <div className="absolute top-[63%] left-4 right-4 h-px border-t border-dashed border-white/10 z-20" />
+
 
             {/* ── Content Slab ── */}
             <div className="absolute inset-x-6 bottom-7 z-30 space-y-5">
                 <div>
-                    <h3 className="text-2xl md:text-3xl font-black text-white leading-none tracking-tighter uppercase italic mb-2 line-clamp-2 group-hover:text-neon-green transition-colors duration-500">
+                    <h3 className="text-2xl md:text-3xl font-extrabold text-white leading-none tracking-tight mb-2 line-clamp-2 group-hover:text-neon-green transition-colors duration-500">
                         {item.title}
                     </h3>
 

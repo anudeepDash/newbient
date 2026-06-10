@@ -78,23 +78,23 @@ const CommunityCard = ({ item, type, handleShare, onAction }) => {
     
     const getButtonLabel = () => {
         if (item.buttonText) return item.buttonText;
-        if (hasExternalLink) return "VIEW MORE";
-        if (isInternalGL) return "JOIN GUESTLIST";
-        if (isGig) return "APPLY";
-        if (isCampaign) return "APPLY";
+        if (hasExternalLink) return "View More";
+        if (isInternalGL) return "Join Guestlist";
+        if (isGig) return "Apply";
+        if (isCampaign) return "Apply";
         if (isEvent) {
-            if (item.isTicketed) return "GET TICKETS";
-            if (item.isGuestlistEnabled) return "RSVP NOW";
-            return "VIEW DETAILS";
+            if (item.isTicketed) return "Get Tickets";
+            if (item.isGuestlistEnabled) return "RSVP Now";
+            return "View Details";
         }
-        return "OPEN FORM";
+        return "Open Form";
     };
 
     const buttonLabel = getButtonLabel();
     const isClosed = (item.status && (item.status.toLowerCase() === 'closed' || item.status.toLowerCase() === 'full')) || (item.activeLabel && item.activeLabel.toLowerCase() === 'closed');
     const showButton = (hasExternalLink || isInternalGL || isGig || isForm || isCampaign || isEvent) && !isClosed;
 
-    const themeColor = isForm ? "#FF4F8B" : (isGig ? "#39FF14" : (isCampaign ? "#2ebfff" : (isEvent ? "#2ebfff" : (isGL ? "#2ebfff" : "#ffffff"))));
+    const themeColor = isForm ? "#ffffff" : (isGig ? "#39FF14" : (isCampaign ? "#39FF14" : (isEvent ? "#39FF14" : (isGL ? "#39FF14" : "#ffffff"))));
     const highlightColor = item.highlightColor || themeColor;
 
     const handleButtonClick = (e) => {
@@ -121,7 +121,7 @@ const CommunityCard = ({ item, type, handleShare, onAction }) => {
 
     return (
         <div 
-            className="perspective-1000 w-full h-[400px] md:h-[420px] flex group"
+            className="perspective-1000 w-full aspect-[4/5] flex group"
             onMouseMove={handleMouseMove}
         >
             <motion.div
@@ -133,17 +133,12 @@ const CommunityCard = ({ item, type, handleShare, onAction }) => {
                 {/* Front Side */}
                 <div 
                     className={cn(
-                        "backface-hidden relative bg-zinc-950/20 border-2 rounded-[2.5rem] overflow-hidden flex-1 flex shadow-[0_40px_80px_-20px_rgba(0,0,0,0.8)] transition-all duration-700",
+                        "backface-hidden relative bg-black border border-white/5 rounded-3xl overflow-hidden flex-1 flex flex-col shadow-2xl transition-all duration-500",
                         isFlipped ? "pointer-events-none" : "pointer-events-auto"
                     )}
-                    style={{ 
-                        borderColor: `${highlightColor}25`,
-                        background: `radial-gradient(circle at ${mousePos.x}% ${mousePos.y}%, ${highlightColor}15 0%, transparent 60%)`
-                    }}
                 >
                     {/* Background Visual */}
-                    <div className="absolute inset-0 z-0 overflow-hidden bg-black">
-                        {/* Video Layer (Priority) */}
+                    <div className="absolute inset-0 z-0 overflow-hidden">
                         {item.videoUrl && item.enableVideoBackground && (item.videoUrl.match(/\.(mp4|webm|ogg)$/i) || item.videoUrl.includes('cloudinary.com')) ? (
                             <motion.video 
                                 src={item.videoUrl}
@@ -151,9 +146,9 @@ const CommunityCard = ({ item, type, handleShare, onAction }) => {
                                 loop
                                 muted
                                 playsInline
-                                className="w-full h-full object-cover opacity-40 group-hover:opacity-80 transition-all duration-1000 scale-105 group-hover:scale-110"
+                                className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-all duration-1000 scale-105 group-hover:scale-110"
                                 initial={{ opacity: 0 }}
-                                animate={{ opacity: 0.4 }}
+                                animate={{ opacity: 0.6 }}
                             />
                         ) : item.image ? (
                             <motion.div 
@@ -163,230 +158,202 @@ const CommunityCard = ({ item, type, handleShare, onAction }) => {
                                     scale: isFlipped ? 1 : (transform.scale || 1.05)
                                 }}
                                 whileHover={{ scale: isFlipped ? 1 : (transform.scale || 1.05) * 1.05 }}
-                                transition={{ duration: 2, ease: [0.23, 1, 0.32, 1] }}
+                                transition={{ duration: 1.5, ease: [0.23, 1, 0.32, 1] }}
                                 style={{ 
                                     backgroundImage: `url(${item.image})`,
                                     backgroundPosition: `calc(50% + ${transform.x || 0}%) calc(50% + ${transform.y || 0}%)`
                                 }}
                             />
                         ) : (
-                            <div className="w-full h-full bg-zinc-900 flex items-center justify-center relative overflow-hidden">
-                                <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent" />
-                                {isForm ? <ClipboardList size={80} className="text-white/5" /> : 
-                                 isGig ? <Users size={80} className="text-white/5" /> : 
-                                 isCampaign ? <Megaphone size={80} className="text-white/5" /> : 
-                                 isGL ? <Ticket size={80} className="text-white/5" /> : 
-                                 isEvent ? <Calendar size={80} className="text-white/5" /> :
-                                 <Star size={80} className="text-white/5" />}
+                            <div className="w-full h-full bg-gradient-to-br from-zinc-900 to-zinc-950 flex items-center justify-center relative overflow-hidden">
+                                <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(57,255,20,0.08),transparent_60%)]" />
+                                {isForm ? <ClipboardList size={60} className="text-white/5" /> : 
+                                 isGig ? <Users size={60} className="text-white/5" /> : 
+                                 isCampaign ? <Megaphone size={60} className="text-white/5" /> : 
+                                 isGL ? <Ticket size={60} className="text-white/5" /> : 
+                                 isEvent ? <Calendar size={60} className="text-white/5" /> :
+                                 <Star size={60} className="text-white/5" />}
                             </div>
                         )}
-                        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent" />
-                        
-                        {/* Interactive Shimmer Overlay */}
-                        <div 
-                            className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-1000 pointer-events-none z-10"
-                            style={{ 
-                                background: `linear-gradient(${mousePos.x + mousePos.y}deg, transparent 40%, ${highlightColor}10 50%, transparent 60%)`
-                            }}
-                        />
+                        {/* Advanced Overlay Gradients */}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent opacity-90" />
+                        <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-transparent opacity-60" />
                     </div>
 
-                    {/* Content Layer */}
-                    <div className="relative z-20 flex-1 flex flex-col backdrop-blur-2xl p-6 md:p-8">
-                        {/* Status Bar */}
-                        <div className="flex items-center justify-between mb-6">
-                            <div className="flex items-center gap-3">
-                                <div className="flex items-center justify-center px-3 h-6 rounded-full bg-white/5 border border-white/10 backdrop-blur-3xl shadow-xl">
-                                    <span className="text-[8px] font-black uppercase tracking-[0.3em] italic pl-[0.3em] leading-none" style={{ color: highlightColor }}>
-                                        {isGig ? "VOLUNTEER GIG" : (isCampaign ? "CAMPAIGN" : (isForm ? "FORM" : (isEvent ? "EVENT" : "GUESTLIST")))}
-                                    </span>
-                                </div>
+                    {/* Corner Badges */}
+                    <div className="absolute top-8 left-8 right-8 z-10 flex justify-between items-start">
+                        <div className="flex gap-2">
+                            <div className="px-4 h-8 rounded-2xl bg-black/40 backdrop-blur-3xl border border-white/10 flex items-center gap-2">
+                                <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: highlightColor }} />
+                                <span className="text-[9px] font-black uppercase tracking-widest text-white/90">
+                                    {isGig ? "Volunteer" : (isCampaign ? "Campaign" : (isForm ? "Form" : (isEvent ? "Event" : "Guestlist")))}
+                                </span>
+                            </div>
+                            {item.status && (
                                 <div className={cn(
-                                    "px-3 h-6 rounded-full border text-[8px] font-black uppercase tracking-widest flex items-center justify-center gap-2 backdrop-blur-3xl shadow-lg",
+                                    "px-4 h-8 rounded-2xl border text-[9px] font-black uppercase tracking-widest flex items-center justify-center gap-2 backdrop-blur-3xl",
                                     (item.status === 'Open' || item.activeLabel === 'Live' || item.status === 'Live') ? "bg-green-500/10 border-green-500/20 text-green-400" : 
                                     (item.status === 'Filling Fast' || item.activeLabel === 'Few Slots Remain' || item.status === 'Few Slots Remain') ? "bg-yellow-500/10 border-yellow-500/20 text-yellow-500" : 
                                     "bg-red-500/10 border-red-500/20 text-red-400"
                                 )}>
-                                    <div className="w-1.5 h-1.5 rounded-full bg-current animate-pulse shadow-[0_0_8px_currentColor]" />
                                     {(item.status || item.activeLabel || 'LIVE').toUpperCase()}
                                 </div>
-                            </div>
-                            
+                            )}
+                        </div>
+                        
+                        <div className="flex gap-2">
                             {item.isPinned && (
-                                <div className="w-10 h-10 rounded-2xl bg-yellow-400/10 border border-yellow-400/20 flex items-center justify-center text-yellow-400 shadow-[0_0_20px_rgba(234,179,8,0.3)] backdrop-blur-3xl group-hover:scale-110 transition-transform">
-                                    <Star size={18} className="fill-current" />
+                                <div className="w-10 h-10 rounded-xl bg-yellow-400/10 border border-yellow-400/20 flex items-center justify-center text-yellow-400 backdrop-blur-3xl">
+                                    <Star size={14} className="fill-current" />
+                                </div>
+                            )}
+                            <button 
+                                onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleShare?.(type, item.id); }}
+                                className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-white/40 hover:text-white hover:bg-white/10 transition-all backdrop-blur-3xl"
+                            >
+                                <Share2 size={14} />
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Content Bottom Overlay */}
+                    <div className="absolute inset-x-0 bottom-0 z-10 p-8 pt-20 bg-gradient-to-t from-black via-black/80 to-transparent flex flex-col justify-end text-left space-y-4">
+                        <div className="space-y-2.5">
+                            {/* Artists List */}
+                            {artistsList.length > 0 && (
+                                <div className="flex flex-wrap items-center gap-2 pb-1">
+                                    {artistsList.slice(0, 2).map((artist, idx) => (
+                                        <span key={idx} className="text-[9px] font-black uppercase tracking-widest text-neon-green/80 px-2 py-0.5 rounded bg-neon-green/5 border border-neon-green/20 whitespace-nowrap">
+                                            {artist}
+                                        </span>
+                                    ))}
+                                    {artistsList.length > 2 && (
+                                        <span className="text-[9px] font-black uppercase tracking-widest text-white/20 whitespace-nowrap">+{artistsList.length - 2} MORE</span>
+                                    )}
                                 </div>
                             )}
 
-                            <button 
-                                onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleShare?.(type, item.id); }}
-                                className="w-10 h-10 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-white/30 hover:text-white hover:bg-white/10 transition-all backdrop-blur-3xl shadow-xl ml-auto"
-                            >
-                                <Share2 size={16} />
-                            </button>
+                            <h3 className="text-2xl md:text-3xl font-extrabold font-heading tracking-tight text-white leading-tight group-hover:translate-x-1 transition-transform duration-500">
+                                {item.title}
+                            </h3>
+
+                            <p className="text-[11px] md:text-[12px] font-medium text-zinc-400 leading-relaxed line-clamp-2">
+                                {item.description || "No description provided."}
+                            </p>
                         </div>
 
-                        {/* Title & Desc Area */}
-                        <div className="mt-0 space-y-4">
-                            <div className="space-y-1.5">
-                                <h2 className="text-2xl md:text-3xl font-black font-heading text-white tracking-tighter uppercase italic leading-[0.95] drop-shadow-[0_10px_10px_rgba(0,0,0,0.5)] group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-white group-hover:to-white/40 transition-all duration-700 line-clamp-3">
-                                    {item.title}
-                                </h2>
-                                {highlightColor && <div className="h-[2px] w-12 rounded-full group-hover:w-20 transition-all duration-700" style={{ backgroundColor: highlightColor }} />}
-                            </div>
-
-                            <div className="relative group/desc">
-                                <div className="absolute -inset-4 bg-white/[0.03] rounded-3xl blur-2xl opacity-0 group-hover/desc:opacity-100 transition-opacity duration-700" />
-                                <p className="relative text-[12px] md:text-[13px] font-medium text-gray-400 uppercase tracking-widest leading-relaxed line-clamp-2 italic opacity-80 group-hover:opacity-100 transition-opacity">
-                                    {item.description || ""}
-                                </p>
-                            </div>
-
-                            <button 
-                                onClick={(e) => { e.preventDefault(); e.stopPropagation(); setIsFlipped(true); }}
-                                className="flex items-center gap-3 text-[9px] font-black text-white/30 hover:text-white uppercase tracking-[0.5em] transition-all group/more"
-                            >
-                                VIEW DETAILS
-                                <div className="w-6 h-[1px] bg-white/10 group-hover/more:w-12 group-hover/more:bg-white/40 transition-all duration-500" />
-                            </button>
-                        </div>
-
-                        {/* Artists / Lineup */}
-                        {artistsList.length > 0 && (
-                            <div className="mt-4 flex items-center gap-2 overflow-hidden">
-                                {artistsList.slice(0, 2).map((artist, idx) => (
-                                    <div key={idx} className="px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-[9px] font-black text-white/60 uppercase tracking-widest backdrop-blur-3xl hover:bg-white/10 transition-colors truncate max-w-[120px]">
-                                        {artist}
-                                    </div>
-                                ))}
-                                {artistsList.length > 2 && (
-                                    <div className="px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-[9px] font-black text-white/20 uppercase tracking-widest shrink-0">
-                                        +{artistsList.length - 2}
-                                    </div>
-                                )}
-                            </div>
-                        )}
-
-                        {/* Footer Section */}
-                        <div className="mt-auto pt-4 border-t border-white/5 flex items-center justify-between gap-4">
-                            <div className="space-y-2">
-                                {!isForm && (
-                                    <div className="flex items-center gap-2.5 text-white/50 group/meta">
-                                        <div className="w-6 h-6 rounded-lg bg-white/5 flex items-center justify-center group-hover/meta:bg-white/10 transition-colors">
-                                            <Calendar size={12} style={{ color: highlightColor }} />
-                                        </div>
-                                        <span className="text-[9px] font-black uppercase tracking-widest whitespace-nowrap">{formatDate(item.dates || item.date)}</span>
-                                    </div>
-                                )}
-                                <div className="flex items-center gap-2.5 text-white/50 group/meta">
-                                    <div className="w-6 h-6 rounded-lg bg-white/5 flex items-center justify-center group-hover/meta:bg-white/10 transition-colors">
-                                        <MapPin size={12} style={{ color: highlightColor }} />
-                                    </div>
-                                    <span className="text-[9px] font-black uppercase tracking-tight leading-tight line-clamp-2 max-w-[140px] md:max-w-[180px]">{item.bottomText || item.targetCity || item.location || ''}</span>
+                        {/* Metadata Row */}
+                        <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-white/40">
+                            {!isForm && (
+                                <div className="flex items-center gap-2">
+                                    <Calendar size={12} className="text-zinc-500 shrink-0" />
+                                    <span className="text-[10px] font-black uppercase tracking-widest whitespace-nowrap">{formatDate(item.dates || item.date)}</span>
                                 </div>
+                            )}
+                            <div className="flex items-center gap-2">
+                                <MapPin size={12} className="text-neon-green shrink-0" />
+                                <span className="text-[10px] font-black uppercase tracking-widest line-clamp-1">{item.bottomText || item.targetCity || item.location || 'TBD'}</span>
                             </div>
+                        </div>
 
+                        {/* Action Buttons (Always Visible) */}
+                        <div className="flex gap-3 w-full pt-2 shrink-0">
                             {showButton && (
                                 <button 
                                     onClick={handleButtonClick}
                                     disabled={isClosed}
                                     className={cn(
-                                        "h-12 px-5 rounded-xl border-2 font-black uppercase tracking-[0.15em] text-[9px] transition-all flex items-center justify-center gap-2.5 group/btn relative overflow-hidden shadow-2xl shrink-0",
+                                        "flex-1 h-14 rounded-2xl text-[10px] font-black uppercase tracking-[0.15em] flex items-center justify-center gap-2 transition-all active:scale-95",
                                         isClosed 
-                                            ? "bg-white/5 border-white/5 text-gray-600 cursor-not-allowed opacity-50" 
-                                            : "bg-black/40 border-white/10 text-white hover:bg-white hover:text-black hover:scale-105 active:scale-95"
+                                            ? "bg-white/5 border border-white/5 text-zinc-600 cursor-not-allowed opacity-50" 
+                                            : "bg-white text-black hover:bg-neon-green hover:scale-[1.02] shadow-2xl"
                                     )}
-                                    style={{ borderColor: isClosed ? 'transparent' : `${highlightColor}40` }}
                                 >
-                                    <span className="relative z-10 italic whitespace-nowrap pl-[0.15em]">{isClosed ? 'CLOSED' : buttonLabel}</span>
-                                    {!isClosed && <ArrowRight size={16} className="relative z-10 group-hover/btn:translate-x-2 transition-transform duration-500 shrink-0" />}
-                                    
-                                    {/* Advanced Shimmer Overlay */}
-                                    {!isClosed && (
-                                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover/btn:animate-[shimmer_3s_infinite] pointer-events-none" />
-                                    )}
+                                    <span>{isClosed ? 'CLOSED' : buttonLabel}</span>
+                                    {!isClosed && <ArrowRight size={14} />}
                                 </button>
                             )}
+                            <button 
+                                onClick={(e) => { e.preventDefault(); e.stopPropagation(); setIsFlipped(true); }}
+                                className="w-14 h-14 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/10 flex items-center justify-center text-white transition-all shadow-md shrink-0"
+                                title="View Details"
+                            >
+                                <Info size={18} />
+                            </button>
                         </div>
-
-                        {/* Floating Corner Accent */}
-                        <div 
-                            className="absolute -top-10 -right-10 w-32 h-32 blur-[60px] opacity-0 group-hover:opacity-40 transition-opacity duration-1000 pointer-events-none"
-                            style={{ backgroundColor: highlightColor }}
-                        />
                     </div>
+
+                    {/* Shimmer on Hover */}
+                    <div className="absolute inset-0 pointer-events-none bg-gradient-to-tr from-white/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
                 </div>
 
                 {/* Back Side */}
                 <div 
                     className={cn(
-                        "absolute inset-0 backface-hidden rotate-y-180 bg-[#080808] border-2 rounded-[2.5rem] p-7 md:p-9 flex flex-col shadow-2xl overflow-hidden",
+                        "absolute inset-0 backface-hidden rotate-y-180 bg-zinc-950/95 backdrop-blur-2xl border border-white/10 rounded-3xl p-6 md:p-8 flex flex-col justify-between shadow-[0_30px_60px_-15px_rgba(0,0,0,0.8)] overflow-hidden",
                         isFlipped ? "pointer-events-auto" : "pointer-events-none"
                     )}
                     style={{ 
-                        borderColor: `${highlightColor}35`,
-                        background: `radial-gradient(circle at bottom right, ${highlightColor}10 0%, transparent 70%)`
+                        borderColor: `${highlightColor}25`,
+                        background: `radial-gradient(circle at bottom right, ${highlightColor}05 0%, transparent 70%)`
                     }}
                 >
-                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.03),transparent)]" />
+                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.02),transparent)] pointer-events-none" />
                     
-                    <div className="relative z-10 flex items-center justify-end mb-8">
+                    <div className="relative z-10 flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full bg-neon-green animate-pulse" />
+                            <span className="text-[9px] font-extrabold uppercase tracking-[0.2em] text-zinc-400">Details Overview</span>
+                        </div>
                         <button 
                             onClick={() => setIsFlipped(false)}
-                            className="w-12 h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-white/30 hover:text-white hover:bg-white/10 transition-all group/close backdrop-blur-3xl"
+                            className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-zinc-400 hover:text-white hover:bg-white/10 transition-all group/close"
                         >
-                            <X size={20} className="group-hover/close:rotate-90 transition-transform duration-500" />
+                            <X size={14} className="group-hover/close:rotate-90 transition-transform duration-300" />
                         </button>
                     </div>
 
-                    <div className="relative z-10 flex-1 overflow-y-auto pr-4 space-y-10 scrollbar-hide">
-                        <div className="space-y-5">
-                            <div className="flex items-center gap-4 text-white/20">
-                                <div className="w-10 h-[1px] bg-current" />
-                                <span className="text-[10px] font-black uppercase tracking-[0.5em]">DESCRIPTION</span>
-                            </div>
-                            <div className="text-base font-medium text-gray-400 leading-relaxed italic whitespace-pre-wrap pl-1">
-                                {item.description || ""}
-                            </div>
+                    <div className="relative z-10 flex-1 overflow-y-auto pr-1 space-y-5 scrollbar-hide text-left">
+                        <div className="space-y-2">
+                            <h4 className="text-[10px] font-extrabold uppercase tracking-widest text-zinc-500">Description</h4>
+                            <p className="text-xs font-medium text-zinc-300 leading-relaxed whitespace-pre-wrap">
+                                {item.description || "No additional description provided."}
+                            </p>
                         </div>
 
                         {item.importantNotes && (
-                            <div className="p-6 rounded-[1.5rem] bg-white/[0.03] border border-white/5 relative overflow-hidden group/note">
-                                <div className="absolute top-0 left-0 w-1 h-full transition-all duration-500 group-hover/note:w-1.5" style={{ backgroundColor: highlightColor }} />
-                                <div className="flex items-center gap-3 mb-3">
-                                    <Info style={{ color: highlightColor }} size={14} />
-                                    <span className="text-[9px] font-black uppercase tracking-[0.4em] text-white/70">IMPORTANT NOTES</span>
+                            <div className="p-4 rounded-xl bg-white/[0.02] border border-white/5 relative overflow-hidden group/note">
+                                <div className="absolute top-0 left-0 w-[3px] h-full transition-all duration-300 group-hover/note:w-[4px]" style={{ backgroundColor: highlightColor }} />
+                                <div className="flex items-center gap-2 mb-1.5">
+                                    <Info style={{ color: highlightColor }} size={12} className="shrink-0" />
+                                    <span className="text-[8px] font-extrabold uppercase tracking-[0.15em] text-zinc-400">Important Notes</span>
                                 </div>
-                                <div className="text-[11px] font-bold text-gray-400 leading-relaxed uppercase tracking-widest italic">
+                                <p className="text-[10px] font-semibold text-zinc-300 leading-normal">
                                     {item.importantNotes}
-                                </div>
+                                </p>
                             </div>
                         )}
 
                         {isCampaign && (
-                            <div className="pt-8 border-t border-white/5 space-y-5">
-                                <div className="flex items-center gap-4 text-white/20">
-                                    <div className="w-10 h-[1px] bg-current" />
-                                    <span className="text-[10px] font-black uppercase tracking-[0.5em]">FOLLOWERS</span>
-                                </div>
-                                <div className="p-8 rounded-[2rem] bg-white/[0.02] border border-white/10 flex items-center justify-between group/metric hover:bg-white/[0.04] transition-colors">
+                            <div className="space-y-2 pt-2">
+                                <h4 className="text-[10px] font-extrabold uppercase tracking-widest text-zinc-500">Requirements</h4>
+                                <div className="p-4 rounded-xl bg-white/[0.01] border border-white/5 flex items-center justify-between group/metric hover:bg-white/[0.03] transition-all duration-300">
                                     <div>
-                                        <p className="text-[10px] font-black text-neon-blue uppercase tracking-[0.3em] mb-1 opacity-60">MINIMUM REQUIRED</p>
-                                        <p className="text-4xl font-black italic tracking-tighter text-white">{Number(item.minInstagramFollowers || 0).toLocaleString()}+</p>
+                                        <p className="text-[8px] font-bold text-neon-green uppercase tracking-[0.15em] mb-0.5 opacity-80">MINIMUM FOLLOWERS</p>
+                                        <p className="text-2xl font-black tracking-tight text-white">{Number(item.minInstagramFollowers || 0).toLocaleString()}+</p>
                                     </div>
-                                    <Users size={32} className="text-white/10 group-hover/metric:text-neon-blue group-hover/metric:scale-110 transition-all duration-500" />
+                                    <Users size={24} className="text-white/10 group-hover/metric:text-neon-green group-hover/metric:scale-105 transition-all duration-300" />
                                 </div>
                             </div>
                         )}
                     </div>
 
-                    <div className="relative z-10 pt-8 mt-auto flex items-center justify-between border-t border-white/10">
-                        <div className="flex items-center gap-3">
-                            <Star size={12} style={{ color: highlightColor }} />
-                            <span className="text-[9px] font-black text-white/20 uppercase tracking-[0.6em] italic">NEWBI ENTERTAINMENT</span>
+                    <div className="relative z-10 pt-4 mt-auto flex items-center justify-between border-t border-white/5">
+                        <div className="flex items-center gap-2">
+                            <Star size={10} className="text-neon-green" />
+                            <span className="text-[8px] font-extrabold text-zinc-600 uppercase tracking-[0.3em]">NEWBI ENTERTAINMENT</span>
                         </div>
-                        <div className="flex gap-2">
-                            <div className="w-1.5 h-1.5 rounded-full bg-white/30" />
+                        <div className="flex gap-1">
                             <div className="w-1.5 h-1.5 rounded-full bg-white/20" />
                             <div className="w-1.5 h-1.5 rounded-full bg-white/10" />
                         </div>
