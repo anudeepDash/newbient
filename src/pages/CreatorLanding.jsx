@@ -6,7 +6,8 @@ import { cn } from '../lib/utils';
 import { 
     Zap, ArrowRight, ArrowLeft, Instagram, Youtube, Users, Target, 
     ShieldCheck, CheckCircle2, ChevronDown, MapPin, 
-    Briefcase, HelpCircle, Check, Globe, Mail, LayoutDashboard
+    Briefcase, HelpCircle, Check, Globe, Mail, LayoutDashboard,
+    Star
 } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import useDynamicMeta from '../hooks/useDynamicMeta';
@@ -34,6 +35,52 @@ const CreatorLanding = () => {
         if (!creatorProfile) return 0;
         return (creatorProfile.joinedCampaigns || []).length;
     }, [creatorProfile]);
+
+    const MOCK_CREATORS = [
+        {
+            uid: 'mock1',
+            name: 'Aisha Sharma',
+            instagram: 'aisha_travels',
+            instagramFollowers: 145000,
+            city: 'Mumbai',
+            specializations: ['Travel & Lifestyle', 'Fashion & Luxury'],
+            profilePicture: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&auto=format&fit=crop&q=60'
+        },
+        {
+            uid: 'mock2',
+            name: 'Rohan Verma',
+            instagram: 'rohan_techs',
+            instagramFollowers: 98000,
+            city: 'Delhi',
+            specializations: ['Tech & Gaming'],
+            profilePicture: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=500&auto=format&fit=crop&q=60'
+        },
+        {
+            uid: 'mock3',
+            name: 'Priya Patel',
+            instagram: 'priya_fits',
+            instagramFollowers: 72000,
+            city: 'Bangalore',
+            specializations: ['Beauty & Fitness', 'Food & Beverage'],
+            profilePicture: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=500&auto=format&fit=crop&q=60'
+        }
+    ];
+
+    // Top Creators (approved, sorted by followers count descending)
+    const topCreatorsList = useMemo(() => {
+        const dbCreators = (creators || []).filter(c => c.profileStatus === 'approved');
+        const sorted = [...dbCreators].sort((a, b) => Number(b.instagramFollowers || 0) - Number(a.instagramFollowers || 0));
+        
+        if (sorted.length < 3) {
+            // Merge with mock creators to ensure a full layout
+            const existingUids = new Set(sorted.map(c => c.uid));
+            const needed = 3 - sorted.length;
+            const extra = MOCK_CREATORS.filter(mc => !existingUids.has(mc.uid)).slice(0, needed);
+            return [...sorted, ...extra];
+        }
+        
+        return sorted.slice(0, 6);
+    }, [creators]);
 
     // FAQ Accordion State
     const [openFaq, setOpenFaq] = useState(null);
@@ -386,6 +433,105 @@ const CreatorLanding = () => {
                                 </div>
                             </div>
                         ))}
+                    </div>
+                </motion.section>
+
+                {/* TOP CREATORS SHOWCASE */}
+                <motion.section 
+                    initial={{ opacity: 0, y: 30 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    className="space-y-16 pt-12"
+                >
+                    <div className="text-center max-w-3xl mx-auto space-y-4">
+                        <div className="flex items-center justify-center gap-3 text-neon-pink font-black tracking-[0.4em] text-[10px] uppercase mb-2">
+                            <Star size={14} className="animate-spin-slow text-neon-pink" />
+                            MEET OUR TOP TALENTS
+                        </div>
+                        <h2 className="text-4xl sm:text-6xl font-black font-heading tracking-tighter uppercase italic text-white pr-4 leading-none">
+                            FEATURED <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-pink via-neon-blue to-white">CREATORS.</span>
+                        </h2>
+                        <p className="text-gray-400 text-sm md:text-base font-bold uppercase tracking-widest leading-relaxed">
+                            A curated showcase of our top performing content creators driving brand impact across India.
+                        </p>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 pt-4">
+                        {topCreatorsList.map((creator, index) => {
+                            const rank = index + 1;
+                            const followersCount = Number(creator.instagramFollowers || 0);
+                            const formattedFollowers = followersCount >= 1000000 
+                                ? (followersCount / 1000000).toFixed(1) + 'M' 
+                                : followersCount >= 1000 
+                                    ? (followersCount / 1000).toFixed(0) + 'K' 
+                                    : followersCount;
+
+                            return (
+                                <motion.div 
+                                    key={creator.uid || creator.instagram}
+                                    whileHover={{ y: -6 }}
+                                    className="group relative bg-black/60 backdrop-blur-3xl border border-white/10 hover:border-neon-pink/40 rounded-[2.5rem] p-6 sm:p-8 flex flex-col justify-between overflow-hidden shadow-2xl transition-all duration-500"
+                                >
+                                    {/* Subtle internal aura */}
+                                    <div className="absolute top-0 right-0 w-32 h-32 bg-neon-pink/5 blur-[50px] pointer-events-none group-hover:bg-neon-pink/10 transition-colors" />
+
+                                    <div className="flex items-center gap-5">
+                                        {/* Profile Photo */}
+                                        <div className="relative">
+                                            <div className="w-18 h-18 sm:w-20 sm:h-20 rounded-2xl bg-zinc-900 border border-white/10 overflow-hidden shadow-2xl">
+                                                {creator.profilePicture ? (
+                                                    <img src={creator.profilePicture} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                                                ) : (
+                                                    <div className="w-full h-full flex items-center justify-center text-xl font-black text-white italic">
+                                                        {creator.name?.charAt(0) || 'C'}
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-[#030303] rounded-full flex items-center justify-center border border-white/5">
+                                                <div className="w-4.5 h-4.5 bg-neon-pink rounded-full flex items-center justify-center text-black font-black text-[9px] shadow-[0_0_8px_rgba(255,79,139,0.4)]">
+                                                    #{rank}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-1">
+                                            <h4 className="text-lg font-black text-white uppercase tracking-tight group-hover:text-neon-pink transition-colors">{creator.name}</h4>
+                                            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest flex items-center gap-1.5">
+                                                <MapPin size={10} className="text-neon-blue" /> {creator.city || 'Hub'}
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    {/* Followers Stats & Socials */}
+                                    <div className="mt-6 p-4 bg-white/[0.02] border border-white/5 rounded-2xl flex items-center justify-between">
+                                        <div>
+                                            <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest mb-0.5">Audience</p>
+                                            <p className="text-lg font-black text-neon-green italic leading-none">{formattedFollowers} Followers</p>
+                                        </div>
+                                        <a 
+                                            href={`https://instagram.com/${creator.instagram}`} 
+                                            target="_blank" 
+                                            rel="noopener noreferrer"
+                                            className="h-10 px-4 rounded-xl bg-white/5 hover:bg-neon-pink hover:text-black border border-white/10 hover:border-transparent text-white font-bold uppercase tracking-widest text-[9px] flex items-center gap-1.5 transition-all shadow-inner"
+                                        >
+                                            <Instagram size={12} />
+                                            <span>@{creator.instagram}</span>
+                                        </a>
+                                    </div>
+
+                                    {/* Niches */}
+                                    {((creator.specializations || creator.niches || [])).length > 0 && (
+                                        <div className="flex flex-wrap gap-1.5 mt-6">
+                                            {(creator.specializations || creator.niches || []).slice(0, 3).map((niche, i) => (
+                                                <span key={i} className="px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 text-[8px] font-black uppercase tracking-widest text-gray-400">
+                                                    {niche}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    )}
+                                </motion.div>
+                            );
+                        })}
                     </div>
                 </motion.section>
 

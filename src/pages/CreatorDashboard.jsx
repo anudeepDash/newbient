@@ -651,6 +651,285 @@ const CreatorSettingsView = ({ profile }) => {
 
 
 
+const CreatorReferralsView = ({ profile }) => {
+    const { creators } = useStore();
+    const [copied, setCopied] = useState(false);
+
+    // Compute referral link
+    const referralLink = `${window.location.origin}/creator/join?ref=${profile.creatorId || profile.uid.slice(0, 8).toUpperCase()}`;
+
+    const handleCopy = () => {
+        navigator.clipboard.writeText(referralLink);
+        setCopied(true);
+        useStore.getState().addToast("Referral link copied to clipboard!", "success");
+        setTimeout(() => setCopied(false), 2000);
+    };
+
+    // My referrals
+    const myReferrals = creators.filter(c => 
+        c.referredBy === profile.uid || 
+        (profile.creatorId && c.referredBy && c.referredBy.toUpperCase() === profile.creatorId.toUpperCase()) ||
+        (profile.instagram && c.referredBy && c.referredBy.toLowerCase() === profile.instagram.toLowerCase())
+    );
+
+    const approvedCount = myReferrals.filter(c => c.profileStatus === 'approved').length;
+
+    // Leaderboard
+    const getLeaderboard = () => {
+        const counts = {};
+        creators.forEach(c => {
+            if (c.referredBy) {
+                const referrer = creators.find(rc => 
+                    rc.uid === c.referredBy || 
+                    (rc.creatorId && rc.creatorId.toUpperCase() === c.referredBy.toUpperCase()) ||
+                    (rc.instagram && rc.instagram.toLowerCase() === c.referredBy.toLowerCase())
+                );
+                if (referrer) {
+                    counts[referrer.uid] = (counts[referrer.uid] || 0) + 1;
+                }
+            }
+        });
+
+        return creators
+            .map(c => ({
+                ...c,
+                referralCount: counts[c.uid] || 0
+            }))
+            .filter(c => c.referralCount > 0)
+            .sort((a, b) => b.referralCount - a.referralCount);
+    };
+
+    const leaderboard = getLeaderboard();
+    const myRank = leaderboard.findIndex(c => c.uid === profile.uid) + 1;
+
+    return (
+        <div className="space-y-12">
+            {/* Top Cards: Link + Stats */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                {/* Link Card */}
+                <div className="lg:col-span-7 bg-zinc-950/45 border border-white/[0.08] backdrop-blur-3xl p-8 rounded-[2.5rem] relative overflow-hidden flex flex-col justify-between shadow-2xl">
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-neon-blue/5 blur-[100px] pointer-events-none" />
+                    
+                    <div className="space-y-4">
+                        <div className="flex items-center gap-3 text-neon-blue font-black tracking-widest text-[10px] uppercase">
+                            <Link2 size={14} className="animate-pulse" />
+                            YOUR PERSONAL REFERRAL LINK
+                        </div>
+                        <h3 className="text-2xl sm:text-3xl font-black font-heading uppercase italic tracking-tight">INVITE OTHER CREATORS</h3>
+                        <p className="text-gray-400 text-xs sm:text-sm font-medium leading-relaxed max-w-xl">
+                            Share this link with fellow creators. When they register on Newbi using your link, they will be registered as your referral and you will rise on the dashboard leaderboard!
+                        </p>
+                    </div>
+
+                    <div className="mt-8 flex flex-col sm:flex-row gap-4">
+                        <div className="flex-1 h-14 bg-black/60 border border-white/10 rounded-xl px-4 flex items-center justify-between text-xs sm:text-sm font-bold text-gray-300 truncate select-all">
+                            {referralLink}
+                        </div>
+                        <Button 
+                            onClick={handleCopy}
+                            className="h-14 px-8 rounded-xl bg-white text-black font-black uppercase tracking-widest text-[10px] hover:bg-neon-blue transition-all flex items-center justify-center gap-2 shadow-lg shrink-0"
+                        >
+                            {copied ? <CheckCircle2 size={14} className="text-neon-green" /> : <Copy size={14} />}
+                            <span>{copied ? 'Copied' : 'Copy Link'}</span>
+                        </Button>
+                    </div>
+                </div>
+
+                {/* Stats Card */}
+                <div className="lg:col-span-5 bg-zinc-950/45 border border-white/[0.08] backdrop-blur-3xl p-8 rounded-[2.5rem] flex flex-col justify-between relative overflow-hidden shadow-2xl">
+                    <div className="absolute bottom-0 right-0 w-48 h-48 bg-neon-pink/5 blur-[100px] pointer-events-none" />
+                    
+                    <div className="flex items-center gap-3 text-neon-pink font-black tracking-widest text-[10px] uppercase">
+                        <TrendingUp size={14} />
+                        REFERRAL ANALYTICS
+                    </div>
+
+                    <div className="grid grid-cols-3 divide-x divide-white/5 py-4 my-2">
+                        <div className="flex flex-col items-center justify-center px-2">
+                            <span className="text-2xl sm:text-3xl font-black text-white italic leading-none">{myReferrals.length}</span>
+                            <span className="text-[7px] font-black text-gray-500 uppercase tracking-widest mt-2">Invited</span>
+                        </div>
+                        <div className="flex flex-col items-center justify-center px-2">
+                            <span className="text-2xl sm:text-3xl font-black text-neon-green italic leading-none">{approvedCount}</span>
+                            <span className="text-[7px] font-black text-gray-500 uppercase tracking-widest mt-2">Verified</span>
+                        </div>
+                        <div className="flex flex-col items-center justify-center px-2">
+                            <span className="text-2xl sm:text-3xl font-black text-neon-blue italic leading-none">
+                                {myRank > 0 ? `#${myRank}` : 'Unranked'}
+                            </span>
+                            <span className="text-[7px] font-black text-gray-500 uppercase tracking-widest mt-2">Rank</span>
+                        </div>
+                    </div>
+
+                    <div className="pt-4 border-t border-white/5 text-[9px] font-black uppercase tracking-widest text-gray-500 flex items-center justify-between">
+                        <span>INVITATION SUCCESS RATE</span>
+                        <span className="text-white">
+                            {myReferrals.length > 0 ? Math.round((approvedCount / myReferrals.length) * 100) : 0}%
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            {/* Bottom Content: Leaderboard + My Invites */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                {/* Leaderboard Table */}
+                <div className="lg:col-span-8 bg-zinc-950/45 border border-white/[0.08] backdrop-blur-3xl p-6 sm:p-8 rounded-[2.5rem] space-y-6 shadow-2xl">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-neon-blue/10 border border-neon-blue/20 flex items-center justify-center text-neon-blue shadow-inner">
+                            <Award size={18} />
+                        </div>
+                        <div>
+                            <h3 className="text-xl font-black uppercase tracking-tight italic">REFERRAL LEADERBOARD</h3>
+                            <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest mt-0.5">Top referrers in the network</p>
+                        </div>
+                    </div>
+
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left border-collapse">
+                            <thead>
+                                <tr className="border-b border-white/5 text-[9px] font-black text-gray-500 uppercase tracking-wider">
+                                    <th className="pb-4 pl-4 w-16">Rank</th>
+                                    <th className="pb-4">Creator</th>
+                                    <th className="pb-4 hidden sm:table-cell">City & Niche</th>
+                                    <th className="pb-4 text-right pr-4">Invited Creators</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-white/5">
+                                {leaderboard.slice(0, 10).map((creator, index) => {
+                                    const rank = index + 1;
+                                    const isMe = creator.uid === profile.uid;
+                                    
+                                    // Custom colors/styles for top 3
+                                    let rankBadge = `${rank}`;
+                                    let rankColor = "text-gray-400";
+                                    let rowBg = isMe ? "bg-white/[0.02] border-l-2 border-l-neon-blue" : "hover:bg-white/[0.01]";
+
+                                    if (rank === 1) {
+                                        rankBadge = "🥇";
+                                        rankColor = "text-yellow-400 font-extrabold shadow-[0_0_15px_rgba(234,179,8,0.2)]";
+                                    } else if (rank === 2) {
+                                        rankBadge = "🥈";
+                                        rankColor = "text-gray-300 font-bold";
+                                    } else if (rank === 3) {
+                                        rankBadge = "🥉";
+                                        rankColor = "text-amber-600 font-bold";
+                                    }
+
+                                    return (
+                                        <tr key={creator.uid} className={cn("transition-colors", rowBg)}>
+                                            <td className="py-4 pl-4 font-black text-sm">
+                                                <span className={rankColor}>{rankBadge}</span>
+                                            </td>
+                                            <td className="py-4">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-10 h-10 rounded-xl bg-zinc-900 border border-white/5 overflow-hidden flex items-center justify-center shrink-0">
+                                                        {creator.profilePicture ? (
+                                                            <img src={creator.profilePicture} alt="" className="w-full h-full object-cover" />
+                                                        ) : (
+                                                            <span className="text-xs font-black text-white italic">{creator.name?.charAt(0) || 'C'}</span>
+                                                        )}
+                                                    </div>
+                                                    <div>
+                                                        <span className={cn("text-xs font-bold uppercase tracking-wide block truncate max-w-[120px] sm:max-w-none", isMe ? "text-neon-blue font-black" : "text-white")}>
+                                                            {creator.name} {isMe && "(You)"}
+                                                        </span>
+                                                        <span className="text-[9px] text-gray-500 uppercase tracking-widest mt-0.5 block flex items-center gap-1">
+                                                            <Instagram size={8} className="text-neon-pink" /> @{creator.instagram}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td className="py-4 hidden sm:table-cell">
+                                                <div className="space-y-0.5">
+                                                    <span className="text-[10px] font-bold text-gray-300 uppercase tracking-wider block">{creator.city}</span>
+                                                    <span className="text-[8px] text-gray-500 uppercase tracking-widest block">{(creator.specializations || [])[0] || 'Niche'}</span>
+                                                </div>
+                                            </td>
+                                            <td className="py-4 text-right pr-4 font-black italic text-neon-green text-sm">
+                                                {creator.referralCount}
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+
+                                {leaderboard.length === 0 && (
+                                    <tr>
+                                        <td colSpan={4} className="py-12 text-center">
+                                            <p className="text-xs font-bold text-gray-500 uppercase tracking-widest">No referral activity in the network yet.</p>
+                                            <p className="text-[10px] text-gray-700 uppercase tracking-widest mt-1">Be the first to invite creators and dominate the leaderboard!</p>
+                                        </td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                {/* My Referrals List */}
+                <div className="lg:col-span-4 bg-zinc-950/45 border border-white/[0.08] backdrop-blur-3xl p-6 sm:p-8 rounded-[2.5rem] space-y-6 shadow-2xl flex flex-col justify-between">
+                    <div className="space-y-6">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-neon-pink/10 border border-neon-pink/20 flex items-center justify-center text-neon-pink shadow-inner">
+                                <Users size={18} />
+                            </div>
+                            <div>
+                                <h3 className="text-xl font-black uppercase tracking-tight italic">YOUR INVITES</h3>
+                                <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest mt-0.5">Creators you referred</p>
+                            </div>
+                        </div>
+
+                        <div className="space-y-4 max-h-[380px] overflow-y-auto pr-1 scrollbar-thin">
+                            {myReferrals.map((referred, index) => {
+                                const isApproved = referred.profileStatus === 'approved';
+                                return (
+                                    <div key={referred.uid} className="p-4 bg-black/45 border border-white/5 rounded-2xl flex items-center justify-between group hover:border-white/10 transition-colors">
+                                        <div className="flex items-center gap-3 min-w-0">
+                                            <div className="w-8 h-8 rounded-lg bg-zinc-900 border border-white/5 overflow-hidden flex items-center justify-center shrink-0">
+                                                {referred.profilePicture ? (
+                                                    <img src={referred.profilePicture} alt="" className="w-full h-full object-cover" />
+                                                ) : (
+                                                    <span className="text-[10px] font-black text-white italic">{referred.name?.charAt(0) || 'C'}</span>
+                                                )}
+                                            </div>
+                                            <div className="min-w-0">
+                                                <h4 className="text-xs font-bold text-white uppercase tracking-tight truncate max-w-[100px] sm:max-w-none">{referred.name}</h4>
+                                                <p className="text-[8px] text-gray-500 uppercase tracking-widest mt-0.5 truncate">@{referred.instagram}</p>
+                                            </div>
+                                        </div>
+
+                                        <div className={cn("px-2.5 py-1 rounded-md text-[8px] font-black uppercase tracking-widest border",
+                                            isApproved ? 'bg-neon-green/10 text-neon-green border-neon-green/20' : 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20')}>
+                                            {isApproved ? 'Verified' : 'Pending'}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+
+                            {myReferrals.length === 0 && (
+                                <div className="py-16 text-center">
+                                    <Users size={32} className="text-gray-700 mx-auto mb-4" />
+                                    <p className="text-[10px] font-bold text-gray-600 uppercase tracking-widest">You haven't referred any creators yet.</p>
+                                    <p className="text-[8px] text-gray-700 uppercase tracking-widest mt-1">Share your link to recruit creators!</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    <div className="pt-6 border-t border-white/5 mt-4">
+                        <Button 
+                            onClick={handleCopy}
+                            className="w-full h-14 rounded-xl bg-white/5 border border-white/10 text-white font-black uppercase tracking-widest text-[9px] hover:bg-white hover:text-black transition-all flex items-center justify-center gap-2 shadow-inner"
+                        >
+                            <Link2 size={12} /> Share Invite Link
+                        </Button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+
 const CreatorDashboard = () => {
     const { user, authInitialized, creators, campaigns, uploadToCloudinary, loading } = useStore();
     const navigate = useNavigate();
@@ -672,6 +951,12 @@ const CreatorDashboard = () => {
             const existingProfile = creators.find(c => c.uid === user.uid);
             if (existingProfile) {
                 setProfile(existingProfile);
+                if (!existingProfile.creatorId) {
+                    const generatedId = existingProfile.uid.slice(0, 8).toUpperCase();
+                    useStore.getState().updateCreator(existingProfile.uid, { creatorId: generatedId })
+                        .then(() => console.log(`Auto-migrated creatorId for ${existingProfile.uid}: ${generatedId}`))
+                        .catch(err => console.error("Failed to auto-migrate creatorId:", err));
+                }
             } else {
                 navigate('/creator/join');
             }
@@ -787,36 +1072,63 @@ const CreatorDashboard = () => {
                         animate={{ opacity: 1, x: 0 }}
                         className="lg:col-span-7 space-y-8"
                     >
-                        <div className="flex items-center gap-6">
-                            <div className="relative">
-                                <div className="absolute -inset-1 bg-gradient-to-r from-neon-blue to-neon-purple rounded-[2rem] blur opacity-20" />
-                                <div className="relative w-20 h-20 md:w-24 md:h-24 rounded-[2rem] bg-zinc-900 border border-white/10 overflow-hidden shadow-2xl">
+                        <div className="flex flex-col sm:flex-row items-center sm:items-center text-center sm:text-left gap-6 md:gap-8">
+                            <div className="relative shrink-0">
+                                <div className="absolute -inset-1.5 bg-gradient-to-r from-neon-blue to-neon-purple rounded-[2.5rem] md:rounded-[3.25rem] blur opacity-25" />
+                                <div className="relative w-28 h-28 md:w-36 md:h-36 rounded-[2.25rem] md:rounded-[2.85rem] bg-zinc-900 border border-white/10 overflow-hidden shadow-2xl flex items-center justify-center">
                                     {profile?.profilePicture ? (
                                         <img src={profile.profilePicture} alt="" className="w-full h-full object-cover" />
                                     ) : (
-                                        <div className="w-full h-full flex items-center justify-center text-3xl font-black text-white italic">
+                                        <div className="w-full h-full flex items-center justify-center text-4xl md:text-5xl font-black text-white italic">
                                             {profile?.name?.charAt(0) || 'C'}
                                         </div>
                                     )}
                                 </div>
-                                <div className="absolute -bottom-1 -right-1 w-8 h-8 bg-[#020202] rounded-full flex items-center justify-center border border-white/5">
-                                    <div className="w-5 h-5 bg-neon-green rounded-full flex items-center justify-center shadow-[0_0_15px_rgba(57,255,20,0.4)]">
-                                        <CheckCircle2 size={12} className="text-black" />
-                                    </div>
+                                <div className="absolute bottom-0 right-0 w-9 h-9 bg-[#020202] rounded-full flex items-center justify-center border border-white/5 shadow-2xl">
+                                    {profile?.profileStatus === 'approved' ? (
+                                        <div className="w-6.5 h-6.5 rounded-full bg-neon-green flex items-center justify-center shadow-[0_0_15px_rgba(57,255,20,0.4)]" title="Verified Creator">
+                                            <CheckCircle2 size={14} className="text-black" />
+                                        </div>
+                                    ) : (
+                                        <div className="w-6.5 h-6.5 rounded-full bg-yellow-500 flex items-center justify-center shadow-[0_0_15px_rgba(234,179,8,0.4)]" title="Pending Verification">
+                                            <Clock size={14} className="text-black animate-pulse" />
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                             <div>
-                                <div className="flex items-center gap-3 text-neon-blue font-black tracking-[0.4em] text-[10px] uppercase mb-2">
-                                    <Zap size={14} className="animate-pulse" />
-                                    Creator Dashboard
+                                <div className="flex flex-wrap items-center justify-center sm:justify-start gap-3 text-neon-blue font-black tracking-[0.4em] text-[10px] uppercase mb-2">
+                                    <span className="flex items-center gap-1.5"><Zap size={14} className="animate-pulse" /> Creator Dashboard</span>
+                                    {profile?.profileStatus === 'approved' ? (
+                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-neon-green/10 border border-neon-green/30 text-neon-green text-[8px] font-black tracking-widest uppercase ml-1">
+                                            <ShieldCheck size={10} /> Verified
+                                        </span>
+                                    ) : (
+                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-yellow-500/10 border border-yellow-500/30 text-yellow-500 text-[8px] font-black tracking-widest uppercase ml-1">
+                                            <Clock size={10} /> Pending Verification
+                                        </span>
+                                    )}
                                 </div>
-                                <h2 className="text-4xl md:text-6xl font-black font-heading tracking-tight uppercase italic leading-tight text-white pr-4 overflow-visible">
-                                    Hello, <span className="inline-block pr-12 -mr-12 italic text-transparent bg-clip-text bg-gradient-to-r from-white via-white to-gray-500">{profile?.name?.split(' ')[0] || 'Creator'}</span>
+                                <h2 className="text-2xl sm:text-4xl md:text-6xl font-black font-heading tracking-tight uppercase italic leading-tight text-white pr-4 overflow-visible whitespace-nowrap">
+                                    Hello, <span className="inline pr-12 -mr-12 italic text-transparent bg-clip-text bg-gradient-to-r from-white via-white to-gray-500">{profile?.name?.split(' ')[0] || 'Creator'}</span>
                                 </h2>
-                                <p className="text-gray-500 text-[11px] font-bold uppercase tracking-widest mt-4 flex items-center gap-3">
-                                    <span className="w-8 h-px bg-white/10" />
-                                    Manage your campaigns and submissions
-                                </p>
+                                <div className="flex flex-wrap items-center justify-center sm:justify-start gap-4 mt-6">
+                                    <button
+                                        onClick={() => {
+                                            navigator.clipboard.writeText(profile.creatorId || profile.uid.slice(0, 8).toUpperCase());
+                                            useStore.getState().addToast("Creator ID copied!", "success");
+                                        }}
+                                        className="px-3 py-1.5 rounded-xl bg-white/[0.03] hover:bg-white/[0.08] border border-white/10 text-gray-300 font-mono text-[10px] font-bold uppercase tracking-widest flex items-center gap-2 transition-all active:scale-95 shadow-inner"
+                                        title="Click to copy Creator ID"
+                                    >
+                                        <span className="text-[8px] font-black text-neon-blue tracking-wider">CREATOR ID:</span>
+                                        {profile.creatorId || profile.uid.slice(0, 8).toUpperCase()}
+                                    </button>
+                                    <div className="hidden sm:block w-1 h-4 bg-white/10" />
+                                    <p className="text-gray-500 text-[10px] font-bold uppercase tracking-widest flex items-center gap-3">
+                                        Manage your campaigns and submissions
+                                    </p>
+                                </div>
                             </div>
                         </div>
                     </motion.div>
@@ -830,15 +1142,15 @@ const CreatorDashboard = () => {
                         <div className="bg-zinc-950/45 border border-white/[0.08] backdrop-blur-3xl shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)] rounded-[2rem] sm:rounded-[2.5rem] p-1.5 sm:p-2 flex items-center overflow-hidden group">
                             <div className="flex-1 grid grid-cols-3 divide-x divide-white/5 py-4">
                                 <div className="flex flex-col items-center justify-center px-4">
-                                    <span className="text-2xl font-black text-white italic leading-none">{joinedCampaignsList.length}</span>
+                                    <span className="text-xl sm:text-2xl font-black text-white italic leading-none">{joinedCampaignsList.length}</span>
                                     <span className="text-[7px] font-black text-gray-500 uppercase tracking-widest mt-2">Campaigns</span>
                                 </div>
                                 <div className="flex flex-col items-center justify-center px-4">
-                                    <span className="text-2xl font-black text-white italic leading-none">{approvedTasks}</span>
+                                    <span className="text-xl sm:text-2xl font-black text-white italic leading-none">{approvedTasks}</span>
                                     <span className="text-[7px] font-black text-gray-500 uppercase tracking-widest mt-2">Deliverables</span>
                                 </div>
                                 <div className="flex flex-col items-center justify-center px-4">
-                                    <span className="text-2xl font-black text-neon-blue italic leading-none">{totalTasks > 0 ? Math.round((approvedTasks / totalTasks) * 100) : 0}%</span>
+                                    <span className="text-xl sm:text-2xl font-black text-neon-blue italic leading-none">{totalTasks > 0 ? Math.round((approvedTasks / totalTasks) * 100) : 0}%</span>
                                     <span className="text-[7px] font-black text-gray-500 uppercase tracking-widest mt-2">Efficiency</span>
                                 </div>
                             </div>
@@ -854,6 +1166,63 @@ const CreatorDashboard = () => {
 
                 {/* Main Content Area */}
                 <div className="space-y-16 md:space-y-24">
+                    {/* Quick Referral Banner */}
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="bg-zinc-950/40 border border-white/[0.06] backdrop-blur-3xl p-8 rounded-[2rem] relative overflow-hidden shadow-2xl flex flex-col md:flex-row items-center justify-between gap-8 group"
+                    >
+                        <div className="absolute top-0 left-0 w-80 h-80 bg-neon-blue/5 blur-[120px] pointer-events-none" />
+                        <div className="absolute bottom-0 right-0 w-64 h-64 bg-neon-pink/5 blur-[100px] pointer-events-none" />
+
+                        <div className="flex items-center gap-6 relative z-10 w-full md:w-auto">
+                            <div className="w-16 h-16 rounded-[2rem] bg-gradient-to-br from-neon-blue/15 to-neon-pink/5 border border-white/[0.08] flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform shrink-0">
+                                <Award className="text-neon-blue animate-pulse" size={28} />
+                            </div>
+                            <div className="space-y-2">
+                                <span className="text-[10px] font-black uppercase tracking-[0.3em] text-transparent bg-clip-text bg-gradient-to-r from-neon-blue to-neon-pink">
+                                    Creator Referral Program
+                                </span>
+                                <h3 className="text-xl md:text-2xl font-black font-heading uppercase tracking-tight italic text-white">
+                                    Invite Creators, Climb the Leaderboard
+                                </h3>
+                                <p className="text-gray-400 text-xs font-medium max-w-md">
+                                    Grow the Newbi community. Share your unique link, refer top talent, and track your achievements.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 w-full md:w-auto relative z-10 shrink-0">
+                            {/* Copy Link Field */}
+                            <div className="flex items-center bg-black/45 border border-white/10 rounded-2xl p-1.5 pl-4 grow md:grow-0 md:w-80">
+                                <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest select-none truncate">
+                                    {profile.creatorId || profile.uid.slice(0, 8).toUpperCase()}
+                                </span>
+                                <div className="w-px h-4 bg-white/15 mx-3" />
+                                <button
+                                    onClick={() => {
+                                        const referralLink = `${window.location.origin}/creator/join?ref=${profile.creatorId || profile.uid.slice(0, 8).toUpperCase()}`;
+                                        navigator.clipboard.writeText(referralLink);
+                                        useStore.getState().addToast("Referral link copied!", "success");
+                                    }}
+                                    className="ml-auto px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white hover:text-black border border-white/5 text-[9px] font-black uppercase tracking-widest transition-all flex items-center gap-2"
+                                >
+                                    <Copy size={12} />
+                                    Copy Link
+                                </button>
+                            </div>
+
+                            {/* View Leaderboard Button */}
+                            <button
+                                onClick={() => setActiveTab('referrals')}
+                                className="px-6 py-4 rounded-2xl bg-white text-black hover:bg-neon-blue hover:text-white font-black uppercase tracking-widest text-[9px] transition-all flex items-center justify-center gap-2 shadow-xl shrink-0"
+                            >
+                                <Users size={12} />
+                                Leaderboard
+                            </button>
+                        </div>
+                    </motion.div>
+
                     {/* Priority Section */}
                     {shortlistedCampaignsList.length > 0 && (
                         <motion.section 
@@ -916,7 +1285,7 @@ const CreatorDashboard = () => {
                                 </div>
 
                                 <div id="nav-tabs" className="flex items-center gap-6 md:gap-12 w-full overflow-x-auto scrollbar-hide snap-x">
-                                    {['opportunities', 'active'].map((tab) => (
+                                    {['opportunities', 'active', 'referrals'].map((tab) => (
                                         <button 
                                             key={tab}
                                             onClick={() => setActiveTab(tab)}
@@ -925,7 +1294,7 @@ const CreatorDashboard = () => {
                                                 activeTab === tab ? "text-white" : "text-gray-700 hover:text-gray-500"
                                             )}
                                         >
-                                            {tab === 'opportunities' ? 'New Openings' : 'Performance History'}
+                                            {tab === 'opportunities' ? 'New Openings' : tab === 'active' ? 'Performance History' : 'Referrals & Leaderboard'}
                                             {activeTab === tab && (
                                                 <motion.div 
                                                     layoutId="tab-underline" 
@@ -937,54 +1306,62 @@ const CreatorDashboard = () => {
                                 </div>
                             </div>
 
-                            <div className="flex items-center gap-4 w-full md:w-auto justify-end">
-                                <div className="px-5 py-2 rounded-full bg-white/5 border border-white/10 text-[9px] font-black uppercase tracking-widest text-gray-400 mr-auto md:mr-0">
-                                    <span className="text-white mr-2">{activeTab === 'opportunities' ? availableCampaigns.length : joinedCampaignsList.length}</span>
-                                    {activeTab === 'opportunities' ? 'GIGS DISCOVERED' : 'CAMPAIGNS TRACKED'}
-                                </div>
+                            {activeTab !== 'referrals' && (
+                                <div className="flex items-center gap-4 w-full md:w-auto justify-end">
+                                    <div className="px-5 py-2 rounded-full bg-white/5 border border-white/10 text-[9px] font-black uppercase tracking-widest text-gray-400 mr-auto md:mr-0">
+                                        <span className="text-white mr-2">{activeTab === 'opportunities' ? availableCampaigns.length : joinedCampaignsList.length}</span>
+                                        {activeTab === 'opportunities' ? 'GIGS DISCOVERED' : 'CAMPAIGNS TRACKED'}
+                                    </div>
 
-                                {/* Navigation Arrows */}
-                                <div className="flex items-center gap-2 md:hidden">
-                                    <button onClick={() => scrollContainer('opportunities-scroll', 'left')} className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-gray-400 hover:bg-white/10 hover:text-white transition-all">
-                                        <ChevronRight className="rotate-180" size={16} />
-                                    </button>
-                                    <button onClick={() => scrollContainer('opportunities-scroll', 'right')} className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-gray-400 hover:bg-white/10 hover:text-white transition-all">
-                                        <ChevronRight size={16} />
-                                    </button>
+                                    {/* Navigation Arrows */}
+                                    <div className="flex items-center gap-2 md:hidden">
+                                        <button onClick={() => scrollContainer('opportunities-scroll', 'left')} className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-gray-400 hover:bg-white/10 hover:text-white transition-all">
+                                            <ChevronRight className="rotate-180" size={16} />
+                                        </button>
+                                        <button onClick={() => scrollContainer('opportunities-scroll', 'right')} className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-gray-400 hover:bg-white/10 hover:text-white transition-all">
+                                            <ChevronRight size={16} />
+                                        </button>
+                                    </div>
                                 </div>
-                            </div>
+                            )}
                         </div>
 
-                        <div id="opportunities-scroll" className="flex overflow-x-auto md:grid md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-8 pb-4 scrollbar-hide snap-x">
-                            <AnimatePresence mode="popLayout">
-                                {(activeTab === 'opportunities' ? availableCampaigns : joinedCampaignsList).map(c => (
-                                    <motion.div
-                                        key={c.id}
-                                        layout
-                                        initial={{ opacity: 0, scale: 0.9 }}
-                                        animate={{ opacity: 1, scale: 1 }}
-                                        exit={{ opacity: 0, scale: 0.9 }}
-                                        className="min-w-[280px] w-[280px] md:min-w-0 md:w-auto snap-start"
-                                    >
-                                        <CampaignCard 
-                                            campaign={c} 
-                                            profile={profile} 
-                                            type={activeTab === 'opportunities' ? 'available' : 'joined'} 
-                                            onOpenMission={(camp) => navigate(`/campaign/${camp.id}`)} 
-                                        />
-                                    </motion.div>
-                                ))}
-                            </AnimatePresence>
-                        </div>
-
-                        {(activeTab === 'opportunities' ? availableCampaigns : joinedCampaignsList).length === 0 && (
-                            <div className="py-32 text-center">
-                                <div className="w-24 h-24 rounded-[2.5rem] bg-white/5 border border-white/10 flex items-center justify-center mx-auto mb-8 text-gray-700">
-                                    <Zap size={40} />
+                        {activeTab === 'referrals' ? (
+                            <CreatorReferralsView profile={profile} />
+                        ) : (
+                            <>
+                                <div id="opportunities-scroll" className="flex overflow-x-auto md:grid md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-8 pb-4 scrollbar-hide snap-x">
+                                    <AnimatePresence mode="popLayout">
+                                        {(activeTab === 'opportunities' ? availableCampaigns : joinedCampaignsList).map(c => (
+                                            <motion.div
+                                                key={c.id}
+                                                layout
+                                                initial={{ opacity: 0, scale: 0.9 }}
+                                                animate={{ opacity: 1, scale: 1 }}
+                                                exit={{ opacity: 0, scale: 0.9 }}
+                                                className="min-w-[280px] w-[280px] md:min-w-0 md:w-auto snap-start"
+                                            >
+                                                <CampaignCard 
+                                                    campaign={c} 
+                                                    profile={profile} 
+                                                    type={activeTab === 'opportunities' ? 'available' : 'joined'} 
+                                                    onOpenMission={(camp) => navigate(`/campaign/${camp.id}`)} 
+                                                />
+                                            </motion.div>
+                                        ))}
+                                    </AnimatePresence>
                                 </div>
-                                <h4 className="text-2xl font-black font-heading uppercase italic tracking-tighter text-gray-600 pr-4">No campaigns yet.</h4>
-                                <p className="text-[11px] font-black text-gray-700 uppercase tracking-widest mt-2 px-10">New campaigns matching your city and niche will appear here when available.</p>
-                            </div>
+
+                                {(activeTab === 'opportunities' ? availableCampaigns : joinedCampaignsList).length === 0 && (
+                                    <div className="py-32 text-center">
+                                        <div className="w-24 h-24 rounded-[2.5rem] bg-white/5 border border-white/10 flex items-center justify-center mx-auto mb-8 text-gray-700">
+                                            <Zap size={40} />
+                                        </div>
+                                        <h4 className="text-2xl font-black font-heading uppercase italic tracking-tighter text-gray-600 pr-4">No campaigns yet.</h4>
+                                        <p className="text-[11px] font-black text-gray-700 uppercase tracking-widest mt-2 px-10">New campaigns matching your city and niche will appear here when available.</p>
+                                    </div>
+                                )}
+                            </>
                         )}
                     </motion.div>
                 </div>
