@@ -35,6 +35,7 @@ import Scale from 'lucide-react/dist/esm/icons/scale';
 import ChevronDown from 'lucide-react/dist/esm/icons/chevron-down';
 import ChevronUp from 'lucide-react/dist/esm/icons/chevron-up';
 import FileSpreadsheet from 'lucide-react/dist/esm/icons/file-spreadsheet';
+import AlertTriangle from 'lucide-react/dist/esm/icons/alert-triangle';
 import { useStore } from '../../lib/store';
 import { Card } from '../../components/ui/Card';
 import { Input } from '../../components/ui/Input';
@@ -603,6 +604,12 @@ const AIStudio = () => {
     const [isExpandedPreview, setIsExpandedPreview] = useState(false);
     const [currentPreviewPage, setCurrentPreviewPage] = useState(0);
     const [isSaving, setIsSaving] = useState(false);
+    const [autosaveStatus, setAutosaveStatus] = useState('idle'); // 'idle' | 'saving' | 'saved' | 'error'
+    const [lastSaved, setLastSaved] = useState('');
+    const [showDraftBanner, setShowDraftBanner] = useState(false);
+    const isDirtyRef = useRef(false);
+    const initialProposalLoadedRef = useRef(false);
+    const initialAgreementLoadedRef = useRef(false);
     const [isGenerating, setIsGenerating] = useState(false);
     const [showPreviewMobile, setShowPreviewMobile] = useState(false);
     const previewContainerRef = useRef(null);
@@ -710,6 +717,22 @@ const AIStudio = () => {
 
     // Initialize existing proposal when editing
     const hasInitializedProposalRef = useRef(false);
+    const hasInitializedAgreementRef = useRef(false);
+    
+    useEffect(() => {
+        hasInitializedProposalRef.current = false;
+        hasInitializedAgreementRef.current = false;
+        initialProposalLoadedRef.current = false;
+        initialAgreementLoadedRef.current = false;
+    }, [id]);
+
+    useEffect(() => {
+        if (!id) {
+            initialProposalLoadedRef.current = true;
+            initialAgreementLoadedRef.current = true;
+        }
+    }, [id]);
+
     useEffect(() => {
         if (activeEngine === 'proposal' && id && proposals.length > 0 && !hasInitializedProposalRef.current) {
             const proposal = proposals.find(p => p.id === id);
@@ -732,9 +755,162 @@ const AIStudio = () => {
                 });
                 setProposalItems(proposal.items || []);
                 hasInitializedProposalRef.current = true;
+                setTimeout(() => {
+                    initialProposalLoadedRef.current = true;
+                }, 200);
             }
         }
     }, [id, proposals, activeEngine]);
+
+    useEffect(() => {
+        if (activeEngine === 'agreement' && id && agreements.length > 0 && !hasInitializedAgreementRef.current) {
+            const agreement = agreements.find(a => a.id === id);
+            if (agreement) {
+                setAgreementFormData(agreement);
+                hasInitializedAgreementRef.current = true;
+                setTimeout(() => {
+                    initialAgreementLoadedRef.current = true;
+                }, 200);
+            }
+        }
+    }, [id, agreements, activeEngine]);
+
+    useEffect(() => {
+        if (initialProposalLoadedRef.current && activeEngine === 'proposal') {
+            isDirtyRef.current = true;
+        }
+    }, [proposalFormData, proposalItems]);
+
+    useEffect(() => {
+        if (initialAgreementLoadedRef.current && activeEngine === 'agreement') {
+            isDirtyRef.current = true;
+        }
+    }, [agreementFormData]);
+
+    // Check for localStorage draft on mount
+    useEffect(() => {
+        if (id) return;
+        const draftProposal = localStorage.getItem('newbi_aistudio_draft_proposal_form');
+        const draftMessages = localStorage.getItem('newbi_aistudio_draft_messages');
+        if (draftProposal || draftMessages) {
+            setShowDraftBanner(true);
+        }
+    }, [id]);
+
+    const handleRestoreDraft = () => {
+        try {
+            const form = localStorage.getItem('newbi_aistudio_draft_proposal_form');
+            const items = localStorage.getItem('newbi_aistudio_draft_proposal_items');
+            const agreement = localStorage.getItem('newbi_aistudio_draft_agreement_form');
+            const msgs = localStorage.getItem('newbi_aistudio_draft_messages');
+            const eng = localStorage.getItem('newbi_aistudio_draft_engine');
+
+            if (form) setProposalFormData(JSON.parse(form));
+            if (items) setProposalItems(JSON.parse(items));
+            if (agreement) setAgreementFormData(JSON.parse(agreement));
+            if (msgs) setMessages(JSON.parse(msgs));
+            if (eng) setActiveEngine(eng);
+
+            addToast("Draft session successfully restored!", "success");
+        } catch (e) {
+            console.error("Failed to restore draft:", e);
+            addToast("Draft restoration failed", "error");
+        } finally {
+            setShowDraftBanner(false);
+        }
+    };
+
+    const handleClearDraft = () => {
+        localStorage.removeItem('newbi_aistudio_draft_proposal_form');
+        localStorage.removeItem('newbi_aistudio_draft_proposal_items');
+        localStorage.removeItem('newbi_aistudio_draft_agreement_form');
+        localStorage.removeItem('newbi_aistudio_draft_messages');
+        localStorage.removeItem('newbi_aistudio_draft_engine');
+        setShowDraftBanner(false);
+        addToast("Draft cleared", "info");
+    };
+
+    useEffect(() => {
+        if (!id) {
+            isDirtyRef.current = true;
+        }
+    }, [messages]);
+
+    // Firestore Autosave for editing existing documents
+    useEffect(() => {
+        if (!id) return;
+        if (!isDirtyRef.current) return;
+
+        if (activeEngine === 'proposal' && !initialProposalLoadedRef.current) return;
+        if (activeEngine === 'agreement' && !initialAgreementLoadedRef.current) return;
+
+        let active = true;
+        const timer = setTimeout(async () => {
+            if (!active) return;
+            setAutosaveStatus('saving');
+            try {
+                if (activeEngine === 'proposal') {
+                    const rawProposalData = { 
+                        ...proposalFormData, 
+                        items: proposalItems, 
+                        totalAmount: proposalTotalAmount, 
+                        subtotal: proposalSubtotal, 
+                        updatedAt: new Date().toISOString() 
+                    };
+                    const proposalData = JSON.parse(JSON.stringify(rawProposalData));
+                    await updateProposal(id, proposalData);
+                } else if (activeEngine === 'agreement') {
+                    const rawData = { 
+                        ...agreementFormData, 
+                        updatedAt: new Date().toISOString(),
+                        createdBy: agreementFormData.createdBy || user?.uid || null 
+                    };
+                    const data = JSON.parse(JSON.stringify(rawData));
+                    await updateAgreement(id, data);
+                }
+                if (active) {
+                    setAutosaveStatus('saved');
+                    setLastSaved(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+                    isDirtyRef.current = false;
+                }
+            } catch (err) {
+                console.error("AIStudio autosave failed:", err);
+                if (active) {
+                    setAutosaveStatus('error');
+                }
+            }
+        }, 5000);
+
+        return () => {
+            active = false;
+            clearTimeout(timer);
+        };
+    }, [id, activeEngine, proposalFormData, proposalItems, agreementFormData, proposalTotalAmount, proposalSubtotal]);
+
+    // LocalStorage Autosave for new documents
+    useEffect(() => {
+        if (id) return;
+        if (!isDirtyRef.current) return;
+
+        const timer = setTimeout(() => {
+            try {
+                localStorage.setItem('newbi_aistudio_draft_proposal_form', JSON.stringify(proposalFormData));
+                localStorage.setItem('newbi_aistudio_draft_proposal_items', JSON.stringify(proposalItems));
+                localStorage.setItem('newbi_aistudio_draft_agreement_form', JSON.stringify(agreementFormData));
+                localStorage.setItem('newbi_aistudio_draft_messages', JSON.stringify(messages));
+                localStorage.setItem('newbi_aistudio_draft_engine', activeEngine);
+                
+                setAutosaveStatus('saved');
+                setLastSaved(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+                isDirtyRef.current = false;
+            } catch (e) {
+                console.error("Failed to save draft session:", e);
+                setAutosaveStatus('error');
+            }
+        }, 3000);
+
+        return () => clearTimeout(timer);
+    }, [id, proposalFormData, proposalItems, agreementFormData, messages, activeEngine]);
 
     const proposalSubtotal = activeProposalItems.reduce((sum, item) => sum + (Number(item.price) || 0), 0);
     const proposalGstAmount = activeProposalData.showGst ? (proposalSubtotal * activeProposalData.gstRate) / 100 : 0;
@@ -961,6 +1137,14 @@ const AIStudio = () => {
                 const proposalData = JSON.parse(JSON.stringify(rawProposalData));
                 if (id) await updateProposal(id, proposalData);
                 else await addProposal({ ...proposalData, createdAt: new Date().toISOString() });
+                
+                localStorage.removeItem('newbi_aistudio_draft_proposal_form');
+                localStorage.removeItem('newbi_aistudio_draft_proposal_items');
+                localStorage.removeItem('newbi_aistudio_draft_agreement_form');
+                localStorage.removeItem('newbi_aistudio_draft_messages');
+                localStorage.removeItem('newbi_aistudio_draft_engine');
+                isDirtyRef.current = false;
+
                 addToast(`Proposal saved successfully!`, 'success');
                 navigate('/admin/proposals');
             }
@@ -1000,6 +1184,14 @@ const AIStudio = () => {
             const data = JSON.parse(JSON.stringify(rawData));
             if (id) await updateAgreement(id, data);
             else await addAgreement(data);
+            
+            localStorage.removeItem('newbi_aistudio_draft_proposal_form');
+            localStorage.removeItem('newbi_aistudio_draft_proposal_items');
+            localStorage.removeItem('newbi_aistudio_draft_agreement_form');
+            localStorage.removeItem('newbi_aistudio_draft_messages');
+            localStorage.removeItem('newbi_aistudio_draft_engine');
+            isDirtyRef.current = false;
+
             addToast("Agreement saved successfully!", "success");
             navigate('/admin/agreements');
         } catch (error) {
@@ -1569,6 +1761,21 @@ const AIStudio = () => {
                 </div>
 
                 <div className="flex items-center gap-3">
+                    {autosaveStatus !== 'idle' && (
+                        <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white/5 border border-white/10 select-none">
+                            <span className={cn(
+                                "w-1.5 h-1.5 rounded-full shrink-0",
+                                autosaveStatus === 'saving' && "bg-amber-400 animate-pulse",
+                                autosaveStatus === 'saved' && "bg-emerald-400",
+                                autosaveStatus === 'error' && "bg-red-500"
+                            )} />
+                            <span className="text-[8px] font-black uppercase tracking-widest text-zinc-400">
+                                {autosaveStatus === 'saving' && "Saving..."}
+                                {autosaveStatus === 'saved' && `Autosaved ${lastSaved}`}
+                                {autosaveStatus === 'error' && "Autosave error"}
+                            </span>
+                        </div>
+                    )}
                     <button
                         onClick={generatePDF}
                         disabled={isSaving}
@@ -1601,6 +1808,34 @@ const AIStudio = () => {
                     "w-full lg:w-[52%] border-r border-white/5 bg-[#050505] flex flex-col min-h-0 overflow-hidden",
                     isExpandedPreview && "hidden"
                 )}>
+                    {showDraftBanner && (
+                        <div className="mx-6 mt-6 p-4 rounded-2xl bg-zinc-900/90 border border-amber-500/20 shadow-[0_0_20px_rgba(245,158,11,0.05)] flex flex-col gap-3 relative overflow-hidden animate-fade-in shrink-0 z-30">
+                            <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-amber-400 to-amber-600" />
+                            <div className="flex items-start gap-3">
+                                <AlertTriangle size={18} className="text-amber-400 mt-0.5 shrink-0" />
+                                <div className="space-y-1">
+                                    <h4 className="text-xs font-black uppercase tracking-wider text-amber-400">Unsaved Session Draft Detected</h4>
+                                    <p className="text-[10px] text-zinc-400 font-medium leading-relaxed">
+                                        We found an incomplete draft from your previous AI sandbox session. Would you like to restore your work or clear this draft?
+                                    </p>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-2 justify-end">
+                                <button 
+                                    onClick={handleClearDraft}
+                                    className="px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider text-zinc-500 hover:text-zinc-300 transition-all"
+                                >
+                                    Dismiss Draft
+                                </button>
+                                <button 
+                                    onClick={handleRestoreDraft}
+                                    className="px-3.5 py-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20 text-amber-400 text-[9px] font-black uppercase tracking-wider transition-all shadow-[0_0_10px_rgba(245,158,11,0.05)]"
+                                >
+                                    Restore Session
+                                </button>
+                            </div>
+                        </div>
+                    )}
                     
                     {/* TOP BRANDING PANEL: GEMINI 3.5 FLASH ACTIVE */}
                     <div className="p-6 border-b border-white/5 relative overflow-hidden shrink-0">

@@ -136,6 +136,10 @@ const ContractGenerator = () => {
     const { id } = useParams();
     const navigate = useNavigate();
     const { addAgreement, updateAgreement, agreements, user, addToast, activeModel } = useStore();
+    const [autosaveStatus, setAutosaveStatus] = useState('idle'); // 'idle' | 'saving' | 'saved' | 'error'
+    const [lastSaved, setLastSaved] = useState('');
+    const isDirtyRef = useRef(false);
+    const initialDataLoadedRef = useRef(false);
     
     // UI State
     const [activeTab, setActiveTab] = useState('ai');
@@ -340,6 +344,84 @@ const ContractGenerator = () => {
         paginatedPages
     } = useContractGenerator(existingData);
 
+    const hasInitializedRef = useRef(false);
+    useEffect(() => {
+        hasInitializedRef.current = false;
+        initialDataLoadedRef.current = false;
+    }, [id]);
+
+    useEffect(() => {
+        if (!id) {
+            initialDataLoadedRef.current = true;
+        }
+    }, [id]);
+
+    useEffect(() => {
+        if (id && agreements.length > 0 && !hasInitializedRef.current) {
+            const agreement = agreements.find(a => a.id === id);
+            if (agreement) {
+                setFormData(agreement);
+                hasInitializedRef.current = true;
+                setTimeout(() => {
+                    initialDataLoadedRef.current = true;
+                }, 200);
+            }
+        }
+    }, [id, agreements]);
+
+    useEffect(() => {
+        if (initialDataLoadedRef.current) {
+            isDirtyRef.current = true;
+        }
+    }, [formData]);
+
+    useEffect(() => {
+        if (!initialDataLoadedRef.current || !isDirtyRef.current) return;
+
+        let active = true;
+        const timer = setTimeout(async () => {
+            if (!active) return;
+            setAutosaveStatus('saving');
+            try {
+                const rawData = { 
+                    ...formData, 
+                    updatedAt: new Date().toISOString(),
+                    createdBy: formData.createdBy || user?.uid || null 
+                };
+                const data = JSON.parse(JSON.stringify(rawData));
+                
+                if (id) {
+                    await updateAgreement(id, data);
+                    if (active) {
+                        setAutosaveStatus('saved');
+                        setLastSaved(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+                        isDirtyRef.current = false;
+                    }
+                } else {
+                    const newDocId = await addAgreement(data);
+                    if (active) {
+                        setAutosaveStatus('saved');
+                        setLastSaved(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+                        isDirtyRef.current = false;
+                        hasInitializedRef.current = true;
+                        initialDataLoadedRef.current = true;
+                        navigate(`/admin/agreements/edit/${newDocId}`, { replace: true });
+                    }
+                }
+            } catch (err) {
+                console.error("Agreement autosave failed:", err);
+                if (active) {
+                    setAutosaveStatus('error');
+                }
+            }
+        }, 5000);
+
+        return () => {
+            active = false;
+            clearTimeout(timer);
+        };
+    }, [formData, id]);
+
     useEffect(() => {
         const handleResize = () => {
             if (previewContainerRef.current) {
@@ -357,8 +439,6 @@ const ContractGenerator = () => {
         return () => window.removeEventListener('resize', handleResize);
     }, [userZoom, isExpandedPreview]);
 
-
-
     const handleSave = async () => {
         setIsSaving(true);
         try {
@@ -368,8 +448,17 @@ const ContractGenerator = () => {
                 createdBy: formData.createdBy || user?.uid || null 
             };
             const data = JSON.parse(JSON.stringify(rawData)); // Sanitize for Firestore
-            if (id) await updateAgreement(id, data);
-            else await addAgreement(data);
+            if (id) {
+                await updateAgreement(id, data);
+                isDirtyRef.current = false;
+                setAutosaveStatus('saved');
+                setLastSaved(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+            } else {
+                await addAgreement(data);
+                isDirtyRef.current = false;
+                setAutosaveStatus('saved');
+                setLastSaved(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+            }
             
             setPromptBoxClear(true);
             setTimeout(() => setPromptBoxClear(false), 100);
@@ -937,6 +1026,21 @@ const ContractGenerator = () => {
                         <Eye size={14} />
                         <span className="text-[8px] font-black uppercase tracking-widest">Preview</span>
                     </button>
+                    {autosaveStatus !== 'idle' && (
+                        <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white/5 border border-white/10 select-none">
+                            <span className={cn(
+                                "w-1.5 h-1.5 rounded-full shrink-0",
+                                autosaveStatus === 'saving' && "bg-amber-400 animate-pulse",
+                                autosaveStatus === 'saved' && "bg-emerald-400",
+                                autosaveStatus === 'error' && "bg-red-500"
+                            )} />
+                            <span className="text-[8px] font-black uppercase tracking-widest text-zinc-400">
+                                {autosaveStatus === 'saving' && "Saving..."}
+                                {autosaveStatus === 'saved' && `Autosaved ${lastSaved}`}
+                                {autosaveStatus === 'error' && "Autosave error"}
+                            </span>
+                        </div>
+                    )}
                     <button onClick={handleSave} disabled={isSaving} className="h-10 md:h-12 px-3 md:px-8 bg-white/5 hover:bg-white/10 text-white font-black uppercase tracking-widest text-[9px] md:text-[10px] rounded-xl border border-white/10 transition-all flex items-center gap-2">
                         {isSaving ? <RefreshCw className="animate-spin" size={14} /> : <Save size={14} />} 
                         <span className="hidden sm:inline">Save Draft</span>
