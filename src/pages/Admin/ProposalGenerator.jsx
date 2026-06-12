@@ -31,6 +31,8 @@ import ImageIcon from 'lucide-react/dist/esm/icons/image';
 import ClipboardList from 'lucide-react/dist/esm/icons/clipboard-list';
 import Undo2 from 'lucide-react/dist/esm/icons/undo-2';
 import Upload from 'lucide-react/dist/esm/icons/upload';
+import Paperclip from 'lucide-react/dist/esm/icons/paperclip';
+import LinkIcon from 'lucide-react/dist/esm/icons/link';
 import Sparkles from 'lucide-react/dist/esm/icons/sparkles';
 import Cpu from 'lucide-react/dist/esm/icons/cpu';
 import PenTool from 'lucide-react/dist/esm/icons/pen-tool';
@@ -546,6 +548,9 @@ const ProposalGenerator = () => {
     const [isSignaturesCollapsed, setIsSignaturesCollapsed] = useState(true);
     const [bulkRawText, setBulkRawText] = useState('');
     const [bulkCampaignName, setBulkCampaignName] = useState('PROPOSAL PLAN');
+    const [isUploadingFile, setIsUploadingFile] = useState(false);
+    const [linkName, setLinkName] = useState('');
+    const [linkUrl, setLinkUrl] = useState('');
 
     const [isBulkMode, setIsBulkMode] = useState(false);
     const [bulkProposals, setBulkProposals] = useState([]);
@@ -721,7 +726,8 @@ const ProposalGenerator = () => {
         inventoryTitle: 'RESOURCE INVENTORY',
         inventorySub: 'COMMERCIALS BREAKDOWN',
         commercialsTitle: 'COMMERCIAL TERMS',
-        commercialsSub: 'SETTLEMENT & SIGN-OFF'
+        commercialsSub: 'SETTLEMENT & SIGN-OFF',
+        attachments: []
     });
 
     const [singleItems, setSingleItems] = useState([
@@ -784,7 +790,8 @@ const ProposalGenerator = () => {
                     inventoryTitle: proposal.inventoryTitle ?? 'RESOURCE INVENTORY',
                     inventorySub: proposal.inventorySub ?? 'COMMERCIALS BREAKDOWN',
                     commercialsTitle: proposal.commercialsTitle ?? 'COMMERCIAL TERMS',
-                    commercialsSub: proposal.commercialsSub ?? 'SETTLEMENT & SIGN-OFF'
+                    commercialsSub: proposal.commercialsSub ?? 'SETTLEMENT & SIGN-OFF',
+                    attachments: proposal.attachments || []
                 });
                 setSingleItems(proposal.items || []);
                 hasInitializedRef.current = true;
@@ -1047,6 +1054,12 @@ const ProposalGenerator = () => {
             }
         }
         insertCustomPagesFor('commercials');
+        if (!isHidden('attachments') && formData.attachments && formData.attachments.length > 0) {
+            pages.push({
+                type: 'attachments',
+                attachments: formData.attachments
+            });
+        }
         return pages;
     };
     const handleSave = async () => {
@@ -1129,7 +1142,8 @@ const ProposalGenerator = () => {
             '4': 'proposal', 
             '5': 'table', 
             '6': 'commercials',
-            '7': 'custom'
+            '7': 'custom',
+            '8': 'attachments'
         };
         const targetType = mapping[tabId];
         const pageIndex = pages.findIndex(p => p.type === targetType);
@@ -1922,8 +1936,9 @@ const ProposalGenerator = () => {
         { id: '3', label: 'Scope of Work', icon: ClipboardList, desc: 'Project Scope', visibilityKey: 'scopeOfWork' },
         { id: '4', label: 'Deliverables', icon: Layers, desc: 'What we deliver', visibilityKey: 'proposal' },
         { id: '5', label: 'Pricing Breakdown', icon: Briefcase, desc: 'Financial Details', visibilityKey: 'inventory' },
-        { id: '6', label: 'Payment & Terms', icon: CreditCard, desc: 'Settlement & Terms', visibilityKey: 'paymentDetails' },
-        { id: '7', label: 'Custom Pages', icon: FileText, desc: 'Additional Pages', visibilityKey: 'customPages' }
+        { id: '6', label: 'Payment & Terms', icon: CreditCard, desc: 'Settlement & Terms', visibilityKey: 'commercials' },
+        { id: '7', label: 'Custom Pages', icon: FileText, desc: 'Additional Pages', visibilityKey: 'customPages' },
+        { id: '8', label: 'Attachments', icon: Paperclip, desc: 'Attached Sheets & PDFs', visibilityKey: 'attachments' }
     ];
 
 
@@ -3358,6 +3373,242 @@ const ProposalGenerator = () => {
                                         </div>
                                     </div>
                                 )}
+                                {activeTab === '8' && (
+                                    <div className="flex flex-col gap-10">
+                                        <div className="flex flex-col md:flex-row gap-8">
+                                            {/* Upload Card */}
+                                            <div className="flex-1 bg-zinc-900/30 border border-white/5 p-8 rounded-[2.5rem] flex flex-col justify-between group/card relative overflow-hidden min-h-[300px]">
+                                                <div className="absolute -top-12 -left-12 w-24 h-24 bg-neon-green/5 blur-2xl group-hover/card:bg-neon-green/10 transition-all rounded-full pointer-events-none" />
+                                                <div className="space-y-4 relative z-10">
+                                                    <div className="flex items-center justify-between">
+                                                        <div className="space-y-1">
+                                                            <h3 className="text-xl font-black uppercase tracking-tight italic text-white">Upload Documents.</h3>
+                                                            <p className="text-[9px] font-bold text-neon-green uppercase tracking-wider">Spreadsheets & PDFs</p>
+                                                        </div>
+                                                        <div className="p-3 bg-neon-green/10 rounded-2xl border border-neon-green/20">
+                                                            <Upload size={18} className="text-neon-green" />
+                                                        </div>
+                                                    </div>
+                                                    <p className="text-[11px] text-gray-400 leading-relaxed font-sans">
+                                                        Directly attach supporting spreadsheets (CSV, Excel) or PDFs. These files are stored securely and rendered interactively inside the final proposal.
+                                                    </p>
+                                                </div>
+                                                
+                                                <div className="mt-8 relative z-10">
+                                                    <label 
+                                                        htmlFor="file-uploader" 
+                                                        className={cn(
+                                                            "w-full h-32 border-2 border-dashed border-white/10 hover:border-neon-green/30 rounded-2xl flex flex-col items-center justify-center gap-2 cursor-pointer transition-all hover:bg-neon-green/[0.02] group/upload",
+                                                            isUploadingFile && "opacity-50 pointer-events-none"
+                                                        )}
+                                                    >
+                                                        {isUploadingFile ? (
+                                                            <>
+                                                                <RefreshCw className="animate-spin text-neon-green" size={24} />
+                                                                <span className="text-[9px] font-black uppercase tracking-widest text-neon-green">Uploading to Storage...</span>
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                <Upload className="text-gray-400 group-hover/upload:text-neon-green transition-colors" size={24} />
+                                                                <span className="text-[9px] font-black uppercase tracking-widest text-gray-300">Choose file or drag here</span>
+                                                                <span className="text-[8px] font-medium text-gray-500 uppercase">PDF, CSV, XLSX (Max 10MB)</span>
+                                                            </>
+                                                        )}
+                                                    </label>
+                                                    <input 
+                                                        type="file" 
+                                                        className="hidden" 
+                                                        id="file-uploader" 
+                                                        accept=".pdf,.csv,.xlsx,.xls,.tsv" 
+                                                        disabled={isUploadingFile}
+                                                        onChange={async (e) => {
+                                                            const file = e.target.files?.[0];
+                                                            if (!file) return;
+                                                            setIsUploadingFile(true);
+                                                            try {
+                                                                const uniqueId = Math.random().toString(36).substring(2, 9);
+                                                                const cleanName = file.name.replace(/[^a-zA-Z0-9.]/g, '_');
+                                                                const storagePath = `proposals/attachments/${uniqueId}_${cleanName}`;
+                                                                const storageRef = ref(storage, storagePath);
+                                                                await uploadBytes(storageRef, file);
+                                                                const downloadUrl = await getDownloadURL(storageRef);
+                                                                
+                                                                const ext = file.name.split('.').pop()?.toLowerCase();
+                                                                let fileType = 'other';
+                                                                if (ext === 'pdf') fileType = 'pdf';
+                                                                else if (['csv', 'xlsx', 'xls', 'tsv'].includes(ext || '')) fileType = 'spreadsheet';
+
+                                                                const newAttachment = {
+                                                                    id: Date.now(),
+                                                                    name: file.name,
+                                                                    url: downloadUrl,
+                                                                    type: 'file',
+                                                                    fileType
+                                                                };
+
+                                                                setFormData(prev => ({
+                                                                    ...prev,
+                                                                    attachments: [...(prev.attachments || []), newAttachment]
+                                                                }));
+                                                                addToast('Attachment uploaded successfully', 'success');
+                                                            } catch (err) {
+                                                                addToast(`Upload failed: ${err.message}`, 'error');
+                                                            } finally {
+                                                                setIsUploadingFile(false);
+                                                            }
+                                                        }}
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            {/* Link Card */}
+                                            <div className="flex-1 bg-zinc-900/30 border border-white/5 p-8 rounded-[2.5rem] flex flex-col justify-between group/card relative overflow-hidden min-h-[300px]">
+                                                <div className="absolute -top-12 -left-12 w-24 h-24 bg-neon-green/5 blur-2xl group-hover/card:bg-neon-green/10 transition-all rounded-full pointer-events-none" />
+                                                <div className="space-y-4 relative z-10 w-full">
+                                                    <div className="flex items-center justify-between">
+                                                        <div className="space-y-1">
+                                                            <h3 className="text-xl font-black uppercase tracking-tight italic text-white">Link Directories.</h3>
+                                                            <p className="text-[9px] font-bold text-neon-green uppercase tracking-wider">External Sheets & Hubs</p>
+                                                        </div>
+                                                        <div className="p-3 bg-neon-green/10 rounded-2xl border border-neon-green/20">
+                                                            <LinkIcon size={18} className="text-neon-green" />
+                                                        </div>
+                                                    </div>
+                                                    <p className="text-[11px] text-gray-400 leading-relaxed font-sans">
+                                                        Attach external Google Sheets, Airtable, Notion dashboards, or web PDF links for active sync.
+                                                    </p>
+                                                </div>
+
+                                                <div className="mt-6 space-y-4 relative z-10 w-full">
+                                                    <Input 
+                                                        label="Document Title" 
+                                                        value={linkName} 
+                                                        onChange={e => setLinkName(e.target.value)} 
+                                                        placeholder="e.g. Budget Worksheet" 
+                                                    />
+                                                    <Input 
+                                                        label="Document URL" 
+                                                        value={linkUrl} 
+                                                        onChange={e => setLinkUrl(e.target.value)} 
+                                                        placeholder="e.g. https://docs.google.com/spreadsheets/..." 
+                                                    />
+                                                    <Button 
+                                                        onClick={() => {
+                                                            if (!linkName.trim() || !linkUrl.trim()) {
+                                                                addToast('Please enter both name and link URL', 'error');
+                                                                return;
+                                                            }
+                                                            let fileType = 'other';
+                                                            const urlLower = linkUrl.toLowerCase();
+                                                            if (urlLower.includes('.pdf') || urlLower.includes('pdf')) {
+                                                                fileType = 'pdf';
+                                                            } else if (urlLower.includes('spreadsheets') || urlLower.includes('csv') || urlLower.includes('excel')) {
+                                                                fileType = 'spreadsheet';
+                                                            }
+
+                                                            const newAttachment = {
+                                                                    id: Date.now(),
+                                                                    name: linkName.trim(),
+                                                                    url: linkUrl.trim(),
+                                                                    type: 'link',
+                                                                    fileType
+                                                            };
+
+                                                            setFormData(prev => ({
+                                                                ...prev,
+                                                                attachments: [...(prev.attachments || []), newAttachment]
+                                                            }));
+                                                            setLinkName('');
+                                                            setLinkUrl('');
+                                                            addToast('Link added successfully', 'success');
+                                                        }}
+                                                        className="w-full bg-zinc-950 border border-white/10 text-white hover:bg-neon-green hover:text-black uppercase tracking-widest text-[9px] font-black h-12"
+                                                    >
+                                                        Link Document
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Attachments List */}
+                                        <div className="space-y-4">
+                                            <h4 className="text-[10px] font-black text-gray-500 uppercase tracking-widest px-2">Current Attachments ({(formData.attachments || []).length})</h4>
+                                            
+                                            {(formData.attachments || []).length === 0 ? (
+                                                <div className="p-12 border border-dashed border-white/5 rounded-[2.5rem] bg-zinc-950/20 text-center">
+                                                    <p className="text-gray-500 text-xs font-bold uppercase tracking-wider">No documents attached yet</p>
+                                                    <p className="text-gray-600 text-[10px] font-medium uppercase mt-1">Files or links added will appear here</p>
+                                                </div>
+                                            ) : (
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                    {(formData.attachments || []).map((attachment, idx) => {
+                                                        const isSpreadsheet = attachment.fileType === 'spreadsheet';
+                                                        const isPdf = attachment.fileType === 'pdf';
+                                                        
+                                                        return (
+                                                            <div key={attachment.id || idx} className="p-6 bg-zinc-950/40 border border-white/5 rounded-[2.5rem] flex items-center justify-between group/item hover:border-white/10 transition-all">
+                                                                <div className="flex items-center gap-4 min-w-0 flex-1">
+                                                                    <div className={cn(
+                                                                        "w-12 h-12 rounded-2xl flex items-center justify-center border shrink-0",
+                                                                        isSpreadsheet && "bg-[#107C41]/10 border-[#107C41]/20 text-[#107C41]",
+                                                                        isPdf && "bg-red-500/10 border-red-500/20 text-red-500",
+                                                                        (!isSpreadsheet && !isPdf) && "bg-blue-500/10 border-blue-500/20 text-blue-500"
+                                                                    )}>
+                                                                        {isSpreadsheet ? (
+                                                                            <FileSpreadsheet size={20} />
+                                                                        ) : isPdf ? (
+                                                                            <FileText size={20} />
+                                                                        ) : (
+                                                                            <LinkIcon size={20} />
+                                                                        )}
+                                                                    </div>
+                                                                    <div className="min-w-0 flex-1">
+                                                                        <input 
+                                                                            type="text"
+                                                                            value={attachment.name}
+                                                                            onChange={e => {
+                                                                                const updated = [...(formData.attachments || [])];
+                                                                                updated[idx] = { ...attachment, name: e.target.value };
+                                                                                setFormData({ ...formData, attachments: updated });
+                                                                            }}
+                                                                            className="bg-transparent border-b border-transparent hover:border-white/20 focus:border-neon-green/50 text-xs font-black text-white w-full outline-none transition-all pb-0.5"
+                                                                        />
+                                                                        <p className="text-[8px] font-bold text-gray-500 uppercase tracking-widest mt-1 truncate">
+                                                                            {attachment.type === 'file' ? 'Uploaded Storage File' : 'External Web URL'} &bull; {attachment.fileType?.toUpperCase()}
+                                                                        </p>
+                                                                    </div>
+                                                                </div>
+
+                                                                <div className="flex items-center gap-2 pl-4">
+                                                                    <a 
+                                                                        href={attachment.url} 
+                                                                        target="_blank" 
+                                                                        rel="noopener noreferrer" 
+                                                                        className="p-2 bg-zinc-900 hover:bg-zinc-800 text-gray-400 hover:text-white rounded-xl border border-white/5 transition-colors"
+                                                                        title="Open Link"
+                                                                    >
+                                                                        <Maximize2 size={13} />
+                                                                    </a>
+                                                                    <button
+                                                                        onClick={() => {
+                                                                            const updated = (formData.attachments || []).filter(a => a.id !== attachment.id);
+                                                                            setFormData({ ...formData, attachments: updated });
+                                                                            addToast('Attachment removed', 'success');
+                                                                        }}
+                                                                        className="p-2 bg-red-500/5 hover:bg-red-500/10 text-red-400/70 hover:text-red-400 rounded-xl border border-red-500/10 transition-colors"
+                                                                        title="Delete Attachment"
+                                                                    >
+                                                                        <Trash2 size={13} />
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
                              </motion.div>
                          </AnimatePresence>
 
@@ -3781,6 +4032,67 @@ const ProposalGenerator = () => {
                                                 )}
                                             </div>
                                         )}
+                                        {paginatedPages[currentPreviewPage]?.type === 'attachments' && (
+                                            <div className="space-y-12 py-10 px-4 h-full flex flex-col justify-between">
+                                                <div>
+                                                    <div className="mb-10 space-y-3">
+                                                        <h3 className="text-3xl font-black text-black tracking-tight uppercase leading-none">
+                                                            APPENDIX / ATTACHMENTS.
+                                                        </h3>
+                                                        <div className="w-20 h-1.5 bg-neon-green" />
+                                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">
+                                                            SUPPORTING INSTRUMENTS & DOCUMENTATION
+                                                        </p>
+                                                    </div>
+                                                    
+                                                    <div className="grid grid-cols-2 gap-8 mt-12">
+                                                        {(paginatedPages[currentPreviewPage]?.attachments || []).map((attachment, idx) => {
+                                                            const isSpreadsheet = attachment.fileType === 'spreadsheet';
+                                                            const isPdf = attachment.fileType === 'pdf';
+                                                            const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(attachment.url)}`;
+                                                            
+                                                            return (
+                                                                <div key={idx} className="p-6 border border-gray-200 rounded-[2rem] flex flex-col justify-between h-44 relative bg-gray-50/50">
+                                                                    <div className="flex items-start justify-between gap-4">
+                                                                        <div className="min-w-0">
+                                                                            <h4 className="text-xs font-black text-black uppercase tracking-wider truncate" title={attachment.name}>
+                                                                                {attachment.name}
+                                                                            </h4>
+                                                                            <p className="text-[8px] font-bold text-gray-400 uppercase tracking-widest mt-1">
+                                                                                {attachment.type === 'file' ? 'Uploaded Storage File' : 'Linked URL'}
+                                                                            </p>
+                                                                        </div>
+                                                                        <span className={cn(
+                                                                            "text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border shrink-0",
+                                                                            isSpreadsheet && "bg-[#107C41]/10 border-[#107C41]/20 text-[#107C41]",
+                                                                            isPdf && "bg-red-500/10 border-red-500/20 text-red-500",
+                                                                            (!isSpreadsheet && !isPdf) && "bg-blue-500/10 border-blue-500/20 text-blue-500"
+                                                                        )}>
+                                                                            {attachment.fileType || 'Link'}
+                                                                        </span>
+                                                                    </div>
+                                                                    
+                                                                    <div className="flex items-end justify-between mt-4">
+                                                                        <a 
+                                                                            href={attachment.url} 
+                                                                            target="_blank" 
+                                                                            rel="noopener noreferrer" 
+                                                                            className="text-[9px] font-black uppercase tracking-widest text-neon-green bg-black hover:bg-zinc-800 transition-colors px-3 py-1.5 rounded-xl inline-block"
+                                                                        >
+                                                                            View Document &rarr;
+                                                                        </a>
+                                                                        
+                                                                        <div className="w-14 h-14 bg-white p-0.5 rounded-lg border border-gray-200 shadow-sm shrink-0">
+                                                                            <img src={qrCodeUrl} alt="QR Access" className="w-full h-full object-contain" />
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
                                         </div>
                                     </div>
                                     <div className="mt-auto pt-8 pb-10 border-t border-gray-100 flex justify-between items-center text-[9px] font-black text-gray-400 uppercase tracking-[0.4em]">
@@ -4130,6 +4442,67 @@ const ProposalGenerator = () => {
                                     )}
                                 </div>
                             )}
+                            {page.type === 'attachments' && (
+                                <div className="space-y-12 py-10 px-4 h-full flex flex-col justify-between">
+                                    <div>
+                                        <div className="mb-10 space-y-3">
+                                            <h3 className="text-3xl font-black text-black tracking-tight uppercase leading-none">
+                                                APPENDIX / ATTACHMENTS.
+                                            </h3>
+                                            <div className="w-20 h-1.5 bg-neon-green" />
+                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">
+                                                SUPPORTING INSTRUMENTS & DOCUMENTATION
+                                            </p>
+                                        </div>
+                                        
+                                        <div className="grid grid-cols-2 gap-8 mt-12">
+                                            {(page.attachments || []).map((attachment, idx) => {
+                                                const isSpreadsheet = attachment.fileType === 'spreadsheet';
+                                                const isPdf = attachment.fileType === 'pdf';
+                                                const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(attachment.url)}`;
+                                                
+                                                return (
+                                                    <div key={idx} className="p-6 border border-gray-200 rounded-[2rem] flex flex-col justify-between h-44 relative bg-gray-50/50">
+                                                        <div className="flex items-start justify-between gap-4">
+                                                            <div className="min-w-0">
+                                                                <h4 className="text-xs font-black text-black uppercase tracking-wider truncate" title={attachment.name}>
+                                                                    {attachment.name}
+                                                                </h4>
+                                                                <p className="text-[8px] font-bold text-gray-400 uppercase tracking-widest mt-1">
+                                                                    {attachment.type === 'file' ? 'Uploaded Storage File' : 'Linked URL'}
+                                                                </p>
+                                                            </div>
+                                                            <span className={cn(
+                                                                "text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border shrink-0",
+                                                                isSpreadsheet && "bg-[#107C41]/10 border-[#107C41]/20 text-[#107C41]",
+                                                                isPdf && "bg-red-500/10 border-red-500/20 text-red-500",
+                                                                (!isSpreadsheet && !isPdf) && "bg-blue-500/10 border-blue-500/20 text-blue-500"
+                                                            )}>
+                                                                {attachment.fileType || 'Link'}
+                                                            </span>
+                                                        </div>
+                                                        
+                                                        <div className="flex items-end justify-between mt-4">
+                                                            <a 
+                                                                href={attachment.url} 
+                                                                target="_blank" 
+                                                                rel="noopener noreferrer" 
+                                                                className="text-[9px] font-black uppercase tracking-widest text-neon-green bg-black hover:bg-zinc-800 transition-colors px-3 py-1.5 rounded-xl inline-block"
+                                                            >
+                                                                View Document &rarr;
+                                                             </a>
+                                                             
+                                                             <div className="w-14 h-14 bg-white p-0.5 rounded-lg border border-gray-200 shadow-sm shrink-0">
+                                                                 <img src={qrCodeUrl} alt="QR Access" className="w-full h-full object-contain" />
+                                                             </div>
+                                                         </div>
+                                                     </div>
+                                                 );
+                                             })}
+                                         </div>
+                                     </div>
+                                 </div>
+                             )}
                             </div>
                         </div>
                         <div className="mt-auto pt-8 pb-10 border-t border-gray-100 flex justify-between items-center text-[9px] font-black text-gray-400 uppercase tracking-[0.4em]">

@@ -21,6 +21,9 @@ import RefreshCw from 'lucide-react/dist/esm/icons/refresh-cw';
 import Trash2 from 'lucide-react/dist/esm/icons/trash-2';
 import Upload from 'lucide-react/dist/esm/icons/upload';
 import X from 'lucide-react/dist/esm/icons/x';
+import Paperclip from 'lucide-react/dist/esm/icons/paperclip';
+import LinkIcon from 'lucide-react/dist/esm/icons/link';
+import FileSpreadsheet from 'lucide-react/dist/esm/icons/file-spreadsheet';
 import ChevronLeft from 'lucide-react/dist/esm/icons/chevron-left';
 import ChevronRight from 'lucide-react/dist/esm/icons/chevron-right';
 import Cpu from 'lucide-react/dist/esm/icons/cpu';
@@ -344,6 +347,8 @@ const Proposal = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isSignatureModalOpen, setIsSignatureModalOpen] = useState(false);
     const [isSignaturesCollapsed, setIsSignaturesCollapsed] = useState(true);
+    const [isAttachmentDrawerOpen, setIsAttachmentDrawerOpen] = useState(false);
+    const [previewingAttachment, setPreviewingAttachment] = useState(null);
 
     useEffect(() => {
         const handleResize = () => {
@@ -985,6 +990,12 @@ const Proposal = () => {
             }
         }
         insertCustomPagesFor('commercials');
+        if (!isHidden('attachments') && displayProposal.attachments && displayProposal.attachments.length > 0) {
+            pages.push({
+                type: 'attachments',
+                attachments: displayProposal.attachments
+            });
+        }
         return pages;
     };
 
@@ -1020,6 +1031,16 @@ const Proposal = () => {
                             </div>
                         </div>
                         <div className="flex items-center gap-2 sm:gap-4">
+                            {displayProposal.attachments && displayProposal.attachments.length > 0 && (
+                                <button 
+                                    onClick={() => setIsAttachmentDrawerOpen(true)} 
+                                    className="p-2.5 sm:p-3 bg-neon-green/10 rounded-2xl hover:bg-neon-green/20 border border-neon-green/35 text-neon-green transition-all flex items-center gap-1.5"
+                                    title="View Attachments"
+                                >
+                                    <Paperclip size={16} />
+                                    <span className="text-[9px] font-black tracking-widest font-mono">{(displayProposal.attachments || []).length}</span>
+                                </button>
+                            )}
                             <button onClick={handleShare} className="p-2.5 sm:p-3 bg-white/5 rounded-2xl hover:bg-white/10 border border-white/5 text-gray-400 hover:text-neon-blue transition-all"><Share2 size={16} /></button>
                             <button onClick={() => window.print()} className="p-3 bg-white/5 rounded-2xl hover:bg-white/10 border border-white/5 hidden sm:block"><Printer size={18} /></button>
                             <Button onClick={handleDownloadPDF} className="bg-neon-green text-black font-black uppercase tracking-widest text-[9px] sm:text-[10px] h-10 sm:h-12 px-4 sm:px-8 rounded-xl sm:rounded-2xl shadow-[0_10px_30px_rgba(57,255,20,0.3)]">
@@ -1526,6 +1547,67 @@ const Proposal = () => {
                                                 </div>
                                             </div>
                                         )}
+                                        {page.type === 'attachments' && (
+                                            <div className="space-y-12 py-10 px-4 h-full flex flex-col justify-between">
+                                                <div>
+                                                    <div className="mb-10 space-y-3">
+                                                        <h3 className="text-3xl font-black text-black tracking-tight uppercase leading-none">
+                                                            APPENDIX / ATTACHMENTS.
+                                                        </h3>
+                                                        <div className="w-20 h-1.5 bg-neon-green" />
+                                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">
+                                                            SUPPORTING INSTRUMENTS & DOCUMENTATION
+                                                        </p>
+                                                    </div>
+                                                    
+                                                    <div className="grid grid-cols-2 gap-8 mt-12">
+                                                        {(page.attachments || []).map((attachment, idx) => {
+                                                            const isSpreadsheet = attachment.fileType === 'spreadsheet';
+                                                            const isPdf = attachment.fileType === 'pdf';
+                                                            const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(attachment.url)}`;
+                                                            
+                                                            return (
+                                                                <div key={idx} className="p-6 border border-gray-200 rounded-[2rem] flex flex-col justify-between h-44 relative bg-gray-50/50">
+                                                                    <div className="flex items-start justify-between gap-4">
+                                                                        <div className="min-w-0">
+                                                                            <h4 className="text-xs font-black text-black uppercase tracking-wider truncate" title={attachment.name}>
+                                                                                {attachment.name}
+                                                                            </h4>
+                                                                            <p className="text-[8px] font-bold text-gray-400 uppercase tracking-widest mt-1">
+                                                                                {attachment.type === 'file' ? 'Uploaded Storage File' : 'Linked URL'}
+                                                                            </p>
+                                                                        </div>
+                                                                        <span className={cn(
+                                                                            "text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border shrink-0",
+                                                                            isSpreadsheet && "bg-[#107C41]/10 border-[#107C41]/20 text-[#107C41]",
+                                                                            isPdf && "bg-red-500/10 border-red-500/20 text-red-500",
+                                                                            (!isSpreadsheet && !isPdf) && "bg-blue-500/10 border-blue-500/20 text-blue-500"
+                                                                        )}>
+                                                                            {attachment.fileType || 'Link'}
+                                                                        </span>
+                                                                    </div>
+                                                                    
+                                                                    <div className="flex items-end justify-between mt-4">
+                                                                        <a 
+                                                                            href={attachment.url} 
+                                                                            target="_blank" 
+                                                                            rel="noopener noreferrer" 
+                                                                            className="text-[9px] font-black uppercase tracking-widest text-neon-green bg-black hover:bg-zinc-800 transition-colors px-3 py-1.5 rounded-xl inline-block"
+                                                                        >
+                                                                            View Document &rarr;
+                                                                        </a>
+                                                                        
+                                                                        <div className="w-14 h-14 bg-white p-0.5 rounded-lg border border-gray-200 shadow-sm shrink-0">
+                                                                            <img src={qrCodeUrl} alt="QR Access" className="w-full h-full object-contain" />
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 )}
                                 </div>
@@ -1938,6 +2020,67 @@ const Proposal = () => {
                                     )}
                                 </div>
                             )}
+                            {page.type === 'attachments' && (
+                                <div className="space-y-12 py-10 px-4 h-full flex flex-col justify-between">
+                                    <div>
+                                        <div className="mb-10 space-y-3">
+                                            <h3 className="text-3xl font-black text-black tracking-tight uppercase leading-none">
+                                                APPENDIX / ATTACHMENTS.
+                                            </h3>
+                                            <div className="w-20 h-1.5 bg-neon-green" />
+                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">
+                                                SUPPORTING INSTRUMENTS & DOCUMENTATION
+                                            </p>
+                                        </div>
+                                        
+                                        <div className="grid grid-cols-2 gap-8 mt-12">
+                                            {(page.attachments || []).map((attachment, idx) => {
+                                                const isSpreadsheet = attachment.fileType === 'spreadsheet';
+                                                const isPdf = attachment.fileType === 'pdf';
+                                                const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(attachment.url)}`;
+                                                
+                                                return (
+                                                    <div key={idx} className="p-6 border border-gray-200 rounded-[2rem] flex flex-col justify-between h-44 relative bg-gray-50/50">
+                                                        <div className="flex items-start justify-between gap-4">
+                                                            <div className="min-w-0">
+                                                                <h4 className="text-xs font-black text-black uppercase tracking-wider truncate" title={attachment.name}>
+                                                                    {attachment.name}
+                                                                </h4>
+                                                                <p className="text-[8px] font-bold text-gray-400 uppercase tracking-widest mt-1">
+                                                                    {attachment.type === 'file' ? 'Uploaded Storage File' : 'Linked URL'}
+                                                                </p>
+                                                            </div>
+                                                            <span className={cn(
+                                                                "text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border shrink-0",
+                                                                isSpreadsheet && "bg-[#107C41]/10 border-[#107C41]/20 text-[#107C41]",
+                                                                isPdf && "bg-red-500/10 border-red-500/20 text-red-500",
+                                                                (!isSpreadsheet && !isPdf) && "bg-blue-500/10 border-blue-500/20 text-blue-500"
+                                                            )}>
+                                                                {attachment.fileType || 'Link'}
+                                                            </span>
+                                                        </div>
+                                                        
+                                                        <div className="flex items-end justify-between mt-4">
+                                                            <a 
+                                                                href={attachment.url} 
+                                                                target="_blank" 
+                                                                rel="noopener noreferrer" 
+                                                                className="text-[9px] font-black uppercase tracking-widest text-neon-green bg-black hover:bg-zinc-800 transition-colors px-3 py-1.5 rounded-xl inline-block"
+                                                            >
+                                                                View Document &rarr;
+                                                                </a>
+                                                            
+                                                            <div className="w-14 h-14 bg-white p-0.5 rounded-lg border border-gray-200 shadow-sm shrink-0">
+                                                                <img src={qrCodeUrl} alt="QR Access" className="w-full h-full object-contain" />
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
                             </div>
                         </div>
                         <div className="mt-auto pt-8 pb-10 border-t border-gray-100 flex justify-between items-center text-[9px] font-black text-gray-400 uppercase tracking-[0.4em]">
@@ -2014,6 +2157,181 @@ const Proposal = () => {
                                 <p className="text-[8px] font-bold text-gray-300 text-center uppercase tracking-widest mt-4">This digital signature is binding and non-repudiable.</p>
                             </div>
                         </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
+            {/* Attachments Drawer */}
+            <AnimatePresence>
+                {isAttachmentDrawerOpen && (
+                    <>
+                        {/* Backdrop */}
+                        <div 
+                            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[80] no-print"
+                            onClick={() => setIsAttachmentDrawerOpen(false)}
+                        />
+                        
+                        {/* Drawer */}
+                        <motion.div 
+                            initial={{ x: '100%' }}
+                            animate={{ x: 0 }}
+                            exit={{ x: '100%' }}
+                            transition={{ type: 'spring', damping: 25, stiffness: 250 }}
+                            className="fixed right-0 top-0 bottom-0 w-full max-w-md bg-zinc-950/95 backdrop-blur-3xl border-l border-white/10 z-[90] p-8 flex flex-col justify-between shadow-[0_0_50px_rgba(0,0,0,0.8)] no-print"
+                        >
+                            <div className="space-y-8 flex-1 overflow-y-auto scrollbar-hide">
+                                {/* Header */}
+                                <div className="flex items-center justify-between border-b border-white/5 pb-6">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded-2xl bg-neon-green/10 flex items-center justify-center border border-neon-green/20">
+                                            <Paperclip className="text-neon-green" size={18} />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-lg font-black uppercase tracking-tight italic">Attachments.</h3>
+                                            <p className="text-[8px] font-bold text-gray-500 uppercase tracking-widest">Supporting Documentation</p>
+                                        </div>
+                                    </div>
+                                    <button 
+                                        onClick={() => setIsAttachmentDrawerOpen(false)}
+                                        className="p-2.5 bg-white/5 rounded-xl hover:bg-white/10 border border-white/5 transition-all"
+                                    >
+                                        <X size={14} />
+                                    </button>
+                                </div>
+
+                                {/* List */}
+                                <div className="space-y-4">
+                                    {(displayProposal.attachments || []).map((attachment, idx) => {
+                                        const isSpreadsheet = attachment.fileType === 'spreadsheet';
+                                        const isPdf = attachment.fileType === 'pdf';
+                                        
+                                        return (
+                                            <div 
+                                                key={attachment.id || idx} 
+                                                className="p-4 rounded-3xl bg-white/[0.02] border border-white/5 hover:border-neon-green/30 transition-all flex items-center justify-between group"
+                                            >
+                                                <div className="flex items-center gap-4 min-w-0 flex-1">
+                                                    <div className={cn(
+                                                        "w-10 h-10 rounded-xl flex items-center justify-center border shrink-0",
+                                                        isSpreadsheet && "bg-[#107C41]/10 border-[#107C41]/20 text-[#107C41]",
+                                                        isPdf && "bg-red-500/10 border-red-500/20 text-red-500",
+                                                        (!isSpreadsheet && !isPdf) && "bg-blue-500/10 border-blue-500/20 text-blue-500"
+                                                    )}>
+                                                        {isSpreadsheet ? (
+                                                            <FileSpreadsheet size={16} />
+                                                        ) : isPdf ? (
+                                                            <FileText size={16} />
+                                                        ) : (
+                                                            <LinkIcon size={16} />
+                                                        )}
+                                                    </div>
+                                                    <div className="min-w-0 flex-1">
+                                                        <h4 className="text-xs font-black text-white truncate">{attachment.name}</h4>
+                                                        <p className="text-[8px] font-bold text-gray-500 uppercase tracking-widest mt-0.5">
+                                                            {attachment.type === 'file' ? 'Uploaded Storage File' : 'External Web URL'}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                
+                                                <div className="flex items-center gap-2 pl-3">
+                                                    <button 
+                                                        onClick={() => {
+                                                            setPreviewingAttachment(attachment);
+                                                            setIsAttachmentDrawerOpen(false);
+                                                        }}
+                                                        className="px-3 py-1.5 bg-neon-green text-black font-black uppercase tracking-widest text-[8px] rounded-xl hover:scale-105 transition-all"
+                                                    >
+                                                        Preview
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                            
+                            <div className="pt-6 border-t border-white/5">
+                                <p className="text-[8px] text-gray-600 font-bold uppercase tracking-widest text-center">
+                                    Newbi Document Verification System
+                                </p>
+                            </div>
+                        </motion.div>
+                    </>
+                )}
+            </AnimatePresence>
+
+            {/* Inline Preview Modal */}
+            <AnimatePresence>
+                {previewingAttachment && (
+                    <div className="fixed inset-0 bg-black/95 z-[100] flex flex-col p-6 no-print">
+                        {/* Header */}
+                        <div className="flex items-center justify-between pb-4 border-b border-white/10 mb-6 shrink-0">
+                            <div className="flex items-center gap-3">
+                                <span className={cn(
+                                    "text-[9px] font-black uppercase tracking-wider px-2 py-1 rounded-lg border",
+                                    previewingAttachment.fileType === 'spreadsheet' && "bg-[#107C41]/10 border-[#107C41]/20 text-[#107C41]",
+                                    previewingAttachment.fileType === 'pdf' && "bg-red-500/10 border-red-500/20 text-red-500",
+                                    (previewingAttachment.fileType !== 'spreadsheet' && previewingAttachment.fileType !== 'pdf') && "bg-blue-500/10 border-blue-500/20 text-blue-500"
+                                )}>
+                                    {previewingAttachment.fileType?.toUpperCase() || 'Attachment'}
+                                </span>
+                                <h3 className="text-sm font-black text-white truncate max-w-md sm:max-w-xl">{previewingAttachment.name}</h3>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <a 
+                                    href={previewingAttachment.url} 
+                                    download 
+                                    target="_blank" 
+                                    rel="noopener noreferrer" 
+                                    className="px-4 py-2 bg-white/5 hover:bg-white/10 text-white border border-white/10 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all"
+                                >
+                                    Open Direct Link
+                                </a>
+                                <button 
+                                    onClick={() => setPreviewingAttachment(null)}
+                                    className="p-2.5 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-500 rounded-xl transition-all"
+                                >
+                                    <X size={14} />
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Content Area */}
+                        <div className="flex-1 min-h-0 bg-white/5 rounded-3xl overflow-hidden relative border border-white/5">
+                            {previewingAttachment.fileType === 'spreadsheet' || previewingAttachment.fileType === 'pdf' ? (
+                                <iframe 
+                                    src={`https://docs.google.com/viewer?url=${encodeURIComponent(previewingAttachment.url)}&embedded=true`} 
+                                    className="w-full h-full border-0 bg-white" 
+                                    title="Document Preview"
+                                />
+                            ) : previewingAttachment.url.includes('google.com/spreadsheets') ? (
+                                <iframe 
+                                    src={previewingAttachment.url.replace('/edit', '/preview')} 
+                                    className="w-full h-full border-0 bg-white" 
+                                    title="Google Sheet Preview"
+                                />
+                            ) : (
+                                <div className="w-full h-full flex flex-col items-center justify-center gap-6 p-8 text-center bg-zinc-950">
+                                    <div className="w-16 h-16 rounded-3xl bg-white/5 border border-white/10 flex items-center justify-center text-neon-green">
+                                        <LinkIcon size={28} />
+                                    </div>
+                                    <div className="space-y-2 max-w-md">
+                                        <h4 className="text-base font-black uppercase tracking-tight text-white">External Document Hub.</h4>
+                                        <p className="text-xs text-gray-500 leading-relaxed font-sans">
+                                            This attachment is hosted on an external platform. Click below to view the interactive dashboard in a new tab.
+                                        </p>
+                                    </div>
+                                    <a 
+                                        href={previewingAttachment.url} 
+                                        target="_blank" 
+                                        rel="noopener noreferrer" 
+                                        className="h-12 px-8 bg-neon-green text-black font-black uppercase tracking-widest text-[9px] rounded-xl flex items-center gap-2 hover:scale-105 transition-all shadow-[0_10px_30px_rgba(57,255,20,0.3)]"
+                                    >
+                                        Open Dashboard &rarr;
+                                    </a>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 )}
             </AnimatePresence>
