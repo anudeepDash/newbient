@@ -137,9 +137,11 @@ const InvoiceGenerator = () => {
         if (!html) return html;
         return html.replace(/<(p|div)\b([^>]*?)>(#{1,6})(?:\s|&nbsp;|\u00a0)+(.*?)<\/\1>/gi, (match, tag, attrs, hashes, content) => {
             const level = hashes.length;
-            const headingClass = level <= 2 
-                ? "text-[12px] font-bold text-black border-b border-black/10 pb-1 mt-6 mb-2 block"
-                : "text-[11px] font-semibold text-gray-800 mt-4 mb-1 block";
+            const headingClass = level === 1
+                ? "text-[18px] font-black text-black border-b border-black/10 pb-1 mt-6 mb-2 block"
+                : level === 2
+                ? "text-[15px] font-bold text-black border-b border-black/10 pb-1 mt-5 mb-2 block"
+                : "text-[13.5px] font-bold text-gray-800 mt-4 mb-1 block";
             const headingTag = `h${Math.min(level + 1, 6)}`;
             return `<${headingTag} class="${headingClass}" ${attrs}>${content}</${headingTag}>`;
         });
@@ -167,10 +169,14 @@ const InvoiceGenerator = () => {
             if (headingMatch) {
                 const level = headingMatch[1].length;
                 const headingText = headingMatch[2];
-                const headingClass = level <= 2 
-                    ? "text-[12px] font-bold text-black border-b border-black/10 pb-1 mt-6 mb-2 block"
-                    : "text-[11px] font-semibold text-gray-800 mt-4 mb-1 block";
-                elements.push(<p key={i} className={headingClass}>{headingText}</p>);
+                const headingClass = level === 1
+                    ? "text-[18px] font-black text-black border-b border-black/10 pb-1 mt-6 mb-2 block"
+                    : level === 2
+                    ? "text-[15px] font-bold text-black border-b border-black/10 pb-1 mt-5 mb-2 block"
+                    : "text-[13.5px] font-bold text-gray-800 mt-4 mb-1 block";
+                const headingTag = level === 1 ? 'h2' : level === 2 ? 'h3' : 'h4';
+                const Tag = headingTag;
+                elements.push(<Tag key={i} className={headingClass} dangerouslySetInnerHTML={{ __html: inlineFmt(headingText) }} />);
             } else if (line.match(/^[•\-\*](?:\s|&nbsp;|\u00a0)+/)) {
                 const items = [];
                 while (i < lines.length && lines[i].match(/^[•\-\*](?:\s|&nbsp;|\u00a0)+/)) { 
@@ -181,7 +187,7 @@ const InvoiceGenerator = () => {
                     <div key={`ul-${i}`} className="pl-6 space-y-2 my-3">
                         {items.map((item, j) => (
                             <div key={j} className="flex items-start gap-3">
-                                <span className="text-black mt-1.5 text-[6px]">■</span>
+                                <span className="text-black mt-[8px] text-[6px] select-none shrink-0">■</span>
                                 <span className={baseClass} dangerouslySetInnerHTML={{ __html: inlineFmt(item) }} />
                             </div>
                         ))}

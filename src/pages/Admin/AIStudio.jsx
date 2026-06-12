@@ -143,9 +143,11 @@ const logoOptions = [
         if (!html) return html;
         return html.replace(/<(p|div)\b([^>]*?)>(#{1,6})(?:\s|&nbsp;|\u00a0)+(.*?)<\/\1>/gi, (match, tag, attrs, hashes, content) => {
             const level = hashes.length;
-            const headingClass = level <= 2 
-                ? "text-[12px] font-bold text-black border-b border-black/10 pb-1 mt-6 mb-2 block"
-                : "text-[11px] font-semibold text-gray-800 mt-4 mb-1 block";
+            const headingClass = level === 1
+                ? "text-[18px] font-black text-black border-b border-black/10 pb-1 mt-6 mb-2 block"
+                : level === 2
+                ? "text-[15px] font-bold text-black border-b border-black/10 pb-1 mt-5 mb-2 block"
+                : "text-[13.5px] font-bold text-gray-800 mt-4 mb-1 block";
             const headingTag = `h${Math.min(level + 1, 6)}`;
             return `<${headingTag} class="${headingClass}" ${attrs}>${content}</${headingTag}>`;
         });
@@ -248,10 +250,14 @@ const logoOptions = [
             if (headingMatch) {
                 const level = headingMatch[1].length;
                 const headingText = headingMatch[2];
-                const headingClass = level <= 2 
-                    ? "text-[12px] font-bold text-black border-b border-black/10 pb-1 mt-6 mb-2"
-                    : "text-[11px] font-semibold text-gray-800 mt-4 mb-1";
-                elements.push(<p key={i} className={headingClass}>{headingText}</p>);
+                const headingClass = level === 1
+                    ? "text-[18px] font-black text-black border-b border-black/10 pb-1 mt-6 mb-2 block"
+                    : level === 2
+                    ? "text-[15px] font-bold text-black border-b border-black/10 pb-1 mt-5 mb-2 block"
+                    : "text-[13.5px] font-bold text-gray-800 mt-4 mb-1 block";
+                const headingTag = level === 1 ? 'h2' : level === 2 ? 'h3' : 'h4';
+                const Tag = headingTag;
+                elements.push(<Tag key={i} className={headingClass} dangerouslySetInnerHTML={{ __html: inlineFmt(headingText) }} />);
             } else if (line.match(/^[•\-\*](?:\s|&nbsp;|\u00a0)+/)) {
                 const items = [];
                 while (i < lines.length && lines[i].trim().match(/^[•\-\*](?:\s|&nbsp;|\u00a0)+/)) {
@@ -260,7 +266,12 @@ const logoOptions = [
                 }
                 elements.push(
                     <div key={`ul-${i}`} className="pl-4 space-y-1.5 my-3">
-                        {items.map((item, j) => <div key={j} className="flex items-start gap-3"><span className="text-neon-green mt-1.5 text-[8px]">●</span><span className={cn("text-[13px] font-medium text-black leading-[1.9]", baseClass)} dangerouslySetInnerHTML={{ __html: inlineFmt(item) }} /></div>)}
+                        {items.map((item, j) => (
+                            <div key={j} className="flex items-start gap-3">
+                                <span className="text-neon-green mt-[7px] text-[8px] select-none shrink-0">●</span>
+                                <span className={cn("text-[13px] font-medium text-black leading-[1.9]", baseClass)} dangerouslySetInnerHTML={{ __html: inlineFmt(item) }} />
+                            </div>
+                        ))}
                     </div>
                 );
                 continue;
