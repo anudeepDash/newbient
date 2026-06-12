@@ -25,6 +25,7 @@ import Activity from 'lucide-react/dist/esm/icons/activity';
 import Edit from 'lucide-react/dist/esm/icons/edit';
 import Mail from 'lucide-react/dist/esm/icons/mail';
 import FileSpreadsheet from 'lucide-react/dist/esm/icons/file-spreadsheet';
+import FolderOpen from 'lucide-react/dist/esm/icons/folder-open';
 import Globe from 'lucide-react/dist/esm/icons/globe';
 import Smartphone from 'lucide-react/dist/esm/icons/smartphone';
 import CheckCircle2 from 'lucide-react/dist/esm/icons/check-circle-2';
@@ -62,6 +63,7 @@ const ContractManagement = () => {
         ...(['developer', 'founder'].includes(user?.role) ? [{ name: 'Invoices', path: '/admin/invoices', icon: FileText, color: 'text-neon-blue' }] : []),
         { name: 'Proposals', path: '/admin/proposals', icon: FileSpreadsheet, color: 'text-neon-green' },
         { name: 'Contracts', path: '/admin/agreements', icon: ShieldCheck, color: 'text-neon-purple' },
+        { name: 'Documents', path: '/admin/documents', icon: FolderOpen, color: 'text-neon-blue' },
     ];
 
 

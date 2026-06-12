@@ -43,6 +43,11 @@ import Check from 'lucide-react/dist/esm/icons/check';
 import Minus from 'lucide-react/dist/esm/icons/minus';
 import Maximize2 from 'lucide-react/dist/esm/icons/maximize-2';
 import Minimize2 from 'lucide-react/dist/esm/icons/minimize-2';
+import Music from 'lucide-react/dist/esm/icons/music';
+import Smile from 'lucide-react/dist/esm/icons/smile';
+import Trophy from 'lucide-react/dist/esm/icons/trophy';
+import Award from 'lucide-react/dist/esm/icons/award';
+import Megaphone from 'lucide-react/dist/esm/icons/megaphone';
 
 import { useStore } from '../../lib/store';
 import { Card } from '../../components/ui/Card';
@@ -524,7 +529,7 @@ const COLUMN_TYPES = [
 const ProposalGenerator = () => {
     const { id } = useParams();
     const navigate = useNavigate();
-    const { addProposal, updateProposal, proposals, user, addToast } = useStore();
+    const { addProposal, updateProposal, proposals, user, addToast, activeModel } = useStore();
     const [previewScale, setPreviewScale] = useState(0.65);
     const previewContainerRef = useRef(null);
 
@@ -568,6 +573,8 @@ const ProposalGenerator = () => {
     const [showSuggestions, setShowSuggestions] = useState(false);
     const [suggestionCategory, setSuggestionCategory] = useState(0);
     const [refinementContext, setRefinementContext] = useState(null);
+    const [aiTone, setAiTone] = useState('balanced'); // 'creative' | 'balanced' | 'formal'
+    const [aiLength, setAiLength] = useState('balanced'); // 'concise' | 'balanced' | 'detailed'
 
     const handleRefineClick = (fieldKey, fieldLabel, currentValue) => {
         setRefinementContext({
@@ -581,11 +588,13 @@ const ProposalGenerator = () => {
         {
             id: 'init-msg',
             sender: 'ai',
-            text: "Welcome to Newbi AI Proposal Studio. Describe the event or campaign requirements in the prompt box below, choose 'Generate New' or 'Bulk Mode', and I will draft a comprehensive proposal. Use 'Chat & Refine' to iteratively customize any details!"
+            text: "Welcome to Newbi AI Proposal Studio. Describe the event or campaign requirements in the prompt box below, and I will draft a comprehensive proposal. Once generated, continue chatting to refine any details!"
         }
     ]);
     const chatEndRef = useRef(null);
     const chatContainerRef = useRef(null);
+    const [isFloatingChatOpen, setIsFloatingChatOpen] = useState(false);
+    const floatingChatContainerRef = useRef(null);
 
     const [generationStage, setGenerationStage] = useState(0);
     const [generationProgress, setGenerationProgress] = useState(0);
@@ -633,6 +642,12 @@ const ProposalGenerator = () => {
         if (chatContainerRef.current) {
             chatContainerRef.current.scrollTo({
                 top: chatContainerRef.current.scrollHeight,
+                behavior: 'smooth'
+            });
+        }
+        if (floatingChatContainerRef.current) {
+            floatingChatContainerRef.current.scrollTo({
+                top: floatingChatContainerRef.current.scrollHeight,
                 behavior: 'smooth'
             });
         }
@@ -1441,194 +1456,75 @@ const ProposalGenerator = () => {
                 }]);
                 setRefinementContext(null);
                 addToast(`Field "${refinementContext.fieldLabel}" successfully refined!`, 'success');
-            } else if (aiMode === 'bulk') {
-                setIsBulkGenerating(true);
-                let prompts = [];
-                if (currentPrompt.includes('---') || currentPrompt.includes('___')) {
-                    prompts = currentPrompt
-                        .split(/\n?[-_]{3,}\n?/)
-                        .map(p => p.trim())
-                        .filter(p => p.length > 5);
-                } else {
-                    prompts = currentPrompt
-                        .split(/\n\n+/)
-                        .map(p => p.trim())
-                        .filter(p => p.length > 10);
-                }
-                if (prompts.length === 0) {
-                    prompts = [currentPrompt.trim()];
-                }
-                
-                setBulkProgress({ current: 0, total: prompts.length });
-                const generatedProposals = [];
-                
-                try {
-                    for (let i = 0; i < prompts.length; i++) {
-                        const prompt = prompts[i];
-                        const data = await generateFullDocument('proposal', prompt, 'Premium', {});
-                        
-                        const finalProposal = {
-                            clientName: data.clientName || `Client 0${i + 1}`,
-                            clientAddress: data.clientAddress || 'Corporate Headquarters',
-                            campaignName: data.campaignName || 'Strategic Initiative',
-                            campaignDuration: data.campaignDuration || 'TBD',
-                            proposalNumber: `NBQ-${Math.floor(1000 + Math.random() * 9000)}`,
-                            coverDescription: data.coverDescription || 'This document contains the beautifully formatted and arranged synthesis of your data.',
-                            overview: data.overview || '',
-                            primaryGoal: data.primaryGoal || '',
-                            numericTargets: '',
-                            audienceAge: '',
-                            audienceLocation: '',
-                            audienceInterests: '',
-                            selectedChannels: [],
-                            contentCount: { reels: 0, posts: 0, stories: 0 },
-                            deliverables: data.deliverables?.length 
-                                ? data.deliverables.map((d, index) => ({ 
-                                    id: Date.now() + index + Math.random(), 
-                                    item: d.item || d.name || '', 
-                                    qty: d.qty || '1', 
-                                    timeline: d.timeline || 'TBD' 
-                                })) 
-                                : [],
-                            clientRequirements: data.clientRequirements?.length 
-                                ? data.clientRequirements.map((r, index) => ({ 
-                                    id: Date.now() + 100 + index + Math.random(), 
-                                    description: r.description || r.requirement || '' 
-                                })) 
-                                : [],
-                            scopeOfWork: data.scopeOfWork || prompt,
-                            terms: data.terms || '1. 50% Advance Fee required.\n2. Balance on delivery.\n3. Taxes as applicable (18% GST).\n4. Quote valid for 14 days.',
-                            paymentDetails: 'Account Name: Newbi Entertainment\nAccount Number: 0000000000\nIFSC: YOUR000000\nUPI: newbi@upi',
-                            gstRate: 18,
-                            advanceRequested: 50,
-                            showGst: true,
-                            showPaymentDetails: true,
-                            showSeal: false,
-                            showSignatures: true,
-                            signatureType: 'handwritten',
-                            providerSignature: '',
-                            clientSignature: '',
-                            senderName: 'Authorized Signatory',
-                            senderDesignation: 'Director of Operations',
-                            status: 'Draft',
-                            hiddenFields: [],
-                            selectedLogo: 'entertainment',
-                            customPages: [],
-                            items: data.items?.length 
-                                ? data.items.map((item, idx) => ({
-                                    id: Date.now() + 200 + idx + Math.random(),
-                                    description: item.description || item.name || '',
-                                    qty: Number(item.qty) || 1,
-                                    unit: item.unit || 'Unit',
-                                    price: Number(item.price) || 0
-                                }))
-                                : [],
-                            subtotal: 0,
-                            gstAmount: 0,
-                            totalAmount: 0,
-                            isBulkGenerated: true,
-                            strategyTitle: 'EXECUTIVE SUMMARY',
-                            strategySub: 'STRATEGIC OUTLINE',
-                            scopeTitle: 'SCOPE OF WORK',
-                            scopeSub: 'RESOURCE DELIVERABLES',
-                            proposalTitle: 'DELIVERABLES',
-                            proposalSub: 'PROJECT INVENTORY',
-                            inventoryTitle: 'RESOURCE INVENTORY',
-                            inventorySub: 'COMMERCIALS BREAKDOWN',
-                            commercialsTitle: 'COMMERCIAL TERMS',
-                            commercialsSub: 'SETTLEMENT & SIGN-OFF'
-                        };
-                        generatedProposals.push(finalProposal);
-                        setBulkProgress({ current: i + 1, total: prompts.length });
+            } else {
+                const isInitialGeneration = !singleFormData.clientName || singleFormData.clientName.trim() === '' || messages.length <= 1;
+                if (isInitialGeneration) {
+                    const data = await generateFullDocument('proposal', currentPrompt, 'Premium', {});
+                    setSingleFormData(prev => ({
+                        ...prev,
+                        clientName: data.clientName || prev.clientName,
+                        clientAddress: data.clientAddress || prev.clientAddress,
+                        campaignName: data.campaignName || prev.campaignName,
+                        campaignDuration: data.campaignDuration || prev.campaignDuration,
+                        coverDescription: data.coverDescription || prev.coverDescription,
+                        overview: data.overview || prev.overview,
+                        primaryGoal: data.primaryGoal || prev.primaryGoal,
+                        scopeOfWork: data.scopeOfWork || prev.scopeOfWork,
+                        terms: data.terms || prev.terms,
+                        deliverables: data.deliverables?.length 
+                            ? data.deliverables.map((d, i) => ({ 
+                                id: Date.now() + i, 
+                                item: d.item || d.name || '', 
+                                qty: d.qty || '1', 
+                                timeline: d.timeline || 'TBD' 
+                            })) 
+                            : prev.deliverables,
+                        clientRequirements: data.clientRequirements?.length 
+                            ? data.clientRequirements.map((r, i) => ({ 
+                                id: Date.now() + 100 + i, 
+                                description: r.description || r.requirement || '' 
+                            })) 
+                            : prev.clientRequirements,
+                    }));
+                    if (data.items && data.items.length > 0) {
+                        setSingleItems(data.items.map((item, idx) => ({
+                            id: Date.now() + 200 + idx,
+                            description: item.description || item.name || '',
+                            qty: Number(item.qty) || 1,
+                            unit: item.unit || 'Unit',
+                            price: Number(item.price) || 0
+                        })));
                     }
-                    
-                    setBulkProposals(prev => {
-                        const newVault = [...prev, ...generatedProposals];
-                        setSelectedBulkIndex(newVault.length - generatedProposals.length);
-                        return newVault;
-                    });
 
                     setMessages(prev => [...prev, {
                         id: String(Date.now()) + '-ai',
                         sender: 'ai',
-                        text: `✓ Bulk requirements successfully structured! I have generated ${generatedProposals.length} proposals and configured the engine. Preview the compiled A4 sheet on the right, or click save to persist.`
+                        text: `✓ Proposal for "${data.clientName || 'Partner'}" generated successfully! I added ${data.items?.length || 0} financial line items. \n\nYou can continue chatting here to modify the proposal, or edit using the manual tabs.`
                     }]);
-                    addToast(`Successfully generated ${generatedProposals.length} premium proposals!`, 'success');
-                } catch (err) {
+                    addToast('Proposal successfully generated!', 'success');
+                } else {
+                    const currentDoc = singleFormData;
+                    const currentDocWithItems = { ...currentDoc, items };
+                    const updatedDoc = await reviseDocument(currentDocWithItems, currentPrompt, 'Premium');
+                    
+                    setFormData(updatedDoc);
+                    if (updatedDoc.items && updatedDoc.items.length > 0) {
+                        setItems(updatedDoc.items.map((item, idx) => ({
+                            id: Date.now() + 200 + idx,
+                            description: item.description || item.name || item.item || '',
+                            qty: Number(item.qty) || 1,
+                            unit: item.unit || 'Unit',
+                            price: Number(item.price) || 0
+                        })));
+                    }
+
                     setMessages(prev => [...prev, {
-                        id: String(Date.now()) + '-ai-err',
+                        id: String(Date.now()) + '-ai',
                         sender: 'ai',
-                        text: `⚠ Failed to process bulk request: ${err.message}`
+                        text: `✓ Document refined according to request: "${currentPrompt}". You can inspect the updated preview on the right.`
                     }]);
-                    addToast(`Error: ${err.message}`, 'error');
+                    addToast('Document successfully refined!', 'success');
                 }
-            } else if (aiMode === 'generate') {
-                const data = await generateFullDocument('proposal', currentPrompt, 'Premium', {});
-                setSingleFormData(prev => ({
-                    ...prev,
-                    clientName: data.clientName || prev.clientName,
-                    clientAddress: data.clientAddress || prev.clientAddress,
-                    campaignName: data.campaignName || prev.campaignName,
-                    campaignDuration: data.campaignDuration || prev.campaignDuration,
-                    coverDescription: data.coverDescription || prev.coverDescription,
-                    overview: data.overview || prev.overview,
-                    primaryGoal: data.primaryGoal || prev.primaryGoal,
-                    scopeOfWork: data.scopeOfWork || prev.scopeOfWork,
-                    terms: data.terms || prev.terms,
-                    deliverables: data.deliverables?.length 
-                        ? data.deliverables.map((d, i) => ({ 
-                            id: Date.now() + i, 
-                            item: d.item || d.name || '', 
-                            qty: d.qty || '1', 
-                            timeline: d.timeline || 'TBD' 
-                        })) 
-                        : prev.deliverables,
-                    clientRequirements: data.clientRequirements?.length 
-                        ? data.clientRequirements.map((r, i) => ({ 
-                            id: Date.now() + 100 + i, 
-                            description: r.description || r.requirement || '' 
-                        })) 
-                        : prev.clientRequirements,
-                }));
-                if (data.items && data.items.length > 0) {
-                    setSingleItems(data.items.map((item, idx) => ({
-                        id: Date.now() + 200 + idx,
-                        description: item.description || item.name || '',
-                        qty: Number(item.qty) || 1,
-                        unit: item.unit || 'Unit',
-                        price: Number(item.price) || 0
-                    })));
-                }
-
-                setMessages(prev => [...prev, {
-                    id: String(Date.now()) + '-ai',
-                    sender: 'ai',
-                    text: `✓ Proposal for "${data.clientName || 'Partner'}" generated successfully! I added ${data.items?.length || 0} financial line items. \n\nI have switched your mode to **Chat & Revise** so you can make modifications directly. Or feel free to adjust using the manual tabs.`
-                }]);
-                setAiMode('refine');
-                addToast('Proposal successfully generated!', 'success');
-            } else {
-                const currentDoc = (isBulkMode && bulkProposals.length > 0) ? bulkProposals[selectedBulkIndex] : singleFormData;
-                const currentDocWithItems = { ...currentDoc, items };
-                const updatedDoc = await reviseDocument(currentDocWithItems, currentPrompt, 'Premium');
-                
-                setFormData(updatedDoc);
-                if (updatedDoc.items && updatedDoc.items.length > 0) {
-                    setItems(updatedDoc.items.map((item, idx) => ({
-                        id: Date.now() + 200 + idx,
-                        description: item.description || item.name || item.item || '',
-                        qty: Number(item.qty) || 1,
-                        unit: item.unit || 'Unit',
-                        price: Number(item.price) || 0
-                    })));
-                }
-
-                setMessages(prev => [...prev, {
-                    id: String(Date.now()) + '-ai',
-                    sender: 'ai',
-                    text: `✓ Document refined according to request: "${currentPrompt}". You can inspect the updated preview on the right.`
-                }]);
-                addToast('Document successfully refined!', 'success');
             }
         } catch (err) {
             setMessages(prev => [...prev, {
@@ -1641,6 +1537,382 @@ const ProposalGenerator = () => {
             setIsGenerating(false);
             setIsBulkGenerating(false);
         }
+    };
+
+    const renderChatbot = (isFloating = false) => {
+        return (
+            <div className={cn(
+                "flex flex-col relative w-full",
+                isFloating ? "flex-grow flex-1 min-h-0 h-full overflow-hidden" : "h-auto"
+            )}>
+                {/* Orbital Glow in Background */}
+                <div className={cn("absolute top-0 left-1/2 -translate-x-1/2 bg-neon-green/5 rounded-full blur-3xl pointer-events-none", isFloating ? "w-48 h-48" : "w-64 h-64")} />
+
+                {/* Brand Header */}
+                <div className={cn(
+                    "bg-zinc-950/45 border border-white/[0.06] backdrop-blur-2xl rounded-2xl flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 shrink-0 relative z-10 shadow-lg",
+                    isFloating ? "p-3 mb-2" : "p-4 mb-6"
+                )}>
+                    <div className="flex items-center gap-3.5 animate-fade-in">
+                        <div className={cn(
+                            "rounded-xl flex items-center justify-center border relative shadow-sm shrink-0",
+                            isFloating ? "w-9 h-9 bg-neon-green/5 border-neon-green/10 text-neon-green" : "w-11 h-11 bg-neon-green/[0.02] border-neon-green/10 text-neon-green shadow-[0_0_15px_rgba(57,255,20,0.05)]"
+                        )}>
+                            <div className="absolute inset-0 rounded-inherit bg-neon-green/5 opacity-40 animate-pulse pointer-events-none" />
+                            <Cpu size={isFloating ? 16 : 18} className="text-neon-green animate-pulse" />
+                        </div>
+                        <div className="space-y-0.5">
+                            <div className="flex items-center gap-2">
+                                <span className="text-[8px] font-black text-zinc-500 uppercase tracking-[0.25em] block leading-none">Primary Model</span>
+                                <span className="relative flex h-1.5 w-1.5">
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-neon-green opacity-75"></span>
+                                    <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-neon-green"></span>
+                                </span>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                                <h3 className="text-xs font-bold text-zinc-200 tracking-wide leading-none">
+                                    {activeModel || 'Gemini 3.5 Flash'}
+                                </h3>
+                                <span className="h-3 w-px bg-white/10" />
+                                <span className="text-[8px] text-zinc-500 font-mono font-medium lowercase tracking-wide">live pulse</span>
+                            </div>
+                        </div>
+                    </div>
+                    {/* Mode status indicator */}
+                    <div className="flex items-center justify-between sm:justify-end gap-4 border-t sm:border-t-0 border-white/5 pt-2 sm:pt-0">
+                        <div className="flex items-center gap-2.5">
+                            <span className="text-[8px] font-black text-zinc-500 uppercase tracking-[0.2em] leading-none">Active Mode</span>
+                            <div className="flex items-center gap-2 bg-white/[0.02] border border-white/10 px-3 py-1.5 rounded-full shadow-inner">
+                                <span className="h-1.5 w-1.5 rounded-full bg-neon-green animate-pulse" />
+                                <span className="text-[9px] font-bold uppercase tracking-widest text-zinc-300">
+                                    {refinementContext ? 'Field Refinement' : (messages.length <= 1 ? 'First Draft' : 'Refinement & Chat')}
+                                </span>
+                            </div>
+                        </div>
+                        {messages.length > 1 && (
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setSingleFormData({
+                                        clientName: '',
+                                        clientAddress: '',
+                                        campaignName: '',
+                                        campaignDuration: '',
+                                        proposalNumber: `NBQ-${Math.floor(1000 + Math.random() * 9000)}`,
+                                        coverDescription: 'This comprehensive commercial instrument details the strategic execution architecture and deployment framework proposed by Newbi Entertainment for the success of your upcoming mission.',
+                                        overview: '',
+                                        primaryGoal: '',
+                                        numericTargets: '',
+                                        audienceAge: '',
+                                        audienceLocation: '',
+                                        audienceInterests: '',
+                                        selectedChannels: [],
+                                        contentCount: { reels: 0, posts: 0, stories: 0 },
+                                        deliverables: [{ id: 1, item: '', qty: '', timeline: '' }],
+                                        clientRequirements: [{ id: 1, description: '' }],
+                                        scopeOfWork: '',
+                                        terms: '1. 50% Advance Fee required.\n2. Balance on delivery.\n3. Taxes as applicable (18% GST).\n4. Quote valid for 14 days.',
+                                        paymentDetails: 'Account Name: YOUR NAME\nAccount Number: 0000000000\nIFSC: YOUR000000\nUPI: yourname@upi',
+                                        gstRate: 18,
+                                        advanceRequested: 50,
+                                        showGst: true,
+                                        showPaymentDetails: true,
+                                        showSeal: false,
+                                        showSignatures: false,
+                                        signatureType: 'handwritten',
+                                        providerSignature: '',
+                                        clientSignature: '',
+                                        senderName: 'Authorized Signatory',
+                                        senderDesignation: 'Director of Operations',
+                                        status: 'Draft',
+                                        hiddenFields: [],
+                                        selectedLogo: 'entertainment',
+                                        customPages: [],
+                                        totalOverride: null,
+                                        totalSourceColumn: 'price',
+                                        hideTotalColumn: false,
+                                        strategyTitle: 'EXECUTIVE SUMMARY',
+                                        strategySub: 'STRATEGIC OUTLINE',
+                                        scopeTitle: 'SCOPE OF WORK',
+                                        scopeSub: 'RESOURCE DELIVERABLES',
+                                        proposalTitle: 'DELIVERABLES',
+                                        proposalSub: 'PROJECT INVENTORY',
+                                        inventoryTitle: 'RESOURCE INVENTORY',
+                                        inventorySub: 'COMMERCIALS BREAKDOWN',
+                                        commercialsTitle: 'COMMERCIAL TERMS',
+                                        commercialsSub: 'SETTLEMENT & SIGN-OFF'
+                                    });
+                                    setSingleItems([
+                                        { id: 1, description: 'Project Phase 01: Initial Strategic Planning', qty: 1, unit: 'Phase', price: 0 }
+                                    ]);
+                                    setMessages([
+                                        {
+                                            id: 'init-msg',
+                                            sender: 'ai',
+                                            text: "Welcome to Newbi AI Proposal Studio. Describe the event or campaign requirements in the prompt box below, and I will draft a comprehensive proposal. Once generated, continue chatting to refine any details!"
+                                        }
+                                    ]);
+                                    setPromptText('');
+                                    setRefinementContext(null);
+                                    addToast('Reset to fresh draft state', 'info');
+                                }}
+                                className="px-3 py-1.5 bg-red-500/[0.03] hover:bg-red-500/[0.08] border border-red-500/10 hover:border-red-500/30 text-red-400 hover:text-red-300 rounded-xl text-[9px] font-bold uppercase tracking-widest transition-all active:scale-95 flex items-center gap-1.5 shadow-sm"
+                            >
+                                <RefreshCw size={10} />
+                                <span>Reset</span>
+                            </button>
+                        )}
+                        {isFloating && (
+                            <button
+                                type="button"
+                                onClick={() => setIsFloatingChatOpen(false)}
+                                className="p-2 bg-white/[0.02] hover:bg-white/[0.06] border border-white/10 rounded-xl text-zinc-400 hover:text-white transition-all active:scale-95 shadow-sm"
+                            >
+                                <X size={14} />
+                            </button>
+                        )}
+                    </div>
+                </div>
+
+                {/* Message Stream */}
+                <div 
+                    ref={isFloating ? floatingChatContainerRef : chatContainerRef} 
+                    className={cn(
+                        "space-y-4 mb-4 relative z-10 flex flex-col w-full",
+                        isFloating ? "flex-grow overflow-y-auto min-h-0 pr-2 scrollbar-hide" : "h-auto"
+                    )}
+                >
+                    {/* Welcome card if only initial message */}
+                    {messages.length === 1 && (
+                        <div className={cn(
+                            "my-auto py-4 flex flex-col items-center justify-center text-center mx-auto animate-fade-in",
+                            isFloating ? "max-w-full space-y-4 px-2" : "max-w-2xl space-y-6"
+                        )}>
+                            <div className="relative">
+                                <div className="absolute -inset-4 bg-gradient-to-r from-neon-green via-neon-blue to-purple-500 rounded-full blur-xl opacity-20 animate-pulse" />
+                                <div className="relative w-12 h-12 rounded-full bg-zinc-950 border border-white/10 flex items-center justify-center shadow-[0_0_30px_rgba(57,255,20,0.15)]">
+                                    <Sparkles size={20} className="text-neon-green animate-pulse" />
+                                </div>
+                            </div>
+                            <div className="space-y-2 max-w-md">
+                                <h2 className="text-lg font-black uppercase tracking-tight text-white leading-none">
+                                    AI Document <span className="bg-gradient-to-r from-neon-green to-emerald-400 bg-clip-text text-transparent">Orchestrator</span>
+                                </h2>
+                                <p className="text-[10px] text-zinc-400 leading-relaxed font-medium">
+                                    Input requirements below. The generator constructs a fully formatted proposal including scope of work, deliverables, and financials.
+                                </p>
+                            </div>
+
+                            {/* Suggestions Grid */}
+                            {!isFloating && (
+                                <div className="w-full space-y-4 pt-4 border-t border-white/5">
+                                    <div className="flex items-center justify-between px-1">
+                                        <span className="text-[9px] font-black uppercase text-zinc-500 tracking-[0.2em] flex items-center gap-2">
+                                            <Sparkles size={10} className="text-neon-green" /> Suggested Blueprints
+                                        </span>
+                                        <button 
+                                            type="button"
+                                            onClick={() => setSuggestionCategory(c => (c + 1) % 2)}
+                                            className="flex items-center gap-1.5 px-2.5 py-1 bg-white/5 hover:bg-white/10 border border-white/5 hover:border-white/10 rounded-lg text-[8px] font-black uppercase tracking-widest text-zinc-400 hover:text-white transition-all active:scale-95"
+                                        >
+                                            <RefreshCw size={8} className="animate-spin-slow" /> Next Blueprints
+                                        </button>
+                                    </div>
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                        {suggestions.map((s, idx) => {
+                                            let Icon = Sparkles;
+                                            let heading = "Custom Setup";
+                                            if (s.toLowerCase().includes("music") || s.toLowerCase().includes("festival")) {
+                                                Icon = Music;
+                                                heading = "Music Festival";
+                                            } else if (s.toLowerCase().includes("comedy") || s.toLowerCase().includes("talent")) {
+                                                Icon = Smile;
+                                                heading = "Comedy Tour";
+                                            } else if (s.toLowerCase().includes("marathon") || s.toLowerCase().includes("run")) {
+                                                Icon = Trophy;
+                                                heading = "Corporate Run";
+                                            } else if (s.toLowerCase().includes("gala") || s.toLowerCase().includes("anniversary")) {
+                                                Icon = Award;
+                                                heading = "Gala Dinner";
+                                            } else if (s.toLowerCase().includes("marketing") || s.toLowerCase().includes("social")) {
+                                                Icon = Megaphone;
+                                                heading = "Media Coverage";
+                                            } else if (s.toLowerCase().includes("tedx") || s.toLowerCase().includes("technical")) {
+                                                Icon = Cpu;
+                                                heading = "Technical Stage";
+                                            }
+                                            return (
+                                                <button
+                                                    type="button"
+                                                    key={idx}
+                                                    onClick={() => setPromptText(s)}
+                                                    className="text-left p-4 bg-zinc-900/30 hover:bg-zinc-900/60 border border-white/5 hover:border-neon-green/20 rounded-2xl transition-all duration-300 flex flex-col justify-between gap-4 h-auto min-h-[145px] pb-4 group relative overflow-hidden shadow-sm"
+                                                >
+                                                    <div className="absolute top-0 right-0 w-16 h-16 bg-neon-green/5 rounded-full blur-xl opacity-0 group-hover:opacity-100 transition-opacity" />
+                                                    <div className="flex items-center justify-between w-full relative z-10">
+                                                        <div className="p-2 bg-white/5 group-hover:bg-neon-green/10 rounded-xl transition-colors">
+                                                            <Icon size={14} className="text-zinc-400 group-hover:text-neon-green transition-colors" />
+                                                        </div>
+                                                        <span className="text-[9px] font-black text-neon-green opacity-0 group-hover:opacity-100 translate-x-2 group-hover:translate-x-0 transition-all">→</span>
+                                                    </div>
+                                                    <div className="space-y-1 relative z-10 w-full">
+                                                        <span className="text-[8px] font-black uppercase tracking-widest text-zinc-500 group-hover:text-zinc-400">{heading}</span>
+                                                        <p className="text-[10px] font-bold text-zinc-400 group-hover:text-white transition-colors line-clamp-2 leading-relaxed">
+                                                            {s}
+                                                        </p>
+                                                    </div>
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {/* Chat Messages */}
+                    {messages.length > 1 && messages.map(m => (
+                        <div
+                            key={m.id}
+                            className={cn(
+                                "max-w-[85%] rounded-[2rem] p-4 text-xs leading-relaxed transition-all shadow-md relative overflow-hidden group",
+                                m.sender === 'user'
+                                    ? "bg-zinc-900 text-zinc-100 self-end rounded-tr-none border border-white/5"
+                                    : "bg-white/[0.02] border border-white/[0.04] text-zinc-300 self-start rounded-tl-none"
+                            )}
+                        >
+                            <div className="flex items-center gap-2 mb-1.5">
+                                <span className={cn(
+                                    "text-[8px] font-black uppercase tracking-wider",
+                                    m.sender === 'user' ? "text-gray-400" : "text-neon-green"
+                                )}>
+                                    {m.sender === 'user' ? 'You' : (activeModel || 'Gemini 3.5 Flash')}
+                                </span>
+                            </div>
+                            <div className="font-medium leading-relaxed">{renderChatMessage(m.text)}</div>
+                        </div>
+                    ))}
+
+                    {/* Generating Bubble */}
+                    {isGenerating && (
+                        <div className="bg-white/[0.02] border border-white/[0.04] text-zinc-300 self-start rounded-[2rem] rounded-tl-none p-4 text-xs w-[260px] sm:w-[280px] flex flex-col gap-2.5 shadow-md">
+                            <div className="flex items-center gap-2">
+                                <Sparkles size={14} className="text-neon-green animate-spin shrink-0" />
+                                <span className="font-bold uppercase tracking-wider text-[9px] text-neon-green flex-1 truncate">
+                                    {STAGE_MESSAGES[generationStage]?.text || "Synthesizing document..."}
+                                </span>
+                                <span className="text-[8px] font-mono text-zinc-500 font-bold shrink-0">
+                                    {generationTime}s
+                                </span>
+                            </div>
+                            <div className="w-full h-1 bg-zinc-950 rounded-full overflow-hidden">
+                                <div 
+                                    className="h-full bg-neon-green transition-all duration-500" 
+                                    style={{ width: `${generationProgress}%` }}
+                                />
+                            </div>
+                        </div>
+                    )}
+                    <div ref={chatEndRef} />
+                </div>
+
+                {/* Prompt container - Command Console Redesign */}
+                <div className={cn("pt-2 bg-transparent", isFloating ? "mt-auto shrink-0" : "mt-6")}>
+                    <div className="bg-zinc-950 border border-white/5 rounded-2xl p-2.5 flex flex-col gap-2 relative shadow-[0_10px_30px_rgba(0,0,0,0.5)] focus-within:border-neon-green/30 focus-within:shadow-[0_0_20px_rgba(57,255,20,0.05)] transition-all">
+                        {/* Quoted Refinement Context */}
+                        {refinementContext && (
+                            <div className="px-3 py-2 bg-neon-green/5 border border-neon-green/20 rounded-xl flex items-center justify-between gap-3 border-l-4 border-l-neon-green shadow-inner animate-fade-in">
+                                <div className="min-w-0">
+                                    <span className="text-[7px] font-black uppercase tracking-widest text-neon-green block mb-0.5">Refining: {refinementContext.fieldLabel}</span>
+                                    <p className="text-[9px] text-zinc-400 line-clamp-1 italic">
+                                        "{refinementContext.currentValue || 'No current content...'}"
+                                    </p>
+                                </div>
+                                <button 
+                                    type="button" 
+                                    onClick={() => setRefinementContext(null)}
+                                    className="p-1 hover:bg-white/5 rounded-lg text-zinc-500 hover:text-white transition-all shrink-0"
+                                >
+                                    <X size={10} />
+                                </button>
+                            </div>
+                        )}
+
+                        <div className="flex items-end gap-2">
+                            <textarea
+                                value={promptText}
+                                onChange={e => setPromptText(e.target.value)}
+                                placeholder={refinementContext ? `Instruct AI to refine "${refinementContext.fieldLabel}"...` : "Describe the proposal you want to generate or modify..."}
+                                className="flex-grow bg-transparent border-none text-[12px] font-medium text-white placeholder:text-zinc-600 outline-none min-h-[36px] max-h-[120px] py-1 px-1.5 resize-none leading-relaxed"
+                                rows={1}
+                                disabled={isGenerating}
+                                onKeyDown={e => {
+                                    if (e.key === 'Enter' && !e.shiftKey) {
+                                        e.preventDefault();
+                                        handleStudioSubmit();
+                                    }
+                                }}
+                            />
+                            <button
+                                type="button"
+                                onClick={handleStudioSubmit}
+                                disabled={!promptText.trim() || isGenerating}
+                                className="w-9 h-9 bg-neon-green text-black rounded-xl hover:scale-105 active:scale-95 transition-all shrink-0 disabled:opacity-20 disabled:scale-100 flex items-center justify-center shadow-[0_0_10px_rgba(57,255,20,0.3)]"
+                            >
+                                {isGenerating ? <RefreshCw className="animate-spin" size={12} /> : <Send size={12} />}
+                            </button>
+                        </div>
+
+                        {/* Control Bar inside Prompt Console */}
+                        <div className="flex items-center justify-between border-t border-white/5 pt-2 px-1 text-[8px] text-zinc-500 font-bold">
+                            <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                                <div className="flex items-center gap-1">
+                                    <span>Tone:</span>
+                                    <div className="flex bg-black/40 rounded p-0.5 border border-white/5">
+                                        {['balanced', 'creative', 'formal'].map(t => (
+                                            <button
+                                                type="button"
+                                                key={t}
+                                                onClick={() => setAiTone(t)}
+                                                className={cn(
+                                                    "px-1.5 py-0.5 rounded text-[7px] uppercase tracking-wider transition-all",
+                                                    aiTone === t ? "bg-neon-green/10 text-neon-green border border-neon-green/20" : "border border-transparent hover:text-zinc-300"
+                                                )}
+                                            >
+                                                {t}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center gap-1">
+                                    <span>Length:</span>
+                                    <div className="flex bg-black/40 rounded p-0.5 border border-white/5">
+                                        {['concise', 'balanced', 'detailed'].map(l => (
+                                            <button
+                                                type="button"
+                                                key={l}
+                                                onClick={() => setAiLength(l)}
+                                                className={cn(
+                                                    "px-1.5 py-0.5 rounded text-[7px] uppercase tracking-wider transition-all",
+                                                    aiLength === l ? "bg-neon-green/10 text-neon-green border border-neon-green/20" : "border border-transparent hover:text-zinc-300"
+                                                )}
+                                            >
+                                                {l}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="hidden sm:flex items-center gap-1 text-[7px] text-zinc-600 font-mono">
+                                <span>Approx. {promptText.length ? Math.round(promptText.length / 4) : 0} tokens</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
     };
 
     const tabs = [
@@ -1660,7 +1932,7 @@ const ProposalGenerator = () => {
     const currentTab = tabs.find(t => t.id === activeTab);
 
     return (
-        <div className="h-screen overflow-hidden bg-[#020202] text-white selection:bg-neon-green selection:text-black font-['Outfit'] flex flex-col">
+        <div className="h-full w-full overflow-hidden bg-[#0B0F17] text-white selection:bg-neon-green selection:text-black font-['Outfit'] flex flex-col admin-hub-content-container">
             <style dangerouslySetInnerHTML={{ __html: `
                 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap');
                 @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400..700&display=swap');
@@ -1677,8 +1949,8 @@ const ProposalGenerator = () => {
                         <Link to="/admin/proposals" className="p-2.5 md:p-3 bg-white/5 rounded-2xl hover:bg-white/10 border border-white/5 group"><ArrowLeft size={16} /></Link>
                     </div>
                     <div className="min-w-0 flex flex-col justify-center">
-                        <h1 className="text-sm md:text-xl font-black tracking-tighter uppercase italic text-white truncate leading-none">Quotation <span className="text-neon-green">Engine.</span></h1>
-                        <p className="text-[7px] md:text-[9px] font-black text-gray-500 uppercase tracking-widest mt-1 truncate">Business Summary</p>
+                        <h1 className="text-sm md:text-xl font-extrabold tracking-tight text-white truncate leading-none">Quotation <span className="text-neon-green">Engine.</span></h1>
+                        <p className="text-[7px] md:text-[9px] font-bold text-gray-500 uppercase tracking-widest mt-1 truncate">Business Summary</p>
                     </div>
                 </div>
 
@@ -1733,14 +2005,13 @@ const ProposalGenerator = () => {
                 </div>
 
 
-                {/* Editor Area */}
                 <main className={cn(
-                    "flex-grow scrollbar-hide bg-[#050505]",
-                    activeTab === 'ai' ? "h-full overflow-hidden p-4 md:p-6 pb-4 flex flex-col" : "px-4 md:px-12 py-10 md:py-16 overflow-y-auto pb-32",
+                    "flex-grow scrollbar-hide bg-[#050505] px-4 md:px-12 py-10 md:py-16 overflow-y-auto pb-32",
                     isExpandedPreview && "hidden"
                 )}>
-                    <div className={cn("max-w-[1600px] mx-auto w-full", activeTab === 'ai' ? "h-full flex-grow flex flex-col min-h-0" : "space-y-10 md:space-y-12")}>
+                    <div className="max-w-[1600px] mx-auto w-full space-y-10 md:space-y-12">
 
+                        {/* ... */}
                         {activeTab !== 'ai' && (
                             <div className="flex flex-col 2xl:flex-row items-start 2xl:items-end justify-between gap-6 mb-16 pb-8 border-b border-white/5 relative overflow-hidden">
                                 <div className="space-y-4 min-w-0 w-full 2xl:w-auto">
@@ -1751,7 +2022,7 @@ const ProposalGenerator = () => {
                                         </p>
                                     </div>
                                     <div className="space-y-2 min-w-0">
-                                        <h2 className="text-xl sm:text-2xl md:text-3xl font-black uppercase tracking-tighter italic text-white leading-none truncate">
+                                        <h2 className="text-xl sm:text-2xl md:text-3xl font-extrabold tracking-tight text-white leading-none truncate">
                                             {currentTab?.label}<span className="text-neon-green">.</span>
                                         </h2>
                                         <p className="text-[11px] text-gray-500 font-bold uppercase tracking-[0.3em] pl-1 truncate">
@@ -1779,405 +2050,10 @@ const ProposalGenerator = () => {
                         )}
 
                         <AnimatePresence mode="wait">
-                            <motion.div key={activeTab} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.2 }} className={cn(activeTab === 'ai' ? "flex-grow flex flex-col min-h-0 h-full" : "space-y-16")}>
+                            <motion.div key={activeTab} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.2 }} className={cn(activeTab === 'ai' ? "w-full" : "space-y-16")}>
                                 {activeTab === 'ai' && (
-                                    <div className="flex flex-col flex-grow flex-1 min-h-0 h-full bg-zinc-950/20 border border-white/5 rounded-[2.5rem] p-6 relative overflow-hidden">
-                                        {/* Orbital Glow in Background */}
-                                        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-64 bg-neon-green/5 rounded-full blur-3xl pointer-events-none" />
-
-                                        {/* Brand Header */}
-                                        <div className="flex items-center justify-between pb-4 border-b border-white/5 mb-4 shrink-0 relative z-10">
-                                            <div className="flex items-center gap-2.5">
-                                                <div className="w-8 h-8 rounded-xl bg-neon-green/10 flex items-center justify-center border border-neon-green/20">
-                                                    <Cpu size={14} className="text-neon-green animate-pulse" />
-                                                </div>
-                                                <div>
-                                                    <span className="text-[9px] font-black text-neon-green uppercase tracking-[0.3em] block leading-none mb-0.5">Primary Model</span>
-                                                    <h3 className="text-xs font-black uppercase text-white tracking-wide leading-none">Gemini 3.5 Flash<span className="text-neon-green">.</span></h3>
-                                                </div>
-                                            </div>
-                                            {/* Mode status indicator */}
-                                            <div className="flex items-center gap-2">
-                                                <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Active Mode:</span>
-                                                <span className="text-[9px] font-black uppercase tracking-widest bg-white/5 border border-white/10 px-2.5 py-1 rounded-md text-neon-green shadow-sm">
-                                                    {refinementContext ? 'Field Refinement' : (aiMode === 'bulk' ? 'Bulk Generator' : (aiMode === 'generate' ? 'First Draft' : 'Refinement & Chat'))}
-                                                </span>
-                                            </div>
-                                        </div>
-
-                                        {/* Mode Switcher inside AI Studio */}
-                                        <div className="flex items-center bg-zinc-950 border border-white/5 rounded-2xl p-1 gap-1 mb-4 z-10 shrink-0">
-                                            <button
-                                                type="button"
-                                                onClick={() => { setIsBulkMode(false); setAiMode('generate'); }}
-                                                className={cn(
-                                                    "flex-1 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-1.5",
-                                                    (!isBulkMode && aiMode !== 'refine') ? "bg-neon-green text-black shadow-[0_0_15px_rgba(57,255,20,0.3)]" : "text-gray-500 hover:text-white"
-                                                )}
-                                            >
-                                                <Sparkles size={12} />
-                                                <span>Generate New</span>
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={() => { setIsBulkMode(true); setAiMode('bulk'); }}
-                                                className={cn(
-                                                    "flex-1 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-1.5",
-                                                    isBulkMode ? "bg-neon-green text-black shadow-[0_0_15px_rgba(57,255,20,0.3)]" : "text-gray-500 hover:text-white"
-                                                )}
-                                            >
-                                                <FileSpreadsheet size={12} />
-                                                <span>AI Bulk Mode</span>
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={() => { setIsBulkMode(false); setAiMode('refine'); }}
-                                                className={cn(
-                                                    "flex-1 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-1.5",
-                                                    (!isBulkMode && aiMode === 'refine') ? "bg-neon-green text-black shadow-[0_0_15px_rgba(57,255,20,0.3)]" : "text-gray-500 hover:text-white"
-                                                )}
-                                            >
-                                                <Send size={12} />
-                                                <span>Chat & Revise</span>
-                                            </button>
-                                        </div>
-
-                                        {aiMode === 'bulk' ? (
-                                            <div className="flex-1 overflow-y-auto pr-2 space-y-6 scrollbar-hide relative z-10 pb-4">
-                                                {/* Top Intro Card */}
-                                                <div className="p-8 bg-zinc-900/30 border border-white/10 rounded-[2.5rem] relative overflow-hidden shadow-2xl space-y-6 group backdrop-blur-md">
-                                                    <div className="absolute top-0 right-0 w-32 h-32 bg-neon-green/5 rounded-full blur-3xl group-hover:bg-neon-green/10 transition-all duration-700" />
-                                                    <div className="flex flex-col items-start gap-2 relative z-10">
-                                                        <div className="flex items-center gap-2">
-                                                            <Sparkles size={14} className="text-neon-green" />
-                                                            <p className="text-[9px] font-black text-neon-green uppercase tracking-[0.4em]">Batch Automation</p>
-                                                        </div>
-                                                        <h2 className="text-xl font-black uppercase tracking-tighter italic text-white leading-tight">AI Bulk Orchestrator<span className="text-neon-green">.</span></h2>
-                                                        <p className="text-[11px] font-medium text-gray-400 leading-relaxed">
-                                                            Paste raw unstructured requirements or client requests. The generator parses each request and creates a fully formatted document complete with financials, timeline, and deliverables.
-                                                        </p>
-                                                    </div>
-
-                                                    <div className="space-y-4 relative z-10">
-                                                        <div className="flex flex-col gap-1.5 px-1">
-                                                            <label className="text-[8px] font-black text-gray-500 uppercase tracking-widest">First Page Title (Default: PROPOSAL PLAN)</label>
-                                                            <input 
-                                                                type="text"
-                                                                value={bulkCampaignName}
-                                                                onChange={e => setBulkCampaignName(e.target.value)}
-                                                                placeholder="PROPOSAL PLAN"
-                                                                className="w-full bg-black/60 border border-white/10 focus:border-neon-green/40 focus:shadow-[0_0_15px_rgba(57,255,20,0.1)] rounded-2xl px-4 h-12 text-xs font-bold text-white outline-none placeholder:text-gray-700 transition-all shadow-inner"
-                                                            />
-                                                        </div>
-
-                                                        <div className="space-y-3">
-                                                            <div className="flex justify-between items-center px-1">
-                                                                <label className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Raw Input Data / Client Prompts</label>
-                                                                <span className="text-[8px] font-black text-neon-green bg-neon-green/10 px-2.5 py-0.5 rounded-full border border-neon-green/20">
-                                                                    {parsedPrompts.length} Prompts Detected
-                                                                </span>
-                                                            </div>
-                                                            <textarea 
-                                                                value={bulkRawText}
-                                                                onChange={e => setBulkRawText(e.target.value)}
-                                                                rows={5}
-                                                                placeholder="Example:&#10;Client: Apex Events | Project: Summer Music Festival | Duration: 2 Days | Requirements: Full stage sound and lighting setup, 40k budget.&#10;---&#10;Client: Nova Tech | Project: Annual Gala | Duration: 1 Evening | Requirements: LED video walls, corporate AV, and livestreaming, 120k budget."
-                                                                className="w-full bg-black/60 border border-white/10 focus:border-neon-green/40 focus:shadow-[0_0_15px_rgba(57,255,20,0.1)] rounded-2xl p-4 text-xs font-medium text-white outline-none resize-y placeholder:text-gray-700 leading-relaxed shadow-inner transition-all"
-                                                            />
-                                                        </div>
-
-                                                        {parsedPrompts.length > 0 && (
-                                                            <div className="space-y-2 relative z-10 pt-2 animate-fade-in">
-                                                                <div className="flex items-center justify-between px-1">
-                                                                    <label className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Parsed Prompts Queue</label>
-                                                                    <span className="text-[7px] font-black text-neon-green/70 uppercase tracking-wider">Separate using '---' line break</span>
-                                                                </div>
-                                                                <div className="max-h-36 overflow-y-auto space-y-1.5 pr-1 scrollbar-hide">
-                                                                    {parsedPrompts.map((pText, idx) => (
-                                                                        <div key={idx} className="flex items-start gap-2.5 p-3 bg-black/60 border border-white/5 rounded-2xl text-[10px] text-zinc-300 hover:border-white/10 transition-all font-mono leading-normal">
-                                                                            <span className="text-neon-green font-black select-none">{String(idx + 1).padStart(2, '0')}.</span>
-                                                                            <span className="truncate flex-1">{pText}</span>
-                                                                        </div>
-                                                                    ))}
-                                                                </div>
-                                                            </div>
-                                                        )}
-                                                    </div>
-
-
-                                                    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2 relative z-10">
-                                                        <div className="flex items-center gap-2 text-[10px] font-bold text-gray-500">
-                                                            <Cpu size={14} className="text-neon-green" />
-                                                            <span>Multi-Threaded AI Pulse</span>
-                                                        </div>
-
-                                                        <button 
-                                                            onClick={handleBulkGenerate}
-                                                            disabled={isBulkGenerating || !bulkRawText.trim()}
-                                                            className="w-full sm:w-auto px-6 py-3 bg-neon-green text-black font-black uppercase tracking-widest text-[10px] rounded-xl shadow-[0_5px_15px_rgba(57,255,20,0.2)] hover:scale-105 active:scale-95 transition-all disabled:opacity-30 disabled:pointer-events-none disabled:hover:scale-100 flex items-center justify-center gap-2"
-                                                        >
-                                                            {isBulkGenerating ? (
-                                                                <>
-                                                                    <RefreshCw className="animate-spin" size={12} />
-                                                                    <span>Generating {bulkProgress.current}/{bulkProgress.total}...</span>
-                                                                </>
-                                                            ) : (
-                                                                <>
-                                                                    <Sparkles size={12} />
-                                                                    <span>Execute Batch</span>
-                                                                </>
-                                                            )}
-                                                        </button>
-                                                    </div>
-
-                                                    {isBulkGenerating && (
-                                                        <div className="space-y-1.5 relative z-10 pt-2">
-                                                            <div className="flex justify-between items-center text-[8px] font-black uppercase tracking-widest text-gray-400">
-                                                                <span>AI Pulse Progress ({bulkProgress.current} of {bulkProgress.total})</span>
-                                                                <span className="text-neon-green">{Math.round((bulkProgress.current / bulkProgress.total) * 100) || 0}%</span>
-                                                            </div>
-                                                            <div className="w-full h-2 bg-white/5 rounded-full overflow-hidden p-0.5 border border-white/10">
-                                                                <div 
-                                                                    className="h-full bg-neon-green rounded-full transition-all duration-500 shadow-[0_0_8px_#39FF14]"
-                                                                    style={{ width: `${(bulkProgress.current / bulkProgress.total) * 100}%` }}
-                                                                />
-                                                            </div>
-                                                        </div>
-                                                    )}
-                                                </div>
-
-                                                {/* Generated Bulk Proposals Grid */}
-                                                {bulkProposals.length > 0 && (
-                                                    <div className="space-y-6 pt-4 border-t border-white/5">
-                                                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                                                            <div className="space-y-0.5">
-                                                                <div className="flex items-center gap-1.5">
-                                                                    <div className="w-2 h-2 rounded-full bg-neon-green animate-pulse" />
-                                                                    <h3 className="text-lg font-black uppercase tracking-tight italic text-white">Generated Vault</h3>
-                                                                </div>
-                                                                <p className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">{bulkProposals.length} Proposals Ready</p>
-                                                            </div>
-
-                                                            <div className="flex items-center gap-2">
-                                                                <button 
-                                                                    onClick={generateAllBulkPDFs}
-                                                                    disabled={isSaving}
-                                                                    className="px-4 py-2.5 bg-white/5 hover:bg-white/10 border border-white/5 text-white rounded-xl text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-1.5 disabled:opacity-50"
-                                                                >
-                                                                    {isSaving ? <RefreshCw className="animate-spin" size={12} /> : <Download size={12} />}
-                                                                    <span>Export All</span>
-                                                                </button>
-                                                                <button 
-                                                                    onClick={handleSaveAllBulk}
-                                                                    disabled={isSaving}
-                                                                    className="px-4 py-2.5 bg-neon-green text-black rounded-xl text-[9px] font-black uppercase tracking-widest shadow-[0_0_15px_rgba(57,255,20,0.2)] hover:scale-105 transition-all flex items-center justify-center gap-1.5 disabled:opacity-50"
-                                                                >
-                                                                    {isSaving ? <RefreshCw className="animate-spin" size={12} /> : <Save size={12} />}
-                                                                    <span>Save All</span>
-                                                                </button>
-                                                            </div>
-                                                        </div>
-
-                                                        <div className="grid grid-cols-1 gap-4">
-                                                            {bulkProposals.map((prop, idx) => (
-                                                                <div 
-                                                                    key={idx}
-                                                                    onClick={() => setSelectedBulkIndex(idx)}
-                                                                    className={cn(
-                                                                        "p-4 rounded-2xl border transition-all duration-300 cursor-pointer flex flex-col gap-4 relative group overflow-hidden",
-                                                                        selectedBulkIndex === idx 
-                                                                            ? "bg-zinc-900 border-neon-green shadow-lg scale-[1.01]" 
-                                                                            : "bg-zinc-900/30 border-white/5 hover:border-white/10 hover:bg-zinc-900/50"
-                                                                    )}
-                                                                >
-                                                                    {selectedBulkIndex === idx && (
-                                                                        <div className="absolute top-0 left-0 w-1 h-full bg-neon-green shadow-[0_0_8px_#39FF14]" />
-                                                                    )}
-
-                                                                    <div className="flex items-start justify-between gap-4">
-                                                                        <div className="space-y-1 min-w-0">
-                                                                            <h4 className="text-sm font-black text-white uppercase tracking-tight truncate leading-tight">
-                                                                                {prop.clientName || `Client 0${idx+1}`}
-                                                                            </h4>
-                                                                            <p className="text-[10px] font-bold text-gray-400 italic truncate">
-                                                                                {prop.campaignName || `Project 0${idx+1}`}
-                                                                            </p>
-                                                                        </div>
-                                                                        <div className="flex items-center gap-1.5 shrink-0">
-                                                                            <span className="text-[9px] font-black font-mono px-2 py-0.5 rounded bg-white/5 border border-white/10 text-neon-green">
-                                                                                {prop.proposalNumber}
-                                                                            </span>
-                                                                            <button 
-                                                                                onClick={(e) => {
-                                                                                    e.stopPropagation();
-                                                                                    setBulkProposals(bulkProposals.filter((_, i) => i !== idx));
-                                                                                    if (selectedBulkIndex >= bulkProposals.length - 1) {
-                                                                                        setSelectedBulkIndex(Math.max(0, bulkProposals.length - 2));
-                                                                                    }
-                                                                                }}
-                                                                                className="p-1 text-gray-500 hover:text-red-500 hover:bg-red-500/10 rounded transition-all"
-                                                                            >
-                                                                                <X size={12} />
-                                                                            </button>
-                                                                        </div>
-                                                                    </div>
-
-                                                                    <div className="flex items-center justify-between pt-3 border-t border-white/5 text-[10px] font-bold text-gray-500">
-                                                                        <div className="flex items-center gap-2">
-                                                                            <span>Duration: {prop.campaignDuration || '3 Months'}</span>
-                                                                        </div>
-                                                                        <span className={cn(
-                                                                            "text-[9px] font-black uppercase tracking-widest flex items-center gap-1",
-                                                                            selectedBulkIndex === idx ? "text-neon-green" : "text-gray-500 group-hover:text-white"
-                                                                        )}>
-                                                                            <span>{selectedBulkIndex === idx ? 'Editing' : 'Select'}</span>
-                                                                            <ArrowRight size={10} />
-                                                                        </span>
-                                                                    </div>
-                                                                </div>
-                                                            ))}
-                                                        </div>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        ) : (
-                                            <>
-                                                {/* Message Stream */}
-                                                <div ref={chatContainerRef} className="flex-1 overflow-y-auto pr-2 space-y-4 mb-4 relative z-10 flex flex-col min-h-0">
-                                                    {/* Welcome card if only initial message */}
-                                                    {messages.length === 1 && (
-                                                        <div className="my-auto py-2 flex flex-col items-center justify-center text-center max-w-xl mx-auto space-y-3">
-                                                            <div className="relative">
-                                                                <div className="absolute -inset-1 bg-gradient-to-r from-neon-green via-neon-blue to-purple-500 rounded-full blur opacity-30 animate-pulse" />
-                                                                <div className="relative w-10 h-10 rounded-full bg-black border border-white/10 flex items-center justify-center">
-                                                                    <Sparkles size={16} className="text-neon-green" />
-                                                                </div>
-                                                            </div>
-                                                            <div className="space-y-1">
-                                                                <h4 className="text-sm font-black uppercase tracking-tight italic text-white">AI Document Orchestrator</h4>
-                                                                <p className="text-[10px] text-gray-400 leading-normal font-medium">
-                                                                    Describe your requirements below to draft a complete proposal in seconds.
-                                                                </p>
-                                                            </div>
-
-                                                            {/* Suggestions Grid */}
-                                                            <div className="w-full space-y-2 pt-1">
-                                                                <span className="text-[8px] font-black uppercase text-gray-500 tracking-widest block">Suggested Blueprints</span>
-                                                                <div className="grid grid-cols-1 gap-1.5">
-                                                                    {suggestions.map((s, idx) => (
-                                                                        <button
-                                                                            type="button"
-                                                                            key={idx}
-                                                                            onClick={() => setPromptText(s)}
-                                                                            className="w-full text-left py-2 px-3.5 bg-white/[0.02] border border-white/5 hover:border-neon-green/20 hover:bg-neon-green/5 rounded-2xl text-[10px] font-bold text-gray-400 hover:text-white transition-all duration-300 leading-normal group"
-                                                                        >
-                                                                            <span className="text-neon-green group-hover:translate-x-1 inline-block transition-transform mr-1.5">→</span>
-                                                                            {s}
-                                                                        </button>
-                                                                    ))}
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    )}
-
-                                                    {/* Chat Messages */}
-                                                    {messages.length > 1 && messages.map(m => (
-                                                        <div
-                                                            key={m.id}
-                                                            className={cn(
-                                                                "max-w-[80%] rounded-[2rem] p-5 text-xs leading-relaxed transition-all shadow-md relative overflow-hidden group",
-                                                                m.sender === 'user'
-                                                                    ? "bg-zinc-900 text-zinc-100 self-end rounded-tr-none border border-white/5"
-                                                                    : "bg-white/[0.02] border border-white/[0.04] text-zinc-300 self-start rounded-tl-none"
-                                                            )}
-                                                        >
-                                                            <div className="flex items-center gap-2 mb-2">
-                                                                <span className={cn(
-                                                                    "text-[8px] font-black uppercase tracking-wider",
-                                                                    m.sender === 'user' ? "text-gray-400" : "text-neon-green"
-                                                                )}>
-                                                                    {m.sender === 'user' ? 'You' : 'Gemini 3.5 Flash'}
-                                                                </span>
-                                                            </div>
-                                                            <div className="font-medium leading-relaxed">{renderChatMessage(m.text)}</div>
-                                                        </div>
-                                                    ))}
-
-                                                    {/* Generating Bubble */}
-                                                    {isGenerating && (
-                                                        <div className="bg-white/[0.02] border border-white/[0.04] text-zinc-300 self-start rounded-[2rem] rounded-tl-none p-5 text-xs w-[280px] sm:w-[320px] flex flex-col gap-3 shadow-md">
-                                                            <div className="flex items-center gap-2">
-                                                                <Sparkles size={14} className="text-neon-green animate-spin shrink-0" />
-                                                                <span className="font-bold uppercase tracking-wider text-[10px] text-neon-green flex-1 truncate">
-                                                                    {STAGE_MESSAGES[generationStage]?.text || "Synthesizing document..."}
-                                                                </span>
-                                                                <span className="text-[9px] font-mono text-zinc-500 font-bold shrink-0">
-                                                                    {generationTime}s
-                                                                </span>
-                                                            </div>
-                                                            <div className="w-full h-1 bg-zinc-950 rounded-full overflow-hidden">
-                                                                <div 
-                                                                    className="h-full bg-neon-green transition-all duration-500" 
-                                                                    style={{ width: `${generationProgress}%` }}
-                                                                />
-                                                            </div>
-                                                        </div>
-                                                    )}
-                                                    <div ref={chatEndRef} />
-                                                </div>
-
-                                                {/* Prompt container wrapped in .gemini-border-wrap */}
-                                                <div className="mt-auto pt-4 bg-transparent shrink-0">
-                                                    {/* WhatsApp quoted context container */}
-                                                    {refinementContext && (
-                                                        <div className="px-4 py-3 bg-zinc-900/80 border-l-4 border-neon-green rounded-r-2xl flex items-center justify-between gap-4 mb-3 border border-white/5 border-l-0 shadow-lg relative overflow-hidden group">
-                                                            <div className="absolute inset-0 bg-neon-green/5 opacity-40" />
-                                                            <div className="min-w-0 relative z-10">
-                                                                <span className="text-[9px] font-black uppercase tracking-widest text-neon-green block mb-0.5">Refining: {refinementContext.fieldLabel}</span>
-                                                                <p className="text-xs text-gray-400 line-clamp-1 italic">
-                                                                    "{refinementContext.currentValue || 'No current content...'}"
-                                                                </p>
-                                                            </div>
-                                                            <button 
-                                                                type="button" 
-                                                                onClick={() => setRefinementContext(null)}
-                                                                className="p-1.5 hover:bg-white/10 rounded-xl text-gray-500 hover:text-white transition-all shrink-0 relative z-10"
-                                                            >
-                                                                <X size={14} />
-                                                            </button>
-                                                        </div>
-                                                    )}
-
-                                                    {/* The Input box container */}
-                                                    <div className="gemini-border-wrap shadow-[0_15px_40px_rgba(57,255,20,0.15)] relative">
-                                                        <div className="bg-[#050505] rounded-[1.4rem] p-3 flex items-end gap-3">
-                                                            <textarea
-                                                                value={promptText}
-                                                                onChange={e => setPromptText(e.target.value)}
-                                                                placeholder={refinementContext ? `Ask AI to refine "${refinementContext.fieldLabel}"...` : "Describe the proposal you want to generate or modify..."}
-                                                                className="flex-1 bg-transparent border-none text-[13px] font-medium text-white placeholder:text-zinc-600 outline-none min-h-[44px] max-h-[160px] py-2 px-3 resize-none leading-relaxed"
-                                                                rows={1}
-                                                                disabled={isGenerating}
-                                                                onKeyDown={e => {
-                                                                    if (e.key === 'Enter' && !e.shiftKey) {
-                                                                        e.preventDefault();
-                                                                        handleStudioSubmit();
-                                                                    }
-                                                                }}
-                                                            />
-                                                            <button
-                                                                type="button"
-                                                                onClick={handleStudioSubmit}
-                                                                disabled={!promptText.trim() || isGenerating}
-                                                                className="p-3 bg-neon-green text-black rounded-xl hover:scale-105 active:scale-95 transition-all shrink-0 disabled:opacity-20 disabled:scale-100 flex items-center justify-center shadow-lg"
-                                                            >
-                                                                {isGenerating ? <RefreshCw className="animate-spin" size={14} /> : <Send size={14} />}
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </>
-                                        )}
+                                    <div className="w-full bg-zinc-950/20 border border-white/5 rounded-[2.5rem] p-6 relative flex flex-col">
+                                        {renderChatbot(false)}
                                     </div>
                                 )}
                                 {activeTab === '1' && (
@@ -4272,6 +4148,26 @@ const ProposalGenerator = () => {
                 }}
                 initialName="Authorized Signatory"
             />
+
+            {/* Floating Action Button for AI Chat */}
+            {activeTab !== 'ai' && (
+                <div className="fixed bottom-24 right-6 lg:bottom-8 lg:right-8 z-[120]">
+                    <button
+                        type="button"
+                        onClick={() => setIsFloatingChatOpen(!isFloatingChatOpen)}
+                        className="w-14 h-14 bg-neon-green/10 text-neon-green hover:bg-neon-green/20 border border-neon-green/20 hover:border-neon-green/40 shadow-[0_0_20px_rgba(57,255,20,0.15)] hover:shadow-[0_0_30px_rgba(57,255,20,0.3)] rounded-full flex items-center justify-center cursor-pointer transition-all duration-300 hover:scale-105 active:scale-95"
+                    >
+                        <Sparkles className="w-6 h-6 animate-pulse" />
+                    </button>
+                </div>
+            )}
+
+            {/* Floating AI Chat Pop-up Overlay */}
+            {activeTab !== 'ai' && isFloatingChatOpen && (
+                <div className="fixed bottom-40 right-6 lg:bottom-24 lg:right-8 w-[92vw] sm:w-[420px] md:w-[460px] h-[550px] md:h-[600px] bg-zinc-950/90 backdrop-blur-2xl border border-white/10 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.6)] overflow-hidden flex flex-col p-4 z-[120] animate-fade-in">
+                    {renderChatbot(true)}
+                </div>
+            )}
         </div>
     );
 };

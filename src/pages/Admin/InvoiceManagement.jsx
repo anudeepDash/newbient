@@ -28,6 +28,7 @@ import Globe from 'lucide-react/dist/esm/icons/globe';
 import MessageCircle from 'lucide-react/dist/esm/icons/message-circle';
 import Receipt from 'lucide-react/dist/esm/icons/receipt';
 import AlertTriangle from 'lucide-react/dist/esm/icons/alert-triangle';
+import FolderOpen from 'lucide-react/dist/esm/icons/folder-open';
 import { useStore } from '../../lib/store';
 import { sendInvoiceEmail, generateInvoiceEmailHTML, sendPaymentApprovedEmail, sendPaymentDeclinedEmail } from '../../lib/email';
 import { Card } from '../../components/ui/Card';
@@ -62,6 +63,7 @@ const InvoiceManagement = () => {
         { name: 'Invoices', path: '/admin/invoices', icon: FileText, color: 'text-neon-blue' },
         { name: 'Proposals', path: '/admin/proposals', icon: FileSpreadsheet, color: 'text-neon-green' },
         { name: 'Contracts', path: '/admin/agreements', icon: ShieldCheck, color: 'text-[#A855F7]' },
+        { name: 'Documents', path: '/admin/documents', icon: FolderOpen, color: 'text-neon-blue' },
     ];
 
     // Quick Upload State

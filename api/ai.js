@@ -57,11 +57,11 @@ async function discoverModels() {
 
         if (!response.ok) {
             const errBody = await response.text().catch(() => '');
-            // 403 = key leaked/revoked/invalid — mark as dead
-            if (response.status === 403) {
-                const isKeyDead = errBody.includes('leaked') || errBody.includes('PERMISSION_DENIED') || errBody.includes('API key');
+            // 400 or 403 = key leaked/revoked/invalid — mark as dead
+            if (response.status === 403 || response.status === 400) {
+                const isKeyDead = errBody.includes('leaked') || errBody.includes('PERMISSION_DENIED') || errBody.includes('API key') || errBody.includes('API_KEY_INVALID');
                 if (isKeyDead) {
-                    console.error('[AI PROXY] 🚨 GEMINI API KEY IS DEAD (leaked/revoked). Skipping ALL Gemini models.');
+                    console.error('[AI PROXY] 🚨 GEMINI API KEY IS DEAD (invalid/leaked/revoked). Skipping ALL Gemini models.');
                     cachedModels = ['__KEY_DEAD__'];
                     modelCacheTimestamp = Date.now();
                     return cachedModels;
@@ -199,10 +199,9 @@ export default async function handler(req, res) {
                         console.log(`[AI PROXY] 🚀 Trying Gemini model: ${modelName}`);
                         const response = await ai.models.generateContent({
                             model: modelName,
-                            contents: [
-                                { role: 'user', parts: [{ text: systemPrompt + "\n\nReturn valid JSON.\n\n" + userPrompt }] }
-                            ],
+                            contents: userPrompt,
                             config: {
+                                systemInstruction: systemPrompt + "\n\nReturn valid JSON.",
                                 responseMimeType: "application/json"
                             }
                         });
@@ -217,10 +216,10 @@ export default async function handler(req, res) {
                         const errMsg = modelError.message || '';
                         const status = modelError.status || modelError.httpStatusCode || 0;
 
-                        // KEY-LEVEL ERROR: leaked, revoked, or permission denied
+                        // KEY-LEVEL ERROR: leaked, revoked, invalid, or permission denied
                         // Immediately break out — no point trying other models with the same dead key
-                        if (status === 403 || errMsg.includes('leaked') || errMsg.includes('PERMISSION_DENIED')) {
-                            console.error(`[AI PROXY] 🚨 API KEY ERROR (403): ${errMsg.substring(0, 150)}`);
+                        if (status === 403 || status === 400 || errMsg.includes('leaked') || errMsg.includes('PERMISSION_DENIED') || errMsg.includes('API_KEY_INVALID') || errMsg.includes('API Key not found')) {
+                            console.error(`[AI PROXY] 🚨 API KEY ERROR (${status}): ${errMsg.substring(0, 150)}`);
                             console.error('[AI PROXY] 🚨 Skipping ALL remaining Gemini models — key is dead.');
                             // Cache the dead state so future requests don't waste time
                             cachedModels = ['__KEY_DEAD__'];

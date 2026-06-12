@@ -17,6 +17,8 @@ import HardDrive from 'lucide-react/dist/esm/icons/hard-drive';
 import Calendar from 'lucide-react/dist/esm/icons/calendar';
 import Tag from 'lucide-react/dist/esm/icons/tag';
 import CheckCircle from 'lucide-react/dist/esm/icons/check-circle';
+import ShieldCheck from 'lucide-react/dist/esm/icons/shield-check';
+import FileSpreadsheet from 'lucide-react/dist/esm/icons/file-spreadsheet';
 import { useStore } from '../../lib/store';
 import { Card } from '../../components/ui/Card';
 import { Input } from '../../components/ui/Input';
@@ -253,6 +255,13 @@ const DocumentCard = ({ doc, onPreview, onCopyLink, onTogglePublic, onDelete }) 
 const DocumentHub = () => {
     const { documents, addDocument, updateDocument, deleteDocument, uploadDocumentFile, user, addToast } = useStore();
 
+    const vaultTabs = [
+        ...(['developer', 'founder'].includes(user?.role) ? [{ name: 'Invoices', path: '/admin/invoices', icon: FileText, color: 'text-neon-blue' }] : []),
+        { name: 'Proposals', path: '/admin/proposals', icon: FileSpreadsheet, color: 'text-neon-green' },
+        { name: 'Contracts', path: '/admin/agreements', icon: ShieldCheck, color: 'text-neon-purple' },
+        { name: 'Documents', path: '/admin/documents', icon: FolderOpen, color: 'text-neon-blue' },
+    ];
+
     // UI state
     const [showAddModal, setShowAddModal] = useState(false);
     const [search, setSearch] = useState('');
@@ -478,6 +487,7 @@ const DocumentHub = () => {
                 accentClass: 'text-neon-blue'
             }}
             accentColor="neon-blue"
+            tabs={vaultTabs}
             hideTabs={false}
             action={
                 <Button

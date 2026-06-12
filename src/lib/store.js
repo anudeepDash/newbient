@@ -308,6 +308,7 @@ export const useStore = create((set, get) => ({
     portfolioCategories: [], // Dynamic categories
     toasts: [], // Ephemeral UI notifications
     aiConfig: { geminiKey: '', defaultModel: 'gemini-3.5-flash' }, // Global AI Config
+    activeModel: 'Gemini 3.5 Flash',
     maintenanceState: {
         global: false,
         pages: {}, // e.g., gallery, concerts
@@ -322,8 +323,8 @@ export const useStore = create((set, get) => ({
     user: initialUser,
 
     // Real-time Subscription Init
-    subscribeToData: () => {
-        console.log("Initializing Firebase Subscriptions...");
+    subscribeToData: (isAdmin) => {
+        console.log(`Initializing Firebase Subscriptions (Admin mode: ${!!isAdmin})...`);
         
         // Safety timeout to prevent stuck loading screen
         const loadingTimeout = setTimeout(() => {
@@ -334,7 +335,7 @@ export const useStore = create((set, get) => ({
         }, 2500);
 
         const loadedKeys = new Set();
-        const criticalKeys = ['announcements', 'upcomingEvents', 'siteSettings', 'invoices', 'creators', 'campaigns'];
+        const criticalKeys = ['announcements', 'upcomingEvents', 'siteSettings'];
 
         // Helper for collections
         const sub = (colName, stateKey) => {
@@ -392,35 +393,56 @@ export const useStore = create((set, get) => ({
             });
         };
 
+        // Always Subscribed (Public Data)
         const unsub1 = sub('announcements', 'announcements');
         const unsub2 = sub('concerts', 'concerts');
         const unsub3 = sub('portfolio', 'portfolio');
-        const unsub4 = sub('invoices', 'invoices');
-        const unsubSpends = sub('spends', 'spends');
-        const unsubOtherIncomes = sub('other_incomes', 'otherIncomes');
-        const unsubFinancePayees = sub('finance_payees', 'financePayees');
         const unsub5 = sub('forms', 'forms');
-
         const unsub7 = sub('volunteer_gigs', 'volunteerGigs');
         const unsub8 = sub('upcoming_events', 'upcomingEvents');
         const unsubCategory = sub('portfolio_categories', 'portfolioCategories');
-        const unsubGuestlist = sub('guestlists', 'guestlists'); // New sub
-        const unsubMessages = sub('messages', 'messages');
-        const unsubCreators = sub('creators', 'creators');
-        const unsubCampaigns = sub('campaigns', 'campaigns');
-        const unsubProposals = sub('proposals', 'proposals');
-        const unsubAgreements = sub('agreements', 'agreements');
+        const unsubGuestlist = sub('guestlists', 'guestlists');
         const unsubGiveaways = sub('giveaways', 'giveaways');
-        const unsubGiveawayEntries = sub('giveaway_entries', 'giveawayEntries');
         const unsubPosts = sub('posts', 'posts');
-        const unsubSubscribers = sub('subscribers', 'subscribers');
-        const unsubAllUsers = sub('users', 'allUsers');
-        const unsubArtists = sub('artists', 'artists');
-        const unsubAdmins = sub('admins', 'admins');
-        const unsubClientRequests = sub('client_requests', 'clientRequests');
-        const unsubTicketOrders = sub('ticket_orders', 'ticketOrders');
-        const unsubCoupons = sub('coupons', 'coupons');
-        const unsubDocuments = sub('documents', 'documents');
+
+        // Admin-only subscriptions (only run if isAdmin is true)
+        let unsub4 = null;
+        let unsubSpends = null;
+        let unsubOtherIncomes = null;
+        let unsubFinancePayees = null;
+        let unsubMessages = null;
+        let unsubCreators = null;
+        let unsubCampaigns = null;
+        let unsubProposals = null;
+        let unsubAgreements = null;
+        let unsubSubscribers = null;
+        let unsubAllUsers = null;
+        let unsubArtists = null;
+        let unsubAdmins = null;
+        let unsubClientRequests = null;
+        let unsubTicketOrders = null;
+        let unsubCoupons = null;
+        let unsubDocuments = null;
+
+        if (isAdmin) {
+            unsub4 = sub('invoices', 'invoices');
+            unsubSpends = sub('spends', 'spends');
+            unsubOtherIncomes = sub('other_incomes', 'otherIncomes');
+            unsubFinancePayees = sub('finance_payees', 'financePayees');
+            unsubMessages = sub('messages', 'messages');
+            unsubCreators = sub('creators', 'creators');
+            unsubCampaigns = sub('campaigns', 'campaigns');
+            unsubProposals = sub('proposals', 'proposals');
+            unsubAgreements = sub('agreements', 'agreements');
+            unsubSubscribers = sub('subscribers', 'subscribers');
+            unsubAllUsers = sub('users', 'allUsers');
+            unsubArtists = sub('artists', 'artists');
+            unsubAdmins = sub('admins', 'admins');
+            unsubClientRequests = sub('client_requests', 'clientRequests');
+            unsubTicketOrders = sub('ticket_orders', 'ticketOrders');
+            unsubCoupons = sub('coupons', 'coupons');
+            unsubDocuments = sub('documents', 'documents');
+        }
 
         // Site Settings Subscription (Single Doc)
         const unsub9 = onSnapshot(doc(db, 'site_settings', 'general'), (docSnap) => {
@@ -460,14 +482,11 @@ export const useStore = create((set, get) => ({
             }
         }, (error) => console.error("Error fetching AI config:", error));
 
-
-
         const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
         const maintenanceDocId = isLocal ? 'maintenance_local' : 'maintenance';
 
         const unsub11 = onSnapshot(doc(db, 'app_state', maintenanceDocId), (docSnap) => {
             if (docSnap.exists()) {
-                // Merge with initial structure to ensure all keys exist
                 const data = docSnap.data();
                 set({
                     maintenanceState: {
@@ -479,7 +498,6 @@ export const useStore = create((set, get) => ({
                     }
                 });
             } else {
-                // If doc doesn't exist, use defaults but don't force write yet
                 set({
                     maintenanceState: {
                         global: false,
@@ -492,16 +510,43 @@ export const useStore = create((set, get) => ({
             }
         }, (error) => console.error(`Error fetching maintenance state (${maintenanceDocId}):`, error));
 
-
         return () => {
             clearTimeout(loadingTimeout);
-            unsub1(); unsub2(); unsub3(); unsub4(); unsub5(); unsub7(); unsub8(); unsub9(); unsub10(); unsub11(); unsub12(); unsubCategory(); unsubGuestlist(); unsubMessages(); unsubCreators(); unsubCampaigns(); unsubProposals(); unsubGiveaways(); unsubGiveawayEntries();
-            unsubPosts(); unsubSubscribers(); unsubAllUsers(); unsubAdmins(); unsubArtists(); unsubAgreements();
-            unsubClientRequests(); unsubTicketOrders();
-            unsubCoupons(); unsubDocuments();
+            unsub1(); unsub2(); unsub3(); unsub5(); unsub7(); unsub8(); unsub9(); unsub10(); unsub11(); unsub12(); unsubCategory(); unsubGuestlist(); unsubGiveaways();
+            unsubPosts(); 
             unsubAI();
-            unsubSpends(); unsubOtherIncomes(); unsubFinancePayees();
+
+            if (unsub4) unsub4();
+            if (unsubSpends) unsubSpends();
+            if (unsubOtherIncomes) unsubOtherIncomes();
+            if (unsubFinancePayees) unsubFinancePayees();
+            if (unsubMessages) unsubMessages();
+            if (unsubCreators) unsubCreators();
+            if (unsubCampaigns) unsubCampaigns();
+            if (unsubProposals) unsubProposals();
+            if (unsubAgreements) unsubAgreements();
+            if (unsubSubscribers) unsubSubscribers();
+            if (unsubAllUsers) unsubAllUsers();
+            if (unsubArtists) unsubArtists();
+            if (unsubAdmins) unsubAdmins();
+            if (unsubClientRequests) unsubClientRequests();
+            if (unsubTicketOrders) unsubTicketOrders();
+            if (unsubCoupons) unsubCoupons();
+            if (unsubDocuments) unsubDocuments();
         };
+    },
+
+    // Campaign-specific Giveaway Entries Subscription (to avoid loading all entries globally)
+    subscribeToGiveawayEntries: (campaignId) => {
+        if (!campaignId) return () => {};
+        console.log(`Subscribing to giveaway entries for campaign: ${campaignId}`);
+        const q = query(collection(db, 'giveaway_entries'), where('campaignId', '==', campaignId));
+        return onSnapshot(q, (snapshot) => {
+            const data = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+            set({ giveawayEntries: data });
+        }, (error) => {
+            console.error("Error fetching giveaway entries for campaign:", campaignId, error);
+        });
     },
 
     // Toast System

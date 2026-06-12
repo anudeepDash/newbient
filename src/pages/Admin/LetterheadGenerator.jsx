@@ -107,7 +107,7 @@ const LetterheadGenerator = () => {
     }, []);
 
     return (
-        <div className="min-h-screen bg-[#020202] text-white selection:bg-neon-green selection:text-black font-['Outfit'] overflow-x-clip flex flex-col no-print">
+        <div className="min-h-screen bg-[#0B0F17] text-white selection:bg-neon-green selection:text-black font-['Outfit'] overflow-x-clip flex flex-col no-print admin-hub-content-container">
             <style dangerouslySetInnerHTML={{ __html: `
                 @media print {
                     body * {
@@ -145,7 +145,7 @@ const LetterheadGenerator = () => {
                         <ArrowLeft size={16} />
                     </button>
                     <div>
-                        <h1 className="text-lg font-black uppercase tracking-tighter text-white">Letterhead Gen.</h1>
+                        <h1 className="text-lg font-extrabold tracking-tight text-white">Letterhead Gen.</h1>
                         <p className="text-[10px] font-bold text-neon-green uppercase tracking-[0.3em]">Official Document Generator</p>
                     </div>
                 </div>

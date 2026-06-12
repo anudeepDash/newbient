@@ -287,7 +287,6 @@ const splitTextIntoPages = (rawText, maxPageHeight = 800) => {
 
     return finalPages.length > 0 ? finalPages : [''];
 };
-
 const defaultColumns = [
     { key: 'description', label: 'Resource Inventory' },
     { key: 'qty', label: 'Qty' },
@@ -296,7 +295,37 @@ const defaultColumns = [
 
 const Proposal = () => {
     const { id } = useParams();
-    const { proposals, updateProposalStatus, loading, user } = useStore();
+    const { proposals, updateProposalStatus, loading: storeLoading, user } = useStore();
+    const [localProposal, setLocalProposal] = useState(null);
+    const [localLoading, setLocalLoading] = useState(true);
+
+    const proposal = localProposal || proposals.find(p => p.id === id);
+
+    useEffect(() => {
+        const found = proposals.find(p => p.id === id);
+        if (found) {
+            setLocalProposal(found);
+            setLocalLoading(false);
+        } else if (!storeLoading) {
+            const fetchProposal = async () => {
+                try {
+                    const { doc, getDoc } = await import('firebase/firestore');
+                    const { db } = await import('../lib/firebase');
+                    const docSnap = await getDoc(doc(db, 'proposals', id));
+                    if (docSnap.exists()) {
+                        setLocalProposal({ ...docSnap.data(), id: docSnap.id });
+                    }
+                } catch (err) {
+                    console.error("Error fetching proposal directly:", err);
+                } finally {
+                    setLocalLoading(false);
+                }
+            };
+            fetchProposal();
+        }
+    }, [id, proposals, storeLoading]);
+
+    const loading = localLoading;
     const proposalRef = useRef(null);
     const [scale, setScale] = useState(1);
     const [isExporting, setIsExporting] = useState(false);
@@ -330,7 +359,6 @@ const Proposal = () => {
         return () => window.removeEventListener('resize', handleResize);
     }, []);
 
-    const proposal = proposals.find(p => p.id === id);
     const isAdmin = (localStorage.getItem('adminAuth') === 'true') || (user?.role === 'super_admin' || user?.role === 'developer');
 
     const displayProposal = proposal || {

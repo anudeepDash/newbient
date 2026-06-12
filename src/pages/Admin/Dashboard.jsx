@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import IndianRupee from 'lucide-react/dist/esm/icons/indian-rupee';
 import Users from 'lucide-react/dist/esm/icons/users';
@@ -18,7 +18,6 @@ import Image from 'lucide-react/dist/esm/icons/image';
 import Ticket from 'lucide-react/dist/esm/icons/ticket';
 import LayoutDashboard from 'lucide-react/dist/esm/icons/layout-dashboard';
 import Settings from 'lucide-react/dist/esm/icons/settings';
-import LogOut from 'lucide-react/dist/esm/icons/log-out';
 import Search from 'lucide-react/dist/esm/icons/search';
 import Bell from 'lucide-react/dist/esm/icons/bell';
 import Zap from 'lucide-react/dist/esm/icons/zap';
@@ -33,6 +32,9 @@ import FolderOpen from 'lucide-react/dist/esm/icons/folder-open';
 import Briefcase from 'lucide-react/dist/esm/icons/briefcase';
 import ChevronLeft from 'lucide-react/dist/esm/icons/chevron-left';
 import ChevronRight from 'lucide-react/dist/esm/icons/chevron-right';
+import Menu from 'lucide-react/dist/esm/icons/menu';
+import X from 'lucide-react/dist/esm/icons/x';
+import Compass from 'lucide-react/dist/esm/icons/compass';
 
 import { collection, query, where, onSnapshot, getDocs, addDoc } from 'firebase/firestore';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, sendPasswordResetEmail, signInWithPopup } from 'firebase/auth';
@@ -71,22 +73,22 @@ const DashboardSection = ({ title, gradient, children, icon }) => (
         <div className="relative group/section">
             <button 
                 onClick={() => scrollContainer(`section-${title.replace(/\s+/g, '-').toLowerCase()}`, 'left')}
-                className="absolute left-2 top-1/2 -translate-y-1/2 z-40 w-10 h-10 rounded-full bg-black/60 border border-white/10 backdrop-blur-md flex items-center justify-center text-gray-400 hover:text-white lg:hidden opacity-0 group-hover/section:opacity-100 transition-all duration-300 active:scale-90 shadow-xl"
+                className="absolute left-2 md:-left-12 top-1/2 -translate-y-1/2 z-40 w-10 h-10 md:w-12 md:h-12 rounded-full bg-white/5 border border-white/10 backdrop-blur-md flex items-center justify-center text-white hover:bg-neon-green hover:text-black lg:hidden opacity-0 group-hover/section:opacity-100 -translate-x-2 md:-translate-x-4 md:group-hover/section:translate-x-0 transition-all duration-300 active:scale-90 shadow-xl"
             >
                 <ChevronLeft size={20} />
             </button>
             <button 
                 onClick={() => scrollContainer(`section-${title.replace(/\s+/g, '-').toLowerCase()}`, 'right')}
-                className="absolute right-2 top-1/2 -translate-y-1/2 z-40 w-10 h-10 rounded-full bg-black/60 border border-white/10 backdrop-blur-md flex items-center justify-center text-gray-400 hover:text-white lg:hidden opacity-0 group-hover/section:opacity-100 transition-all duration-300 active:scale-90 shadow-xl"
+                className="absolute right-2 md:-right-12 top-1/2 -translate-y-1/2 z-40 w-10 h-10 md:w-12 md:h-12 rounded-full bg-white/5 border border-white/10 backdrop-blur-md flex items-center justify-center text-white hover:bg-neon-green hover:text-black lg:hidden opacity-0 group-hover/section:opacity-100 translate-x-2 md:translate-x-4 md:group-hover/section:translate-x-0 transition-all duration-300 active:scale-90 shadow-xl"
             >
                 <ChevronRight size={20} />
             </button>
-            <div id={`section-${title.replace(/\s+/g, '-').toLowerCase()}`} className="flex overflow-x-auto lg:overflow-x-visible lg:grid lg:grid-cols-4 gap-4 md:gap-8 pb-12 md:pb-0 scrollbar-hide snap-x snap-mandatory -mx-4 px-4 md:mx-0 md:px-0">
+            <div id={`section-${title.replace(/\s+/g, '-').toLowerCase()}`} className="flex items-stretch overflow-x-auto lg:overflow-x-visible lg:grid lg:grid-cols-4 gap-4 md:gap-8 pb-12 md:pb-0 scrollbar-hide snap-x snap-mandatory -mx-4 px-4 md:mx-0 md:px-0">
                 {React.Children.map(children, (child) => (
                     <motion.div 
                         whileHover={{ y: -5 }}
                         transition={{ type: "spring", stiffness: 400, damping: 10 }}
-                        className="h-full w-full min-w-[280px] lg:min-w-0 snap-center"
+                        className="h-full w-full min-w-[280px] lg:min-w-0 snap-center flex flex-col items-stretch"
                     >
                         {child}
                     </motion.div>
@@ -95,6 +97,7 @@ const DashboardSection = ({ title, gradient, children, icon }) => (
         </div>
     </section>
 );
+
 
 const ControlCard = ({ title, desc, icon: IconComponent, logo, color, link, count, isNew, isHidden, comingSoon }) => {
     const getGlowColor = () => {
@@ -119,7 +122,7 @@ const ControlCard = ({ title, desc, icon: IconComponent, logo, color, link, coun
     };
 
     return (
-        <Link to={(isHidden || comingSoon) ? '#' : (link || '#')} className={cn("group relative block h-full", (isHidden || comingSoon) && "pointer-events-none")}>
+        <Link to={(isHidden || comingSoon) ? '#' : (link || '#')} className={cn("group relative flex flex-col h-full", (isHidden || comingSoon) && "pointer-events-none")}>
             {/* Glow Effect */}
             <div className={cn(
                 "absolute inset-0 rounded-3xl opacity-0 group-hover:opacity-15 transition-all duration-700 blur-2xl",
@@ -127,23 +130,13 @@ const ControlCard = ({ title, desc, icon: IconComponent, logo, color, link, coun
             )} />
         
             <div className={cn(
-                "relative p-5 sm:p-8 md:p-10 h-full border transition-all duration-500 rounded-3xl flex flex-col items-center text-center group overflow-hidden backdrop-blur-3xl shadow-[0_20px_50px_rgba(0,0,0,0.5)]",
+                "relative p-5 sm:p-8 md:p-10 w-full flex-1 border transition-all duration-500 rounded-3xl flex flex-col items-center text-center group overflow-hidden backdrop-blur-3xl shadow-[0_20px_50px_rgba(0,0,0,0.5)]",
                 isHidden 
                     ? "bg-black/40 border-white/5 opacity-40 grayscale" 
                     : (comingSoon 
                         ? "bg-zinc-950/20 border-white/5 opacity-60 grayscale border-white/5" 
                         : cn("bg-zinc-950/35 border-white/[0.08] hover:bg-zinc-950/50", getBorderHoverColor()))
             )}>
-                {/* New Signal */}
-                {isNew && !isHidden && !comingSoon && (
-                    <span className="absolute top-6 right-6 flex items-center gap-2">
-                        <span className="relative flex h-2 w-2">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-neon-blue opacity-75"></span>
-                            <span className="relative inline-flex rounded-full h-2 w-2 bg-neon-blue"></span>
-                        </span>
-                        <span className="text-[7px] font-black uppercase tracking-[0.3em] text-neon-blue">Advanced</span>
-                    </span>
-                )}
 
                 {comingSoon && !isHidden && (
                     <span className="absolute top-6 right-6 px-3 py-1 bg-white/5 border border-white/10 rounded-full text-[7px] font-black uppercase tracking-[0.3em] text-gray-500">
@@ -207,28 +200,28 @@ const AuthSection = ({ email, setEmail, password, setPassword, isResetting, setI
                     <Shield size={32} className="text-neon-pink relative z-10 sm:w-10 sm:h-10" />
                 </div>
                 <h1 className="text-2xl sm:text-3xl font-extrabold font-heading text-white tracking-tight leading-none">
-                    {isResetting ? 'Restore Access' : (isRegistering ? 'New Clearance' : 'Secure Login')}
+                    {isResetting ? 'Recover Password' : (isRegistering ? 'Register Admin' : 'Admin Login')}
                 </h1>
-                <p className="text-gray-500 text-[8px] sm:text-[10px] font-black uppercase tracking-[0.4em] mt-3 sm:mt-4">Command Staff Authorization Required</p>
+                <p className="text-gray-500 text-[8px] sm:text-[10px] font-black uppercase tracking-[0.4em] mt-3 sm:mt-4">Authorized Administrator Access Only</p>
             </div>
 
             <form onSubmit={handleLogin} className="space-y-6 sm:space-y-8">
                 <div className="space-y-3">
-                    <label className="text-[9px] sm:text-[10px] font-black text-gray-500 uppercase tracking-[0.3em] pl-2">Identity Endpoint</label>
+                    <label className="text-[9px] sm:text-[10px] font-black text-gray-500 uppercase tracking-[0.3em] pl-2">Email Address</label>
                     <Input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="name@newbi.live" className="h-14 sm:h-16 bg-black/40 border border-white/5 focus:border-neon-pink/40 rounded-xl sm:rounded-2xl text-sm font-medium transition-all" required />
                 </div>
                 <div className="space-y-3">
-                    <label className="text-[9px] sm:text-[10px] font-black text-gray-500 uppercase tracking-[0.3em] pl-2">Security Key</label>
+                    <label className="text-[9px] sm:text-[10px] font-black text-gray-500 uppercase tracking-[0.3em] pl-2">Password</label>
                     <Input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" className="h-14 sm:h-16 bg-black/40 border-white/5 focus:border-neon-pink/40 rounded-xl sm:rounded-2xl text-sm font-medium transition-all" required />
                 </div>
                 <Button type="submit" className="w-full h-14 sm:h-16 bg-neon-pink text-black font-black font-heading uppercase tracking-[0.2em] text-[10px] sm:text-xs rounded-xl sm:rounded-2xl hover:scale-[1.02] active:scale-98 transition-all shadow-[0_15px_40px_rgba(255,79,139,0.3)]">
-                    {isRegistering ? 'INITIALIZE' : 'AUTHENTICATE'}
+                    {isRegistering ? 'REGISTER' : 'SIGN IN'}
                 </Button>
             </form>
 
             <div className="mt-12 flex justify-between items-center text-[10px] font-black uppercase tracking-[0.2em]">
-                <button onClick={() => setIsResetting(!isResetting)} className="text-gray-600 hover:text-white transition-colors">LOST ACCESS?</button>
-                <button onClick={() => setIsRegistering(!isRegistering)} className="text-neon-blue hover:underline underline-offset-8 decoration-2">{isRegistering ? 'BACK TO PORTAL' : 'REQUEST ENTRY'}</button>
+                <button onClick={() => setIsResetting(!isResetting)} className="text-gray-600 hover:text-white transition-colors">FORGOT PASSWORD?</button>
+                <button onClick={() => setIsRegistering(!isRegistering)} className="text-neon-blue hover:underline underline-offset-8 decoration-2">{isRegistering ? 'BACK TO LOGIN' : 'REQUEST ACCESS'}</button>
             </div>
         </div>
     </div>
@@ -246,15 +239,16 @@ const BootstrapAlert = ({ onClaim }) => (
                 <Sparkles size={40} className="animate-pulse" />
             </div>
             <div>
-                <h2 className="text-2xl md:text-3xl font-extrabold font-heading text-white tracking-tight">System Root Uninitialized</h2>
-                <p className="text-gray-400 text-sm mt-2 font-medium uppercase tracking-widest">No primary administrator detected. Claim <span className="text-neon-green">SUPER_ADMIN</span> status to begin.</p>
+                <h2 className="text-2xl md:text-3xl font-extrabold font-heading text-white tracking-tight">System Uninitialized</h2>
+                <p className="text-gray-400 text-sm mt-2 font-medium uppercase tracking-widest">No primary administrator detected. Register as <span className="text-neon-green">Super Admin</span> to begin.</p>
             </div>
         </div>
         <Button onClick={onClaim} className="w-full lg:w-auto bg-white text-black font-black font-heading uppercase tracking-[0.2em] text-xs h-16 px-12 rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-[0_15px_40px_rgba(255,255,255,0.2)]">
-            Initialize Authority
+            Setup Super Admin
         </Button>
     </motion.div>
 );
+
 
 // --- Main Dashboard Component ---
 
@@ -262,9 +256,59 @@ const Dashboard = () => {
     const { 
         invoices, spends, otherIncomes, proposals, agreements, concerts, portfolio, announcements, user, 
         artists, clientRequests, upcomingEvents, ticketOrders, documents,
-        checkUserRole, logout, maintenanceState, archivePastEvents 
+        checkUserRole, maintenanceState, archivePastEvents 
     } = useStore();
     const cards = maintenanceState?.features || {};
+    const location = useLocation();
+    
+    const sections = [
+        {
+            title: "Finance & Strategic Assets",
+            color: "text-neon-green",
+            visible: user?.role !== 'scanner' && user?.role !== 'gate_manager' && user?.role !== 'blog_writer',
+            links: [
+                { name: "Finance Board", path: "/admin/finance", icon: TrendingUp, color: "neon-green", show: ['developer', 'founder'].includes(user?.role) && !cards.invoices },
+                { name: "Invoices", path: "/admin/invoices", icon: FileText, color: "neon-blue", show: ['developer', 'founder'].includes(user?.role) && !cards.invoices },
+                { name: "Proposals", path: "/admin/proposals", icon: FileSpreadsheet, color: "neon-green", show: !cards.docs },
+                { name: "Contracts", path: "/admin/agreements", icon: Scale, color: "neon-purple", show: !cards.docs },
+                { name: "Documents", path: "/admin/documents", icon: FolderOpen, color: "neon-blue", show: true }
+            ]
+        },
+        {
+            title: "Core Content Infrastructure",
+            color: "text-neon-pink",
+            visible: user?.role !== 'scanner' && user?.role !== 'gate_manager',
+            links: [
+                { name: "Upcoming", path: "/admin/upcoming-events", icon: Calendar, color: "neon-green", show: !cards.upcoming_events },
+                { name: "Announcements", path: "/admin/announcements", icon: Radio, color: "neon-pink", show: !cards.blog_announcements },
+                { name: "Blog", path: "/admin/blog", icon: FileText, color: "neon-blue", show: !cards.blog_announcements },
+                { name: "Portfolio", path: "/admin/concertzone", icon: Music, color: "neon-purple", show: !cards.concerts }
+            ]
+        },
+        {
+            title: "Event & Ticketing Operations",
+            color: "text-yellow-400",
+            visible: true,
+            links: [
+                { name: "Ticketing Ops", path: "/admin/ticketing", icon: Ticket, color: "neon-green", show: !cards.ticketing },
+                { name: "QR Scanner", path: "/admin/scanner", icon: Zap, color: "yellow-400", show: !cards.ticketing }
+            ]
+        },
+        {
+            title: "Personnel & Community Ops",
+            color: "text-neon-blue",
+            visible: user?.role !== 'scanner' && user?.role !== 'gate_manager' && user?.role !== 'blog_writer',
+            links: [
+                { name: "Community Hub", path: "/admin/volunteer-gigs", icon: Users, color: "neon-green", show: !cards.community },
+                { name: "Creator Studio", path: "/admin/creators", icon: Star, color: "neon-blue", show: !cards.influencer },
+                { name: "Giveaways", path: "/admin/giveaways", icon: Gift, color: "neon-purple", show: !cards.giveaways },
+                { name: "Artistant", path: "/admin/artistant", icon: Music, color: "neon-blue", show: !cards.artists },
+                { name: "Mailing", path: "/admin/mailing", icon: Megaphone, color: "neon-blue", show: !cards.mailing },
+                { name: "Members", path: "/admin/manage-admins", icon: Shield, color: "neon-blue", show: user?.role !== 'editor' && user?.role !== 'content_admin' && user?.role !== 'blog_writer' && !cards.admins },
+                { name: "Inbox", path: "/admin/messages", icon: Mail, color: "white", show: !cards.messages }
+            ]
+        }
+    ];
     
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -273,6 +317,7 @@ const Dashboard = () => {
     const [isFirstRun, setIsFirstRun] = useState(false);
     const [isRegistering, setIsRegistering] = useState(false);
     const [isResetting, setIsResetting] = useState(false);
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
 
     useEffect(() => {
         if (user && (user.role === 'super_admin' || user.role === 'developer' || user.role === 'founder')) {
@@ -326,26 +371,62 @@ const Dashboard = () => {
         } catch (error) { useStore.getState().addToast("Something went wrong. Please try again.", 'error'); }
     };
 
+    const totalPaidRevenue = (invoices || [])
+        .filter(inv => inv.status === 'Paid')
+        .reduce((sum, inv) => sum + Number(inv.total || inv.amount || 0), 0) +
+        (otherIncomes || [])
+        .filter(inc => inc.status === 'Paid')
+        .reduce((sum, inc) => sum + Number(inc.amount || 0), 0);
+
+    const totalPaidExpenses = (spends || [])
+        .filter(sp => sp.status === 'Paid' || sp.status === 'Cleared')
+        .reduce((sum, sp) => sum + Number(sp.amount || 0), 0);
+
+    const netCashFlow = totalPaidRevenue - totalPaidExpenses;
+
+    const pendingArtistRequests = (clientRequests || [])
+        .filter(r => r.status === 'pending').length;
+
+    const ticketSalesAmount = (ticketOrders || [])
+        .filter(o => o.status === 'approved' || o.status === 'dispatched')
+        .reduce((sum, o) => sum + Number(o.totalAmount || 0), 0);
+
+    const ticketSalesCount = (ticketOrders || [])
+        .filter(o => o.status === 'approved' || o.status === 'dispatched')
+        .length;
+
     const stats = [
         { 
-            label: 'Artistant Hub', 
+            label: 'Artist Roster', 
             value: artists?.length || 0, 
-            icon: Users, color: 'neon-blue', detail: `${clientRequests?.filter(r => r.status === 'pending').length || 0} Pending Requests`, link: '/admin/artistant' 
+            icon: Users, 
+            color: 'neon-blue', 
+            detail: `${pendingArtistRequests} Pending Onboarding Requests`, 
+            link: '/admin/artistant' 
         },
         { 
-            label: 'Ticketing Ops', 
-            value: upcomingEvents?.filter(e => e.isTicketed).length || 0, 
-            icon: Ticket, color: 'neon-pink', detail: `${ticketOrders?.filter(o => o.status === 'pending').length || 0} Pending Verifications`, link: '/admin/ticketing' 
+            label: 'Ticket Sales', 
+            value: ticketSalesCount, 
+            icon: Ticket, 
+            color: 'neon-pink', 
+            detail: ['developer', 'founder'].includes(user?.role) ? `₹${ticketSalesAmount.toLocaleString('en-IN')} Ticketing Revenue` : `${ticketSalesCount} Tickets Sold`, 
+            link: '/admin/ticketing' 
         },
         ...(['developer', 'founder'].includes(user?.role) ? [{ 
-            label: 'Finance Board', 
-            value: 'Active', 
-            icon: IndianRupee, color: 'neon-green', detail: `Spends & Cash Flow Ledgers`, link: '/admin/finance' 
+            label: 'Total Revenue', 
+            value: `₹${totalPaidRevenue.toLocaleString('en-IN')}`, 
+            icon: IndianRupee, 
+            color: 'neon-green', 
+            detail: `Net Cash Flow: ₹${netCashFlow.toLocaleString('en-IN')}`, 
+            link: '/admin/finance' 
         }] : []),
         { 
-            label: 'Active Briefs', 
+            label: 'Contracts & Proposals', 
             value: (proposals?.length || 0) + (agreements?.length || 0), 
-            icon: FileSpreadsheet, color: 'neon-purple', detail: 'Combined Contracts', link: '/admin/proposals' 
+            icon: FileSpreadsheet, 
+            color: 'neon-purple', 
+            detail: `${proposals?.length || 0} Proposals | ${agreements?.length || 0} Contracts`, 
+            link: '/admin/proposals' 
         },
     ];
 
@@ -372,31 +453,16 @@ const Dashboard = () => {
                         animate={{ opacity: 1, x: 0 }}
                         className="space-y-4 md:space-y-6 max-w-full"
                     >
-                        <div className="flex items-center gap-4">
-                            <div className="p-3 md:p-4 rounded-2xl md:rounded-[1.8rem] bg-white/5 border border-white/10 backdrop-blur-2xl shadow-2xl relative group">
-                                <div className="absolute inset-0 bg-neon-green/20 rounded-[1.8rem] blur-xl opacity-0 group-hover:opacity-100 transition-opacity" />
-                                <LayoutDashboard className="text-neon-green relative z-10 w-6 h-6 md:w-8 md:h-8" />
-                            </div>
-                            <div className="h-10 w-px bg-white/10 mx-2 hidden sm:block" />
-                            <div className="flex flex-col">
-                                <span className="text-[10px] font-black text-neon-green uppercase tracking-[0.4em] mb-1">Central Command</span>
-                                <div className="flex items-center gap-2">
-                                    <div className="w-2 h-2 rounded-full bg-neon-green animate-pulse" />
-                                    <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest">System Active</span>
-                                </div>
-                            </div>
-                        </div>
-
                         <h1 className="text-2xl sm:text-3xl md:text-5xl font-extrabold font-heading tracking-tight leading-tight">
-                            OPERATIONS <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-green via-white to-neon-blue">DASHBOARD.</span>
+                            ADMIN <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-green via-white to-neon-blue">DASHBOARD.</span>
                         </h1>
 
                         <p className="text-gray-500 text-[9px] md:text-xs font-black uppercase tracking-[0.3em] flex flex-wrap items-center gap-2 md:gap-3">
-                            Internal Management Interface <span className="text-white/20 hidden sm:inline">|</span> 
-                            <span className="text-neon-blue bg-neon-blue/10 px-3 py-1 rounded-full border border-neon-blue/20">{user.role?.replace('_', ' ')} CLEARANCE</span>
+                            Administrative Access Panel <span className="text-white/20 hidden sm:inline">|</span> 
+                            <span className="text-neon-blue bg-neon-blue/10 px-3 py-1 rounded-full border border-neon-blue/20">{user.role?.replace('_', ' ').toUpperCase()} ROLE</span>
                             {maintenanceState.global && (
                                 <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-500/10 text-red-500 border border-red-500/20 animate-pulse">
-                                    <Shield size={12} /> GLOBAL OVERRIDE
+                                    <Shield size={12} /> MAINTENANCE MODE
                                 </span>
                             )}
                         </p>
@@ -405,33 +471,19 @@ const Dashboard = () => {
                     <motion.div 
                         initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
-                        className="flex items-center gap-2 bg-[#0a0a0a]/60 border border-white/10 p-2 rounded-3xl backdrop-blur-3xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] self-start xl:self-auto"
+                        className="flex items-center bg-[#0a0a0a]/60 border border-white/10 p-1.5 rounded-2xl backdrop-blur-3xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] self-start xl:self-auto"
                     >
                         <div className="flex items-center gap-1">
                             {user.role === 'developer' && (
-                                <Link to="/admin/system-command" className="p-3.5 hover:bg-white/10 rounded-2xl transition-all group relative overflow-hidden">
+                                <Link to="/admin/system-command" className="p-3 hover:bg-white/10 rounded-xl transition-all group relative overflow-hidden">
                                     <Settings size={20} className="text-gray-400 group-hover:text-white transition-colors relative z-10" />
                                     <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                                 </Link>
                             )}
-                            <Link to="/admin/messages" className="p-3.5 hover:bg-white/10 rounded-2xl transition-all relative group overflow-hidden">
+                            <Link to="/admin/messages" className="p-3 hover:bg-white/10 rounded-xl transition-all relative group overflow-hidden">
                                 <Bell size={20} className="text-gray-400 group-hover:text-white transition-colors relative z-10" />
-                                {unreadCount > 0 && <span className="absolute top-3 right-3 w-2 h-2 bg-neon-pink rounded-full shadow-[0_0_15px_rgba(255,0,255,0.6)] z-20 animate-pulse" />}
+                                {unreadCount > 0 && <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-neon-pink rounded-full shadow-[0_0_15px_rgba(255,0,255,0.6)] z-20 animate-pulse" />}
                             </Link>
-                        </div>
-                        <div className="h-10 w-px bg-white/10 mx-2" />
-                        <div className="flex items-center gap-3 md:gap-4 pl-1 pr-4 py-1">
-                            <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl bg-gradient-to-br from-zinc-800 to-black border border-white/10 flex items-center justify-center relative overflow-hidden group shadow-xl">
-                                <div className="absolute inset-0 bg-neon-green opacity-0 group-hover:opacity-20 transition-opacity" />
-                                <span className="font-black text-base md:text-lg uppercase text-neon-green relative z-10 group-hover:scale-110 transition-transform">{user.email?.[0]}</span>
-                            </div>
-                            <div className="hidden sm:block text-left">
-                                <p className="text-sm font-black text-white leading-none capitalize mb-1">{user.displayName || 'Security Lead'}</p>
-                                <p className="text-[9px] text-gray-500 font-bold uppercase tracking-widest truncate max-w-[150px]">{user.email}</p>
-                            </div>
-                            <button onClick={logout} className="ml-1 md:ml-2 p-2.5 md:p-3.5 bg-red-500/5 hover:bg-red-500 text-gray-500 hover:text-white border border-red-500/10 rounded-xl md:rounded-2xl transition-all flex items-center justify-center group">
-                                <LogOut size={16} className="group-hover:rotate-12 transition-transform" />
-                            </button>
                         </div>
                     </motion.div>
                 </header>
@@ -464,9 +516,9 @@ const Dashboard = () => {
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: i * 0.1 }}
-                                className="group relative min-w-[85vw] md:min-w-0 snap-center"
+                                className="group relative min-w-[85vw] md:min-w-0 snap-center flex flex-col items-stretch"
                             >
-                                <Link to={stat.link}>
+                                <Link to={stat.link} className="block h-full w-full flex flex-col items-stretch">
                                     <div className={cn("absolute -inset-px rounded-3xl opacity-0 group-hover:opacity-15 transition-opacity blur-xl bg-gradient-to-br", 
                                         stat.color === 'neon-green' ? 'from-neon-green to-emerald-500' : 
                                         (stat.color === 'neon-blue' ? 'from-neon-blue to-cyan-500' : 
@@ -550,6 +602,101 @@ const Dashboard = () => {
                     )}
                 </div>
             </div>
+
+            {/* Mobile Persistent Floating Control Bar */}
+            <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] w-[90%] max-w-[420px] h-16 bg-[#050505]/80 backdrop-blur-2xl border border-white/10 rounded-full flex items-center justify-between p-2 shadow-2xl md:hidden">
+                <Link
+                    to="/admin"
+                    className="w-10 h-10 rounded-full bg-white/5 border border-white/5 hover:bg-white/10 flex items-center justify-center text-gray-400 hover:text-white transition-all active:scale-90"
+                    title="Admin Dashboard"
+                >
+                    <LayoutDashboard size={16} />
+                </Link>
+                
+                <button
+                    onClick={() => setIsMenuOpen(!isMenuOpen)}
+                    className="flex-1 mx-2 h-10 rounded-full bg-gradient-to-r from-neon-green/10 via-neon-blue/10 to-neon-pink/10 border border-white/10 hover:border-white/20 flex items-center justify-center gap-2 text-[9px] font-black uppercase tracking-[0.2em] text-white transition-all active:scale-[0.98]"
+                >
+                    <Compass size={14} className="text-neon-blue animate-pulse" />
+                    <span>ADMIN MENU</span>
+                    {isMenuOpen ? <X size={12} className="ml-1" /> : <Menu size={12} className="ml-1" />}
+                </button>
+                
+                <Link
+                    to="/admin/messages"
+                    className="w-10 h-10 rounded-full bg-white/5 border border-white/5 hover:bg-white/10 flex items-center justify-center text-gray-400 hover:text-white relative transition-all active:scale-90"
+                    title="Inbox"
+                >
+                    <Mail size={16} />
+                    {unreadCount > 0 && (
+                        <span className="absolute top-0 right-0 w-2.5 h-2.5 bg-neon-pink border-2 border-black rounded-full animate-pulse shadow-[0_0_8px_rgba(255,79,139,0.8)]" />
+                    )}
+                </Link>
+            </div>
+
+            {/* Switcher Drawer Overlay */}
+            <AnimatePresence>
+                {isMenuOpen && (
+                    <motion.div
+                        initial={{ opacity: 0, y: '100%' }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: '100%' }}
+                        transition={{ type: "spring", stiffness: 260, damping: 26 }}
+                        className="fixed inset-0 z-[90] bg-[#020202]/98 backdrop-blur-3xl overflow-y-auto px-6 pt-28 pb-32 md:hidden flex flex-col"
+                    >
+                        <div className="max-w-md mx-auto w-full space-y-8">
+                            <div className="text-center">
+                                <div className="inline-flex p-3 rounded-2xl bg-white/5 border border-white/10 mb-4">
+                                    <Sparkles className="text-neon-green w-6 h-6" />
+                                </div>
+                                <h2 className="text-2xl font-black font-heading uppercase tracking-tighter text-white leading-none">ADMIN NAVIGATION</h2>
+                                <p className="text-[8px] font-black uppercase tracking-[0.4em] text-gray-500 mt-2">Administrative Portal Modules</p>
+                            </div>
+
+                            <div className="space-y-6">
+                                {sections.map((section) => {
+                                    if (!section.visible) return null;
+                                    const visibleLinks = section.links.filter(l => l.show);
+                                    if (visibleLinks.length === 0) return null;
+
+                                    return (
+                                        <div key={section.title} className="space-y-2">
+                                            <h4 className={cn("text-[9px] font-black uppercase tracking-[0.3em] pl-3", section.color)}>
+                                                {section.title}
+                                            </h4>
+                                            <div className="grid grid-cols-1 gap-2">
+                                                {visibleLinks.map((link) => {
+                                                    const LinkIcon = link.icon;
+                                                    const isActive = location.pathname === link.path;
+                                                    return (
+                                                        <Link
+                                                            key={link.name}
+                                                            to={link.path}
+                                                            onClick={() => setIsMenuOpen(false)}
+                                                            className={cn(
+                                                                "flex items-center justify-between p-3.5 rounded-2xl transition-all duration-300 border",
+                                                                isActive 
+                                                                    ? "bg-white text-black font-black border-white"
+                                                                    : "bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white border-white/5"
+                                                            )}
+                                                        >
+                                                            <div className="flex items-center gap-3">
+                                                                <LinkIcon size={16} className={isActive ? "text-black" : `text-${link.color}`} />
+                                                                <span className="text-[10px] font-bold uppercase tracking-widest">{link.name}</span>
+                                                            </div>
+                                                            <ChevronRight size={14} className="opacity-40" />
+                                                        </Link>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 };

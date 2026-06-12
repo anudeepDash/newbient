@@ -86,7 +86,7 @@ const Navbar = () => {
 
             {/* Top Navbar - Hidden on Document Engines */}
             {/* Top Navbar - Hidden on Document Engines */}
-            {!location.pathname.includes('/admin/create-') && !location.pathname.includes('/admin/edit-') && !location.pathname.includes('/admin/agreements/') && (
+            {!location.pathname.toLowerCase().includes('/admin/create-') && !location.pathname.toLowerCase().includes('/admin/edit-') && !location.pathname.toLowerCase().includes('/admin/agreements/') && (
                 <nav className={cn(
                     "fixed left-1/2 -translate-x-1/2 z-50 transition-all duration-500 w-full max-w-7xl px-4",
                 (maintenanceState.global && user?.role === 'developer') 
@@ -204,8 +204,8 @@ const Navbar = () => {
             </nav>
             )}
 
-            {/* Bottom Navigation (Mobile Only) - Hidden on Document Engines */}
-            {!location.pathname.includes('/admin/create-') && !location.pathname.includes('/admin/edit-') && !location.pathname.includes('/admin/agreements/') && (
+            {/* Bottom Navigation (Mobile Only) - Hidden on Document Engines and Admin Panel */}
+            {!location.pathname.toLowerCase().startsWith('/admin') && !location.pathname.toLowerCase().includes('/admin/') && (
                 <div className="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-[90%] max-w-sm">
                     <div className="bg-black/60 backdrop-blur-3xl border border-white/10 rounded-3xl p-2 shadow-[0_-8px_32px_rgba(0,0,0,0.5)]">
                     <div className="flex items-center justify-around">

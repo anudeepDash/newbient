@@ -46,8 +46,6 @@ import Minimize2 from 'lucide-react/dist/esm/icons/minimize-2';
 import StudioDatePicker from '../../components/ui/StudioDatePicker';
 import AdminDashboardLink from '../../components/admin/AdminDashboardLink';
 import StudioRichEditor from '../../components/ui/StudioRichEditor';
-import { generateFullDocument } from '../../lib/ai';
-import AIPromptBox from '../../components/admin/AIPromptBox';
 import DocumentSeal from '../../components/ui/DocumentSeal';
 
 // Markdown-like formatting toolbar for textareas
@@ -62,7 +60,6 @@ const InvoiceGenerator = () => {
     const [activeTab, setActiveTab] = useState('1'); 
     const [currentPreviewPage, setCurrentPreviewPage] = useState(0);
     const [isGenerating, setIsGenerating] = useState(false);
-    const [promptBoxClear, setPromptBoxClear] = useState(false);
     const [showPreviewMobile, setShowPreviewMobile] = useState(false);
     const [userZoom, setUserZoom] = useState(1);
     const [isExpandedPreview, setIsExpandedPreview] = useState(false);
@@ -273,9 +270,7 @@ const InvoiceGenerator = () => {
             };
             if (id) await updateInvoice(id, invoiceData);
             else await addInvoice({ ...invoiceData, createdAt: new Date().toISOString() });
-            
-            setPromptBoxClear(true);
-            setTimeout(() => setPromptBoxClear(false), 100);
+
 
             navigate('/admin/invoices');
         } catch (error) {
@@ -285,37 +280,7 @@ const InvoiceGenerator = () => {
         }
     };
 
-    const handleGenerateInvoice = async (prompt) => {
-        setIsGenerating(true);
-        try {
-            const data = await generateFullDocument('invoice', prompt, 'Premium', {});
-            setFormData(prev => ({
-                ...prev,
-                clientName: data.clientName || prev.clientName,
-                clientAddress: data.clientAddress || prev.clientAddress,
-                clientGst: data.clientGst || prev.clientGst,
-                invoiceDate: data.invoiceDate || prev.invoiceDate,
-                dueDate: data.dueDate || prev.dueDate,
-                note: data.note || prev.note,
-                // NOTE: Never overwrite paymentDetails — user has their own bank details pre-configured
-            }));
-            
-            if (data.items && data.items.length > 0) {
-                setItems(data.items.map((item, idx) => ({
-                    id: Date.now() + idx,
-                    name: item.name || item.description || '',
-                    description: item.description || '',
-                    qty: Number(item.qty) || 1,
-                    price: Number(item.price) || 0,
-                    customValues: {}
-                })));
-            }
-        } catch (error) {
-            useStore.getState().addToast("AI Generation failed: " + error.message, 'error');
-        } finally {
-            setIsGenerating(false);
-        }
-    };
+
 
     const handleSignatoryUpload = async (e) => {
         const file = e.target.files[0];
@@ -446,7 +411,7 @@ const InvoiceGenerator = () => {
     };
 
     return (
-        <div className="h-screen overflow-hidden bg-[#020202] text-white selection:bg-neon-blue selection:text-black font-['Outfit'] flex flex-col">
+        <div className="h-screen overflow-hidden bg-[#0B0F17] text-white selection:bg-neon-blue selection:text-black font-['Outfit'] flex flex-col admin-hub-content-container">
             <style dangerouslySetInnerHTML={{ __html: `
                 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap');
                 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
@@ -465,8 +430,8 @@ const InvoiceGenerator = () => {
                         <Link to="/admin/invoices" className="p-2.5 md:p-3 bg-white/5 rounded-2xl hover:bg-white/10 border border-white/5"><ArrowLeft size={16} /></Link>
                     </div>
                     <div className="min-w-0 flex flex-col justify-center">
-                        <h1 className="text-sm md:text-xl font-black tracking-tighter uppercase italic text-white truncate leading-none">Invoice <span className="text-neon-blue">Engine.</span></h1>
-                        <p className="text-[7px] md:text-[9px] font-black text-gray-500 uppercase tracking-widest mt-1 truncate">Financial Summary</p>
+                        <h1 className="text-sm md:text-xl font-extrabold tracking-tight text-white truncate leading-none">Invoice <span className="text-neon-blue">Engine.</span></h1>
+                        <p className="text-[7px] md:text-[9px] font-bold text-gray-500 uppercase tracking-widest mt-1 truncate">Financial Summary</p>
                     </div>
                 </div>
 
@@ -523,11 +488,10 @@ const InvoiceGenerator = () => {
                 {/* Editor */}
                 <section className={cn("flex-1 overflow-y-auto p-6 md:p-12 scrollbar-hide bg-[#050505] pb-32", isExpandedPreview && "hidden")}>
                     <div className="max-w-7xl mx-auto">
-                        
-                        <AIPromptBox onGenerate={handleGenerateInvoice} isGenerating={isGenerating} type="invoice" forceClear={promptBoxClear} />
+
 
                         <div className="mb-12">
-                            <h2 className="text-3xl font-black uppercase tracking-tighter text-white italic mb-1">{currentTab?.label}.</h2>
+                            <h2 className="text-3xl font-extrabold tracking-tight text-white mb-1">{currentTab?.label}.</h2>
                             <p className="text-[10px] font-black text-gray-500 uppercase tracking-[0.4em] mb-6">{currentTab?.desc}</p>
                             <div className="w-16 h-1.5 bg-neon-blue" />
                         </div>

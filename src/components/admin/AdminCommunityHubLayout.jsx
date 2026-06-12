@@ -3,14 +3,14 @@ import { Link, useLocation } from 'react-router-dom';
 import { 
     Users, ClipboardList, ListChecks, Sparkles, LayoutGrid, FolderOpen, 
     Menu, X, Mail, Compass, TrendingUp, Ticket, LayoutDashboard, Shield,
-    Calendar, Radio, FileText, Music, Settings, LogOut, ChevronRight
+    Calendar, Radio, FileText, Music, Settings, ChevronRight
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../../lib/utils';
 import { useStore } from '../../lib/store';
 import AdminDashboardLink from './AdminDashboardLink';
 
-const AdminCommunityHubLayout = ({ children, title, description, action, studioHeader, hideTabs = false, tabs: customTabs, accentColor = 'neon-green' }) => {
+const AdminCommunityHubLayout = ({ children, title, description, action, studioHeader, hideTabs = false, tabs: customTabs, accentColor = 'neon-green', hideMobileMenu = false }) => {
     const location = useLocation();
     const { user, maintenanceState, messages } = useStore();
     const cards = maintenanceState?.features || {};
@@ -22,7 +22,6 @@ const AdminCommunityHubLayout = ({ children, title, description, action, studioH
         { name: 'GIGS', path: '/admin/volunteer-gigs', icon: Users, color: 'text-neon-green' },
         { name: 'GUESTLISTS', path: '/admin/guestlists', icon: ListChecks, color: 'text-neon-blue' },
         { name: 'FORMS', path: '/admin/forms', icon: ClipboardList, color: 'text-neon-pink' },
-        { name: 'DOCUMENTS', path: '/admin/documents', icon: FolderOpen, color: 'text-neon-blue' },
     ];
 
     const tabs = customTabs || defaultTabs;
@@ -111,14 +110,11 @@ const AdminCommunityHubLayout = ({ children, title, description, action, studioH
                     <div className="space-y-4 md:space-y-8 w-full md:w-auto">
                         {studioHeader ? (
                             <div className="space-y-1 md:space-y-2">
-                                <div className="flex items-center gap-2 md:gap-3">
-                                    {studioHeader.logo ? (
-                                        <img src={studioHeader.logo} alt="Logo" className="h-8 md:h-16 w-auto object-contain mb-2" />
-                                    ) : (
-                                        studioHeader.icon ? <studioHeader.icon size={12} className={cn(studioHeader.accentClass, "md:w-4 md:h-4")} /> : <Sparkles size={12} className={cn(studioHeader.accentClass, "md:w-4 md:h-4")} />
-                                    )}
-                                    {!studioHeader.logo && <span className={cn(studioHeader.accentClass, "text-[8px] md:text-[10px] font-black uppercase tracking-[0.3em] md:tracking-[0.4em]")}>Operations Hub</span>}
-                                </div>
+                                {studioHeader.logo && (
+                                    <div className="mb-2">
+                                        <img src={studioHeader.logo} alt="Logo" className="h-8 md:h-16 w-auto object-contain" />
+                                    </div>
+                                )}
                                 <h1 className="text-2xl sm:text-3xl md:text-5xl font-extrabold font-heading tracking-tight text-white flex flex-wrap items-center gap-x-3 gap-y-1 leading-none">
                                     {studioHeader.title} <span className={studioHeader.accentClass}>{studioHeader.subtitle}.</span>
                                 </h1>
@@ -149,12 +145,12 @@ const AdminCommunityHubLayout = ({ children, title, description, action, studioH
                                             className={cn(
                                                 "flex items-center gap-2 md:gap-3 px-3 md:px-6 py-2 md:py-3 rounded-lg md:rounded-xl transition-all duration-500 group relative shrink-0",
                                                 isActive 
-                                                    ? "bg-white text-black font-black" 
+                                                    ? "text-white font-extrabold" 
                                                     : "text-gray-400 hover:text-white hover:bg-white/5",
                                                 tab.comingSoon && "opacity-40 cursor-not-allowed pointer-events-none"
                                             )}
                                         >
-                                            <Icon size={14} className={cn(isActive ? "text-black" : tab.color || activeTextClass, "md:size-[16px]")} />
+                                            <Icon size={14} className={cn(isActive ? tab.color || "text-white" : "text-gray-400 group-hover:text-white", "md:size-[16px] transition-colors")} />
                                             <div className="flex flex-col text-left">
                                                 <span className="text-[8px] md:text-[10px] uppercase tracking-widest leading-none">{tab.name}</span>
                                                 {tab.comingSoon && <span className="text-[7px] font-black text-gray-500 uppercase tracking-tighter mt-0.5">Soon</span>}
@@ -162,7 +158,7 @@ const AdminCommunityHubLayout = ({ children, title, description, action, studioH
                                             {isActive && (
                                                 <motion.div
                                                     layoutId="admin-hub-active-tab"
-                                                    className="absolute inset-0 bg-white rounded-lg md:rounded-xl -z-10"
+                                                    className="absolute inset-0 bg-white/10 border border-white/15 rounded-lg md:rounded-xl -z-10 shadow-[0_4px_20px_rgba(0,0,0,0.4)]"
                                                     transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
                                                 />
                                             )}
@@ -183,7 +179,7 @@ const AdminCommunityHubLayout = ({ children, title, description, action, studioH
                         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 md:gap-6 mb-6 md:mb-8">
                             {(title || description) && (
                                 <div className="flex-1">
-                                    {title && <h2 className="text-xl md:text-2xl font-black font-heading text-white uppercase tracking-tight italic">{title}</h2>}
+                                    {title && <h2 className="text-xl md:text-2xl font-extrabold font-heading text-white tracking-tight">{title}</h2>}
                                     {description && <p className="text-gray-500 text-[10px] md:text-sm mt-1 uppercase font-bold tracking-widest">{description}</p>}
                                 </div>
                             )}
@@ -210,11 +206,12 @@ const AdminCommunityHubLayout = ({ children, title, description, action, studioH
             </div>
 
             {/* Mobile Persistent Floating Control Bar */}
-            <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] w-[90%] max-w-[420px] h-16 bg-[#050505]/80 backdrop-blur-2xl border border-white/10 rounded-full flex items-center justify-between p-2 shadow-2xl md:hidden">
+            {!hideMobileMenu && (
+                <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] w-[90%] max-w-[420px] h-16 bg-[#050505]/80 backdrop-blur-2xl border border-white/10 rounded-full flex items-center justify-between p-2 shadow-2xl md:hidden">
                 <Link
                     to="/admin"
                     className="w-10 h-10 rounded-full bg-white/5 border border-white/5 hover:bg-white/10 flex items-center justify-center text-gray-400 hover:text-white transition-all active:scale-90"
-                    title="Central Command"
+                    title="Admin Dashboard"
                 >
                     <LayoutDashboard size={16} />
                 </Link>
@@ -224,7 +221,7 @@ const AdminCommunityHubLayout = ({ children, title, description, action, studioH
                     className="flex-1 mx-2 h-10 rounded-full bg-gradient-to-r from-neon-green/10 via-neon-blue/10 to-neon-pink/10 border border-white/10 hover:border-white/20 flex items-center justify-center gap-2 text-[9px] font-black uppercase tracking-[0.2em] text-white transition-all active:scale-[0.98]"
                 >
                     <Compass size={14} className="text-neon-blue animate-pulse" />
-                    <span>{title || "COMMAND MENU"}</span>
+                    <span>{title || "ADMIN MENU"}</span>
                     {isMenuOpen ? <X size={12} className="ml-1" /> : <Menu size={12} className="ml-1" />}
                 </button>
                 
@@ -239,6 +236,7 @@ const AdminCommunityHubLayout = ({ children, title, description, action, studioH
                     )}
                 </Link>
             </div>
+            )}
 
             {/* Switcher Drawer Overlay */}
             <AnimatePresence>
@@ -255,8 +253,8 @@ const AdminCommunityHubLayout = ({ children, title, description, action, studioH
                                 <div className="inline-flex p-3 rounded-2xl bg-white/5 border border-white/10 mb-4">
                                     <LayoutGrid className="text-neon-green w-6 h-6" />
                                 </div>
-                                <h2 className="text-2xl font-black font-heading uppercase tracking-tighter italic text-white leading-none">COMMAND HUB INDEX</h2>
-                                <p className="text-[8px] font-black uppercase tracking-[0.4em] text-gray-500 mt-2">Central Mission Control Modules</p>
+                                <h2 className="text-2xl font-black font-heading uppercase tracking-tighter text-white leading-none">ADMIN NAVIGATION</h2>
+                                <p className="text-[8px] font-black uppercase tracking-[0.4em] text-gray-500 mt-2">Administrative Portal Modules</p>
                             </div>
 
                             <div className="space-y-6">

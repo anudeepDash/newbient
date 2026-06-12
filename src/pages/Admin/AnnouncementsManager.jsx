@@ -174,7 +174,7 @@ const AnnouncementsManager = () => {
 
                 {/* Mobile Preview Toggle */}
                 {isAdding && (
-                    <div className="lg:hidden fixed bottom-6 right-6 z-[200]">
+                    <div className="lg:hidden fixed bottom-24 right-6 z-[200]">
                         <button 
                             onClick={() => setShowPreviewMobile(!showPreviewMobile)}
                             className={cn(

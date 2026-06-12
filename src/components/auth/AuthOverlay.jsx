@@ -29,7 +29,16 @@ const AuthOverlay = () => {
     const [otpCode, setOtpCode] = useState('');
     const [confirmationResult, setConfirmationResult] = useState(null);
     const [step, setStep] = useState('input'); // 'input', 'verify' for phone mode
+    const [cooldown, setCooldown] = useState(0);
     const recaptchaVerifier = useRef(null);
+
+    useEffect(() => {
+        if (cooldown <= 0) return;
+        const timer = setTimeout(() => {
+            setCooldown(c => c - 1);
+        }, 1000);
+        return () => clearTimeout(timer);
+    }, [cooldown]);
 
     const [formData, setFormData] = useState({
         email: '',
@@ -198,6 +207,7 @@ const AuthOverlay = () => {
             const result = await signInWithPhoneNumber(auth, formattedPhone, recaptchaVerifier.current);
             setConfirmationResult(result);
             setStep('verify');
+            setCooldown(60);
         } catch (err) {
             console.error("Phone Auth Error:", err);
             const friendlyError = getFriendlyErrorMessage(err);
@@ -343,8 +353,8 @@ const AuthOverlay = () => {
                                                 </div>
                                             </div>
                                         </div>
-                                        <Button type="submit" className="w-full h-12" disabled={loading}>
-                                            {loading ? <LoadingSpinner size="xs" color="#FFFFFF" /> : 'Send OTP'}
+                                        <Button type="submit" className="w-full h-12" disabled={loading || cooldown > 0}>
+                                            {loading ? <LoadingSpinner size="xs" color="#FFFFFF" /> : cooldown > 0 ? `Resend OTP in ${cooldown}s` : 'Send OTP'}
                                         </Button>
                                     </form>
                                 ) : (
@@ -524,7 +534,7 @@ const AuthOverlay = () => {
                                 <button
                                     type="button"
                                     onClick={() => setMode('phone')}
-                                    className="w-full h-12 bg-neon-blue/10 hover:bg-neon-blue/20 text-neon-blue border border-neon-blue/30 rounded-lg flex items-center justify-center gap-3 transition-all font-medium"
+                                    className="w-full h-12 bg-white/5 hover:bg-white/10 text-gray-300 border border-white/10 hover:text-white rounded-lg flex items-center justify-center gap-3 transition-all font-medium"
                                     disabled={loading}
                                 >
                                     <Phone size={18} />

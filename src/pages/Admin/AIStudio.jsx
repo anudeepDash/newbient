@@ -595,7 +595,7 @@ const AIStudio = () => {
     const [isGenerating, setIsGenerating] = useState(false);
     const [showPreviewMobile, setShowPreviewMobile] = useState(false);
     const previewContainerRef = useRef(null);
-    const [isManualCalibrationExpanded, setIsManualCalibrationExpanded] = useState(false);
+    const [leftPanelMode, setLeftPanelMode] = useState('ai'); // 'ai' | 'manual'
 
     // ────────────────────────────────────────────────────────────────────────
     // 1. PROPOSAL ENGINE STATE & FUNCTIONS
@@ -1655,8 +1655,44 @@ const AIStudio = () => {
                         )}
                     </div>
 
-                    {/* CORE SINGLE PROMPT BOX */}
-                    <div className="p-6 border-b border-white/5 bg-black/40 relative">
+                    {/* SEGMENTED MODE SWITCHER */}
+                    <div className="px-6 py-3 border-b border-white/5 bg-black/20 flex gap-2 shrink-0">
+                        <button
+                            type="button"
+                            onClick={() => setLeftPanelMode('ai')}
+                            className={cn(
+                                "flex-1 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all flex items-center justify-center gap-2",
+                                leftPanelMode === 'ai'
+                                    ? (activeEngine === 'proposal'
+                                        ? "bg-[#39FF14]/10 text-[#39FF14] border border-[#39FF14]/20 shadow-[0_0_15px_rgba(57,255,20,0.05)]"
+                                        : "bg-[#A855F7]/10 text-[#A855F7] border border-[#A855F7]/20 shadow-[0_0_15px_rgba(168,85,247,0.05)]")
+                                    : "text-zinc-500 hover:text-zinc-300 border border-transparent"
+                            )}
+                        >
+                            <Sparkles size={12} className={cn(leftPanelMode === 'ai' && (activeEngine === 'proposal' ? "text-[#39FF14]" : "text-[#A855F7]"))} />
+                            AI Assist Mode
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setLeftPanelMode('manual')}
+                            className={cn(
+                                "flex-1 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all flex items-center justify-center gap-2",
+                                leftPanelMode === 'manual'
+                                    ? (activeEngine === 'proposal'
+                                        ? "bg-[#39FF14]/10 text-[#39FF14] border border-[#39FF14]/20 shadow-[0_0_15px_rgba(57,255,20,0.05)]"
+                                        : "bg-[#A855F7]/10 text-[#A855F7] border border-[#A855F7]/20 shadow-[0_0_15px_rgba(168,85,247,0.05)]")
+                                    : "text-zinc-500 hover:text-zinc-300 border border-transparent"
+                            )}
+                        >
+                            <Settings size={12} className={cn(leftPanelMode === 'manual' && (activeEngine === 'proposal' ? "text-[#39FF14]" : "text-[#A855F7]"))} />
+                            Manual Calibration
+                        </button>
+                    </div>
+
+                    {leftPanelMode === 'ai' && (
+                        <>
+                            {/* CORE SINGLE PROMPT BOX */}
+                            <div className="p-6 border-b border-white/5 bg-black/40 relative">
                         <div className="flex items-center justify-between mb-4">
                             <span className="text-[10px] font-black uppercase text-zinc-400 tracking-widest">Document Intent</span>
                             
@@ -1858,27 +1894,13 @@ const AIStudio = () => {
                             </button>
                         </form>
                     </div>
+                        </>
+                    )}
 
-                    {/* Collapsible Forms Section */}
-                    <div className={cn(
-                        "p-6 shrink-0 flex flex-col min-h-0 bg-black/20 transition-all duration-300",
-                        isManualCalibrationExpanded ? "max-h-[45vh] overflow-y-auto pb-24" : "max-h-[50px] overflow-hidden pb-0"
-                    )}>
-                        <div 
-                            className="flex items-center justify-between border-b border-white/5 pb-2 cursor-pointer select-none"
-                            onClick={() => setIsManualCalibrationExpanded(!isManualCalibrationExpanded)}
-                        >
-                            <span className="text-[10px] font-black uppercase text-zinc-400 tracking-[0.15em] flex items-center gap-2">
-                                <Settings size={12} />
-                                Manual Calibration
-                            </span>
-                            <span className="text-zinc-500 hover:text-white transition-colors">
-                                {isManualCalibrationExpanded ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
-                            </span>
-                        </div>
-
-                        {isManualCalibrationExpanded && (
-                            <div className="flex-1 flex flex-col min-h-0 mt-4">
+                    {/* Collapsible Forms Section -> spacious scrollable container */}
+                    {leftPanelMode === 'manual' && (
+                        <div className="flex-1 overflow-y-auto p-6 space-y-6 pb-24 scrollbar-hide bg-black/20">
+                            <div className="flex-1 flex flex-col min-h-0">
                                 {/* Engine Form switcher */}
                                 {activeEngine === 'proposal' ? (
                             // PROPOSAL ENGINE FORMS
@@ -2196,8 +2218,8 @@ const AIStudio = () => {
                             </div>
                         )}
                             </div>
-                        )}
-                    </div>
+                        </div>
+                    )}
                 </div>
 
                 {/* RIGHT COLUMN (INTERACTIVE A4 PREVIEW) */}

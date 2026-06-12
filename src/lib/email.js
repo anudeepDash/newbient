@@ -30,10 +30,10 @@ export const generateOfficialHTML = (data) => {
     // Brand Logos: Home (Dark) vs Document (Light)
     const baseUrl = getBaseUrl();
     
-    // Header background and logo adapt to the theme to avoid a mismatched black header on light emails
-    const headerBg = containerBg;
-    const headerBorder = borderColor;
-    const logoUrl = isDark ? `${baseUrl}/logo_full.png` : `${baseUrl}/logo_document.png`;
+    // Header background is always dark to avoid a mismatched logo/header in dark mode
+    const headerBg = '#0a0a0a';
+    const headerBorder = '#1a1a1a';
+    const logoUrl = `${baseUrl}/logo_full.png`;
 
     return `
         <!DOCTYPE html>
@@ -58,8 +58,6 @@ export const generateOfficialHTML = (data) => {
                 .social-links { margin-bottom: 20px; }
                 .social-icon { display: inline-block; margin: 0 12px; }
                 .social-img { width: 18px; height: 18px; opacity: 0.6; ${isDark ? 'filter: invert(1);' : ''} }
-                .logo-light { display: ${isDark ? 'none' : 'block'} !important; }
-                .logo-dark { display: ${isDark ? 'block' : 'none'} !important; }
 
                 @media screen and (max-width: 600px) {
                     .container { margin: 0 !important; border-radius: 0 !important; border: none !important; width: 100% !important; }
@@ -73,26 +71,20 @@ export const generateOfficialHTML = (data) => {
                 @media (prefers-color-scheme: dark) {
                     body { background-color: #000000 !important; color: #ffffff !important; }
                     .container { background-color: #0a0a0a !important; border-color: #1a1a1a !important; }
-                    .header { background-color: #0a0a0a !important; border-color: #1a1a1a !important; }
                     .title { color: #ffffff !important; }
                     .body-text { color: #888888 !important; }
                     .footer { background-color: #050505 !important; border-color: #1a1a1a !important; }
                     .social-img { filter: invert(1) !important; }
-                    .logo-light { display: none !important; }
-                    .logo-dark { display: block !important; }
                     .category-badge { background: ${NEWBI_GREEN} !important; }
                 }
 
                 @media (prefers-color-scheme: light) {
                     body { background-color: #fcfcfc !important; color: #111111 !important; }
                     .container { background-color: #ffffff !important; border-color: #eaeaea !important; }
-                    .header { background-color: #ffffff !important; border-color: #eaeaea !important; }
                     .title { color: #111111 !important; }
                     .body-text { color: #444444 !important; }
                     .footer { background-color: #fafafa !important; border-color: #eaeaea !important; }
                     .social-img { filter: none !important; }
-                    .logo-dark { display: none !important; }
-                    .logo-light { display: block !important; }
                     .category-badge { background: ${NEWBI_GREEN} !important; }
                 }
             </style>
@@ -101,10 +93,8 @@ export const generateOfficialHTML = (data) => {
             <span class="preheader">${messageBody.replace(/<[^>]*>?/gm, '').substring(0, 150)}</span>
             <div class="container">
                 <div class="header">
-                    <!-- Light Mode Logo -->
-                    <img src="${baseUrl}/logo_document.png" class="logo-light" alt="Newbi" style="display: ${isDark ? 'none' : 'block'}; margin: 0; height: 25px; width: auto; max-width: 180px; background: linear-gradient(#ffffff, #ffffff); background-color: #ffffff; padding: 4px 8px; border-radius: 6px;">
-                    <!-- Dark Mode Logo -->
-                    <img src="${baseUrl}/logo_full.png" class="logo-dark" alt="Newbi" style="display: ${isDark ? 'block' : 'none'}; margin: 0; height: 25px; width: auto; max-width: 180px; background: linear-gradient(#0a0a0a, #0a0a0a); background-color: #0a0a0a; padding: 4px 8px; border-radius: 6px;">
+                    <!-- Brand Logo -->
+                    <img src="${baseUrl}/logo_full.png" alt="Newbi" style="display: block; margin: 0; height: 25px; width: auto; max-width: 180px;">
                 </div>
                 <div class="content">
                     <div class="category-badge">${category}</div>
@@ -490,10 +480,10 @@ export const generateInvoiceEmailHTML = (data) => {
     const cardBorder = isDark ? '#1e1e1e' : '#e5e7eb';
     const baseUrl = getBaseUrl();
     
-    // Header background and logo adapt to the theme to avoid a mismatched black header on light emails
-    const headerBg = containerBg;
-    const headerBorder = borderColor;
-    const logoUrl = isDark ? `${baseUrl}/logo_full.png` : `${baseUrl}/logo_document.png`;
+    // Header background is always dark to avoid a mismatched logo/header in dark mode
+    const headerBg = '#0a0a0a';
+    const headerBorder = '#1a1a1a';
+    const logoUrl = `${baseUrl}/logo_full.png`;
 
     return `
         <!DOCTYPE html>
@@ -535,8 +525,6 @@ export const generateInvoiceEmailHTML = (data) => {
                 .social-links { margin-bottom: 20px; }
                 .social-icon { display: inline-block; margin: 0 12px; }
                 .social-img { width: 18px; height: 18px; opacity: 0.6; ${isDark ? 'filter: invert(1);' : ''} }
-                .logo-light { display: ${isDark ? 'none' : 'block'} !important; }
-                .logo-dark { display: ${isDark ? 'block' : 'none'} !important; }
 
                 @media screen and (max-width: 600px) {
                     .container { margin: 0 !important; border-radius: 0 !important; border: none !important; width: 100% !important; }
@@ -550,13 +538,10 @@ export const generateInvoiceEmailHTML = (data) => {
                 @media (prefers-color-scheme: dark) {
                     body { background-color: #000000 !important; color: #ffffff !important; }
                     .container { background-color: #0a0a0a !important; border-color: #1a1a1a !important; }
-                    .header { background-color: #0a0a0a !important; border-color: #1a1a1a !important; }
                     .title { color: #ffffff !important; }
                     .body-text { color: #888888 !important; }
                     .footer { background-color: #050505 !important; border-color: #1a1a1a !important; }
                     .social-img { filter: invert(1) !important; }
-                    .logo-light { display: none !important; }
-                    .logo-dark { display: block !important; }
                     .category-badge { background: ${NEWBI_GREEN} !important; }
                     .attachment-card { background: #111111 !important; border-color: #1e1e1e !important; }
                     .attachment-label { color: #888888 !important; }
@@ -568,13 +553,10 @@ export const generateInvoiceEmailHTML = (data) => {
                 @media (prefers-color-scheme: light) {
                     body { background-color: #fcfcfc !important; color: #111111 !important; }
                     .container { background-color: #ffffff !important; border-color: #eaeaea !important; }
-                    .header { background-color: #ffffff !important; border-color: #eaeaea !important; }
                     .title { color: #111111 !important; }
                     .body-text { color: #444444 !important; }
                     .footer { background-color: #fafafa !important; border-color: #eaeaea !important; }
                     .social-img { filter: none !important; }
-                    .logo-dark { display: none !important; }
-                    .logo-light { display: block !important; }
                     .category-badge { background: ${NEWBI_GREEN} !important; }
                     .attachment-card { background: #f8f9fa !important; border-color: #e5e7eb !important; }
                     .attachment-label { color: #444444 !important; }
@@ -588,10 +570,8 @@ export const generateInvoiceEmailHTML = (data) => {
             <span class="preheader">Invoice ${invoiceNumber} for ${clientName} — ₹${amount}</span>
             <div class="container">
                 <div class="header">
-                    <!-- Light Mode Logo -->
-                    <img src="${baseUrl}/logo_document.png" class="logo-light" alt="Newbi" style="display: ${isDark ? 'none' : 'block'}; margin: 0; height: 25px; width: auto; max-width: 180px; background: linear-gradient(#ffffff, #ffffff); background-color: #ffffff; padding: 4px 8px; border-radius: 6px;">
-                    <!-- Dark Mode Logo -->
-                    <img src="${baseUrl}/logo_full.png" class="logo-dark" alt="Newbi" style="display: ${isDark ? 'block' : 'none'}; margin: 0; height: 25px; width: auto; max-width: 180px; background: linear-gradient(#0a0a0a, #0a0a0a); background-color: #0a0a0a; padding: 4px 8px; border-radius: 6px;">
+                    <!-- Brand Logo -->
+                    <img src="${baseUrl}/logo_full.png" alt="Newbi" style="display: block; margin: 0; height: 25px; width: auto; max-width: 180px;">
                 </div>
                 <div class="content">
                     <div class="category-badge">INVOICE</div>
@@ -812,15 +792,14 @@ export const generateWeeklyHTML = (data) => {
                 .header { 
                     padding: 40px 40px 20px; 
                     text-align: center; 
-                    border-bottom: 1px solid ${borderColor};
+                    background-color: #0a0a0a;
+                    border-bottom: 1px solid #1a1a1a;
                 }
                 .header img { 
                     width: 100%; 
                     max-width: 320px; 
                     height: auto; 
                 }
-                .logo-light { display: ${isDark ? 'none' : 'inline-block'}; }
-                .logo-dark { display: ${isDark ? 'inline-block' : 'none'}; }
                 .date-badge {
                     display: inline-block;
                     margin-top: 15px;
@@ -958,10 +937,8 @@ export const generateWeeklyHTML = (data) => {
             <span class="preheader">${summary}</span>
             <div class="container">
                 <div class="header">
-                    <!-- Light Mode Logo -->
-                    <img src="${getBaseUrl()}/weekly_logo_light.png" class="logo-light" alt="WEEKLY BY CONCERT ZONE" style="display: ${isDark ? 'none' : 'inline-block'}; max-width: 320px; width: 100%; height: auto; background: linear-gradient(#ffffff, #ffffff); background-color: #ffffff; padding: 6px 12px; border-radius: 8px;">
-                    <!-- Dark Mode Logo -->
-                    <img src="${getBaseUrl()}/weekly_logo_dark.png" class="logo-dark" alt="WEEKLY BY CONCERT ZONE" style="display: ${isDark ? 'inline-block' : 'none'}; max-width: 320px; width: 100%; height: auto; background: linear-gradient(#0a0a0a, #0a0a0a); background-color: #0a0a0a; padding: 6px 12px; border-radius: 8px;">
+                    <!-- Brand Logo -->
+                    <img src="${getBaseUrl()}/weekly_logo_dark.png" alt="WEEKLY BY CONCERT ZONE" style="display: block; margin: 0 auto; max-width: 320px; width: 100%; height: auto;">
                     <div>
                         <span class="date-badge">${dateStr}</span>
                     </div>
@@ -1100,10 +1077,10 @@ export const generateProposalEmailHTML = (data) => {
     const cardBorder = isDark ? '#1e1e1e' : '#e5e7eb';
     const baseUrl = getBaseUrl();
     
-    // Header background and logo adapt to the theme to avoid a mismatched black header on light emails
-    const headerBg = containerBg;
-    const headerBorder = borderColor;
-    const logoUrl = isDark ? `${baseUrl}/logo_full.png` : `${baseUrl}/logo_document.png`;
+    // Header background is always dark to avoid a mismatched logo/header in dark mode
+    const headerBg = '#0a0a0a';
+    const headerBorder = '#1a1a1a';
+    const logoUrl = `${baseUrl}/logo_full.png`;
 
     return `
         <!DOCTYPE html>
@@ -1142,8 +1119,6 @@ export const generateProposalEmailHTML = (data) => {
                 .social-links { margin-bottom: 20px; }
                 .social-icon { display: inline-block; margin: 0 12px; }
                 .social-img { width: 18px; height: 18px; opacity: 0.6; ${isDark ? 'filter: invert(1);' : ''} }
-                .logo-light { display: ${isDark ? 'none' : 'block'} !important; }
-                .logo-dark { display: ${isDark ? 'block' : 'none'} !important; }
 
                 @media screen and (max-width: 600px) {
                     .container { margin: 0 !important; border-radius: 0 !important; border: none !important; width: 100% !important; }
@@ -1157,13 +1132,10 @@ export const generateProposalEmailHTML = (data) => {
                 @media (prefers-color-scheme: dark) {
                     body { background-color: #000000 !important; color: #ffffff !important; }
                     .container { background-color: #0a0a0a !important; border-color: #1a1a1a !important; }
-                    .header { background-color: #0a0a0a !important; border-color: #1a1a1a !important; }
                     .title { color: #ffffff !important; }
                     .body-text { color: #888888 !important; }
                     .footer { background-color: #050505 !important; border-color: #1a1a1a !important; }
                     .social-img { filter: invert(1) !important; }
-                    .logo-light { display: none !important; }
-                    .logo-dark { display: block !important; }
                     .category-badge { background: ${NEWBI_GREEN} !important; }
                     .attachment-card { background: #111111 !important; border-color: #1e1e1e !important; }
                     .attachment-label { color: #888888 !important; }
@@ -1173,13 +1145,10 @@ export const generateProposalEmailHTML = (data) => {
                 @media (prefers-color-scheme: light) {
                     body { background-color: #fcfcfc !important; color: #111111 !important; }
                     .container { background-color: #ffffff !important; border-color: #eaeaea !important; }
-                    .header { background-color: #ffffff !important; border-color: #eaeaea !important; }
                     .title { color: #111111 !important; }
                     .body-text { color: #444444 !important; }
                     .footer { background-color: #fafafa !important; border-color: #eaeaea !important; }
                     .social-img { filter: none !important; }
-                    .logo-dark { display: none !important; }
-                    .logo-light { display: block !important; }
                     .category-badge { background: ${NEWBI_GREEN} !important; }
                     .attachment-card { background: #f8f9fa !important; border-color: #e5e7eb !important; }
                     .attachment-label { color: #444444 !important; }
@@ -1191,10 +1160,8 @@ export const generateProposalEmailHTML = (data) => {
             <span class="preheader">Proposal ${proposalNumber} for ${clientName}</span>
             <div class="container">
                 <div class="header">
-                    <!-- Light Mode Logo -->
-                    <img src="${baseUrl}/logo_document.png" class="logo-light" alt="Newbi" style="display: ${isDark ? 'none' : 'block'}; margin: 0; height: 25px; width: auto; max-width: 180px; background: linear-gradient(#ffffff, #ffffff); background-color: #ffffff; padding: 4px 8px; border-radius: 6px;">
-                    <!-- Dark Mode Logo -->
-                    <img src="${baseUrl}/logo_full.png" class="logo-dark" alt="Newbi" style="display: ${isDark ? 'block' : 'none'}; margin: 0; height: 25px; width: auto; max-width: 180px; background: linear-gradient(#0a0a0a, #0a0a0a); background-color: #0a0a0a; padding: 4px 8px; border-radius: 6px;">
+                    <!-- Brand Logo -->
+                    <img src="${baseUrl}/logo_full.png" alt="Newbi" style="display: block; margin: 0; height: 25px; width: auto; max-width: 180px;">
                 </div>
                 <div class="content">
                     <div class="category-badge">PROPOSAL</div>
@@ -1307,10 +1274,10 @@ export const generateAgreementEmailHTML = (data) => {
     const cardBorder = isDark ? '#1e1e1e' : '#e5e7eb';
     const baseUrl = getBaseUrl();
     
-    // Header background and logo adapt to the theme to avoid a mismatched black header on light emails
-    const headerBg = containerBg;
-    const headerBorder = borderColor;
-    const logoUrl = isDark ? `${baseUrl}/logo_full.png` : `${baseUrl}/logo_document.png`;
+    // Header background is always dark to avoid a mismatched logo/header in dark mode
+    const headerBg = '#0a0a0a';
+    const headerBorder = '#1a1a1a';
+    const logoUrl = `${baseUrl}/logo_full.png`;
 
     return `
         <!DOCTYPE html>
@@ -1349,8 +1316,6 @@ export const generateAgreementEmailHTML = (data) => {
                 .social-links { margin-bottom: 20px; }
                 .social-icon { display: inline-block; margin: 0 12px; }
                 .social-img { width: 18px; height: 18px; opacity: 0.6; ${isDark ? 'filter: invert(1);' : ''} }
-                .logo-light { display: ${isDark ? 'none' : 'block'} !important; }
-                .logo-dark { display: ${isDark ? 'block' : 'none'} !important; }
 
                 @media screen and (max-width: 600px) {
                     .container { margin: 0 !important; border-radius: 0 !important; border: none !important; width: 100% !important; }
@@ -1364,13 +1329,10 @@ export const generateAgreementEmailHTML = (data) => {
                 @media (prefers-color-scheme: dark) {
                     body { background-color: #000000 !important; color: #ffffff !important; }
                     .container { background-color: #0a0a0a !important; border-color: #1a1a1a !important; }
-                    .header { background-color: #0a0a0a !important; border-color: #1a1a1a !important; }
                     .title { color: #ffffff !important; }
                     .body-text { color: #888888 !important; }
                     .footer { background-color: #050505 !important; border-color: #1a1a1a !important; }
                     .social-img { filter: invert(1) !important; }
-                    .logo-light { display: none !important; }
-                    .logo-dark { display: block !important; }
                     .category-badge { background: ${NEON_PURPLE} !important; }
                     .attachment-card { background: #111111 !important; border-color: #1e1e1e !important; }
                     .attachment-label { color: #888888 !important; }
@@ -1380,13 +1342,10 @@ export const generateAgreementEmailHTML = (data) => {
                 @media (prefers-color-scheme: light) {
                     body { background-color: #fcfcfc !important; color: #111111 !important; }
                     .container { background-color: #ffffff !important; border-color: #eaeaea !important; }
-                    .header { background-color: #ffffff !important; border-color: #eaeaea !important; }
                     .title { color: #111111 !important; }
                     .body-text { color: #444444 !important; }
                     .footer { background-color: #fafafa !important; border-color: #eaeaea !important; }
                     .social-img { filter: none !important; }
-                    .logo-dark { display: none !important; }
-                    .logo-light { display: block !important; }
                     .category-badge { background: ${NEON_PURPLE} !important; }
                     .attachment-card { background: #f8f9fa !important; border-color: #e5e7eb !important; }
                     .attachment-label { color: #444444 !important; }
@@ -1398,10 +1357,8 @@ export const generateAgreementEmailHTML = (data) => {
             <span class="preheader">Contract ${agreementNumber} — ${secondPartyName}</span>
             <div class="container">
                 <div class="header">
-                    <!-- Light Mode Logo -->
-                    <img src="${baseUrl}/logo_document.png" class="logo-light" alt="Newbi" style="display: ${isDark ? 'none' : 'block'}; margin: 0; height: 25px; width: auto; max-width: 180px; background: linear-gradient(#ffffff, #ffffff); background-color: #ffffff; padding: 4px 8px; border-radius: 6px;">
-                    <!-- Dark Mode Logo -->
-                    <img src="${baseUrl}/logo_full.png" class="logo-dark" alt="Newbi" style="display: ${isDark ? 'block' : 'none'}; margin: 0; height: 25px; width: auto; max-width: 180px; background: linear-gradient(#0a0a0a, #0a0a0a); background-color: #0a0a0a; padding: 4px 8px; border-radius: 6px;">
+                    <!-- Brand Logo -->
+                    <img src="${baseUrl}/logo_full.png" alt="Newbi" style="display: block; margin: 0; height: 25px; width: auto; max-width: 180px;">
                 </div>
                 <div class="content">
                     <div class="category-badge">CONTRACT</div>
@@ -1527,8 +1484,10 @@ export const generateReceiptEmailHTML = (data) => {
     const cardBorder = isDark ? '#1e1e1e' : '#e5e7eb';
     const baseUrl = getBaseUrl();
     
-    const headerBg = containerBg;
-    const headerBorder = borderColor;
+    // Header background is always dark to avoid a mismatched logo/header in dark mode
+    const headerBg = '#0a0a0a';
+    const headerBorder = '#1a1a1a';
+    const logoUrl = `${baseUrl}/logo_full.png`;
 
     return `
         <!DOCTYPE html>
@@ -1570,8 +1529,6 @@ export const generateReceiptEmailHTML = (data) => {
                 .social-links { margin-bottom: 20px; }
                 .social-icon { display: inline-block; margin: 0 12px; }
                 .social-img { width: 18px; height: 18px; opacity: 0.6; ${isDark ? 'filter: invert(1);' : ''} }
-                .logo-light { display: ${isDark ? 'none' : 'block'} !important; }
-                .logo-dark { display: ${isDark ? 'block' : 'none'} !important; }
 
                 @media screen and (max-width: 600px) {
                     .container { margin: 0 !important; border-radius: 0 !important; border: none !important; width: 100% !important; }
@@ -1585,13 +1542,10 @@ export const generateReceiptEmailHTML = (data) => {
                 @media (prefers-color-scheme: dark) {
                     body { background-color: #000000 !important; color: #ffffff !important; }
                     .container { background-color: #0a0a0a !important; border-color: #1a1a1a !important; }
-                    .header { background-color: #0a0a0a !important; border-color: #1a1a1a !important; }
                     .title { color: #ffffff !important; }
                     .body-text { color: #888888 !important; }
                     .footer { background-color: #050505 !important; border-color: #1a1a1a !important; }
                     .social-img { filter: invert(1) !important; }
-                    .logo-light { display: none !important; }
-                    .logo-dark { display: block !important; }
                     .category-badge { background: ${NEWBI_GREEN} !important; }
                     .attachment-card { background: #111111 !important; border-color: #1e1e1e !important; }
                     .attachment-label { color: #888888 !important; }
@@ -1603,13 +1557,10 @@ export const generateReceiptEmailHTML = (data) => {
                 @media (prefers-color-scheme: light) {
                     body { background-color: #fcfcfc !important; color: #111111 !important; }
                     .container { background-color: #ffffff !important; border-color: #eaeaea !important; }
-                    .header { background-color: #ffffff !important; border-color: #eaeaea !important; }
                     .title { color: #111111 !important; }
                     .body-text { color: #444444 !important; }
                     .footer { background-color: #fafafa !important; border-color: #eaeaea !important; }
                     .social-img { filter: none !important; }
-                    .logo-dark { display: none !important; }
-                    .logo-light { display: block !important; }
                     .category-badge { background: ${NEWBI_GREEN} !important; }
                     .attachment-card { background: #f8f9fa !important; border-color: #e5e7eb !important; }
                     .attachment-label { color: #444444 !important; }
@@ -1623,10 +1574,8 @@ export const generateReceiptEmailHTML = (data) => {
             <span class="preheader">Payout Receipt ${reference} to ${receiverName} — ₹${amount}</span>
             <div class="container">
                 <div class="header">
-                    <!-- Light Mode Logo -->
-                    <img src="${baseUrl}/logo_document.png" class="logo-light" alt="Newbi" style="display: ${isDark ? 'none' : 'block'}; margin: 0; height: 25px; width: auto; max-width: 180px; background: linear-gradient(#ffffff, #ffffff); background-color: #ffffff; padding: 4px 8px; border-radius: 6px;">
-                    <!-- Dark Mode Logo -->
-                    <img src="${baseUrl}/logo_full.png" class="logo-dark" alt="Newbi" style="display: ${isDark ? 'block' : 'none'}; margin: 0; height: 25px; width: auto; max-width: 180px; background: linear-gradient(#0a0a0a, #0a0a0a); background-color: #0a0a0a; padding: 4px 8px; border-radius: 6px;">
+                    <!-- Brand Logo -->
+                    <img src="${baseUrl}/logo_full.png" alt="Newbi" style="display: block; margin: 0; height: 25px; width: auto; max-width: 180px;">
                 </div>
                 <div class="content">
                     <div class="category-badge">PAYOUT RECEIPT</div>
@@ -1807,8 +1756,6 @@ export const generateCreatorWelcomeHTML = (creatorName) => {
                 .social-links { margin-bottom: 20px; }
                 .social-icon { display: inline-block; margin: 0 12px; }
                 .social-img { width: 18px; height: 18px; opacity: 0.5; filter: invert(1); }
-                .logo-light { display: none; }
-                .logo-dark { display: block; }
                 
                 @media screen and (max-width: 600px) {
                     .container { margin: 0 !important; border-radius: 0 !important; border: none !important; width: 100% !important; }
@@ -1822,7 +1769,6 @@ export const generateCreatorWelcomeHTML = (creatorName) => {
                 @media (prefers-color-scheme: light) {
                     body { background-color: #ffffff !important; color: #111111 !important; }
                     .container { background-color: #ffffff !important; border-color: #e5e7eb !important; box-shadow: 0 20px 40px rgba(0,0,0,0.08) !important; }
-                    .header { background-color: #ffffff !important; border-color: #e5e7eb !important; }
                     .welcome-badge { background: linear-gradient(90deg, #0099aa, #cc3366) !important; }
                     .title { color: #111111 !important; }
                     .body-text { color: #444444 !important; }
@@ -1833,8 +1779,6 @@ export const generateCreatorWelcomeHTML = (creatorName) => {
                     .footer { background-color: #fafafa !important; border-color: #e5e7eb !important; }
                     .footer-text { color: #999999 !important; }
                     .social-img { filter: none !important; opacity: 0.5 !important; }
-                    .logo-dark { display: none !important; }
-                    .logo-light { display: block !important; }
                 }
             </style>
         </head>
@@ -1842,10 +1786,8 @@ export const generateCreatorWelcomeHTML = (creatorName) => {
             <span class="preheader">Your creator application is received. Welcome to Newbi!</span>
             <div class="container">
                 <div class="header">
-                    <!-- Light Mode Logo -->
-                    <img src="${baseUrl}/logo_document.png" class="logo-light" alt="Newbi" style="display: none; margin: 0; height: 25px; width: auto; max-width: 180px; background: linear-gradient(#ffffff, #ffffff); background-color: #ffffff; padding: 4px 8px; border-radius: 6px;">
-                    <!-- Dark Mode Logo -->
-                    <img src="${baseUrl}/logo_full.png" class="logo-dark" alt="Newbi" style="display: block; margin: 0; height: 25px; width: auto; max-width: 180px; background: linear-gradient(#0a0a0a, #0a0a0a); background-color: #0a0a0a; padding: 4px 8px; border-radius: 6px;">
+                    <!-- Brand Logo -->
+                    <img src="${baseUrl}/logo_full.png" alt="Newbi" style="display: block; margin: 0; height: 25px; width: auto; max-width: 180px;">
                 </div>
                 <div class="content">
                     <div class="welcome-badge">CREATOR WORKSPACE</div>
@@ -1942,8 +1884,6 @@ export const generateCampaignNotificationHTML = (campaign) => {
                 .social-links { margin-bottom: 20px; }
                 .social-icon { display: inline-block; margin: 0 12px; }
                 .social-img { width: 18px; height: 18px; opacity: 0.5; filter: invert(1); }
-                .logo-light { display: none; }
-                .logo-dark { display: block; }
                 
                 @media screen and (max-width: 600px) {
                     .container { margin: 0 !important; border-radius: 0 !important; border: none !important; width: 100% !important; }
@@ -1957,7 +1897,6 @@ export const generateCampaignNotificationHTML = (campaign) => {
                 @media (prefers-color-scheme: light) {
                     body { background-color: #ffffff !important; color: #111111 !important; }
                     .container { background-color: #ffffff !important; border-color: #e5e7eb !important; box-shadow: 0 20px 40px rgba(0,0,0,0.08) !important; }
-                    .header { background-color: #ffffff !important; border-color: #e5e7eb !important; }
                     .campaign-badge { background: linear-gradient(90deg, #0099aa, #cc3366) !important; }
                     .title { color: #111111 !important; }
                     .blue-text { color: #0099aa !important; }
@@ -1972,8 +1911,6 @@ export const generateCampaignNotificationHTML = (campaign) => {
                     .footer { background-color: #fafafa !important; border-color: #e5e7eb !important; }
                     .footer-text { color: #999999 !important; }
                     .social-img { filter: none !important; opacity: 0.5 !important; }
-                    .logo-dark { display: none !important; }
-                    .logo-light { display: block !important; }
                 }
             </style>
         </head>
@@ -1981,10 +1918,8 @@ export const generateCampaignNotificationHTML = (campaign) => {
             <span class="preheader">New Campaign: ${campaign.title} is now active in ${cityText}.</span>
             <div class="container">
                 <div class="header">
-                    <!-- Light Mode Logo -->
-                    <img src="${baseUrl}/logo_document.png" class="logo-light" alt="Newbi" style="display: none; margin: 0; height: 25px; width: auto; max-width: 180px; background: linear-gradient(#ffffff, #ffffff); background-color: #ffffff; padding: 4px 8px; border-radius: 6px;">
-                    <!-- Dark Mode Logo -->
-                    <img src="${baseUrl}/logo_full.png" class="logo-dark" alt="Newbi" style="display: block; margin: 0; height: 25px; width: auto; max-width: 180px; background: linear-gradient(#0a0a0a, #0a0a0a); background-color: #0a0a0a; padding: 4px 8px; border-radius: 6px;">
+                    <!-- Brand Logo -->
+                    <img src="${baseUrl}/logo_full.png" alt="Newbi" style="display: block; margin: 0; height: 25px; width: auto; max-width: 180px;">
                 </div>
                 <div class="content">
                     <div class="campaign-badge">NEW OPPORTUNITY</div>
@@ -2084,8 +2019,6 @@ export const generateCreatorApprovedHTML = (creatorName) => {
                 .social-links { margin-bottom: 20px; }
                 .social-icon { display: inline-block; margin: 0 12px; }
                 .social-img { width: 18px; height: 18px; opacity: 0.5; filter: invert(1); }
-                .logo-light { display: none; }
-                .logo-dark { display: block; }
                 
                 @media screen and (max-width: 600px) {
                     .container { margin: 0 !important; border-radius: 0 !important; border: none !important; width: 100% !important; }
@@ -2099,7 +2032,6 @@ export const generateCreatorApprovedHTML = (creatorName) => {
                 @media (prefers-color-scheme: light) {
                     body { background-color: #ffffff !important; color: #111111 !important; }
                     .container { background-color: #ffffff !important; border-color: #e5e7eb !important; box-shadow: 0 20px 40px rgba(0,0,0,0.08) !important; }
-                    .header { background-color: #ffffff !important; border-color: #e5e7eb !important; }
                     .verified-badge { background: linear-gradient(90deg, #0099aa, #cc3366) !important; }
                     .title { color: #111111 !important; }
                     .blue-text { color: #0099aa !important; }
@@ -2111,8 +2043,6 @@ export const generateCreatorApprovedHTML = (creatorName) => {
                     .footer { background-color: #fafafa !important; border-color: #e5e7eb !important; }
                     .footer-text { color: #999999 !important; }
                     .social-img { filter: none !important; opacity: 0.5 !important; }
-                    .logo-dark { display: none !important; }
-                    .logo-light { display: block !important; }
                 }
             </style>
         </head>
@@ -2120,10 +2050,8 @@ export const generateCreatorApprovedHTML = (creatorName) => {
             <span class="preheader">Congratulations! Your Newbi Creators profile has been verified.</span>
             <div class="container">
                 <div class="header">
-                    <!-- Light Mode Logo -->
-                    <img src="${baseUrl}/logo_document.png" class="logo-light" alt="Newbi" style="display: none; margin: 0; height: 25px; width: auto; max-width: 180px; background: linear-gradient(#ffffff, #ffffff); background-color: #ffffff; padding: 4px 8px; border-radius: 6px;">
-                    <!-- Dark Mode Logo -->
-                    <img src="${baseUrl}/logo_full.png" class="logo-dark" alt="Newbi" style="display: block; margin: 0; height: 25px; width: auto; max-width: 180px; background: linear-gradient(#0a0a0a, #0a0a0a); background-color: #0a0a0a; padding: 4px 8px; border-radius: 6px;">
+                    <!-- Brand Logo -->
+                    <img src="${baseUrl}/logo_full.png" alt="Newbi" style="display: block; margin: 0; height: 25px; width: auto; max-width: 180px;">
                 </div>
                 <div class="content">
                     <div class="verified-badge">PROFILE VERIFIED</div>
@@ -2220,8 +2148,6 @@ export const generateStaffAuthorizedHTML = (role) => {
                 .social-links { margin-bottom: 20px; }
                 .social-icon { display: inline-block; margin: 0 12px; }
                 .social-img { width: 18px; height: 18px; opacity: 0.5; filter: invert(1); }
-                .logo-light { display: none; }
-                .logo-dark { display: block; }
                 
                 @media screen and (max-width: 600px) {
                     .container { margin: 0 !important; border-radius: 0 !important; border: none !important; width: 100% !important; }
@@ -2235,7 +2161,6 @@ export const generateStaffAuthorizedHTML = (role) => {
                 @media (prefers-color-scheme: light) {
                     body { background-color: #ffffff !important; color: #111111 !important; }
                     .container { background-color: #ffffff !important; border-color: #e5e7eb !important; box-shadow: 0 20px 40px rgba(0,0,0,0.08) !important; }
-                    .header { background-color: #ffffff !important; border-color: #e5e7eb !important; }
                     .verified-badge { background: linear-gradient(90deg, #39FF14, #00f2ff) !important; }
                     .title { color: #111111 !important; }
                     .blue-text { color: #0099aa !important; }
@@ -2247,8 +2172,6 @@ export const generateStaffAuthorizedHTML = (role) => {
                     .footer { background-color: #fafafa !important; border-color: #e5e7eb !important; }
                     .footer-text { color: #999999 !important; }
                     .social-img { filter: none !important; opacity: 0.5 !important; }
-                    .logo-dark { display: none !important; }
-                    .logo-light { display: block !important; }
                 }
             </style>
         </head>
@@ -2256,10 +2179,8 @@ export const generateStaffAuthorizedHTML = (role) => {
             <span class="preheader">Your Newbi Command Portal credentials have been authorized.</span>
             <div class="container">
                 <div class="header">
-                    <!-- Light Mode Logo -->
-                    <img src="${baseUrl}/logo_document.png" class="logo-light" alt="Newbi" style="display: none; margin: 0; height: 25px; width: auto; max-width: 180px; background: linear-gradient(#ffffff, #ffffff); background-color: #ffffff; padding: 4px 8px; border-radius: 6px;">
-                    <!-- Dark Mode Logo -->
-                    <img src="${baseUrl}/logo_full.png" class="logo-dark" alt="Newbi" style="display: block; margin: 0; height: 25px; width: auto; max-width: 180px; background: linear-gradient(#0a0a0a, #0a0a0a); background-color: #0a0a0a; padding: 4px 8px; border-radius: 6px;">
+                    <!-- Brand Logo -->
+                    <img src="${baseUrl}/logo_full.png" alt="Newbi" style="display: block; margin: 0; height: 25px; width: auto; max-width: 180px;">
                 </div>
                 <div class="content">
                     <div class="verified-badge">STAFF AUTHORIZATION</div>

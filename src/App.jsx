@@ -82,7 +82,7 @@ import MaintenanceGuard from './components/MaintenanceGuard';
 import NewbiToast from './components/ui/NewbiToast';
 
 function AppContent() {
-  const { subscribeToData, subscribeToNotifications, checkUserRole, loading, authInitialized } = useStore();
+  const { user, subscribeToData, subscribeToNotifications, checkUserRole, loading, authInitialized } = useStore();
   const location = useLocation();
 
   const getColorByPath = (path) => {
@@ -93,9 +93,10 @@ function AppContent() {
   };
 
   const currentColor = getColorByPath(location.pathname);
+  const isAdmin = ['developer', 'super_admin', 'editor', 'admin', 'founder'].includes(user?.role) || localStorage.getItem('adminAuth') === 'true';
 
   useEffect(() => {
-    const unsubscribeData = subscribeToData();
+    const unsubscribeData = subscribeToData(isAdmin);
     const unsubscribeNotifications = subscribeToNotifications();
     initForegroundMessaging();
     
@@ -113,7 +114,7 @@ function AppContent() {
       if (unsubscribeNotifications) unsubscribeNotifications();
       if (unsubAuth) unsubAuth();
     };
-  }, [subscribeToData, subscribeToNotifications]);
+  }, [subscribeToData, subscribeToNotifications, isAdmin]);
 
   return (
     <>

@@ -25,8 +25,37 @@ import { notifyAdmins } from '../lib/notificationTriggers';
 
 const Invoice = () => {
     const { id } = useParams();
-    const { invoices, updateInvoiceStatus, loading, user, logDocumentAccess } = useStore();
-    const invoice = invoices.find(inv => inv.id === id);
+    const { invoices, updateInvoiceStatus, loading: storeLoading, user, logDocumentAccess } = useStore();
+    const [localInvoice, setLocalInvoice] = React.useState(null);
+    const [localLoading, setLocalLoading] = React.useState(true);
+
+    const invoice = localInvoice || invoices.find(inv => inv.id === id);
+
+    React.useEffect(() => {
+        const found = invoices.find(inv => inv.id === id);
+        if (found) {
+            setLocalInvoice(found);
+            setLocalLoading(false);
+        } else if (!storeLoading) {
+            const fetchInvoice = async () => {
+                try {
+                    const { doc, getDoc } = await import('firebase/firestore');
+                    const { db } = await import('../lib/firebase');
+                    const docSnap = await getDoc(doc(db, 'invoices', id));
+                    if (docSnap.exists()) {
+                        setLocalInvoice({ ...docSnap.data(), id: docSnap.id });
+                    }
+                } catch (err) {
+                    console.error("Error fetching invoice directly:", err);
+                } finally {
+                    setLocalLoading(false);
+                }
+            };
+            fetchInvoice();
+        }
+    }, [id, invoices, storeLoading]);
+
+    const loading = localLoading;
     const isAdmin = (localStorage.getItem('adminAuth') === 'true') || (user?.role === 'super_admin' || user?.role === 'developer');
     const location = useLocation();
     const invoiceRef = useRef(null);
