@@ -9,6 +9,7 @@ import AdminCommunityHubLayout from '../../components/admin/AdminCommunityHubLay
 import { sendMassEmail, generateWeeklyHTML } from '../../lib/email';
 import { generateNewsletterBriefing } from '../../lib/ai';
 import StudioRichEditor from '../../components/ui/StudioRichEditor';
+import EmailPreviewIframe from '../../components/ui/EmailPreviewIframe';
 
 const NewsletterStudio = () => {
     const { posts, subscribers, allUsers, admins, addToast } = useStore();
@@ -149,7 +150,8 @@ const NewsletterStudio = () => {
         return generateWeeklyHTML({
             summary: mainPost ? `FEATURING: ${mainPost.title.toUpperCase()}` : "THE DEFINITIVE WEEKLY BRIEFING",
             messageBody: innerContent,
-            theme: theme
+            theme: theme,
+            isPreview: true
         });
     }, [selectedPosts, theme, editorialText, commercialContent]);
 
@@ -492,12 +494,7 @@ const NewsletterStudio = () => {
                                 viewMode === 'mobile' ? "max-w-[375px]" : "w-full",
                                 theme === 'dark' ? "bg-black" : "bg-white"
                             )}>
-                                <div className={cn(
-                                    "h-[700px] overflow-y-auto scrollbar-hide",
-                                    theme === 'dark' ? "bg-[#060606]" : "bg-[#fcfcfc]"
-                                )}>
-                                    <div dangerouslySetInnerHTML={{ __html: generateInternalHTML }} />
-                                </div>
+                                <EmailPreviewIframe html={generateInternalHTML} />
                             </div>
                         </div>
                     </div>

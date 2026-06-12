@@ -16,6 +16,7 @@ import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import StudioRichEditor from '../../components/ui/StudioRichEditor';
 import { generateInvoiceEmailHTML } from '../../lib/email';
+import EmailPreviewIframe from '../../components/ui/EmailPreviewIframe';
 
 const InvoiceEmailModal = ({ isOpen, onClose, invoice, onSend }) => {
     const invoiceUrl = `${window.location.origin}/invoice/${invoice?.id}`;
@@ -66,7 +67,8 @@ const InvoiceEmailModal = ({ isOpen, onClose, invoice, onSend }) => {
             amount: `${(invoice?.total || invoice?.amount || 0).toLocaleString()}`,
             dueDate: invoice?.dueDate ? new Date(invoice.dueDate).toLocaleDateString('en-GB') : '',
             invoiceUrl,
-            theme: emailData.theme
+            theme: emailData.theme,
+            isPreview: true
         });
     }, [emailData, invoice]);
 
@@ -339,11 +341,7 @@ const InvoiceEmailModal = ({ isOpen, onClose, invoice, onSend }) => {
                                     viewMode === 'mobile' ? "w-[360px]" : "w-full",
                                     emailData.theme === 'dark' ? "bg-black" : "bg-white"
                                 )}>
-                                    <div className={cn(
-                                        emailData.theme === 'dark' ? "bg-black" : "bg-[#fcfcfc]"
-                                    )}>
-                                        <div dangerouslySetInnerHTML={{ __html: previewHtml }} />
-                                    </div>
+                                    <EmailPreviewIframe html={previewHtml} />
                                 </div>
                             </div>
                         </div>

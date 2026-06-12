@@ -16,6 +16,7 @@ import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import StudioRichEditor from '../../components/ui/StudioRichEditor';
 import { generateAgreementEmailHTML } from '../../lib/email';
+import EmailPreviewIframe from '../../components/ui/EmailPreviewIframe';
 
 const AgreementEmailModal = ({ isOpen, onClose, agreement, onSend }) => {
     const agreementUrl = `${window.location.origin}/agreement/${agreement?.id}`;
@@ -75,7 +76,8 @@ const AgreementEmailModal = ({ isOpen, onClose, agreement, onSend }) => {
             projectName: agreement?.details?.projectName || '',
             effectiveDate: agreement?.effectiveDate ? new Date(agreement.effectiveDate).toLocaleDateString('en-GB') : '',
             agreementUrl: dynamicUrl,
-            theme: emailData.theme
+            theme: emailData.theme,
+            isPreview: true
         });
     }, [emailData, agreement]);
 
@@ -367,11 +369,7 @@ const AgreementEmailModal = ({ isOpen, onClose, agreement, onSend }) => {
                                     viewMode === 'mobile' ? "w-[360px]" : "w-full",
                                     emailData.theme === 'dark' ? "bg-black" : "bg-white"
                                 )}>
-                                    <div className={cn(
-                                        emailData.theme === 'dark' ? "bg-black" : "bg-[#fcfcfc]"
-                                    )}>
-                                        <div dangerouslySetInnerHTML={{ __html: previewHtml }} />
-                                    </div>
+                                    <EmailPreviewIframe html={previewHtml} />
                                 </div>
                             </div>
                         </div>
