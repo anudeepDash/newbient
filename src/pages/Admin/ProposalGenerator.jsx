@@ -543,6 +543,10 @@ const ProposalGenerator = () => {
     const { id } = useParams();
     const navigate = useNavigate();
     const { addProposal, updateProposal, proposals, user, addToast, activeModel } = useStore();
+    const [autosaveStatus, setAutosaveStatus] = useState('idle'); // 'idle' | 'saving' | 'saved' | 'error'
+    const [lastSaved, setLastSaved] = useState('');
+    const isDirtyRef = useRef(false);
+    const initialDataLoadedRef = useRef(false);
     const [previewScale, setPreviewScale] = useState(0.65);
     const previewContainerRef = useRef(null);
 
@@ -781,6 +785,13 @@ const ProposalGenerator = () => {
     const hasInitializedRef = useRef(false);
     useEffect(() => {
         hasInitializedRef.current = false;
+        initialDataLoadedRef.current = false;
+    }, [id]);
+
+    useEffect(() => {
+        if (!id) {
+            initialDataLoadedRef.current = true;
+        }
     }, [id]);
 
     useEffect(() => {
@@ -806,9 +817,61 @@ const ProposalGenerator = () => {
                 });
                 setSingleItems(proposal.items || []);
                 hasInitializedRef.current = true;
+                setTimeout(() => {
+                    initialDataLoadedRef.current = true;
+                }, 200);
             }
         }
     }, [id, proposals]);
+
+    useEffect(() => {
+        if (initialDataLoadedRef.current) {
+            isDirtyRef.current = true;
+        }
+    }, [formData, items]);
+
+    useEffect(() => {
+        if (!initialDataLoadedRef.current || !isDirtyRef.current) return;
+
+        let active = true;
+        const timer = setTimeout(async () => {
+            if (!active) return;
+            setAutosaveStatus('saving');
+            try {
+                const rawProposalData = { ...formData, items, totalAmount, subtotal, updatedAt: new Date().toISOString() };
+                const proposalData = JSON.parse(JSON.stringify(rawProposalData));
+                
+                if (id) {
+                    await updateProposal(id, proposalData);
+                    if (active) {
+                        setAutosaveStatus('saved');
+                        setLastSaved(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+                        isDirtyRef.current = false;
+                    }
+                } else {
+                    const newDocId = await addProposal(proposalData);
+                    if (active) {
+                        setAutosaveStatus('saved');
+                        setLastSaved(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+                        isDirtyRef.current = false;
+                        hasInitializedRef.current = true;
+                        initialDataLoadedRef.current = true;
+                        navigate(`/admin/edit-proposal/${newDocId}`, { replace: true });
+                    }
+                }
+            } catch (err) {
+                console.error("Proposal autosave failed:", err);
+                if (active) {
+                    setAutosaveStatus('error');
+                }
+            }
+        }, 5000);
+
+        return () => {
+            active = false;
+            clearTimeout(timer);
+        };
+    }, [formData, items, id]);
 
     useEffect(() => {
         const handleResize = () => {
@@ -1081,9 +1144,15 @@ const ProposalGenerator = () => {
             if (id) {
                 await updateProposal(id, proposalData);
                 addToast('Strategic Memorandum Updated', 'success');
+                isDirtyRef.current = false;
+                setAutosaveStatus('saved');
+                setLastSaved(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
             } else {
                 const newDocId = await addProposal(proposalData);
                 addToast('Strategic Memorandum Created', 'success');
+                isDirtyRef.current = false;
+                setAutosaveStatus('saved');
+                setLastSaved(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
                 navigate(`/admin/edit-proposal/${newDocId}`);
             }
         } catch (err) {
@@ -1988,6 +2057,21 @@ const ProposalGenerator = () => {
                         <Eye size={14} />
                         <span className="text-[8px] font-black uppercase tracking-widest">Preview</span>
                     </button>
+                    {autosaveStatus !== 'idle' && (
+                        <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white/5 border border-white/10 select-none">
+                            <span className={cn(
+                                "w-1.5 h-1.5 rounded-full shrink-0",
+                                autosaveStatus === 'saving' && "bg-amber-400 animate-pulse",
+                                autosaveStatus === 'saved' && "bg-emerald-400",
+                                autosaveStatus === 'error' && "bg-red-500"
+                            )} />
+                            <span className="text-[8px] font-black uppercase tracking-widest text-zinc-400">
+                                {autosaveStatus === 'saving' && "Saving..."}
+                                {autosaveStatus === 'saved' && `Autosaved ${lastSaved}`}
+                                {autosaveStatus === 'error' && "Autosave error"}
+                            </span>
+                        </div>
+                    )}
                     <button onClick={handleSave} className="h-10 md:h-12 px-3 md:px-6 bg-white/5 hover:bg-white/10 text-white border border-white/10 font-black uppercase tracking-widest text-[9px] md:text-[10px] rounded-xl transition-all flex items-center gap-2">
                         <Save size={14} className="sm:hidden" />
                         <span className="hidden sm:inline">Save</span>

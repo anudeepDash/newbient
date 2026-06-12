@@ -54,6 +54,10 @@ const InvoiceGenerator = () => {
     const { id } = useParams();
     const navigate = useNavigate();
     const { addInvoice, updateInvoice, invoices, uploadToCloudinary, user } = useStore();
+    const [autosaveStatus, setAutosaveStatus] = useState('idle'); // 'idle' | 'saving' | 'saved' | 'error'
+    const [lastSaved, setLastSaved] = useState('');
+    const isDirtyRef = useRef(false);
+    const initialDataLoadedRef = useRef(false);
     const [previewScale, setPreviewScale] = useState(0.65);
     const previewContainerRef = useRef(null);
 
@@ -226,8 +230,20 @@ const InvoiceGenerator = () => {
         setNewColumnName('');
     };
 
+    const hasInitializedRef = useRef(false);
     useEffect(() => {
-        if (id && invoices.length > 0) {
+        hasInitializedRef.current = false;
+        initialDataLoadedRef.current = false;
+    }, [id]);
+
+    useEffect(() => {
+        if (!id) {
+            initialDataLoadedRef.current = true;
+        }
+    }, [id]);
+
+    useEffect(() => {
+        if (id && invoices.length > 0 && !hasInitializedRef.current) {
             const invoice = invoices.find(inv => inv.id === id);
             if (invoice) {
                 setFormData({
@@ -237,6 +253,10 @@ const InvoiceGenerator = () => {
                 });
                 setItems(invoice.items || []);
                 setCustomColumns(invoice.customColumns || []);
+                hasInitializedRef.current = true;
+                setTimeout(() => {
+                    initialDataLoadedRef.current = true;
+                }, 200);
             }
         }
     }, [id, invoices]);
@@ -262,6 +282,62 @@ const InvoiceGenerator = () => {
     const totalAmount = subtotal + gstAmount;
     const balanceDue = totalAmount - formData.advancePaid;
 
+    useEffect(() => {
+        if (initialDataLoadedRef.current) {
+            isDirtyRef.current = true;
+        }
+    }, [formData, items, customColumns]);
+
+    useEffect(() => {
+        if (!initialDataLoadedRef.current || !isDirtyRef.current) return;
+
+        let active = true;
+        const timer = setTimeout(async () => {
+            if (!active) return;
+            setAutosaveStatus('saving');
+            try {
+                const invoiceData = { 
+                    ...formData, 
+                    items, 
+                    customColumns,
+                    amount: totalAmount,
+                    total: totalAmount,
+                    issueDate: formData.invoiceDate,
+                    updatedAt: new Date().toISOString() 
+                };
+                
+                if (id) {
+                    await updateInvoice(id, invoiceData);
+                    if (active) {
+                        setAutosaveStatus('saved');
+                        setLastSaved(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+                        isDirtyRef.current = false;
+                    }
+                } else {
+                    const res = await addInvoice({ ...invoiceData, createdAt: new Date().toISOString() });
+                    if (active) {
+                        setAutosaveStatus('saved');
+                        setLastSaved(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+                        isDirtyRef.current = false;
+                        hasInitializedRef.current = true;
+                        initialDataLoadedRef.current = true;
+                        navigate(`/admin/edit-invoice/${res.id}`, { replace: true });
+                    }
+                }
+            } catch (err) {
+                console.error("Invoice autosave failed:", err);
+                if (active) {
+                    setAutosaveStatus('error');
+                }
+            }
+        }, 5000);
+
+        return () => {
+            active = false;
+            clearTimeout(timer);
+        };
+    }, [formData, items, customColumns, id]);
+
     const handleSave = async () => {
         setIsGenerating(true);
         try {
@@ -274,10 +350,17 @@ const InvoiceGenerator = () => {
                 issueDate: formData.invoiceDate,
                 updatedAt: new Date().toISOString() 
             };
-            if (id) await updateInvoice(id, invoiceData);
-            else await addInvoice({ ...invoiceData, createdAt: new Date().toISOString() });
-
-
+            if (id) {
+                await updateInvoice(id, invoiceData);
+                isDirtyRef.current = false;
+                setAutosaveStatus('saved');
+                setLastSaved(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+            } else {
+                const res = await addInvoice({ ...invoiceData, createdAt: new Date().toISOString() });
+                isDirtyRef.current = false;
+                setAutosaveStatus('saved');
+                setLastSaved(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+            }
             navigate('/admin/invoices');
         } catch (error) {
             useStore.getState().addToast("Save Error: " + error.message, 'error');
@@ -449,6 +532,21 @@ const InvoiceGenerator = () => {
                         <Eye size={14} />
                         <span className="text-[8px] font-black uppercase tracking-widest">Preview</span>
                     </button>
+                    {autosaveStatus !== 'idle' && (
+                        <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white/5 border border-white/10 select-none">
+                            <span className={cn(
+                                "w-1.5 h-1.5 rounded-full shrink-0",
+                                autosaveStatus === 'saving' && "bg-amber-400 animate-pulse",
+                                autosaveStatus === 'saved' && "bg-emerald-400",
+                                autosaveStatus === 'error' && "bg-red-500"
+                            )} />
+                            <span className="text-[8px] font-black uppercase tracking-widest text-zinc-400">
+                                {autosaveStatus === 'saving' && "Saving..."}
+                                {autosaveStatus === 'saved' && `Autosaved ${lastSaved}`}
+                                {autosaveStatus === 'error' && "Autosave error"}
+                            </span>
+                        </div>
+                    )}
                     <button onClick={handleSave} className="h-10 md:h-12 px-3 md:px-6 bg-white/5 hover:bg-white/10 text-white border border-white/10 font-black uppercase tracking-widest text-[9px] md:text-[10px] rounded-xl transition-all flex items-center gap-2">
                         <Save size={14} className="sm:hidden" />
                         <span className="hidden sm:inline">Save</span>

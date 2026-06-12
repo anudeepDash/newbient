@@ -271,28 +271,63 @@ const DocumentHub = () => {
     const [saving, setSaving] = useState(false);
 
     // Google Doc/Sheet form
-    const [googleUrl, setGoogleUrl] = useState('');
+    const [googleUrl, setGoogleUrl] = useState(() => localStorage.getItem('newbi_doc_draft_google_url') || '');
     const [detectedType, setDetectedType] = useState(null);
-    const [docTitle, setDocTitle] = useState('');
-    const [docDescription, setDocDescription] = useState('');
-    const [docTags, setDocTags] = useState('');
-    const [docIsPublic, setDocIsPublic] = useState(true);
+    const [docTitle, setDocTitle] = useState(() => localStorage.getItem('newbi_doc_draft_google_title') || '');
+    const [docDescription, setDocDescription] = useState(() => localStorage.getItem('newbi_doc_draft_google_desc') || '');
+    const [docTags, setDocTags] = useState(() => localStorage.getItem('newbi_doc_draft_google_tags') || '');
+    const [docIsPublic, setDocIsPublic] = useState(() => {
+        const stored = localStorage.getItem('newbi_doc_draft_google_public');
+        return stored === null ? true : stored === 'true';
+    });
 
     // Google Drive form
-    const [driveUrl, setDriveUrl] = useState('');
-    const [driveTitle, setDriveTitle] = useState('');
-    const [driveDescription, setDriveDescription] = useState('');
-    const [driveTags, setDriveTags] = useState('');
-    const [driveIsPublic, setDriveIsPublic] = useState(true);
+    const [driveUrl, setDriveUrl] = useState(() => localStorage.getItem('newbi_doc_draft_drive_url') || '');
+    const [driveTitle, setDriveTitle] = useState(() => localStorage.getItem('newbi_doc_draft_drive_title') || '');
+    const [driveDescription, setDriveDescription] = useState(() => localStorage.getItem('newbi_doc_draft_drive_desc') || '');
+    const [driveTags, setDriveTags] = useState(() => localStorage.getItem('newbi_doc_draft_drive_tags') || '');
+    const [driveIsPublic, setDriveIsPublic] = useState(() => {
+        const stored = localStorage.getItem('newbi_doc_draft_drive_public');
+        return stored === null ? true : stored === 'true';
+    });
 
     // Upload form
     const [selectedFile, setSelectedFile] = useState(null);
-    const [uploadTitle, setUploadTitle] = useState('');
-    const [uploadDescription, setUploadDescription] = useState('');
-    const [uploadTags, setUploadTags] = useState('');
-    const [uploadIsPublic, setUploadIsPublic] = useState(true);
+    const [uploadTitle, setUploadTitle] = useState(() => localStorage.getItem('newbi_doc_draft_upload_title') || '');
+    const [uploadDescription, setUploadDescription] = useState(() => localStorage.getItem('newbi_doc_draft_upload_desc') || '');
+    const [uploadTags, setUploadTags] = useState(() => localStorage.getItem('newbi_doc_draft_upload_tags') || '');
+    const [uploadIsPublic, setUploadIsPublic] = useState(() => {
+        const stored = localStorage.getItem('newbi_doc_draft_upload_public');
+        return stored === null ? true : stored === 'true';
+    });
     const [isDragging, setIsDragging] = useState(false);
     const fileInputRef = useRef(null);
+
+    // Sync Google Doc/Sheet form to localStorage
+    useEffect(() => {
+        localStorage.setItem('newbi_doc_draft_google_url', googleUrl);
+        localStorage.setItem('newbi_doc_draft_google_title', docTitle);
+        localStorage.setItem('newbi_doc_draft_google_desc', docDescription);
+        localStorage.setItem('newbi_doc_draft_google_tags', docTags);
+        localStorage.setItem('newbi_doc_draft_google_public', String(docIsPublic));
+    }, [googleUrl, docTitle, docDescription, docTags, docIsPublic]);
+
+    // Sync Google Drive form to localStorage
+    useEffect(() => {
+        localStorage.setItem('newbi_doc_draft_drive_url', driveUrl);
+        localStorage.setItem('newbi_doc_draft_drive_title', driveTitle);
+        localStorage.setItem('newbi_doc_draft_drive_desc', driveDescription);
+        localStorage.setItem('newbi_doc_draft_drive_tags', driveTags);
+        localStorage.setItem('newbi_doc_draft_drive_public', String(driveIsPublic));
+    }, [driveUrl, driveTitle, driveDescription, driveTags, driveIsPublic]);
+
+    // Sync Upload form to localStorage
+    useEffect(() => {
+        localStorage.setItem('newbi_doc_draft_upload_title', uploadTitle);
+        localStorage.setItem('newbi_doc_draft_upload_desc', uploadDescription);
+        localStorage.setItem('newbi_doc_draft_upload_tags', uploadTags);
+        localStorage.setItem('newbi_doc_draft_upload_public', String(uploadIsPublic));
+    }, [uploadTitle, uploadDescription, uploadTags, uploadIsPublic]);
 
     const resetForm = () => {
         setGoogleUrl(''); setDetectedType(null); setDocTitle(''); setDocDescription(''); setDocTags(''); setDocIsPublic(true);
