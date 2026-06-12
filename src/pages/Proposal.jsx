@@ -1558,67 +1558,67 @@ const Proposal = () => {
                                                 </div>
                                             </div>
                                         )}
-                                        {page.type === 'attachments' && (
-                                            <div className="space-y-12 py-10 px-4 h-full flex flex-col justify-between">
-                                                <div>
-                                                    <div className="mb-10 space-y-3">
-                                                        <h3 className="text-3xl font-black text-black tracking-tight uppercase leading-none">
-                                                            APPENDIX / ATTACHMENTS.
-                                                        </h3>
-                                                        <div className="w-20 h-1.5 bg-neon-green" />
-                                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">
-                                                            SUPPORTING INSTRUMENTS & DOCUMENTATION
-                                                        </p>
-                                                    </div>
-                                                    
-                                                    <div className="grid grid-cols-2 gap-8 mt-12">
-                                                        {(page.attachments || []).map((attachment, idx) => {
-                                                            const isSpreadsheet = attachment.fileType === 'spreadsheet';
-                                                            const isPdf = attachment.fileType === 'pdf';
-                                                            const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(attachment.url)}`;
-                                                            
-                                                            return (
-                                                                <div key={idx} className="p-6 border border-gray-200 rounded-[2rem] flex flex-col justify-between h-44 relative bg-gray-50/50">
-                                                                    <div className="flex items-start justify-between gap-4">
-                                                                        <div className="min-w-0">
-                                                                            <h4 className="text-xs font-black text-black uppercase tracking-wider truncate" title={attachment.name}>
-                                                                                {attachment.name}
-                                                                            </h4>
-                                                                            <p className="text-[8px] font-bold text-gray-400 uppercase tracking-widest mt-1">
-                                                                                {attachment.type === 'file' ? 'Uploaded Storage File' : 'Linked URL'}
-                                                                            </p>
-                                                                        </div>
-                                                                        <span className={cn(
-                                                                            "text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border shrink-0",
-                                                                            isSpreadsheet && "bg-[#107C41]/10 border-[#107C41]/20 text-[#107C41]",
-                                                                            isPdf && "bg-red-500/10 border-red-500/20 text-red-500",
-                                                                            (!isSpreadsheet && !isPdf) && "bg-blue-500/10 border-blue-500/20 text-blue-500"
-                                                                        )}>
-                                                                            {attachment.fileType || 'Link'}
-                                                                        </span>
-                                                                    </div>
-                                                                    
-                                                                    <div className="flex items-end justify-between mt-4">
-                                                                        <a 
-                                                                            href={attachment.url} 
-                                                                            target="_blank" 
-                                                                            rel="noopener noreferrer" 
-                                                                            className="text-[9px] font-black uppercase tracking-widest text-neon-green bg-black hover:bg-zinc-800 transition-colors px-3 py-1.5 rounded-xl inline-block"
-                                                                        >
-                                                                            View Document &rarr;
-                                                                        </a>
-                                                                        
-                                                                        <div className="w-14 h-14 bg-white p-0.5 rounded-lg border border-gray-200 shadow-sm shrink-0">
-                                                                            <img src={qrCodeUrl} alt="QR Access" className="w-full h-full object-contain" />
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            );
-                                                        })}
-                                                    </div>
-                                                </div>
+                                    </div>
+                                )}
+                                {page.type === 'attachments' && (
+                                    <div className="space-y-12 py-10 px-4 h-full flex flex-col justify-between">
+                                        <div>
+                                            <div className="mb-10 space-y-3">
+                                                <h3 className="text-3xl font-black text-black tracking-tight uppercase leading-none">
+                                                    APPENDIX / ATTACHMENTS.
+                                                </h3>
+                                                <div className="w-20 h-1.5 bg-neon-green" />
+                                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">
+                                                    SUPPORTING INSTRUMENTS & DOCUMENTATION
+                                                </p>
                                             </div>
-                                        )}
+                                            
+                                            <div className="grid grid-cols-2 gap-8 mt-12">
+                                                {(page.attachments || []).map((attachment, idx) => {
+                                                    const isSpreadsheet = attachment.fileType === 'spreadsheet';
+                                                    const isPdf = attachment.fileType === 'pdf';
+                                                    const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(attachment.url)}`;
+                                                    
+                                                    return (
+                                                        <div key={idx} className="p-6 border border-gray-200 rounded-[2rem] flex flex-col justify-between h-44 relative bg-gray-50/50">
+                                                            <div className="flex items-start justify-between gap-4">
+                                                                <div className="min-w-0">
+                                                                    <h4 className="text-xs font-black text-black uppercase tracking-wider truncate" title={attachment.name}>
+                                                                        {attachment.name}
+                                                                    </h4>
+                                                                    <p className="text-[8px] font-bold text-gray-400 uppercase tracking-widest mt-1">
+                                                                        {attachment.type === 'file' ? 'Uploaded Storage File' : 'Linked URL'}
+                                                                    </p>
+                                                                </div>
+                                                                <span className={cn(
+                                                                    "text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border shrink-0",
+                                                                    isSpreadsheet && "bg-[#107C41]/10 border-[#107C41]/20 text-[#107C41]",
+                                                                    isPdf && "bg-red-500/10 border-red-500/20 text-red-500",
+                                                                    (!isSpreadsheet && !isPdf) && "bg-blue-500/10 border-blue-500/20 text-blue-500"
+                                                                )}>
+                                                                    {attachment.fileType || 'Link'}
+                                                                </span>
+                                                            </div>
+                                                            
+                                                            <div className="flex items-end justify-between mt-4">
+                                                                <a 
+                                                                    href={attachment.url} 
+                                                                    target="_blank" 
+                                                                    rel="noopener noreferrer" 
+                                                                    className="text-[9px] font-black uppercase tracking-widest text-neon-green bg-black hover:bg-zinc-800 transition-colors px-3 py-1.5 rounded-xl inline-block"
+                                                                >
+                                                                    View Document &rarr;
+                                                                </a>
+                                                                
+                                                                <div className="w-14 h-14 bg-white p-0.5 rounded-lg border border-gray-200 shadow-sm shrink-0">
+                                                                    <img src={qrCodeUrl} alt="QR Access" className="w-full h-full object-contain" />
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
                                     </div>
                                 )}
                                 </div>
