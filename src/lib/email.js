@@ -17,7 +17,8 @@ export const generateOfficialHTML = (data) => {
         category = "OFFICIAL",
         ctaText = "", 
         ctaUrl = "#",
-        theme = "light" 
+        theme = "light",
+        isPreview = false
     } = data;
 
     const isDark = theme === 'dark';
@@ -34,6 +35,18 @@ export const generateOfficialHTML = (data) => {
     const headerBg = '#0a0a0a';
     const headerBorder = '#1a1a1a';
     const logoUrl = `${baseUrl}/logo_full.png`;
+
+    const mediaQueries = (isPreview || isDark) ? '' : `
+        @media (prefers-color-scheme: dark) {
+            body { background-color: #000000 !important; color: #ffffff !important; }
+            .container { background-color: #0a0a0a !important; border-color: #1a1a1a !important; color: #ffffff !important; }
+            .title { color: #ffffff !important; }
+            .body-text { color: #888888 !important; }
+            .footer { background-color: #050505 !important; border-color: #1a1a1a !important; }
+            .social-img { filter: invert(1) !important; }
+            .category-badge { background: ${NEWBI_GREEN} !important; }
+        }
+    `;
 
     return `
         <!DOCTYPE html>
@@ -68,48 +81,30 @@ export const generateOfficialHTML = (data) => {
                     .body-text { font-size: 14px !important; line-height: 1.5 !important; }
                 }
 
-                @media (prefers-color-scheme: dark) {
-                    body { background-color: #000000 !important; color: #ffffff !important; }
-                    .container { background-color: #0a0a0a !important; border-color: #1a1a1a !important; }
-                    .title { color: #ffffff !important; }
-                    .body-text { color: #888888 !important; }
-                    .footer { background-color: #050505 !important; border-color: #1a1a1a !important; }
-                    .social-img { filter: invert(1) !important; }
-                    .category-badge { background: ${NEWBI_GREEN} !important; }
-                }
-
-                @media (prefers-color-scheme: light) {
-                    body { background-color: #fcfcfc !important; color: #111111 !important; }
-                    .container { background-color: #ffffff !important; border-color: #eaeaea !important; }
-                    .title { color: #111111 !important; }
-                    .body-text { color: #444444 !important; }
-                    .footer { background-color: #fafafa !important; border-color: #eaeaea !important; }
-                    .social-img { filter: none !important; }
-                    .category-badge { background: ${NEWBI_GREEN} !important; }
-                }
+                ${mediaQueries}
             </style>
         </head>
-        <body>
+        <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: ${bgColor}; color: ${textColor}; margin: 0; padding: 0;">
             <span class="preheader">${messageBody.replace(/<[^>]*>?/gm, '').substring(0, 150)}</span>
-            <div class="container">
-                <div class="header">
+            <div class="container" style="width: 100%; max-width: 600px; margin: 40px auto; background-color: ${containerBg}; border: 1px solid ${borderColor}; border-radius: 20px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.02); color: ${textColor};">
+                <div class="header" style="padding: 40px; background-color: ${headerBg}; border-bottom: 1px solid ${headerBorder}; text-align: left;">
                     <!-- Brand Logo -->
-                    <img src="${baseUrl}/logo_full.png" alt="Newbi" style="display: block; margin: 0; height: 25px; width: auto; max-width: 180px;">
+                    <img src="${logoUrl}" alt="Newbi" style="display: block; margin: 0; height: 25px; width: auto; max-width: 180px;">
                 </div>
-                <div class="content">
-                    <div class="category-badge">${category}</div>
-                    <h1 class="title">${headerText}</h1>
-                    <div class="body-text">${messageBody}</div>
-                    ${ctaText ? `<a href="${ctaUrl}" class="cta-button">${ctaText}</a>` : ''}
+                <div class="content" style="padding: 50px; text-align: left;">
+                    <div class="category-badge" style="display: inline-block; padding: 6px 12px; background: ${NEWBI_GREEN}; color: #000000; font-size: 9px; font-weight: 900; border-radius: 6px; letter-spacing: 2px; margin-bottom: 20px; text-transform: uppercase;">${category}</div>
+                    <h1 class="title" style="font-size: 28px; font-weight: 800; color: ${textColor}; margin-bottom: 24px; line-height: 1.2; letter-spacing: -0.5px; margin-top: 0;">${headerText}</h1>
+                    <div class="body-text" style="color: ${subTextColor}; font-size: 15px; line-height: 1.6; font-weight: 400; margin-bottom: 40px;">${messageBody}</div>
+                    ${ctaText ? `<a href="${ctaUrl}" class="cta-button" style="display: inline-block; padding: 16px 30px; background-color: ${NEWBI_GREEN}; color: #000000 !important; text-decoration: none; font-weight: 700; font-size: 12px; border-radius: 10px;">${ctaText}</a>` : ''}
                 </div>
-                <div class="footer">
-                    <div class="social-links">
-                        <a href="https://www.instagram.com/newbi.live" class="social-icon"><img src="https://img.icons8.com/material-outlined/48/888888/instagram-new.png" class="social-img" alt="Instagram"></a>
-                        <a href="https://linkedin.com/company/newbi-ent" class="social-icon"><img src="https://img.icons8.com/material-outlined/48/888888/linkedin.png" class="social-img" alt="LinkedIn"></a>
-                        <a href="https://newbi.live" class="social-icon"><img src="https://img.icons8.com/material-outlined/48/888888/domain.png" class="social-img" alt="Website"></a>
+                <div class="footer" style="padding: 40px 50px; background-color: ${isDark ? '#050505' : '#fafafa'}; border-top: 1px solid ${borderColor}; text-align: center;">
+                    <div class="social-links" style="margin-bottom: 20px;">
+                        <a href="https://www.instagram.com/newbi.live" class="social-icon" style="display: inline-block; margin: 0 12px;"><img src="https://img.icons8.com/material-outlined/48/888888/instagram-new.png" class="social-img" style="width: 18px; height: 18px; opacity: 0.6; ${isDark ? 'filter: invert(1);' : ''}" alt="Instagram"></a>
+                        <a href="https://linkedin.com/company/newbi-ent" class="social-icon" style="display: inline-block; margin: 0 12px;"><img src="https://img.icons8.com/material-outlined/48/888888/linkedin.png" class="social-img" style="width: 18px; height: 18px; opacity: 0.6; ${isDark ? 'filter: invert(1);' : ''}" alt="LinkedIn"></a>
+                        <a href="https://newbi.live" class="social-icon" style="display: inline-block; margin: 0 12px;"><img src="https://img.icons8.com/material-outlined/48/888888/domain.png" class="social-img" style="width: 18px; height: 18px; opacity: 0.6; ${isDark ? 'filter: invert(1);' : ''}" alt="Website"></a>
                     </div>
-                    <p class="footer-text">© ${new Date().getFullYear()} NEWBI ENTERTAINMENT. ALL RIGHTS RESERVED.</p>
-                    <p class="footer-text" style="margin-top: 10px;"><a href="https://newbi.live/unsubscribe" style="color: #777; text-decoration: underline;">UNSUBSCRIBE FROM OFFICIAL LIST</a></p>
+                    <p class="footer-text" style="font-size: 10px; font-weight: 800; color: #777; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 15px; margin-top: 0;">© ${new Date().getFullYear()} NEWBI ENTERTAINMENT. ALL RIGHTS RESERVED.</p>
+                    <p class="footer-text" style="margin-top: 10px; font-size: 10px; font-weight: 800; color: #777; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0;"><a href="https://newbi.live/unsubscribe" style="color: #777; text-decoration: underline;">UNSUBSCRIBE FROM OFFICIAL LIST</a></p>
                 </div>
             </div>
         </body>
@@ -467,7 +462,8 @@ export const generateInvoiceEmailHTML = (data) => {
         amount = "0",
         dueDate = "",
         invoiceUrl = "#",
-        theme = "light"
+        theme = "light",
+        isPreview = false
     } = data;
 
     const isDark = theme === 'dark';
@@ -484,6 +480,23 @@ export const generateInvoiceEmailHTML = (data) => {
     const headerBg = '#0a0a0a';
     const headerBorder = '#1a1a1a';
     const logoUrl = `${baseUrl}/logo_full.png`;
+
+    const mediaQueries = (isPreview || isDark) ? '' : `
+        @media (prefers-color-scheme: dark) {
+            body { background-color: #000000 !important; color: #ffffff !important; }
+            .container { background-color: #0a0a0a !important; border-color: #1a1a1a !important; color: #ffffff !important; }
+            .title { color: #ffffff !important; }
+            .body-text { color: #888888 !important; }
+            .footer { background-color: #050505 !important; border-color: #1a1a1a !important; }
+            .social-img { filter: invert(1) !important; }
+            .category-badge { background: ${NEWBI_GREEN} !important; }
+            .attachment-card { background: #111111 !important; border-color: #1e1e1e !important; }
+            .attachment-label { color: #888888 !important; }
+            .attachment-value { color: #ffffff !important; }
+            .attachment-total { background: #0d1f0d !important; }
+            .attachment-total-value { color: #ffffff !important; }
+        }
+    `;
 
     return `
         <!DOCTYPE html>
@@ -535,59 +548,31 @@ export const generateInvoiceEmailHTML = (data) => {
                     .body-text { font-size: 14px !important; line-height: 1.5 !important; }
                 }
 
-                @media (prefers-color-scheme: dark) {
-                    body { background-color: #000000 !important; color: #ffffff !important; }
-                    .container { background-color: #0a0a0a !important; border-color: #1a1a1a !important; }
-                    .title { color: #ffffff !important; }
-                    .body-text { color: #888888 !important; }
-                    .footer { background-color: #050505 !important; border-color: #1a1a1a !important; }
-                    .social-img { filter: invert(1) !important; }
-                    .category-badge { background: ${NEWBI_GREEN} !important; }
-                    .attachment-card { background: #111111 !important; border-color: #1e1e1e !important; }
-                    .attachment-label { color: #888888 !important; }
-                    .attachment-value { color: #ffffff !important; }
-                    .attachment-total { background: #0d1f0d !important; }
-                    .attachment-total-value { color: #ffffff !important; }
-                }
-
-                @media (prefers-color-scheme: light) {
-                    body { background-color: #fcfcfc !important; color: #111111 !important; }
-                    .container { background-color: #ffffff !important; border-color: #eaeaea !important; }
-                    .title { color: #111111 !important; }
-                    .body-text { color: #444444 !important; }
-                    .footer { background-color: #fafafa !important; border-color: #eaeaea !important; }
-                    .social-img { filter: none !important; }
-                    .category-badge { background: ${NEWBI_GREEN} !important; }
-                    .attachment-card { background: #f8f9fa !important; border-color: #e5e7eb !important; }
-                    .attachment-label { color: #444444 !important; }
-                    .attachment-value { color: #111111 !important; }
-                    .attachment-total { background: #f0fdf4 !important; }
-                    .attachment-total-value { color: #111111 !important; }
-                }
+                ${mediaQueries}
             </style>
         </head>
-        <body>
+        <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: ${bgColor}; color: ${textColor}; margin: 0; padding: 0;">
             <span class="preheader">Invoice ${invoiceNumber} for ${clientName} — ₹${amount}</span>
-            <div class="container">
-                <div class="header">
+            <div class="container" style="width: 100%; max-width: 600px; margin: 40px auto; background-color: ${containerBg}; border: 1px solid ${borderColor}; border-radius: 20px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.02); color: ${textColor};">
+                <div class="header" style="padding: 40px; background-color: ${headerBg}; border-bottom: 1px solid ${headerBorder}; text-align: left;">
                     <!-- Brand Logo -->
-                    <img src="${baseUrl}/logo_full.png" alt="Newbi" style="display: block; margin: 0; height: 25px; width: auto; max-width: 180px;">
+                    <img src="${logoUrl}" alt="Newbi" style="display: block; margin: 0; height: 25px; width: auto; max-width: 180px;">
                 </div>
-                <div class="content">
-                    <div class="category-badge">INVOICE</div>
-                    <h1 class="title">${headerText}</h1>
-                    <div class="body-text">${messageBody}</div>
+                <div class="content" style="padding: 50px; text-align: left;">
+                    <div class="category-badge" style="display: inline-block; padding: 6px 12px; background: ${NEWBI_GREEN}; color: #000000; font-size: 9px; font-weight: 900; border-radius: 6px; letter-spacing: 2px; margin-bottom: 20px; text-transform: uppercase;">INVOICE</div>
+                    <h1 class="title" style="font-size: 28px; font-weight: 800; color: ${textColor}; margin-bottom: 24px; line-height: 1.2; letter-spacing: -0.5px; margin-top: 0;">${headerText}</h1>
+                    <div class="body-text" style="color: ${subTextColor}; font-size: 15px; line-height: 1.6; font-weight: 400; margin-bottom: 30px;">${messageBody}</div>
 
                     <!-- Attachment-Style Invoice Card (Table-based for maximum email client compatibility) -->
-                    <table class="attachment-card" width="100%" cellpadding="0" cellspacing="0" style="width: 100%; border-collapse: collapse; background: ${cardBg}; border: 1px solid ${cardBorder}; border-radius: 16px; margin: 30px 0; overflow: hidden;">
+                    <table class="attachment-card" width="100%" cellpadding="0" cellspacing="0" style="width: 100%; border-collapse: collapse; background: ${cardBg}; border: 1px solid ${cardBorder}; border-radius: 16px; margin: 30px 0; overflow: hidden; color: ${textColor};">
                         <tr>
-                            <td class="attachment-header" style="padding: 16px 20px; border-bottom: 1px solid ${cardBorder};">
+                            <td class="attachment-header" style="padding: 16px 20px; border-bottom: 1px solid ${cardBorder}; background-color: ${cardBg};">
                                 <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse: collapse;">
                                     <tr>
                                         <td width="44" valign="middle" style="width: 44px; padding-right: 14px;">
                                             <div class="attachment-icon" style="width: 44px; height: 44px; background: linear-gradient(135deg, #FF4444, #CC0000); border-radius: 10px; text-align: center; line-height: 44px; color: white; font-weight: 900; font-size: 11px; letter-spacing: 1px;">PDF</div>
                                         </td>
-                                        <td valign="middle">
+                                        <td valign="middle" style="text-align: left;">
                                             <p class="attachment-filename" style="font-size: 13px; font-weight: 800; color: ${textColor}; letter-spacing: -0.3px; margin: 0;">Invoice-${invoiceNumber}.pdf</p>
                                             <p class="attachment-filetype" style="font-size: 9px; font-weight: 700; color: ${subTextColor}; text-transform: uppercase; letter-spacing: 1.5px; margin: 3px 0 0;">PDF Document • Newbi Entertainment</p>
                                         </td>
@@ -596,14 +581,14 @@ export const generateInvoiceEmailHTML = (data) => {
                             </td>
                         </tr>
                         <tr>
-                            <td class="attachment-body" style="padding: 20px 20px 10px 20px;">
+                            <td class="attachment-body" style="padding: 20px 20px 10px 20px; background-color: ${cardBg};">
                                 <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse: collapse;">
                                     <tr>
                                         <td class="attachment-row" style="padding: 10px 0; border-bottom: 1px dashed ${cardBorder};">
                                             <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse: collapse;">
                                                 <tr>
-                                                    <td align="left" class="attachment-label" style="font-size: 10px; font-weight: 800; color: ${subTextColor}; text-transform: uppercase; letter-spacing: 1.5px;">Invoice Number</td>
-                                                    <td align="right" class="attachment-value" style="font-size: 13px; font-weight: 700; color: ${textColor};">${invoiceNumber}</td>
+                                                    <td align="left" class="attachment-label" style="font-size: 10px; font-weight: 800; color: ${subTextColor}; text-transform: uppercase; letter-spacing: 1.5px; text-align: left;">Invoice Number</td>
+                                                    <td align="right" class="attachment-value" style="font-size: 13px; font-weight: 700; color: ${textColor}; text-align: right;">${invoiceNumber}</td>
                                                 </tr>
                                             </table>
                                         </td>
@@ -612,8 +597,8 @@ export const generateInvoiceEmailHTML = (data) => {
                                         <td class="attachment-row" style="padding: 10px 0; border-bottom: 1px dashed ${cardBorder};">
                                             <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse: collapse;">
                                                 <tr>
-                                                    <td align="left" class="attachment-label" style="font-size: 10px; font-weight: 800; color: ${subTextColor}; text-transform: uppercase; letter-spacing: 1.5px;">Client</td>
-                                                    <td align="right" class="attachment-value" style="font-size: 13px; font-weight: 700; color: ${textColor};">${clientName}</td>
+                                                    <td align="left" class="attachment-label" style="font-size: 10px; font-weight: 800; color: ${subTextColor}; text-transform: uppercase; letter-spacing: 1.5px; text-align: left;">Client</td>
+                                                    <td align="right" class="attachment-value" style="font-size: 13px; font-weight: 700; color: ${textColor}; text-align: right;">${clientName}</td>
                                                 </tr>
                                             </table>
                                         </td>
@@ -623,8 +608,8 @@ export const generateInvoiceEmailHTML = (data) => {
                                         <td class="attachment-row" style="padding: 10px 0; border-bottom: none;">
                                             <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse: collapse;">
                                                 <tr>
-                                                    <td align="left" class="attachment-label" style="font-size: 10px; font-weight: 800; color: ${subTextColor}; text-transform: uppercase; letter-spacing: 1.5px;">Due Date</td>
-                                                    <td align="right" class="attachment-value" style="font-size: 13px; font-weight: 700; color: ${textColor};">${dueDate}</td>
+                                                    <td align="left" class="attachment-label" style="font-size: 10px; font-weight: 800; color: ${subTextColor}; text-transform: uppercase; letter-spacing: 1.5px; text-align: left;">Due Date</td>
+                                                    <td align="right" class="attachment-value" style="font-size: 13px; font-weight: 700; color: ${textColor}; text-align: right;">${dueDate}</td>
                                                 </tr>
                                             </table>
                                         </td>
@@ -637,8 +622,8 @@ export const generateInvoiceEmailHTML = (data) => {
                             <td class="attachment-total" style="background: ${isDark ? '#0d1f0d' : '#f0fdf4'}; border-top: 2px solid ${NEWBI_GREEN}; padding: 16px 20px;">
                                 <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse: collapse;">
                                     <tr>
-                                        <td align="left" class="attachment-total-label" style="font-size: 10px; font-weight: 900; color: ${NEWBI_GREEN}; text-transform: uppercase; letter-spacing: 2px; valign: middle;">Total Amount</td>
-                                        <td align="right" class="attachment-total-value" style="font-size: 22px; font-weight: 900; color: ${textColor}; letter-spacing: -1px; valign: middle;">₹${amount}</td>
+                                        <td align="left" class="attachment-total-label" style="font-size: 10px; font-weight: 900; color: ${NEWBI_GREEN}; text-transform: uppercase; letter-spacing: 2px; valign: middle; text-align: left;">Total Amount</td>
+                                        <td align="right" class="attachment-total-value" style="font-size: 22px; font-weight: 900; color: ${textColor}; letter-spacing: -1px; valign: middle; text-align: right;">₹${amount}</td>
                                     </tr>
                                 </table>
                             </td>
@@ -651,16 +636,16 @@ export const generateInvoiceEmailHTML = (data) => {
                     </table>
 
                     <div style="text-align: center; margin-top: 35px;">
-                        <a href="${invoiceUrl}" class="cta-button">View Full Invoice</a>
+                        <a href="${invoiceUrl}" class="cta-button" style="display: inline-block; padding: 16px 30px; background-color: ${NEWBI_GREEN}; color: #000000 !important; text-decoration: none; font-weight: 700; font-size: 12px; border-radius: 10px; letter-spacing: 1px; text-transform: uppercase;">View Full Invoice</a>
                     </div>
                 </div>
-                <div class="footer">
-                    <div class="social-links">
-                        <a href="https://www.instagram.com/newbi.live" class="social-icon"><img src="https://img.icons8.com/material-outlined/48/888888/instagram-new.png" class="social-img" alt="Instagram"></a>
-                        <a href="https://linkedin.com/company/newbi-ent" class="social-icon"><img src="https://img.icons8.com/material-outlined/48/888888/linkedin.png" class="social-img" alt="LinkedIn"></a>
-                        <a href="https://newbi.live" class="social-icon"><img src="https://img.icons8.com/material-outlined/48/888888/domain.png" class="social-img" alt="Website"></a>
+                <div class="footer" style="padding: 40px 50px; background-color: ${isDark ? '#050505' : '#fafafa'}; border-top: 1px solid ${borderColor}; text-align: center;">
+                    <div class="social-links" style="margin-bottom: 20px;">
+                        <a href="https://www.instagram.com/newbi.live" class="social-icon" style="display: inline-block; margin: 0 12px;"><img src="https://img.icons8.com/material-outlined/48/888888/instagram-new.png" class="social-img" style="width: 18px; height: 18px; opacity: 0.6; ${isDark ? 'filter: invert(1);' : ''}" alt="Instagram"></a>
+                        <a href="https://linkedin.com/company/newbi-ent" class="social-icon" style="display: inline-block; margin: 0 12px;"><img src="https://img.icons8.com/material-outlined/48/888888/linkedin.png" class="social-img" style="width: 18px; height: 18px; opacity: 0.6; ${isDark ? 'filter: invert(1);' : ''}" alt="LinkedIn"></a>
+                        <a href="https://newbi.live" class="social-icon" style="display: inline-block; margin: 0 12px;"><img src="https://img.icons8.com/material-outlined/48/888888/domain.png" class="social-img" style="width: 18px; height: 18px; opacity: 0.6; ${isDark ? 'filter: invert(1);' : ''}" alt="Website"></a>
                     </div>
-                    <p class="footer-text">© ${new Date().getFullYear()} NEWBI ENTERTAINMENT. ALL RIGHTS RESERVED.</p>
+                    <p class="footer-text" style="font-size: 10px; font-weight: 800; color: #777; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 15px; margin-top: 0;">© ${new Date().getFullYear()} NEWBI ENTERTAINMENT. ALL RIGHTS RESERVED.</p>
                 </div>
             </div>
         </body>
@@ -744,7 +729,8 @@ export const generateWeeklyHTML = (data) => {
     const { 
         summary = "The official Weekly Newsletter from Concert Zone.",
         messageBody = "", 
-        theme = "dark" 
+        theme = "dark",
+        isPreview = false
     } = data;
 
     const isDark = theme === 'dark';
@@ -756,6 +742,22 @@ export const generateWeeklyHTML = (data) => {
     const cardBg = isDark ? '#111111' : '#ffffff';
     const accent = isDark ? '#00f2ff' : '#008899';
     const dateStr = new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }).toUpperCase();
+    const baseUrl = getBaseUrl();
+
+    // Dynamic header: dark theme uses dark bg with dark logo; light theme uses white bg with light logo
+    const headerBg = isDark ? '#0a0a0a' : '#ffffff';
+    const headerBorder = isDark ? '#1a1a1a' : '#e5e7eb';
+    const logoSrc = isDark ? `${baseUrl}/weekly_logo_dark.png` : `${baseUrl}/weekly_logo_light.png`;
+
+    // Media queries: omit entirely for preview; omit for dark (preserve dark); add dark override for light theme emails
+    const mediaQueries = (isPreview || isDark) ? '' : `
+        @media (prefers-color-scheme: dark) {
+            body { background-color: #000000 !important; color: #f8fafc !important; }
+            .container { background-color: #080808 !important; border-color: #1e293b !important; }
+            .footer { background-color: #040404 !important; border-color: #1e293b !important; }
+            .social-img { filter: invert(1) !important; }
+        }
+    `;
 
     return `
         <!DOCTYPE html>
@@ -763,14 +765,10 @@ export const generateWeeklyHTML = (data) => {
         <head>
             <meta charset="utf-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <meta name="color-scheme" content="light dark">
-            <meta name="supported-color-schemes" content="light dark">
+            <meta name="color-scheme" content="${isDark ? 'dark' : 'light'}">
+            <meta name="supported-color-schemes" content="${isDark ? 'dark' : 'light'} dark">
             <title>Weekly by Concert Zone</title>
             <style>
-                :root {
-                    color-scheme: light dark;
-                    supported-color-schemes: light dark;
-                }
                 .preheader { display: none !important; visibility: hidden; opacity: 0; color: transparent; height: 0; width: 0; }
                 body { 
                     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
@@ -792,8 +790,8 @@ export const generateWeeklyHTML = (data) => {
                 .header { 
                     padding: 40px 40px 20px; 
                     text-align: center; 
-                    background-color: #0a0a0a;
-                    border-bottom: 1px solid #1a1a1a;
+                    background-color: ${headerBg};
+                    border-bottom: 1px solid ${headerBorder};
                 }
                 .header img { 
                     width: 100%; 
@@ -843,10 +841,6 @@ export const generateWeeklyHTML = (data) => {
                 .social-icon { 
                     display: inline-block; 
                     margin: 0 10px; 
-                    transition: transform 0.2s;
-                }
-                .social-icon:hover {
-                    transform: scale(1.1);
                 }
                 .social-img { 
                     width: 18px; 
@@ -861,11 +855,6 @@ export const generateWeeklyHTML = (data) => {
                     text-decoration: none; 
                     text-transform: uppercase; 
                     letter-spacing: 1px; 
-                    border-bottom: 1px solid transparent;
-                    transition: border-color 0.2s;
-                }
-                .unsubscribe-link:hover {
-                    border-bottom-color: ${accent};
                 }
                 .content p { 
                     line-height: 1.8; 
@@ -881,16 +870,11 @@ export const generateWeeklyHTML = (data) => {
                     max-width: 100%; 
                 }
                 
-                /* Premium interactive card hover styles */
+                /* Story card hover styles */
                 .story-card {
                     background: ${cardBg};
                     border: 1px solid ${borderColor};
                     border-radius: 20px;
-                    transition: all 0.3s ease;
-                }
-                .story-card:hover {
-                    border-color: ${accent} !important;
-                    box-shadow: 0 10px 25px rgba(0, 242, 255, 0.05);
                 }
                 
                 /* Interactive details summary accordion */
@@ -900,7 +884,6 @@ export const generateWeeklyHTML = (data) => {
                     border-radius: 16px;
                     padding: 16px;
                     margin-bottom: 20px;
-                    transition: all 0.3s;
                 }
                 summary {
                     font-weight: 800;
@@ -930,30 +913,31 @@ export const generateWeeklyHTML = (data) => {
                     .mobile-w-full { width: 100% !important; max-width: 100% !important; margin-bottom: 15px !important; }
                 }
 
+                ${mediaQueries}
 
             </style>
         </head>
-        <body>
+        <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: ${bgColor}; color: ${textColor}; margin: 0; padding: 0;">
             <span class="preheader">${summary}</span>
-            <div class="container">
-                <div class="header">
+            <div class="container" style="max-width: 600px; margin: 40px auto; background-color: ${containerBg}; border: 1px solid ${borderColor}; border-radius: 32px; overflow: hidden; box-shadow: 0 30px 60px rgba(0,0,0,0.15); color: ${textColor};">
+                <div class="header" style="padding: 40px 40px 20px; text-align: center; background-color: ${headerBg}; border-bottom: 1px solid ${headerBorder};">
                     <!-- Brand Logo -->
-                    <img src="${getBaseUrl()}/weekly_logo_dark.png" alt="WEEKLY BY CONCERT ZONE" style="display: block; margin: 0 auto; max-width: 320px; width: 100%; height: auto;">
+                    <img src="${logoSrc}" alt="WEEKLY BY CONCERT ZONE" style="display: block; margin: 0 auto; max-width: 320px; width: 100%; height: auto;">
                     <div>
-                        <span class="date-badge">${dateStr}</span>
+                        <span class="date-badge" style="display: inline-block; margin-top: 15px; padding: 4px 12px; background: ${isDark ? 'rgba(0,242,255,0.1)' : 'rgba(0,136,153,0.1)'}; border: 1px solid ${isDark ? 'rgba(0,242,255,0.2)' : 'rgba(0,136,153,0.2)'}; border-radius: 12px; font-size: 9px; font-weight: 900; letter-spacing: 3px; color: ${accent};">${dateStr}</span>
                     </div>
                 </div>
-                <div class="content">
+                <div class="content" style="padding: 40px 0; color: ${textColor};">
                     ${messageBody}
                 </div>
-                <div class="footer">
-                    <div class="social-links">
-                        <a href="https://www.instagram.com/newbi.live" class="social-icon"><img src="https://img.icons8.com/material-outlined/48/888888/instagram-new.png" class="social-img" alt="Instagram"></a>
-                        <a href="https://linkedin.com/company/newbi-ent" class="social-icon"><img src="https://img.icons8.com/material-outlined/48/888888/linkedin.png" class="social-img" alt="LinkedIn"></a>
-                        <a href="https://newbi.live" class="social-icon"><img src="https://img.icons8.com/material-outlined/48/888888/domain.png" class="social-img" alt="Website"></a>
+                <div class="footer" style="padding: 40px 40px; border-top: 1px solid ${borderColor}; text-align: center; background-color: ${isDark ? '#040404' : '#f3f4f6'};">
+                    <div class="social-links" style="margin-bottom: 25px;">
+                        <a href="https://www.instagram.com/newbi.live" class="social-icon" style="display: inline-block; margin: 0 10px;"><img src="https://img.icons8.com/material-outlined/48/888888/instagram-new.png" class="social-img" style="width: 18px; height: 18px; opacity: 0.6; ${isDark ? 'filter: invert(1);' : ''}" alt="Instagram"></a>
+                        <a href="https://linkedin.com/company/newbi-ent" class="social-icon" style="display: inline-block; margin: 0 10px;"><img src="https://img.icons8.com/material-outlined/48/888888/linkedin.png" class="social-img" style="width: 18px; height: 18px; opacity: 0.6; ${isDark ? 'filter: invert(1);' : ''}" alt="LinkedIn"></a>
+                        <a href="https://newbi.live" class="social-icon" style="display: inline-block; margin: 0 10px;"><img src="https://img.icons8.com/material-outlined/48/888888/domain.png" class="social-img" style="width: 18px; height: 18px; opacity: 0.6; ${isDark ? 'filter: invert(1);' : ''}" alt="Website"></a>
                     </div>
-                    <p class="footer-text">© ${new Date().getFullYear()} CONCERT ZONE. ALL RIGHTS RESERVED.<br/>A SUBSIDIARY OF NEWBI ENTERTAINMENT.</p>
-                    <a href="https://newbi.live/unsubscribe" class="unsubscribe-link">UNSUBSCRIBE FROM WEEKLY BRIEFINGS</a>
+                    <p class="footer-text" style="font-size: 9px; font-weight: 800; color: ${isDark ? '#475569' : '#9ca3af'}; text-transform: uppercase; letter-spacing: 3px; margin-bottom: 20px; line-height: 1.6;">© ${new Date().getFullYear()} CONCERT ZONE. ALL RIGHTS RESERVED.<br/>A SUBSIDIARY OF NEWBI ENTERTAINMENT.</p>
+                    <a href="https://newbi.live/unsubscribe" class="unsubscribe-link" style="font-size: 8px; font-weight: 700; color: ${accent}; text-decoration: none; text-transform: uppercase; letter-spacing: 1px;">UNSUBSCRIBE FROM WEEKLY BRIEFINGS</a>
                 </div>
             </div>
         </body>
@@ -1064,7 +1048,8 @@ export const generateProposalEmailHTML = (data) => {
         clientName = "Client",
         projectName = "",
         proposalUrl = "#",
-        theme = "light"
+        theme = "light",
+        isPreview = false
     } = data;
 
     const isDark = theme === 'dark';
@@ -1082,14 +1067,29 @@ export const generateProposalEmailHTML = (data) => {
     const headerBorder = '#1a1a1a';
     const logoUrl = `${baseUrl}/logo_full.png`;
 
+    const mediaQueries = (isPreview || isDark) ? '' : `
+        @media (prefers-color-scheme: dark) {
+            body { background-color: #000000 !important; color: #ffffff !important; }
+            .container { background-color: #0a0a0a !important; border-color: #1a1a1a !important; color: #ffffff !important; }
+            .title { color: #ffffff !important; }
+            .body-text { color: #888888 !important; }
+            .footer { background-color: #050505 !important; border-color: #1a1a1a !important; }
+            .social-img { filter: invert(1) !important; }
+            .category-badge { background: ${NEWBI_GREEN} !important; }
+            .attachment-card { background: #111111 !important; border-color: #1e1e1e !important; }
+            .attachment-label { color: #888888 !important; }
+            .attachment-value { color: #ffffff !important; }
+        }
+    `;
+
     return `
         <!DOCTYPE html>
         <html>
         <head>
             <meta charset="utf-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <meta name="color-scheme" content="light dark">
-            <meta name="supported-color-schemes" content="light dark">
+            <meta name="color-scheme" content="${isDark ? 'dark' : 'light'}">
+            <meta name="supported-color-schemes" content="${isDark ? 'dark' : 'light'} dark">
             <style>
                 .preheader { display: none !important; visibility: hidden; opacity: 0; color: transparent; height: 0; width: 0; }
                 body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: ${bgColor}; color: ${textColor}; margin: 0; padding: 0; }
@@ -1129,44 +1129,20 @@ export const generateProposalEmailHTML = (data) => {
                     .body-text { font-size: 14px !important; line-height: 1.5 !important; }
                 }
 
-                @media (prefers-color-scheme: dark) {
-                    body { background-color: #000000 !important; color: #ffffff !important; }
-                    .container { background-color: #0a0a0a !important; border-color: #1a1a1a !important; }
-                    .title { color: #ffffff !important; }
-                    .body-text { color: #888888 !important; }
-                    .footer { background-color: #050505 !important; border-color: #1a1a1a !important; }
-                    .social-img { filter: invert(1) !important; }
-                    .category-badge { background: ${NEWBI_GREEN} !important; }
-                    .attachment-card { background: #111111 !important; border-color: #1e1e1e !important; }
-                    .attachment-label { color: #888888 !important; }
-                    .attachment-value { color: #ffffff !important; }
-                }
-
-                @media (prefers-color-scheme: light) {
-                    body { background-color: #fcfcfc !important; color: #111111 !important; }
-                    .container { background-color: #ffffff !important; border-color: #eaeaea !important; }
-                    .title { color: #111111 !important; }
-                    .body-text { color: #444444 !important; }
-                    .footer { background-color: #fafafa !important; border-color: #eaeaea !important; }
-                    .social-img { filter: none !important; }
-                    .category-badge { background: ${NEWBI_GREEN} !important; }
-                    .attachment-card { background: #f8f9fa !important; border-color: #e5e7eb !important; }
-                    .attachment-label { color: #444444 !important; }
-                    .attachment-value { color: #111111 !important; }
-                }
+                ${mediaQueries}
             </style>
         </head>
-        <body>
+        <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: ${bgColor}; color: ${textColor}; margin: 0; padding: 0;">
             <span class="preheader">Proposal ${proposalNumber} for ${clientName}</span>
-            <div class="container">
-                <div class="header">
+            <div class="container" style="width: 100%; max-width: 600px; margin: 40px auto; background-color: ${containerBg}; border: 1px solid ${borderColor}; border-radius: 20px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.02); color: ${textColor};">
+                <div class="header" style="padding: 40px; background-color: ${headerBg}; border-bottom: 1px solid ${headerBorder}; text-align: left;">
                     <!-- Brand Logo -->
                     <img src="${baseUrl}/logo_full.png" alt="Newbi" style="display: block; margin: 0; height: 25px; width: auto; max-width: 180px;">
                 </div>
-                <div class="content">
-                    <div class="category-badge">PROPOSAL</div>
-                    <h1 class="title">${headerText}</h1>
-                    <div class="body-text">${messageBody}</div>
+                <div class="content" style="padding: 50px; text-align: left;">
+                    <div class="category-badge" style="display: inline-block; padding: 6px 12px; background: ${NEWBI_GREEN}; color: #000000; font-size: 9px; font-weight: 900; border-radius: 6px; letter-spacing: 2px; margin-bottom: 20px; text-transform: uppercase;">PROPOSAL</div>
+                    <h1 class="title" style="font-size: 28px; font-weight: 800; color: ${textColor}; margin-bottom: 24px; line-height: 1.2; letter-spacing: -0.5px; margin-top: 0;">${headerText}</h1>
+                    <div class="body-text" style="color: ${subTextColor}; font-size: 15px; line-height: 1.6; font-weight: 400; margin-bottom: 30px;">${messageBody}</div>
 
                     <!-- Attachment-Style Proposal Card (Table-based) -->
                     <table class="attachment-card" width="100%" cellpadding="0" cellspacing="0" style="width: 100%; border-collapse: collapse; background: ${cardBg}; border: 1px solid ${cardBorder}; border-radius: 16px; margin: 30px 0; overflow: hidden;">
@@ -1231,16 +1207,16 @@ export const generateProposalEmailHTML = (data) => {
                     </table>
 
                     <div style="text-align: center; margin-top: 35px;">
-                        <a href="${proposalUrl}" class="cta-button">View Full Proposal</a>
+                        <a href="${proposalUrl}" class="cta-button" style="display: inline-block; padding: 16px 30px; background-color: ${NEWBI_GREEN}; color: #000000 !important; text-decoration: none; font-weight: 700; font-size: 12px; border-radius: 10px; letter-spacing: 1px; text-transform: uppercase;">View Full Proposal</a>
                     </div>
                 </div>
-                <div class="footer">
-                    <div class="social-links">
-                        <a href="https://www.instagram.com/newbi.live" class="social-icon"><img src="https://img.icons8.com/material-outlined/48/888888/instagram-new.png" class="social-img" alt="Instagram"></a>
-                        <a href="https://linkedin.com/company/newbi-ent" class="social-icon"><img src="https://img.icons8.com/material-outlined/48/888888/linkedin.png" class="social-img" alt="LinkedIn"></a>
-                        <a href="https://newbi.live" class="social-icon"><img src="https://img.icons8.com/material-outlined/48/888888/domain.png" class="social-img" alt="Website"></a>
+                <div class="footer" style="padding: 40px 50px; background-color: ${isDark ? '#050505' : '#fafafa'}; border-top: 1px solid ${borderColor}; text-align: center;">
+                    <div class="social-links" style="margin-bottom: 20px;">
+                        <a href="https://www.instagram.com/newbi.live" class="social-icon" style="display: inline-block; margin: 0 12px;"><img src="https://img.icons8.com/material-outlined/48/888888/instagram-new.png" class="social-img" style="width: 18px; height: 18px; opacity: 0.6; ${isDark ? 'filter: invert(1);' : ''}" alt="Instagram"></a>
+                        <a href="https://linkedin.com/company/newbi-ent" class="social-icon" style="display: inline-block; margin: 0 12px;"><img src="https://img.icons8.com/material-outlined/48/888888/linkedin.png" class="social-img" style="width: 18px; height: 18px; opacity: 0.6; ${isDark ? 'filter: invert(1);' : ''}" alt="LinkedIn"></a>
+                        <a href="https://newbi.live" class="social-icon" style="display: inline-block; margin: 0 12px;"><img src="https://img.icons8.com/material-outlined/48/888888/domain.png" class="social-img" style="width: 18px; height: 18px; opacity: 0.6; ${isDark ? 'filter: invert(1);' : ''}" alt="Website"></a>
                     </div>
-                    <p class="footer-text">© ${new Date().getFullYear()} NEWBI ENTERTAINMENT. ALL RIGHTS RESERVED.</p>
+                    <p class="footer-text" style="font-size: 10px; font-weight: 800; color: #777; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 15px; margin-top: 0;">© ${new Date().getFullYear()} NEWBI ENTERTAINMENT. ALL RIGHTS RESERVED.</p>
                 </div>
             </div>
         </body>
@@ -1261,7 +1237,8 @@ export const generateAgreementEmailHTML = (data) => {
         projectName = "",
         effectiveDate = "",
         agreementUrl = "#",
-        theme = "light"
+        theme = "light",
+        isPreview = false
     } = data;
 
     const isDark = theme === 'dark';
@@ -1279,14 +1256,29 @@ export const generateAgreementEmailHTML = (data) => {
     const headerBorder = '#1a1a1a';
     const logoUrl = `${baseUrl}/logo_full.png`;
 
+    const mediaQueries = (isPreview || isDark) ? '' : `
+        @media (prefers-color-scheme: dark) {
+            body { background-color: #000000 !important; color: #ffffff !important; }
+            .container { background-color: #0a0a0a !important; border-color: #1a1a1a !important; color: #ffffff !important; }
+            .title { color: #ffffff !important; }
+            .body-text { color: #888888 !important; }
+            .footer { background-color: #050505 !important; border-color: #1a1a1a !important; }
+            .social-img { filter: invert(1) !important; }
+            .category-badge { background: ${NEON_PURPLE} !important; }
+            .attachment-card { background: #111111 !important; border-color: #1e1e1e !important; }
+            .attachment-label { color: #888888 !important; }
+            .attachment-value { color: #ffffff !important; }
+        }
+    `;
+
     return `
         <!DOCTYPE html>
         <html>
         <head>
             <meta charset="utf-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <meta name="color-scheme" content="light dark">
-            <meta name="supported-color-schemes" content="light dark">
+            <meta name="color-scheme" content="${isDark ? 'dark' : 'light'}">
+            <meta name="supported-color-schemes" content="${isDark ? 'dark' : 'light'} dark">
             <style>
                 .preheader { display: none !important; visibility: hidden; opacity: 0; color: transparent; height: 0; width: 0; }
                 body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: ${bgColor}; color: ${textColor}; margin: 0; padding: 0; }
@@ -1326,44 +1318,20 @@ export const generateAgreementEmailHTML = (data) => {
                     .body-text { font-size: 14px !important; line-height: 1.5 !important; }
                 }
 
-                @media (prefers-color-scheme: dark) {
-                    body { background-color: #000000 !important; color: #ffffff !important; }
-                    .container { background-color: #0a0a0a !important; border-color: #1a1a1a !important; }
-                    .title { color: #ffffff !important; }
-                    .body-text { color: #888888 !important; }
-                    .footer { background-color: #050505 !important; border-color: #1a1a1a !important; }
-                    .social-img { filter: invert(1) !important; }
-                    .category-badge { background: ${NEON_PURPLE} !important; }
-                    .attachment-card { background: #111111 !important; border-color: #1e1e1e !important; }
-                    .attachment-label { color: #888888 !important; }
-                    .attachment-value { color: #ffffff !important; }
-                }
-
-                @media (prefers-color-scheme: light) {
-                    body { background-color: #fcfcfc !important; color: #111111 !important; }
-                    .container { background-color: #ffffff !important; border-color: #eaeaea !important; }
-                    .title { color: #111111 !important; }
-                    .body-text { color: #444444 !important; }
-                    .footer { background-color: #fafafa !important; border-color: #eaeaea !important; }
-                    .social-img { filter: none !important; }
-                    .category-badge { background: ${NEON_PURPLE} !important; }
-                    .attachment-card { background: #f8f9fa !important; border-color: #e5e7eb !important; }
-                    .attachment-label { color: #444444 !important; }
-                    .attachment-value { color: #111111 !important; }
-                }
+                ${mediaQueries}
             </style>
         </head>
-        <body>
+        <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: ${bgColor}; color: ${textColor}; margin: 0; padding: 0;">
             <span class="preheader">Contract ${agreementNumber} — ${secondPartyName}</span>
-            <div class="container">
-                <div class="header">
+            <div class="container" style="width: 100%; max-width: 600px; margin: 40px auto; background-color: ${containerBg}; border: 1px solid ${borderColor}; border-radius: 20px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.02); color: ${textColor};">
+                <div class="header" style="padding: 40px; background-color: ${headerBg}; border-bottom: 1px solid ${headerBorder}; text-align: left;">
                     <!-- Brand Logo -->
                     <img src="${baseUrl}/logo_full.png" alt="Newbi" style="display: block; margin: 0; height: 25px; width: auto; max-width: 180px;">
                 </div>
-                <div class="content">
-                    <div class="category-badge">CONTRACT</div>
-                    <h1 class="title">${headerText}</h1>
-                    <div class="body-text">${messageBody}</div>
+                <div class="content" style="padding: 50px; text-align: left;">
+                    <div class="category-badge" style="display: inline-block; padding: 6px 12px; background: ${NEON_PURPLE}; color: #ffffff; font-size: 9px; font-weight: 900; border-radius: 6px; letter-spacing: 2px; margin-bottom: 20px; text-transform: uppercase;">CONTRACT</div>
+                    <h1 class="title" style="font-size: 28px; font-weight: 800; color: ${textColor}; margin-bottom: 24px; line-height: 1.2; letter-spacing: -0.5px; margin-top: 0;">${headerText}</h1>
+                    <div class="body-text" style="color: ${subTextColor}; font-size: 15px; line-height: 1.6; font-weight: 400; margin-bottom: 30px;">${messageBody}</div>
 
                     <!-- Attachment-Style Agreement Card (Table-based) -->
                     <table class="attachment-card" width="100%" cellpadding="0" cellspacing="0" style="width: 100%; border-collapse: collapse; background: ${cardBg}; border: 1px solid ${cardBorder}; border-radius: 16px; margin: 30px 0; overflow: hidden;">
@@ -1440,24 +1408,13 @@ export const generateAgreementEmailHTML = (data) => {
                     </table>
 
                     <div style="text-align: center; margin-top: 35px;">
-                        <a href="${agreementUrl}" class="cta-button">View & Sign Agreement</a>
+                        <a href="${agreementUrl}" class="cta-button" style="display: inline-block; padding: 16px 30px; background-color: ${NEON_PURPLE}; color: #ffffff !important; text-decoration: none; font-weight: 700; font-size: 12px; border-radius: 10px; letter-spacing: 1px; text-transform: uppercase;">View &amp; Sign Agreement</a>
                     </div>
                 </div>
-                <div class="footer">
-                    <div class="social-links">
-                        <a href="https://www.instagram.com/newbi.live" class="social-icon"><img src="https://img.icons8.com/material-outlined/48/888888/instagram-new.png" class="social-img" alt="Instagram"></a>
-                        <a href="https://linkedin.com/company/newbi-ent" class="social-icon"><img src="https://img.icons8.com/material-outlined/48/888888/linkedin.png" class="social-img" alt="LinkedIn"></a>
-                        <a href="https://newbi.live" class="social-icon"><img src="https://img.icons8.com/material-outlined/48/888888/domain.png" class="social-img" alt="Website"></a>
-                    </div>
-                    <p class="footer-text">© ${new Date().getFullYear()} NEWBI ENTERTAINMENT. ALL RIGHTS RESERVED.</p>
-                </div>
-            </div>
-        </body>
-        </html>
-    `;
-};
-
-/**
+                <div class="footer" style="padding: 40px 50px; background-color: ${isDark ? '#050505' : '#fafafa'}; border-top: 1px solid ${borderColor}; text-align: center;">
+                    <div class="social-links" style="margin-bottom: 20px;">
+                        <a href="https://www.instagram.com/newbi.live" class="social-icon" style="display: inline-block; margin: 0 12px;"><img src="https://img.icons8.com/material-outlined/48/888888/instagram-new.png" class="social-img" style="width: 18px; height: 18px; opacity: 0.6; ${isDark ? 'filter: invert(1);' : ''}" alt="Instagram"></a>
+                        <a href="https://linkedin.com/company/newbi-ent" class="social-icon" style="display: inline-block; margin: 0 12px;"><img src="https://img.icons8.com/material-outlined/48/888888/linkedin.png" class="social-img" style="width: 18px; height: 18px; opacity: 0.6; ${isDark ? 'filter: invert(1);' : ''}" alt="LinkedIn"></a>
  * Generates the HTML for a payment receipt email.
  * Premium theme, compatible with light and dark mode templates.
  */
@@ -1471,7 +1428,8 @@ export const generateReceiptEmailHTML = (data) => {
         date = "",
         paymentMode = "UPI",
         verifyUrl = "#",
-        theme = "dark"
+        theme = "dark",
+        isPreview = false
     } = data;
 
     const isDark = theme === 'dark';
@@ -1489,14 +1447,30 @@ export const generateReceiptEmailHTML = (data) => {
     const headerBorder = '#1a1a1a';
     const logoUrl = `${baseUrl}/logo_full.png`;
 
+    const mediaQueries = (isPreview || isDark) ? '' : `
+        @media (prefers-color-scheme: dark) {
+            body { background-color: #000000 !important; color: #ffffff !important; }
+            .container { background-color: #0a0a0a !important; border-color: #1a1a1a !important; color: #ffffff !important; }
+            .title { color: #ffffff !important; }
+            .body-text { color: #888888 !important; }
+            .footer { background-color: #050505 !important; border-color: #1a1a1a !important; }
+            .social-img { filter: invert(1) !important; }
+            .attachment-card { background: #111111 !important; }
+            .attachment-label { color: #888888 !important; }
+            .attachment-value { color: #ffffff !important; }
+            .attachment-total { background: #0d1f0d !important; }
+            .attachment-total-value { color: #ffffff !important; }
+        }
+    `;
+
     return `
         <!DOCTYPE html>
         <html>
         <head>
             <meta charset="utf-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <meta name="color-scheme" content="light dark">
-            <meta name="supported-color-schemes" content="light dark">
+            <meta name="color-scheme" content="${isDark ? 'dark' : 'light'}">
+            <meta name="supported-color-schemes" content="${isDark ? 'dark' : 'light'} dark">
             <style>
                 .preheader { display: none !important; visibility: hidden; opacity: 0; color: transparent; height: 0; width: 0; }
                 body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: ${bgColor}; color: ${textColor}; margin: 0; padding: 0; }
@@ -1567,20 +1541,20 @@ export const generateReceiptEmailHTML = (data) => {
                     .attachment-value { color: #111111 !important; }
                     .attachment-total { background: #f0fdf4 !important; }
                     .attachment-total-value { color: #111111 !important; }
-                }
+                ${mediaQueries}
             </style>
         </head>
-        <body>
+        <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: ${bgColor}; color: ${textColor}; margin: 0; padding: 0;">
             <span class="preheader">Payout Receipt ${reference} to ${receiverName} — ₹${amount}</span>
-            <div class="container">
-                <div class="header">
+            <div class="container" style="width: 100%; max-width: 600px; margin: 40px auto; background-color: ${containerBg}; border: 1px solid ${borderColor}; border-radius: 20px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.02); color: ${textColor};">
+                <div class="header" style="padding: 40px; background-color: ${headerBg}; border-bottom: 1px solid ${headerBorder}; text-align: left;">
                     <!-- Brand Logo -->
                     <img src="${baseUrl}/logo_full.png" alt="Newbi" style="display: block; margin: 0; height: 25px; width: auto; max-width: 180px;">
                 </div>
-                <div class="content">
-                    <div class="category-badge">PAYOUT RECEIPT</div>
-                    <h1 class="title">${headerText}</h1>
-                    <div class="body-text">${messageBody}</div>
+                <div class="content" style="padding: 50px; text-align: left;">
+                    <div class="category-badge" style="display: inline-block; padding: 6px 12px; background: ${NEWBI_GREEN}; color: #000000; font-size: 9px; font-weight: 900; border-radius: 6px; letter-spacing: 2px; margin-bottom: 20px; text-transform: uppercase;">PAYOUT RECEIPT</div>
+                    <h1 class="title" style="font-size: 28px; font-weight: 800; color: ${textColor}; margin-bottom: 24px; line-height: 1.2; letter-spacing: -0.5px; margin-top: 0;">${headerText}</h1>
+                    <div class="body-text" style="color: ${subTextColor}; font-size: 15px; line-height: 1.6; font-weight: 400; margin-bottom: 30px;">${messageBody}</div>
 
                     <!-- Attachment-Style Receipt Card -->
                     <table class="attachment-card" width="100%" cellpadding="0" cellspacing="0" style="width: 100%; border-collapse: collapse; background: ${cardBg}; border: 1px solid ${cardBorder}; border-top: none; border-bottom: none; border-radius: 0; margin: 30px 0; overflow: visible;">
@@ -1683,16 +1657,16 @@ export const generateReceiptEmailHTML = (data) => {
                     </table>
 
                     <div style="text-align: center; margin-top: 35px;">
-                        <a href="${verifyUrl}" class="cta-button">Verify Payout</a>
+                        <a href="${verifyUrl}" class="cta-button" style="display: inline-block; padding: 16px 30px; background-color: ${NEWBI_GREEN}; color: #000000 !important; text-decoration: none; font-weight: 700; font-size: 12px; border-radius: 10px; letter-spacing: 1px; text-transform: uppercase;">Verify Payout</a>
                     </div>
                 </div>
-                <div class="footer">
-                    <div class="social-links">
-                        <a href="https://www.instagram.com/newbi.live" class="social-icon"><img src="https://img.icons8.com/material-outlined/48/888888/instagram-new.png" class="social-img" alt="Instagram"></a>
-                        <a href="https://linkedin.com/company/newbi-ent" class="social-icon"><img src="https://img.icons8.com/material-outlined/48/888888/linkedin.png" class="social-img" alt="LinkedIn"></a>
-                        <a href="https://newbi.live" class="social-icon"><img src="https://img.icons8.com/material-outlined/48/888888/domain.png" class="social-img" alt="Website"></a>
+                <div class="footer" style="padding: 40px 50px; background-color: ${isDark ? '#050505' : '#fafafa'}; border-top: 1px solid ${borderColor}; text-align: center;">
+                    <div class="social-links" style="margin-bottom: 20px;">
+                        <a href="https://www.instagram.com/newbi.live" class="social-icon" style="display: inline-block; margin: 0 12px;"><img src="https://img.icons8.com/material-outlined/48/888888/instagram-new.png" class="social-img" style="width: 18px; height: 18px; opacity: 0.6; ${isDark ? 'filter: invert(1);' : ''}" alt="Instagram"></a>
+                        <a href="https://linkedin.com/company/newbi-ent" class="social-icon" style="display: inline-block; margin: 0 12px;"><img src="https://img.icons8.com/material-outlined/48/888888/linkedin.png" class="social-img" style="width: 18px; height: 18px; opacity: 0.6; ${isDark ? 'filter: invert(1);' : ''}" alt="LinkedIn"></a>
+                        <a href="https://newbi.live" class="social-icon" style="display: inline-block; margin: 0 12px;"><img src="https://img.icons8.com/material-outlined/48/888888/domain.png" class="social-img" style="width: 18px; height: 18px; opacity: 0.6; ${isDark ? 'filter: invert(1);' : ''}" alt="Website"></a>
                     </div>
-                    <p class="footer-text">© ${new Date().getFullYear()} NEWBI ENTERTAINMENT. ALL RIGHTS RESERVED.</p>
+                    <p class="footer-text" style="font-size: 10px; font-weight: 800; color: #777; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 15px; margin-top: 0;">© ${new Date().getFullYear()} NEWBI ENTERTAINMENT. ALL RIGHTS RESERVED.</p>
                 </div>
             </div>
         </body>

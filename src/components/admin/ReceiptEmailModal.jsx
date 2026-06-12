@@ -16,6 +16,7 @@ import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import StudioRichEditor from '../../components/ui/StudioRichEditor';
 import { generateReceiptEmailHTML } from '../../lib/email';
+import EmailPreviewIframe from '../../components/ui/EmailPreviewIframe';
 
 const ReceiptEmailModal = ({ isOpen, onClose, receipt, onSend }) => {
     const verifyUrl = `${window.location.origin}/verify-payout?ref=${encodeURIComponent(receipt?.reference || 'N/A')}&amt=${receipt?.amount || 0}&payee=${encodeURIComponent(receipt?.receiverName || '')}${(receipt?.receiptUrl || receipt?.proofUrl) ? `&proof=${encodeURIComponent(receipt?.receiptUrl || receipt?.proofUrl)}` : ''}`;
@@ -68,7 +69,8 @@ const ReceiptEmailModal = ({ isOpen, onClose, receipt, onSend }) => {
             date: receipt?.date || '',
             paymentMode: receipt?.paymentMode || 'UPI',
             verifyUrl,
-            theme: emailData.theme
+            theme: emailData.theme,
+            isPreview: true
         });
     }, [emailData, receipt, defaultAmount, verifyUrl]);
 
@@ -378,11 +380,7 @@ const ReceiptEmailModal = ({ isOpen, onClose, receipt, onSend }) => {
                                     viewMode === 'mobile' ? "w-[360px]" : "w-full",
                                     emailData.theme === 'dark' ? "bg-black" : "bg-white"
                                 )}>
-                                    <div className={cn(
-                                        emailData.theme === 'dark' ? "bg-black" : "bg-[#fcfcfc]"
-                                    )}>
-                                        <div dangerouslySetInnerHTML={{ __html: previewHtml }} />
-                                    </div>
+                                    <EmailPreviewIframe html={previewHtml} />
                                 </div>
                             </div>
                         </div>

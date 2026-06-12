@@ -1,0 +1,774 @@
+diff --git a/src/pages/Admin/AIStudio.jsx b/src/pages/Admin/AIStudio.jsx
+index 3a5baea..4d9d95e 100644
+--- a/src/pages/Admin/AIStudio.jsx
++++ b/src/pages/Admin/AIStudio.jsx
+@@ -595,7 +595,7 @@ const AIStudio = () => {
+     const [isGenerating, setIsGenerating] = useState(false);
+     const [showPreviewMobile, setShowPreviewMobile] = useState(false);
+     const previewContainerRef = useRef(null);
+-    const [isManualCalibrationExpanded, setIsManualCalibrationExpanded] = useState(false);
++    const [leftPanelMode, setLeftPanelMode] = useState('ai'); // 'ai' | 'manual'
+ 
+     // ????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????
+     // 1. PROPOSAL ENGINE STATE & FUNCTIONS
+@@ -1621,563 +1621,250 @@ const AIStudio = () => {
+                                     "absolute w-10 h-10 rounded-full border border-dashed opacity-45 animate-orbit-2",
+                                     activeEngine === 'proposal' ? "border-[#39FF14]" : "border-[#A855F7]"
+                                 )} />
+-                                <div className={cn(
+-                                    "absolute w-7 h-7 rounded-full border border-dashed opacity-65 animate-orbit-3",
+-                                    activeEngine === 'proposal' ? "border-[#39FF14]" : "border-[#A855F7]"
+-                                )} />
+-                                <div className={cn(
+-                                    "w-3.5 h-3.5 rounded-full z-10 animate-ping absolute",
+-                                    activeEngine === 'proposal' ? "bg-[#39FF14]" : "bg-[#A855F7]"
+-                                )} />
+-                                <div className={cn(
+-                                    "w-2.5 h-2.5 rounded-full z-10 relative",
+-                                    activeEngine === 'proposal' ? "bg-[#39FF14]" : "bg-[#A855F7]"
+-                                )} />
++                                <Sparkles size={14} className={cn("animate-pulse", activeEngine === 'proposal' ? "text-[#39FF14]" : "text-[#A855F7]")} />
+                             </div>
+                         </div>
+-
+-                        {/* Dynamic Step Status Bar */}
+-                        {isGenerating && (
+-                            <div className="mt-4 pt-3 border-t border-white/5 flex flex-col gap-2 relative z-10 animate-pulse">
+-                                <div className="flex items-center justify-between text-[9px] font-black uppercase tracking-wider">
+-                                    <span className={activeEngine === 'proposal' ? "text-[#39FF14]" : "text-[#A855F7]"}>
+-                                        {STAGE_MESSAGES[generationStage]?.text || "Synthesizing parameters..."}
+-                                    </span>
+-                                    <span className="text-zinc-500 font-mono font-bold">{generationTime}s elapsed</span>
+-                                </div>
+-                                <div className="w-full h-1 bg-zinc-950 rounded-full overflow-hidden">
+-                                    <div 
+-                                        className={cn("h-full transition-all duration-500", activeEngine === 'proposal' ? "bg-[#39FF14]" : "bg-[#A855F7]")} 
+-                                        style={{ width: `${generationProgress}%` }}
+-                                    />
+-                                </div>
+-                            </div>
+-                        )}
+                     </div>
+ 
+-                    {/* CORE SINGLE PROMPT BOX */}
+-                    <div className="p-6 border-b border-white/5 bg-black/40 relative">
+-                        <div className="flex items-center justify-between mb-4">
+-                            <span className="text-[10px] font-black uppercase text-zinc-400 tracking-widest">Document Intent</span>
+-                            
+-                            {/* Toggle Bulk Mode (Proposal Engine Only) */}
+-                            {activeEngine === 'proposal' && (
+-                                <div className="flex items-center gap-3">
+-                                    <span className="text-[9px] font-black text-zinc-500 uppercase tracking-wider">Bulk mode</span>
+-                                    <button
+-                                        onClick={() => setIsBulkMode(!isBulkMode)}
+-                                        className={cn(
+-                                            "w-10 h-5 rounded-full p-0.5 transition-all relative",
+-                                            isBulkMode ? "bg-[#39FF14]" : "bg-zinc-800"
+-                                        )}
+-                                    >
+-                                        <div className={cn(
+-                                            "w-4 h-4 rounded-full bg-black transition-all",
+-                                            isBulkMode ? "translate-x-5" : "translate-x-0"
+-                                        )} />
+-                                    </button>
+-                                </div>
+-                            )}
+-                        </div>
+-
+-                        {/* TextArea & Suggestion controls */}
+-                        <div className={cn(
+-                            "border border-white/5 rounded-3xl p-3 bg-zinc-950 flex flex-col relative",
+-                            isGenerating && `border-${activeEngine === 'proposal' ? '[#39FF14]' : '[#A855F7]'}/30 shadow-[0_0_20px_rgba(57,255,20,0.05)]`
+-                        )}>
+-                            <textarea
+-                                value={promptText}
+-                                onChange={(e) => setPromptText(e.target.value)}
+-                                placeholder={
+-                                    isBulkMode
+-                                        ? "Paste raw CSV / structured requirements here to process bulk proposals..."
+-                                        : `Describe the ${activeEngine === 'proposal' ? 'proposal' : 'agreement'} requirements in natural language...`
+-                                }
+-                                className="w-full bg-transparent text-sm text-white placeholder-zinc-600 outline-none border-none resize-none py-2 px-1 min-h-[60px]"
+-                                onKeyDown={(e) => {
+-                                    if (e.key === 'Enter' && !e.shiftKey) {
+-                                        e.preventDefault();
+-                                        handleMainGenerate();
+-                                    }
+-                                }}
+-                            />
+-
+-                            {isBulkMode && parsedPrompts.length > 0 && (
+-                                <div className="space-y-1.5 mt-2 pt-2 border-t border-white/5 animate-fade-in relative z-10">
+-                                    <div className="flex items-center justify-between px-1">
+-                                        <label className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Parsed Prompts ({parsedPrompts.length})</label>
+-                                        <span className="text-[7px] font-black text-neon-green/70 uppercase tracking-wider">Split using '---' line break</span>
+-                                    </div>
+-                                    <div className="max-h-28 overflow-y-auto space-y-1 pr-1 scrollbar-hide">
+-                                        {parsedPrompts.map((pText, idx) => (
+-                                            <div key={idx} className="flex items-start gap-2 p-2 bg-black/60 border border-white/5 rounded-xl text-[9px] text-zinc-400 hover:border-white/10 hover:text-white transition-all font-mono">
+-                                                <span className="text-neon-green font-black select-none">{String(idx + 1).padStart(2, '0')}.</span>
+-                                                <span className="truncate flex-1">{pText}</span>
+-                                            </div>
+-                                        ))}
+-                                    </div>
+-                                </div>
+-                            )}
+-
+-                            {isBulkGenerating && (
+-                                <div className="space-y-1 mt-2 pt-2 border-t border-white/5 animate-pulse relative z-10">
+-                                    <div className="flex justify-between items-center text-[8px] font-black uppercase tracking-widest text-gray-400">
+-                                        <span>AI Pulse Progress ({bulkProgress.current} of {bulkProgress.total})</span>
+-                                        <span className="text-neon-green">{Math.round((bulkProgress.current / bulkProgress.total) * 100) || 0}%</span>
+-                                    </div>
+-                                    <div className="w-full h-1.5 bg-zinc-950 rounded-full overflow-hidden">
+-                                        <div 
+-                                            className="h-full bg-neon-green rounded-full transition-all duration-500 shadow-[0_0_8px_#39FF14]"
+-                                            style={{ width: `${(bulkProgress.current / bulkProgress.total) * 100}%` }}
+-                                        />
+-                                    </div>
+-                                </div>
+-                            )}
+-
+-                            <div className="flex items-center justify-between mt-2 pt-2 border-t border-white/5">
+-                                <button
+-                                    onClick={() => setShowSuggestions(!showSuggestions)}
+-                                    className="px-3 py-1 bg-white/5 hover:bg-white/10 rounded-lg text-zinc-500 hover:text-white transition-all text-[9px] font-black uppercase tracking-wider flex items-center gap-1.5"
+-                                >
+-                                    <Zap size={10} />
+-                                    Inspiration
+-                                </button>
+-
+-                                <button
+-                                    onClick={handleMainGenerate}
+-                                    disabled={isGenerating || !promptText.trim()}
+-                                    className={cn(
+-                                        "px-5 py-2.5 rounded-2xl font-black uppercase tracking-widest text-[9px] flex items-center gap-2 transition-all",
+-                                        activeEngine === 'proposal'
+-                                            ? "bg-[#39FF14] text-black disabled:bg-zinc-800 disabled:text-zinc-600"
+-                                            : "bg-[#A855F7] text-white disabled:bg-zinc-800 disabled:text-zinc-600"
+-                                    )}
+-                                >
+-                                    {isGenerating ? <RefreshCw size={12} className="animate-spin" /> : <Sparkles size={12} />}
+-                                    <span>{isBulkMode ? "Process Bulk" : "Generate"}</span>
+-                                </button>
+-                            </div>
+-                        </div>
+-
+-                        {/* Prompt Suggestions */}
+-                        <AnimatePresence>
+-                            {showSuggestions && (
+-                                <motion.div
+-                                    initial={{ opacity: 0, height: 0 }}
+-                                    animate={{ opacity: 1, height: 'auto' }}
+-                                    exit={{ opacity: 0, height: 0 }}
+-                                    className="mt-3 overflow-hidden bg-zinc-950/80 border border-white/5 rounded-2xl p-2"
+-                                >
+-                                    <div className="flex items-center justify-between px-3 py-2 border-b border-white/5 text-[9px] font-black uppercase text-zinc-500 tracking-wider">
+-                                        <span>Sample Requests</span>
+-                                        <button onClick={() => setSuggestionCategory(c => (c + 1) % 2)} className="hover:text-white flex items-center gap-1">
+-                                            <RefreshCw size={8} /> Next
+-                                        </button>
+-                                    </div>
+-                                    <div className="space-y-1 mt-2">
+-                                        {suggestions.map((s, idx) => (
+-                                            <button
+-                                                key={idx}
+-                                                onClick={() => { setPromptText(s); setShowSuggestions(false); }}
+-                                                className="w-full text-left px-3 py-2 rounded-xl text-[11px] text-zinc-400 hover:text-white hover:bg-white/5 transition-all truncate"
+-                                            >
+-                                                ??? {s}
+-                                            </button>
+-                                        ))}
+-                                    </div>
+-                                </motion.div>
+-                            )}
+-                        </AnimatePresence>
+-                    </div>
+-
+-                    {/* INTERACTIVE CHAT STREAM */}
+-                    <div className="p-6 border-b border-white/5 bg-[#080808] flex flex-col gap-4 flex-1 min-h-0 overflow-hidden">
+-                        <span className="text-[10px] font-black uppercase text-zinc-500 tracking-widest">Interactive refinement stream</span>
+-                        
+-                        <div ref={chatContainerRef} className="flex flex-col gap-3 flex-1 min-h-0 overflow-y-auto pr-2">
+-                            {messages.map((m) => (
+-                                <div
+-                                    key={m.id}
+-                                    className={cn(
+-                                        "max-w-[85%] rounded-3xl p-4 text-[12px] leading-relaxed",
+-                                        m.sender === 'user'
+-                                            ? "bg-zinc-800 text-zinc-100 self-end rounded-tr-none"
+-                                            : "bg-zinc-900/60 border border-white/[0.04] text-zinc-300 self-start rounded-tl-none"
+-                                    )}
+-                                >
+-                                    <div className="flex items-center gap-1.5 mb-1.5">
+-                                        <span className="text-[9px] font-black uppercase tracking-wider text-zinc-500">
+-                                            {m.sender === 'user' ? 'Client / Admin' : 'Gemini 3.5 Flash'}
+-                                        </span>
+-                                    </div>
+-                                    <div className="leading-relaxed">{renderChatMessage(m.text)}</div>
+-                                </div>
+-                            ))}
+-
+-                            {/* Generating Bubble */}
+-                            {isGenerating && (
+-                                <div className="max-w-[85%] rounded-3xl p-4 text-[12px] leading-relaxed self-start rounded-tl-none bg-white/[0.02] border border-white/[0.04] text-zinc-300 flex flex-col gap-2.5 w-[260px] sm:w-[280px]">
+-                                    <div className="flex items-center gap-2">
+-                                        <Sparkles size={12} className={cn("animate-spin shrink-0", activeEngine === 'proposal' ? "text-[#39FF14]" : "text-[#A855F7]")} />
+-                                        <span className="font-bold uppercase tracking-wider text-[10px] text-zinc-400 flex-1 truncate">
+-                                            {STAGE_MESSAGES[generationStage]?.text || "Processing..."}
+-                                        </span>
+-                                        <span className="text-[9px] font-mono text-zinc-500 font-bold shrink-0">
+-                                            {generationTime}s
+-                                        </span>
+-                                    </div>
+-                                    <div className="w-full h-1 bg-zinc-950 rounded-full overflow-hidden">
+-                                        <div 
+-                                            className={cn("h-full transition-all duration-500", activeEngine === 'proposal' ? "bg-[#39FF14]" : "bg-[#A855F7]")} 
+-                                            style={{ width: `${generationProgress}%` }}
+-                                        />
+-                                    </div>
+-                                </div>
+-                            )}
+-                            <div ref={chatEndRef} />
+-                        </div>
+-
+-                        {/* Interactive Chat Input */}
+-                        <form onSubmit={handleChatRefinement} className="flex items-center gap-2 mt-2">
+-                            <input
+-                                type="text"
+-                                value={chatInput}
+-                                onChange={(e) => setChatInput(e.target.value)}
+-                                placeholder="Instruct AI to refine document (e.g. 'Add a confidentiality clause')"
+-                                className="flex-1 bg-zinc-950 border border-white/5 rounded-2xl px-4 py-2.5 text-[12px] placeholder-zinc-600 outline-none focus:border-white/20 transition-all text-white"
+-                            />
++                    {/* MODE SELECTOR */}
++                    <div className="px-6 py-3 border-b border-white/5 bg-zinc-950 flex items-center justify-between shrink-0 relative z-20">
++                        <div className="bg-black border border-white/[0.04] p-1 rounded-2xl flex items-center gap-1 w-full">
+                             <button
+-                                type="submit"
+-                                disabled={!chatInput.trim() || isGenerating}
++                                type="button"
++                                onClick={() => setLeftPanelMode('ai')}
+                                 className={cn(
+-                                    "p-3 rounded-2xl text-black transition-all flex items-center justify-center shrink-0 disabled:opacity-20",
+-                                    activeEngine === 'proposal' ? "bg-[#39FF14]" : "bg-[#A855F7] text-white"
++                                    "flex-1 py-2 rounded-xl text-[10px] font-black uppercase tracking-[0.15em] transition-all flex items-center justify-center gap-2",
++                                    leftPanelMode === 'ai'
++                                        ? "bg-white text-black shadow-[0_4px_20px_rgba(255,255,255,0.1)] font-extrabold"
++                                        : "text-zinc-500 hover:text-zinc-300"
+                                 )}
+                             >
+-                                <Send size={12} />
++                                <Sparkles size={12} className={leftPanelMode === 'ai' ? (activeEngine === 'proposal' ? "text-[#39FF14]" : "text-[#A855F7]") : ""} />
++                                AI Assist
+                             </button>
+-                        </form>
+-                    </div>
+-
+-                    {/* Collapsible Forms Section */}
+-                    <div className={cn(
+-                        "p-6 shrink-0 flex flex-col min-h-0 bg-black/20 transition-all duration-300",
+-                        isManualCalibrationExpanded ? "max-h-[45vh] overflow-y-auto pb-24" : "max-h-[50px] overflow-hidden pb-0"
+-                    )}>
+-                        <div 
+-                            className="flex items-center justify-between border-b border-white/5 pb-2 cursor-pointer select-none"
+-                            onClick={() => setIsManualCalibrationExpanded(!isManualCalibrationExpanded)}
+-                        >
+-                            <span className="text-[10px] font-black uppercase text-zinc-400 tracking-[0.15em] flex items-center gap-2">
+-                                <Settings size={12} />
++                            <button
++                                type="button"
++                                onClick={() => setLeftPanelMode('manual')}
++                                className={cn(
++                                    "flex-1 py-2 rounded-xl text-[10px] font-black uppercase tracking-[0.15em] transition-all flex items-center justify-center gap-2",
++                                    leftPanelMode === 'manual'
++                                        ? "bg-white text-black shadow-[0_4px_20px_rgba(255,255,255,0.1)] font-extrabold"
++                                        : "text-zinc-500 hover:text-zinc-300"
++                                )}
++                            >
++                                <Settings size={12} className={leftPanelMode === 'manual' ? (activeEngine === 'proposal' ? "text-[#39FF14]" : "text-[#A855F7]") : ""} />
+                                 Manual Calibration
+-                            </span>
+-                            <span className="text-zinc-500 hover:text-white transition-colors">
+-                                {isManualCalibrationExpanded ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
+-                            </span>
++                            </button>
+                         </div>
++                    </div>
+ 
+-                        {isManualCalibrationExpanded && (
+-                            <div className="flex-1 flex flex-col min-h-0 mt-4">
+-                                {/* Engine Form switcher */}
+-                                {activeEngine === 'proposal' ? (
+-                            // PROPOSAL ENGINE FORMS
+-                            <div className="flex-1 flex flex-col min-h-0">
+-                                {/* Proposal Local form Tabs */}
+-                                <div className="flex gap-2 border-b border-white/5 pb-2 mb-4 overflow-x-auto scrollbar-hide shrink-0">
+-                                    {[
+-                                        { id: '1', label: 'Identity' },
+-                                        { id: '2', label: 'Strategy' },
+-                                        { id: '3', label: 'Scope' },
+-                                        { id: '4', label: 'Deliverables' },
+-                                        { id: '5', label: 'Commercials' },
+-                                        { id: '6', label: 'Settlement' },
+-                                        { id: '7', label: 'Signatures' }
+-                                    ].map(tab => (
+-                                        <button
+-                                            key={tab.id}
+-                                            onClick={() => setProposalActiveTab(tab.id)}
+-                                            className={cn(
+-                                                "px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all whitespace-nowrap",
+-                                                proposalActiveTab === tab.id
+-                                                    ? "bg-[#39FF14]/10 text-[#39FF14] border border-[#39FF14]/20"
+-                                                    : "text-zinc-500 hover:text-zinc-300"
+-                                            )}
+-                                        >
+-                                            {tab.label}
+-                                        </button>
+-                                    ))}
+-                                </div>
+-
+-                                <div className="flex-1 space-y-6">
+-                                    {proposalActiveTab === '1' && (
+-                                        <div className="space-y-4">
+-                                            <Input label="Client Name" value={activeProposalData.clientName} onChange={(e) => setProposalDataState({ clientName: e.target.value })} placeholder="Client Corporate Name" />
+-                                            <Input label="Client Address" value={activeProposalData.clientAddress} onChange={(e) => setProposalDataState({ clientAddress: e.target.value })} placeholder="Corporate HQ Location" textarea />
+-                                            <Input label="Campaign Name" value={activeProposalData.campaignName} onChange={(e) => setProposalDataState({ campaignName: e.target.value })} placeholder="e.g. Neon Horizon Festival" />
+-                                            <Input label="Campaign Duration" value={activeProposalData.campaignDuration} onChange={(e) => setProposalDataState({ campaignDuration: e.target.value })} placeholder="e.g. 3 Months / Dates" />
+-                                            <Input label="Proposal Number" value={activeProposalData.proposalNumber} onChange={(e) => setProposalDataState({ proposalNumber: e.target.value })} />
+-                                            <Input label="Cover Summary" value={activeProposalData.coverDescription} onChange={(e) => setProposalDataState({ coverDescription: e.target.value })} textarea />
+-                                        </div>
+-                                    )}
+-
+-                                    {proposalActiveTab === '2' && (
+-                                        <div className="space-y-4">
+-                                            <div className="grid grid-cols-2 gap-4">
+-                                                <Input label="Section Title" value={activeProposalData.strategyTitle} onChange={(e) => setProposalDataState({ strategyTitle: e.target.value })} placeholder="EXECUTIVE SUMMARY" />
+-                                                <Input label="Section Subtitle" value={activeProposalData.strategySub} onChange={(e) => setProposalDataState({ strategySub: e.target.value })} placeholder="STRATEGIC OUTLINE" />
+-                                            </div>
+-                                            <MultiPageRichEditor label="Executive Overview" value={activeProposalData.overview} onChange={(val) => setProposalDataState({ overview: val })} minHeight="200px" accentColor="neon-green" />
+-                                            <Input label="Primary Goal" value={activeProposalData.primaryGoal} onChange={(e) => setProposalDataState({ primaryGoal: e.target.value })} placeholder="Dominant marketing or brand statement..." textarea />
++                    {leftPanelMode === 'ai' ? (
++                        <>
++                            {/* CORE SINGLE PROMPT BOX */}
++                            <div className="p-6 border-b border-white/5 bg-black/40 relative shrink-0">
++                                <div className="flex items-center justify-between mb-4">
++                                    <span className="text-[10px] font-black uppercase text-zinc-400 tracking-widest">Document Intent</span>
++                                    
++                                    {/* Toggle Bulk Mode (Proposal Engine Only) */}
++                                    {activeEngine === 'proposal' && (
++                                        <div className="flex items-center gap-3">
++                                            <span className="text-[9px] font-black text-zinc-500 uppercase tracking-wider">Bulk mode</span>
++                                            <button
++                                                type="button"
++                                                onClick={() => setIsBulkMode(!isBulkMode)}
++                                                className={cn(
++                                                    "w-10 h-5 rounded-full p-0.5 transition-all relative",
++                                                    isBulkMode ? "bg-[#39FF14]" : "bg-zinc-800"
++                                                )}
++                                            >
++                                                <div className={cn(
++                                                    "w-4 h-4 rounded-full bg-black transition-all",
++                                                    isBulkMode ? "translate-x-5" : "translate-x-0"
++                                                )} />
++                                            </button>
+                                         </div>
+                                     )}
++                                </div>
+ 
+-                                    {proposalActiveTab === '3' && (
+-                                        <div className="space-y-4">
+-                                            <div className="grid grid-cols-2 gap-4">
+-                                                <Input label="Section Title" value={activeProposalData.scopeTitle} onChange={(e) => setProposalDataState({ scopeTitle: e.target.value })} placeholder="SCOPE OF WORK" />
+-                                                <Input label="Section Subtitle" value={activeProposalData.scopeSub} onChange={(e) => setProposalDataState({ scopeSub: e.target.value })} placeholder="RESOURCE DELIVERABLES" />
+-                                            </div>
+-                                            <MultiPageRichEditor label="Scope of Work" value={activeProposalData.scopeOfWork} onChange={(val) => setProposalDataState({ scopeOfWork: val })} minHeight="250px" accentColor="neon-green" />
+-                                        </div>
+-                                    )}
++                                {/* TextArea & Suggestion controls */}
++                                <div className={cn(
++                                    "border border-white/5 rounded-3xl p-3 bg-zinc-950 flex flex-col relative",
++                                    isGenerating && `border-${activeEngine === 'proposal' ? '[#39FF14]' : '[#A855F7]'}/30 shadow-[0_0_20px_rgba(57,255,20,0.05)]`
++                                )}>
++                                    <textarea
++                                        value={promptText}
++                                        onChange={(e) => setPromptText(e.target.value)}
++                                        placeholder={
++                                            isBulkMode
++                                                ? "Paste raw CSV / structured requirements here to process bulk proposals..."
++                                                : `Describe the ${activeEngine === 'proposal' ? 'proposal' : 'agreement'} requirements in natural language...`
++                                        }
++                                        className="w-full bg-transparent text-sm text-white placeholder-zinc-600 outline-none border-none resize-none py-2 px-1 min-h-[60px]"
++                                        onKeyDown={(e) => {
++                                            if (e.key === 'Enter' && !e.shiftKey) {
++                                                e.preventDefault();
++                                                handleMainGenerate();
++                                            }
++                                        }}
++                                    />
+ 
+-                                    {proposalActiveTab === '4' && (
+-                                        <div className="space-y-6">
+-                                            <div className="grid grid-cols-2 gap-4">
+-                                                <Input label="Section Title" value={activeProposalData.proposalTitle} onChange={(e) => setProposalDataState({ proposalTitle: e.target.value })} placeholder="DELIVERABLES" />
+-                                                <Input label="Section Subtitle" value={activeProposalData.proposalSub} onChange={(e) => setProposalDataState({ proposalSub: e.target.value })} placeholder="PROJECT INVENTORY" />
++                                    {isBulkMode && parsedPrompts.length > 0 && (
++                                        <div className="space-y-1.5 mt-2 pt-2 border-t border-white/5 animate-fade-in relative z-10">
++                                            <div className="flex items-center justify-between px-1">
++                                                <label className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Parsed Prompts ({parsedPrompts.length})</label>
++                                                <span className="text-[7px] font-black text-neon-green/70 uppercase tracking-wider">Split using '---' line break</span>
+                                             </div>
+-                                            <div className="space-y-4">
+-                                                <div className="flex items-center justify-between"><span className="text-[10px] font-black uppercase text-zinc-400">Deliverables List</span><button onClick={() => setProposalDataState(prev => ({ deliverables: [...prev.deliverables, { id: Date.now(), item: '', qty: '1', timeline: '' }] }))} className="p-1 hover:bg-white/10 rounded-lg text-[#39FF14]"><Plus size={14} /></button></div>
+-                                                {activeProposalData.deliverables.map((d, index) => (
+-                                                    <div key={d.id} className="flex gap-2 items-center bg-zinc-950 p-3 rounded-2xl border border-white/5">
+-                                                        <input type="text" value={d.item} onChange={(e) => setProposalDataState(prev => ({ deliverables: prev.deliverables.map((item, idx) => idx === index ? { ...item, item: e.target.value } : item) }))} placeholder="Specification" className="flex-1 bg-transparent border-none text-xs text-white outline-none" />
+-                                                        <input type="text" value={d.qty} onChange={(e) => setProposalDataState(prev => ({ deliverables: prev.deliverables.map((item, idx) => idx === index ? { ...item, qty: e.target.value } : item) }))} placeholder="Qty" className="w-16 bg-transparent border-none text-xs text-zinc-400 text-center outline-none" />
+-                                                        <input type="text" value={d.timeline} onChange={(e) => setProposalDataState(prev => ({ deliverables: prev.deliverables.map((item, idx) => idx === index ? { ...item, timeline: e.target.value } : item) }))} placeholder="Timeline" className="w-24 bg-transparent border-none text-xs text-zinc-400 text-right outline-none" />
+-                                                        <button onClick={() => setProposalDataState(prev => ({ deliverables: prev.deliverables.filter((_, idx) => idx !== index) }))} className="text-red-400 hover:text-red-500"><Trash2 size={12} /></button>
+-                                                    </div>
+-                                                ))}
+-                                            </div>
+-
+-                                            <div className="space-y-4 pt-4 border-t border-white/5">
+-                                                <div className="flex items-center justify-between"><span className="text-[10px] font-black uppercase text-zinc-400">Prerequisites</span><button onClick={() => setProposalDataState(prev => ({ clientRequirements: [...prev.clientRequirements, { id: Date.now(), description: '' }] }))} className="p-1 hover:bg-white/10 rounded-lg text-[#39FF14]"><Plus size={14} /></button></div>
+-                                                {activeProposalData.clientRequirements.map((r, index) => (
+-                                                    <div key={r.id} className="flex gap-2 items-center bg-zinc-950 p-2 rounded-2xl border border-white/5">
+-                                                        <input type="text" value={r.description} onChange={(e) => setProposalDataState(prev => ({ clientRequirements: prev.clientRequirements.map((req, idx) => idx === index ? { ...req, description: e.target.value } : req) }))} placeholder="Prerequisite item" className="flex-1 bg-transparent border-none text-xs text-white outline-none" />
+-                                                        <button onClick={() => setProposalDataState(prev => ({ clientRequirements: prev.clientRequirements.filter((_, idx) => idx !== index) }))} className="text-red-400 hover:text-red-500"><Trash2 size={12} /></button>
++                                            <div className="max-h-28 overflow-y-auto space-y-1 pr-1 scrollbar-hide">
++                                                {parsedPrompts.map((pText, idx) => (
++                                                    <div key={idx} className="flex items-start gap-2 p-2 bg-black/60 border border-white/5 rounded-xl text-[9px] text-zinc-400 hover:border-white/10 hover:text-white transition-all font-mono">
++                                                        <span className="text-neon-green font-black select-none">{String(idx + 1).padStart(2, '0')}.</span>
++                                                        <span className="truncate flex-1">{pText}</span>
+                                                     </div>
+                                                 ))}
+                                             </div>
+                                         </div>
+                                     )}
+ 
+-                                    {proposalActiveTab === '5' && (
+-                                        <div className="space-y-4">
+-                                            <div className="grid grid-cols-2 gap-4">
+-                                                <Input label="Section Title" value={activeProposalData.inventoryTitle} onChange={(e) => setProposalDataState({ inventoryTitle: e.target.value })} placeholder="RESOURCE INVENTORY" />
+-                                                <Input label="Section Subtitle" value={activeProposalData.inventorySub} onChange={(e) => setProposalDataState({ inventorySub: e.target.value })} placeholder="COMMERCIALS BREAKDOWN" />
+-                                            </div>
+-                                            <div className="flex items-center justify-between"><span className="text-[10px] font-black uppercase text-zinc-400">Line items (Estimated Cost)</span><button onClick={() => setProposalItemsState(prev => [...prev, { id: Date.now(), description: '', qty: 1, unit: 'Phase', price: 0 }])} className="p-1 hover:bg-white/10 rounded-lg text-[#39FF14]"><Plus size={14} /></button></div>
+-                                            {activeProposalItems.map((item, index) => (
+-                                                <div key={item.id} className="bg-zinc-950 p-3 border border-white/5 rounded-2xl flex flex-col gap-2">
+-                                                    <input type="text" value={item.description} onChange={(e) => setProposalItemsState(prev => prev.map((it, idx) => idx === index ? { ...it, description: e.target.value } : it))} placeholder="Description" className="bg-transparent border-none text-xs text-white outline-none w-full" />
+-                                                    <div className="flex items-center justify-between gap-3 mt-1.5">
+-                                                        <div className="flex items-center gap-2">
+-                                                            <input type="number" value={item.qty} onChange={(e) => setProposalItemsState(prev => prev.map((it, idx) => idx === index ? { ...it, qty: Number(e.target.value) } : it))} placeholder="Qty" className="w-16 bg-zinc-900 border border-white/5 text-center text-xs text-zinc-300 rounded-lg py-1 px-2" />
+-                                                            <input type="text" value={item.unit} onChange={(e) => setProposalItemsState(prev => prev.map((it, idx) => idx === index ? { ...it, unit: e.target.value } : it))} placeholder="Unit" className="w-16 bg-zinc-900 border border-white/5 text-center text-xs text-zinc-300 rounded-lg py-1 px-2" />
+-                                                        </div>
+-                                                        <div className="flex items-center gap-3">
+-                                                            <input type="number" value={item.price} onChange={(e) => setProposalItemsState(prev => prev.map((it, idx) => idx === index ? { ...it, price: Number(e.target.value) } : it))} placeholder="Price" className="w-32 bg-zinc-900 border border-white/5 text-right text-xs text-[#39FF14] font-mono rounded-lg py-1 px-2" />
+-                                                            <button onClick={() => setProposalItemsState(prev => prev.filter((_, idx) => idx !== index))} className="text-red-400 hover:text-red-500"><Trash2 size={12} /></button>
+-                                                        </div>
+-                                                    </div>
+-                                                </div>
+-                                            ))}
+-                                        </div>
+-                                    )}
+-
+-                                    {proposalActiveTab === '6' && (
+-                                        <div className="space-y-4">
+-                                            <div className="grid grid-cols-2 gap-4">
+-                                                <Input label="Section Title" value={activeProposalData.commercialsTitle} onChange={(e) => setProposalDataState({ commercialsTitle: e.target.value })} placeholder="COMMERCIAL TERMS" />
+-                                                <Input label="Section Subtitle" value={activeProposalData.commercialsSub} onChange={(e) => setProposalDataState({ commercialsSub: e.target.value })} placeholder="SETTLEMENT & SIGN-OFF" />
+-                                            </div>
+-                                            <Input label="Conditions & Terms" value={activeProposalData.terms} onChange={(e) => setProposalDataState({ terms: e.target.value })} textarea rows={4} />
+-                                            <Input label="Settlement Details" value={activeProposalData.paymentDetails} onChange={(e) => setProposalDataState({ paymentDetails: e.target.value })} textarea rows={4} />
+-                                            <div className="grid grid-cols-2 gap-4">
+-                                                <Input label="GST Rate (%)" type="number" value={activeProposalData.gstRate} onChange={(e) => setProposalDataState({ gstRate: Number(e.target.value) })} />
+-                                                <Input label="Advance Requested (%)" type="number" value={activeProposalData.advanceRequested} onChange={(e) => setProposalDataState({ advanceRequested: Number(e.target.value) })} />
++                                    {isBulkGenerating && (
++                                        <div className="space-y-1 mt-2 pt-2 border-t border-white/5 animate-pulse relative z-10">
++                                            <div className="flex justify-between items-center text-[8px] font-black uppercase tracking-widest text-gray-400">
++                                                <span>AI Pulse Progress ({bulkProgress.current} of {bulkProgress.total})</span>
++                                                <span className="text-neon-green">{Math.round((bulkProgress.current / bulkProgress.total) * 100) || 0}%</span>
+                                             </div>
+-                                            <div className="flex flex-wrap items-center gap-6 mt-4">
+-                                                <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-zinc-400">
+-                                                    <input type="checkbox" checked={activeProposalData.showGst} onChange={(e) => setProposalDataState({ showGst: e.target.checked })} className="rounded bg-zinc-900 border-white/5 text-[#39FF14] focus:ring-[#39FF14]" />
+-                                                    Show GST breakdown
+-                                                </label>
+-                                                <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-zinc-400">
+-                                                    <input type="checkbox" checked={activeProposalData.hideTotalColumn} onChange={(e) => setProposalDataState({ hideTotalColumn: e.target.checked })} className="rounded bg-zinc-900 border-white/5 text-[#39FF14] focus:ring-[#39FF14]" />
+-                                                    Hide Totals Column
+-                                                </label>
+-                                                <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-zinc-400">
+-                                                    <input type="checkbox" checked={activeProposalData.showPaymentDetails === false} onChange={(e) => setProposalDataState({ showPaymentDetails: !e.target.checked })} className="rounded bg-zinc-900 border-white/5 text-[#39FF14] focus:ring-[#39FF14]" />
+-                                                    Hide Settlement Details
+-                                                </label>
++                                            <div className="w-full h-1.5 bg-zinc-950 rounded-full overflow-hidden">
++                                                <div 
++                                                    className="h-full bg-neon-green rounded-full transition-all duration-500 shadow-[0_0_8px_#39FF14]"
++                                                    style={{ width: `${(bulkProgress.current / bulkProgress.total) * 100}%` }}
++                                                />
+                                             </div>
+                                         </div>
+                                     )}
+ 
+-                                    {proposalActiveTab === '7' && (
+-                                        <div className="space-y-4">
+-                                            <div className="flex items-center gap-6">
+-                                                <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-zinc-400">
+-                                                    <input type="checkbox" checked={activeProposalData.showSeal} onChange={(e) => setProposalDataState({ showSeal: e.target.checked })} className="rounded bg-zinc-900 border-white/5 text-[#39FF14]" />
+-                                                    Render Document Seal
+-                                                </label>
+-                                                <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-zinc-400">
+-                                                    <input type="checkbox" checked={activeProposalData.showSignatures} onChange={(e) => setProposalDataState({ showSignatures: e.target.checked })} className="rounded bg-zinc-900 border-white/5 text-[#39FF14]" />
+-                                                    Show Signatures block
+-                                                </label>
+-                                            </div>
+-                                            <div className="grid grid-cols-2 gap-4 pt-4">
+-                                                <button
+-                                                    onClick={() => { setSigTarget('provider'); setIsSigModalOpen(true); }}
+-                                                    className="py-3 bg-zinc-900 border border-white/5 hover:border-[#39FF14]/30 rounded-2xl text-[10px] font-black uppercase tracking-wider transition-all"
+-                                                >
+-                                                    Sign for Provider
+-                                                </button>
+-                                                <button
+-                                                    onClick={() => { setSigTarget('client'); setIsSigModalOpen(true); }}
+-                                                    className="py-3 bg-zinc-900 border border-white/5 hover:border-[#39FF14]/30 rounded-2xl text-[10px] font-black uppercase tracking-wider transition-all"
+-                                                >
+-                                                    Sign for Client
+-                                                </button>
+-                                            </div>
+-                                            <div className="space-y-3 pt-4 border-t border-white/5">
+-                                                <Input label="Sender Signatory Name" value={activeProposalData.senderName} onChange={(e) => setProposalDataState({ senderName: e.target.value })} />
+-                                                <Input label="Sender Designation" value={activeProposalData.senderDesignation} onChange={(e) => setProposalDataState({ senderDesignation: e.target.value })} />
+-                                            </div>
+-                                        </div>
+-                                    )}
+-                                </div>
+-                            </div>
+-                        ) : (
+-                            // AGREEMENT ENGINE FORMS
+-                            <div className="flex-1 flex flex-col min-h-0">
+-                                <div className="flex gap-2 border-b border-white/5 pb-2 mb-4 overflow-x-auto scrollbar-hide shrink-0">
+-                                    {[
+-                                        { id: '1', label: 'Entities' },
+-                                        { id: '2', label: 'Scope' },
+-                                        { id: '3', label: 'Commercials' },
+-                                        { id: '4', label: 'Clauses' },
+-                                        { id: '5', label: 'Execution' }
+-                                    ].map(tab => (
++                                    <div className="flex items-center justify-between mt-2 pt-2 border-t border-white/5">
++                                        <button
++                                            type="button"
++                                            onClick={() => setShowSuggestions(!showSuggestions)}
++                                            className="px-3 py-1 bg-white/5 hover:bg-white/10 rounded-lg text-zinc-500 hover:text-white transition-all text-[9px] font-black uppercase tracking-wider flex items-center gap-1.5"
++                                        >
++                                            <Zap size={10} />
++                                            Inspiration
++                                        </button>
++
+                                         <button
+-                                            key={tab.id}
+-                                            onClick={() => setAgreementActiveTab(tab.id)}
++                                            type="button"
++                                            onClick={handleMainGenerate}
++                                            disabled={isGenerating || !promptText.trim()}
+                                             className={cn(
+-                                                "px-4 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all whitespace-nowrap",
+-                                                agreementActiveTab === tab.id
+-                                                    ? "bg-[#A855F7]/10 text-[#A855F7] border border-[#A855F7]/20"
+-                                                    : "text-zinc-500 hover:text-zinc-300"
++                                                "px-5 py-2.5 rounded-2xl font-black uppercase tracking-widest text-[9px] flex items-center gap-2 transition-all",
++                                                activeEngine === 'proposal'
++                                                    ? "bg-[#39FF14] text-black disabled:bg-zinc-800 disabled:text-zinc-600"
++                                                    : "bg-[#A855F7] text-white disabled:bg-zinc-800 disabled:text-zinc-600"
+                                             )}
+                                         >
+-                                            {tab.label}
++                                            {isGenerating ? <RefreshCw size={12} className="animate-spin" /> : <Sparkles size={12} />}
++                                            <span>{isBulkMode ? "Process Bulk" : "Generate"}</span>
+                                         </button>
+-                                    ))}
++                                    </div>
+                                 </div>
+ 
+-                                <div className="flex-1 space-y-6">
+-                                    {agreementActiveTab === '1' && (
+-                                        <div className="space-y-4">
+-                                            <div className="grid grid-cols-2 gap-4">
+-                                                <Input label="Agreement No." value={agreementFormData.agreementNumber} onChange={(e) => updateAgreementField('agreementNumber', e.target.value)} />
+-                                                <Input label="Template Type" value={agreementFormData.template} onChange={(e) => updateAgreementField('template', e.target.value)} />
+-                                            </div>
+-                                            <div className="space-y-3 pt-2 border-t border-white/5">
+-                                                <p className="text-[10px] font-black uppercase text-zinc-500 tracking-wider">Party 1 (Provider)</p>
+-                                                <Input label="Name" value={agreementFormData.parties.firstParty.name} onChange={(e) => updateAgreementField('parties.firstParty.name', e.target.value)} />
+-                                                <Input label="Address" value={agreementFormData.parties.firstParty.address} onChange={(e) => updateAgreementField('parties.firstParty.address', e.target.value)} textarea />
++                                {/* Prompt Suggestions */}
++                                <AnimatePresence>
++                                    {showSuggestions && (
++                                        <motion.div
++                                            initial={{ opacity: 0, height: 0 }}
++                                            animate={{ opacity: 1, height: 'auto' }}
++                                            exit={{ opacity: 0, height: 0 }}
++                                            className="mt-3 overflow-hidden bg-zinc-950/80 border border-white/5 rounded-2xl p-2 animate-fade-in relative z-15"
++                                        >
++                                            <div className="flex items-center justify-between px-3 py-2 border-b border-white/5 text-[9px] font-black uppercase text-zinc-500 tracking-wider">
++                                                <span>Sample Requests</span>
++                                                <button type="button" onClick={() => setSuggestionCategory(c => (c + 1) % 2)} className="hover:text-white flex items-center gap-1">
++                                                    <RefreshCw size={8} /> Next
++                                                </button>
+                                             </div>
+-                                            <div className="space-y-3 pt-2 border-t border-white/5">
+-                                                <p className="text-[10px] font-black uppercase text-zinc-500 tracking-wider">Party 2 (Client)</p>
+-                                                <Input label="Name" value={agreementFormData.parties.secondParty.name} onChange={(e) => updateAgreementField('parties.secondParty.name', e.target.value)} />
+-                                                <Input label="Address" value={agreementFormData.parties.secondParty.address} onChange={(e) => updateAgreementField('parties.secondParty.address', e.target.value)} textarea />
++                                            <div className="space-y-1 mt-2">
++                                                {suggestions.map((s, idx) => (
++                                                    <button
++                                                        key={idx}
++                                                        type="button"
++                                                        onClick={() => { setPromptText(s); setShowSuggestions(false); }}
++                                                        className="w-full text-left px-3 py-2 rounded-xl text-[11px] text-zinc-400 hover:text-white hover:bg-white/5 transition-all truncate"
++                                                    >
++                                                        ??? {s}
++                                                    </button>
++                                                ))}
+                                             </div>
+-                                        </div>
+-                                    )}
+-
+-                                    {agreementActiveTab === '2' && (
+-                                        <div className="space-y-4">
+-                                            <Input label="Project Name" value={agreementFormData.details.projectName} onChange={(e) => updateAgreementField('details.projectName', e.target.value)} />
+-                                            <Input label="Agreement Purpose" value={agreementFormData.details.purpose} onChange={(e) => updateAgreementField('details.purpose', e.target.value)} textarea rows={6} />
+-                                        </div>
++                                        </motion.div>
+                                     )}
++                                </AnimatePresence>
++                            </div>
+ 
+-                                    {agreementActiveTab === '3' && (
+-                                        <div className="space-y-4">
+-                                            <div className="grid grid-cols-2 gap-4">
+-                                                <Input label="Contract Value" value={agreementFormData.commercials.totalValue} onChange={(e) => updateAgreementField('commercials.totalValue', e.target.value)} />
+-                                                <Input label="Currency" value={agreementFormData.commercials.currency} onChange={(e) => updateAgreementField('commercials.currency', e.target.value)} />
++                            {/* INTERACTIVE CHAT STREAM */}
++                            <div className="p-6 border-b border-white/5 bg-[#080808] flex flex-col gap-4 flex-1 min-h-0 overflow-hidden">
++                                <span className="text-[10px] font-black uppercase text-zinc-500 tracking-widest">Interactive refinement stream</span>
++                                
++                                <div ref={chatContainerRef} className="flex flex-col gap-3 flex-1 min-h-0 overflow-y-auto pr-2">
++                                    {messages.map((m) => (
++                                        <div
++                                            key={m.id}
++                                            className={cn(
++                                                "max-w-[85%] rounded-3xl p-4 text-[12px] leading-relaxed",
++                                                m.sender === 'user'
++                                                    ? "bg-zinc-800 text-zinc-100 self-end rounded-tr-none"
++                                                    : "bg-zinc-900/60 border border-white/[0.04] text-zinc-300 self-start rounded-tl-none"
++                                            )}
++                                        >
++                                            <div className="flex items-center gap-1.5 mb-1.5">
++                                                <span className="text-[9px] font-black uppercase tracking-wider text-zinc-500">
++                                                    {m.sender === 'user' ? 'Client / Admin' : 'Gemini 3.5 Flash'}
++                                                </span>
+                                             </div>
+-                                            <Input label="Payment Schedule" value={agreementFormData.commercials.paymentSchedule} onChange={(e) => updateAgreementField('commercials.paymentSchedule', e.target.value)} textarea rows={4} />
++                                            <div className="leading-relaxed">{renderChatMessage(m.text)}</div>
+                                         </div>
+-                                    )}
+-
+-                                    {agreementActiveTab === '4' && (
+-                                        <div className="space-y-4">
+-                                            <div className="flex items-center justify-between mb-2">
+-                                                <span className="text-[10px] font-black uppercase text-zinc-400">Legal Clauses</span>
+-                                                <button onClick={() => addAgreementCustomClause('New Custom Clause', 'Clause terms details go here.')} className="p-1 hover:bg-white/10 rounded-lg text-[#A855F7]"><Plus size={14} /></button>
+-                                            </div>
++                                    ))}
+ 
+-                                            {/* Clause List */}
+-                                            <div className="space-y-3">
+-                                                {agreementFormData.clauses.map((clause) => (
+-                                                    <div key={clause.id} className="bg-zinc-950 p-3 rounded-2xl border border-white/5 space-y-2">
+-                                                        <div className="flex items-center justify-between">
+-                                                            <input
+-                                                                type="text"
+-                                                                value={clause.title}
+-                                                                onChange={(e) => updateAgreementClause(clause.id, { title: e.target.value })}
+-                                                                className="bg-transparent border-none text-xs font-black text-white outline-none flex-1"
+-                                                            />
+-                                                            <button onClick={() => removeAgreementClause(clause.id)} className="text-red-400 hover:text-red-500"><Trash2 size={12} /></button>
+-                                                        </div>
+-                                                        <textarea
+-                                                            value={clause.content}
+-                                                            onChange={(e) => updateAgreementClause(clause.id, { content: e.target.value })}
+-                                                            className="w-full bg-zinc-900 border border-white/5 rounded-xl p-2 text-xs text-zinc-400 outline-none h-20 resize-none leading-relaxed"
+-                                                        />
+-                                                    </div>
+-                                                ))}
++                                    {/* Generating Bubble */}
++                                    {isGenerating && (
++                                        <div className="max-w-[85%] rounded-3xl p-4 text-[12px] leading-relaxed self-start rounded-tl-none bg-white/[0.02] border border-white/[0.04] text-zinc-300 flex flex-col gap-2.5 w-[260px] sm:w-[280px]">
++                                            <div className="flex items-center gap-2">
++                                                <Sparkles size={12} className={cn("animate-spin shrink-0", activeEngine === 'proposal' ? "text-[#39FF14]" : "text-[#A855F7]")} />
++                                                <span className="font-bold uppercase tracking-wider text-[10px] text-zinc-400 flex-1 truncate">
++                                                    {STAGE_MESSAGES[generationStage]?.text || "Processing..."}
++                                                </span>
++                                                <span className="text-[9px] font-mono text-zinc-500 font-bold shrink-0">
++                                                    {generationTime}s
++                                                </span>
+                                             </div>
+-
+-                                            {/* Standard clauses marketplace integration */}
+-                                            <div className="pt-4 border-t border-white/5">
+-                                                <p className="text-[10px] font-black uppercase text-zinc-500 mb-2">Clause Library Additions</p>
+-                                                <ClauseMarketplace activeClauses={agreementFormData.clauses} onToggleClause={toggleAgreementClause} />
++                                            <div className="w-full h-1 bg-zinc-950 rounded-full overflow-hidden">
++                                                <div 
++                                                    className={cn("h-full transition-all duration-500", activeEngine === 'proposal' ? "bg-[#39FF14]" : "bg-[#A855F7]")} 
++                                                    style={{ width: `${generationProgress}%` }}
++                                                />
+                                             </div>
+                                         </div>
+                                     )}
++                                    <div ref={chatEndRef} />
++                                </div>
+ 
+-                                    {agreementActiveTab === '5' && (
+-                                        <div className="space-y-4">
+-                                            <div className="flex items-center gap-6">
+-                                                <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-zinc-400">
+-                                                    <input type="checkbox" checked={agreementFormData.showSeal} onChange={(e) => updateAgreementField('showSeal', e.target.checked)} className="rounded bg-zinc-900 border-white/5 text-[#A855F7]" />
+-                                                    Render Document Seal
+-                                                </label>
+-                                                <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-zinc-400">
+-                                                    <input type="checkbox" checked={agreementFormData.showSignatures} onChange={(e) => updateAgreementField('showSignatures', e.target.checked)} className="rounded bg-zinc-900 border-white/5 text-[#A855F7]" />
+-                                                    Show Signatures block
+-                                                </label>
+-                                            </div>
+-                                            <div className="grid grid-cols-2 gap-4 pt-4">
+-                                                <button
+-                                                    onClick={() => { setSigTarget('provider'); setIsSigModalOpen(true); }}
+-                                                    className="py-3 bg-zinc-900 border border-white/5 hover:border-[#A855F7]/30 rounded-2xl text-[10px] font-black uppercase tracking-wider transition-all"
+-                                                >
+-                                                    Sign for Provider
++                                {/* Interactive Chat Input */}
++                                <form onSubmit={handleChatRefinement} className="flex items-center gap-2 mt-2">
++                                    <input
++                                        type="text"
++                                        value={chatInput}
++                                        onChange={(e) => setChatInput(e.target.value)}
++                                        placeholder="Instruct AI to refine document (e.g. 'Add a confidentiality clause')"
++                                        className="flex-1 bg-zinc-950 border border-white/5 rounded-2xl px-4 py-2.5 text-[12px] placeholder-zinc-600 outline-none focus:border-white/20 transition-all text-white"
++                                    />
++                                    <button
++                                        type="submit"
++                                        disabled={!chatInput.trim() || isGenerating}
++                                        className={cn(
++                                            "p-3 rounded-2xl text-black transition-all flex items-center justify-center shrink-0 disabled:opacity-20",
++                                            activeEngine === 'proposal' ? "bg-[#39FF14]" : "bg-[#A855F7] text-white"
++                                        )}
++                                    >
++                                        <Send size={12} />
++                                    </button>
+                                                 </button>
+                                                 <button
+                                                     onClick={() => { setSigTarget('client'); setIsSigModalOpen(true); }}

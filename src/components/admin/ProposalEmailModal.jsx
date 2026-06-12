@@ -16,6 +16,7 @@ import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import StudioRichEditor from '../../components/ui/StudioRichEditor';
 import { generateProposalEmailHTML } from '../../lib/email';
+import EmailPreviewIframe from '../../components/ui/EmailPreviewIframe';
 
 const ProposalEmailModal = ({ isOpen, onClose, proposal, onSend }) => {
     const proposalUrl = `${window.location.origin}/proposal/${proposal?.id}`;
@@ -72,7 +73,8 @@ const ProposalEmailModal = ({ isOpen, onClose, proposal, onSend }) => {
             clientName: proposal?.clientName || 'Client',
             projectName: proposal?.title || '',
             proposalUrl: dynamicUrl,
-            theme: emailData.theme
+            theme: emailData.theme,
+            isPreview: true
         });
     }, [emailData, proposal]);
 
@@ -363,11 +365,7 @@ const ProposalEmailModal = ({ isOpen, onClose, proposal, onSend }) => {
                                     viewMode === 'mobile' ? "w-[360px]" : "w-full",
                                     emailData.theme === 'dark' ? "bg-black" : "bg-white"
                                 )}>
-                                    <div className={cn(
-                                        emailData.theme === 'dark' ? "bg-black" : "bg-[#fcfcfc]"
-                                    )}>
-                                        <div dangerouslySetInnerHTML={{ __html: previewHtml }} />
-                                    </div>
+                                    <EmailPreviewIframe html={previewHtml} />
                                 </div>
                             </div>
                         </div>
