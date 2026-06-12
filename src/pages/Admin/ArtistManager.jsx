@@ -234,7 +234,7 @@ const ArtistManager = ({ isEmbedded = false }) => {
                         <StatCard 
                             compact={true} 
                             icon={<Layers size={24} />} 
-                            label="TALENT ROSTER" 
+                            label="ARTIST ROSTER" 
                             value={stats.total} 
                             color="blue" 
                             description={`TOTAL ACTIVE ROSTER | ${stats.approved} VERIFIED • ${stats.pending} PENDING`} 
@@ -500,7 +500,7 @@ const ArtistManager = ({ isEmbedded = false }) => {
                     <StatCard 
                         compact={true} 
                         icon={<Layers size={20} />} 
-                        label="TALENT ROSTER" 
+                        label="ARTIST ROSTER" 
                         value={stats.total} 
                         color="blue" 
                         description={`TOTAL ACTIVE ROSTER | ${stats.approved} VERIFIED • ${stats.pending} PENDING`} 
@@ -544,9 +544,9 @@ const ArtistManager = ({ isEmbedded = false }) => {
                                 <AlertTriangle size={44} className="text-red-500" />
                             </div>
                             <div className="space-y-3">
-                                <h3 className="text-3xl font-black font-heading uppercase italic tracking-tighter text-white">Security Protocol</h3>
+                                <h3 className="text-3xl font-black font-heading uppercase italic tracking-tighter text-white">Confirm Delete</h3>
                                 <p className="text-[11px] font-bold text-gray-500 uppercase tracking-widest leading-relaxed">
-                                    Are you certain you want to decommission this artist profile? This action is irreversible and will remove all associated deployment records.
+                                    Are you certain you want to delete this artist profile? This action is irreversible and will remove all associated records.
                                 </p>
                             </div>
                             <div className="flex flex-col gap-4">
@@ -555,13 +555,13 @@ const ArtistManager = ({ isEmbedded = false }) => {
                                     disabled={isDeleting}
                                     className="w-full h-20 bg-red-500 text-white rounded-[1.5rem] font-black uppercase tracking-[0.2em] text-[11px] hover:bg-red-600 transition-all shadow-xl active:scale-95 flex items-center justify-center gap-3"
                                 >
-                                    {isDeleting ? <LoadingSpinner size="xs" color="white" /> : 'DECOMMISSION PROFILE'}
+                                    {isDeleting ? <LoadingSpinner size="xs" color="white" /> : 'DELETE PROFILE'}
                                 </button>
                                 <button 
                                     onClick={() => setShowDeleteConfirmId(null)}
                                     className="w-full h-20 bg-white/5 text-gray-400 rounded-[1.5rem] font-black uppercase tracking-[0.2em] text-[11px] hover:bg-white/10 transition-all active:scale-95"
                                 >
-                                    ABORT OPERATION
+                                    CANCEL
                                 </button>
                             </div>
                         </motion.div>
@@ -722,14 +722,14 @@ const ArtistBadgeCard = ({ artist, onSelect }) => (
                 {/* Added Phone/Contact info */}
                 <div className="col-span-2 flex items-center gap-2 text-white/40 text-[9px] font-black uppercase tracking-[0.15em] bg-white/[0.02] px-3 py-2 rounded-xl border border-white/5">
                     <Phone size={10} className="text-neon-blue shrink-0" />
-                    <span className="truncate">{artist.phone || 'SECURE LINE N/A'}</span>
+                    <span className="truncate">{artist.phone || 'PHONE N/A'}</span>
                 </div>
             </div>
 
             {/* Commercial Baseline */}
             <div className="mt-auto pt-4 border-t border-white/5 flex items-center justify-between">
                 <div>
-                    <p className="text-[7px] font-black text-gray-600 uppercase tracking-widest mb-1">BASE PREMIUM</p>
+                    <p className="text-[7px] font-black text-gray-600 uppercase tracking-widest mb-1">BASE PRICE</p>
                     <p className="text-xl font-black text-white tracking-tighter tabular-nums">₹{Number(artist.basePrice).toLocaleString()}</p>
                 </div>
                 <div className="flex gap-1.5">
@@ -1212,7 +1212,7 @@ const CastingBoardModal = ({ upcomingEvents, artists, onClose, onCast }) => {
                     </div>
 
                     {/* Deployment Engine */}
-                    <div className="flex-1 flex flex-col overflow-hidden bg-[#020202]">
+                    <div className="flex-1 flex flex-col overflow-hidden bg-[#0B0F17] admin-hub-content-container">
                         {selectedEvent ? (
                             <>
                                 <div className="p-10 border-b border-white/5 bg-[#080808]/20 flex items-center justify-between">
@@ -1314,7 +1314,7 @@ const CastingBoardModal = ({ upcomingEvents, artists, onClose, onCast }) => {
                                 </div>
                             </>
                         ) : (
-                            <div className="flex-1 flex flex-col items-center justify-center text-center p-10 bg-[#020202]">
+                            <div className="flex-1 flex flex-col items-center justify-center text-center p-10 bg-[#0B0F17]">
                                 <div className="relative mb-12">
                                     <div className="absolute inset-0 bg-neon-blue/20 blur-[100px] animate-pulse rounded-full" />
                                     <div className="relative w-48 h-48 bg-white/5 rounded-[4rem] flex items-center justify-center border border-white/10 animate-float">

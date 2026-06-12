@@ -159,9 +159,10 @@ const AdminManager = () => {
         e.preventDefault();
         const canAuthorizeStaff = user?.role === 'developer' || user?.role === 'founder';
         if (!canAuthorizeStaff) {
-            useStore.getState().addToast("You don't have permission to authorize new staff.", 'error');
+            useStore.getState().addToast("You don't have permission to add new admins.", 'error');
             return;
         }
+
         try {
             const q = query(collection(db, "admins"), where("email", "==", newAdminEmail));
             const existing = await getDocs(q);
@@ -197,7 +198,7 @@ const AdminManager = () => {
     const handleApprove = async (id, role) => {
         const canAuthorizeStaff = user?.role === 'developer' || user?.role === 'founder';
         if (!canAuthorizeStaff) {
-            useStore.getState().addToast("You don't have permission to authorize new staff.", 'error');
+            useStore.getState().addToast("You don't have permission to approve admin requests.", 'error');
             return;
         }
         try {
@@ -396,7 +397,7 @@ const AdminManager = () => {
                         )}
                     >
                         <UserPlus size={14} />
-                        {isInviteOpen ? 'Close Portal' : 'Authorize Staff'}
+                        {isInviteOpen ? 'Close Panel' : 'Add Admin'}
                     </button>
                 )
             }
@@ -405,43 +406,39 @@ const AdminManager = () => {
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-10">
                 {[
                     { 
-                        label: 'Personnel Registry', 
+                        label: 'Users', 
                         count: members.length, 
                         detail: `${members.filter(m => !m.isBlocked).length} Active`, 
                         color: 'text-neon-blue', 
-                        bgGlow: 'rgba(0,240,255,0.15)',
-                        hoverShadow: 'hover:shadow-[0_15px_30px_rgba(0,240,255,0.08)]',
-                        hoverBorder: 'hover:border-neon-blue/30',
+                        bgGlow: 'bg-neon-blue',
+                        hoverBorder: 'group-hover:border-neon-blue/30',
                         topGradient: 'from-neon-blue to-blue-500'
                     },
                     { 
-                        label: 'Command Staff', 
+                        label: 'Admins', 
                         count: admins.filter(a => a.role !== 'pending').length, 
-                        detail: 'System Operatives', 
+                        detail: 'Active Admins', 
                         color: 'text-neon-green', 
-                        bgGlow: 'rgba(57,255,20,0.15)',
-                        hoverShadow: 'hover:shadow-[0_15px_30px_rgba(57,255,20,0.08)]',
-                        hoverBorder: 'hover:border-neon-green/30',
+                        bgGlow: 'bg-neon-green',
+                        hoverBorder: 'group-hover:border-neon-green/30',
                         topGradient: 'from-neon-green to-emerald-500'
                     },
                     { 
                         label: 'Tribe & Creators', 
                         count: members.filter(m => m.hasJoinedTribe || creators?.some(c => c.uid === m.id) || artists?.some(a => a.uid === m.id && a.profileStatus === 'approved')).length, 
-                        detail: 'Verified Badges', 
+                        detail: 'Verified Members', 
                         color: 'text-neon-pink', 
-                        bgGlow: 'rgba(255,79,139,0.15)',
-                        hoverShadow: 'hover:shadow-[0_15px_30px_rgba(255,79,139,0.08)]',
-                        hoverBorder: 'hover:border-neon-pink/30',
+                        bgGlow: 'bg-neon-pink',
+                        hoverBorder: 'group-hover:border-neon-pink/30',
                         topGradient: 'from-neon-pink to-purple-500'
                     },
                     { 
                         label: 'Pending Requests', 
                         count: pendingRequests.length, 
-                        detail: 'Awaiting Auth', 
+                        detail: 'Awaiting Approval', 
                         color: 'text-yellow-500', 
-                        bgGlow: 'rgba(234,179,8,0.15)',
-                        hoverShadow: 'hover:shadow-[0_15px_30px_rgba(234,179,8,0.08)]',
-                        hoverBorder: 'hover:border-yellow-500/30',
+                        bgGlow: 'bg-yellow-400',
+                        hoverBorder: 'group-hover:border-yellow-400/30',
                         topGradient: 'from-yellow-500 to-amber-500'
                     }
                 ].map((stat, i) => (
@@ -450,24 +447,24 @@ const AdminManager = () => {
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: i * 0.05 }}
-                        className="group relative"
+                        className="group relative h-full flex flex-col items-stretch"
                     >
-                        <div 
-                            className="absolute -inset-px rounded-[2rem] opacity-0 group-hover:opacity-100 transition-opacity blur-xl duration-500 pointer-events-none"
-                            style={{ background: `radial-gradient(circle at center, ${stat.bgGlow} 0%, transparent 70%)` }}
-                        />
-                        <Card className={cn(
-                            "relative p-6 md:p-8 bg-white/[0.03] backdrop-blur-xl border border-white/10 shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)] rounded-[2rem] transition-all duration-300 overflow-hidden group flex flex-col justify-between hover:bg-white/[0.06]",
-                            stat.hoverBorder,
-                            stat.hoverShadow
+                        <div className={cn(
+                            "absolute inset-0 rounded-3xl opacity-0 group-hover:opacity-15 transition-all duration-700 blur-2xl pointer-events-none",
+                            stat.bgGlow
+                        )} />
+                        
+                        <div className={cn(
+                            "relative z-10 p-6 md:p-8 h-full bg-zinc-950/35 backdrop-blur-3xl border border-white/[0.08] shadow-[0_20px_50px_rgba(0,0,0,0.5)] rounded-3xl transition-all duration-500 flex flex-col justify-between group-hover:-translate-y-1",
+                            stat.hoverBorder
                         )}>
-                            <div className={cn("absolute top-0 left-0 w-full h-[2.5px] bg-gradient-to-r", stat.topGradient)} />
-                            <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-3 leading-none relative z-10">{stat.label}</p>
+                            <div className={cn("absolute top-0 left-0 w-full h-[2.5px] bg-gradient-to-r rounded-t-3xl", stat.topGradient)} />
+                            <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-3 leading-none relative z-10">{stat.label}</p>
                             <div className="flex items-baseline gap-2.5 relative z-10">
-                                <span className={cn("text-3xl md:text-4xl font-black font-heading italic leading-none", stat.color)}>{stat.count}</span>
-                                <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wide truncate">{stat.detail}</span>
+                                <span className={cn("text-3xl md:text-4xl font-extrabold font-heading tracking-tight leading-none", stat.color)}>{stat.count}</span>
+                                <span className="text-[10px] text-zinc-400 font-bold uppercase tracking-wide truncate">{stat.detail}</span>
                             </div>
-                        </Card>
+                        </div>
                     </motion.div>
                 ))}
             </div>
@@ -476,9 +473,9 @@ const AdminManager = () => {
             <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 mb-10 border-b border-white/5 pb-8">
                 <div className="flex flex-wrap sm:flex-nowrap bg-zinc-950/60 p-1.5 rounded-full border border-white/10 backdrop-blur-3xl gap-1.5 w-full lg:w-auto relative z-10 shadow-lg">
                     {[
-                        { id: 'members', label: 'Personnel Registry', count: members.length, icon: Users },
-                        { id: 'admins', label: 'Command Staff', count: admins.filter(a => a.role !== 'pending').length, icon: Shield },
-                        ...(canAuthorizeStaff ? [{ id: 'requests', label: 'Clearance Queries', count: pendingRequests.length, icon: Clock }] : [])
+                        { id: 'members', label: 'Users', count: members.length, icon: Users },
+                        { id: 'admins', label: 'Admins', count: admins.filter(a => a.role !== 'pending').length, icon: Shield },
+                        ...(canAuthorizeStaff ? [{ id: 'requests', label: 'Pending Approvals', count: pendingRequests.length, icon: Clock }] : [])
                     ].map(tab => {
                         const isActive = activeTab === tab.id;
                         return (
@@ -490,20 +487,20 @@ const AdminManager = () => {
                                 }}
                                 className={cn(
                                     "flex items-center justify-center gap-3 px-8 py-4 rounded-full text-[10px] font-black uppercase tracking-widest transition-all duration-500 relative group shrink-0",
-                                    isActive ? "text-black" : "text-gray-500 hover:text-white"
+                                    isActive ? "text-neon-green font-extrabold" : "text-gray-500 hover:text-white"
                                 )}
                             >
-                                <tab.icon size={14} className={cn("transition-colors duration-500", isActive ? "text-black" : "text-gray-500 group-hover:text-white")} />
+                                <tab.icon size={14} className={cn("transition-colors duration-500", isActive ? "text-neon-green" : "text-gray-500 group-hover:text-white")} />
                                 <span>{tab.label}</span>
                                 <span className={cn(
                                     "px-2 py-0.5 rounded-full text-[8px] font-bold font-mono transition-colors duration-500",
-                                    isActive ? "bg-black/10 text-black" : "bg-white/5 text-gray-500 group-hover:text-white"
+                                    isActive ? "bg-neon-green/10 text-neon-green border border-neon-green/20" : "bg-white/5 text-gray-500 group-hover:text-white"
                                 )}>{tab.count}</span>
 
                                 {isActive && (
                                     <motion.div
                                         layoutId="manager-active-tab"
-                                        className="absolute inset-0 bg-neon-green rounded-full -z-10 shadow-[0_10px_25px_rgba(57,255,20,0.35)]"
+                                        className="absolute inset-0 bg-neon-green/10 border border-neon-green/20 rounded-full -z-10 shadow-none"
                                         transition={{ type: "spring", bounce: 0.15, duration: 0.5 }}
                                     />
                                 )}
@@ -556,10 +553,10 @@ const AdminManager = () => {
                                         key={filter.id}
                                         onClick={() => setMemberFilter(filter.id)}
                                         className={cn(
-                                            "flex-1 px-4 sm:px-6 py-3.5 rounded-full text-[8px] sm:text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-300 min-w-[70px] sm:min-w-[90px] md:min-w-[110px] flex items-center justify-center text-center leading-none",
+                                            "flex-1 px-4 sm:px-6 py-3.5 rounded-full text-[8px] sm:text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-300 min-w-[70px] sm:min-w-[90px] md:min-w-[110px] flex items-center justify-center text-center leading-none border",
                                             memberFilter === filter.id 
-                                                ? "bg-neon-green text-black shadow-[0_10px_25px_rgba(57,255,20,0.5)] scale-[1.02]" 
-                                                : "text-gray-500 hover:text-white hover:bg-white/5"
+                                                ? "bg-neon-green/10 text-neon-green border-neon-green/20 font-extrabold scale-[1.02]" 
+                                                : "text-gray-500 hover:text-white hover:bg-white/5 border-transparent"
                                         )}
                                     >
                                         {filter.label}
@@ -585,10 +582,10 @@ const AdminManager = () => {
                                         key={filter.id}
                                         onClick={() => setAdminFilter(filter.id)}
                                         className={cn(
-                                            "flex-1 px-4 sm:px-6 py-3.5 rounded-full text-[8px] sm:text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-300 min-w-[70px] sm:min-w-[90px] md:min-w-[110px] flex items-center justify-center text-center leading-none",
+                                            "flex-1 px-4 sm:px-6 py-3.5 rounded-full text-[8px] sm:text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-300 min-w-[70px] sm:min-w-[90px] md:min-w-[110px] flex items-center justify-center text-center leading-none border",
                                             adminFilter === filter.id 
-                                                ? "bg-neon-green text-black shadow-[0_10px_25px_rgba(57,255,20,0.5)] scale-[1.02]" 
-                                                : "text-gray-500 hover:text-white hover:bg-white/5"
+                                                ? "bg-neon-green/10 text-neon-green border-neon-green/20 font-extrabold scale-[1.02]" 
+                                                : "text-gray-500 hover:text-white hover:bg-white/5 border-transparent"
                                         )}
                                     >
                                         {filter.label}
@@ -1387,7 +1384,7 @@ const AdminManager = () => {
                                     className={cn(
                                         "w-12 h-12 rounded-full font-black text-xs transition-all border flex items-center justify-center",
                                         currentPage === page 
-                                            ? "bg-neon-green text-black border-neon-green shadow-[0_0_20px_rgba(57,255,20,0.3)]" 
+                                            ? "bg-neon-green/20 text-neon-green border-neon-green/30" 
                                             : "bg-white/5 text-gray-500 border-white/10 hover:border-white/30"
                                     )}
                                 >

@@ -214,7 +214,7 @@ const BlogPostEditor = () => {
     const currentTab = tabs.find(t => t.id === activeTab);
 
     return (
-        <div className="min-h-screen bg-[#020202] text-white selection:bg-neon-blue selection:text-black font-['Outfit'] overflow-x-clip flex flex-col">
+        <div className="min-h-screen bg-[#0B0F17] text-white selection:bg-neon-blue selection:text-black font-['Outfit'] overflow-x-clip flex flex-col admin-hub-content-container">
             <style dangerouslySetInnerHTML={{ __html: `
                 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap');
                 .scrollbar-hide::-webkit-scrollbar { display: none; }
@@ -226,8 +226,8 @@ const BlogPostEditor = () => {
                 <div className="flex items-center gap-4">
                     <button onClick={() => navigate('/admin/blog')} className="p-2.5 bg-white/5 rounded-2xl hover:bg-white/10 border border-white/5 transition-all"><ChevronLeft size={18} /></button>
                     <div className="flex flex-col">
-                        <h1 className="text-sm md:text-xl font-black tracking-tighter uppercase italic text-white leading-none">Content <span className="text-neon-blue">Architect.</span></h1>
-                        <p className="text-[7px] md:text-[9px] font-black text-gray-500 uppercase tracking-widest mt-1">Editorial Engine</p>
+                        <h1 className="text-sm md:text-xl font-extrabold tracking-tight text-white leading-none">Content <span className="text-neon-blue">Architect.</span></h1>
+                        <p className="text-[7px] md:text-[9px] font-bold text-gray-500 uppercase tracking-widest mt-1">Editorial Engine</p>
                     </div>
                 </div>
 
@@ -293,7 +293,7 @@ const BlogPostEditor = () => {
                                     Phase {tabs.findIndex(t => t.id === activeTab) + 1} of {tabs.length}
                                 </p>
                             </div>
-                            <h2 className="text-5xl md:text-7xl font-black uppercase tracking-tighter italic text-white leading-none">
+                            <h2 className="text-3xl md:text-5xl font-extrabold tracking-tight text-white leading-none">
                                 {currentTab?.label}<span className="text-neon-blue">.</span>
                             </h2>
                         </div>
@@ -320,7 +320,7 @@ const BlogPostEditor = () => {
                                                 value={formData.title} 
                                                 onChange={handleTitleChange}
                                                 placeholder="STORY HEADLINE..."
-                                                className="w-full bg-zinc-900 border border-white/10 p-6 md:p-8 rounded-[2rem] text-2xl md:text-4xl font-black uppercase italic tracking-tighter leading-none outline-none focus:border-neon-blue/40 transition-all min-h-[140px]"
+                                                className="w-full bg-zinc-900 border border-white/10 p-6 md:p-8 rounded-[2rem] text-xl md:text-3xl font-extrabold tracking-tight leading-none outline-none focus:border-neon-blue/40 transition-all min-h-[140px]"
                                             />
                                         </div>
 

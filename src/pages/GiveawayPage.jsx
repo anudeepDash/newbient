@@ -33,10 +33,18 @@ const GiveawayPage = () => {
     const [searchParams] = useSearchParams();
     const referredBy = searchParams.get('ref');
     
-    const { giveaways, giveawayEntries, enterGiveaway, updateGiveawayEntry, user, setAuthModal } = useStore();
+    const { giveaways, giveawayEntries, enterGiveaway, updateGiveawayEntry, subscribeToGiveawayEntries, user, setAuthModal } = useStore();
     const giveaway = giveaways.find(g => g.slug === slug);
     const userEntry = giveawayEntries.find(e => e.campaignId === giveaway?.id && e.userId === user?.uid);
     const winner = giveawayEntries.find(e => e.campaignId === giveaway?.id && e.isWinner);
+
+    useEffect(() => {
+        if (!giveaway?.id) return;
+        const unsubscribe = subscribeToGiveawayEntries(giveaway.id);
+        return () => {
+            if (unsubscribe) unsubscribe();
+        };
+    }, [giveaway?.id, subscribeToGiveawayEntries]);
     
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [formData, setFormData] = useState({

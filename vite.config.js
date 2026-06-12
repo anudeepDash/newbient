@@ -36,7 +36,19 @@ async function discoverModels(apiKey) {
         const response = await fetch(
             `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`
         );
-        if (!response.ok) throw new Error(`Models API returned ${response.status}`);
+        if (!response.ok) {
+          const errBody = await response.text().catch(() => '');
+          if (response.status === 403 || response.status === 400) {
+              const isKeyDead = errBody.includes('leaked') || errBody.includes('PERMISSION_DENIED') || errBody.includes('API key') || errBody.includes('API_KEY_INVALID');
+              if (isKeyDead) {
+                  console.error('[LOCAL AI DEV PROXY] 🚨 GEMINI API KEY IS DEAD (invalid/leaked/revoked). Skipping ALL Gemini models.');
+                  cachedModels = ['__KEY_DEAD__'];
+                  modelCacheTimestamp = Date.now();
+                  return cachedModels;
+              }
+          }
+          throw new Error(`Models API returned ${response.status}`);
+        }
         const data = await response.json();
         const models = data.models || [];
 
@@ -97,37 +109,51 @@ export default defineConfig(({ mode }) => {
                     const genAI = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
                     const models = await discoverModels(GEMINI_API_KEY);
 
-                    for (const modelName of models) {
-                      try {
-                        console.log(`[LOCAL AI DEV PROXY] 🚀 Trying: ${modelName}`);
-                        const response = await genAI.models.generateContent({
-                          model: modelName,
-                          contents: [
-                            { role: 'user', parts: [{ text: systemPrompt + "\n\nReturn valid JSON.\n\n" + userPrompt }] }
-                          ],
-                          config: {
-                            responseMimeType: "application/json"
+                    if (models.length === 1 && models[0] === '__KEY_DEAD__') {
+                      console.warn('[LOCAL AI DEV PROXY] ⚠️ Skipping Gemini: API key is dead (leaked/revoked/invalid).');
+                    } else {
+                      for (const modelName of models) {
+                        try {
+                          console.log(`[LOCAL AI DEV PROXY] 🚀 Trying: ${modelName}`);
+                          const response = await genAI.models.generateContent({
+                            model: modelName,
+                            contents: userPrompt,
+                            config: {
+                              systemInstruction: systemPrompt + "\n\nReturn valid JSON.",
+                              responseMimeType: "application/json"
+                            }
+                          });
+                          const text = response.text;
+                          if (text && text.length > 20) {
+                            console.log(`[LOCAL AI DEV PROXY] ✨ Success: ${modelName}`);
+                            res.statusCode = 200;
+                            res.end(JSON.stringify({ content: text, provider: `gemini-${modelName}` }));
+                            return;
                           }
-                        });
-                        const text = response.text;
-                        if (text && text.length > 20) {
-                          console.log(`[LOCAL AI DEV PROXY] ✨ Success: ${modelName}`);
-                          res.statusCode = 200;
-                          res.end(JSON.stringify({ content: text, provider: `gemini-${modelName}` }));
-                          return;
-                        }
-                      } catch (e) {
-                        const msg = e.message || '';
-                        if (msg.includes('not found') || msg.includes('not supported')) {
-                          console.warn(`[LOCAL AI DEV PROXY] ⚠️ ${modelName} gone (404), trying next...`);
-                          cachedModels = null; // Invalidate cache
+                        } catch (e) {
+                          const msg = e.message || '';
+                          const status = e.status || e.httpStatusCode || 0;
+                          
+                          // KEY-LEVEL ERROR: leaked, revoked, invalid, or permission denied
+                          if (status === 403 || status === 400 || msg.includes('leaked') || msg.includes('PERMISSION_DENIED') || msg.includes('API_KEY_INVALID') || msg.includes('API Key not found')) {
+                            console.error(`[LOCAL AI DEV PROXY] 🚨 API KEY ERROR (${status}): ${msg.substring(0, 150)}`);
+                            console.error('[LOCAL AI DEV PROXY] 🚨 Skipping ALL remaining Gemini models — key is dead.');
+                            cachedModels = ['__KEY_DEAD__'];
+                            modelCacheTimestamp = Date.now();
+                            break;
+                          }
+
+                          if (status === 404 || msg.includes('not found') || msg.includes('not supported')) {
+                            console.warn(`[LOCAL AI DEV PROXY] ⚠️ ${modelName} gone (404), trying next...`);
+                            cachedModels = null; // Invalidate cache
+                            continue;
+                          }
+                          console.warn(`[LOCAL AI DEV PROXY] ⚠️ ${modelName} failed:`, msg.substring(0, 100));
                           continue;
                         }
-                        console.warn(`[LOCAL AI DEV PROXY] ⚠️ ${modelName} failed:`, msg.substring(0, 100));
-                        continue;
                       }
+                      console.warn('[LOCAL AI DEV PROXY] All Gemini models exhausted');
                     }
-                    console.warn('[LOCAL AI DEV PROXY] All Gemini models exhausted');
                   }
 
                   // ── Try OpenRouter ──

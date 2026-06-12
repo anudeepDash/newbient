@@ -580,12 +580,13 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
         setLoading(true);
         try {
             const ref = `NB-${Math.random().toString(36).substr(2, 5).toUpperCase()}`;
+            const normalizedEmail = (formData.email || '').trim().toLowerCase();
             const entryData = {
                 userId: user?.uid || null,
                 name: formData.name,
                 customerName: formData.name,
-                email: formData.email,
-                customerEmail: formData.email,
+                email: normalizedEmail,
+                customerEmail: normalizedEmail,
                 phone: `${countryCode}${formData.phone}`,
                 customerPhone: `${countryCode}${formData.phone}`,
                 guestsCount: guestCount,
@@ -604,7 +605,7 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
                 const { sendGuestlistConfirmation } = await import('../../lib/email');
                 await sendGuestlistConfirmation({
                     toName: formData.name,
-                    toEmail: formData.email,
+                    toEmail: normalizedEmail,
                     eventName: event?.title || 'Event',
                     bookingRef: ref,
                     guestCount: guestCount,

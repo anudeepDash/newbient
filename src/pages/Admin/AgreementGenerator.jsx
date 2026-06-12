@@ -44,6 +44,12 @@ import Upload from 'lucide-react/dist/esm/icons/upload';
 import Sparkles from 'lucide-react/dist/esm/icons/sparkles';
 import PenTool from 'lucide-react/dist/esm/icons/pen-tool';
 import CheckCircle2 from 'lucide-react/dist/esm/icons/check-circle-2';
+import Music from 'lucide-react/dist/esm/icons/music';
+import Smile from 'lucide-react/dist/esm/icons/smile';
+import Trophy from 'lucide-react/dist/esm/icons/trophy';
+import Award from 'lucide-react/dist/esm/icons/award';
+import Megaphone from 'lucide-react/dist/esm/icons/megaphone';
+import Cpu from 'lucide-react/dist/esm/icons/cpu';
 import { useStore } from '../../lib/store';
 import { Card } from '../../components/ui/Card';
 import { Input } from '../../components/ui/Input';
@@ -129,7 +135,7 @@ const renderChatMessage = (text) => {
 const ContractGenerator = () => {
     const { id } = useParams();
     const navigate = useNavigate();
-    const { addAgreement, updateAgreement, agreements, user, addToast } = useStore();
+    const { addAgreement, updateAgreement, agreements, user, addToast, activeModel } = useStore();
     
     // UI State
     const [activeTab, setActiveTab] = useState('ai');
@@ -151,7 +157,7 @@ const ContractGenerator = () => {
         {
             id: 'init-msg',
             sender: 'ai',
-            text: "Welcome to Newbi AI Agreement Studio. Describe the contract requirements or clauses you want in the prompt box below, choose 'Generate New' or 'Chat & Revise', and I will draft a comprehensive agreement. Click the sparkles icon next to any field to refine it directly!"
+            text: "Welcome to Newbi AI Agreement Studio. Describe the contract requirements or clauses you want in the prompt box below, and I will draft a comprehensive agreement. Once generated, continue chatting to refine any details! Click the sparkles icon next to any field to refine it directly!"
         }
     ]);
     const [promptText, setPromptText] = useState('');
@@ -161,6 +167,10 @@ const ContractGenerator = () => {
     const [refinementContext, setRefinementContext] = useState(null);
     const [refinementPrompt, setRefinementPrompt] = useState('');
     const [isRefining, setIsRefining] = useState(false);
+    const [isFloatingChatOpen, setIsFloatingChatOpen] = useState(false);
+    const floatingChatContainerRef = useRef(null);
+    const [aiTone, setAiTone] = useState('balanced'); // 'creative' | 'balanced' | 'formal'
+    const [aiLength, setAiLength] = useState('balanced'); // 'concise' | 'balanced' | 'detailed'
 
     const htmlToPlainText = (html) => {
         if (!html) return '';
@@ -264,6 +274,12 @@ const ContractGenerator = () => {
         if (chatContainerRef.current) {
             chatContainerRef.current.scrollTo({
                 top: chatContainerRef.current.scrollHeight,
+                behavior: 'smooth'
+            });
+        }
+        if (floatingChatContainerRef.current) {
+            floatingChatContainerRef.current.scrollTo({
+                top: floatingChatContainerRef.current.scrollHeight,
                 behavior: 'smooth'
             });
         }
@@ -402,81 +418,83 @@ const ContractGenerator = () => {
                 }]);
                 setRefinementContext(null);
                 addToast(`Field "${refinementContext.fieldLabel}" successfully refined!`, 'success');
-            } else if (aiMode === 'generate') {
-                const data = await generateFullDocument('contract', currentPrompt, 'Premium', {});
-                setFormData(prev => ({
-                    ...prev,
-                    parties: {
-                        firstParty: {
-                            ...prev.parties.firstParty,
-                            ...(data.parties?.firstParty || {}),
-                            name: data.parties?.firstParty?.name || prev.parties.firstParty.name || 'Newbi Entertainment',
-                            role: data.parties?.firstParty?.role || prev.parties.firstParty.role || 'Service Provider',
-                        },
-                        secondParty: {
-                            ...prev.parties.secondParty,
-                            ...(data.parties?.secondParty || {}),
-                        }
-                    },
-                    details: {
-                        ...prev.details,
-                        ...(data.details || {}),
-                    },
-                    commercials: {
-                        ...prev.commercials,
-                        ...(data.commercials || {}),
-                    },
-                    clauses: (data.clauses?.length > 0) 
-                        ? data.clauses.map((c, i) => ({
-                            id: c.id || `ai-clause-${Date.now()}-${i}`,
-                            title: c.title || `Clause ${i + 1}`,
-                            content: c.content || '',
-                            isActive: c.isActive !== false,
-                            isCustom: true,
-                            strictness: 'medium',
-                            category: 'custom'
-                        }))
-                        : prev.clauses,
-                    template: data.template || prev.template,
-                }));
-
-                setMessages(prev => [...prev, {
-                    id: String(Date.now()) + '-ai',
-                    sender: 'ai',
-                    text: `✓ Agreement for "${data.parties?.secondParty?.name || 'Partner'}" generated successfully! I added ${data.clauses?.length || 0} legal clauses. \n\nI have switched your mode to **Chat & Revise** so you can make modifications directly. Or feel free to adjust using the manual tabs.`
-                }]);
-                setAiMode('refine');
-                addToast('Agreement successfully generated!', 'success');
             } else {
-                const updatedDoc = await reviseDocument(formData, currentPrompt, 'Premium');
-                setFormData(prev => ({
-                    ...prev,
-                    ...updatedDoc,
-                    parties: {
-                        firstParty: { ...prev.parties.firstParty, ...(updatedDoc.parties?.firstParty || {}) },
-                        secondParty: { ...prev.parties.secondParty, ...(updatedDoc.parties?.secondParty || {}) }
-                    },
-                    details: { ...prev.details, ...(updatedDoc.details || {}) },
-                    commercials: { ...prev.commercials, ...(updatedDoc.commercials || {}) },
-                    clauses: updatedDoc.clauses?.length > 0 
-                        ? updatedDoc.clauses.map((c, i) => ({
-                            id: c.id || `ai-clause-${Date.now()}-${i}`,
-                            title: c.title || `Clause ${i + 1}`,
-                            content: c.content || '',
-                            isActive: c.isActive !== false,
-                            isCustom: true,
-                            strictness: 'medium',
-                            category: 'custom'
-                        }))
-                        : prev.clauses
-                }));
+                const isInitialGeneration = !formData.parties?.secondParty?.name || formData.parties.secondParty.name.trim() === '' || messages.length <= 1;
+                if (isInitialGeneration) {
+                    const data = await generateFullDocument('contract', currentPrompt, 'Premium', {});
+                    setFormData(prev => ({
+                        ...prev,
+                        parties: {
+                            firstParty: {
+                                ...prev.parties.firstParty,
+                                ...(data.parties?.firstParty || {}),
+                                name: data.parties?.firstParty?.name || prev.parties.firstParty.name || 'Newbi Entertainment',
+                                role: data.parties?.firstParty?.role || prev.parties.firstParty.role || 'Service Provider',
+                            },
+                            secondParty: {
+                                ...prev.parties.secondParty,
+                                ...(data.parties?.secondParty || {}),
+                            }
+                        },
+                        details: {
+                            ...prev.details,
+                            ...(data.details || {}),
+                        },
+                        commercials: {
+                            ...prev.commercials,
+                            ...(data.commercials || {}),
+                        },
+                        clauses: (data.clauses?.length > 0) 
+                            ? data.clauses.map((c, i) => ({
+                                id: c.id || `ai-clause-${Date.now()}-${i}`,
+                                title: c.title || `Clause ${i + 1}`,
+                                content: c.content || '',
+                                isActive: c.isActive !== false,
+                                isCustom: true,
+                                strictness: 'medium',
+                                category: 'custom'
+                            }))
+                            : prev.clauses,
+                        template: data.template || prev.template,
+                    }));
 
-                setMessages(prev => [...prev, {
-                    id: String(Date.now()) + '-ai',
-                    sender: 'ai',
-                    text: `✓ Document refined according to request: "${currentPrompt}". You can inspect the updated preview on the right.`
-                }]);
-                addToast('Document successfully refined!', 'success');
+                    setMessages(prev => [...prev, {
+                        id: String(Date.now()) + '-ai',
+                        sender: 'ai',
+                        text: `✓ Agreement for "${data.parties?.secondParty?.name || 'Partner'}" generated successfully! I added ${data.clauses?.length || 0} legal clauses. \n\nYou can continue chatting here to modify the agreement, or edit using the manual tabs.`
+                    }]);
+                    addToast('Agreement successfully generated!', 'success');
+                } else {
+                    const updatedDoc = await reviseDocument(formData, currentPrompt, 'Premium');
+                    setFormData(prev => ({
+                        ...prev,
+                        ...updatedDoc,
+                        parties: {
+                            firstParty: { ...prev.parties.firstParty, ...(updatedDoc.parties?.firstParty || {}) },
+                            secondParty: { ...prev.parties.secondParty, ...(updatedDoc.parties?.secondParty || {}) }
+                        },
+                        details: { ...prev.details, ...(updatedDoc.details || {}) },
+                        commercials: { ...prev.commercials, ...(updatedDoc.commercials || {}) },
+                        clauses: updatedDoc.clauses?.length > 0 
+                            ? updatedDoc.clauses.map((c, i) => ({
+                                id: c.id || `ai-clause-${Date.now()}-${i}`,
+                                title: c.title || `Clause ${i + 1}`,
+                                content: c.content || '',
+                                isActive: c.isActive !== false,
+                                isCustom: true,
+                                strictness: 'medium',
+                                category: 'custom'
+                            }))
+                            : prev.clauses
+                    }));
+
+                    setMessages(prev => [...prev, {
+                        id: String(Date.now()) + '-ai',
+                        sender: 'ai',
+                        text: `✓ Document refined according to request: "${currentPrompt}". You can inspect the updated preview on the right.`
+                    }]);
+                    addToast('Document successfully refined!', 'success');
+                }
             }
         } catch (err) {
             setMessages(prev => [...prev, {
@@ -520,6 +538,348 @@ const ContractGenerator = () => {
         }
     };
 
+    const renderChatbot = (isFloating = false) => {
+        return (
+            <div className={cn(
+                "flex flex-col relative w-full",
+                isFloating ? "flex-grow flex-1 min-h-0 h-full overflow-hidden" : "h-auto"
+            )}>
+                {/* Orbital Glow in Background */}
+                <div className={cn("absolute top-0 left-1/2 -translate-x-1/2 bg-[#A855F7]/5 rounded-full blur-3xl pointer-events-none", isFloating ? "w-48 h-48" : "w-64 h-64")} />
+
+                {/* Brand Header */}
+                <div className={cn(
+                    "bg-zinc-950/45 border border-white/[0.06] backdrop-blur-2xl rounded-2xl flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 shrink-0 relative z-10 shadow-lg",
+                    isFloating ? "p-3 mb-2" : "p-4 mb-6"
+                )}>
+                    <div className="flex items-center gap-3.5 animate-fade-in">
+                        <div className={cn(
+                            "rounded-xl flex items-center justify-center border relative shadow-sm shrink-0",
+                            isFloating ? "w-9 h-9 bg-[#A855F7]/5 border-[#A855F7]/10 text-[#A855F7]" : "w-11 h-11 bg-[#A855F7]/[0.02] border-[#A855F7]/10 text-[#A855F7] shadow-[0_0_15px_rgba(168,85,247,0.05)]"
+                        )}>
+                            <div className="absolute inset-0 rounded-inherit bg-[#A855F7]/5 opacity-40 animate-pulse pointer-events-none" />
+                            <Cpu size={isFloating ? 16 : 18} className="text-[#A855F7] animate-pulse" />
+                        </div>
+                        <div className="space-y-0.5">
+                            <div className="flex items-center gap-2">
+                                <span className="text-[8px] font-black text-zinc-500 uppercase tracking-[0.25em] block leading-none">Primary Model</span>
+                                <span className="relative flex h-1.5 w-1.5">
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#A855F7] opacity-75"></span>
+                                    <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-[#A855F7]"></span>
+                                </span>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                                <h3 className="text-xs font-bold text-zinc-200 tracking-wide leading-none">
+                                    {activeModel || 'Gemini 3.5 Flash'}
+                                </h3>
+                                <span className="h-3 w-px bg-white/10" />
+                                <span className="text-[8px] text-zinc-500 font-mono font-medium lowercase tracking-wide">live pulse</span>
+                            </div>
+                        </div>
+                    </div>
+                    {/* Mode status indicator */}
+                    <div className="flex items-center justify-between sm:justify-end gap-4 border-t sm:border-t-0 border-white/5 pt-2 sm:pt-0">
+                        <div className="flex items-center gap-2.5">
+                            <span className="text-[8px] font-black text-zinc-500 uppercase tracking-[0.2em] leading-none">Active Mode</span>
+                            <div className="flex items-center gap-2 bg-white/[0.02] border border-white/10 px-3 py-1.5 rounded-full shadow-inner">
+                                <span className="h-1.5 w-1.5 rounded-full bg-[#A855F7] animate-pulse" />
+                                <span className="text-[9px] font-bold uppercase tracking-widest text-zinc-300">
+                                    {refinementContext ? 'Field Refinement' : (messages.length <= 1 ? 'First Draft' : 'Refinement & Chat')}
+                                </span>
+                            </div>
+                        </div>
+                        {messages.length > 1 && (
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setFormData({
+                                        parties: {
+                                            firstParty: { name: 'Newbi Entertainment', role: 'Service Provider' },
+                                            secondParty: { name: '', role: 'Client' }
+                                        },
+                                        details: {
+                                            effectiveDate: '',
+                                            jurisdiction: 'Karnataka, India',
+                                            terminationNotice: '30 Days'
+                                        },
+                                        commercials: {
+                                            paymentTerms: 'Payment due within 15 days of invoice date.',
+                                            compensation: 'Client agrees to pay Service Provider according to project scope.'
+                                        },
+                                        clauses: [],
+                                        template: 'modern',
+                                        hiddenFields: []
+                                    });
+                                    setMessages([
+                                        {
+                                            id: 'init-msg',
+                                            sender: 'ai',
+                                            text: "Welcome to Newbi AI Agreement Studio. Describe the contract requirements or clauses you want in the prompt box below, and I will draft a comprehensive agreement. Once generated, continue chatting to refine any details! Click the sparkles icon next to any field to refine it directly!"
+                                        }
+                                    ]);
+                                    setPromptText('');
+                                    setRefinementContext(null);
+                                    addToast('Reset to fresh draft agreement state', 'info');
+                                }}
+                                className="px-3 py-1.5 bg-[#A855F7]/5 hover:bg-[#A855F7]/10 border border-[#A855F7]/10 hover:border-[#A855F7]/30 text-[#A855F7] hover:text-[#C084FC] rounded-xl text-[9px] font-bold uppercase tracking-widest transition-all active:scale-95 flex items-center gap-1.5 shadow-sm"
+                            >
+                                <RefreshCw size={10} />
+                                <span>Reset</span>
+                            </button>
+                        )}
+                        {isFloating && (
+                            <button
+                                type="button"
+                                onClick={() => setIsFloatingChatOpen(false)}
+                                className="p-2 bg-white/[0.02] hover:bg-white/[0.06] border border-white/10 rounded-xl text-zinc-400 hover:text-white transition-all active:scale-95 shadow-sm"
+                            >
+                                <X size={14} />
+                            </button>
+                        )}
+                    </div>
+                </div>
+
+                {/* Message Stream */}
+                <div 
+                    ref={isFloating ? floatingChatContainerRef : chatContainerRef} 
+                    className={cn(
+                        "space-y-4 mb-4 relative z-10 flex flex-col w-full",
+                        isFloating ? "flex-grow overflow-y-auto min-h-0 pr-2 scrollbar-hide" : "h-auto"
+                    )}
+                >
+                    {/* Welcome card if only initial message */}
+                    {messages.length === 1 && (
+                        <div className={cn(
+                            "my-auto py-4 flex flex-col items-center justify-center text-center mx-auto animate-fade-in",
+                            isFloating ? "max-w-full space-y-4 px-2" : "max-w-2xl space-y-6"
+                        )}>
+                            <div className="relative">
+                                <div className="absolute -inset-4 bg-gradient-to-r from-[#A855F7] via-purple-500 to-indigo-500 rounded-full blur-xl opacity-20 animate-pulse" />
+                                <div className="relative w-12 h-12 rounded-full bg-zinc-950 border border-white/10 flex items-center justify-center shadow-[0_0_30px_rgba(168,85,247,0.15)]">
+                                    <Sparkles size={20} className="text-[#A855F7] animate-pulse" />
+                                </div>
+                            </div>
+                            <div className="space-y-2 max-w-md">
+                                <h2 className="text-lg font-black uppercase tracking-tight text-white leading-none">
+                                    AI Agreement <span className="bg-gradient-to-r from-[#A855F7] to-purple-400 bg-clip-text text-transparent">Orchestrator</span>
+                                </h2>
+                                <p className="text-[10px] text-zinc-400 leading-relaxed font-medium">
+                                    Input requirements below. The generator constructs a fully formatted agreement with custom terms and legal clauses.
+                                </p>
+                            </div>
+
+                            {/* Suggestions Grid */}
+                            {!isFloating && (
+                                <div className="w-full space-y-4 pt-4 border-t border-white/5">
+                                    <div className="flex items-center justify-between px-1">
+                                        <span className="text-[9px] font-black uppercase text-zinc-500 tracking-[0.2em] flex items-center gap-2">
+                                            <Sparkles size={10} className="text-[#A855F7]" /> Suggested Blueprints
+                                        </span>
+                                        <button 
+                                            type="button"
+                                            onClick={() => setSuggestionCategory(c => (c + 1) % 2)}
+                                            className="flex items-center gap-1.5 px-2.5 py-1 bg-white/5 hover:bg-white/10 border border-white/5 hover:border-white/10 rounded-lg text-[8px] font-black uppercase tracking-widest text-zinc-400 hover:text-white transition-all active:scale-95"
+                                        >
+                                            <RefreshCw size={8} className="animate-spin-slow" /> Next Blueprints
+                                        </button>
+                                    </div>
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                        {suggestions.map((s, idx) => {
+                                            let Icon = Sparkles;
+                                            let heading = "Custom Clause";
+                                            if (s.toLowerCase().includes("marketing") || s.toLowerCase().includes("talent")) {
+                                                Icon = Megaphone;
+                                                heading = "Talent & Marketing";
+                                            } else if (s.toLowerCase().includes("disclosure") || s.toLowerCase().includes("nda")) {
+                                                Icon = Shield;
+                                                heading = "NDA Agreement";
+                                            } else if (s.toLowerCase().includes("co-producing") || s.toLowerCase().includes("partnership")) {
+                                                Icon = Users;
+                                                heading = "Partnership MOU";
+                                            } else if (s.toLowerCase().includes("security") || s.toLowerCase().includes("liability")) {
+                                                Icon = Lock;
+                                                heading = "Liability/Security";
+                                            } else if (s.toLowerCase().includes("comedy") || s.toLowerCase().includes("booking")) {
+                                                Icon = Smile;
+                                                heading = "Talent Booking";
+                                            } else if (s.toLowerCase().includes("venue") || s.toLowerCase().includes("structure")) {
+                                                Icon = Building2;
+                                                heading = "Venue Contract";
+                                            }
+                                            return (
+                                                <button
+                                                    type="button"
+                                                    key={idx}
+                                                    onClick={() => setPromptText(s)}
+                                                    className="text-left p-4 bg-zinc-900/30 hover:bg-zinc-900/60 border border-white/5 hover:border-[#A855F7]/20 rounded-2xl transition-all duration-300 flex flex-col justify-between gap-4 h-auto min-h-[145px] pb-4 group relative overflow-hidden shadow-sm"
+                                                >
+                                                    <div className="absolute top-0 right-0 w-16 h-16 bg-[#A855F7]/5 rounded-full blur-xl opacity-0 group-hover:opacity-100 transition-opacity" />
+                                                    <div className="flex items-center justify-between w-full relative z-10">
+                                                        <div className="p-2 bg-white/5 group-hover:bg-[#A855F7]/10 rounded-xl transition-colors">
+                                                            <Icon size={14} className="text-zinc-400 group-hover:text-[#A855F7] transition-colors" />
+                                                        </div>
+                                                        <span className="text-[9px] font-black text-[#A855F7] opacity-0 group-hover:opacity-100 translate-x-2 group-hover:translate-x-0 transition-all">→</span>
+                                                    </div>
+                                                    <div className="space-y-1 relative z-10 w-full">
+                                                        <span className="text-[8px] font-black uppercase tracking-widest text-zinc-500 group-hover:text-zinc-400">{heading}</span>
+                                                        <p className="text-[10px] font-bold text-zinc-400 group-hover:text-white transition-colors line-clamp-2 leading-relaxed">
+                                                            {s}
+                                                        </p>
+                                                    </div>
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {/* Chat Messages */}
+                    {messages.length > 1 && messages.map(m => (
+                        <div
+                            key={m.id}
+                            className={cn(
+                                "max-w-[85%] rounded-[2rem] p-4 text-xs leading-relaxed transition-all shadow-md relative overflow-hidden group",
+                                m.sender === 'user'
+                                    ? "bg-zinc-900 text-zinc-100 self-end rounded-tr-none border border-white/5"
+                                    : "bg-white/[0.02] border border-white/[0.04] text-zinc-300 self-start rounded-tl-none"
+                            )}
+                        >
+                            <div className="flex items-center gap-2 mb-1.5">
+                                <span className={cn(
+                                    "text-[8px] font-black uppercase tracking-wider",
+                                    m.sender === 'user' ? "text-gray-400" : "text-[#A855F7]"
+                                )}>
+                                    {m.sender === 'user' ? 'You' : (activeModel || 'Gemini 3.5 Flash')}
+                                </span>
+                            </div>
+                            <div className="font-medium leading-relaxed">{renderChatMessage(m.text)}</div>
+                        </div>
+                    ))}
+
+                    {/* Generating Bubble */}
+                    {isGenerating && (
+                        <div className="bg-white/[0.02] border border-white/[0.04] text-zinc-300 self-start rounded-[2rem] rounded-tl-none p-4 text-xs w-[260px] sm:w-[280px] flex flex-col gap-2.5 shadow-md">
+                            <div className="flex items-center gap-2">
+                                <Sparkles size={14} className="text-[#A855F7] animate-spin shrink-0" />
+                                <span className="font-bold uppercase tracking-wider text-[9px] text-[#A855F7] flex-1 truncate">
+                                    {STAGE_MESSAGES[generationStage]?.text || "Synthesizing document..."}
+                                </span>
+                                <span className="text-[8px] font-mono text-zinc-500 font-bold shrink-0">
+                                    {generationTime}s
+                                </span>
+                            </div>
+                            <div className="w-full h-1 bg-zinc-950 rounded-full overflow-hidden">
+                                <div 
+                                    className="h-full bg-[#A855F7] transition-all duration-500" 
+                                    style={{ width: `${generationProgress}%` }}
+                                />
+                            </div>
+                        </div>
+                    )}
+                    <div ref={chatEndRef} />
+                </div>
+
+                {/* Prompt container - Command Console Redesign */}
+                <div className={cn("pt-2 bg-transparent", isFloating ? "mt-auto shrink-0" : "mt-6")}>
+                    <div className="bg-zinc-950 border border-white/5 rounded-2xl p-2.5 flex flex-col gap-2 relative shadow-[0_10px_30px_rgba(0,0,0,0.5)] focus-within:border-[#A855F7]/30 focus-within:shadow-[0_0_20px_rgba(168,85,247,0.05)] transition-all">
+                        {/* Quoted Refinement Context */}
+                        {refinementContext && (
+                            <div className="px-3 py-2 bg-[#A855F7]/5 border border-[#A855F7]/20 rounded-xl flex items-center justify-between gap-3 border-l-4 border-l-[#A855F7] shadow-inner animate-fade-in">
+                                <div className="min-w-0">
+                                    <span className="text-[7px] font-black uppercase tracking-widest text-[#A855F7] block mb-0.5">Refining: {refinementContext.fieldLabel}</span>
+                                    <p className="text-[9px] text-zinc-400 line-clamp-1 italic">
+                                        "{refinementContext.currentValue || 'No current content...'}"
+                                    </p>
+                                </div>
+                                <button 
+                                    type="button" 
+                                    onClick={() => setRefinementContext(null)}
+                                    className="p-1 hover:bg-white/5 rounded-lg text-zinc-500 hover:text-white transition-all shrink-0"
+                                >
+                                    <X size={10} />
+                                </button>
+                            </div>
+                        )}
+
+                        <div className="flex items-end gap-2">
+                            <textarea
+                                value={promptText}
+                                onChange={e => setPromptText(e.target.value)}
+                                placeholder={refinementContext ? `Instruct AI to refine "${refinementContext.fieldLabel}"...` : "Describe the agreement you want to generate or modify..."}
+                                className="flex-grow bg-transparent border-none text-[12px] font-medium text-white placeholder:text-zinc-600 outline-none min-h-[36px] max-h-[120px] py-1 px-1.5 resize-none leading-relaxed"
+                                rows={1}
+                                disabled={isGenerating}
+                                onKeyDown={e => {
+                                    if (e.key === 'Enter' && !e.shiftKey) {
+                                        e.preventDefault();
+                                        handleStudioSubmit();
+                                    }
+                                }}
+                            />
+                            <button
+                                type="button"
+                                onClick={handleStudioSubmit}
+                                disabled={!promptText.trim() || isGenerating}
+                                className="w-9 h-9 bg-[#A855F7] text-black rounded-xl hover:scale-105 active:scale-95 transition-all shrink-0 disabled:opacity-20 disabled:scale-100 flex items-center justify-center shadow-[0_0_10px_rgba(168,85,247,0.3)]"
+                            >
+                                {isGenerating ? <RefreshCw className="animate-spin" size={12} /> : <Send size={12} />}
+                            </button>
+                        </div>
+
+                        {/* Control Bar inside Prompt Console */}
+                        <div className="flex items-center justify-between border-t border-white/5 pt-2 px-1 text-[8px] text-zinc-500 font-bold">
+                            <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                                <div className="flex items-center gap-1">
+                                    <span>Tone:</span>
+                                    <div className="flex bg-black/40 rounded p-0.5 border border-white/5">
+                                        {['balanced', 'creative', 'formal'].map(t => (
+                                            <button
+                                                type="button"
+                                                key={t}
+                                                onClick={() => setAiTone(t)}
+                                                className={cn(
+                                                    "px-1.5 py-0.5 rounded text-[7px] uppercase tracking-wider transition-all",
+                                                    aiTone === t ? "bg-[#A855F7]/10 text-[#A855F7] border border-[#A855F7]/20" : "border border-transparent hover:text-zinc-300"
+                                                )}
+                                            >
+                                                {t}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center gap-1">
+                                    <span>Length:</span>
+                                    <div className="flex bg-black/40 rounded p-0.5 border border-white/5">
+                                        {['concise', 'balanced', 'detailed'].map(l => (
+                                            <button
+                                                type="button"
+                                                key={l}
+                                                onClick={() => setAiLength(l)}
+                                                className={cn(
+                                                    "px-1.5 py-0.5 rounded text-[7px] uppercase tracking-wider transition-all",
+                                                    aiLength === l ? "bg-[#A855F7]/10 text-[#A855F7] border border-[#A855F7]/20" : "border border-transparent hover:text-zinc-300"
+                                                )}
+                                            >
+                                                {l}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="hidden sm:flex items-center gap-1 text-[7px] text-zinc-600 font-mono">
+                                <span>Approx. {promptText.length ? Math.round(promptText.length / 4) : 0} tokens</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
     const tabs = [
         { id: 'ai', label: 'AI Studio', icon: Sparkles, desc: 'AI Document Orchestrator' },
         { id: '1', label: 'Parties', icon: Users, desc: 'Contracting Entities' },
@@ -548,7 +908,7 @@ const ContractGenerator = () => {
     };
 
     return (
-        <div className="h-screen bg-[#020202] text-white flex flex-col font-['Outfit'] overflow-hidden">
+        <div className="h-full w-full bg-[#0B0F17] text-white flex flex-col font-['Outfit'] overflow-hidden admin-hub-content-container">
             <style dangerouslySetInnerHTML={{ __html: `
                 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap');
                 @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400..700&display=swap');
@@ -564,8 +924,8 @@ const ContractGenerator = () => {
                 <div className="flex items-center gap-2 md:gap-6 min-w-0">
                     <Link to="/admin/agreements" className="p-2.5 md:p-3 bg-white/5 rounded-2xl hover:bg-white/10 transition-all border border-white/5 shrink-0"><ArrowLeft size={16} /></Link>
                     <div className="min-w-0 flex flex-col justify-center">
-                        <h1 className="text-sm md:text-xl font-black uppercase tracking-tighter italic truncate mb-1">Contract <span className="text-[#A855F7]">Vault.</span></h1>
-                        <p className="text-[7px] md:text-[10px] font-black text-gray-500 uppercase tracking-[0.3em] leading-none truncate">Contract Operating System</p>
+                        <h1 className="text-sm md:text-xl font-extrabold tracking-tight text-white truncate mb-1">Contract <span className="text-[#A855F7]">Vault.</span></h1>
+                        <p className="text-[7px] md:text-[10px] font-bold text-gray-500 uppercase tracking-[0.3em] leading-none truncate">Contract Operating System</p>
                     </div>
                 </div>
 
@@ -621,11 +981,10 @@ const ContractGenerator = () => {
 
                 {/* Editor */}
                 <main className={cn(
-                    "flex-grow scrollbar-hide bg-[#050505]",
-                    activeTab === 'ai' ? "h-full overflow-hidden p-4 md:p-6 pb-4 flex flex-col" : "px-4 md:px-12 py-10 md:py-16 overflow-y-auto pb-32",
+                    "flex-grow scrollbar-hide bg-[#050505] px-4 md:px-12 py-10 md:py-16 overflow-y-auto pb-32",
                     isExpandedPreview && "hidden"
                 )}>
-                    <div className={cn("max-w-[1600px] mx-auto w-full", activeTab === 'ai' ? "h-full flex-grow flex flex-col min-h-0" : "space-y-10 md:space-y-12")}>
+                    <div className="max-w-[1600px] mx-auto w-full space-y-10 md:space-y-12">
                         
                         {/* Minimalist Section Header */}
                         {activeTab !== 'ai' && (
@@ -638,7 +997,7 @@ const ContractGenerator = () => {
                                         </p>
                                     </div>
                                     <div className="space-y-2">
-                                        <h2 className="text-xl sm:text-2xl md:text-3xl font-black uppercase tracking-tighter italic text-white leading-none">
+                                        <h2 className="text-xl sm:text-2xl md:text-3xl font-extrabold tracking-tight text-white leading-none">
                                             {tabs.find(t => t.id === activeTab)?.label}<span className="text-[#A855F7]">.</span>
                                         </h2>
                                         <p className="text-[11px] text-gray-500 font-bold uppercase tracking-[0.3em] pl-1">
@@ -666,193 +1025,10 @@ const ContractGenerator = () => {
                         )}
 
                         <AnimatePresence mode="wait">
-                            <motion.div key={activeTab} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.2 }} className={cn(activeTab === 'ai' ? "flex-grow flex flex-col min-h-0 h-full" : "space-y-16")}>
+                            <motion.div key={activeTab} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.2 }} className={cn(activeTab === 'ai' ? "w-full" : "space-y-16")}>
                                 {activeTab === 'ai' && (
-                                    <div className="flex flex-col flex-grow flex-1 min-h-0 h-full bg-zinc-950/20 border border-white/5 rounded-[2.5rem] p-6 relative overflow-hidden">
-                                        {/* Orbital Glow in Background */}
-                                        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-64 bg-[#A855F7]/5 rounded-full blur-3xl pointer-events-none" />
-
-                                        {/* Brand Header */}
-                                        <div className="flex items-center justify-between pb-4 border-b border-white/5 mb-4 shrink-0 relative z-10">
-                                            <div className="flex items-center gap-2.5">
-                                                <div className="w-8 h-8 rounded-xl bg-[#A855F7]/10 flex items-center justify-center border border-[#A855F7]/20">
-                                                    <Zap size={14} className="text-[#A855F7] animate-pulse" />
-                                                </div>
-                                                <div>
-                                                    <span className="text-[9px] font-black text-[#A855F7] uppercase tracking-[0.3em] block leading-none mb-0.5">Primary Model</span>
-                                                    <h3 className="text-xs font-black uppercase text-white tracking-wide leading-none">Gemini 3.5 Flash<span className="text-[#A855F7]">.</span></h3>
-                                                </div>
-                                            </div>
-                                            {/* Mode status indicator */}
-                                            <div className="flex items-center gap-2">
-                                                <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Active Mode:</span>
-                                                <span className="text-[9px] font-black uppercase tracking-widest bg-white/5 border border-white/10 px-2.5 py-1 rounded-md text-[#A855F7] shadow-sm">
-                                                    {refinementContext ? 'Field Refinement' : (aiMode === 'generate' ? 'First Draft' : 'Refinement & Chat')}
-                                                </span>
-                                            </div>
-                                        </div>
-
-                                        {/* Mode Switcher inside AI Studio */}
-                                        <div className="flex items-center bg-zinc-950 border border-white/5 rounded-2xl p-1 gap-1 mb-4 z-10 shrink-0">
-                                            <button
-                                                type="button"
-                                                onClick={() => setAiMode('generate')}
-                                                className={cn(
-                                                    "flex-1 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-1.5",
-                                                    aiMode === 'generate' ? "bg-[#A855F7] text-black shadow-[0_0_15px_rgba(168,85,247,0.3)]" : "text-gray-500 hover:text-white"
-                                                )}
-                                            >
-                                                <Sparkles size={12} />
-                                                <span>Generate New</span>
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={() => setAiMode('refine')}
-                                                className={cn(
-                                                    "flex-1 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-1.5",
-                                                    aiMode === 'refine' ? "bg-[#A855F7] text-black shadow-[0_0_15px_rgba(168,85,247,0.3)]" : "text-gray-500 hover:text-white"
-                                                )}
-                                            >
-                                                <Send size={12} />
-                                                <span>Chat & Revise</span>
-                                            </button>
-                                        </div>
-
-                                        {/* Message Stream */}
-                                         <div ref={chatContainerRef} className="flex-1 overflow-y-auto pr-2 space-y-4 mb-4 relative z-10 flex flex-col min-h-0">
-                                             {/* Welcome card if only initial message */}
-                                             {messages.length === 1 && (
-                                                 <div className="my-auto py-2 flex flex-col items-center justify-center text-center max-w-xl mx-auto space-y-3">
-                                                     <div className="relative">
-                                                         <div className="absolute -inset-1 bg-gradient-to-r from-[#A855F7] via-purple-500 to-indigo-500 rounded-full blur opacity-30 animate-pulse" />
-                                                         <div className="relative w-10 h-10 rounded-full bg-black border border-white/10 flex items-center justify-center">
-                                                             <Sparkles size={16} className="text-[#A855F7]" />
-                                                         </div>
-                                                     </div>
-                                                     <div className="space-y-1">
-                                                         <h4 className="text-sm font-black uppercase tracking-tight italic text-white">AI Agreement Orchestrator</h4>
-                                                         <p className="text-[10px] text-gray-400 leading-normal font-medium">
-                                                             Describe your requirements below to draft a complete legally-binding agreement in seconds.
-                                                         </p>
-                                                     </div>
-
-                                                     {/* Suggestions Grid */}
-                                                     <div className="w-full space-y-2 pt-1">
-                                                         <span className="text-[8px] font-black uppercase text-gray-500 tracking-widest block">Suggested Templates</span>
-                                                         <div className="grid grid-cols-1 gap-1.5">
-                                                             {suggestions.map((s, idx) => (
-                                                                 <button
-                                                                     type="button"
-                                                                     key={idx}
-                                                                     onClick={() => setPromptText(s)}
-                                                                     className="w-full text-left py-2 px-3.5 bg-white/[0.02] border border-white/5 hover:border-[#A855F7]/20 hover:bg-[#A855F7]/5 rounded-2xl text-[10px] font-bold text-gray-400 hover:text-white transition-all duration-300 leading-normal group"
-                                                                 >
-                                                                     <div className="flex items-start gap-2">
-                                                                         <span className="text-[#A855F7] mt-0.5 text-[8px]">✦</span>
-                                                                         <span className="flex-1">{s}</span>
-                                                                     </div>
-                                                                 </button>
-                                                             ))}
-                                                         </div>
-                                                     </div>
-                                                 </div>
-                                             )}
-
-                                             {messages.length > 1 && messages.map(m => (
-                                                 <div
-                                                     key={m.id}
-                                                     className={cn(
-                                                         "max-w-[80%] rounded-[2rem] p-5 text-xs leading-relaxed transition-all shadow-md relative overflow-hidden group",
-                                                         m.sender === 'user'
-                                                             ? "bg-zinc-900 text-zinc-100 self-end rounded-tr-none border border-white/5"
-                                                             : "bg-white/[0.02] border border-white/[0.04] text-zinc-300 self-start rounded-tl-none"
-                                                     )}
-                                                 >
-                                                     <div className="flex items-center gap-2 mb-2">
-                                                         <span className={cn(
-                                                             "text-[8px] font-black uppercase tracking-wider",
-                                                             m.sender === 'user' ? "text-gray-400" : "text-[#A855F7]"
-                                                         )}>
-                                                             {m.sender === 'user' ? 'You' : 'Gemini 3.5 Flash'}
-                                                         </span>
-                                                     </div>
-                                                     <div className="font-medium leading-relaxed">{renderChatMessage(m.text)}</div>
-                                                 </div>
-                                             ))}
-
-                                             {/* Generating Bubble */}
-                                             {isGenerating && (
-                                                 <div className="bg-white/[0.02] border border-white/[0.04] text-zinc-300 self-start rounded-[2rem] rounded-tl-none p-5 text-xs w-[280px] sm:w-[320px] flex flex-col gap-3 shadow-md">
-                                                     <div className="flex items-center gap-2">
-                                                         <Sparkles size={14} className="text-[#A855F7] animate-spin shrink-0" />
-                                                         <span className="font-bold uppercase tracking-wider text-[10px] text-[#A855F7] flex-1 truncate">
-                                                             {STAGE_MESSAGES[generationStage]?.text || "Negotiating contract..."}
-                                                         </span>
-                                                         <span className="text-[9px] font-mono text-zinc-500 font-bold shrink-0">
-                                                             {generationTime}s
-                                                         </span>
-                                                     </div>
-                                                     <div className="w-full h-1 bg-zinc-950 rounded-full overflow-hidden">
-                                                         <div 
-                                                             className="h-full bg-[#A855F7] transition-all duration-500" 
-                                                             style={{ width: `${generationProgress}%` }}
-                                                         />
-                                                     </div>
-                                                 </div>
-                                             )}
-                                             <div ref={chatEndRef} />
-                                         </div>
-
-                                        {/* Prompt container wrapped in .gemini-border-wrap-purple */}
-                                        <div className="mt-auto pt-4 bg-transparent shrink-0">
-                                            {/* WhatsApp quoted context container */}
-                                            {refinementContext && (
-                                                <div className="px-4 py-3 bg-zinc-900/80 border-l-4 border-[#A855F7] rounded-r-2xl flex items-center justify-between gap-4 mb-3 border border-white/5 border-l-0 shadow-lg relative overflow-hidden group">
-                                                    <div className="absolute inset-0 bg-[#A855F7]/5 opacity-40" />
-                                                    <div className="min-w-0 relative z-10">
-                                                        <span className="text-[9px] font-black uppercase tracking-widest text-[#A855F7] block mb-0.5">Refining: {refinementContext.fieldLabel}</span>
-                                                        <p className="text-xs text-gray-400 line-clamp-1 italic">
-                                                            "{refinementContext.currentValue || 'No current content...'}"
-                                                        </p>
-                                                    </div>
-                                                    <button 
-                                                        type="button" 
-                                                        onClick={() => setRefinementContext(null)}
-                                                        className="p-1.5 hover:bg-white/10 rounded-xl text-gray-500 hover:text-white transition-all shrink-0 relative z-10"
-                                                    >
-                                                        <X size={14} />
-                                                    </button>
-                                                </div>
-                                            )}
-
-                                            {/* The Input box container */}
-                                            <div className="gemini-border-wrap-purple shadow-[0_15px_40px_rgba(168,85,247,0.15)] relative">
-                                                <div className="bg-[#050505] rounded-[1.4rem] p-3 flex items-end gap-3">
-                                                    <textarea
-                                                        value={promptText}
-                                                        onChange={e => setPromptText(e.target.value)}
-                                                        placeholder={refinementContext ? `Ask AI to refine "${refinementContext.fieldLabel}"...` : "Describe the contract you want to generate or modify..."}
-                                                        className="flex-1 bg-transparent border-none text-[13px] font-medium text-white placeholder:text-zinc-600 outline-none min-h-[44px] max-h-[160px] py-2 px-3 resize-none leading-relaxed"
-                                                        rows={1}
-                                                        disabled={isGenerating}
-                                                        onKeyDown={e => {
-                                                            if (e.key === 'Enter' && !e.shiftKey) {
-                                                                e.preventDefault();
-                                                                handleStudioSubmit();
-                                                            }
-                                                        }}
-                                                    />
-                                                    <button
-                                                        type="button"
-                                                        onClick={handleStudioSubmit}
-                                                        disabled={!promptText.trim() || isGenerating}
-                                                        className="p-3 bg-[#A855F7] text-black rounded-xl hover:scale-105 active:scale-95 transition-all shrink-0 disabled:opacity-20 disabled:scale-100 flex items-center justify-center shadow-lg"
-                                                    >
-                                                        {isGenerating ? <RefreshCw className="animate-spin" size={14} /> : <Send size={14} />}
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        </div>
+                                    <div className="w-full bg-zinc-950/20 border border-white/5 rounded-[2.5rem] p-6 relative flex flex-col">
+                                        {renderChatbot(false)}
                                     </div>
                                 )}
 
@@ -1382,6 +1558,26 @@ const ContractGenerator = () => {
                 onSave={(sig) => updateField('providerSignature', sig)} 
                 initialName="Authorized Signatory"
             />
+
+            {/* Floating Action Button for AI Chat */}
+            {activeTab !== 'ai' && (
+                <div className="fixed bottom-24 right-6 lg:bottom-8 lg:right-8 z-[120]">
+                    <button
+                        type="button"
+                        onClick={() => setIsFloatingChatOpen(!isFloatingChatOpen)}
+                        className="w-14 h-14 bg-[#A855F7]/10 text-[#A855F7] hover:bg-[#A855F7]/20 border border-[#A855F7]/20 hover:border-[#A855F7]/40 shadow-[0_0_20px_rgba(168,85,247,0.15)] hover:shadow-[0_0_30px_rgba(168,85,247,0.3)] rounded-full flex items-center justify-center cursor-pointer transition-all duration-300 hover:scale-105 active:scale-95"
+                    >
+                        <Sparkles className="w-6 h-6 animate-pulse" />
+                    </button>
+                </div>
+            )}
+
+            {/* Floating AI Chat Pop-up Overlay */}
+            {activeTab !== 'ai' && isFloatingChatOpen && (
+                <div className="fixed bottom-40 right-6 lg:bottom-24 lg:right-8 w-[92vw] sm:w-[420px] md:w-[460px] h-[550px] md:h-[600px] bg-zinc-950/90 backdrop-blur-2xl border border-white/10 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.6)] overflow-hidden flex flex-col p-4 z-[120] animate-fade-in">
+                    {renderChatbot(true)}
+                </div>
+            )}
         </div>
     );
 };

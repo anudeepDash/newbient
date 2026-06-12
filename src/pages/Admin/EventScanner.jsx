@@ -164,7 +164,7 @@ const EventScanner = () => {
     };
 
     return (
-        <div className="fixed inset-0 bg-[#020202] text-white font-sans overflow-hidden flex flex-col z-[9999]">
+        <div className="fixed inset-0 bg-[#0B0F17] text-white font-['Outfit'] overflow-hidden flex flex-col z-[9999]">
             {/* Ambient Background Glows */}
             <div className={cn(
                 "absolute inset-0 opacity-30 blur-[200px] transition-all duration-1000 pointer-events-none",
@@ -212,10 +212,10 @@ const EventScanner = () => {
                             <div className="absolute top-0 right-0 w-32 h-32 bg-neon-blue/20 rounded-full blur-[50px] group-hover:bg-neon-blue/30 transition-all" />
                             
                             <div className="relative z-10">
-                                <h4 className="text-[9px] font-black text-neon-blue uppercase tracking-[0.3em] mb-2 flex items-center gap-2">
+                                <h4 className="text-[9px] font-bold text-neon-blue uppercase tracking-[0.3em] mb-2 flex items-center gap-2">
                                     <div className="w-1.5 h-1.5 rounded-full bg-neon-blue animate-pulse" /> Active Protocol
                                 </h4>
-                                <p className="text-2xl font-black italic uppercase tracking-tighter leading-none">{activeEvent.title}</p>
+                                <p className="text-2xl font-extrabold tracking-tight leading-none">{activeEvent.title}</p>
                                 <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-2">{new Date(activeEvent.date).toLocaleDateString()}</p>
                             </div>
                         </div>
@@ -238,7 +238,7 @@ const EventScanner = () => {
                                 >
                                     <div className="flex items-center justify-between gap-2">
                                         <h4 className={cn(
-                                            "text-sm font-black uppercase italic tracking-widest truncate",
+                                            "text-sm font-extrabold tracking-tight truncate",
                                             selectedEventId === e.id ? "text-white" : "text-gray-400"
                                         )}>{e.title}</h4>
                                         {e.date && new Date(e.date) < new Date() && (
@@ -264,7 +264,7 @@ const EventScanner = () => {
                                 <div className="absolute inset-0 border-2 border-dashed border-gray-600 rounded-full animate-[spin_20s_linear_infinite]" />
                                 <ScanLine size={48} className="text-gray-500" />
                             </div>
-                            <h2 className="text-2xl font-black italic uppercase tracking-widest">Awaiting Setup</h2>
+                            <h2 className="text-2xl font-extrabold tracking-tight">Awaiting Setup</h2>
                             <p className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] leading-relaxed">Please configure the target event from the console to initialize the optical scanner.</p>
                         </motion.div>
                     ) : (
@@ -306,7 +306,7 @@ const EventScanner = () => {
                                             <ScanLine size={40} className="text-gray-400 group-hover:text-neon-green transition-colors" />
                                         </div>
                                         <div className="relative z-10">
-                                            <h3 className="text-xl font-black uppercase tracking-widest mb-2 text-white">Camera Inactive</h3>
+                                            <h3 className="text-xl font-extrabold tracking-tight mb-2 text-white">Camera Inactive</h3>
                                             <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Initialize optical sensor to begin verification</p>
                                         </div>
                                         <Button onClick={() => { setIsScanning(true); setScanResult(null); }} className="relative z-10 h-16 px-10 bg-white text-black font-black uppercase tracking-[0.2em] rounded-2xl hover:scale-105 shadow-[0_10px_40px_rgba(255,255,255,0.2)]">
@@ -369,7 +369,7 @@ const EventScanner = () => {
                                     {/* Message */}
                                     <div className="relative z-10 mb-8">
                                         <h3 className={cn(
-                                            "text-4xl font-black italic uppercase tracking-tighter leading-none mb-4",
+                                            "text-3xl font-extrabold tracking-tight leading-none mb-4",
                                             scanResult.status === 'GREEN' && "text-neon-green",
                                             scanResult.status === 'RED' && "text-red-500",
                                             scanResult.status === 'YELLOW' && "text-yellow-500"

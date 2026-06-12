@@ -45,14 +45,16 @@ const ProfilePanel = ({ isOpen, onClose }) => {
                     where('userId', '==', user.uid)
                 );
                 
-                const qCustEmail = user.email ? query(
+                const cleanEmail = user.email ? user.email.trim().toLowerCase() : null;
+
+                const qCustEmail = cleanEmail ? query(
                     collectionGroup(db, 'entries'),
-                    where('customerEmail', '==', user.email)
+                    where('customerEmail', '==', cleanEmail)
                 ) : null;
 
-                const qEmail = user.email ? query(
+                const qEmail = cleanEmail ? query(
                     collectionGroup(db, 'entries'),
-                    where('email', '==', user.email)
+                    where('email', '==', cleanEmail)
                 ) : null;
 
                 const [snapUser, snapCustEmail, snapEmail] = await Promise.all([

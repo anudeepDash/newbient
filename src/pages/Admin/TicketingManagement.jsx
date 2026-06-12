@@ -1275,7 +1275,7 @@ const TicketingManagement = () => {
                                     {/* Ticketed Stats */}
                                     {event?.isTicketed && (
                                         <>
-                                            {!isScanner && (
+                                            {!isScanner && (user?.role === 'developer' || user?.role === 'founder') && (
                                                 <div className="bg-black/60 p-8 rounded-3xl border border-white/5 relative overflow-hidden group hover:border-white/10 transition-all duration-300">
                                                     <p className="text-[11px] font-black text-gray-500 uppercase tracking-[0.3em] mb-4">Total Revenue</p>
                                                     <p className="text-4xl font-black text-neon-green italic tracking-tighter">

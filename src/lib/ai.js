@@ -8,6 +8,7 @@
 // API Keys are now handled securely by the backend proxy (/api/ai)
 
 import { auth } from './firebase';
+import { useStore } from './store';
 
 // ── Newbi Error System ──────────────────────────────────────────────────
 export const ERROR_CODES = {
@@ -65,6 +66,29 @@ const executeAIPulse = async (systemPrompt, userPrompt) => {
         if (response.ok) {
             const data = await response.json();
             console.log(`[NEWBI AI] ✓ AI Path: Secure Proxy (${data.provider})`);
+            
+            // Update the live model in the Zustand store
+            let displayModel = 'Gemini 3.5 Flash';
+            if (data.provider) {
+                if (data.provider.startsWith('gemini-')) {
+                    const raw = data.provider.replace('gemini-', '');
+                    displayModel = raw.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+                } else if (data.provider === 'openrouter') {
+                    displayModel = 'OpenRouter (Gemini 2.5)';
+                } else if (data.provider === 'airforce') {
+                    displayModel = 'Airforce GPT-4o-Mini';
+                } else if (data.provider === 'pollinations') {
+                    displayModel = 'Pollinations AI (OpenAI)';
+                } else {
+                    displayModel = data.provider;
+                }
+            }
+            try {
+                useStore.setState({ activeModel: displayModel });
+            } catch (e) {
+                console.error("Failed to update store with activeModel:", e);
+            }
+
             return data.content;
         }
 
@@ -93,6 +117,9 @@ const executeAIPulse = async (systemPrompt, userPrompt) => {
         if (pollResponse.ok) {
             const text = await pollResponse.text();
             console.log('[NEWBI AI] ✨ Success: Keyless Direct AI Path (Pollinations)');
+            try {
+                useStore.setState({ activeModel: 'Pollinations AI (OpenAI)' });
+            } catch (e) {}
             return text;
         }
         console.warn('[NEWBI AI] ✗ Pollinations direct path response not OK');
@@ -102,6 +129,9 @@ const executeAIPulse = async (systemPrompt, userPrompt) => {
 
     // FINAL FAILPROOF FALLBACK
     console.error('[NEWBI AI] ✗ ✗ ✗ ALL AI PATHS COLLAPSED. Activating Absolute Failproof Mock.');
+    try {
+        useStore.setState({ activeModel: 'Newbi Failproof Mock' });
+    } catch (e) {}
     
     const type = systemPrompt.toLowerCase().includes('proposal') ? 'proposal' : 
                  systemPrompt.toLowerCase().includes('contract') ? 'contract' : 

@@ -393,7 +393,7 @@ const CreatorManager = ({ showLeaderboardOnly = false }) => {
                     </div>
 
                     {/* Filter Cluster */}
-                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:flex lg:flex-wrap 2xl:flex-wrap items-center gap-2 shrink-0 w-full 2xl:w-auto pr-0 md:pr-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:flex lg:flex-wrap items-center gap-2.5 shrink-0 w-full lg:w-auto pr-0 md:pr-2">
                         {/* Custom Followers Range Popover Selector */}
                         <div className="relative w-full lg:w-[160px]" ref={followersRef}>
                             <div 
@@ -532,7 +532,7 @@ const CreatorManager = ({ showLeaderboardOnly = false }) => {
                         </div>
 
                         {/* Status Filter */}
-                        <div className="w-full lg:w-[150px] col-span-2 sm:col-span-1">
+                        <div className="w-full lg:w-[150px]">
                             <StudioSelect 
                                 value={filterStatus} 
                                 options={[
@@ -590,16 +590,16 @@ const CreatorManager = ({ showLeaderboardOnly = false }) => {
 
                         <button 
                             onClick={exportToCSV}
-                            className="group relative h-12 md:h-14 px-4 md:px-8 bg-white text-black rounded-xl md:rounded-full font-black uppercase tracking-[0.2em] text-[9px] md:text-[10px] overflow-hidden hover:scale-[1.02] active:scale-95 transition-all shadow-[0_15px_40px_rgba(255,255,255,0.1)] flex items-center justify-center gap-3 w-full lg:w-auto shrink-0 col-span-2 sm:col-span-3 lg:col-span-1"
+                            className="group relative h-12 md:h-14 px-4 md:px-8 bg-white/5 border border-white/10 hover:border-white/20 text-white rounded-xl md:rounded-full font-black uppercase tracking-[0.2em] text-[9px] md:text-[10px] overflow-hidden hover:scale-[1.02] active:scale-95 transition-all shadow-lg flex items-center justify-center gap-3 w-full lg:w-auto shrink-0"
                         >
                             <div className="absolute inset-0 bg-gradient-to-r from-neon-pink via-purple-500 to-neon-blue opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                            <div className="relative z-10 flex items-center gap-3 group-hover:text-white transition-colors duration-500">
+                            <div className="relative z-10 flex items-center gap-3 group-hover:text-black transition-colors duration-500">
                                 <Download size={16} />
                                 EXPORT CSV
                             </div>
                         </button>
 
-                        <label className="group relative h-12 md:h-14 px-4 md:px-8 bg-zinc-900 border border-white/10 hover:border-white/20 text-white rounded-xl md:rounded-full font-black uppercase tracking-[0.2em] text-[9px] md:text-[10px] hover:scale-[1.02] active:scale-95 transition-all cursor-pointer flex items-center justify-center gap-3 w-full lg:w-auto shrink-0 col-span-2 sm:col-span-3 lg:col-span-1">
+                        <label className="group relative h-12 md:h-14 px-4 md:px-8 bg-zinc-900 border border-white/10 hover:border-white/20 text-white rounded-xl md:rounded-full font-black uppercase tracking-[0.2em] text-[9px] md:text-[10px] hover:scale-[1.02] active:scale-95 transition-all cursor-pointer flex items-center justify-center gap-3 w-full lg:w-auto shrink-0">
                             <Upload size={16} className="text-neon-pink" />
                             IMPORT SHEET
                             <input type="file" accept=".csv" onChange={handleImportCSV} className="hidden" />
@@ -607,7 +607,7 @@ const CreatorManager = ({ showLeaderboardOnly = false }) => {
 
                         <button 
                             onClick={() => setIsAddModalOpen(true)}
-                            className="group relative h-12 md:h-14 px-4 md:px-8 bg-zinc-900 border border-white/10 hover:border-white/20 text-white rounded-xl md:rounded-full font-black uppercase tracking-[0.2em] text-[9px] md:text-[10px] hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3 w-full lg:w-auto shrink-0 col-span-2 sm:col-span-3 lg:col-span-1"
+                            className="group relative h-12 md:h-14 px-4 md:px-8 bg-zinc-900 border border-white/10 hover:border-white/20 text-white rounded-xl md:rounded-full font-black uppercase tracking-[0.2em] text-[9px] md:text-[10px] hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3 w-full lg:w-auto shrink-0"
                         >
                             <Plus size={16} className="text-neon-blue" />
                             ADD CREATOR
@@ -783,6 +783,7 @@ const CreatorManager = ({ showLeaderboardOnly = false }) => {
             }}
             accentColor="neon-pink"
             tabs={personnelTabs}
+            hideMobileMenu={selectedUids.length > 0}
             action={
                 <div className="w-full md:w-80 shrink-0">
                     <StatCard 
@@ -830,7 +831,7 @@ const CreatorManager = ({ showLeaderboardOnly = false }) => {
                             animate={{ y: 0, x: '-50%', opacity: 1 }}
                             exit={{ y: 100, x: '-50%', opacity: 0 }}
                             transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-                            className="fixed bottom-8 left-1/2 z-[100] w-[90%] max-w-2xl bg-black/60 backdrop-blur-2xl border border-white/10 rounded-3xl px-6 py-4 flex flex-col md:flex-row items-center justify-between gap-4 shadow-[0_20px_50px_rgba(0,0,0,0.5)] border-t-white/20"
+                            className="fixed bottom-28 md:bottom-8 left-1/2 z-[100] w-[90%] max-w-2xl bg-black/60 backdrop-blur-2xl border border-white/10 rounded-3xl px-6 py-4 flex flex-col md:flex-row items-center justify-between gap-4 shadow-[0_20px_50px_rgba(0,0,0,0.5)] border-t-white/20"
                         >
                             <div className="flex items-center gap-3">
                                 <span className="w-3 h-3 rounded-full bg-neon-pink animate-pulse" />

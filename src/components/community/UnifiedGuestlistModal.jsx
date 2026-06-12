@@ -101,6 +101,8 @@ const UnifiedGuestlistModal = ({ isOpen, onClose, guestlist }) => {
             const ref = `GL-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
             setBookingRef(ref);
 
+            const normalizedEmail = (formData.email || '').trim().toLowerCase();
+
             const entryData = {
                 guestlistId: guestlist.id,
                 title: guestlist.title,
@@ -109,7 +111,8 @@ const UnifiedGuestlistModal = ({ isOpen, onClose, guestlist }) => {
                 image: guestlist.image || '',
                 userId: user?.uid || null,
                 customerName: formData.name,
-                customerEmail: formData.email,
+                email: normalizedEmail,
+                customerEmail: normalizedEmail,
                 customerPhone: formData.phone,
                 guestsCount: guestsCount,
                 plusOneNames: formData.plusOneNames.filter(Boolean),
@@ -126,7 +129,7 @@ const UnifiedGuestlistModal = ({ isOpen, onClose, guestlist }) => {
                 const { sendGuestlistConfirmation } = await import('../../lib/email');
                 await sendGuestlistConfirmation({
                     toName: formData.name,
-                    toEmail: formData.email,
+                    toEmail: normalizedEmail,
                     eventName: guestlist.title,
                     bookingRef: ref,
                     guestCount: guestsCount,

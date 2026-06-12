@@ -881,7 +881,7 @@ const CampaignManager = () => {
                                             <ArrowLeft size={20} />
                                         </button>
                                         <h2 className="text-3xl font-black uppercase italic tracking-tighter text-white">
-                                            {editingId ? 'EDIT' : 'NEW'} <span className="text-neon-blue">CAMPAIGN BRIEF</span>
+                                            {editingId ? 'EDIT' : 'NEW'} <span className="text-neon-blue">CAMPAIGN DETAILS</span>
                                         </h2>
                                     </div>
                                     <div className="flex gap-4">
@@ -891,7 +891,7 @@ const CampaignManager = () => {
                                             disabled={isDeploying || isUploading}
                                             className="h-12 px-10 bg-white text-black font-black uppercase tracking-widest rounded-full hover:scale-105 transition-all flex items-center justify-center gap-3 min-w-[140px]"
                                         >
-                                            {isDeploying ? <LoadingSpinner size="xs" color="black" /> : 'DEPLOΥ'}
+                                            {isDeploying ? <LoadingSpinner size="xs" color="black" /> : 'SAVE'}
                                         </button>
                                     </div>
                                 </div>
@@ -1059,7 +1059,7 @@ const CampaignManager = () => {
                                 </div>
                                 <div className="space-y-2">
                                     <h3 className="text-3xl font-black uppercase tracking-tighter text-gray-500 italic">No Campaigns Found</h3>
-                                    <p className="text-gray-700 text-sm font-black uppercase tracking-widest">Deploy a campaign to begin operations</p>
+                                    <p className="text-gray-700 text-sm font-black uppercase tracking-widest">Create a campaign to begin operations</p>
                                 </div>
                             </motion.div>
                         ) : (
@@ -1194,8 +1194,8 @@ const CampaignManager = () => {
             accentColor="neon-blue"
             tabs={personnelTabs}
             action={
-                <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
-                    <div className="w-full md:w-64 shrink-0">
+                <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto items-stretch">
+                    <div className="w-full md:w-64 shrink-0 flex flex-col items-stretch">
                         <StatCard 
                             compact={true} 
                             icon={<Zap size={20} />} 
@@ -1205,7 +1205,7 @@ const CampaignManager = () => {
                             description={`${stats.total} Total Units`} 
                         />
                     </div>
-                    <div className="w-full md:w-64 shrink-0">
+                    <div className="w-full md:w-64 shrink-0 flex flex-col items-stretch">
                         <StatCard 
                             compact={true} 
                             icon={<Clock size={20} />} 

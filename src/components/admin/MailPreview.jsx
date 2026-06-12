@@ -39,17 +39,14 @@ const MailPreview = ({ data }) => {
                     isDark ? "bg-[#0a0a0a] text-white" : "bg-[#ffffff] text-black"
                 )}>
                     {/* Header/Logo */}
-                    <div className={cn(
-                        "p-8 text-left border-b transition-colors",
-                        isDark ? "bg-[#0a0a0a] bg-gradient-to-b from-black to-transparent border-white/5" : "bg-white border-black/5"
-                    )}>
+                    <div className="p-8 text-left border-b bg-[#0a0a0a] border-white/5">
                         <div className="inline-block relative">
                             <img 
-                                src={isDark ? "/logo_full.png" : "/logo_document.png"} 
+                                src="/logo_full.png" 
                                 alt="Newbi Ent" 
                                 className="h-6 w-auto object-contain relative z-10" 
                             />
-                            {isDark && <div className="absolute inset-0 bg-neon-green/20 blur-xl rounded-full" />}
+                            <div className="absolute inset-0 bg-neon-green/20 blur-xl rounded-full" />
                         </div>
                     </div>
 

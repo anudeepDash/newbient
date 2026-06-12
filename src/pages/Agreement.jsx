@@ -92,7 +92,7 @@ const renderContent = (content, baseClass = 'text-[12px] font-medium text-black 
 
 const Agreement = () => {
     const { id } = useParams();
-    const { agreements, updateAgreement, logDocumentAccess, user } = useStore();
+    const { agreements, updateAgreement, logDocumentAccess, user, loading: storeLoading } = useStore();
     const [displayAgreement, setDisplayAgreement] = useState(null);
     const [isExporting, setIsExporting] = useState(false);
     const [signatureName, setSignatureName] = useState('');
@@ -124,8 +124,22 @@ const Agreement = () => {
         if (agreement) {
             setDisplayAgreement(agreement);
             if (user && !verificationEmail) setVerificationEmail(user.email);
+        } else if (!storeLoading) {
+            const fetchAgreement = async () => {
+                try {
+                    const { doc, getDoc } = await import('firebase/firestore');
+                    const { db } = await import('../lib/firebase');
+                    const docSnap = await getDoc(doc(db, 'agreements', id));
+                    if (docSnap.exists()) {
+                        setDisplayAgreement({ ...docSnap.data(), id: docSnap.id });
+                    }
+                } catch (err) {
+                    console.error("Error fetching agreement directly:", err);
+                }
+            };
+            fetchAgreement();
         }
-    }, [id, agreements, user]);
+    }, [id, agreements, user, storeLoading]);
 
     const location = useLocation();
     const isAdmin = (localStorage.getItem('adminAuth') === 'true') || (user?.role === 'super_admin' || user?.role === 'developer');
