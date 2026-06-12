@@ -126,16 +126,49 @@
   @apply text-neon-blue hover:underline font-black transition-all underline-offset-8;
 }
 
-.article-content ul {
-  @apply list-disc list-outside ml-10 mb-10 space-y-4 text-gray-200;
+.article-content ul,
+.proposal-page-render .article-content ul,
+.agreement-page-render .article-content ul,
+.invoice-page-render .article-content ul {
+  list-style-type: disc !important;
+  list-style-position: outside !important;
+  padding-left: 1.25rem !important;
+  margin-left: 0 !important;
+  margin-bottom: 0.75rem !important;
+  margin-top: 0.5rem !important;
 }
 
-.article-content ol {
-  @apply list-decimal list-outside ml-10 mb-10 space-y-4 text-gray-200;
+.article-content ol,
+.proposal-page-render .article-content ol,
+.agreement-page-render .article-content ol,
+.invoice-page-render .article-content ol {
+  list-style-type: decimal !important;
+  list-style-position: outside !important;
+  padding-left: 1.25rem !important;
+  margin-left: 0 !important;
+  margin-bottom: 0.75rem !important;
+  margin-top: 0.5rem !important;
 }
 
-.article-content li {
+.article-content li,
+.proposal-page-render .article-content li,
+.agreement-page-render .article-content li,
+.invoice-page-render .article-content li {
   @apply text-sm md:text-base leading-relaxed font-medium;
+}
+
+/* Fix for paragraphs inside lists moving text too far below */
+.article-content ul p,
+.article-content ol p,
+.proposal-page-render .article-content ul p,
+.proposal-page-render .article-content ol p,
+.agreement-page-render .article-content ul p,
+.agreement-page-render .article-content ol p,
+.invoice-page-render .article-content ul p,
+.invoice-page-render .article-content ol p {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  display: inline !important;
 }
 
 .article-content img {
@@ -421,13 +454,13 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover {
 .proposal-page-render .article-content h1,
 .agreement-page-render .article-content h1,
 .invoice-page-render .article-content h1 {
-  font-size: 14px !important;
+  font-size: 18px !important;
 }
 
 .proposal-page-render .article-content h2,
 .agreement-page-render .article-content h2,
 .invoice-page-render .article-content h2 {
-  font-size: 12px !important;
+  font-size: 15px !important;
 }
 
 .proposal-page-render .article-content h3,
@@ -442,7 +475,7 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover {
 .invoice-page-render .article-content h4,
 .invoice-page-render .article-content h5,
 .invoice-page-render .article-content h6 {
-  font-size: 11px !important;
+  font-size: 13.5px !important;
   font-weight: 600 !important;
   text-transform: none !important;
   letter-spacing: normal !important;
@@ -475,7 +508,8 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover {
 .proposal-page-render .article-content ol,
 .agreement-page-render .article-content ul,
 .agreement-page-render .article-content ol {
-  margin-left: 1.25rem !important;
+  margin-left: 0 !important;
+  padding-left: 1.25rem !important;
   margin-bottom: 0.5rem !important;
   margin-top: 0.25rem !important;
 }
