@@ -24,6 +24,8 @@ const InvoiceEmailModal = ({ isOpen, onClose, invoice, onSend }) => {
 
     const [emailData, setEmailData] = useState({
         to: invoice?.clientEmail || '',
+        cc: '',
+        bcc: '',
         subject: `Invoice Ready: ${invoice?.invoiceNumber || 'INV'}`,
         headerText: 'Your Invoice is Ready',
         messageBody: `<p>Hi${invoice?.clientName ? ` <strong>${invoice.clientName}</strong>` : ''},</p>
@@ -44,6 +46,8 @@ const InvoiceEmailModal = ({ isOpen, onClose, invoice, onSend }) => {
             const amt = `${(invoice.total || invoice.amount || 0).toLocaleString()}`;
             setEmailData({
                 to: invoice.clientEmail || '',
+                cc: '',
+                bcc: '',
                 subject: `Invoice Ready: ${invoice.invoiceNumber || 'INV'}`,
                 headerText: 'Your Invoice is Ready',
                 messageBody: `<p>Hi${invoice.clientName ? ` <strong>${invoice.clientName}</strong>` : ''},</p>
@@ -96,6 +100,8 @@ const InvoiceEmailModal = ({ isOpen, onClose, invoice, onSend }) => {
 
             await onSend({
                 to: emailData.to,
+                cc: emailData.cc,
+                bcc: emailData.bcc,
                 subject: emailData.subject,
                 html: htmlContent
             });
@@ -162,16 +168,44 @@ const InvoiceEmailModal = ({ isOpen, onClose, invoice, onSend }) => {
                                 {/* Recipient */}
                                 <div className="space-y-3">
                                     <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1 flex items-center gap-2">
-                                        <Mail size={12} className="text-neon-blue" /> Recipient Email
+                                        <Mail size={12} className="text-neon-blue" /> Recipient Email(s)
                                     </label>
                                     <Input
-                                        type="email"
+                                        type="text"
                                         value={emailData.to}
                                         onChange={(e) => setEmailData({ ...emailData, to: e.target.value })}
-                                        placeholder="client@example.com"
+                                        placeholder="client@example.com, partner@example.com"
                                         className="h-14 bg-black/50 border-white/5 rounded-2xl text-sm font-bold focus:border-neon-blue/30"
                                         required
                                     />
+                                </div>
+
+                                {/* CC & BCC */}
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-3">
+                                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">
+                                            CC
+                                        </label>
+                                        <Input
+                                            type="text"
+                                            value={emailData.cc}
+                                            onChange={(e) => setEmailData({ ...emailData, cc: e.target.value })}
+                                            placeholder="cc@example.com"
+                                            className="h-14 bg-black/50 border-white/5 rounded-2xl text-sm font-bold focus:border-neon-blue/30"
+                                        />
+                                    </div>
+                                    <div className="space-y-3">
+                                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">
+                                            BCC
+                                        </label>
+                                        <Input
+                                            type="text"
+                                            value={emailData.bcc}
+                                            onChange={(e) => setEmailData({ ...emailData, bcc: e.target.value })}
+                                            placeholder="bcc@example.com"
+                                            className="h-14 bg-black/50 border-white/5 rounded-2xl text-sm font-bold focus:border-neon-blue/30"
+                                        />
+                                    </div>
                                 </div>
 
                                 {/* Subject */}

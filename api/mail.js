@@ -71,7 +71,7 @@ export default async function handler(req, res) {
         return res.status(401).json({ error: 'Unauthorized: Valid Firebase ID Token required' });
     }
 
-    const { to, bcc, subject, text, html, attachments, accountType = 'official', fromName, fromEmail } = req.body;
+    const { to, cc, bcc, subject, text, html, attachments, accountType = 'official', fromName, fromEmail } = req.body;
 
     if (!to || !subject || (!text && !html)) {
         return res.status(400).json({ error: 'Missing required fields' });
@@ -152,16 +152,32 @@ export default async function handler(req, res) {
 
     try {
         const fromAddress = `"${fromDisplayName}" <${fromEmailAddress}>`;
-
-        const info = await transporter.sendMail({
+        const mailOptions = {
             from: fromAddress,
             to,
-            bcc,
             subject,
             text,
             html,
             attachments: attachments || [],
-        });
+        };
+
+        if (cc) {
+            if (typeof cc === 'string' && cc.trim()) {
+                mailOptions.cc = cc.trim();
+            } else if (Array.isArray(cc) && cc.length > 0) {
+                mailOptions.cc = cc;
+            }
+        }
+
+        if (bcc) {
+            if (typeof bcc === 'string' && bcc.trim()) {
+                mailOptions.bcc = bcc.trim();
+            } else if (Array.isArray(bcc) && bcc.length > 0) {
+                mailOptions.bcc = bcc;
+            }
+        }
+
+        const info = await transporter.sendMail(mailOptions);
 
         console.log(`[MAIL] ✅ ${serviceKey} mail sent: ${info.messageId}`);
         return res.status(200).json({ success: true, messageId: info.messageId });

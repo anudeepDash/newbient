@@ -75,7 +75,7 @@ const MailPreview = ({ data }) => {
 
                         <div 
                             className={cn(
-                                "text-sm md:text-base leading-relaxed font-medium prose max-w-none prose-sm break-words",
+                                "text-sm md:text-base leading-relaxed font-medium prose max-w-none prose-sm break-words article-content",
                                 isDark ? "text-gray-400 prose-invert" : "text-gray-600 prose-zinc"
                             )}
                             style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}

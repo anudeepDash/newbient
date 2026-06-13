@@ -96,7 +96,7 @@ const ProposalManagement = () => {
         setEmailModalProposal(proposal);
     };
 
-    const handleDispatchEmail = async ({ to, subject, html }) => {
+    const handleDispatchEmail = async ({ to, cc, bcc, subject, html }) => {
         try {
             const { auth } = await import('../../lib/firebase');
             const token = auth.currentUser ? await auth.currentUser.getIdToken() : null;
@@ -108,6 +108,8 @@ const ProposalManagement = () => {
                 },
                 body: JSON.stringify({ 
                     to, 
+                    cc,
+                    bcc,
                     subject, 
                     html,
                     fromName: 'Newbi Partnerships',

@@ -480,14 +480,14 @@ const Agreement = () => {
                             </div>
                             <div className="mt-auto pt-8 flex justify-between items-center text-[9px] font-black text-gray-400 uppercase tracking-widest">
                                 <p className="w-1/3 text-left">© NEWBI ENTERTAINMENT</p>
-                                <p className="w-1/3 text-center text-gray-500 truncate px-2">{displayAgreement.details?.projectName || ''}</p>
+                                <p className="w-1/3 text-center text-gray-500 truncate px-2"></p>
                                 <p className="w-1/3 text-right text-black">Page {idx + 1} of {paginatedPages.length}</p>
                             </div>
                         </div>
                     ))}
                 </div>
 
-                {displayAgreement.showSignatures && displayAgreement.status !== 'Executed' && !isExporting && (
+                {(displayAgreement.showSignatures || displayAgreement.showSeal) && displayAgreement.status !== 'Executed' && !isExporting && (
                     <div className="w-full max-w-[794px] space-y-10 no-print">
                         <div className="flex items-center justify-between border-b border-white/5 pb-8">
                             <div className="space-y-2">
@@ -500,49 +500,51 @@ const Agreement = () => {
                             </div>
                         </div>
 
-                        <div 
-                            onClick={() => setIsSignatureModalOpen(true)}
-                            className="group cursor-pointer bg-[#0a0a0a] border-2 border-dashed border-white/10 rounded-[2.5rem] p-12 flex flex-col items-center justify-center gap-8 hover:bg-white/[0.02] hover:border-[#A855F7]/20 transition-all shadow-2xl relative overflow-hidden"
-                        >
-                            {clientSignature ? (
-                                <div className="w-full space-y-8">
-                                    <div className="h-40 flex items-center justify-center">
-                                        <img src={clientSignature} alt="Client Signature" className="max-h-full object-contain invert" />
-                                    </div>
-                                    <div className="text-center border-t border-white/5 pt-8 flex items-center justify-center gap-6">
-                                        <div className="space-y-1">
-                                            <p className="text-[12px] font-black text-white uppercase tracking-widest">{signatureName || 'Authorized Signatory'}</p>
-                                            <p className="text-[8px] text-gray-500 uppercase tracking-widest">Signatory Representative</p>
+                        {displayAgreement.showSignatures && (
+                            <div 
+                                onClick={() => setIsSignatureModalOpen(true)}
+                                className="group cursor-pointer bg-[#0a0a0a] border-2 border-dashed border-white/10 rounded-[2.5rem] p-12 flex flex-col items-center justify-center gap-8 hover:bg-white/[0.02] hover:border-[#A855F7]/20 transition-all shadow-2xl relative overflow-hidden"
+                            >
+                                {clientSignature ? (
+                                    <div className="w-full space-y-8">
+                                        <div className="h-40 flex items-center justify-center">
+                                            <img src={clientSignature} alt="Client Signature" className="max-h-full object-contain invert" />
                                         </div>
-                                        <button 
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                setClientSignature(null);
-                                            }}
-                                            className="p-3 bg-red-500/10 text-red-500 rounded-xl hover:bg-red-500 hover:text-white transition-all"
-                                        >
-                                            <Trash2 size={16} />
-                                        </button>
+                                        <div className="text-center border-t border-white/5 pt-8 flex items-center justify-center gap-6">
+                                            <div className="space-y-1">
+                                                <p className="text-[12px] font-black text-white uppercase tracking-widest">{signatureName || 'Authorized Signatory'}</p>
+                                                <p className="text-[8px] text-gray-500 uppercase tracking-widest">Signatory Representative</p>
+                                            </div>
+                                            <button 
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setClientSignature(null);
+                                                }}
+                                                className="p-3 bg-red-500/10 text-red-500 rounded-xl hover:bg-red-500 hover:text-white transition-all"
+                                            >
+                                                <Trash2 size={16} />
+                                            </button>
+                                        </div>
                                     </div>
-                                </div>
-                            ) : (
-                                <>
-                                    <div className="w-24 h-24 bg-white/5 rounded-full flex items-center justify-center group-hover:scale-110 group-hover:bg-[#A855F7]/10 transition-all duration-500">
-                                        <PenTool size={36} className="text-gray-400 group-hover:text-[#A855F7]" />
-                                    </div>
-                                    <div className="text-center">
-                                        <p className="text-[13px] font-black text-white uppercase tracking-[0.2em]">Click to sign agreement</p>
-                                        <p className="text-[10px] text-gray-500 mt-2 uppercase tracking-[0.3em]">Type, Draw or Upload</p>
-                                    </div>
-                                </>
-                            )}
-                        </div>
+                                ) : (
+                                    <>
+                                        <div className="w-24 h-24 bg-white/5 rounded-full flex items-center justify-center group-hover:scale-110 group-hover:bg-[#A855F7]/10 transition-all duration-500">
+                                            <PenTool size={36} className="text-gray-400 group-hover:text-[#A855F7]" />
+                                        </div>
+                                        <div className="text-center">
+                                            <p className="text-[13px] font-black text-white uppercase tracking-[0.2em]">Click to sign agreement</p>
+                                            <p className="text-[10px] text-gray-500 mt-2 uppercase tracking-[0.3em]">Type, Draw or Upload</p>
+                                        </div>
+                                    </>
+                                )}
+                            </div>
+                        )}
 
                         <div className="pt-6 space-y-6">
-                            {clientSignature && (
+                            {(!displayAgreement.showSignatures || clientSignature) && (
                                 <Button 
                                     onClick={() => setIsVerifying(true)}
-                                    disabled={!signatureName.trim()}
+                                    disabled={displayAgreement.showSignatures && !signatureName.trim()}
                                     className="w-full h-20 bg-[#A855F7] text-black font-black uppercase tracking-[0.3em] text-xs rounded-2xl hover:scale-[1.02] active:scale-95 transition-all shadow-[0_20px_50px_rgba(168,85,247,0.3)]"
                                 >
                                     <Zap size={18} className="mr-3" /> Authorize & Execute Instrument

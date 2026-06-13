@@ -4087,41 +4087,52 @@ const ProposalGenerator = () => {
 
                                                 {/* Authentication Layer */}
                                                 {!isHidden('signatures') && (formData.showSignatures || formData.showSeal) && (
-                                                    <div className="mt-12 pt-12 border-t border-gray-100 grid grid-cols-2 gap-16 relative">
-                                                        {/* Provider Signature */}
-                                                        <div className="space-y-6">
-                                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">For Newbi Entertainment</p>
-                                                            <div className="h-32 flex items-center justify-start relative">
-                                                                {formData.showSignatures && formData.providerSignature ? (
-                                                                    <img src={formData.providerSignature} alt="Provider Signature" className="h-full object-contain grayscale" />
-                                                                ) : (
-                                                                    <p className="text-[18px] font-formal italic text-black opacity-40">{formData.senderName || 'Authorized Signatory'}</p>
-                                                                )}
-                                                                <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-black/10" />
-                                                            </div>
-                                                            <p className="text-[9px] font-black text-black uppercase tracking-widest">{formData.senderName || 'Authorized Signatory'}</p>
-                                                            <p className="text-[7px] font-bold text-gray-400 uppercase tracking-widest">{formData.senderDesignation || 'Director of Operations'}</p>
-                                                        </div>
+                                                    <div className="mt-12 pt-12 border-t border-gray-100 relative">
+                                                        {formData.showSignatures ? (
+                                                            <>
+                                                                <div className="grid grid-cols-2 gap-16">
+                                                                    {/* Provider Signature */}
+                                                                    <div className="space-y-6">
+                                                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">For Newbi Entertainment</p>
+                                                                        <div className="h-32 flex items-center justify-start relative">
+                                                                            {formData.providerSignature ? (
+                                                                                <img src={formData.providerSignature} alt="Provider Signature" className="h-full object-contain grayscale" />
+                                                                            ) : (
+                                                                                <p className="text-[18px] font-formal italic text-black opacity-40">{formData.senderName || 'Authorized Signatory'}</p>
+                                                                            )}
+                                                                            <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-black/10" />
+                                                                        </div>
+                                                                        <p className="text-[9px] font-black text-black uppercase tracking-widest">{formData.senderName || 'Authorized Signatory'}</p>
+                                                                        <p className="text-[7px] font-bold text-gray-400 uppercase tracking-widest">{formData.senderDesignation || 'Director of Operations'}</p>
+                                                                    </div>
 
-                                                        {/* Client Signature */}
-                                                        <div className="space-y-6 text-right">
-                                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">For {formData.clientName || 'Valued Partner'}</p>
-                                                            <div className="h-32 flex items-center justify-end relative">
-                                                                {formData.showSignatures && formData.clientSignature ? (
-                                                                    <img src={formData.clientSignature} alt="Client Signature" className="h-full object-contain grayscale" />
-                                                                ) : (
-                                                                    <p className="text-[18px] font-formal italic text-black opacity-20">Type name to sign</p>
+                                                                    {/* Client Signature */}
+                                                                    <div className="space-y-6 text-right">
+                                                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">For {formData.clientName || 'Valued Partner'}</p>
+                                                                        <div className="h-32 flex items-center justify-end relative">
+                                                                            {formData.clientSignature ? (
+                                                                                <img src={formData.clientSignature} alt="Client Signature" className="h-full object-contain grayscale" />
+                                                                            ) : (
+                                                                                <p className="text-[18px] font-formal italic text-black opacity-20">Type name to sign</p>
+                                                                            )}
+                                                                            <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-black/10" />
+                                                                        </div>
+                                                                        <p className="text-[9px] font-black text-black uppercase tracking-widest">Acknowledged & Accepted</p>
+                                                                    </div>
+                                                                </div>
+                                                                {formData.showSeal && (
+                                                                    <div className="flex justify-center mt-6 relative z-10">
+                                                                        <DocumentSeal className="w-44 h-44" />
+                                                                    </div>
                                                                 )}
-                                                                <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-black/10" />
-                                                            </div>
-                                                            <p className="text-[9px] font-black text-black uppercase tracking-widest">Acknowledged & Accepted</p>
-                                                        </div>
-
-                                                        {/* Official Seal Overlay */}
-                                                        {formData.showSeal && (
-                                                            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-10 opacity-80 mix-blend-multiply">
-                                                                <DocumentSeal className="w-44 h-44" />
-                                                            </div>
+                                                            </>
+                                                        ) : (
+                                                            formData.showSeal && (
+                                                                <div className="flex flex-col items-center justify-center p-8 border-2 border-dashed border-gray-200 rounded-[20px]">
+                                                                    <DocumentSeal className="w-44 h-44" />
+                                                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-4">Official Document Seal</p>
+                                                                </div>
+                                                            )
                                                         )}
                                                     </div>
                                                 )}
@@ -4497,41 +4508,52 @@ const ProposalGenerator = () => {
 
                                     {/* Authentication Layer (Export) */}
                                     {(formData.showSeal || formData.showSignatures) && (
-                                        <div className="mt-20 pt-12 border-t-2 border-black/5 grid grid-cols-2 gap-20 relative">
-                                            {/* Provider Signature */}
-                                            <div className="space-y-6">
-                                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">For Newbi Entertainment</p>
-                                                <div className="h-40 flex items-center justify-start relative">
-                                                    {formData.showSignatures && formData.providerSignature ? (
-                                                        <img src={formData.providerSignature} alt="Provider Signature" className="h-full object-contain grayscale mix-blend-multiply" crossOrigin="anonymous" />
-                                                    ) : (
-                                                        <p className="text-[24px] font-formal italic text-black opacity-40">{formData.senderName || 'Authorized Signatory'}</p>
-                                                    )}
-                                                    <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-black" />
-                                                </div>
-                                                <p className="text-[11px] font-black text-black uppercase tracking-widest">{formData.senderName || 'Authorized Signatory'}</p>
-                                                <p className="text-[8px] font-bold text-gray-400 uppercase tracking-widest">{formData.senderDesignation || 'Director of Operations'}</p>
-                                            </div>
+                                        <div className="mt-20 pt-12 border-t-2 border-black/5 relative">
+                                            {formData.showSignatures ? (
+                                                <>
+                                                    <div className="grid grid-cols-2 gap-20">
+                                                        {/* Provider Signature */}
+                                                        <div className="space-y-6">
+                                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">For Newbi Entertainment</p>
+                                                            <div className="h-40 flex items-center justify-start relative">
+                                                                {formData.providerSignature ? (
+                                                                    <img src={formData.providerSignature} alt="Provider Signature" className="h-full object-contain grayscale mix-blend-multiply" crossOrigin="anonymous" />
+                                                                ) : (
+                                                                    <p className="text-[24px] font-formal italic text-black opacity-40">{formData.senderName || 'Authorized Signatory'}</p>
+                                                                )}
+                                                                <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-black" />
+                                                            </div>
+                                                            <p className="text-[11px] font-black text-black uppercase tracking-widest">{formData.senderName || 'Authorized Signatory'}</p>
+                                                            <p className="text-[8px] font-bold text-gray-400 uppercase tracking-widest">{formData.senderDesignation || 'Director of Operations'}</p>
+                                                        </div>
 
-                                            {/* Client Signature */}
-                                            <div className="space-y-6 text-right">
-                                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">For {formData.clientName || 'Valued Partner'}</p>
-                                                <div className="h-40 flex items-center justify-end relative">
-                                                    {formData.showSignatures && formData.clientSignature ? (
-                                                        <img src={formData.clientSignature} alt="Client Signature" className="h-full object-contain grayscale mix-blend-multiply" crossOrigin="anonymous" />
-                                                    ) : (
-                                                        <p className="text-[24px] font-formal italic text-black opacity-10">Type name to sign</p>
+                                                        {/* Client Signature */}
+                                                        <div className="space-y-6 text-right">
+                                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">For {formData.clientName || 'Valued Partner'}</p>
+                                                            <div className="h-40 flex items-center justify-end relative">
+                                                                {formData.clientSignature ? (
+                                                                    <img src={formData.clientSignature} alt="Client Signature" className="h-full object-contain grayscale mix-blend-multiply" crossOrigin="anonymous" />
+                                                                ) : (
+                                                                    <p className="text-[24px] font-formal italic text-black opacity-10">Type name to sign</p>
+                                                                )}
+                                                                <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-black" />
+                                                            </div>
+                                                            <p className="text-[11px] font-black text-black uppercase tracking-widest">Acknowledged & Accepted</p>
+                                                        </div>
+                                                    </div>
+                                                    {formData.showSeal && (
+                                                        <div className="flex justify-center mt-6 relative z-10">
+                                                            <DocumentSeal className="w-56 h-56" />
+                                                        </div>
                                                     )}
-                                                    <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-black" />
-                                                </div>
-                                                <p className="text-[11px] font-black text-black uppercase tracking-widest">Acknowledged & Accepted</p>
-                                            </div>
-
-                                            {/* Official Seal Overlay */}
-                                            {formData.showSeal && (
-                                                <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-10 opacity-90 mix-blend-multiply">
-                                                    <DocumentSeal className="w-56 h-56" />
-                                                </div>
+                                                </>
+                                            ) : (
+                                                formData.showSeal && (
+                                                    <div className="flex flex-col items-center justify-center p-8 border-2 border-dashed border-gray-200 rounded-[20px]">
+                                                        <DocumentSeal className="w-56 h-56" />
+                                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-4">Official Document Seal</p>
+                                                    </div>
+                                                )
                                             )}
                                         </div>
                                     )}

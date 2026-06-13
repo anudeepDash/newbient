@@ -24,6 +24,8 @@ const ProposalEmailModal = ({ isOpen, onClose, proposal, onSend }) => {
 
     const [emailData, setEmailData] = useState({
         to: proposal?.clientEmail || '',
+        cc: '',
+        bcc: '',
         subject: `New Proposal: ${defaultTitle}`,
         headerText: 'Strategic Proposal Ready',
         messageBody: `<p>Hi${proposal?.clientName ? ` <strong>${proposal.clientName}</strong>` : ''},</p>
@@ -43,6 +45,8 @@ const ProposalEmailModal = ({ isOpen, onClose, proposal, onSend }) => {
             const title = proposal.title || 'Strategic Proposal';
             setEmailData({
                 to: proposal.clientEmail || '',
+                cc: '',
+                bcc: '',
                 subject: `New Proposal: ${title}`,
                 headerText: 'Strategic Proposal Ready',
                 messageBody: `<p>Hi${proposal.clientName ? ` <strong>${proposal.clientName}</strong>` : ''},</p>
@@ -115,6 +119,8 @@ const ProposalEmailModal = ({ isOpen, onClose, proposal, onSend }) => {
 
                 return onSend({
                     to: recipientEmail,
+                    cc: emailData.cc,
+                    bcc: emailData.bcc,
                     subject: emailData.subject,
                     html: htmlContent
                 });
@@ -194,6 +200,34 @@ const ProposalEmailModal = ({ isOpen, onClose, proposal, onSend }) => {
                                         className="h-14 bg-black/50 border-white/5 rounded-2xl text-sm font-bold focus:border-neon-green/30"
                                         required
                                     />
+                                </div>
+
+                                {/* CC & BCC */}
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-3">
+                                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">
+                                            CC
+                                        </label>
+                                        <Input
+                                            type="text"
+                                            value={emailData.cc}
+                                            onChange={(e) => setEmailData({ ...emailData, cc: e.target.value })}
+                                            placeholder="cc@example.com"
+                                            className="h-14 bg-black/50 border-white/5 rounded-2xl text-sm font-bold focus:border-neon-green/30"
+                                        />
+                                    </div>
+                                    <div className="space-y-3">
+                                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">
+                                            BCC
+                                        </label>
+                                        <Input
+                                            type="text"
+                                            value={emailData.bcc}
+                                            onChange={(e) => setEmailData({ ...emailData, bcc: e.target.value })}
+                                            placeholder="bcc@example.com"
+                                            className="h-14 bg-black/50 border-white/5 rounded-2xl text-sm font-bold focus:border-neon-green/30"
+                                        />
+                                    </div>
                                 </div>
 
                                 {/* Subject */}

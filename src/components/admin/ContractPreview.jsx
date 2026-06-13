@@ -206,58 +206,63 @@ const ContractPreview = ({ formData, paginatedPages, currentPage }) => {
               <h3 className="text-base font-bold uppercase tracking-widest text-black">Execution</h3>
             </div>
             <div className="flex-1 flex flex-col justify-start space-y-20">
-              <p className="text-[12px] text-gray-700 text-center max-w-xl mx-auto leading-relaxed">
-                IN WITNESS WHEREOF, the Parties have executed this Agreement as of the date first above written.
-              </p>
-              <div className="grid grid-cols-2 gap-20">
-                <div className="space-y-8">
-                  <p className="text-[8px] font-bold text-gray-500 uppercase tracking-widest border-b border-black/10 pb-2">Signed for and on behalf of Provider:</p>
-                  <div className="h-20 flex items-end">
-                    {formData.showSignatures && (
-                      formData.providerSignature ? (
-                        <img src={formData.providerSignature} className="h-full w-auto object-contain grayscale mix-blend-multiply" alt="Provider Signature" crossOrigin="anonymous" />
-                      ) : (
-                        <p className="text-4xl font-signature text-black leading-none opacity-40">Authorized Signatory</p>
-                      )
-                    )}
+              {formData.showSignatures ? (
+                <>
+                  <p className="text-[12px] text-gray-700 text-center max-w-xl mx-auto leading-relaxed">
+                    IN WITNESS WHEREOF, the Parties have executed this Agreement as of the date first above written.
+                  </p>
+                  <div className="grid grid-cols-2 gap-20">
+                    <div className="space-y-8">
+                      <p className="text-[8px] font-bold text-gray-500 uppercase tracking-widest border-b border-black/10 pb-2">Signed for and on behalf of Provider:</p>
+                      <div className="h-20 flex items-end">
+                        {formData.providerSignature ? (
+                          <img src={formData.providerSignature} className="h-full w-auto object-contain grayscale mix-blend-multiply" alt="Provider Signature" crossOrigin="anonymous" />
+                        ) : (
+                          <p className="text-4xl font-signature text-black leading-none opacity-40">Authorized Signatory</p>
+                        )}
+                      </div>
+                      <div className="pt-4">
+                        <p className="text-[11px] font-bold uppercase">{formData.providerName || 'Authorized Signatory'}</p>
+                        <p className="text-[8px] text-gray-500 uppercase tracking-widest">{formData.providerDesignation || 'Director of Operations'}</p>
+                      </div>
+                    </div>
+                    <div className="space-y-8 text-right">
+                      <p className="text-[8px] font-bold text-gray-500 uppercase tracking-widest border-b border-black/10 pb-2">Signed for and on behalf of Client:</p>
+                      <div className="h-20 flex items-end justify-end">
+                        {formData.clientSignature ? (
+                          <img src={formData.clientSignature} className="h-full w-auto object-contain grayscale mix-blend-multiply" alt="Client Signature" crossOrigin="anonymous" />
+                        ) : (
+                          <div className="w-full h-px bg-black/10 border-dashed border-t" />
+                        )}
+                      </div>
+                      <div className="pt-4">
+                        <p className="text-[11px] font-bold uppercase">{formData.parties.secondParty.name || '________________'}</p>
+                        <p className="text-[8px] text-gray-500 uppercase tracking-widest">Authorized Signatory</p>
+                      </div>
+                    </div>
                   </div>
-                  <div className="pt-4">
-                    <p className="text-[11px] font-bold uppercase">{formData.providerName || 'Authorized Signatory'}</p>
-                    <p className="text-[8px] text-gray-500 uppercase tracking-widest">{formData.providerDesignation || 'Director of Operations'}</p>
-                  </div>
-                </div>
-                <div className="space-y-8 text-right">
-                  <p className="text-[8px] font-bold text-gray-500 uppercase tracking-widest border-b border-black/10 pb-2">Signed for and on behalf of Client:</p>
-                  <div className="h-20 flex items-end justify-end">
-                    {formData.showSignatures && (
-                      formData.clientSignature ? (
-                        <img src={formData.clientSignature} className="h-full w-auto object-contain grayscale mix-blend-multiply" alt="Client Signature" crossOrigin="anonymous" />
-                      ) : (
-                        <div className="w-full h-px bg-black/10 border-dashed border-t" />
-                      )
-                    )}
-                  </div>
-                  <div className="pt-4">
-                    <p className="text-[11px] font-bold uppercase">{formData.parties.secondParty.name || '________________'}</p>
-                    <p className="text-[8px] text-gray-500 uppercase tracking-widest">Authorized Signatory</p>
-                  </div>
-                </div>
-              </div>
-              <div className="flex flex-col items-center pt-20 relative">
-                {formData.showSeal && (
-                  <div className="absolute left-1/2 top-20 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-10 opacity-80 mix-blend-multiply">
+                  {formData.showSeal && (
+                    <div className="flex flex-col items-center pt-10 relative">
+                      <DocumentSeal className="w-48 h-48 grayscale brightness-0" />
+                    </div>
+                  )}
+                </>
+              ) : (
+                formData.showSeal && (
+                  <div className="flex flex-col items-center justify-center pt-10">
                     <DocumentSeal className="w-48 h-48 grayscale brightness-0" />
+                    <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-4">Official Document Seal</p>
                   </div>
-                )}
-                
-                {/* Repositioned Forensic Watermark */}
-                <div className="absolute bottom-12 right-12 text-right space-y-1 opacity-40">
-                  <p className="text-[9px] font-black text-black uppercase tracking-[0.2em]">Digital Authentication</p>
-                  <div className="text-[7px] font-bold text-gray-500 uppercase tracking-widest leading-tight">
-                    <p>Reference: {formData.agreementNumber}</p>
-                    <p>Timestamp: {new Date().toISOString()}</p>
-                    <p>Origin: Forensic Node/NB-102</p>
-                  </div>
+                )
+              )}
+              
+              {/* Repositioned Forensic Watermark */}
+              <div className="absolute bottom-12 right-12 text-right space-y-1 opacity-40">
+                <p className="text-[9px] font-black text-black uppercase tracking-[0.2em]">Digital Authentication</p>
+                <div className="text-[7px] font-bold text-gray-500 uppercase tracking-widest leading-tight">
+                  <p>Reference: {formData.agreementNumber}</p>
+                  <p>Timestamp: {new Date().toISOString()}</p>
+                  <p>Origin: Forensic Node/NB-102</p>
                 </div>
               </div>
             </div>
