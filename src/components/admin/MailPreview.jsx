@@ -121,7 +121,7 @@ const MailPreview = ({ data }) => {
                             "text-[10px] font-black uppercase tracking-[0.2em]",
                             isDark ? "text-gray-600" : "text-gray-400"
                         )}>
-                            © {new Date().getFullYear()} NEWBI ENT. ALL RIGHTS RESERVED.
+                            © {new Date().getFullYear()} NEWBI ENTERTAINMENT & MARKETING LLP. ALL RIGHTS RESERVED.
                         </p>
                         <p className={cn(
                             "text-[8px] font-bold uppercase tracking-widest max-w-[200px] mx-auto leading-relaxed",
