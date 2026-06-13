@@ -1071,11 +1071,6 @@ const Proposal = () => {
                                 <div className="flex flex-col gap-6 items-start">
                                     <img src={currentLogo.path} alt="Logo" className={cn("h-16 w-auto object-contain", idx > 0 && "h-8")} crossOrigin="anonymous" />
                                 </div>
-                                {idx > 0 && (
-                                    <div className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em] truncate max-w-[300px]">
-                                        {displayProposal.campaignName || displayProposal.projectName}
-                                    </div>
-                                )}
                                 <div className="text-right space-y-3">
                                     <div><h4 className={cn("text-[10px] font-black uppercase text-black tracking-[0.4em] mb-0", idx > 0 && "text-[7px]")}>Quotation</h4><p className={cn("text-lg font-black text-black tracking-widest font-mono", idx > 0 && "text-sm")}>{displayProposal.proposalNumber}</p></div>
                                     {idx === 0 && (
@@ -1625,7 +1620,7 @@ const Proposal = () => {
                             </div>
                             <div className="mt-auto pt-8 pb-10 border-t border-gray-100 flex justify-between items-center text-[9px] font-black text-gray-400 uppercase tracking-[0.4em]">
                                 <p className="w-1/3 text-left">{currentLogo.label} ©</p>
-                                <p className="w-1/3 text-center text-gray-600 truncate px-2">{displayProposal.campaignName || displayProposal.projectName || ''}</p>
+                                <p className="w-1/3 text-center text-gray-600 truncate px-2"></p>
                                 <p className="w-1/3 text-right text-black">Page {idx + 1} of {paginatedPages.length}</p>
                             </div>
                         </div>
@@ -1641,11 +1636,6 @@ const Proposal = () => {
                             <div className="flex flex-col gap-6 items-start">
                                 <img src={currentLogo.path} alt="Logo" className={cn("h-16 w-auto object-contain", idx > 0 && "h-8")} crossOrigin="anonymous" />
                             </div>
-                            {idx > 0 && (
-                                <div className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em] truncate max-w-[300px]">
-                                    {displayProposal.campaignName || displayProposal.projectName}
-                                </div>
-                            )}
                             <div className="text-right space-y-3">
                                 <div><h4 className={cn("text-[10px] font-black uppercase text-black tracking-[0.4em] mb-0", idx > 0 && "text-[7px]")}>Quotation</h4><p className={cn("text-lg font-black text-black tracking-widest font-mono", idx > 0 && "text-sm")}>{displayProposal.proposalNumber}</p></div>
                                 {idx === 0 && (
@@ -2096,7 +2086,7 @@ const Proposal = () => {
                         </div>
                         <div className="mt-auto pt-8 pb-10 border-t border-gray-100 flex justify-between items-center text-[9px] font-black text-gray-400 uppercase tracking-[0.4em]">
                             <p className="w-1/3 text-left">{currentLogo.label} ©</p>
-                            <p className="w-1/3 text-center text-gray-600 truncate px-2">{displayProposal.campaignName || displayProposal.projectName || ''}</p>
+                            <p className="w-1/3 text-center text-gray-600 truncate px-2"></p>
                             <p className="w-1/3 text-right text-black">Page {idx + 1} of {paginatedPages.length}</p>
                         </div>
                     </div>
