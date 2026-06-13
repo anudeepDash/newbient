@@ -59,6 +59,7 @@ import { generateFullDocument, reviseDocument } from '../../lib/ai';
 
 const logoOptions = [
     { id: 'entertainment', label: 'Newbi Entertainment', path: '/logo_document.png', color: '#39FF14' },
+    { id: 'media', label: 'Newbi Media', path: '/logo_media.png', color: '#00D1FF' },
     { id: 'marketing', label: 'Newbi Marketing', path: '/logo_marketing.png', color: '#FF0055' }
 ];
 
@@ -2803,7 +2804,7 @@ const AIStudio = () => {
                                                                       <div className="grid grid-cols-2 gap-20">
                                                                           {/* Provider Signature */}
                                                                           <div className="space-y-6">
-                                                                              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">For Newbi Entertainment</p>
+                                                                              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">For {currentLogo.label}</p>
                                                                               <div className="h-40 flex items-center justify-start relative">
                                                                                   {activeProposalData.providerSignature ? (
                                                                                       <img src={activeProposalData.providerSignature} alt="Provider Signature" className="h-full object-contain grayscale mix-blend-multiply" crossOrigin="anonymous" />
@@ -2851,7 +2852,7 @@ const AIStudio = () => {
                                             </div>
                                         </div>
                                         <div className="mt-auto pt-8 pb-10 border-t border-gray-100 flex justify-between items-center text-[9px] font-black text-gray-400 uppercase tracking-[0.4em]">
-                                            <p className="w-1/3 text-left">Newbi Entertainment ©</p>
+                                            <p className="w-1/3 text-left">{currentLogo.label} ©</p>
                                             <p className="w-1/3 text-center text-gray-600 truncate px-2"></p>
                                             <p className="w-1/3 text-right text-black">Page {currentPreviewPage + 1} of {paginatedPages.length}</p>
                                         </div>
@@ -3170,7 +3171,7 @@ const AIStudio = () => {
                                                           <div className="grid grid-cols-2 gap-20">
                                                               {/* Provider Signature */}
                                                               <div className="space-y-6">
-                                                                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">For Newbi Entertainment</p>
+                                                                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">For {currentLogo.label}</p>
                                                                   <div className="h-40 flex items-center justify-start relative">
                                                                       {activeProposalData.providerSignature ? (
                                                                           <img src={activeProposalData.providerSignature} alt="Provider Signature" className="h-full object-contain grayscale mix-blend-multiply" crossOrigin="anonymous" />
@@ -3218,7 +3219,7 @@ const AIStudio = () => {
                                 </div>
                             </div>
                             <div className="mt-auto pt-8 pb-10 border-t border-gray-100 flex justify-between items-center text-[9px] font-black text-gray-400 uppercase tracking-[0.4em]">
-                                <p className="w-1/3 text-left">Newbi Entertainment ©</p>
+                                <p className="w-1/3 text-left">{currentLogo.label} ©</p>
                                 <p className="w-1/3 text-center text-gray-600 truncate px-2"></p>
                                 <p className="w-1/3 text-right text-black">Page {idx + 1} of {proposalPaginatedPages.length}</p>
                             </div>

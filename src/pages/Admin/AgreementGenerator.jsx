@@ -333,6 +333,7 @@ const ContractGenerator = () => {
 
     const logoOptions = [
         { id: 'entertainment', label: 'Newbi Entertainment', path: '/logo_document.png', color: '#39FF14' },
+        { id: 'media', label: 'Newbi Media', path: '/logo_media.png', color: '#00D1FF' },
         { id: 'marketing', label: 'Newbi Marketing', path: '/logo_marketing.png', color: '#FF0055' }
     ];
 
