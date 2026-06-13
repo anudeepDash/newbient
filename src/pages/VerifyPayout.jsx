@@ -333,7 +333,7 @@ const VerifyPayout = () => {
                     <span>Official Secure Verification Record</span>
                 </div>
                 <p className="text-[8px] text-gray-600 font-bold uppercase tracking-wider leading-relaxed max-w-md mx-auto">
-                    Access metadata and execution fingerprints are logged securely on client query. Verification services provided by Newbi Entertainment © {new Date().getFullYear()}
+                    Access metadata and execution fingerprints are logged securely on client query. Verification services provided by Newbi Entertainment & Marketing LLP © {new Date().getFullYear()}
                 </p>
             </motion.div>
         </div>

@@ -105,7 +105,7 @@ export const generateOfficialHTML = (data) => {
                         <a href="https://linkedin.com/company/newbi-ent" class="social-icon" style="display: inline-block; margin: 0 12px;"><img src="https://img.icons8.com/material-outlined/48/888888/linkedin.png" class="social-img" style="width: 18px; height: 18px; opacity: 0.6; ${isDark ? 'filter: invert(1);' : ''}" alt="LinkedIn"></a>
                         <a href="https://newbi.live" class="social-icon" style="display: inline-block; margin: 0 12px;"><img src="https://img.icons8.com/material-outlined/48/888888/domain.png" class="social-img" style="width: 18px; height: 18px; opacity: 0.6; ${isDark ? 'filter: invert(1);' : ''}" alt="Website"></a>
                     </div>
-                    <p class="footer-text" style="font-size: 10px; font-weight: 800; color: #777; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 15px; margin-top: 0;">© ${new Date().getFullYear()} NEWBI ENTERTAINMENT. ALL RIGHTS RESERVED.</p>
+                    <p class="footer-text" style="font-size: 10px; font-weight: 800; color: #777; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 15px; margin-top: 0;">© ${new Date().getFullYear()} NEWBI ENTERTAINMENT & MARKETING LLP. ALL RIGHTS RESERVED.</p>
                     <p class="footer-text" style="margin-top: 10px; font-size: 10px; font-weight: 800; color: #777; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0;"><a href="https://newbi.live/unsubscribe" style="color: #777; text-decoration: underline;">UNSUBSCRIBE FROM OFFICIAL LIST</a></p>
                 </div>
             </div>
@@ -650,7 +650,7 @@ export const generateInvoiceEmailHTML = (data) => {
                         <a href="https://linkedin.com/company/newbi-ent" class="social-icon" style="display: inline-block; margin: 0 12px;"><img src="https://img.icons8.com/material-outlined/48/888888/linkedin.png" class="social-img" style="width: 18px; height: 18px; opacity: 0.6; ${isDark ? 'filter: invert(1);' : ''}" alt="LinkedIn"></a>
                         <a href="https://newbi.live" class="social-icon" style="display: inline-block; margin: 0 12px;"><img src="https://img.icons8.com/material-outlined/48/888888/domain.png" class="social-img" style="width: 18px; height: 18px; opacity: 0.6; ${isDark ? 'filter: invert(1);' : ''}" alt="Website"></a>
                     </div>
-                    <p class="footer-text" style="font-size: 10px; font-weight: 800; color: #777; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 15px; margin-top: 0;">© ${new Date().getFullYear()} NEWBI ENTERTAINMENT. ALL RIGHTS RESERVED.</p>
+                    <p class="footer-text" style="font-size: 10px; font-weight: 800; color: #777; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 15px; margin-top: 0;">© ${new Date().getFullYear()} NEWBI ENTERTAINMENT & MARKETING LLP. ALL RIGHTS RESERVED.</p>
                 </div>
             </div>
         </body>
@@ -944,7 +944,7 @@ export const generateWeeklyHTML = (data) => {
                         <a href="https://linkedin.com/company/newbi-ent" class="social-icon" style="display: inline-block; margin: 0 10px;"><img src="https://img.icons8.com/material-outlined/48/888888/linkedin.png" class="social-img" style="width: 18px; height: 18px; opacity: 0.6; ${isDark ? 'filter: invert(1);' : ''}" alt="LinkedIn"></a>
                         <a href="https://newbi.live" class="social-icon" style="display: inline-block; margin: 0 10px;"><img src="https://img.icons8.com/material-outlined/48/888888/domain.png" class="social-img" style="width: 18px; height: 18px; opacity: 0.6; ${isDark ? 'filter: invert(1);' : ''}" alt="Website"></a>
                     </div>
-                    <p class="footer-text" style="font-size: 9px; font-weight: 800; color: ${isDark ? '#475569' : '#9ca3af'}; text-transform: uppercase; letter-spacing: 3px; margin-bottom: 20px; line-height: 1.6;">© ${new Date().getFullYear()} CONCERT ZONE. ALL RIGHTS RESERVED.<br/>A SUBSIDIARY OF NEWBI ENTERTAINMENT.</p>
+                    <p class="footer-text" style="font-size: 9px; font-weight: 800; color: ${isDark ? '#475569' : '#9ca3af'}; text-transform: uppercase; letter-spacing: 3px; margin-bottom: 20px; line-height: 1.6;">© ${new Date().getFullYear()} CONCERT ZONE. ALL RIGHTS RESERVED.<br/>A SUBSIDIARY OF NEWBI ENTERTAINMENT & MARKETING LLP.</p>
                     <a href="https://newbi.live/unsubscribe" class="unsubscribe-link" style="font-size: 8px; font-weight: 700; color: ${accent}; text-decoration: none; text-transform: uppercase; letter-spacing: 1px;">UNSUBSCRIBE FROM WEEKLY BRIEFINGS</a>
                 </div>
             </div>
@@ -1227,7 +1227,7 @@ export const generateProposalEmailHTML = (data) => {
                         <a href="https://linkedin.com/company/newbi-ent" class="social-icon" style="display: inline-block; margin: 0 12px;"><img src="https://img.icons8.com/material-outlined/48/888888/linkedin.png" class="social-img" style="width: 18px; height: 18px; opacity: 0.6; ${isDark ? 'filter: invert(1);' : ''}" alt="LinkedIn"></a>
                         <a href="https://newbi.live" class="social-icon" style="display: inline-block; margin: 0 12px;"><img src="https://img.icons8.com/material-outlined/48/888888/domain.png" class="social-img" style="width: 18px; height: 18px; opacity: 0.6; ${isDark ? 'filter: invert(1);' : ''}" alt="Website"></a>
                     </div>
-                    <p class="footer-text" style="font-size: 10px; font-weight: 800; color: #777; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 15px; margin-top: 0;">© ${new Date().getFullYear()} NEWBI ENTERTAINMENT. ALL RIGHTS RESERVED.</p>
+                    <p class="footer-text" style="font-size: 10px; font-weight: 800; color: #777; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 15px; margin-top: 0;">© ${new Date().getFullYear()} NEWBI ENTERTAINMENT & MARKETING LLP. ALL RIGHTS RESERVED.</p>
                 </div>
             </div>
         </body>
@@ -1432,7 +1432,7 @@ export const generateAgreementEmailHTML = (data) => {
                         <a href="https://linkedin.com/company/newbi-ent" class="social-icon" style="display: inline-block; margin: 0 12px;"><img src="https://img.icons8.com/material-outlined/48/888888/linkedin.png" class="social-img" style="width: 18px; height: 18px; opacity: 0.6; ${isDark ? 'filter: invert(1);' : ''}" alt="LinkedIn"></a>
                         <a href="https://newbi.live" class="social-icon" style="display: inline-block; margin: 0 12px;"><img src="https://img.icons8.com/material-outlined/48/888888/domain.png" class="social-img" style="width: 18px; height: 18px; opacity: 0.6; ${isDark ? 'filter: invert(1);' : ''}" alt="Website"></a>
                     </div>
-                    <p class="footer-text" style="font-size: 10px; font-weight: 800; color: #777; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 15px; margin-top: 0;">© ${new Date().getFullYear()} NEWBI ENTERTAINMENT. ALL RIGHTS RESERVED.</p>
+                    <p class="footer-text" style="font-size: 10px; font-weight: 800; color: #777; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 15px; margin-top: 0;">© ${new Date().getFullYear()} NEWBI ENTERTAINMENT & MARKETING LLP. ALL RIGHTS RESERVED.</p>
                 </div>
             </div>
         </body>
@@ -1666,7 +1666,7 @@ export const generateReceiptEmailHTML = (data) => {
                         <a href="https://linkedin.com/company/newbi-ent" class="social-icon" style="display: inline-block; margin: 0 12px;"><img src="https://img.icons8.com/material-outlined/48/888888/linkedin.png" class="social-img" style="width: 18px; height: 18px; opacity: 0.6; ${isDark ? 'filter: invert(1);' : ''}" alt="LinkedIn"></a>
                         <a href="https://newbi.live" class="social-icon" style="display: inline-block; margin: 0 12px;"><img src="https://img.icons8.com/material-outlined/48/888888/domain.png" class="social-img" style="width: 18px; height: 18px; opacity: 0.6; ${isDark ? 'filter: invert(1);' : ''}" alt="Website"></a>
                     </div>
-                    <p class="footer-text" style="font-size: 10px; font-weight: 800; color: #777; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 15px; margin-top: 0;">© ${new Date().getFullYear()} NEWBI ENTERTAINMENT. ALL RIGHTS RESERVED.</p>
+                    <p class="footer-text" style="font-size: 10px; font-weight: 800; color: #777; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 15px; margin-top: 0;">© ${new Date().getFullYear()} NEWBI ENTERTAINMENT & MARKETING LLP. ALL RIGHTS RESERVED.</p>
                 </div>
             </div>
         </body>
@@ -1787,7 +1787,7 @@ export const generateCreatorWelcomeHTML = (creatorName) => {
                         <a href="https://linkedin.com/company/newbi-ent" class="social-icon"><img src="https://img.icons8.com/material-outlined/48/888888/linkedin.png" class="social-img" alt="LinkedIn"></a>
                         <a href="https://newbi.live" class="social-icon"><img src="https://img.icons8.com/material-outlined/48/888888/domain.png" class="social-img" alt="Website"></a>
                     </div>
-                    <p class="footer-text">© ${new Date().getFullYear()} NEWBI ENTERTAINMENT. ALL RIGHTS RESERVED.</p>
+                    <p class="footer-text">© ${new Date().getFullYear()} NEWBI ENTERTAINMENT & MARKETING LLP. ALL RIGHTS RESERVED.</p>
                 </div>
             </div>
         </body>
@@ -1935,7 +1935,7 @@ export const generateCampaignNotificationHTML = (campaign) => {
                         <a href="https://linkedin.com/company/newbi-ent" class="social-icon"><img src="https://img.icons8.com/material-outlined/48/888888/linkedin.png" class="social-img" alt="LinkedIn"></a>
                         <a href="https://newbi.live" class="social-icon"><img src="https://img.icons8.com/material-outlined/48/888888/domain.png" class="social-img" alt="Website"></a>
                     </div>
-                    <p class="footer-text">© ${new Date().getFullYear()} NEWBI ENTERTAINMENT. ALL RIGHTS RESERVED.</p>
+                    <p class="footer-text">© ${new Date().getFullYear()} NEWBI ENTERTAINMENT & MARKETING LLP. ALL RIGHTS RESERVED.</p>
                 </div>
             </div>
         </body>
@@ -2057,7 +2057,7 @@ export const generateCreatorApprovedHTML = (creatorName) => {
                         <a href="https://linkedin.com/company/newbi-ent" class="social-icon"><img src="https://img.icons8.com/material-outlined/48/888888/linkedin.png" class="social-img" alt="LinkedIn"></a>
                         <a href="https://newbi.live" class="social-icon"><img src="https://img.icons8.com/material-outlined/48/888888/domain.png" class="social-img" alt="Website"></a>
                     </div>
-                    <p class="footer-text">© ${new Date().getFullYear()} NEWBI ENTERTAINMENT. ALL RIGHTS RESERVED.</p>
+                    <p class="footer-text">© ${new Date().getFullYear()} NEWBI ENTERTAINMENT & MARKETING LLP. ALL RIGHTS RESERVED.</p>
                 </div>
             </div>
         </body>
@@ -2190,7 +2190,7 @@ export const generateStaffAuthorizedHTML = (role) => {
                         <a href="https://linkedin.com/company/newbi-ent" class="social-icon"><img src="https://img.icons8.com/material-outlined/48/888888/linkedin.png" class="social-img" alt="LinkedIn"></a>
                         <a href="https://newbi.live" class="social-icon"><img src="https://img.icons8.com/material-outlined/48/888888/domain.png" class="social-img" alt="Website"></a>
                     </div>
-                    <p class="footer-text">© ${new Date().getFullYear()} NEWBI ENTERTAINMENT. ALL RIGHTS RESERVED.</p>
+                    <p class="footer-text">© ${new Date().getFullYear()} NEWBI ENTERTAINMENT & MARKETING LLP. ALL RIGHTS RESERVED.</p>
                 </div>
             </div>
         </body>

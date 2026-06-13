@@ -479,7 +479,7 @@ const Agreement = () => {
                                 )}
                             </div>
                             <div className="mt-auto pt-8 flex justify-between items-center text-[9px] font-black text-gray-400 uppercase tracking-widest">
-                                <p className="w-1/3 text-left">© NEWBI ENTERTAINMENT</p>
+                                <p className="w-1/3 text-left">© NEWBI ENTERTAINMENT & MARKETING LLP</p>
                                 <p className="w-1/3 text-center text-gray-500 truncate px-2"></p>
                                 <p className="w-1/3 text-right text-black">Page {idx + 1} of {paginatedPages.length}</p>
                             </div>

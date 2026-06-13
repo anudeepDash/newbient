@@ -84,7 +84,7 @@ const Footer = () => {
                 <div className="pt-12 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-6">
                     <div className="flex flex-col md:flex-row items-center gap-6 md:gap-12">
                         <div className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-700">
-                            &copy; {new Date().getFullYear()} NEWBI ENTERTAINMENT. ALL RIGHTS RESERVED.
+                            &copy; {new Date().getFullYear()} NEWBI ENTERTAINMENT & MARKETING LLP. ALL RIGHTS RESERVED.
                         </div>
                         
                         <div className="flex items-center gap-6">
