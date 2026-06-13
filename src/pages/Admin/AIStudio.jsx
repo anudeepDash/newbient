@@ -2512,11 +2512,7 @@ const AIStudio = () => {
                                             <div className="flex flex-col gap-6 items-start">
                                                 <img src={currentLogo.path} alt="Logo" className={cn("h-16 w-auto object-contain", currentPreviewPage > 0 && "h-8")} crossOrigin="anonymous" />
                                             </div>
-                                            {currentPreviewPage > 0 && (
-                                                <div className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em] truncate max-w-[300px]">
-                                                    {activeProposalData.campaignName || activeProposalData.projectName}
-                                                </div>
-                                            )}
+
                                             <div className="text-right space-y-3">
                                                 <div><h4 className={cn("text-[10px] font-black uppercase text-black tracking-[0.4em] mb-0", currentPreviewPage > 0 && "text-[7px]")}>Quotation</h4><p className={cn("text-lg font-black text-black tracking-widest font-mono", currentPreviewPage > 0 && "text-sm")}>{activeProposalData.proposalNumber}</p></div>
                                                 {currentPreviewPage === 0 && (
@@ -2801,51 +2797,62 @@ const AIStudio = () => {
 
                                                      {/* Authentication Layer (Preview) */}
                                                      {currentPreviewPage === paginatedPages.length - 1 && (activeProposalData.showSeal || activeProposalData.showSignatures) && (
-                                                         <div className="mt-20 pt-12 border-t-2 border-black/5 grid grid-cols-2 gap-20 relative">
-                                                             {/* Provider Signature */}
-                                                             <div className="space-y-6">
-                                                                 <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">For Newbi Entertainment</p>
-                                                                 <div className="h-40 flex items-center justify-start relative">
-                                                                     {activeProposalData.showSignatures && activeProposalData.providerSignature ? (
-                                                                         <img src={activeProposalData.providerSignature} alt="Provider Signature" className="h-full object-contain grayscale mix-blend-multiply" crossOrigin="anonymous" />
-                                                                     ) : (
-                                                                         <p className="text-[24px] font-signature text-black opacity-40">{activeProposalData.senderName || 'Authorized Signatory'}</p>
-                                                                     )}
-                                                                     <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-black" />
-                                                                 </div>
-                                                                 <p className="text-[11px] font-black text-black uppercase tracking-widest">{activeProposalData.senderName || 'Authorized Signatory'}</p>
-                                                                 <p className="text-[8px] font-bold text-gray-400 uppercase tracking-widest">{activeProposalData.senderDesignation || 'Director of Operations'}</p>
-                                                             </div>
+                                                          <div className="mt-20 pt-12 border-t-2 border-black/5 relative">
+                                                              {activeProposalData.showSignatures ? (
+                                                                  <>
+                                                                      <div className="grid grid-cols-2 gap-20">
+                                                                          {/* Provider Signature */}
+                                                                          <div className="space-y-6">
+                                                                              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">For Newbi Entertainment</p>
+                                                                              <div className="h-40 flex items-center justify-start relative">
+                                                                                  {activeProposalData.providerSignature ? (
+                                                                                      <img src={activeProposalData.providerSignature} alt="Provider Signature" className="h-full object-contain grayscale mix-blend-multiply" crossOrigin="anonymous" />
+                                                                                  ) : (
+                                                                                      <p className="text-[24px] font-signature text-black opacity-40">{activeProposalData.senderName || 'Authorized Signatory'}</p>
+                                                                                  )}
+                                                                                  <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-black" />
+                                                                              </div>
+                                                                              <p className="text-[11px] font-black text-black uppercase tracking-widest">{activeProposalData.senderName || 'Authorized Signatory'}</p>
+                                                                              <p className="text-[8px] font-bold text-gray-400 uppercase tracking-widest">{activeProposalData.senderDesignation || 'Director of Operations'}</p>
+                                                                          </div>
 
-                                                             {/* Client Signature */}
-                                                             <div className="space-y-6 text-right">
-                                                                 <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">For {activeProposalData.clientName || 'Valued Partner'}</p>
-                                                                 <div className="h-40 flex items-center justify-end relative">
-                                                                     {activeProposalData.showSignatures && activeProposalData.clientSignature ? (
-                                                                         <img src={activeProposalData.clientSignature} alt="Client Signature" className="h-full object-contain grayscale mix-blend-multiply" crossOrigin="anonymous" />
-                                                                     ) : (
-                                                                         <p className="text-[24px] font-signature text-black opacity-10">Type name to sign</p>
-                                                                     )}
-                                                                     <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-black" />
-                                                                 </div>
-                                                                 <p className="text-[11px] font-black text-black uppercase tracking-widest">Acknowledged & Accepted</p>
-                                                             </div>
-
-                                                             {/* Official Seal Overlay */}
-                                                             {activeProposalData.showSeal && (
-                                                                 <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-10 opacity-90 mix-blend-multiply">
-                                                                     <DocumentSeal className="w-56 h-56" />
-                                                                 </div>
-                                                             )}
-                                                         </div>
-                                                     )}
+                                                                          {/* Client Signature */}
+                                                                          <div className="space-y-6 text-right">
+                                                                              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">For {activeProposalData.clientName || 'Valued Partner'}</p>
+                                                                              <div className="h-40 flex items-center justify-end relative">
+                                                                                  {activeProposalData.clientSignature ? (
+                                                                                      <img src={activeProposalData.clientSignature} alt="Client Signature" className="h-full object-contain grayscale mix-blend-multiply" crossOrigin="anonymous" />
+                                                                                  ) : (
+                                                                                      <p className="text-[24px] font-signature text-black opacity-10">Type name to sign</p>
+                                                                                  )}
+                                                                                  <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-black" />
+                                                                              </div>
+                                                                              <p className="text-[11px] font-black text-black uppercase tracking-widest">Acknowledged & Accepted</p>
+                                                                          </div>
+                                                                      </div>
+                                                                      {activeProposalData.showSeal && (
+                                                                          <div className="flex justify-center mt-6 relative z-10">
+                                                                              <DocumentSeal className="w-56 h-56" />
+                                                                          </div>
+                                                                      )}
+                                                                  </>
+                                                              ) : (
+                                                                  activeProposalData.showSeal && (
+                                                                      <div className="flex flex-col items-center justify-center p-8 border-2 border-dashed border-gray-200 rounded-[20px]">
+                                                                          <DocumentSeal className="w-56 h-56" />
+                                                                          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-4">Official Document Seal</p>
+                                                                      </div>
+                                                                  )
+                                                              )}
+                                                          </div>
+                                                      )}
                                                  </div>
                                             )}
                                             </div>
                                         </div>
                                         <div className="mt-auto pt-8 pb-10 border-t border-gray-100 flex justify-between items-center text-[9px] font-black text-gray-400 uppercase tracking-[0.4em]">
                                             <p className="w-1/3 text-left">Newbi Entertainment ©</p>
-                                            <p className="w-1/3 text-center text-gray-600 truncate px-2">{activeProposalData.campaignName || activeProposalData.projectName || ''}</p>
+                                            <p className="w-1/3 text-center text-gray-600 truncate px-2"></p>
                                             <p className="w-1/3 text-right text-black">Page {currentPreviewPage + 1} of {paginatedPages.length}</p>
                                         </div>
                                     </motion.div>
@@ -2872,11 +2879,7 @@ const AIStudio = () => {
                                 <div className="flex flex-col gap-6 items-start">
                                     <img src={currentLogo.path} alt="Logo" className={cn("h-16 w-auto object-contain", idx > 0 && "h-8")} crossOrigin="anonymous" />
                                 </div>
-                                {idx > 0 && (
-                                    <div className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em] truncate max-w-[300px]">
-                                        {activeProposalData.campaignName || activeProposalData.projectName}
-                                    </div>
-                                )}
+
                                 <div className="text-right space-y-3">
                                     <div><h4 className={cn("text-[10px] font-black uppercase text-black tracking-[0.4em] mb-0", idx > 0 && "text-[7px]")}>Quotation</h4><p className={cn("text-lg font-black text-black tracking-widest font-mono", idx > 0 && "text-sm")}>{activeProposalData.proposalNumber}</p></div>
                                     {idx === 0 && (
@@ -3161,51 +3164,62 @@ const AIStudio = () => {
 
                                          {/* Authentication Layer (Export) */}
                                          {(activeProposalData.showSeal || activeProposalData.showSignatures) && (
-                                             <div className="mt-20 pt-12 border-t-2 border-black/5 grid grid-cols-2 gap-20 relative">
-                                                 {/* Provider Signature */}
-                                                 <div className="space-y-6">
-                                                     <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">For Newbi Entertainment</p>
-                                                     <div className="h-40 flex items-center justify-start relative">
-                                                         {activeProposalData.showSignatures && activeProposalData.providerSignature ? (
-                                                             <img src={activeProposalData.providerSignature} alt="Provider Signature" className="h-full object-contain grayscale mix-blend-multiply" crossOrigin="anonymous" />
-                                                         ) : (
-                                                             <p className="text-[24px] font-signature text-black opacity-40">{activeProposalData.senderName || 'Authorized Signatory'}</p>
-                                                         )}
-                                                         <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-black" />
-                                                     </div>
-                                                     <p className="text-[11px] font-black text-black uppercase tracking-widest">{activeProposalData.senderName || 'Authorized Signatory'}</p>
-                                                     <p className="text-[8px] font-bold text-gray-400 uppercase tracking-widest">{activeProposalData.senderDesignation || 'Director of Operations'}</p>
-                                                 </div>
+                                              <div className="mt-20 pt-12 border-t-2 border-black/5 relative">
+                                                  {activeProposalData.showSignatures ? (
+                                                      <>
+                                                          <div className="grid grid-cols-2 gap-20">
+                                                              {/* Provider Signature */}
+                                                              <div className="space-y-6">
+                                                                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">For Newbi Entertainment</p>
+                                                                  <div className="h-40 flex items-center justify-start relative">
+                                                                      {activeProposalData.providerSignature ? (
+                                                                          <img src={activeProposalData.providerSignature} alt="Provider Signature" className="h-full object-contain grayscale mix-blend-multiply" crossOrigin="anonymous" />
+                                                                      ) : (
+                                                                          <p className="text-[24px] font-signature text-black opacity-40">{activeProposalData.senderName || 'Authorized Signatory'}</p>
+                                                                      )}
+                                                                      <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-black" />
+                                                                  </div>
+                                                                  <p className="text-[11px] font-black text-black uppercase tracking-widest">{activeProposalData.senderName || 'Authorized Signatory'}</p>
+                                                                  <p className="text-[8px] font-bold text-gray-400 uppercase tracking-widest">{activeProposalData.senderDesignation || 'Director of Operations'}</p>
+                                                              </div>
 
-                                                 {/* Client Signature */}
-                                                 <div className="space-y-6 text-right">
-                                                     <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">For {activeProposalData.clientName || 'Valued Partner'}</p>
-                                                     <div className="h-40 flex items-center justify-end relative">
-                                                         {activeProposalData.showSignatures && activeProposalData.clientSignature ? (
-                                                             <img src={activeProposalData.clientSignature} alt="Client Signature" className="h-full object-contain grayscale mix-blend-multiply" crossOrigin="anonymous" />
-                                                         ) : (
-                                                             <p className="text-[24px] font-signature text-black opacity-10">Type name to sign</p>
-                                                         )}
-                                                         <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-black" />
-                                                     </div>
-                                                     <p className="text-[11px] font-black text-black uppercase tracking-widest">Acknowledged & Accepted</p>
-                                                 </div>
-
-                                                 {/* Official Seal Overlay */}
-                                                 {activeProposalData.showSeal && (
-                                                     <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-10 opacity-90 mix-blend-multiply">
-                                                         <DocumentSeal className="w-56 h-56" />
-                                                     </div>
-                                                 )}
-                                             </div>
-                                         )}
+                                                              {/* Client Signature */}
+                                                              <div className="space-y-6 text-right">
+                                                                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">For {activeProposalData.clientName || 'Valued Partner'}</p>
+                                                                  <div className="h-40 flex items-center justify-end relative">
+                                                                      {activeProposalData.clientSignature ? (
+                                                                          <img src={activeProposalData.clientSignature} alt="Client Signature" className="h-full object-contain grayscale mix-blend-multiply" crossOrigin="anonymous" />
+                                                                      ) : (
+                                                                          <p className="text-[24px] font-signature text-black opacity-10">Type name to sign</p>
+                                                                      )}
+                                                                      <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-black" />
+                                                                  </div>
+                                                                  <p className="text-[11px] font-black text-black uppercase tracking-widest">Acknowledged & Accepted</p>
+                                                              </div>
+                                                          </div>
+                                                          {activeProposalData.showSeal && (
+                                                              <div className="flex justify-center mt-6 relative z-10">
+                                                                  <DocumentSeal className="w-56 h-56" />
+                                                              </div>
+                                                          )}
+                                                      </>
+                                                  ) : (
+                                                      activeProposalData.showSeal && (
+                                                          <div className="flex flex-col items-center justify-center p-8 border-2 border-dashed border-gray-200 rounded-[20px]">
+                                                              <DocumentSeal className="w-56 h-56" />
+                                                              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-4">Official Document Seal</p>
+                                                          </div>
+                                                      )
+                                                  )}
+                                              </div>
+                                          )}
                                      </div>
                                 )}
                                 </div>
                             </div>
                             <div className="mt-auto pt-8 pb-10 border-t border-gray-100 flex justify-between items-center text-[9px] font-black text-gray-400 uppercase tracking-[0.4em]">
                                 <p className="w-1/3 text-left">Newbi Entertainment ©</p>
-                                <p className="w-1/3 text-center text-gray-600 truncate px-2">{activeProposalData.campaignName || activeProposalData.projectName || ''}</p>
+                                <p className="w-1/3 text-center text-gray-600 truncate px-2"></p>
                                 <p className="w-1/3 text-right text-black">Page {idx + 1} of {proposalPaginatedPages.length}</p>
                             </div>
                         </div>

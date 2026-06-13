@@ -607,6 +607,7 @@ const RequestDetailModal = ({ request, onClose, onUpdateStatus, onDelete }) => {
                         
                         <div className="shrink-0 w-full lg:w-auto p-6 sm:p-8 bg-white/[0.03] border border-white/5 rounded-[2rem] sm:rounded-[2.5rem] space-y-4 sm:space-y-6 lg:min-w-[280px]">
                             <DetailItem label="Official Email" value={request.email} icon={<Mail size={16} />} color="blue" />
+                            <DetailItem label="Mobile Number" value={request.phone || 'N/A'} icon={<Phone size={16} />} color="purple" />
                             <DetailItem label="Mission Location" value={request.city} icon={<MapPin size={16} />} color="pink" />
                             <DetailItem label="Deployment Date" value={request.date || 'TBD'} icon={<Calendar size={16} />} color="green" />
                             <DetailItem label="Allocated Budget" value={request.budget || 'UNDISCLOSED'} icon={<DollarSign size={16} />} color="yellow" />
@@ -710,7 +711,8 @@ const DetailItem = ({ label, value, icon, color }) => {
         blue: 'text-neon-blue',
         pink: 'text-neon-pink',
         green: 'text-neon-green',
-        yellow: 'text-yellow-500'
+        yellow: 'text-yellow-500',
+        purple: 'text-purple-500'
     };
 
     return (

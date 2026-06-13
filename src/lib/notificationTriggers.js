@@ -146,6 +146,11 @@ export const notifyAllUsers = async (title, content, link = '', image = '', send
             if (uniqueEmails.length > 0) {
                 const { sendMassEmail } = await import('./email');
                 const htmlContent = `
+                    <style>
+                        ul { list-style-type: disc !important; padding-left: 20px !important; margin-top: 10px !important; margin-bottom: 10px !important; }
+                        ol { list-style-type: decimal !important; padding-left: 20px !important; margin-top: 10px !important; margin-bottom: 10px !important; }
+                        li { margin-bottom: 5px !important; line-height: 1.6 !important; }
+                    </style>
                     <div style="font-family: sans-serif; padding: 20px; color: #333; max-width: 600px; margin: 0 auto; border: 1px solid #eee; border-radius: 12px;">
                         ${image ? `<img src="${image}" alt="${title}" style="width: 100%; border-radius: 8px; margin-bottom: 20px;" />` : ''}
                         <h2 style="color: #000; text-transform: uppercase; font-style: italic;">${title}</h2>

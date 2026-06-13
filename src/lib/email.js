@@ -2,8 +2,7 @@ import { auth } from './firebase';
 export const NEWBI_GREEN = '#39FF14';
 export const CONCERT_ZONE_CYAN = '#00f2ff';
 const getBaseUrl = () => {
-    // For emails, static logo and assets should always resolve to the public production website
-    return 'https://newbi.live';
+    return window.location.origin;
 };
 
 /**
@@ -65,6 +64,9 @@ export const generateOfficialHTML = (data) => {
                 .category-badge { display: inline-block; padding: 6px 12px; background: ${NEWBI_GREEN}; color: #000000; font-size: 9px; font-weight: 900; border-radius: 6px; letter-spacing: 2px; margin-bottom: 20px; text-transform: uppercase; }
                 .title { font-size: 28px; font-weight: 800; color: ${textColor}; margin-bottom: 24px; line-height: 1.2; letter-spacing: -0.5px; }
                 .body-text { color: ${subTextColor}; font-size: 15px; line-height: 1.6; font-weight: 400; margin-bottom: 40px; }
+                .body-text ul, .content ul { list-style-type: disc !important; padding-left: 20px !important; margin-top: 10px !important; margin-bottom: 10px !important; }
+                .body-text ol, .content ol { list-style-type: decimal !important; padding-left: 20px !important; margin-top: 10px !important; margin-bottom: 10px !important; }
+                .body-text li, .content li { margin-bottom: 5px !important; line-height: 1.6 !important; }
                 .cta-button { display: inline-block; padding: 16px 30px; background-color: ${NEWBI_GREEN}; color: #000000 !important; text-decoration: none; font-weight: 700; font-size: 12px; border-radius: 10px; transition: all 0.2s; }
                 .footer { padding: 40px 50px; background-color: ${isDark ? '#050505' : '#fafafa'}; border-top: 1px solid ${borderColor}; text-align: center; }
                 .footer-text { font-size: 10px; font-weight: 800; color: #777; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 15px; }
@@ -479,7 +481,7 @@ export const generateInvoiceEmailHTML = (data) => {
     // Header background is always dark to avoid a mismatched logo/header in dark mode
     const headerBg = '#0a0a0a';
     const headerBorder = '#1a1a1a';
-    const logoUrl = `${baseUrl}/logo_full.png`;
+    const logoUrl = `${baseUrl}/69c6b548-01d8-4fd3-9813-9cc53fa40498.png`;
 
     const mediaQueries = (isPreview || isDark) ? '' : `
         @media (prefers-color-scheme: dark) {
@@ -515,6 +517,9 @@ export const generateInvoiceEmailHTML = (data) => {
                 .category-badge { display: inline-block; padding: 6px 12px; background: ${NEWBI_GREEN}; color: #000000; font-size: 9px; font-weight: 900; border-radius: 6px; letter-spacing: 2px; margin-bottom: 20px; text-transform: uppercase; }
                 .title { font-size: 28px; font-weight: 800; color: ${textColor}; margin-bottom: 24px; line-height: 1.2; letter-spacing: -0.5px; }
                 .body-text { color: ${subTextColor}; font-size: 15px; line-height: 1.6; font-weight: 400; margin-bottom: 30px; }
+                .body-text ul, .content ul { list-style-type: disc !important; padding-left: 20px !important; margin-top: 10px !important; margin-bottom: 10px !important; }
+                .body-text ol, .content ol { list-style-type: decimal !important; padding-left: 20px !important; margin-top: 10px !important; margin-bottom: 10px !important; }
+                .body-text li, .content li { margin-bottom: 5px !important; line-height: 1.6 !important; }
                 
                 /* Attachment Card - Table layout compatible */
                 .attachment-card { background: ${cardBg}; border: 1px solid ${cardBorder}; border-radius: 16px; overflow: hidden; margin: 30px 0; }
@@ -861,6 +866,9 @@ export const generateWeeklyHTML = (data) => {
                     margin-bottom: 1.5em; 
                     font-size: 15px;
                 }
+                .content ul { list-style-type: disc !important; padding-left: 20px !important; margin-top: 10px !important; margin-bottom: 10px !important; }
+                .content ol { list-style-type: decimal !important; padding-left: 20px !important; margin-top: 10px !important; margin-bottom: 10px !important; }
+                .content li { margin-bottom: 5px !important; line-height: 1.6 !important; }
                 .content a { 
                     color: ${accent}; 
                     text-decoration: none; 
@@ -1065,7 +1073,7 @@ export const generateProposalEmailHTML = (data) => {
     // Header background is always dark to avoid a mismatched logo/header in dark mode
     const headerBg = '#0a0a0a';
     const headerBorder = '#1a1a1a';
-    const logoUrl = `${baseUrl}/logo_full.png`;
+    const logoUrl = `${baseUrl}/69c6b548-01d8-4fd3-9813-9cc53fa40498.png`;
 
     const mediaQueries = (isPreview || isDark) ? '' : `
         @media (prefers-color-scheme: dark) {
@@ -1099,6 +1107,9 @@ export const generateProposalEmailHTML = (data) => {
                 .category-badge { display: inline-block; padding: 6px 12px; background: ${NEWBI_GREEN}; color: #000000; font-size: 9px; font-weight: 900; border-radius: 6px; letter-spacing: 2px; margin-bottom: 20px; text-transform: uppercase; }
                 .title { font-size: 28px; font-weight: 800; color: ${textColor}; margin-bottom: 24px; line-height: 1.2; letter-spacing: -0.5px; }
                 .body-text { color: ${subTextColor}; font-size: 15px; line-height: 1.6; font-weight: 400; margin-bottom: 30px; }
+                .body-text ul, .content ul { list-style-type: disc !important; padding-left: 20px !important; margin-top: 10px !important; margin-bottom: 10px !important; }
+                .body-text ol, .content ol { list-style-type: decimal !important; padding-left: 20px !important; margin-top: 10px !important; margin-bottom: 10px !important; }
+                .body-text li, .content li { margin-bottom: 5px !important; line-height: 1.6 !important; }
                 
                 /* Attachment Card - Table layout compatible */
                 .attachment-card { background: ${cardBg}; border: 1px solid ${cardBorder}; border-radius: 16px; overflow: hidden; margin: 30px 0; }
@@ -1137,7 +1148,7 @@ export const generateProposalEmailHTML = (data) => {
             <div class="container" style="width: 100%; max-width: 600px; margin: 40px auto; background-color: ${containerBg}; border: 1px solid ${borderColor}; border-radius: 20px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.02); color: ${textColor};">
                 <div class="header" style="padding: 40px; background-color: ${headerBg}; border-bottom: 1px solid ${headerBorder}; text-align: left;">
                     <!-- Brand Logo -->
-                    <img src="${baseUrl}/logo_full.png" alt="Newbi" style="display: block; margin: 0; height: 25px; width: auto; max-width: 180px;">
+                    <img src="${baseUrl}/69c6b548-01d8-4fd3-9813-9cc53fa40498.png" alt="Newbi" style="display: block; margin: 0; height: 25px; width: auto; max-width: 180px;">
                 </div>
                 <div class="content" style="padding: 50px; text-align: left;">
                     <div class="category-badge" style="display: inline-block; padding: 6px 12px; background: ${NEWBI_GREEN}; color: #000000; font-size: 9px; font-weight: 900; border-radius: 6px; letter-spacing: 2px; margin-bottom: 20px; text-transform: uppercase;">PROPOSAL</div>
@@ -1254,7 +1265,7 @@ export const generateAgreementEmailHTML = (data) => {
     // Header background is always dark to avoid a mismatched logo/header in dark mode
     const headerBg = '#0a0a0a';
     const headerBorder = '#1a1a1a';
-    const logoUrl = `${baseUrl}/logo_full.png`;
+    const logoUrl = `${baseUrl}/69c6b548-01d8-4fd3-9813-9cc53fa40498.png`;
 
     const mediaQueries = (isPreview || isDark) ? '' : `
         @media (prefers-color-scheme: dark) {
@@ -1264,6 +1275,7 @@ export const generateAgreementEmailHTML = (data) => {
             .body-text { color: #888888 !important; }
             .footer { background-color: #050505 !important; border-color: #1a1a1a !important; }
             .social-img { filter: invert(1) !important; }
+            .header img { filter: invert(1) brightness(1.2) !important; }
             .category-badge { background: ${NEON_PURPLE} !important; }
             .attachment-card { background: #111111 !important; border-color: #1e1e1e !important; }
             .attachment-label { color: #888888 !important; }
@@ -1288,6 +1300,9 @@ export const generateAgreementEmailHTML = (data) => {
                 .category-badge { display: inline-block; padding: 6px 12px; background: ${NEON_PURPLE}; color: #ffffff; font-size: 9px; font-weight: 900; border-radius: 6px; letter-spacing: 2px; margin-bottom: 20px; text-transform: uppercase; }
                 .title { font-size: 28px; font-weight: 800; color: ${textColor}; margin-bottom: 24px; line-height: 1.2; letter-spacing: -0.5px; }
                 .body-text { color: ${subTextColor}; font-size: 15px; line-height: 1.6; font-weight: 400; margin-bottom: 30px; }
+                .body-text ul, .content ul { list-style-type: disc !important; padding-left: 20px !important; margin-top: 10px !important; margin-bottom: 10px !important; }
+                .body-text ol, .content ol { list-style-type: decimal !important; padding-left: 20px !important; margin-top: 10px !important; margin-bottom: 10px !important; }
+                .body-text li, .content li { margin-bottom: 5px !important; line-height: 1.6 !important; }
                 
                 /* Attachment Card - Table layout compatible */
                 .attachment-card { background: ${cardBg}; border: 1px solid ${cardBorder}; border-radius: 16px; overflow: hidden; margin: 30px 0; }
@@ -1415,6 +1430,17 @@ export const generateAgreementEmailHTML = (data) => {
                     <div class="social-links" style="margin-bottom: 20px;">
                         <a href="https://www.instagram.com/newbi.live" class="social-icon" style="display: inline-block; margin: 0 12px;"><img src="https://img.icons8.com/material-outlined/48/888888/instagram-new.png" class="social-img" style="width: 18px; height: 18px; opacity: 0.6; ${isDark ? 'filter: invert(1);' : ''}" alt="Instagram"></a>
                         <a href="https://linkedin.com/company/newbi-ent" class="social-icon" style="display: inline-block; margin: 0 12px;"><img src="https://img.icons8.com/material-outlined/48/888888/linkedin.png" class="social-img" style="width: 18px; height: 18px; opacity: 0.6; ${isDark ? 'filter: invert(1);' : ''}" alt="LinkedIn"></a>
+                        <a href="https://newbi.live" class="social-icon" style="display: inline-block; margin: 0 12px;"><img src="https://img.icons8.com/material-outlined/48/888888/domain.png" class="social-img" style="width: 18px; height: 18px; opacity: 0.6; ${isDark ? 'filter: invert(1);' : ''}" alt="Website"></a>
+                    </div>
+                    <p class="footer-text" style="font-size: 10px; font-weight: 800; color: #777; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 15px; margin-top: 0;">© ${new Date().getFullYear()} NEWBI ENTERTAINMENT. ALL RIGHTS RESERVED.</p>
+                </div>
+            </div>
+        </body>
+        </html>
+    `;
+};
+
+/**
  * Generates the HTML for a payment receipt email.
  * Premium theme, compatible with light and dark mode templates.
  */
@@ -1480,6 +1506,9 @@ export const generateReceiptEmailHTML = (data) => {
                 .category-badge { display: inline-block; padding: 6px 12px; background: ${NEWBI_GREEN}; color: #000000; font-size: 9px; font-weight: 900; border-radius: 6px; letter-spacing: 2px; margin-bottom: 20px; text-transform: uppercase; }
                 .title { font-size: 28px; font-weight: 800; color: ${textColor}; margin-bottom: 24px; line-height: 1.2; letter-spacing: -0.5px; }
                 .body-text { color: ${subTextColor}; font-size: 15px; line-height: 1.6; font-weight: 400; margin-bottom: 30px; }
+                .body-text ul, .content ul { list-style-type: disc !important; padding-left: 20px !important; margin-top: 10px !important; margin-bottom: 10px !important; }
+                .body-text ol, .content ol { list-style-type: decimal !important; padding-left: 20px !important; margin-top: 10px !important; margin-bottom: 10px !important; }
+                .body-text li, .content li { margin-bottom: 5px !important; line-height: 1.6 !important; }
                 
                 /* Receipt Attachment Card */
                 .attachment-card { background: ${cardBg}; border: 1px solid ${cardBorder}; border-top: none; border-bottom: none; border-radius: 0; overflow: visible; margin: 30px 0; }
@@ -1512,35 +1541,6 @@ export const generateReceiptEmailHTML = (data) => {
                     .title { font-size: 24px !important; margin-bottom: 18px !important; }
                     .body-text { font-size: 14px !important; line-height: 1.5 !important; }
                 }
-
-                @media (prefers-color-scheme: dark) {
-                    body { background-color: #000000 !important; color: #ffffff !important; }
-                    .container { background-color: #0a0a0a !important; border-color: #1a1a1a !important; }
-                    .title { color: #ffffff !important; }
-                    .body-text { color: #888888 !important; }
-                    .footer { background-color: #050505 !important; border-color: #1a1a1a !important; }
-                    .social-img { filter: invert(1) !important; }
-                    .category-badge { background: ${NEWBI_GREEN} !important; }
-                    .attachment-card { background: #111111 !important; border-color: #1e1e1e !important; }
-                    .attachment-label { color: #888888 !important; }
-                    .attachment-value { color: #ffffff !important; }
-                    .attachment-total { background: #0d1f0d !important; }
-                    .attachment-total-value { color: #ffffff !important; }
-                }
-
-                @media (prefers-color-scheme: light) {
-                    body { background-color: #fcfcfc !important; color: #111111 !important; }
-                    .container { background-color: #ffffff !important; border-color: #eaeaea !important; }
-                    .title { color: #111111 !important; }
-                    .body-text { color: #444444 !important; }
-                    .footer { background-color: #fafafa !important; border-color: #eaeaea !important; }
-                    .social-img { filter: none !important; }
-                    .category-badge { background: ${NEWBI_GREEN} !important; }
-                    .attachment-card { background: #f8f9fa !important; border-color: #e5e7eb !important; }
-                    .attachment-label { color: #444444 !important; }
-                    .attachment-value { color: #111111 !important; }
-                    .attachment-total { background: #f0fdf4 !important; }
-                    .attachment-total-value { color: #111111 !important; }
                 ${mediaQueries}
             </style>
         </head>
@@ -1719,6 +1719,9 @@ export const generateCreatorWelcomeHTML = (creatorName) => {
                 .pink-text { color: #FF4F8B; }
                 .blue-text { color: #00f2ff; }
                 .body-text { color: #a0a0a0; font-size: 16px; line-height: 1.6; font-weight: 400; margin-bottom: 30px; }
+                .body-text ul, .content ul { list-style-type: disc !important; padding-left: 20px !important; margin-top: 10px !important; margin-bottom: 10px !important; }
+                .body-text ol, .content ol { list-style-type: decimal !important; padding-left: 20px !important; margin-top: 10px !important; margin-bottom: 10px !important; }
+                .body-text li, .content li { margin-bottom: 5px !important; line-height: 1.6 !important; }
                 
                 .studio-card { background: #121212; border: 1px solid #222222; border-radius: 16px; padding: 24px; margin: 30px 0; }
                 .studio-card h3 { font-size: 18px; font-weight: 800; color: #00f2ff; margin-top: 0; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
@@ -1845,6 +1848,9 @@ export const generateCampaignNotificationHTML = (campaign) => {
                 .pink-text { color: #FF4F8B; }
                 .blue-text { color: #00f2ff; }
                 .body-text { color: #a0a0a0; font-size: 16px; line-height: 1.6; font-weight: 400; margin-bottom: 30px; }
+                .body-text ul, .content ul { list-style-type: disc !important; padding-left: 20px !important; margin-top: 10px !important; margin-bottom: 10px !important; }
+                .body-text ol, .content ol { list-style-type: decimal !important; padding-left: 20px !important; margin-top: 10px !important; margin-bottom: 10px !important; }
+                .body-text li, .content li { margin-bottom: 5px !important; line-height: 1.6 !important; }
                 
                 .campaign-card { width: 100%; border-collapse: collapse; background: #121212; border: 1px solid #222222; border-radius: 16px; margin: 30px 0; overflow: hidden; }
                 .card-row { border-bottom: 1px dashed #222222; }
@@ -1982,6 +1988,9 @@ export const generateCreatorApprovedHTML = (creatorName) => {
                 .pink-text { color: #FF4F8B; }
                 .blue-text { color: #00f2ff; }
                 .body-text { color: #a0a0a0; font-size: 16px; line-height: 1.6; font-weight: 400; margin-bottom: 30px; }
+                .body-text ul, .content ul { list-style-type: disc !important; padding-left: 20px !important; margin-top: 10px !important; margin-bottom: 10px !important; }
+                .body-text ol, .content ol { list-style-type: decimal !important; padding-left: 20px !important; margin-top: 10px !important; margin-bottom: 10px !important; }
+                .body-text li, .content li { margin-bottom: 5px !important; line-height: 1.6 !important; }
                 
                 .studio-card { background: #121212; border: 1px solid #222222; border-radius: 16px; padding: 24px; margin: 30px 0; }
                 .studio-card h3 { font-size: 18px; font-weight: 800; color: #00f2ff; margin-top: 0; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
@@ -2111,6 +2120,9 @@ export const generateStaffAuthorizedHTML = (role) => {
                 .green-text { color: #39FF14; }
                 .blue-text { color: #00f2ff; }
                 .body-text { color: #a0a0a0; font-size: 16px; line-height: 1.6; font-weight: 400; margin-bottom: 30px; }
+                .body-text ul, .content ul { list-style-type: disc !important; padding-left: 20px !important; margin-top: 10px !important; margin-bottom: 10px !important; }
+                .body-text ol, .content ol { list-style-type: decimal !important; padding-left: 20px !important; margin-top: 10px !important; margin-bottom: 10px !important; }
+                .body-text li, .content li { margin-bottom: 5px !important; line-height: 1.6 !important; }
                 
                 .studio-card { background: #121212; border: 1px solid #222222; border-radius: 16px; padding: 24px; margin: 30px 0; }
                 .studio-card h3 { font-size: 18px; font-weight: 800; color: #39FF14; margin-top: 0; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px; }

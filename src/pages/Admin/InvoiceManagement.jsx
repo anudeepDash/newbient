@@ -143,7 +143,7 @@ const InvoiceManagement = () => {
         }
     };
 
-    const handleSendEmail = async ({ to, subject, html }) => {
+    const handleSendEmail = async ({ to, cc, bcc, subject, html }) => {
         try {
             const { auth } = await import('../../lib/firebase');
             const token = auth.currentUser ? await auth.currentUser.getIdToken() : null;
@@ -155,6 +155,8 @@ const InvoiceManagement = () => {
                 },
                 body: JSON.stringify({ 
                     to, 
+                    cc,
+                    bcc,
                     subject, 
                     html,
                     fromName: 'Newbi Finance',

@@ -147,7 +147,7 @@ const ArtistAnt = () => {
     });
 
     const [clientData, setClientData] = useState({
-        name: '', org: '', email: '', city: '', category: '', 
+        name: '', org: '', email: '', phone: '', city: '', category: '', 
         budget: '', date: '', requirement: ''
     });
 
@@ -242,7 +242,7 @@ const ArtistAnt = () => {
             });
             setView('gateway');
             setStep(1);
-            setClientData({ name: '', org: '', email: '', city: '', category: '', budget: '', date: '', requirement: '' });
+            setClientData({ name: '', org: '', email: '', phone: '', city: '', category: '', budget: '', date: '', requirement: '' });
         } catch (error) {
             useStore.getState().addToast("Something went wrong. Please try again.", 'error');
         } finally {
@@ -722,7 +722,10 @@ const ArtistAnt = () => {
                                                         <FormField label="Authorized Representative" value={clientData.name} onChange={(e) => setClientData({...clientData, name: e.target.value})} placeholder="Full name" />
                                                         <FormField label="Organization" value={clientData.org} onChange={(e) => setClientData({...clientData, org: e.target.value})} placeholder="Company or Entity" />
                                                         <FormField label="Business Email" value={clientData.email} onChange={(e) => setClientData({...clientData, email: e.target.value})} placeholder="email@company.com" />
-                                                        <FormSelect label="Event Location" value={clientData.city} onChange={(e) => setClientData({...clientData, city: e.target.value})} options={PREDEFINED_CITIES} />
+                                                        <FormField label="Mobile Number" value={clientData.phone} onChange={(e) => setClientData({...clientData, phone: e.target.value})} placeholder="+91 XXXXX XXXXX" />
+                                                        <div className="md:col-span-2">
+                                                            <FormSelect label="Event Location" value={clientData.city} onChange={(e) => setClientData({...clientData, city: e.target.value})} options={PREDEFINED_CITIES} />
+                                                        </div>
                                                     </div>
                                                 )}
                                                 {step === 2 && (

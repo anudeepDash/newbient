@@ -421,7 +421,7 @@ const SpendsManagement = () => {
         window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
     };
 
-    const handleSendReceiptEmail = async ({ to, subject, html }) => {
+    const handleSendReceiptEmail = async ({ to, cc, bcc, subject, html }) => {
         try {
             const { auth } = await import('../../lib/firebase');
             const token = auth.currentUser ? await auth.currentUser.getIdToken() : null;
@@ -433,6 +433,8 @@ const SpendsManagement = () => {
                 },
                 body: JSON.stringify({
                     to,
+                    cc,
+                    bcc,
                     subject,
                     html,
                     fromName: 'Newbi Finance',
