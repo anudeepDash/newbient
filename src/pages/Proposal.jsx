@@ -454,9 +454,9 @@ const Proposal = () => {
     }
 
     const logoOptions = [
-        { id: 'entertainment', label: 'Newbi Entertainment', path: '/logo_document.png' },
-        { id: 'media', label: 'Newbi Media', path: '/logo_document.png' },
-        { id: 'marketing', label: 'Newbi Marketing', path: '/logo_document.png' }
+        { id: 'entertainment', label: 'Newbi Entertainment', path: '/logo_document.png', color: '#39FF14' },
+        { id: 'media', label: 'Newbi Media', path: '/logo_media.png', color: '#00D1FF' },
+        { id: 'marketing', label: 'Newbi Marketing', path: '/logo_marketing.png', color: '#FF0055' }
     ];
 
     const currentLogo = logoOptions.find(l => l.id === displayProposal.selectedLogo) || logoOptions[0];
@@ -1441,7 +1441,7 @@ const Proposal = () => {
                                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 relative z-20">
                                                                 {/* Provider Side */}
                                                                 <div className="space-y-4">
-                                                                    <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">For Newbi Entertainment</p>
+                                                                    <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">For {currentLogo.label}</p>
                                                                     <div className="h-24 flex items-end">
                                                                         {displayProposal.providerSignature ? (
                                                                             <img src={displayProposal.providerSignature} className="h-full object-contain grayscale mix-blend-multiply" alt="Provider Signature" crossOrigin="anonymous" />
@@ -1450,7 +1450,7 @@ const Proposal = () => {
                                                                         )}
                                                                     </div>
                                                                     <div className="space-y-1">
-                                                                        <p className="text-[11px] font-black uppercase text-black">{displayProposal.senderName || 'Newbi Entertainment'}</p>
+                                                                        <p className="text-[11px] font-black uppercase text-black">{displayProposal.senderName || currentLogo.label}</p>
                                                                         <p className="text-[8px] font-bold text-gray-400 uppercase tracking-widest italic">{displayProposal.senderDesignation || 'Service Provider'}</p>
                                                                     </div>
                                                                 </div>
@@ -1513,7 +1513,7 @@ const Proposal = () => {
                                                                             )}
                                                                         </div>
                                                                         <div className="space-y-1">
-                                                                            <p className="text-[11px] font-black uppercase text-black">{displayProposal.senderName || 'Newbi Entertainment'}</p>
+                                                                            <p className="text-[11px] font-black uppercase text-black">{displayProposal.senderName || currentLogo.label}</p>
                                                                             <p className="text-[8px] font-bold text-gray-400 uppercase tracking-widest italic">{displayProposal.senderDesignation || 'Service Provider'}</p>
                                                                         </div>
                                                                     </div>
@@ -1624,7 +1624,7 @@ const Proposal = () => {
                                 </div>
                             </div>
                             <div className="mt-auto pt-8 pb-10 border-t border-gray-100 flex justify-between items-center text-[9px] font-black text-gray-400 uppercase tracking-[0.4em]">
-                                <p className="w-1/3 text-left">Newbi Entertainment ©</p>
+                                <p className="w-1/3 text-left">{currentLogo.label} ©</p>
                                 <p className="w-1/3 text-center text-gray-600 truncate px-2">{displayProposal.campaignName || displayProposal.projectName || ''}</p>
                                 <p className="w-1/3 text-right text-black">Page {idx + 1} of {paginatedPages.length}</p>
                             </div>
@@ -1962,7 +1962,7 @@ const Proposal = () => {
                                                     {/* Provider Side */}
                                                     {displayProposal.showSignatures ? (
                                                         <div className="space-y-4 text-left">
-                                                            <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">For Newbi Entertainment</p>
+                                                            <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">For {currentLogo.label}</p>
                                                             <div className="h-16 flex items-end">
                                                                 {displayProposal.providerSignature ? (
                                                                     <img src={displayProposal.providerSignature} className="h-full object-contain grayscale mix-blend-multiply" alt="Provider Signature" crossOrigin="anonymous" />
@@ -1977,8 +1977,8 @@ const Proposal = () => {
                                                         </div>
                                                     ) : (
                                                         <div className="space-y-1 text-left flex flex-col justify-end">
-                                                            <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">For Newbi Entertainment</p>
-                                                            <p className="text-[10px] font-black text-black">{displayProposal.senderName || 'Newbi Entertainment'}</p>
+                                                            <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">For {currentLogo.label}</p>
+                                                            <p className="text-[10px] font-black text-black">{displayProposal.senderName || currentLogo.label}</p>
                                                         </div>
                                                     )}
 
@@ -2095,7 +2095,7 @@ const Proposal = () => {
                             </div>
                         </div>
                         <div className="mt-auto pt-8 pb-10 border-t border-gray-100 flex justify-between items-center text-[9px] font-black text-gray-400 uppercase tracking-[0.4em]">
-                            <p className="w-1/3 text-left">Newbi Entertainment ©</p>
+                            <p className="w-1/3 text-left">{currentLogo.label} ©</p>
                             <p className="w-1/3 text-center text-gray-600 truncate px-2">{displayProposal.campaignName || displayProposal.projectName || ''}</p>
                             <p className="w-1/3 text-right text-black">Page {idx + 1} of {paginatedPages.length}</p>
                         </div>
