@@ -4203,7 +4203,7 @@ const ProposalGenerator = () => {
                                         </div>
                                     </div>
                                     <div className="mt-auto pt-8 pb-10 border-t border-gray-100 flex justify-between items-center text-[9px] font-black text-gray-400 uppercase tracking-[0.4em]">
-                                        <p>{currentLogo.label} ©</p>
+                                        <p>© NEWBI ENTERTAINMENT & MARKETING LLP</p>
                                         <p className="text-black">Page {currentPreviewPage + 1} of {paginatedPages.length}</p>
                                     </div>
                                 </motion.div>
@@ -4624,7 +4624,7 @@ const ProposalGenerator = () => {
                             </div>
                         </div>
                         <div className="mt-auto pt-8 pb-10 border-t border-gray-100 flex justify-between items-center text-[9px] font-black text-gray-400 uppercase tracking-[0.4em]">
-                            <p>{currentLogo.label} ©</p>
+                            <p>© NEWBI ENTERTAINMENT & MARKETING LLP</p>
                             <p className="text-black">Page {idx + 1} of {paginatedPages.length}</p>
                         </div>
                     </div>

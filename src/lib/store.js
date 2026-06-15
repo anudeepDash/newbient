@@ -18,6 +18,17 @@ const getCachedSession = () => {
     }
 };
 
+const getSessionTimestamp = () => {
+    try {
+        const session = localStorage.getItem(AUTH_CACHE_KEY);
+        if (!session) return Date.now();
+        const parsed = JSON.parse(session);
+        return parsed?.timestamp || Date.now();
+    } catch (e) {
+        return Date.now();
+    }
+};
+
 const uploadBase64ToStorage = async (base64String, path) => {
     if (!base64String || typeof base64String !== 'string' || !base64String.startsWith('data:') || !base64String.includes(';base64,')) {
         return base64String;
@@ -321,6 +332,7 @@ export const useStore = create((set, get) => ({
     loading: true,
     authInitialized: initialUser !== null,
     user: initialUser,
+    userListenerUnsubscribe: null,
 
     // Real-time Subscription Init
     subscribeToData: (isAdmin) => {
@@ -2356,6 +2368,21 @@ export const useStore = create((set, get) => ({
                     return;
                 }
 
+                // CHECK FORCE LOGOUT STATUS
+                if (userData.forceLogoutBefore) {
+                    const sessionTimestamp = getSessionTimestamp();
+                    const forceLogoutTime = new Date(userData.forceLogoutBefore).getTime();
+                    if (sessionTimestamp < forceLogoutTime) {
+                        console.warn("User session has been revoked. Denying access.");
+                        set({ user: null, authInitialized: true });
+                        const { getAuth } = await import('firebase/auth');
+                        const auth = getAuth();
+                        await auth.signOut();
+                        useStore.getState().addToast("Your session has expired. Please sign in again.", 'warning');
+                        return;
+                    }
+                }
+
                 hasJoinedTribe = userData.hasJoinedTribe || false;
                 hasJoinedWhatsapp = userData.hasJoinedWhatsapp || false;
                 displayName = userData.displayName || displayName;
@@ -2397,6 +2424,11 @@ export const useStore = create((set, get) => ({
             user: finalUser,
             authInitialized: true
         });
+
+        // Initialize real-time listener for current user's profile updates
+        if (finalUser && finalUser.uid) {
+            get().setupUserListener(finalUser.uid);
+        }
     },
 
     // User Management Actions
@@ -2522,11 +2554,121 @@ export const useStore = create((set, get) => ({
     },
 
     logout: async () => {
+        const { userListenerUnsubscribe } = get();
+        if (userListenerUnsubscribe) {
+            userListenerUnsubscribe();
+        }
         const { getAuth } = await import('firebase/auth');
         const auth = getAuth();
         await auth.signOut();
         localStorage.removeItem(AUTH_CACHE_KEY);
-        set({ user: null });
+        set({ user: null, userListenerUnsubscribe: null });
+    },
+
+    setupUserListener: (uid) => {
+        const { userListenerUnsubscribe } = get();
+        if (userListenerUnsubscribe) {
+            userListenerUnsubscribe();
+        }
+
+        const unsub = onSnapshot(doc(db, 'users', uid), (snapshot) => {
+            if (snapshot.exists()) {
+                const userData = snapshot.data();
+                const currentUser = get().user;
+                if (!currentUser) return;
+
+                // 1. Check if user is blocked
+                if (userData.isBlocked) {
+                    console.warn("User is blocked. Revoking local session.");
+                    get().logout();
+                    get().addToast("Your account has been suspended. Please contact support.", 'error');
+                    return;
+                }
+
+                // 2. Check if user has been logged out from all devices
+                if (userData.forceLogoutBefore) {
+                    const sessionTimestamp = getSessionTimestamp();
+                    const forceLogoutTime = new Date(userData.forceLogoutBefore).getTime();
+                    if (sessionTimestamp < forceLogoutTime) {
+                        console.warn("User session has been revoked. Revoking local session.");
+                        get().logout();
+                        get().addToast("Your session has expired. Please sign in again.", 'warning');
+                        return;
+                    }
+                }
+            }
+        }, (error) => {
+            console.error("Error in real-time user listener:", error);
+        });
+
+        set({ userListenerUnsubscribe: unsub });
+    },
+
+    revokeSessions: async (targetUid = null, targetEmail = null) => {
+        const { getAuth } = await import('firebase/auth');
+        const auth = getAuth();
+        const currentUser = auth.currentUser;
+        if (!currentUser) throw new Error("Authentication required");
+
+        const token = await currentUser.getIdToken(true);
+        const response = await fetch('/api/revoke-sessions', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ targetUid, targetEmail })
+        });
+
+        const text = await response.text();
+        let data;
+        try {
+            data = JSON.parse(text);
+        } catch (e) {
+            const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+            if (isLocal || text.trim().startsWith('<') || response.status === 404) {
+                // local development fallback
+                console.warn("[Revoke Sessions] API returned HTML or 404 on localhost. Falling back to client-only action.");
+                const { db } = await import('./firebase');
+                const { doc, setDoc, query, collection, where, getDocs } = await import('firebase/firestore');
+                
+                let resolvedUid = targetUid;
+                // If resolving admin where targetUid is doc.id (and not a real Auth UID), resolve it via email
+                if (targetEmail && (!resolvedUid || resolvedUid.length < 20 || resolvedUid === targetEmail)) {
+                    try {
+                        const userQuery = query(collection(db, 'users'), where('email', '==', targetEmail));
+                        const userSnap = await getDocs(userQuery);
+                        if (!userSnap.empty) {
+                            resolvedUid = userSnap.docs[0].id;
+                        }
+                    } catch (err) {
+                        console.error("[Revoke Sessions] Failed to resolve UID from email:", err);
+                    }
+                }
+                
+                if (!resolvedUid) {
+                    resolvedUid = currentUser.uid;
+                }
+                
+                await setDoc(doc(db, 'users', resolvedUid), { forceLogoutBefore: new Date().toISOString() }, { merge: true });
+                
+                if (resolvedUid === currentUser.uid) {
+                    await get().logout();
+                }
+                return { success: true, message: 'Vite dev fallback session revoke executed' };
+            }
+            throw new Error(`Non-JSON API response (Status: ${response.status})`);
+        }
+
+        if (!response.ok) {
+            throw new Error(data.error || "Failed to revoke sessions");
+        }
+
+        // If revoking own sessions, run local logout
+        if (!targetUid || targetUid === currentUser.uid) {
+            await get().logout();
+        }
+        return data;
     },
 
     // Maintenance Actions
