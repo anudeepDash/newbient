@@ -2852,7 +2852,7 @@ const AIStudio = () => {
                                             </div>
                                         </div>
                                         <div className="mt-auto pt-8 pb-10 border-t border-gray-100 flex justify-between items-center text-[9px] font-black text-gray-400 uppercase tracking-[0.4em]">
-                                            <p className="w-1/3 text-left">{currentLogo.label} ©</p>
+                                            <p className="w-1/3 text-left">© NEWBI ENTERTAINMENT & MARKETING LLP</p>
                                             <p className="w-1/3 text-center text-gray-600 truncate px-2"></p>
                                             <p className="w-1/3 text-right text-black">Page {currentPreviewPage + 1} of {paginatedPages.length}</p>
                                         </div>
@@ -3219,7 +3219,7 @@ const AIStudio = () => {
                                 </div>
                             </div>
                             <div className="mt-auto pt-8 pb-10 border-t border-gray-100 flex justify-between items-center text-[9px] font-black text-gray-400 uppercase tracking-[0.4em]">
-                                <p className="w-1/3 text-left">{currentLogo.label} ©</p>
+                                <p className="w-1/3 text-left">© NEWBI ENTERTAINMENT & MARKETING LLP</p>
                                 <p className="w-1/3 text-center text-gray-600 truncate px-2"></p>
                                 <p className="w-1/3 text-right text-black">Page {idx + 1} of {proposalPaginatedPages.length}</p>
                             </div>

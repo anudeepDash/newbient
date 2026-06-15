@@ -78,7 +78,7 @@ export const verifyToken = async (req) => {
 
     const token = authHeader.split('Bearer ')[1];
     try {
-        const decodedToken = await auth.verifyIdToken(token);
+        const decodedToken = await auth.verifyIdToken(token, true);
         return decodedToken;
     } catch (error) {
         console.error('Error verifying Firebase ID token:', error);

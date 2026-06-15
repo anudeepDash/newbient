@@ -18,7 +18,8 @@ const ProfilePanel = ({ isOpen, onClose }) => {
     const { 
         user, logout, creators, artists, addNotification, 
         resetPassword, updateDisplayName, verifyInstagramFollowers, 
-        ticketOrders, notifications, upcomingEvents, portfolio, guestlists 
+        ticketOrders, notifications, upcomingEvents, portfolio, guestlists,
+        revokeSessions
     } = useStore();
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState('overview'); // 'overview', 'tickets', 'settings', 'security'
@@ -198,6 +199,30 @@ const ProfilePanel = ({ isOpen, onClose }) => {
             });
         } finally {
             setIsUpdating(false);
+        }
+    };
+
+    const handleSignOutAllDevices = async () => {
+        if (window.confirm("Are you sure you want to sign out of all devices? This will end your session on all current devices, including this one.")) {
+            setIsUpdating(true);
+            try {
+                await revokeSessions();
+                addNotification({
+                    title: "Sessions Revoked",
+                    content: "Successfully signed out of all devices.",
+                    type: 'message'
+                });
+                onClose();
+                navigate('/');
+            } catch (err) {
+                addNotification({
+                    title: "Revocation Failed",
+                    content: err.message || "Unable to revoke sessions.",
+                    type: 'default'
+                });
+            } finally {
+                setIsUpdating(false);
+            }
         }
     };
 
@@ -793,20 +818,37 @@ const ProfilePanel = ({ isOpen, onClose }) => {
                                             <div className="space-y-4">
                                                 <div className="space-y-4">
                                                     <h4 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest pl-1">Access Management</h4>
-                                                    <button 
-                                                        onClick={handleResetPassword}
-                                                        disabled={isUpdating}
-                                                        className="w-full h-20 rounded-3xl bg-white/5 border border-white/10 hover:bg-white hover:text-black transition-all flex items-center justify-between px-8 group disabled:opacity-50"
-                                                    >
-                                                        <div className="flex items-center gap-5">
-                                                            <RefreshCw size={22} className={cn("text-neon-blue transition-transform group-hover:rotate-180 duration-700", isUpdating && "animate-spin")} />
-                                                            <div className="text-left">
-                                                                <span className="block text-xs font-black uppercase tracking-widest">Update Password</span>
-                                                                <span className="block text-[9px] text-gray-500 font-bold uppercase mt-1 group-hover:text-black/60">Dispatches reset link to email</span>
+                                                    <div className="flex flex-col gap-4">
+                                                        <button 
+                                                            onClick={handleResetPassword}
+                                                            disabled={isUpdating}
+                                                            className="w-full h-20 rounded-3xl bg-white/5 border border-white/10 hover:bg-white hover:text-black transition-all flex items-center justify-between px-8 group disabled:opacity-50"
+                                                        >
+                                                            <div className="flex items-center gap-5">
+                                                                <RefreshCw size={22} className={cn("text-neon-blue transition-transform group-hover:rotate-180 duration-700", isUpdating && "animate-spin")} />
+                                                                <div className="text-left">
+                                                                    <span className="block text-xs font-black uppercase tracking-widest">Update Password</span>
+                                                                    <span className="block text-[9px] text-gray-500 font-bold uppercase mt-1 group-hover:text-black/60">Dispatches reset link to email</span>
+                                                                </div>
                                                             </div>
-                                                        </div>
-                                                        <ArrowRight size={18} className="opacity-30 group-hover:opacity-100 transition-all group-hover:translate-x-1" />
-                                                    </button>
+                                                            <ArrowRight size={18} className="opacity-30 group-hover:opacity-100 transition-all group-hover:translate-x-1" />
+                                                        </button>
+
+                                                        <button 
+                                                            onClick={handleSignOutAllDevices}
+                                                            disabled={isUpdating}
+                                                            className="w-full h-20 rounded-3xl bg-red-500/5 border border-red-500/10 hover:bg-red-500 hover:text-white transition-all flex items-center justify-between px-8 group disabled:opacity-50 text-red-500"
+                                                        >
+                                                            <div className="flex items-center gap-5">
+                                                                <LogOut size={22} className="transition-transform group-hover:-translate-x-1 duration-300" />
+                                                                <div className="text-left">
+                                                                    <span className="block text-xs font-black uppercase tracking-widest">Sign out of all devices</span>
+                                                                    <span className="block text-[9px] text-red-500/60 font-bold uppercase mt-1 group-hover:text-white/60">Revokes all active sessions</span>
+                                                                </div>
+                                                            </div>
+                                                            <ArrowRight size={18} className="opacity-30 group-hover:opacity-100 transition-all group-hover:translate-x-1" />
+                                                        </button>
+                                                    </div>
                                                 </div>
 
                                                 <div className="pt-8 space-y-4 border-t border-white/5">

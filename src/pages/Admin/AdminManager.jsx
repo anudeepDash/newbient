@@ -14,6 +14,7 @@ import ShieldAlert from 'lucide-react/dist/esm/icons/shield-alert';
 import UserCheck from 'lucide-react/dist/esm/icons/user-check';
 import Activity from 'lucide-react/dist/esm/icons/activity';
 import X from 'lucide-react/dist/esm/icons/x';
+import LogOut from 'lucide-react/dist/esm/icons/log-out';
 import ChevronDown from 'lucide-react/dist/esm/icons/chevron-down';
 import FileText from 'lucide-react/dist/esm/icons/file-text';
 import ChevronLeft from 'lucide-react/dist/esm/icons/chevron-left';
@@ -270,6 +271,33 @@ const AdminManager = () => {
                 fetchMembers();
             } catch (error) {
                 useStore.getState().addToast("Something went wrong. Please try again.", 'error');
+            }
+        }
+    };
+
+    const handleRevokeMemberSessions = async (member) => {
+        if (window.confirm(`Are you sure you want to log ${member.displayName || member.email} out of all devices?`)) {
+            try {
+                await useStore.getState().revokeSessions(member.id, member.email);
+                useStore.getState().addToast(`Successfully logged out all devices for ${member.displayName || member.email}.`, 'success');
+                fetchMembers();
+            } catch (error) {
+                console.error("Error revoking member sessions:", error);
+                useStore.getState().addToast(error.message || "Failed to revoke sessions", 'error');
+            }
+        }
+    };
+
+    const handleRevokeAdminSessions = async (admin) => {
+        const targetUid = admin.uid || null;
+        if (window.confirm(`Are you sure you want to log the administrator ${admin.displayName || admin.email} out of all devices?`)) {
+            try {
+                await useStore.getState().revokeSessions(targetUid, admin.email);
+                useStore.getState().addToast(`Successfully logged out all devices for admin ${admin.displayName || admin.email}.`, 'success');
+                fetchAdmins();
+            } catch (error) {
+                console.error("Error revoking admin sessions:", error);
+                useStore.getState().addToast(error.message || "Failed to revoke sessions", 'error');
             }
         }
     };
@@ -715,7 +743,7 @@ const AdminManager = () => {
                                                             </div>
 
                                                             {/* Action buttons styled as premium full width button */}
-                                                            <div className="pt-4 border-t border-white/5 w-full mt-auto">
+                                                            <div className="pt-4 border-t border-white/5 w-full mt-auto flex flex-col gap-2">
                                                                 {member.isBlocked ? (
                                                                     <button 
                                                                         onClick={() => handleUnblockUser(member)} 
@@ -724,12 +752,20 @@ const AdminManager = () => {
                                                                         <CheckCircle size={12} /> Reinstate Clearance
                                                                     </button>
                                                                 ) : (
-                                                                    <button 
-                                                                        onClick={() => handleBlockUser(member)} 
-                                                                        className="w-full h-12 bg-red-500/10 hover:bg-red-500 hover:text-black text-red-500 font-black uppercase tracking-widest text-[9px] rounded-xl border border-red-500/20 transition-all flex items-center justify-center gap-2 duration-300 active:scale-95"
-                                                                    >
-                                                                        <ShieldAlert size={12} /> Revoke Clearance
-                                                                    </button>
+                                                                    <>
+                                                                        <button 
+                                                                            onClick={() => handleBlockUser(member)} 
+                                                                            className="w-full h-12 bg-red-500/10 hover:bg-red-500 hover:text-black text-red-500 font-black uppercase tracking-widest text-[9px] rounded-xl border border-red-500/20 transition-all flex items-center justify-center gap-2 duration-300 active:scale-95"
+                                                                        >
+                                                                            <ShieldAlert size={12} /> Revoke Clearance
+                                                                        </button>
+                                                                        <button 
+                                                                            onClick={() => handleRevokeMemberSessions(member)}
+                                                                            className="w-full h-12 bg-white/5 hover:bg-red-500/15 text-gray-400 hover:text-red-500 font-black uppercase tracking-widest text-[9px] rounded-xl border border-white/5 hover:border-red-500/20 transition-all flex items-center justify-center gap-2 duration-300 active:scale-95"
+                                                                        >
+                                                                            <LogOut size={12} /> Log out all devices
+                                                                        </button>
+                                                                    </>
                                                                 )}
                                                             </div>
                                                         </Card>
@@ -819,7 +855,7 @@ const AdminManager = () => {
                                                                         )}
                                                                     </td>
                                                                     <td className="p-6 md:p-8">
-                                                                        <div className="flex justify-end">
+                                                                        <div className="flex justify-end gap-2">
                                                                             {member.isBlocked ? (
                                                                                 <button 
                                                                                     onClick={() => handleUnblockUser(member)} 
@@ -828,12 +864,20 @@ const AdminManager = () => {
                                                                                     <CheckCircle size={10} /> Reinstate
                                                                                 </button>
                                                                             ) : (
-                                                                                <button 
-                                                                                    onClick={() => handleBlockUser(member)} 
-                                                                                    className="px-3 h-8 bg-red-500/5 hover:bg-red-500 text-red-500 hover:text-white border border-red-500/10 hover:border-none rounded-lg text-[8px] font-black uppercase tracking-widest transition-all duration-300 flex items-center justify-center gap-1 shadow-sm"
-                                                                                >
-                                                                                    <ShieldAlert size={10} /> Suspend
-                                                                                </button>
+                                                                                <>
+                                                                                    <button 
+                                                                                        onClick={() => handleBlockUser(member)} 
+                                                                                        className="px-3 h-8 bg-red-500/5 hover:bg-red-500 text-red-500 hover:text-white border border-red-500/10 hover:border-none rounded-lg text-[8px] font-black uppercase tracking-widest transition-all duration-300 flex items-center justify-center gap-1 shadow-sm"
+                                                                                    >
+                                                                                        <ShieldAlert size={10} /> Suspend
+                                                                                    </button>
+                                                                                    <button 
+                                                                                        onClick={() => handleRevokeMemberSessions(member)}
+                                                                                        className="px-3 h-8 bg-white/5 hover:bg-red-500/15 text-gray-400 hover:text-red-500 border border-white/5 hover:border-red-500/10 rounded-lg text-[8px] font-black uppercase tracking-widest transition-all duration-300 flex items-center justify-center gap-1 shadow-sm"
+                                                                                    >
+                                                                                        <LogOut size={10} /> Logout Devices
+                                                                                    </button>
+                                                                                </>
                                                                             )}
                                                                         </div>
                                                                     </td>
@@ -873,7 +917,7 @@ const AdminManager = () => {
                                             initial={{ opacity: 0, scale: 0.98 }}
                                             animate={{ opacity: 1, scale: 1 }}
                                             exit={{ opacity: 0, scale: 0.98 }}
-                                            className="group relative flex flex-col h-full"
+                                            className="group relative flex flex-col h-full has-[.select-open]:z-50"
                                         >
                                             <div className="absolute inset-0 rounded-[2.5rem] bg-yellow-500/5 opacity-100 blur-xl pointer-events-none duration-500" />
                                             <Card className="relative p-6 sm:p-8 bg-zinc-950/60 group-hover:bg-zinc-900/40 border-yellow-500/10 hover:border-yellow-500/30 backdrop-blur-3xl rounded-[2.5rem] transition-all duration-500 shadow-xl flex flex-col justify-between h-full min-h-[340px] border hover:-translate-y-1.5 hover:shadow-[0_20px_50px_rgba(0,0,0,0.8)] gap-6">
@@ -1119,7 +1163,7 @@ const AdminManager = () => {
                                                     layout
                                                     initial={{ opacity: 0, scale: 0.98 }}
                                                     animate={{ opacity: 1, scale: 1 }}
-                                                    className="group relative flex flex-col h-full"
+                                                    className="group relative flex flex-col h-full has-[.select-open]:z-50"
                                                 >
                                                     <div className={cn(
                                                         "absolute inset-0 rounded-[2.5rem] opacity-0 group-hover:opacity-10 transition-opacity blur-2xl duration-700 pointer-events-none bg-gradient-to-br",
@@ -1223,6 +1267,15 @@ const AdminManager = () => {
                                                                         <Trash2 size={12} /> Terminate
                                                                     </button>
                                                                 </>
+                                                            )}
+                                                            {(!isSelf && (user?.role === 'developer' || user?.role === 'founder')) && (
+                                                                <button 
+                                                                    onClick={() => handleRevokeAdminSessions(admin)}
+                                                                    className="w-full h-11 bg-white/5 hover:bg-red-500/15 text-gray-400 hover:text-red-500 border border-white/5 hover:border-red-500/20 rounded-xl transition-all flex items-center justify-center gap-1.5 text-[9px] font-black uppercase tracking-widest shadow-sm active:scale-95 duration-300"
+                                                                    title="Log out all devices"
+                                                                >
+                                                                    <LogOut size={12} /> Log out all devices
+                                                                </button>
                                                             )}
                                                         </div>
                                                     </Card>
@@ -1338,6 +1391,14 @@ const AdminManager = () => {
                                                                                     <Trash2 size={10} /> Terminate
                                                                                 </button>
                                                                             </>
+                                                                        )}
+                                                                        {(!isSelf && (user?.role === 'developer' || user?.role === 'founder')) && (
+                                                                            <button 
+                                                                                onClick={() => handleRevokeAdminSessions(admin)}
+                                                                                className="h-8 px-3 bg-white/5 hover:bg-red-500/15 text-gray-400 hover:text-red-500 border border-white/5 hover:border-red-500/10 rounded-lg transition-all flex items-center justify-center gap-1 text-[8px] font-black uppercase tracking-widest shadow-sm"
+                                                                            >
+                                                                                <LogOut size={10} /> Logout Devices
+                                                                            </button>
                                                                         )}
                                                                     </div>
                                                                 </td>
