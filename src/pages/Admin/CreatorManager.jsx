@@ -377,7 +377,7 @@ const CreatorManager = ({ showLeaderboardOnly = false }) => {
             <div className="relative z-10 max-w-[1700px] mx-auto pb-20">
             <div>
                 {/* Control Panel */}
-                <div className="relative z-50 bg-[#0A0A0A]/80 backdrop-blur-3xl border border-white/10 rounded-[1.5rem] md:rounded-[2rem] p-1.5 md:p-2.5 md:pr-6 mb-8 md:mb-16 shadow-[0_30px_100px_rgba(0,0,0,0.8)] flex flex-col 2xl:flex-row 2xl:flex-wrap 2xl:items-center gap-2 md:gap-3">
+                <div className="relative z-50 bg-[#0A0A0A]/80 backdrop-blur-3xl border border-white/10 rounded-[1.5rem] md:rounded-[2rem] p-1.5 md:p-2.5 md:pr-6 mb-8 md:mb-16 shadow-[0_30px_100px_rgba(0,0,0,0.8)] flex flex-col md:flex-row md:flex-wrap md:items-center gap-2 md:gap-3">
                     
                     {/* Search Engine */}
                     <div className="relative flex-1 min-w-[280px] group">
@@ -513,7 +513,7 @@ const CreatorManager = ({ showLeaderboardOnly = false }) => {
                                 value={filterNiche} 
                                 options={['All', ...NICHES].map(n => ({ value: n, label: n === 'All' ? 'NICHE' : n.toUpperCase() }))} 
                                 onChange={setFilterNiche} 
-                                className="h-12 md:h-14 rounded-xl md:rounded-full border-white/10 bg-black/60" 
+                                className="w-full min-w-0 h-12 md:h-14 rounded-xl md:rounded-full border-white/10 bg-black/60" 
                                 accentColor="neon-pink" 
                                 classNamePrefix="studio-select"
                             />
@@ -525,7 +525,7 @@ const CreatorManager = ({ showLeaderboardOnly = false }) => {
                                 value={filterCity} 
                                 options={cities.map(c => ({ value: c, label: c === 'All' ? 'LOCATION' : c.toUpperCase() }))} 
                                 onChange={setFilterCity} 
-                                className="h-12 md:h-14 rounded-xl md:rounded-full border-white/10 bg-black/60" 
+                                className="w-full min-w-0 h-12 md:h-14 rounded-xl md:rounded-full border-white/10 bg-black/60" 
                                 accentColor="neon-blue" 
                                 classNamePrefix="studio-select"
                             />
@@ -542,7 +542,7 @@ const CreatorManager = ({ showLeaderboardOnly = false }) => {
                                     { value: 'rejected', label: 'REJECTED' }
                                 ]} 
                                 onChange={setFilterStatus} 
-                                className="h-12 md:h-14 rounded-xl md:rounded-full border-white/10 bg-black/60" 
+                                className="w-full min-w-0 h-12 md:h-14 rounded-xl md:rounded-full border-white/10 bg-black/60" 
                                 accentColor="neon-green" 
                                 classNamePrefix="studio-select"
                             />
@@ -559,7 +559,7 @@ const CreatorManager = ({ showLeaderboardOnly = false }) => {
                                     { value: 'youtube', label: 'YOUTUBE' }
                                 ]} 
                                 onChange={setFilterPlatform} 
-                                className="h-12 md:h-14 rounded-xl md:rounded-full border-white/10 bg-black/60" 
+                                className="w-full min-w-0 h-12 md:h-14 rounded-xl md:rounded-full border-white/10 bg-black/60" 
                                 accentColor="neon-blue" 
                                 classNamePrefix="studio-select"
                             />
@@ -688,7 +688,7 @@ const CreatorManager = ({ showLeaderboardOnly = false }) => {
                                     </div>
                                 ) : (
                                     <div className="flex flex-col gap-3">
-                                        <div className="flex items-center gap-6 px-10 py-6 text-[10px] font-black text-gray-600 uppercase tracking-[0.4em] border-b border-white/5">
+                                        <div className="hidden md:flex items-center gap-6 px-10 py-6 text-[10px] font-black text-gray-600 uppercase tracking-[0.4em] border-b border-white/5">
                                             <div className="w-6 shrink-0" />
                                             <div className="w-16 shrink-0">Identity</div>
                                             <div className="flex-1 pl-1">Profile Details</div>
@@ -2160,140 +2160,259 @@ const ReferralLeaderboard = ({ creators, onSelectCreator }) => {
             </div>
 
             {/* Leaderboard Table */}
-            <div className="bg-[#050505]/40 rounded-[2.5rem] border border-white/5 overflow-hidden shadow-2xl">
-                <div className="overflow-x-auto">
-                    <table className="w-full border-collapse text-left">
-                        <thead>
-                            <tr className="border-b border-white/5 text-[9px] font-black text-gray-500 uppercase tracking-[0.3em]">
-                                <th className="py-6 px-8 w-16 text-center">Rank</th>
-                                <th className="py-6 px-6">Creator</th>
-                                <th className="py-6 px-6 text-center">Invites</th>
-                                <th className="py-6 px-6 text-right">Network Reach</th>
-                                <th className="py-6 px-8 text-center">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {filteredLeaderboard.map((referrer, index) => {
-                                const isExpanded = expandedUid === referrer.uid;
-                                const totalReach = referrer.referredCreators.reduce((sum, rc) => {
-                                    return sum + Math.max(Number(rc.instagramFollowers || 0), Number(rc.youtubeSubscribers || 0), Number(rc.linkedinFollowers || 0));
-                                }, 0);
+            {/* Leaderboard Section */}
+            <div className="bg-[#050505]/40 md:bg-transparent md:border-none rounded-[2.5rem] border border-white/5 overflow-hidden md:overflow-visible shadow-2xl md:shadow-none">
+                
+                {/* Desktop Table View */}
+                <div className="hidden md:block bg-[#050505]/40 rounded-[2.5rem] border border-white/5 overflow-hidden shadow-2xl">
+                    <div className="overflow-x-auto">
+                        <table className="w-full border-collapse text-left">
+                            <thead>
+                                <tr className="border-b border-white/5 text-[9px] font-black text-gray-500 uppercase tracking-[0.3em]">
+                                    <th className="py-6 px-8 w-16 text-center">Rank</th>
+                                    <th className="py-6 px-6">Creator</th>
+                                    <th className="py-6 px-6 text-center">Invites</th>
+                                    <th className="py-6 px-6 text-right">Network Reach</th>
+                                    <th className="py-6 px-8 text-center">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {filteredLeaderboard.map((referrer, index) => {
+                                    const isExpanded = expandedUid === referrer.uid;
+                                    const totalReach = referrer.referredCreators.reduce((sum, rc) => {
+                                        return sum + Math.max(Number(rc.instagramFollowers || 0), Number(rc.youtubeSubscribers || 0), Number(rc.linkedinFollowers || 0));
+                                    }, 0);
 
-                                let medal = `${index + 1}`;
-                                if (index === 0) medal = '🥇';
-                                else if (index === 1) medal = '🥈';
-                                else if (index === 2) medal = '🥉';
+                                    let medal = `${index + 1}`;
+                                    if (index === 0) medal = '🥇';
+                                    else if (index === 1) medal = '🥈';
+                                    else if (index === 2) medal = '🥉';
 
-                                return (
-                                    <React.Fragment key={referrer.uid}>
-                                        <tr 
-                                            className={cn(
-                                                "border-b border-white/[0.03] transition-colors hover:bg-white/[0.02]",
-                                                isExpanded && "bg-white/[0.01]"
-                                            )}
-                                        >
-                                            <td className="py-5 px-8 text-center font-black text-lg italic">{medal}</td>
-                                            <td className="py-5 px-6">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="w-10 h-10 rounded-xl bg-zinc-900 border border-white/5 overflow-hidden flex items-center justify-center shrink-0">
-                                                        {referrer.profilePicture ? (
-                                                            <img src={referrer.profilePicture} alt="" className="w-full h-full object-cover" />
-                                                        ) : (
-                                                            <span className="text-[12px] font-black text-white italic">{referrer.name?.charAt(0)}</span>
-                                                        )}
-                                                    </div>
-                                                    <div>
-                                                        <h4 className="text-sm font-black text-white uppercase italic tracking-tight leading-tight">{referrer.name}</h4>
-                                                        <p className="text-[8px] text-gray-500 uppercase tracking-widest mt-0.5">@{referrer.instagram || 'N/A'}</p>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td className="py-5 px-6 text-center">
-                                                <span className="inline-flex items-center justify-center px-4 py-1.5 rounded-full bg-neon-pink/15 border border-neon-pink/20 text-neon-pink text-sm font-black tabular-nums">
-                                                    {referrer.referralCount}
-                                                </span>
-                                            </td>
-                                            <td className="py-5 px-6 text-right font-black text-sm text-gray-400 tabular-nums">
-                                                {totalReach.toLocaleString()} FLW
-                                            </td>
-                                            <td className="py-5 px-8 text-center">
-                                                <div className="flex items-center justify-center gap-2">
-                                                    <button 
-                                                        onClick={() => toggleExpand(referrer.uid)}
-                                                        className="h-10 px-4 rounded-xl bg-white/5 border border-white/10 text-[9px] font-black uppercase tracking-wider text-gray-400 hover:text-white hover:bg-white/10 transition-all flex items-center gap-1.5 animate-none"
-                                                    >
-                                                        <span>Invites ({referrer.referredCreators.length})</span>
-                                                        {isExpanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
-                                                    </button>
-                                                    <button 
-                                                        onClick={() => onSelectCreator(referrer)}
-                                                        className="w-10 h-10 rounded-xl bg-white text-black hover:bg-neon-pink hover:text-white transition-all flex items-center justify-center"
-                                                        title="View Profile"
-                                                    >
-                                                        <ChevronRight size={16} />
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-
-                                        {/* Expandable referrals row */}
-                                        {isExpanded && (
-                                            <tr>
-                                                <td colSpan={5} className="bg-black/30 p-8 border-b border-white/5">
-                                                    <div className="space-y-4">
-                                                        <div className="flex items-center justify-between border-b border-white/5 pb-2">
-                                                            <h5 className="text-[9px] font-black text-neon-pink uppercase tracking-widest">INVITED CREATORS BY {referrer.name.toUpperCase()}</h5>
+                                    return (
+                                        <React.Fragment key={referrer.uid}>
+                                            <tr 
+                                                className={cn(
+                                                    "border-b border-white/[0.03] transition-colors hover:bg-white/[0.02]",
+                                                    isExpanded && "bg-white/[0.01]"
+                                                )}
+                                            >
+                                                <td className="py-5 px-8 text-center font-black text-lg italic">{medal}</td>
+                                                <td className="py-5 px-6">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-10 h-10 rounded-xl bg-zinc-900 border border-white/5 overflow-hidden flex items-center justify-center shrink-0">
+                                                            {referrer.profilePicture ? (
+                                                                <img src={referrer.profilePicture} alt="" className="w-full h-full object-cover" />
+                                                            ) : (
+                                                                <span className="text-[12px] font-black text-white italic">{referrer.name?.charAt(0)}</span>
+                                                            )}
                                                         </div>
-                                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                                            {referrer.referredCreators.map(rc => {
-                                                                const isApproved = rc.profileStatus === 'approved';
-                                                                return (
-                                                                    <div 
-                                                                        key={rc.uid}
-                                                                        onClick={() => onSelectCreator(rc)}
-                                                                        className="p-4 bg-zinc-950/60 border border-white/5 hover:border-white/10 hover:bg-zinc-950 rounded-2xl flex items-center justify-between cursor-pointer transition-all group"
-                                                                    >
-                                                                        <div className="flex items-center gap-3 min-w-0">
-                                                                            <div className="w-8 h-8 rounded-lg bg-zinc-900 border border-white/5 overflow-hidden flex items-center justify-center shrink-0">
-                                                                                {rc.profilePicture ? (
-                                                                                    <img src={rc.profilePicture} alt="" className="w-full h-full object-cover" />
-                                                                                ) : (
-                                                                                    <span className="text-[10px] font-black text-white italic">{rc.name?.charAt(0)}</span>
-                                                                                )}
-                                                                            </div>
-                                                                            <div className="min-w-0">
-                                                                                <h6 className="text-xs font-bold text-white uppercase tracking-tight truncate leading-tight group-hover:text-neon-pink transition-colors">{rc.name}</h6>
-                                                                                <p className="text-[8px] text-gray-500 uppercase tracking-widest mt-0.5 truncate">@{rc.instagram || 'N/A'}</p>
-                                                                            </div>
-                                                                        </div>
-                                                                        <div className={cn(
-                                                                            "px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest border shrink-0",
-                                                                            isApproved ? "bg-neon-green/10 text-neon-green border-neon-green/20" : "bg-yellow-500/10 text-yellow-500 border-yellow-500/20"
-                                                                        )}>
-                                                                            {isApproved ? "Verified" : "Pending"}
-                                                                        </div>
-                                                                    </div>
-                                                                );
-                                                            })}
+                                                        <div>
+                                                            <h4 className="text-sm font-black text-white uppercase italic tracking-tight leading-tight">{referrer.name}</h4>
+                                                            <p className="text-[8px] text-gray-500 uppercase tracking-widest mt-0.5">@{referrer.instagram || 'N/A'}</p>
                                                         </div>
                                                     </div>
                                                 </td>
+                                                <td className="py-5 px-6 text-center">
+                                                    <span className="inline-flex items-center justify-center px-4 py-1.5 rounded-full bg-neon-pink/15 border border-neon-pink/20 text-neon-pink text-sm font-black tabular-nums">
+                                                        {referrer.referralCount}
+                                                    </span>
+                                                </td>
+                                                <td className="py-5 px-6 text-right font-black text-sm text-gray-400 tabular-nums">
+                                                    {totalReach.toLocaleString()} FLW
+                                                </td>
+                                                <td className="py-5 px-8 text-center">
+                                                    <div className="flex items-center justify-center gap-2">
+                                                        <button 
+                                                            onClick={() => toggleExpand(referrer.uid)}
+                                                            className="h-10 px-4 rounded-xl bg-white/5 border border-white/10 text-[9px] font-black uppercase tracking-wider text-gray-400 hover:text-white hover:bg-white/10 transition-all flex items-center gap-1.5 animate-none"
+                                                        >
+                                                            <span>Invites ({referrer.referredCreators.length})</span>
+                                                            {isExpanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+                                                        </button>
+                                                        <button 
+                                                            onClick={() => onSelectCreator(referrer)}
+                                                            className="w-10 h-10 rounded-xl bg-white text-black hover:bg-neon-pink hover:text-white transition-all flex items-center justify-center"
+                                                            title="View Profile"
+                                                        >
+                                                            <ChevronRight size={16} />
+                                                        </button>
+                                                    </div>
+                                                </td>
                                             </tr>
-                                        )}
-                                    </React.Fragment>
-                                );
-                            })}
-                            {filteredLeaderboard.length === 0 && (
-                                <tr>
-                                    <td colSpan={5} className="py-20 text-center">
-                                        <Trophy size={48} className="text-gray-700 mx-auto mb-4 animate-pulse" />
-                                        <h4 className="text-lg font-black text-gray-500 uppercase tracking-widest italic">No Leaderboard Data</h4>
-                                        <p className="text-[10px] text-gray-700 uppercase tracking-wider mt-1">No referrals have been made by creators yet.</p>
-                                    </td>
-                                </tr>
-                            )}
-                        </tbody>
-                    </table>
+
+                                            {/* Expandable referrals row */}
+                                            {isExpanded && (
+                                                <tr>
+                                                    <td colSpan={5} className="bg-black/30 p-8 border-b border-white/5">
+                                                        <div className="space-y-4">
+                                                            <div className="flex items-center justify-between border-b border-white/5 pb-2">
+                                                                <h5 className="text-[9px] font-black text-neon-pink uppercase tracking-widest">INVITED CREATORS BY {referrer.name.toUpperCase()}</h5>
+                                                            </div>
+                                                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                                                {referrer.referredCreators.map(rc => {
+                                                                    const isApproved = rc.profileStatus === 'approved';
+                                                                    return (
+                                                                        <div 
+                                                                            key={rc.uid}
+                                                                            onClick={() => onSelectCreator(rc)}
+                                                                            className="p-4 bg-zinc-950/60 border border-white/5 hover:border-white/10 hover:bg-zinc-950 rounded-2xl flex items-center justify-between cursor-pointer transition-all group"
+                                                                        >
+                                                                            <div className="flex items-center gap-3 min-w-0">
+                                                                                <div className="w-8 h-8 rounded-lg bg-zinc-900 border border-white/5 overflow-hidden flex items-center justify-center shrink-0">
+                                                                                    {rc.profilePicture ? (
+                                                                                        <img src={rc.profilePicture} alt="" className="w-full h-full object-cover" />
+                                                                                    ) : (
+                                                                                        <span className="text-[10px] font-black text-white italic">{rc.name?.charAt(0)}</span>
+                                                                                    )}
+                                                                                </div>
+                                                                                <div className="min-w-0">
+                                                                                    <h6 className="text-xs font-bold text-white uppercase tracking-tight truncate leading-tight group-hover:text-neon-pink transition-colors">{rc.name}</h6>
+                                                                                    <p className="text-[8px] text-gray-500 uppercase tracking-widest mt-0.5 truncate">@{rc.instagram || 'N/A'}</p>
+                                                                                </div>
+                                                                            </div>
+                                                                            <div className={cn(
+                                                                                "px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest border shrink-0",
+                                                                                isApproved ? "bg-neon-green/10 text-neon-green border-neon-green/20" : "bg-yellow-500/10 text-yellow-500 border-yellow-500/20"
+                                                                            )}>
+                                                                                {isApproved ? "Verified" : "Pending"}
+                                                                            </div>
+                                                                        </div>
+                                                                    );
+                                                                })}
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            )}
+                                        </React.Fragment>
+                                    );
+                                })}
+                                {filteredLeaderboard.length === 0 && (
+                                    <tr>
+                                        <td colSpan={5} className="py-20 text-center">
+                                            <Trophy size={48} className="text-gray-700 mx-auto mb-4 animate-pulse" />
+                                            <h4 className="text-lg font-black text-gray-500 uppercase tracking-widest italic">No Leaderboard Data</h4>
+                                            <p className="text-[10px] text-gray-700 uppercase tracking-wider mt-1">No referrals have been made by creators yet.</p>
+                                        </td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                {/* Mobile Cards View */}
+                <div className="md:hidden flex flex-col gap-4 p-4">
+                    {filteredLeaderboard.map((referrer, index) => {
+                        const isExpanded = expandedUid === referrer.uid;
+                        const totalReach = referrer.referredCreators.reduce((sum, rc) => {
+                            return sum + Math.max(Number(rc.instagramFollowers || 0), Number(rc.youtubeSubscribers || 0), Number(rc.linkedinFollowers || 0));
+                        }, 0);
+
+                        let medal = `${index + 1}`;
+                        if (index === 0) medal = '🥇';
+                        else if (index === 1) medal = '🥈';
+                        else if (index === 2) medal = '🥉';
+
+                        return (
+                            <div key={referrer.uid} className="bg-black/60 rounded-[2rem] border border-white/5 p-5 shadow-lg flex flex-col gap-4">
+                                <div className="flex items-center justify-between border-b border-white/5 pb-4">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded-xl bg-zinc-900 border border-white/5 overflow-hidden flex items-center justify-center shrink-0">
+                                            {referrer.profilePicture ? (
+                                                <img src={referrer.profilePicture} alt="" className="w-full h-full object-cover" />
+                                            ) : (
+                                                <span className="text-[12px] font-black text-white italic">{referrer.name?.charAt(0)}</span>
+                                            )}
+                                        </div>
+                                        <div>
+                                            <h4 className="text-sm font-black text-white uppercase italic tracking-tight leading-tight flex items-center gap-2">
+                                                {referrer.name} <span className="text-lg">{medal}</span>
+                                            </h4>
+                                            <p className="text-[8px] text-gray-500 uppercase tracking-widest mt-0.5">@{referrer.instagram || 'N/A'}</p>
+                                        </div>
+                                    </div>
+                                    <button 
+                                        onClick={() => onSelectCreator(referrer)}
+                                        className="w-10 h-10 rounded-xl bg-white/5 text-gray-400 hover:text-white hover:bg-white/10 transition-all flex items-center justify-center shrink-0"
+                                        title="View Profile"
+                                    >
+                                        <ChevronRight size={16} />
+                                    </button>
+                                </div>
+                                
+                                <div className="flex items-center justify-between pt-2">
+                                    <div>
+                                        <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest mb-1">INVITES</p>
+                                        <span className="inline-flex items-center justify-center px-4 py-1.5 rounded-full bg-neon-pink/15 border border-neon-pink/20 text-neon-pink text-sm font-black tabular-nums">
+                                            {referrer.referralCount}
+                                        </span>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest mb-1">NETWORK REACH</p>
+                                        <p className="font-black text-sm text-gray-400 tabular-nums">
+                                            {totalReach.toLocaleString()} FLW
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <button 
+                                    onClick={() => toggleExpand(referrer.uid)}
+                                    className="w-full h-12 mt-2 rounded-xl bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-wider text-gray-400 hover:text-white hover:bg-white/10 transition-all flex items-center justify-center gap-2"
+                                >
+                                    <span>Invites ({referrer.referredCreators.length})</span>
+                                    {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                                </button>
+
+                                {/* Expandable referrals */}
+                                <AnimatePresence>
+                                    {isExpanded && (
+                                        <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden mt-2 pt-4 border-t border-white/5">
+                                            <div className="flex flex-col gap-3">
+                                                {referrer.referredCreators.map(rc => {
+                                                    const isApproved = rc.profileStatus === 'approved';
+                                                    return (
+                                                        <div 
+                                                            key={rc.uid}
+                                                            onClick={() => onSelectCreator(rc)}
+                                                            className="p-4 bg-zinc-950/60 border border-white/5 hover:border-white/10 hover:bg-zinc-950 rounded-2xl flex items-center justify-between cursor-pointer transition-all group"
+                                                        >
+                                                            <div className="flex items-center gap-3 min-w-0">
+                                                                <div className="w-8 h-8 rounded-lg bg-zinc-900 border border-white/5 overflow-hidden flex items-center justify-center shrink-0">
+                                                                    {rc.profilePicture ? (
+                                                                        <img src={rc.profilePicture} alt="" className="w-full h-full object-cover" />
+                                                                    ) : (
+                                                                        <span className="text-[10px] font-black text-white italic">{rc.name?.charAt(0)}</span>
+                                                                    )}
+                                                                </div>
+                                                                <div className="min-w-0">
+                                                                    <h6 className="text-xs font-bold text-white uppercase tracking-tight truncate leading-tight group-hover:text-neon-pink transition-colors">{rc.name}</h6>
+                                                                    <p className="text-[8px] text-gray-500 uppercase tracking-widest mt-0.5 truncate">@{rc.instagram || 'N/A'}</p>
+                                                                </div>
+                                                            </div>
+                                                            <div className={cn(
+                                                                "px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest border shrink-0",
+                                                                isApproved ? "bg-neon-green/10 text-neon-green border-neon-green/20" : "bg-yellow-500/10 text-yellow-500 border-yellow-500/20"
+                                                            )}>
+                                                                {isApproved ? "Verified" : "Pending"}
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+                            </div>
+                        );
+                    })}
+                    {filteredLeaderboard.length === 0 && (
+                        <div className="py-20 text-center">
+                            <Trophy size={48} className="text-gray-700 mx-auto mb-4 animate-pulse" />
+                            <h4 className="text-lg font-black text-gray-500 uppercase tracking-widest italic">No Leaderboard Data</h4>
+                            <p className="text-[10px] text-gray-700 uppercase tracking-wider mt-1">No referrals have been made by creators yet.</p>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>

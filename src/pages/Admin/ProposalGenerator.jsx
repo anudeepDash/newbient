@@ -2051,13 +2051,6 @@ const ProposalGenerator = () => {
                 </div>
 
                 <div className="flex items-center gap-1.5 md:gap-4 shrink-0">
-                    <button 
-                        onClick={() => setShowPreviewMobile(!showPreviewMobile)} 
-                        className="lg:hidden h-10 px-3 bg-neon-green/10 rounded-xl border border-neon-green/20 text-neon-green flex items-center gap-2 active:scale-95 transition-all"
-                    >
-                        <Eye size={14} />
-                        <span className="text-[8px] font-black uppercase tracking-widest">Preview</span>
-                    </button>
                     {autosaveStatus !== 'idle' && (
                         <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white/5 border border-white/10 select-none">
                             <span className={cn(
@@ -2073,11 +2066,11 @@ const ProposalGenerator = () => {
                             </span>
                         </div>
                     )}
-                    <button onClick={handleSave} className="h-10 md:h-12 px-3 md:px-6 bg-white/5 hover:bg-white/10 text-white border border-white/10 font-black uppercase tracking-widest text-[9px] md:text-[10px] rounded-xl transition-all flex items-center gap-2">
+                    <button onClick={handleSave} className="hidden lg:flex h-10 md:h-12 px-3 md:px-6 bg-white/5 hover:bg-white/10 text-white border border-white/10 font-black uppercase tracking-widest text-[9px] md:text-[10px] rounded-xl transition-all items-center gap-2">
                         <Save size={14} className="sm:hidden" />
                         <span className="hidden sm:inline">Save</span>
                     </button>
-                    <button onClick={generatePDF} className="h-10 md:h-12 px-4 md:px-8 bg-neon-green text-black font-black uppercase tracking-widest text-[9px] md:text-[10px] rounded-xl shadow-[0_10px_30px_rgba(57,255,20,0.3)] hover:scale-105 transition-all flex items-center gap-2">
+                    <button onClick={generatePDF} className="hidden lg:flex h-10 md:h-12 px-4 md:px-8 bg-neon-green text-black font-black uppercase tracking-widest text-[9px] md:text-[10px] rounded-xl shadow-[0_10px_30px_rgba(57,255,20,0.3)] hover:scale-105 transition-all items-center gap-2">
                         {isSaving ? <RefreshCw className="animate-spin" size={14} /> : <Download size={14} />} 
                         <span className="hidden sm:inline">Export Proposal</span>
                     </button>
@@ -2110,11 +2103,31 @@ const ProposalGenerator = () => {
                         <button key={tab.id} onClick={() => handleTabClick(tab.id)} className={cn("flex flex-col items-center justify-center min-w-[64px] h-full transition-all gap-1", activeTab === tab.id ? "text-neon-green" : "text-gray-500")}>
                             <tab.icon size={20} />
                             <span className="text-[7px] font-black uppercase tracking-widest">{tab.label.split(' ')[0]}</span>
-                            {activeTab === tab.id && <div className="w-1 h-1 rounded-full bg-[#39FF14] mt-1 shadow-[0_0_8px_#39FF14]" />}
+                            {activeTab === tab.id && <div className="w-1 h-1 rounded-full bg-neon-green mt-1 shadow-[0_0_8px_#39FF14]" />}
                         </button>
                     ))}
                 </div>
 
+                {/* Mobile Action Bar (Sticky above bottom nav) */}
+                <div className="lg:hidden fixed bottom-20 left-0 right-0 p-3 bg-gradient-to-t from-black via-black/90 to-transparent z-[90] flex items-center justify-end gap-2 pointer-events-none">
+                    <div className="flex gap-2 w-full pointer-events-auto">
+                        <button 
+                            onClick={() => setShowPreviewMobile(!showPreviewMobile)} 
+                            className="h-10 px-3 flex-1 bg-neon-green/10 rounded-xl border border-neon-green/20 text-neon-green flex items-center justify-center gap-2 active:scale-95 transition-all shadow-lg backdrop-blur-md"
+                        >
+                            <Eye size={14} />
+                            <span className="text-[9px] font-black uppercase tracking-widest">Preview</span>
+                        </button>
+                        <button onClick={handleSave} className="h-10 px-3 flex-1 bg-white/5 text-white border border-white/10 font-black uppercase tracking-widest text-[9px] rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg backdrop-blur-md">
+                            <Save size={14} />
+                            <span>Save</span>
+                        </button>
+                        <button onClick={generatePDF} className="h-10 px-3 flex-1 bg-neon-green text-black font-black uppercase tracking-widest text-[9px] rounded-xl transition-all flex items-center justify-center gap-2 shadow-[0_10px_30px_rgba(57,255,20,0.2)]">
+                            {isSaving ? <RefreshCw className="animate-spin" size={14} /> : <Download size={14} />} 
+                            <span>Export</span>
+                        </button>
+                    </div>
+                </div>
 
                 <main className={cn(
                     "flex-grow scrollbar-hide bg-[#050505] px-4 md:px-12 py-10 md:py-16 overflow-y-auto pb-32",
@@ -2533,8 +2546,8 @@ const ProposalGenerator = () => {
                                                         const otherCols = cols.filter(c => c.key !== 'description');
                                                         return (
                                                             <div key={item.id} className="flex flex-col gap-4 bg-zinc-900/40 p-5 rounded-3xl border border-white/5 group/refine transition-all hover:bg-zinc-900/60 relative">
-                                                                <div className="flex items-start gap-4">
-                                                                    <div className="flex-1 relative">
+                                                                <div className="flex flex-col md:flex-row md:items-start gap-4 md:gap-6">
+                                                                    <div className="flex-1 relative w-full">
                                                                         <span className="text-[8px] font-black text-neon-green uppercase tracking-widest mb-1.5 block">{descCol.label}</span>
                                                                         <textarea 
                                                                             disabled={isHidden('inventory')} 
@@ -2546,12 +2559,9 @@ const ProposalGenerator = () => {
                                                                         />
                                                                         <button type="button" disabled={isHidden('inventory')} onClick={() => handleRefineClick(`items[${idx}].description`, `${descCol.label} ${idx + 1}`, item.description)} className="absolute right-2 top-[22px] opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-1 text-neon-green hover:text-white rounded-lg hover:scale-105 z-10 disabled:opacity-0" title="Refine with AI"><Sparkles size={11} className="animate-pulse" /></button>
                                                                     </div>
-                                                                    <button disabled={isHidden('inventory')} onClick={() => setItems(items.filter(i => i.id !== item.id))} className="p-2 text-gray-600 hover:text-red-500 transition-colors hover:bg-red-500/10 rounded-lg disabled:opacity-30 mt-4"><Trash2 size={16} /></button>
-                                                                </div>
 
-                                                                {otherCols.length > 0 && (
-                                                                    <div className="flex flex-wrap gap-4 items-end pt-2 border-t border-white/[0.03]">
-                                                                        {otherCols.map(col => {
+                                                                    <div className="flex flex-wrap items-center gap-4 md:gap-6 w-full md:w-auto pt-2 md:pt-0 border-t md:border-t-0 border-white/[0.03]">
+                                                                        {otherCols.length > 0 && otherCols.map(col => {
                                                                             if (col.key === 'qty') {
                                                                                 return (
                                                                                     <div key={col.key} className="flex flex-col items-start w-20">
@@ -2622,8 +2632,9 @@ const ProposalGenerator = () => {
                                                                                 </div>
                                                                             );
                                                                         })}
+                                                                        <button disabled={isHidden('inventory')} onClick={() => setItems(items.filter(i => i.id !== item.id))} className="p-2.5 text-gray-600 hover:text-red-500 transition-colors hover:bg-red-500/10 rounded-lg disabled:opacity-30"><Trash2 size={16} /></button>
                                                                     </div>
-                                                                )}
+                                                                </div>
                                                             </div>
                                                         );
                                                     })}
@@ -2670,7 +2681,7 @@ const ProposalGenerator = () => {
                                              }
                                          `}</style>
                                          {/* Row 1: Commercial Matrix & Terms (Financial Center) */}
-                                         <div className="p-8 md:p-10 bg-zinc-900/40 border border-white/5 rounded-[3rem] space-y-10 relative overflow-hidden">
+                                         <div className="p-4 md:p-8 lg:p-10 bg-zinc-900/40 border border-white/5 rounded-[3rem] space-y-10 relative overflow-hidden">
                                              <div className="flex items-center justify-between">
                                                  <div className="space-y-1">
                                                       <h3 className="text-2xl font-black uppercase tracking-tighter italic text-white">Commercial Center.</h3>
@@ -3133,7 +3144,7 @@ const ProposalGenerator = () => {
                                          <div className="border border-white/5 rounded-[3rem] overflow-hidden bg-white/[0.01]">
                                              {/* Collapsible Header */}
                                              <div 
-                                                 className="flex items-center justify-between p-8 bg-white/[0.02] cursor-pointer hover:bg-white/[0.04] transition-all"
+                                                 className="flex items-center justify-between p-4 md:p-8 bg-white/[0.02] cursor-pointer hover:bg-white/[0.04] transition-all"
                                                  onClick={() => setIsSignaturesCollapsed(!isSignaturesCollapsed)}
                                              >
                                                  <div className="flex items-center gap-6">
@@ -3161,7 +3172,7 @@ const ProposalGenerator = () => {
                                                  "transition-all duration-500 overflow-hidden",
                                                  isSignaturesCollapsed ? "max-h-0 opacity-0" : "max-h-[2000px] opacity-100 border-t border-white/5"
                                              )}>
-                                                  <div className="p-8 md:p-10 space-y-10">
+                                                  <div className="p-4 md:p-8 lg:p-10 space-y-10">
                                                       {/* Sub-toggles: Official Seal and Digital Sign */}
                                                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                                           <button 
@@ -3238,7 +3249,7 @@ const ProposalGenerator = () => {
                                                       {/* Pad & Seals */}
                                                       <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
                                                           {/* Signature Pad */}
-                                                          <div className="p-8 bg-zinc-900/40 border border-white/5 rounded-[2.5rem] relative overflow-hidden group">
+                                                          <div className="p-4 md:p-8 bg-zinc-900/40 border border-white/5 rounded-[2.5rem] relative overflow-hidden group">
                                                               <div className="flex items-center justify-between mb-6">
                                                                   <h4 className="text-lg font-black text-white uppercase tracking-tighter italic">Signature Capture.</h4>
                                                                   {formData.providerSignature && (
@@ -3266,7 +3277,7 @@ const ProposalGenerator = () => {
                                                           </div>
 
                                                           {/* Integrity Hub */}
-                                                          <div className="p-8 bg-white/[0.01] border border-white/5 rounded-[2.5rem] flex flex-col items-center justify-center gap-6 relative overflow-hidden group">
+                                                          <div className="p-4 md:p-8 bg-white/[0.01] border border-white/5 rounded-[2.5rem] flex flex-col items-center justify-center gap-6 relative overflow-hidden group">
                                                               <div className="absolute inset-0 bg-neon-green/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
                                                               <div className="relative shrink-0 flex items-center justify-center w-40 h-40">
                                                                   <div className="relative z-10 scale-90">
@@ -3341,7 +3352,7 @@ const ProposalGenerator = () => {
                                             ) : (
                                                 <div className="space-y-8">
                                                     {(formData.customPages || []).map((cp, idx) => (
-                                                        <div key={cp.id} className="p-8 bg-zinc-900/40 border border-white/5 rounded-[2.5rem] space-y-6 relative group">
+                                                        <div key={cp.id} className="p-4 md:p-8 bg-zinc-900/40 border border-white/5 rounded-[2.5rem] space-y-6 relative group">
                                                             <div className="flex items-center justify-between">
                                                                 <span className="text-[10px] font-black text-neon-green/60 uppercase tracking-widest bg-neon-green/5 border border-neon-green/10 px-3 py-1 rounded-full">Custom Page {String(idx + 1).padStart(2, '0')}</span>
                                                                 <div className="flex items-center gap-1.5">
@@ -3473,7 +3484,7 @@ const ProposalGenerator = () => {
                                     <div className="flex flex-col gap-10">
                                         <div className="flex flex-col md:flex-row gap-8">
                                             {/* Upload Card */}
-                                            <div className="flex-1 bg-zinc-900/30 border border-white/5 p-8 rounded-[2.5rem] flex flex-col justify-between group/card relative overflow-hidden min-h-[300px]">
+                                            <div className="flex-1 bg-zinc-900/30 border border-white/5 p-4 md:p-8 rounded-[2.5rem] flex flex-col justify-between group/card relative overflow-hidden min-h-[300px]">
                                                 <div className="absolute -top-12 -left-12 w-24 h-24 bg-neon-green/5 blur-2xl group-hover/card:bg-neon-green/10 transition-all rounded-full pointer-events-none" />
                                                 <div className="space-y-4 relative z-10">
                                                     <div className="flex items-center justify-between">
@@ -3558,7 +3569,7 @@ const ProposalGenerator = () => {
                                             </div>
 
                                             {/* Link Card */}
-                                            <div className="flex-1 bg-zinc-900/30 border border-white/5 p-8 rounded-[2.5rem] flex flex-col justify-between group/card relative overflow-hidden min-h-[300px]">
+                                            <div className="flex-1 bg-zinc-900/30 border border-white/5 p-4 md:p-8 rounded-[2.5rem] flex flex-col justify-between group/card relative overflow-hidden min-h-[300px]">
                                                 <div className="absolute -top-12 -left-12 w-24 h-24 bg-neon-green/5 blur-2xl group-hover/card:bg-neon-green/10 transition-all rounded-full pointer-events-none" />
                                                 <div className="space-y-4 relative z-10 w-full">
                                                     <div className="flex items-center justify-between">

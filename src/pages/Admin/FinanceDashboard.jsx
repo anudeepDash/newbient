@@ -709,8 +709,8 @@ const FinanceDashboard = () => {
                             </div>
 
                             {/* Custom SVG chart - Redesigned to be Sleek and Premium */}
-                            <div className="w-full h-64 md:h-80 relative flex items-end">
-                                <svg className="w-full h-full" viewBox="0 0 600 300" preserveAspectRatio="none">
+                            <div className="w-full h-64 md:h-80 relative flex items-end overflow-x-auto no-scrollbar">
+                                <svg className="min-w-[600px] w-full h-full" viewBox="0 0 600 300" preserveAspectRatio="none">
                                     {/* Grid Lines */}
                                     <line x1="65" y1="50" x2="580" y2="50" stroke="rgba(255,255,255,0.03)" strokeDasharray="4 4" />
                                     <line x1="65" y1="125" x2="580" y2="125" stroke="rgba(255,255,255,0.03)" strokeDasharray="4 4" />
@@ -925,8 +925,8 @@ const FinanceDashboard = () => {
                                         const isInvoice = activity.type === 'invoice';
 
                                         return (
-                                            <div key={`${activity.type}-${activity.id}-${i}`} className="py-3.5 first:pt-0 last:pb-0 flex items-center justify-between gap-4 group/item hover:bg-white/[0.01] transition-all">
-                                                <div className="flex items-center gap-4">
+                                            <div key={`${activity.type}-${activity.id}-${i}`} className="py-3.5 first:pt-0 last:pb-0 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 group/item hover:bg-white/[0.01] transition-all">
+                                                <div className="flex items-center gap-4 w-full sm:w-auto">
                                                     <div className={cn(
                                                         "w-9 h-9 rounded-lg flex items-center justify-center border shrink-0 transition-transform group-hover/item:scale-105 duration-300",
                                                         isSpend 
@@ -935,9 +935,9 @@ const FinanceDashboard = () => {
                                                     )}>
                                                         {isSpend ? <ArrowDownRight size={16} /> : <ArrowUpRight size={16} />}
                                                     </div>
-                                                    <div>
+                                                    <div className="min-w-0 flex-1">
                                                         <h4 className="text-[11px] font-black uppercase tracking-tight text-white leading-none line-clamp-1 group-hover/item:text-neon-green transition-colors">{activity.title}</h4>
-                                                        <div className="flex items-center gap-2 mt-1.5 text-[8px] font-bold text-zinc-500 uppercase tracking-widest">
+                                                        <div className="flex flex-wrap items-center gap-2 mt-1.5 text-[8px] font-bold text-zinc-500 uppercase tracking-widest">
                                                             <span>{new Date(activity.date).toLocaleDateString()}</span>
                                                             <span>•</span>
                                                             <span>{activity.account}</span>
@@ -946,9 +946,9 @@ const FinanceDashboard = () => {
                                                         </div>
                                                     </div>
                                                 </div>
-                                                <div className="text-right shrink-0">
+                                                <div className="text-left sm:text-right shrink-0 pl-[52px] sm:pl-0 w-full sm:w-auto">
                                                     <div className={cn(
-                                                        "text-xs font-black uppercase tracking-tight tabular-nums flex items-center justify-end",
+                                                        "text-xs font-black uppercase tracking-tight tabular-nums flex items-center justify-start sm:justify-end",
                                                         isSpend ? "text-neon-pink" : "text-neon-green"
                                                     )}>
                                                         {isSpend ? '-' : '+'}₹{activity.amount.toLocaleString('en-IN')}

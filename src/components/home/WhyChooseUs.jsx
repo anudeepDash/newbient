@@ -95,7 +95,7 @@ const WhyChooseUs = () => {
                      onMouseLeave={() => setIsPaused(false)}
                      onTouchStart={() => setIsPaused(true)}
                      onTouchEnd={() => setIsPaused(false)}
-                     className="flex md:grid md:grid-cols-3 gap-6 md:gap-8 overflow-x-auto md:overflow-visible pb-8 md:pb-0 scrollbar-hide snap-x snap-mandatory -mx-4 px-4 md:mx-0 md:px-0"
+                     className="flex md:grid md:grid-cols-3 gap-4 md:gap-8 overflow-x-auto md:overflow-visible pb-8 md:pb-0 scrollbar-hide snap-x snap-mandatory -mx-4 px-4 md:mx-0 md:px-0"
                  >
                      {reasons.map((reason, index) => (
                          <div key={index} className="min-w-[85vw] md:min-w-0 snap-center">
@@ -103,26 +103,47 @@ const WhyChooseUs = () => {
                          </div>
                      ))}
                  </div>
-
-                 {reasons.length > 1 && (
-                     <div className="flex md:hidden items-center justify-center gap-4 mt-2">
-                         <button 
-                             onClick={() => scroll('left')}
-                             className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-white active:bg-white active:text-black transition-all"
-                         >
-                             <ChevronLeft size={16} />
-                         </button>
-                         <button 
-                             onClick={() => scroll('right')}
-                             className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-white active:bg-white active:text-black transition-all"
-                         >
-                             <ChevronRight size={16} />
-                         </button>
-                     </div>
-                 )}
              </div>
          </section>
      );
+ };
+
+ const AnimatedCounter = ({ value }) => {
+    const ref = useRef(null);
+    const [display, setDisplay] = useState(0);
+    const [hasAnimated, setHasAnimated] = useState(false);
+
+    useEffect(() => {
+        const observer = new IntersectionObserver(
+            ([entry]) => {
+                if (entry.isIntersecting && !hasAnimated) {
+                    setHasAnimated(true);
+                    let start = 0;
+                    const duration = 1500;
+                    const startTime = performance.now();
+                    
+                    const animate = (currentTime) => {
+                        const elapsed = currentTime - startTime;
+                        const progress = Math.min(elapsed / duration, 1);
+                        const easeOut = 1 - Math.pow(1 - progress, 4);
+                        
+                        setDisplay(Math.floor(easeOut * value));
+                        
+                        if (progress < 1) {
+                            requestAnimationFrame(animate);
+                        }
+                    };
+                    requestAnimationFrame(animate);
+                }
+            },
+            { threshold: 0.1 }
+        );
+
+        if (ref.current) observer.observe(ref.current);
+        return () => observer.disconnect();
+    }, [value, hasAnimated]);
+
+    return <span ref={ref}>{display < 10 ? `0${display}` : display}</span>;
  };
 
  const Card = ({ reason, index }) => {
@@ -132,26 +153,32 @@ const WhyChooseUs = () => {
              whileInView={{ opacity: 1, y: 0 }}
              viewport={{ once: true }}
              transition={{ duration: 0.6, delay: index * 0.15 }}
-             className="group relative"
+             className="group relative h-full"
          >
              <div className={`absolute -inset-px rounded-[2rem] bg-gradient-to-b ${reason.gradient} opacity-0 md:group-hover:opacity-10 transition-opacity duration-500 blur-xl`} />
              
-             <div className="relative bg-zinc-900/40 backdrop-blur-3xl border border-white/5 rounded-[2rem] p-10 h-full flex flex-col transition-all duration-500 md:group-hover:border-white/10 md:group-hover:-translate-y-2">
-                 <div className={`w-16 h-16 bg-gradient-to-br ${reason.gradient} rounded-2xl flex items-center justify-center mb-8 shadow-2xl ${reason.shadow} md:group-hover:scale-110 transition-transform duration-500`}>
-                     <reason.icon size={32} className="text-black" />
+             <div className="relative bg-zinc-900/40 backdrop-blur-3xl border border-white/5 rounded-[2rem] p-6 md:p-10 h-full flex flex-col transition-all duration-500 md:group-hover:border-white/10 md:group-hover:-translate-y-2 overflow-hidden">
+                 
+                 {/* Large Background Counter */}
+                 <div className="absolute -top-4 -right-2 md:top-4 md:right-6 text-7xl md:text-9xl font-black text-white/[0.03] select-none pointer-events-none font-heading group-hover:text-white/[0.08] transition-colors duration-500">
+                     <AnimatedCounter value={index + 1} />
                  </div>
 
-                 <div className="flex-1">
-                     <h3 className="text-xl font-extrabold font-heading text-white mb-2 tracking-tight">{reason.title}</h3>
-                     <h4 className="text-[10px] font-bold tracking-[0.2em] text-gray-500 uppercase mb-6">{reason.subtitle}</h4>
-                     <p className="text-gray-400 font-medium leading-relaxed mb-8">
+                 <div className={`relative z-10 w-12 h-12 md:w-16 md:h-16 bg-gradient-to-br ${reason.gradient} rounded-2xl flex items-center justify-center mb-6 md:mb-8 shadow-2xl ${reason.shadow} md:group-hover:scale-110 transition-transform duration-500`}>
+                     <reason.icon className="w-6 h-6 md:w-8 md:h-8 text-black" />
+                 </div>
+
+                 <div className="flex-1 relative z-10">
+                     <h3 className="text-lg md:text-xl font-extrabold font-heading text-white mb-2 tracking-tight">{reason.title}</h3>
+                     <h4 className="text-[9px] md:text-[10px] font-bold tracking-[0.2em] text-gray-500 uppercase mb-4 md:mb-6">{reason.subtitle}</h4>
+                     <p className="text-gray-400 font-medium leading-relaxed mb-6 md:mb-8 text-xs md:text-base">
                          {reason.desc}
                      </p>
                  </div>
 
                  <button 
                      onClick={() => document.getElementById('creators-brands')?.scrollIntoView({ behavior: 'smooth' })}
-                     className="pt-8 border-t border-white/5 flex items-center justify-between text-[10px] font-bold uppercase tracking-widest text-gray-500 group-hover:text-white transition-colors w-full"
+                     className="relative z-10 pt-6 md:pt-8 border-t border-white/5 flex items-center justify-between text-[10px] font-bold uppercase tracking-widest text-gray-500 group-hover:text-white transition-colors w-full mt-auto"
                  >
                      <span>Learn More</span>
                      <ArrowUpRight size={16} className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />

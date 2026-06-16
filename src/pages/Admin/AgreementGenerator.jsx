@@ -1084,9 +1084,30 @@ const ContractGenerator = () => {
                     ))}
                 </div>
 
+                {/* Mobile Action Bar (Sticky above bottom nav) */}
+                <div className="lg:hidden fixed bottom-20 left-0 right-0 p-3 bg-gradient-to-t from-black via-black/90 to-transparent z-[90] flex items-center justify-end gap-2 pointer-events-none">
+                    <div className="flex gap-2 w-full pointer-events-auto">
+                        <button 
+                            onClick={() => setShowPreviewMobile(!showPreviewMobile)} 
+                            className="h-10 px-3 flex-1 bg-[#A855F7]/10 rounded-xl border border-[#A855F7]/20 text-[#A855F7] flex items-center justify-center gap-2 active:scale-95 transition-all shadow-lg backdrop-blur-md"
+                        >
+                            <Eye size={14} />
+                            <span className="text-[9px] font-black uppercase tracking-widest">Preview</span>
+                        </button>
+                        <button onClick={handleSave} className="h-10 px-3 flex-1 bg-white/5 text-white border border-white/10 font-black uppercase tracking-widest text-[9px] rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg backdrop-blur-md">
+                            <Save size={14} />
+                            <span>Save</span>
+                        </button>
+                        <button onClick={generatePDF} className="h-10 px-3 flex-1 bg-[#A855F7] text-black font-black uppercase tracking-widest text-[9px] rounded-xl transition-all flex items-center justify-center gap-2 shadow-[0_10px_30px_rgba(168,85,247,0.2)]">
+                            <Download size={14} />
+                            <span>Export</span>
+                        </button>
+                    </div>
+                </div>
+
                 {/* Editor */}
                 <main className={cn(
-                    "flex-grow scrollbar-hide bg-[#050505] px-4 md:px-12 py-10 md:py-16 overflow-y-auto pb-32",
+                    "flex-grow scrollbar-hide bg-[#050505] px-4 md:px-8 py-6 md:py-10 overflow-y-auto pb-32",
                     isExpandedPreview && "hidden"
                 )}>
                     <div className="max-w-[1600px] mx-auto w-full space-y-10 md:space-y-12">
@@ -1301,7 +1322,7 @@ const ContractGenerator = () => {
                                         {/* Row 1: Security & Identity */}
                                         <div className="flex flex-col gap-8">
                                             {/* Security Controls - Full Width */}
-                                            <div className="p-8 md:p-10 bg-white/[0.03] backdrop-blur-3xl border border-white/5 rounded-[3rem] relative overflow-hidden">
+                                            <div className="p-4 md:p-8 bg-white/[0.03] backdrop-blur-3xl border border-white/5 rounded-[3rem] relative overflow-hidden">
                                                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center relative z-10">
                                                     <div className="flex items-center gap-6">
                                                         <div className="w-14 h-14 rounded-2xl bg-[#A855F7]/10 flex items-center justify-center border border-[#A855F7]/20 shrink-0">
@@ -1359,7 +1380,7 @@ const ContractGenerator = () => {
                                             </div>
 
                                             {/* Signatory Identity - Full Width */}
-                                            <div className="p-10 bg-white/[0.03] backdrop-blur-3xl border border-white/5 rounded-[3rem] relative overflow-hidden">
+                                            <div className="p-4 md:p-10 bg-white/[0.03] backdrop-blur-3xl border border-white/5 rounded-[3rem] relative overflow-hidden">
                                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
                                                     <div className="space-y-4">
                                                         <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] px-1">Authorized Representative</label>
@@ -1374,8 +1395,8 @@ const ContractGenerator = () => {
                                         </div>
 
                                         {/* Row 2: Signature Pad - FULL WIDTH */}
-                                        <div className="p-8 md:p-10 bg-zinc-900/40 border border-white/5 rounded-[3rem] relative overflow-hidden group">
-                                            <div className="flex items-center justify-between mb-8">
+                                        <div className="p-4 md:p-8 bg-zinc-900/40 border border-white/5 rounded-[3rem] relative overflow-hidden group">
+                                            <div className="flex flex-col md:flex-row items-center justify-between gap-8 relative z-10">
                                                 <div className="flex items-center gap-4">
                                                     <div className="w-12 h-12 rounded-2xl bg-[#A855F7]/10 flex items-center justify-center border border-[#A855F7]/20">
                                                         <PenTool size={22} className="text-[#A855F7]" />
@@ -1394,7 +1415,7 @@ const ContractGenerator = () => {
 
                                             <div 
                                                 onClick={() => setIsSignatureModalOpen(true)}
-                                                className="w-full h-64 md:h-80 bg-black/80 rounded-[2.5rem] border border-white/5 flex items-center justify-center cursor-pointer hover:border-[#A855F7]/40 transition-all duration-500 relative group/pad"
+                                                className="w-full h-64 md:h-80 bg-black/80 rounded-[2.5rem] border border-white/5 flex items-center justify-center cursor-pointer hover:border-[#A855F7]/40 transition-all duration-500 relative group/pad mt-8"
                                             >
                                                 <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
                                                 
@@ -1416,7 +1437,8 @@ const ContractGenerator = () => {
                                         </div>
 
                                         {/* Row 3: Integrity Hub - FULL WIDTH */}
-                                        <div className="p-8 md:p-12 bg-white/[0.02] border border-white/5 rounded-[3.5rem] relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-12 group">
+                                        <div className="p-4 md:p-8 bg-white/[0.02] border border-white/5 rounded-[3.5rem] relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-12 group">
+                                            {/* Decorative Background for Section */}
                                             <div className="absolute inset-0 bg-[#A855F7]/5 opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
                                             
                                             <div className="flex items-center gap-10 relative z-10 w-full md:w-auto">

@@ -87,7 +87,7 @@ const About = () => {
                             className="relative group p-1 min-w-[85vw] md:min-w-0 snap-center"
                         >
                             <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent rounded-3xl opacity-0 md:group-hover:opacity-100 transition-opacity" />
-                            <div className="relative bg-zinc-900/60 backdrop-blur-2xl border border-white/5 rounded-3xl p-10 h-full flex flex-col items-center text-center md:group-hover:border-white/20 transition-all duration-500 md:group-hover:-translate-y-2">
+                            <div className="relative bg-zinc-900/60 backdrop-blur-2xl border border-white/5 rounded-3xl p-6 md:p-10 h-full flex flex-col items-center text-center md:group-hover:border-white/20 transition-all duration-500 md:group-hover:-translate-y-2">
                                 <span className="text-[10px] font-bold tracking-[0.25em] text-neon-green uppercase mb-8">{stat.label}</span>
                                 <h4 className="text-5xl md:text-7xl font-extrabold text-white mb-4 tracking-tight md:group-hover:scale-105 transition-transform duration-500">
                                     {stat.value}

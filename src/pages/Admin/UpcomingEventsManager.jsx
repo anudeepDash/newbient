@@ -269,7 +269,7 @@ const UpcomingEventsManager = () => {
             tabs={coreContentTabs}
             accentColor="neon-green"
             action={!isAdding && (
-                <div className="flex flex-col sm:flex-row flex-wrap gap-2 md:gap-4 w-full md:w-auto">
+                <div className="flex overflow-x-auto no-scrollbar whitespace-nowrap gap-2 md:gap-4 w-full md:w-auto pb-2">
                     <button
                         onClick={() => toggleUpcomingSectionVisibility(siteSettings?.showUpcomingEvents)}
                         className={cn(
@@ -314,7 +314,7 @@ const UpcomingEventsManager = () => {
                                     ) : (
                                         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-stretch">
                                             <div className="lg:col-span-8">
-                                                <Card className="p-6 md:p-10 bg-zinc-900/40 backdrop-blur-3xl border-white/5 rounded-[2.5rem] md:rounded-[3rem]">
+                                                <Card className="p-4 md:p-8 bg-zinc-900/40 backdrop-blur-3xl border-white/5 rounded-[2.5rem] md:rounded-[3rem]">
                                                     <div className="flex justify-between items-center mb-10">
                                                         <h2 className="text-2xl font-black font-heading tracking-tighter uppercase italic text-white flex items-center gap-3 leading-none">
                                                             EVENT <span className="text-neon-blue">EDITOR.</span>
@@ -1045,7 +1045,7 @@ const UpcomingEventsManager = () => {
                                                             )}
                                                         </div>
 
-                                                        <div className="flex flex-col sm:flex-row gap-4 pt-10 border-t border-white/10">
+                                                        <div className="sticky bottom-0 z-50 bg-zinc-900/90 backdrop-blur-xl p-4 md:p-8 -mx-4 md:-mx-8 -mb-4 md:-mb-8 rounded-b-[2.5rem] md:rounded-b-[3rem] border-t border-white/10 flex flex-col sm:flex-row gap-4 mt-8">
                                                             <button 
                                                                 type="button" 
                                                                 onClick={resetForm} 

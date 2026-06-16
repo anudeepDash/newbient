@@ -24,6 +24,8 @@ import MapPin from 'lucide-react/dist/esm/icons/map-pin';
 import Tag from 'lucide-react/dist/esm/icons/tag';
 import ShieldCheck from 'lucide-react/dist/esm/icons/shield-check';
 import ChevronDown from 'lucide-react/dist/esm/icons/chevron-down';
+import User from 'lucide-react/dist/esm/icons/user';
+import FileText from 'lucide-react/dist/esm/icons/file-text';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '../lib/utils';
 import GlobalLoader from '../components/ui/GlobalLoader';
@@ -63,7 +65,6 @@ const OTPVerificationSuccess = () => {
             <div className="absolute inset-y-0 left-0 w-64 h-full bg-neon-green/5 blur-[60px] pointer-events-none rounded-full" />
             
             <div className="relative flex items-center justify-center w-16 h-16 shrink-0">
-                {/* Shockwave Rings */}
                 <motion.div 
                     initial={{ scale: 0.5, opacity: 1 }}
                     animate={{ scale: 2.2, opacity: 0 }}
@@ -76,16 +77,12 @@ const OTPVerificationSuccess = () => {
                     transition={{ duration: 1.2, delay: 0.4, repeat: Infinity, ease: "easeOut" }}
                     className="absolute w-16 h-16 rounded-full border-2 border-neon-green/20"
                 />
-
-                {/* Rotating gear/shield behind check */}
                 <motion.div 
                     initial={{ rotate: 0 }}
                     animate={{ rotate: 360 }}
                     transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
                     className="absolute w-14 h-14 border border-dashed border-neon-green/40 rounded-full"
                 />
-
-                {/* Solid core with custom spring-loaded check icon */}
                 <motion.div
                     initial={{ scale: 0, rotate: -45 }}
                     animate={{ scale: 1, rotate: 0 }}
@@ -103,24 +100,12 @@ const OTPVerificationSuccess = () => {
                         />
                     </svg>
                 </motion.div>
-
-                {/* Floating particle embers */}
                 {[...Array(4)].map((_, i) => (
                     <motion.div
                         key={i}
                         initial={{ opacity: 0, y: 0, x: 0, scale: 0.8 }}
-                        animate={{ 
-                            opacity: [0, 1, 0], 
-                            y: -35 - Math.random() * 25, 
-                            x: (Math.random() - 0.5) * 50,
-                            scale: [0.8, 1.2, 0.4] 
-                        }}
-                        transition={{ 
-                            duration: 1.5, 
-                            repeat: Infinity, 
-                            delay: i * 0.35, 
-                            ease: "easeOut" 
-                        }}
+                        animate={{ opacity: [0, 1, 0], y: -35 - Math.random() * 25, x: (Math.random() - 0.5) * 50, scale: [0.8, 1.2, 0.4] }}
+                        transition={{ duration: 1.5, repeat: Infinity, delay: i * 0.35, ease: "easeOut" }}
                         className="absolute w-1 h-1 rounded-full bg-neon-green shadow-[0_0_6px_rgba(57,255,20,0.8)]"
                     />
                 ))}
@@ -128,27 +113,16 @@ const OTPVerificationSuccess = () => {
 
             <div className="space-y-1 relative z-10">
                 <motion.h4 
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.3 }}
+                    initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.3 }}
                     className="text-xl font-black font-heading tracking-widest uppercase italic text-neon-green"
                 >
                     Phone Verified
                 </motion.h4>
-                <motion.p 
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.5 }}
-                    className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em]"
-                >
-                    Verification successful. Proceeding to next step...
-                </motion.p>
             </div>
         </div>
     );
 };
 
-// Premium, glassmorphic dropdown selector
 const CustomSelect = ({ value, onChange, options, name, placeholder, icon: Icon, className, isCountryCode }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [highlightedIndex, setHighlightedIndex] = useState(-1);
@@ -164,82 +138,29 @@ const CustomSelect = ({ value, onChange, options, name, placeholder, icon: Icon,
 
     useEffect(() => {
         const handleClickOutside = (e) => {
-            if (containerRef.current && !containerRef.current.contains(e.target)) {
-                setIsOpen(false);
-            }
+            if (containerRef.current && !containerRef.current.contains(e.target)) setIsOpen(false);
         };
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    useEffect(() => {
-        if (!isOpen) return;
-
-        const handleKeyDown = (e) => {
-            if (e.key === 'ArrowDown') {
-                e.preventDefault();
-                setHighlightedIndex(prev => (prev + 1) % options.length);
-            } else if (e.key === 'ArrowUp') {
-                e.preventDefault();
-                setHighlightedIndex(prev => (prev - 1 + options.length) % options.length);
-            } else if (e.key === 'Enter') {
-                e.preventDefault();
-                if (highlightedIndex >= 0 && highlightedIndex < options.length) {
-                    handleSelect(options[highlightedIndex]);
-                }
-            } else if (e.key === 'Escape') {
-                setIsOpen(false);
-            }
-        };
-
-        window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [isOpen, highlightedIndex, options]);
-
-    useEffect(() => {
-        if (isOpen) {
-            const index = options.findIndex(opt => {
-                const optVal = typeof opt === 'object' ? opt.value : opt;
-                return optVal === value;
-            });
-            setHighlightedIndex(index >= 0 ? index : 0);
-        }
-    }, [isOpen, value, options]);
-
-    const currentOption = options.find(opt => {
-        const optVal = typeof opt === 'object' ? opt.value : opt;
-        return optVal === value;
-    });
-
-    const displayLabel = currentOption 
-        ? (typeof currentOption === 'object' ? currentOption.label : currentOption.toUpperCase())
-        : placeholder;
+    const currentOption = options.find(opt => (typeof opt === 'object' ? opt.value : opt) === value);
+    const displayLabel = currentOption ? (typeof currentOption === 'object' ? currentOption.label : currentOption.toUpperCase()) : placeholder;
 
     return (
-        <div ref={containerRef} className={cn("relative", isCountryCode ? "w-24 sm:w-36" : "w-full")}>
+        <div ref={containerRef} className={cn("relative", isCountryCode ? "w-24 sm:w-36 shrink-0" : "w-full")}>
             <button
-                type="button"
-                onClick={handleToggle}
+                type="button" onClick={handleToggle}
                 className={cn(
-                    "w-full h-16 sm:h-20 bg-white/[0.02] border border-white/10 rounded-2xl text-base sm:text-lg font-bold text-left focus:border-neon-blue focus:outline-none transition-all flex items-center justify-between group",
-                    isCountryCode ? "px-3" : "pl-12 sm:pl-16 pr-10 sm:pr-12",
+                    "w-full h-16 bg-white/[0.02] border border-white/10 rounded-2xl text-base font-bold text-left focus:border-neon-blue focus:outline-none transition-all flex items-center justify-between group",
+                    isCountryCode ? "px-3" : "pl-12 pr-10",
                     isOpen && "border-neon-blue/50 ring-1 ring-neon-blue/50",
                     className
                 )}
             >
-                {!isCountryCode && Icon && (
-                    <Icon className={cn("absolute left-4 sm:left-6 top-1/2 -translate-y-1/2 transition-colors", isOpen ? "text-neon-blue" : "text-gray-500")} size={20} sm:size={24} />
-                )}
-                
-                <span className={value ? "text-white" : "text-white/20"}>
-                    {displayLabel}
-                </span>
-
-                <motion.div
-                    animate={{ rotate: isOpen ? 180 : 0 }}
-                    transition={{ duration: 0.2 }}
-                    className="text-gray-500 group-hover:text-white"
-                >
+                {!isCountryCode && Icon && <Icon className={cn("absolute left-4 top-1/2 -translate-y-1/2 transition-colors", isOpen ? "text-neon-blue" : "text-gray-500")} size={20} />}
+                <span className={value ? "text-white" : "text-white/20"}>{displayLabel}</span>
+                <motion.div animate={{ rotate: isOpen ? 180 : 0 }} transition={{ duration: 0.2 }} className="text-gray-500 group-hover:text-white">
                     <ChevronDown size={isCountryCode ? 14 : 18} />
                 </motion.div>
             </button>
@@ -247,10 +168,7 @@ const CustomSelect = ({ value, onChange, options, name, placeholder, icon: Icon,
             <AnimatePresence>
                 {isOpen && (
                     <motion.ul
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
-                        transition={{ duration: 0.15 }}
+                        initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.15 }}
                         className="absolute z-[100] w-full mt-1.5 max-h-48 overflow-y-auto bg-zinc-950/95 border border-white/10 backdrop-blur-2xl rounded-2xl shadow-[0_25px_50px_-12px_rgba(0,0,0,0.8)] py-1 text-white scrollbar-thin scrollbar-thumb-white/10"
                     >
                         {options.map((opt, idx) => {
@@ -260,8 +178,7 @@ const CustomSelect = ({ value, onChange, options, name, placeholder, icon: Icon,
                             return (
                                 <li key={optVal}>
                                     <button
-                                        type="button"
-                                        onClick={() => handleSelect(opt)}
+                                        type="button" onClick={() => handleSelect(opt)}
                                         className={cn(
                                             "w-full px-4 py-2.5 text-left text-xs font-bold uppercase tracking-wider transition-all hover:bg-white/5 hover:text-neon-blue flex items-center justify-between",
                                             isSelected && "bg-neon-blue/10 text-neon-blue font-black",
@@ -282,38 +199,16 @@ const CustomSelect = ({ value, onChange, options, name, placeholder, icon: Icon,
 };
 
 const CreatorJoin = () => {
-    useDynamicMeta({
-        title: "Join Creator Network",
-        description: "Register to join Newbi's Elite Creator Network.",
-        url: window.location.href
-    });
+    useDynamicMeta({ title: "Join Creator Network", description: "Register to join Newbi's Elite Creator Network.", url: window.location.href });
 
     const { user, authInitialized, setAuthModal, addCreator, creators, uploadToCloudinary, loading } = useStore();
     const navigate = useNavigate();
 
-    // Form State
     const [formData, setFormData] = useState({
-        name: '',
-        phone: '',
-        email: '',
-        city: '',
-        customCity: '',
-        categories: '',
-        customNiche: '',
-        collegeName: '',
-        bio: '',
-        doBarter: '',
-        commercials: '',
-        primaryPlatform: 'instagram',
-        instagram: '',
-        instagramFollowers: '',
-        youtube: '',
-        twitter: '',
-        linkedin: '',
-        linkedinFollowers: '',
-        portfolioInfo: '',
-        profilePicture: '',
-        referredBy: ''
+        name: '', phone: '', email: '', city: '', customCity: '', categories: '', customNiche: '',
+        collegeName: '', bio: '', doBarter: '', commercials: '', primaryPlatform: 'instagram',
+        instagram: '', instagramFollowers: '', youtube: '', twitter: '', linkedin: '', linkedinFollowers: '',
+        profilePicture: '', referredBy: ''
     });
 
     const [countryCode, setCountryCode] = useState('+91');
@@ -321,7 +216,6 @@ const CreatorJoin = () => {
     const [hasJoined, setHasJoined] = useState(false);
     const [isReferralCodeLocked, setIsReferralCodeLocked] = useState(false);
 
-    // OTP verification states
     const [otpValues, setOtpValues] = useState(['', '', '', '', '', '']);
     const [isSendingOtp, setIsSendingOtp] = useState(false);
     const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
@@ -336,50 +230,34 @@ const CreatorJoin = () => {
     const recaptchaVerifier = useRef(null);
     const otpRefs = useRef([]);
 
-    // Typeform index state
-    const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-
-    // Pre-fill email, name, and phone from auth user
     useEffect(() => {
         if (user) {
             setFormData(prev => {
                 const updates = {};
                 if (!prev.email && user.email) updates.email = user.email;
                 if (!prev.name && user.displayName) updates.name = user.displayName;
-                
                 if (!prev.phone && user.phoneNumber) {
                     const cleanPhone = user.phoneNumber.replace(/\D/g, '');
                     if (cleanPhone.length >= 10) {
                         updates.phone = cleanPhone.slice(-10);
                         const cc = user.phoneNumber.replace(updates.phone, '');
-                        if (cc && cc.startsWith('+')) {
-                            setCountryCode(cc);
-                        }
+                        if (cc && cc.startsWith('+')) setCountryCode(cc);
                     } else {
                         updates.phone = cleanPhone;
                     }
                     setPhoneVerified(true);
                 }
-                
-                if (Object.keys(updates).length > 0) {
-                    return { ...prev, ...updates };
-                }
-                return prev;
+                return Object.keys(updates).length > 0 ? { ...prev, ...updates } : prev;
             });
         }
     }, [user]);
 
-    // Check if creator already has a profile
     useEffect(() => {
         if (user && creators && !loading) {
-            const existingProfile = creators.find(c => c.uid === user.uid);
-            if (existingProfile) {
-                navigate('/creator-dashboard');
-            }
+            if (creators.find(c => c.uid === user.uid)) navigate('/creator-dashboard');
         }
     }, [user, creators, loading, navigate]);
 
-    // Parse referral code from URL parameters
     useEffect(() => {
         const params = new URLSearchParams(window.location.search);
         const refParam = params.get('ref') || params.get('referral');
@@ -392,80 +270,58 @@ const CreatorJoin = () => {
     const handleChange = (e) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
-        
         if (name === 'phone') {
             const cleanInput = value.replace(/\D/g, '');
             const cleanUserPhone = user?.phoneNumber?.replace(/\D/g, '') || '';
-            if (cleanInput && cleanUserPhone && cleanUserPhone.endsWith(cleanInput)) {
-                setPhoneVerified(true);
-            } else {
-                setPhoneVerified(false);
-            }
+            setPhoneVerified(cleanInput && cleanUserPhone && cleanUserPhone.endsWith(cleanInput));
         }
     };
 
     const handleImageUpload = async (e) => {
         const file = e.target.files[0];
         if (!file) return;
-        
         setIsSubmitting(true);
         try {
             const url = await uploadToCloudinary(file);
             setFormData(prev => ({ ...prev, profilePicture: url }));
             useStore.getState().addToast("Profile picture uploaded!", 'success');
         } catch (error) {
-            useStore.getState().addToast("Couldn't upload your photo. Please try again.", 'error');
+            useStore.getState().addToast("Couldn't upload your photo.", 'error');
         } finally {
             setIsSubmitting(false);
         }
     };
 
-    // Firebase phone number authentication
     const handleSendOTP = async () => {
-        if (!formData.phone) {
-            useStore.getState().addToast("Please enter a contact number", 'error');
-            return;
-        }
+        if (!formData.phone) return useStore.getState().addToast("Please enter a contact number", 'error');
         setIsSendingOtp(true);
-        
         try {
-            // Bypass OTP for localhost/local testing
             const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
             if (isLocal) {
                 setOtpSent(true);
-                useStore.getState().addToast("Local mode: use any 6-digit code (e.g. 123456) to verify.", 'success');
-                setIsSendingOtp(false);
+                useStore.getState().addToast("Local mode: use any 6-digit code.", 'success');
                 return;
             }
-
             if (!recaptchaVerifier.current) {
                 recaptchaVerifier.current = new RecaptchaVerifier(auth, 'recaptcha-creator-container', {
                     size: 'invisible',
                     callback: () => {},
                     'expired-callback': () => {
                         useStore.getState().addToast("reCAPTCHA expired. Please try again.", 'error');
-                        if (recaptchaVerifier.current) {
-                            recaptchaVerifier.current.clear();
-                            recaptchaVerifier.current = null;
-                        }
+                        if (recaptchaVerifier.current) { recaptchaVerifier.current.clear(); recaptchaVerifier.current = null; }
                     }
                 });
             }
-            
             const cleanPhone = formData.phone.replace(/\D/g, '');
             const formattedPhone = `${countryCode}${cleanPhone}`;
-            
             const result = await signInWithPhoneNumber(auth, formattedPhone, recaptchaVerifier.current);
             setConfirmationResult(result);
             setOtpSent(true);
             useStore.getState().addToast("Verification code sent to your phone!", 'success');
         } catch (err) {
             console.error("Phone verification error:", err);
-            useStore.getState().addToast(err.message || "Could not send SMS verification code. Try again.", 'error');
-            if (recaptchaVerifier.current) {
-                try { recaptchaVerifier.current.clear(); } catch(e){}
-                recaptchaVerifier.current = null;
-            }
+            useStore.getState().addToast(err.message || "Could not send SMS verification code.", 'error');
+            if (recaptchaVerifier.current) { try { recaptchaVerifier.current.clear(); } catch(e){} recaptchaVerifier.current = null; }
         } finally {
             setIsSendingOtp(false);
         }
@@ -473,42 +329,23 @@ const CreatorJoin = () => {
 
     const handleVerifyOTP = async (codeToVerify) => {
         const fullCode = typeof codeToVerify === 'string' ? codeToVerify : otpValues.join('');
-        if (fullCode.length !== 6) {
-            useStore.getState().addToast("Please enter the 6-digit verification code.", 'error');
-            return;
-        }
+        if (fullCode.length !== 6) return useStore.getState().addToast("Please enter the 6-digit code.", 'error');
         setIsVerifyingOtp(true);
-        
         try {
-            // Bypass OTP for localhost/local testing
             const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
             if (isLocal) {
                 setPhoneVerified(true);
                 useStore.getState().addToast("Phone verified (Local Bypass)!", 'success');
-                setTimeout(() => {
-                    handleNext();
-                }, 1200);
-                setIsVerifyingOtp(false);
                 return;
             }
-
             const credential = PhoneAuthProvider.credential(confirmationResult.verificationId, fullCode);
             await linkWithCredential(auth.currentUser, credential);
             setPhoneVerified(true);
             useStore.getState().addToast("Phone verified successfully!", 'success');
-            // Auto advance
-            setTimeout(() => {
-                handleNext();
-            }, 1200);
         } catch (err) {
-            console.error("OTP Verification Error:", err);
             if (err.code === 'auth/credential-already-in-use') {
                 setPhoneVerified(true);
                 useStore.getState().addToast("Phone verified! (Number linked to another account)", 'success');
-                // Auto advance
-                setTimeout(() => {
-                    handleNext();
-                }, 1200);
             } else {
                 useStore.getState().addToast("Invalid code. Please try again.", 'error');
             }
@@ -522,16 +359,8 @@ const CreatorJoin = () => {
         const newOtp = [...otpValues];
         newOtp[idx] = val;
         setOtpValues(newOtp);
-        
-        // Autotab forward
-        if (val !== '' && idx < 5) {
-            otpRefs.current[idx + 1]?.focus();
-        }
-
-        // Auto verify when 6 digits are filled
-        if (val !== '' && newOtp.every(digit => digit !== '')) {
-            handleVerifyOTP(newOtp.join(''));
-        }
+        if (val !== '' && idx < 5) otpRefs.current[idx + 1]?.focus();
+        if (val !== '' && newOtp.every(digit => digit !== '')) handleVerifyOTP(newOtp.join(''));
     };
 
     const handleOtpKeyDown = (e, idx) => {
@@ -553,136 +382,49 @@ const CreatorJoin = () => {
         e.preventDefault();
         const pasteData = e.clipboardData.getData('text').trim();
         if (pasteData.length === 6 && !isNaN(pasteData)) {
-            const digits = pasteData.split('');
-            setOtpValues(digits);
+            setOtpValues(pasteData.split(''));
             otpRefs.current[5]?.focus();
             handleVerifyOTP(pasteData);
         }
     };
 
-    // Form steps/questions list (Typeform questions)
-    const QUESTIONS = [
-        { id: 'welcome', label: 'Welcome', type: 'welcome' },
-        { id: 'name', label: 'Full Name', type: 'text', field: 'name', placeholder: 'Stage or Legal Name', description: 'What is your name?', required: true },
-        { id: 'phone', label: 'Contact Number', type: 'phone', field: 'phone', description: 'What is your phone number?', required: true },
-        { id: 'email', label: 'Email Address', type: 'email', field: 'email', placeholder: 'email@example.com', description: 'What is your email address?', required: true },
-        { id: 'city', label: 'Operating City', type: 'city', field: 'city', description: 'Which city are you from?', required: true },
-        { id: 'categories', label: 'Content Niche', type: 'niche', field: 'categories', description: 'What is your content niche?', required: true },
-        { id: 'collegeName', label: 'College / University Name', type: 'college', field: 'collegeName', placeholder: 'e.g. Delhi University, IIT', description: 'Which college do you study in?', required: (data) => data.categories === 'Student/ Campus Creator' || data.categories === 'Student Creator/ Campus Creator' || data.categories === 'College Pages' },
-        { id: 'primaryPlatform', label: 'Primary Platform', type: 'platform_choice', field: 'primaryPlatform', description: 'What is your primary platform?', required: true },
-        { id: 'instagram', label: 'Instagram Handle', type: 'text', field: 'instagram', placeholder: '@yourhandle', description: 'What is your Instagram handle?', required: true, conditional: (data) => data.primaryPlatform === 'instagram' || data.primaryPlatform === 'both' },
-        { id: 'instagramFollowers', label: 'Instagram Followers', type: 'number', field: 'instagramFollowers', placeholder: 'e.g. 5000', description: 'How many Instagram followers do you have?', required: true, conditional: (data) => data.primaryPlatform === 'instagram' || data.primaryPlatform === 'both' },
-        { id: 'linkedin', label: 'LinkedIn Profile URL', type: 'text', field: 'linkedin', placeholder: 'https://linkedin.com/in/username', description: 'What is your LinkedIn Profile link?', required: true, conditional: (data) => data.primaryPlatform === 'linkedin' || data.primaryPlatform === 'both' },
-        { id: 'linkedinFollowers', label: 'LinkedIn Connections', type: 'number', field: 'linkedinFollowers', placeholder: 'e.g. 500', description: 'How many LinkedIn connections/followers do you have?', required: true, conditional: (data) => data.primaryPlatform === 'linkedin' || data.primaryPlatform === 'both' },
-        { id: 'youtube', label: 'YouTube URL', type: 'text', field: 'youtube', placeholder: 'Channel URL (Optional)', description: 'What is your YouTube channel link? (Optional)', required: false },
-        { id: 'twitter', label: 'X / Website URL', type: 'text', field: 'twitter', placeholder: 'X handle or link (Optional)', description: 'What is your Twitter/X or website link? (Optional)', required: false },
-        { id: 'bio', label: 'Professional Bio', type: 'textarea', field: 'bio', placeholder: 'Describe your content niche and why brands should collaborate with you...', description: 'Tell us about yourself (Bio)', required: true },
-        { id: 'doBarter', label: 'Barter Collaborations', type: 'barter_choice', field: 'doBarter', description: 'Do you do barter collaborations?', required: true },
-        { id: 'commercials', label: 'Commercial Rates', type: 'text', field: 'commercials', placeholder: 'e.g. 5k/Reel, 2k/Story or Open to discuss', description: 'What are your standard commercial rates?', required: true },
-        { id: 'profilePicture', label: 'Profile Picture', type: 'image', field: 'profilePicture', description: 'Upload your profile picture', required: false },
-        { id: 'referredBy', label: 'Referral Code', type: 'text', field: 'referredBy', placeholder: 'UID or Username of referrer (Optional)', description: 'Were you referred by another creator? (Optional)', required: false },
-        { id: 'submit', label: 'Review & Submit', type: 'submit' }
-    ];
-
-    // Get currently active questions (filtering based on conditional)
-    const activeQuestions = QUESTIONS.filter(q => !q.conditional || q.conditional(formData));
-
-    const validateCurrentQuestion = () => {
-        const q = activeQuestions[currentQuestionIndex];
-        if (!q) return true;
-        if (q.type === 'welcome' || q.type === 'submit') return null;
-
-        const val = formData[q.field];
-
-        const isRequired = typeof q.required === 'function' ? q.required(formData) : q.required;
-
-        if (isRequired) {
-            if (q.type === 'phone' && !isPhoneVerifiedRef.current) {
-                return "Please verify your contact number via OTP first.";
-            }
-            if (q.type === 'city') {
-                if (!val) return "Please select a hub city.";
-                if (val === 'Others' && !formData.customCity?.trim()) return "Please specify your custom city.";
-            }
-            if (q.type === 'niche') {
-                if (!val) return "Please select a niche.";
-                if (val === 'Others' && !formData.customNiche?.trim()) return "Please specify your custom niche.";
-            }
-            if (q.field === 'instagram') {
-                if (val && (val.includes('/') || val.includes('http') || val.includes('.com'))) {
-                    return "Please enter only the Instagram username/handle, not a full link.";
-                }
-            }
-            if (q.field === 'linkedin') {
-                if (val && !val.includes('linkedin.com/')) {
-                    return "Please enter a valid LinkedIn Profile URL.";
-                }
-            }
-            if (!val || (typeof val === 'string' && val.trim() === '')) {
-                return `${q.label} is required.`;
-            }
-            if (q.field === 'bio' && val.trim().length < 10) {
-                return "Your bio is too short (minimum 10 characters).";
-            }
-            if (q.field === 'email') {
-                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-                if (!emailRegex.test(val)) return "Please enter a valid email address.";
-            }
-            if ((q.field === 'instagramFollowers' || q.field === 'linkedinFollowers') && Number(val) < 0) {
-                return "Followers/Connections count cannot be negative.";
-            }
+    const validateForm = () => {
+        if (!formData.name?.trim()) return "Full Name is required.";
+        if (!isPhoneVerifiedRef.current) return "Please verify your contact number via OTP.";
+        if (!formData.email?.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) return "Please enter a valid email address.";
+        if (!formData.city) return "Please select a Hub City.";
+        if (formData.city === 'Others' && !formData.customCity?.trim()) return "Please specify your custom city.";
+        
+        if (!formData.categories) return "Please select a Content Niche.";
+        if (formData.categories === 'Others' && !formData.customNiche?.trim()) return "Please specify your custom niche.";
+        if ((formData.categories === 'Student/ Campus Creator' || formData.categories === 'Student Creator/ Campus Creator' || formData.categories === 'College Pages') && !formData.collegeName?.trim()) {
+            return "College Name is required for Student/Campus Creators.";
         }
+
+        if (!formData.primaryPlatform) return "Please select a Primary Platform.";
+        if (formData.primaryPlatform === 'instagram' || formData.primaryPlatform === 'both') {
+            if (!formData.instagram?.trim()) return "Instagram Handle is required.";
+            if (formData.instagram.includes('/') || formData.instagram.includes('.com')) return "Enter only the Instagram username, not a link.";
+            if (!formData.instagramFollowers || Number(formData.instagramFollowers) < 0) return "Valid Instagram Followers count is required.";
+        }
+        if (formData.primaryPlatform === 'linkedin' || formData.primaryPlatform === 'both') {
+            if (!formData.linkedin?.trim()) return "LinkedIn Profile URL is required.";
+            if (!formData.linkedin.includes('linkedin.com/')) return "Enter a valid LinkedIn Profile URL.";
+            if (!formData.linkedinFollowers || Number(formData.linkedinFollowers) < 0) return "Valid LinkedIn Connections count is required.";
+        }
+
+        if (!formData.bio?.trim() || formData.bio.trim().length < 10) return "Professional Bio is required (min 10 chars).";
+        if (!formData.doBarter) return "Please select Barter Preference.";
+        if (!formData.commercials?.trim()) return "Commercial Rates are required.";
+        
         return null;
     };
 
-    const handleNext = () => {
-        const errorMsg = validateCurrentQuestion();
-        if (errorMsg) {
-            useStore.getState().addToast(errorMsg, 'error');
-            return;
-        }
-        if (currentQuestionIndex < activeQuestions.length - 1) {
-            setCurrentQuestionIndex(prev => prev + 1);
-        }
-    };
-
-    const handlePrev = () => {
-        if (currentQuestionIndex > 0) {
-            setCurrentQuestionIndex(prev => prev - 1);
-        }
-    };
-
-    // Keyboard controls for Typeform experience
-    useEffect(() => {
-        const handleKeyDown = (e) => {
-            const activeType = activeQuestions[currentQuestionIndex]?.type;
-            if (activeType === 'textarea' || activeType === 'image') return; // Don't trigger on textareas/file uploads
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                if (activeType === 'phone' && !isPhoneVerifiedRef.current) {
-                    if (otpSent) {
-                        handleVerifyOTP();
-                    } else {
-                        handleSendOTP();
-                    }
-                } else if (currentQuestionIndex === activeQuestions.length - 1) {
-                    handleSubmit(e);
-                } else {
-                    handleNext();
-                }
-            }
-        };
-
-        window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [currentQuestionIndex, formData, isPhoneVerified, otpSent, otpValues]);
-
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!user) {
-            setAuthModal(true);
-            return;
-        }
+        if (!user) { setAuthModal(true); return; }
+        const errorMsg = validateForm();
+        if (errorMsg) { useStore.getState().addToast(errorMsg, 'error'); return; }
 
         setIsSubmitting(true);
         try {
@@ -706,34 +448,22 @@ const CreatorJoin = () => {
                 isPhoneVerified: true
             });
             setHasJoined(true);
-            try {
-                confetti({
-                    particleCount: 150,
-                    spread: 80,
-                    origin: { y: 0.6 }
-                });
-            } catch (confettiErr) {
-                console.error("Confetti launch failed:", confettiErr);
-            }
+            try { confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 } }); } catch(err) {}
         } catch (error) {
-            console.error("Error joining creator hub:", error);
-            useStore.getState().addToast("Couldn't submit your application. Please try again.", 'error');
+            console.error("Error joining:", error);
+            useStore.getState().addToast("Couldn't submit application.", 'error');
         } finally {
             setIsSubmitting(false);
         }
     };
 
-    if (!authInitialized || loading) {
-        return <GlobalLoader color="#00F0FF" />;
-    }
+    if (!authInitialized || loading) return <GlobalLoader color="#00F0FF" />;
 
     if (hasJoined) {
         return (
             <div className="min-h-screen bg-[#020202] text-white pt-40 pb-20 px-4 text-center relative overflow-hidden">
                 <div className="absolute top-[30%] left-1/2 -translate-x-1/2 w-[60%] h-[60%] bg-neon-blue/10 rounded-full blur-[150px] pointer-events-none" />
-                
-                <motion.div
-                    initial={{ opacity: 0, scale: 0.9, y: 30 }} animate={{ opacity: 1, scale: 1, y: 0 }}
+                <motion.div initial={{ opacity: 0, scale: 0.9, y: 30 }} animate={{ opacity: 1, scale: 1, y: 0 }}
                     className="max-w-xl mx-auto p-12 md:p-16 bg-zinc-950/45 backdrop-blur-3xl border border-white/[0.08] rounded-[4rem] shadow-[inset_0_1px_1px_rgba(255,255,255,0.15),0_40px_80px_rgba(0,0,0,0.7)] relative z-10"
                 >
                     <div className="w-24 h-24 bg-neon-blue rounded-[2rem] flex items-center justify-center mx-auto mb-10 shadow-[0_0_50px_rgba(46,191,255,0.3)]">
@@ -749,23 +479,19 @@ const CreatorJoin = () => {
         );
     }
 
-    const currentQuestion = activeQuestions[currentQuestionIndex];
-    const progressPercent = Math.round((currentQuestionIndex / (activeQuestions.length - 1)) * 100);
-
     return (
-        <div className="min-h-screen bg-[#020202] text-white pt-32 pb-40 px-4 relative overflow-hidden flex items-center justify-center">
+        <div className="min-h-screen bg-[#020202] text-white pt-32 pb-40 px-4 relative overflow-hidden">
             {/* Atmosphere */}
             <div className="fixed inset-0 z-0 pointer-events-none">
                 <div className="absolute top-[10%] right-[-10%] w-[60%] h-[60%] bg-neon-blue/15 rounded-full blur-[180px]" />
                 <div className="absolute bottom-[10%] left-[-10%] w-[50%] h-[50%] bg-neon-pink/10 rounded-full blur-[180px]" />
             </div>
 
-            {/* Recaptcha container */}
             <div id="recaptcha-creator-container" className="fixed bottom-0 right-0 z-[200]"></div>
 
-            <div className="relative z-10 w-full max-w-4xl">
+            <div className="relative z-10 w-full max-w-4xl mx-auto">
                 {!user ? (
-                    <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="max-w-2xl mx-auto text-center">
+                    <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="max-w-2xl mx-auto text-center mt-20">
                         <div className="p-16 bg-zinc-950/45 backdrop-blur-3xl border border-white/[0.08] rounded-[4rem] shadow-[inset_0_1px_1px_rgba(255,255,255,0.15),0_30px_60px_rgba(0,0,0,0.6)]">
                             <Activity className="w-20 h-20 text-neon-blue mx-auto mb-10" />
                             <h3 className="text-4xl font-black font-heading mb-6 italic uppercase">SIGN IN REQUIRED</h3>
@@ -776,604 +502,284 @@ const CreatorJoin = () => {
                         </div>
                     </motion.div>
                 ) : (
-                    <div className="w-full">
-                        {/* Typeform Frame */}
-                        <div className="bg-zinc-950/45 backdrop-blur-3xl border border-white/[0.08] rounded-3xl md:rounded-[3.5rem] p-5 md:p-16 shadow-[inset_0_1px_1px_rgba(255,255,255,0.15),0_50px_100px_rgba(0,0,0,0.8)] relative min-h-[450px] sm:min-h-[500px] flex flex-col justify-between">
-                            {/* Top decorative elements */}
-                            <div className="absolute top-0 right-0 w-80 h-80 bg-neon-blue/10 blur-[130px] -mr-40 -mt-40 pointer-events-none" />
-                            
-                            {/* Progress bar */}
-                            <div className="w-full h-1 bg-white/5 rounded-full overflow-hidden mb-12 shrink-0">
-                                <motion.div 
-                                    initial={{ width: 0 }}
-                                    animate={{ width: `${progressPercent}%` }}
-                                    transition={{ duration: 0.3 }}
-                                    className="h-full bg-gradient-to-r from-neon-blue to-neon-pink"
-                                />
+                    <div className="space-y-12">
+                        {/* Header */}
+                        <div className="text-center space-y-6">
+                            <div className="relative w-24 h-24 mx-auto mb-6 flex items-center justify-center">
+                                <div className="absolute inset-0 bg-neon-blue/20 blur-xl rounded-full animate-pulse" />
+                                <motion.div animate={{ rotate: 360 }} transition={{ duration: 10, repeat: Infinity, ease: "linear" }} className="absolute inset-0 rounded-[2rem] border border-dashed border-neon-blue/40" />
+                                <div className="relative w-20 h-20 rounded-[1.8rem] bg-zinc-950 border border-white/[0.08] flex items-center justify-center text-neon-blue shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)]">
+                                    <Zap size={36} className="text-neon-blue filter drop-shadow-[0_0_8px_rgba(0,240,255,0.5)]" />
+                                </div>
                             </div>
+                            <h2 className="text-4xl md:text-6xl font-black font-heading tracking-tighter uppercase italic text-white leading-none">
+                                JOIN THE <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-blue via-white to-neon-pink">CREATOR NETWORK.</span>
+                            </h2>
+                            <p className="text-gray-400 font-medium text-lg uppercase tracking-tight max-w-xl mx-auto">
+                                Complete your profile to unlock exclusive brand collaborations, digital products, and analytics.
+                            </p>
+                        </div>
 
-                            {/* Active Question Render */}
-                            <div className="flex-1 flex flex-col justify-center my-6">
-                                <AnimatePresence mode="wait">
-                                    <motion.div
-                                        key={currentQuestion.id}
-                                        initial={{ opacity: 0, y: 30 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        exit={{ opacity: 0, y: -30 }}
-                                        transition={{ duration: 0.4, ease: "easeOut" }}
-                                        className="space-y-8"
-                                    >
-                                        {currentQuestion.type === 'welcome' && (
-                                            <div className="text-center py-8 space-y-6">
-                                                <div className="relative w-24 h-24 mx-auto mb-8 flex items-center justify-center">
-                                                    {/* Glow backdrops */}
-                                                    <div className="absolute inset-0 bg-neon-blue/20 blur-xl rounded-full animate-pulse" />
-                                                    <motion.div 
-                                                        animate={{ rotate: 360 }}
-                                                        transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
-                                                        className="absolute inset-0 rounded-[2rem] border border-dashed border-neon-blue/40"
-                                                    />
-                                                    <div className="relative w-20 h-20 rounded-[1.8rem] bg-zinc-950 border border-white/[0.08] flex items-center justify-center text-neon-blue shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)]">
-                                                        <Zap size={36} className="text-neon-blue filter drop-shadow-[0_0_8px_rgba(0,240,255,0.5)]" />
-                                                    </div>
-                                                </div>
-                                                <h2 className="text-4xl md:text-5xl font-black font-heading tracking-tighter uppercase italic text-white leading-none">
-                                                    WELCOME TO THE <br/>
-                                                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-blue via-white to-neon-pink">CREATOR NETWORK.</span>
-                                                </h2>
+                        <form onSubmit={handleSubmit} className="space-y-8">
+                            {/* Card 1: Identity & Contact */}
+                            <div className="bg-zinc-950/60 backdrop-blur-3xl border border-white/[0.08] rounded-3xl md:rounded-[3rem] p-6 md:p-10 shadow-[inset_0_1px_1px_rgba(255,255,255,0.15),0_30px_60px_rgba(0,0,0,0.4)] relative overflow-hidden">
+                                <div className="absolute top-0 right-0 w-64 h-64 bg-neon-blue/5 blur-[100px] pointer-events-none" />
+                                
+                                <div className="flex items-center gap-4 mb-8 border-b border-white/10 pb-6">
+                                    <div className="w-12 h-12 bg-neon-blue/10 rounded-xl flex items-center justify-center border border-neon-blue/20">
+                                        <User className="text-neon-blue" size={24} />
+                                    </div>
+                                    <h3 className="text-2xl font-black font-heading uppercase italic tracking-tight">Identity & Contact</h3>
+                                </div>
 
-                                                <button 
-                                                    onClick={() => setCurrentQuestionIndex(1)}
-                                                    className="h-14 sm:h-16 px-8 sm:px-12 rounded-xl sm:rounded-2xl bg-white text-black font-black font-heading uppercase tracking-[0.2em] text-xs hover:bg-neon-blue hover:scale-105 active:scale-95 transition-all flex items-center gap-3 mx-auto shadow-2xl"
-                                                >
-                                                    Get Started <ArrowRight size={16} />
-                                                </button>
-                                            </div>
-                                        )}
-
-                                        {currentQuestion.type === 'text' && (
-                                            <div className="space-y-6 w-full">
-                                                <div className="space-y-1">
-                                                    <span className="text-[10px] font-black text-neon-pink uppercase tracking-[0.3em]">QUESTION {currentQuestionIndex} OF {activeQuestions.length - 2}</span>
-                                                    <h3 className="text-3xl md:text-4xl font-black font-heading uppercase italic tracking-tight text-white leading-tight pr-4">
-                                                        {currentQuestion.description}
-                                                    </h3>
-                                                </div>
-                                                <div className="relative">
-                                                    <Input 
-                                                        name={currentQuestion.field} 
-                                                        value={formData[currentQuestion.field]} 
-                                                        onChange={handleChange} 
-                                                        placeholder={currentQuestion.placeholder} 
-                                                        className="h-16 sm:h-20 bg-white/[0.02] border-white/10 rounded-2xl text-lg sm:text-xl font-bold px-6 sm:px-8 focus:border-neon-blue disabled:opacity-60 disabled:cursor-not-allowed" 
-                                                        autoFocus={!(currentQuestion.field === 'referredBy' && isReferralCodeLocked)}
-                                                        disabled={currentQuestion.field === 'referredBy' && isReferralCodeLocked}
-                                                    />
-                                                    {currentQuestion.field === 'referredBy' && isReferralCodeLocked ? (
-                                                        <span className="absolute right-6 top-1/2 -translate-y-1/2 text-[9px] font-black text-neon-blue uppercase tracking-widest">LOCKED 🔒</span>
-                                                    ) : (
-                                                        <span className="absolute right-6 top-1/2 -translate-y-1/2 text-[9px] font-bold text-gray-500 uppercase tracking-widest hidden sm:inline">press Enter ↵</span>
-                                                    )}
-                                                </div>
-                                                {currentQuestion.field === 'referredBy' && isReferralCodeLocked && (
-                                                    <p className="text-[10px] font-bold text-neon-blue uppercase tracking-widest mt-1 pl-1">
-                                                        This referral code was loaded from your invite link and cannot be changed.
-                                                    </p>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    {/* Profile Pic Upload */}
+                                    <div className="md:col-span-2 flex items-center gap-6 mb-4">
+                                        <div className="relative group">
+                                            <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-[2rem] bg-black border-2 border-white/10 flex items-center justify-center overflow-hidden transition-all group-hover:border-neon-blue/40">
+                                                {formData.profilePicture ? (
+                                                    <img src={formData.profilePicture} alt="Preview" className="w-full h-full object-cover" />
+                                                ) : (
+                                                    <Camera size={32} className="text-gray-700 group-hover:text-neon-blue transition-colors" />
                                                 )}
                                             </div>
-                                        )}
+                                            <label className="absolute -bottom-2 -right-2 w-10 h-10 bg-neon-blue text-black rounded-xl flex items-center justify-center cursor-pointer hover:scale-110 active:scale-95 transition-all shadow-xl">
+                                                <Upload size={18} />
+                                                <input type="file" className="hidden" accept="image/*" onChange={handleImageUpload} />
+                                            </label>
+                                        </div>
+                                        <div>
+                                            <h4 className="text-sm font-black uppercase tracking-[0.2em] text-white">Profile Photo</h4>
+                                            <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mt-1">Make a good first impression</p>
+                                        </div>
+                                    </div>
 
-                                        {currentQuestion.type === 'number' && (
-                                            <div className="space-y-6 w-full">
-                                                <div className="space-y-1">
-                                                    <span className="text-[10px] font-black text-neon-pink uppercase tracking-[0.3em]">QUESTION {currentQuestionIndex} OF {activeQuestions.length - 2}</span>
-                                                    <h3 className="text-3xl md:text-4xl font-black font-heading uppercase italic tracking-tight text-white leading-tight pr-4">
-                                                        {currentQuestion.description}
-                                                    </h3>
-                                                </div>
-                                                <div className="relative">
-                                                    <Input 
-                                                        type="number"
-                                                        name={currentQuestion.field} 
-                                                        value={formData[currentQuestion.field]} 
-                                                        onChange={handleChange} 
-                                                        placeholder={currentQuestion.placeholder} 
-                                                        className="h-16 sm:h-20 bg-white/[0.02] border-white/10 rounded-2xl text-lg sm:text-xl font-bold px-6 sm:px-8 focus:border-neon-blue" 
-                                                        autoFocus
-                                                    />
-                                                    <span className="absolute right-6 top-1/2 -translate-y-1/2 text-[9px] font-bold text-gray-500 uppercase tracking-widest hidden sm:inline">press Enter ↵</span>
-                                                </div>
-                                            </div>
-                                        )}
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Full Name</label>
+                                        <Input name="name" value={formData.name} onChange={handleChange} placeholder="Stage or Legal Name" className="h-16 bg-white/[0.02] border-white/10 rounded-2xl text-base font-bold px-6 focus:border-neon-blue" />
+                                    </div>
 
-                                        {currentQuestion.type === 'email' && (
-                                            <div className="space-y-6 w-full">
-                                                <div className="space-y-1">
-                                                    <span className="text-[10px] font-black text-neon-pink uppercase tracking-[0.3em]">QUESTION {currentQuestionIndex} OF {activeQuestions.length - 2}</span>
-                                                    <h3 className="text-3xl md:text-4xl font-black font-heading uppercase italic tracking-tight text-white leading-tight pr-4">
-                                                        {currentQuestion.description}
-                                                    </h3>
-                                                </div>
-                                                <div className="relative">
-                                                    <Mail className="absolute left-4 sm:left-6 top-1/2 -translate-y-1/2 text-gray-500" size={20} sm:size={24} />
-                                                    <Input 
-                                                        type="email"
-                                                        name={currentQuestion.field} 
-                                                        value={formData[currentQuestion.field]} 
-                                                        onChange={handleChange} 
-                                                        placeholder={currentQuestion.placeholder} 
-                                                        className="h-16 sm:h-20 pl-12 sm:pl-16 pr-6 sm:pr-8 bg-white/[0.02] border-white/10 rounded-2xl text-lg sm:text-xl font-bold focus:border-neon-blue" 
-                                                        autoFocus
-                                                    />
-                                                    <span className="absolute right-6 top-1/2 -translate-y-1/2 text-[9px] font-bold text-gray-500 uppercase tracking-widest hidden sm:inline">press Enter ↵</span>
-                                                </div>
-                                            </div>
-                                        )}
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Email Address</label>
+                                        <div className="relative">
+                                            <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" size={20} />
+                                            <Input type="email" name="email" value={formData.email} onChange={handleChange} placeholder="email@example.com" className="h-16 pl-12 pr-6 bg-white/[0.02] border-white/10 rounded-2xl text-base font-bold focus:border-neon-blue" />
+                                        </div>
+                                    </div>
 
-                                        {currentQuestion.type === 'phone' && (
-                                            <div className="space-y-6 w-full">
-                                                <div className="space-y-1">
-                                                    <span className="text-[10px] font-black text-neon-pink uppercase tracking-[0.3em]">QUESTION {currentQuestionIndex} OF {activeQuestions.length - 2}</span>
-                                                    <h3 className="text-3xl md:text-4xl font-black font-heading uppercase italic tracking-tight text-white leading-tight pr-4">
-                                                        {currentQuestion.description}
-                                                    </h3>
+                                    <div className="md:col-span-2 space-y-2">
+                                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Contact Number</label>
+                                        {!otpSent ? (
+                                            <div className="flex gap-3">
+                                                <CustomSelect value={countryCode} onChange={(e) => setCountryCode(e.target.value)} options={COUNTRY_OPTIONS} name="countryCode" placeholder="+91" isCountryCode />
+                                                <div className="relative flex-1">
+                                                    <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" size={20} />
+                                                    <Input type="tel" name="phone" value={formData.phone} onChange={handleChange} disabled={isPhoneVerified} placeholder="99999 99999" className="h-16 pl-12 pr-6 bg-white/[0.02] border-white/10 rounded-2xl text-base font-bold focus:border-neon-blue" />
                                                 </div>
-
-                                                {!otpSent ? (
-                                                    <div className="space-y-4">
-                                                        <div className="flex gap-4">
-                                                            <CustomSelect
-                                                                value={countryCode}
-                                                                onChange={(e) => setCountryCode(e.target.value)}
-                                                                options={COUNTRY_OPTIONS}
-                                                                name="countryCode"
-                                                                placeholder="+91"
-                                                                isCountryCode
-                                                            />
-                                                            <div className="relative flex-1">
-                                                                <Phone className="absolute left-4 sm:left-6 top-1/2 -translate-y-1/2 text-gray-500" size={20} sm:size={24} />
-                                                                <Input 
-                                                                    type="tel"
-                                                                    name={currentQuestion.field} 
-                                                                    value={formData[currentQuestion.field]} 
-                                                                    onChange={handleChange} 
-                                                                    disabled={isPhoneVerified}
-                                                                    placeholder="99999 99999" 
-                                                                    className="h-16 sm:h-20 pl-12 sm:pl-16 pr-6 sm:pr-8 bg-white/[0.02] border-white/10 rounded-2xl text-lg sm:text-xl font-bold focus:border-neon-blue" 
-                                                                    autoFocus
-                                                                />
-                                                            </div>
-                                                        </div>
-                                                        
-                                                        {isPhoneVerified ? (
-                                                            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-                                                                <div className="flex items-center gap-3 bg-neon-green/10 border border-neon-green/20 p-4 rounded-2xl text-neon-green text-sm font-bold w-fit">
-                                                                    <ShieldCheck size={18} /> Phone Verified Successfully!
-                                                                </div>
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => setPhoneVerified(false)}
-                                                                    className="text-xs text-gray-500 hover:text-white font-bold uppercase tracking-widest mt-2 sm:mt-0 underline"
-                                                                >
-                                                                    Change Number
-                                                                </button>
-                                                            </div>
-                                                        ) : (
-                                                            <button 
-                                                                type="button"
-                                                                onClick={handleSendOTP}
-                                                                disabled={isSendingOtp || !formData.phone}
-                                                                className="h-14 sm:h-16 px-6 sm:px-10 rounded-lg sm:rounded-xl bg-neon-blue text-black font-black uppercase tracking-widest text-xs flex items-center justify-center gap-3 hover:scale-105 active:scale-95 transition-all disabled:opacity-50"
-                                                            >
-                                                                {isSendingOtp ? <LoadingSpinner size="xs" color="black" /> : 'Send OTP Code'}
-                                                            </button>
-                                                        )}
+                                                {isPhoneVerified ? (
+                                                    <div className="h-16 px-4 bg-neon-green/10 border border-neon-green/20 rounded-2xl flex items-center justify-center text-neon-green">
+                                                        <ShieldCheck size={20} />
                                                     </div>
                                                 ) : (
-                                                    <div className="space-y-6">
-                                                        <div className="space-y-2">
-                                                            <p className="text-gray-400 text-sm font-bold uppercase tracking-wider">
-                                                                Enter the 6-digit OTP code sent to <span className="text-neon-blue font-black">{countryCode} {formData.phone}</span>
-                                                            </p>
+                                                    <button type="button" onClick={handleSendOTP} disabled={isSendingOtp || !formData.phone} className="h-16 px-6 sm:px-8 rounded-2xl bg-neon-blue text-black font-black uppercase tracking-widest text-xs hover:scale-105 active:scale-95 transition-all disabled:opacity-50 whitespace-nowrap">
+                                                        {isSendingOtp ? <LoadingSpinner size="xs" color="black" /> : 'Send OTP'}
+                                                    </button>
+                                                )}
+                                            </div>
+                                        ) : (
+                                            <div className="bg-white/[0.02] border border-white/10 p-6 rounded-2xl">
+                                                {isPhoneVerified ? (
+                                                    <OTPVerificationSuccess />
+                                                ) : (
+                                                    <div className="flex flex-col sm:flex-row gap-6 items-start sm:items-center">
+                                                        <div className="flex gap-2">
+                                                            {otpValues.map((digit, idx) => (
+                                                                <input
+                                                                    key={idx} ref={el => otpRefs.current[idx] = el} type="text" maxLength={1} value={digit}
+                                                                    disabled={isVerifyingOtp} onChange={e => handleOtpChange(e.target.value, idx)}
+                                                                    onKeyDown={e => handleOtpKeyDown(e, idx)} onPaste={handleOtpPaste}
+                                                                    className={cn("w-10 h-14 sm:w-12 sm:h-16 bg-white/[0.04] border-2 rounded-xl text-center text-xl font-black text-white focus:border-neon-blue focus:outline-none transition-all", isVerifyingOtp ? "border-neon-pink/40 animate-pulse" : "border-white/10")}
+                                                                />
+                                                            ))}
                                                         </div>
-
-                                                        {/* Cool Autotabbing OTP Boxes */}
-                                                        {isPhoneVerified ? (
-                                                            <OTPVerificationSuccess />
-                                                        ) : (
-                                                            <div className="flex flex-col gap-6">
-                                                                <div className="relative flex gap-1.5 sm:gap-3 p-1">
-                                                                    {/* Scanning laser beam */}
-                                                                    {isVerifyingOtp && (
-                                                                        <motion.div 
-                                                                            initial={{ top: '0%' }}
-                                                                            animate={{ top: ['0%', '100%', '0%'] }}
-                                                                            transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
-                                                                            className="absolute left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-neon-pink to-transparent shadow-[0_0_12px_rgba(255,0,127,0.8)] z-20 pointer-events-none"
-                                                                        />
-                                                                    )}
-                                                                    {otpValues.map((digit, idx) => (
-                                                                        <input
-                                                                            key={idx}
-                                                                            ref={el => otpRefs.current[idx] = el}
-                                                                            type="text"
-                                                                            maxLength={1}
-                                                                            value={digit}
-                                                                            disabled={isVerifyingOtp}
-                                                                            onChange={e => handleOtpChange(e.target.value, idx)}
-                                                                            onKeyDown={e => handleOtpKeyDown(e, idx)}
-                                                                            onPaste={handleOtpPaste}
-                                                                            className={cn(
-                                                                                "w-9 h-12 sm:w-14 sm:h-16 md:w-16 md:h-20 bg-white/[0.02] border-2 rounded-xl sm:rounded-2xl text-center text-lg sm:text-2xl font-black text-white focus:border-neon-blue focus:shadow-[0_0_25px_rgba(0,240,255,0.2)] focus:outline-none transition-all",
-                                                                                isVerifyingOtp ? "border-neon-pink/40 animate-pulse" : "border-white/10"
-                                                                            )}
-                                                                            autoFocus={idx === 0}
-                                                                        />
-                                                                    ))}
-                                                                </div>
-
-                                                                <div className="flex gap-4">
-                                                                    <button
-                                                                        type="button"
-                                                                        onClick={handleVerifyOTP}
-                                                                        disabled={isVerifyingOtp || otpValues.join('').length !== 6}
-                                                                        className="h-14 sm:h-16 px-6 sm:px-10 rounded-lg sm:rounded-xl bg-neon-pink text-black font-black uppercase tracking-widest text-xs flex items-center justify-center gap-3 hover:scale-105 active:scale-95 transition-all disabled:opacity-30"
-                                                                    >
-                                                                        {isVerifyingOtp ? <LoadingSpinner size="xs" color="black" /> : 'Confirm Code'}
-                                                                    </button>
-                                                                    <button
-                                                                        type="button"
-                                                                        onClick={() => { setOtpSent(false); setOtpValues(['','','','','','']); }}
-                                                                        className="text-xs text-gray-500 hover:text-white font-bold uppercase tracking-widest"
-                                                                    >
-                                                                        Back / Resend
-                                                                    </button>
-                                                                </div>
-                                                            </div>
-                                                        )}
+                                                        <div className="flex gap-3">
+                                                            <button type="button" onClick={handleVerifyOTP} disabled={isVerifyingOtp || otpValues.join('').length !== 6} className="h-14 px-6 rounded-xl bg-neon-pink text-black font-black uppercase tracking-widest text-xs hover:scale-105 active:scale-95 transition-all disabled:opacity-30">
+                                                                Confirm
+                                                            </button>
+                                                            <button type="button" onClick={() => { setOtpSent(false); setOtpValues(['','','','','','']); }} className="text-xs text-gray-500 hover:text-white font-bold uppercase tracking-widest">
+                                                                Back
+                                                            </button>
+                                                        </div>
                                                     </div>
                                                 )}
                                             </div>
                                         )}
+                                    </div>
 
-                                        {currentQuestion.type === 'city' && (
-                                            <div className="space-y-6 w-full">
-                                                <div className="space-y-1">
-                                                    <span className="text-[10px] font-black text-neon-pink uppercase tracking-[0.3em]">QUESTION {currentQuestionIndex} OF {activeQuestions.length - 2}</span>
-                                                    <h3 className="text-3xl md:text-4xl font-black font-heading uppercase italic tracking-tight text-white leading-tight pr-4">
-                                                        {currentQuestion.description}
-                                                    </h3>
-                                                </div>
-                                                <div className="space-y-4">
-                                                    <CustomSelect
-                                                        value={formData[currentQuestion.field]}
-                                                        onChange={handleChange}
-                                                        options={PREDEFINED_CITIES}
-                                                        name={currentQuestion.field}
-                                                        placeholder="Select Universal Hub"
-                                                        icon={MapPin}
-                                                    />
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Operating Hub City</label>
+                                        <CustomSelect value={formData.city} onChange={handleChange} options={PREDEFINED_CITIES} name="city" placeholder="Select City" icon={MapPin} />
+                                    </div>
 
-                                                    {formData.city === 'Others' && (
-                                                        <motion.div
-                                                            initial={{ opacity: 0, height: 0 }}
-                                                            animate={{ opacity: 1, height: 'auto' }}
-                                                            className="space-y-2"
-                                                        >
-                                                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Specify City Name</label>
-                                                            <Input 
-                                                                name="customCity" 
-                                                                value={formData.customCity} 
-                                                                onChange={handleChange} 
-                                                                placeholder="e.g. Pune, Indore, Lucknow" 
-                                                                className="h-16 bg-white/[0.02] border-white/10 rounded-2xl text-base font-bold px-6 focus:border-neon-blue"
-                                                                required
-                                                            />
-                                                        </motion.div>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        {currentQuestion.type === 'niche' && (
-                                            <div className="space-y-6 w-full">
-                                                <div className="space-y-1">
-                                                    <span className="text-[10px] font-black text-neon-pink uppercase tracking-[0.3em]">QUESTION {currentQuestionIndex} OF {activeQuestions.length - 2}</span>
-                                                    <h3 className="text-3xl md:text-4xl font-black font-heading uppercase italic tracking-tight text-white leading-tight pr-4">
-                                                        {currentQuestion.description}
-                                                    </h3>
-                                                </div>
-                                                <div className="space-y-4">
-                                                    <CustomSelect
-                                                        value={formData[currentQuestion.field]}
-                                                        onChange={handleChange}
-                                                        options={NICHES}
-                                                        name={currentQuestion.field}
-                                                        placeholder="Select Content Niche"
-                                                        icon={Tag}
-                                                    />
-
-                                                    {formData.categories === 'Others' && (
-                                                        <motion.div
-                                                            initial={{ opacity: 0, height: 0 }}
-                                                            animate={{ opacity: 1, height: 'auto' }}
-                                                            className="space-y-2"
-                                                        >
-                                                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Specify Content Niche</label>
-                                                            <Input 
-                                                                name="customNiche" 
-                                                                value={formData.customNiche} 
-                                                                onChange={handleChange} 
-                                                                placeholder="e.g. Comedy, Art, Finance" 
-                                                                className="h-16 bg-white/[0.02] border-white/10 rounded-2xl text-base font-bold px-6 focus:border-neon-blue"
-                                                                required
-                                                            />
-                                                        </motion.div>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        {currentQuestion.type === 'college' && (
-                                            <div className="space-y-6 w-full">
-                                                <div className="space-y-1">
-                                                    <span className="text-[10px] font-black text-neon-pink uppercase tracking-[0.3em]">QUESTION {currentQuestionIndex} OF {activeQuestions.length - 2}</span>
-                                                    <h3 className="text-3xl md:text-4xl font-black font-heading uppercase italic tracking-tight text-white leading-tight pr-4">
-                                                        {currentQuestion.description}
-                                                    </h3>
-                                                    <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mt-2">
-                                                        {!(formData.categories === 'Student/ Campus Creator' || formData.categories === 'Student Creator/ Campus Creator' || formData.categories === 'College Pages') ? (
-                                                            <span className="text-neon-blue">[OPTIONAL]</span>
-                                                        ) : (
-                                                            <span className="text-red-500">[REQUIRED]</span>
-                                                        )}{" "}
-                                                        Why fill this? Matching your college helps us connect you with exclusive regional/campus campaigns and college events.
-                                                    </p>
-                                                </div>
-                                                <div className="relative">
-                                                    <Input 
-                                                        name={currentQuestion.field} 
-                                                        value={formData[currentQuestion.field]} 
-                                                        onChange={handleChange} 
-                                                        placeholder={
-                                                            !(formData.categories === 'Student/ Campus Creator' || formData.categories === 'Student Creator/ Campus Creator' || formData.categories === 'College Pages')
-                                                                ? 'e.g. Delhi University, IIT (Optional)'
-                                                                : 'e.g. Delhi University, IIT'
-                                                        } 
-                                                        className="h-16 sm:h-20 bg-white/[0.02] border-white/10 rounded-2xl text-lg sm:text-xl font-bold px-6 sm:px-8 focus:border-neon-blue" 
-                                                        autoFocus
-                                                    />
-                                                    <span className="absolute right-6 top-1/2 -translate-y-1/2 text-[9px] font-bold text-gray-500 uppercase tracking-widest hidden sm:inline">press Enter ↵</span>
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        {currentQuestion.type === 'platform_choice' && (
-                                            <div className="space-y-6 w-full">
-                                                <div className="space-y-1">
-                                                    <span className="text-[10px] font-black text-neon-pink uppercase tracking-[0.3em]">QUESTION {currentQuestionIndex} OF {activeQuestions.length - 2}</span>
-                                                    <h3 className="text-3xl md:text-4xl font-black font-heading uppercase italic tracking-tight text-white leading-tight pr-4">
-                                                        {currentQuestion.description}
-                                                    </h3>
-                                                </div>
-                                                <div className="space-y-4">
-                                                    <CustomSelect
-                                                        value={formData[currentQuestion.field]}
-                                                        onChange={handleChange}
-                                                        options={[
-                                                            { value: 'instagram', label: 'Instagram' },
-                                                            { value: 'linkedin', label: 'LinkedIn' },
-                                                            { value: 'both', label: 'Both Instagram & LinkedIn' }
-                                                        ]}
-                                                        name={currentQuestion.field}
-                                                        placeholder="Select Primary Platform"
-                                                        icon={Globe}
-                                                    />
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        {currentQuestion.type === 'barter_choice' && (
-                                            <div className="space-y-6 w-full">
-                                                <div className="space-y-1">
-                                                    <span className="text-[10px] font-black text-neon-pink uppercase tracking-[0.3em]">QUESTION {currentQuestionIndex} OF {activeQuestions.length - 2}</span>
-                                                    <h3 className="text-3xl md:text-4xl font-black font-heading uppercase italic tracking-tight text-white leading-tight pr-4">
-                                                        {currentQuestion.description}
-                                                    </h3>
-                                                </div>
-                                                <div className="space-y-4">
-                                                    <CustomSelect
-                                                        value={formData[currentQuestion.field]}
-                                                        onChange={handleChange}
-                                                        options={[
-                                                            { value: 'yes', label: 'Yes, I do barter collaborations' },
-                                                            { value: 'no', label: 'No, I only do paid collaborations' },
-                                                            { value: 'selective', label: 'Selective (Depends on brand/product)' }
-                                                        ]}
-                                                        name={currentQuestion.field}
-                                                        placeholder="Select Barter Preference"
-                                                        icon={Zap}
-                                                    />
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        {currentQuestion.type === 'textarea' && (
-                                            <div className="space-y-6 w-full">
-                                                <div className="space-y-1">
-                                                    <span className="text-[10px] font-black text-neon-pink uppercase tracking-[0.3em]">QUESTION {currentQuestionIndex} OF {activeQuestions.length - 2}</span>
-                                                    <h3 className="text-3xl md:text-4xl font-black font-heading uppercase italic tracking-tight text-white leading-tight pr-4">
-                                                        {currentQuestion.description}
-                                                    </h3>
-                                                </div>
-                                                <div>
-                                                    <textarea 
-                                                        required 
-                                                        name={currentQuestion.field} 
-                                                        value={formData[currentQuestion.field]} 
-                                                        onChange={handleChange}
-                                                        placeholder={currentQuestion.placeholder}
-                                                        className="w-full bg-white/[0.02] border border-white/10 rounded-[2rem] p-8 text-white text-lg font-medium leading-relaxed focus:border-neon-blue focus:outline-none h-48 resize-none shadow-inner"
-                                                        autoFocus
-                                                    />
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        {currentQuestion.type === 'image' && (
-                                            <div className="space-y-6 w-full">
-                                                <div className="space-y-1">
-                                                    <span className="text-[10px] font-black text-neon-pink uppercase tracking-[0.3em]">QUESTION {currentQuestionIndex} OF {activeQuestions.length - 2}</span>
-                                                    <h3 className="text-3xl md:text-4xl font-black font-heading uppercase italic tracking-tight text-white leading-tight pr-4">
-                                                        {currentQuestion.description}
-                                                    </h3>
-                                                </div>
-
-                                                <div className="flex flex-col items-center gap-6 bg-white/[0.01] border border-white/5 rounded-[2.5rem] p-10 relative overflow-hidden group">
-                                                    <div className="absolute inset-0 bg-neon-blue/5 blur-3xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
-                                                    <div className="relative">
-                                                        <div className="w-40 h-40 rounded-[3rem] bg-black border-2 border-white/10 flex items-center justify-center overflow-hidden transition-all group-hover:border-neon-blue/40 shadow-2xl">
-                                                            {formData.profilePicture ? (
-                                                                <img src={formData.profilePicture} alt="Preview" className="w-full h-full object-cover" />
-                                                            ) : (
-                                                                <Camera size={44} className="text-gray-700 group-hover:text-neon-blue transition-colors" />
-                                                            )}
-                                                        </div>
-                                                        <label className="absolute -bottom-2 -right-2 w-14 h-14 bg-neon-blue text-black rounded-2xl flex items-center justify-center cursor-pointer hover:scale-110 active:scale-95 transition-all shadow-xl">
-                                                            <Upload size={22} />
-                                                            <input type="file" className="hidden" accept="image/*" onChange={handleImageUpload} />
-                                                        </label>
-                                                    </div>
-                                                    <div className="text-center space-y-1 relative z-10">
-                                                        <h4 className="text-[10px] font-black uppercase tracking-[0.4em] text-white">Profile Photo</h4>
-                                                        <p className="text-[9px] font-bold text-gray-600 uppercase tracking-widest">Supports JPG, PNG formats</p>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        {currentQuestion.type === 'submit' && (
-                                            <div className="space-y-8 max-w-2xl py-6">
-                                                <div className="space-y-2">
-                                                    <div className="w-16 h-16 rounded-[1.5rem] bg-neon-green/10 border border-neon-green/20 flex items-center justify-center text-neon-green shadow-[0_0_20px_rgba(57,255,20,0.1)] mb-4">
-                                                        <ShieldCheck size={28} />
-                                                    </div>
-                                                    <h3 className="text-3xl md:text-4xl font-black font-heading uppercase italic tracking-tight text-white leading-tight pr-4">
-                                                        Review credentials
-                                                    </h3>
-                                                    <p className="text-gray-500 text-xs font-bold uppercase tracking-widest">Please double check your details before finalizing.</p>
-                                                </div>
-
-                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-white/[0.01] border border-white/5 p-6 rounded-[2.5rem] text-sm">
-                                                    <div className="space-y-1.5 p-3 rounded-xl hover:bg-white/[0.02] transition-all">
-                                                        <p className="text-[9px] font-black text-gray-600 uppercase tracking-widest">Full Name</p>
-                                                        <p className="font-bold text-white text-base truncate">{formData.name}</p>
-                                                    </div>
-                                                    <div className="space-y-1.5 p-3 rounded-xl hover:bg-white/[0.02] transition-all">
-                                                        <p className="text-[9px] font-black text-gray-600 uppercase tracking-widest">Mobile Number</p>
-                                                        <p className="font-bold text-white text-base truncate">{countryCode} {formData.phone}</p>
-                                                    </div>
-                                                    <div className="space-y-1.5 p-3 rounded-xl hover:bg-white/[0.02] transition-all">
-                                                        <p className="text-[9px] font-black text-gray-600 uppercase tracking-widest">Email Address</p>
-                                                        <p className="font-bold text-white text-base truncate">{formData.email}</p>
-                                                    </div>
-                                                    <div className="space-y-1.5 p-3 rounded-xl hover:bg-white/[0.02] transition-all">
-                                                        <p className="text-[9px] font-black text-gray-600 uppercase tracking-widest">Operational City</p>
-                                                        <p className="font-bold text-white text-base truncate">
-                                                            {formData.city === 'Others' ? formData.customCity : formData.city}
-                                                        </p>
-                                                    </div>
-                                                    <div className="space-y-1.5 p-3 rounded-xl hover:bg-white/[0.02] transition-all">
-                                                        <p className="text-[9px] font-black text-gray-600 uppercase tracking-widest">Content Niche</p>
-                                                        <p className="font-bold text-white text-base truncate">
-                                                            {formData.categories === 'Others' ? formData.customNiche : formData.categories}
-                                                        </p>
-                                                    </div>
-                                                    <div className="space-y-1.5 p-3 rounded-xl hover:bg-white/[0.02] transition-all">
-                                                        <p className="text-[9px] font-black text-gray-600 uppercase tracking-widest">Barter Preference</p>
-                                                        <p className="font-bold text-white text-base truncate">
-                                                            {formData.doBarter === 'yes' ? 'Yes' : formData.doBarter === 'no' ? 'No Only Paid' : 'Selective'}
-                                                        </p>
-                                                    </div>
-                                                    <div className="space-y-1.5 p-3 rounded-xl hover:bg-white/[0.02] transition-all">
-                                                        <p className="text-[9px] font-black text-gray-600 uppercase tracking-widest">Commercial Rates</p>
-                                                        <p className="font-bold text-white text-base truncate">{formData.commercials}</p>
-                                                    </div>
-                                                    {formData.collegeName && (
-                                                        <div className="space-y-1.5 p-3 rounded-xl hover:bg-white/[0.02] transition-all">
-                                                            <p className="text-[9px] font-black text-gray-600 uppercase tracking-widest">College Name</p>
-                                                            <p className="font-bold text-white text-base truncate">{formData.collegeName}</p>
-                                                        </div>
-                                                    )}
-                                                    {(formData.primaryPlatform === 'instagram' || formData.primaryPlatform === 'both') && formData.instagram && (
-                                                        <div className="space-y-1.5 p-3 rounded-xl hover:bg-white/[0.02] transition-all">
-                                                            <p className="text-[9px] font-black text-gray-600 uppercase tracking-widest">Instagram</p>
-                                                            <p className="font-bold text-neon-pink text-base truncate">{formData.instagram} ({Number(formData.instagramFollowers || 0).toLocaleString()} followers)</p>
-                                                        </div>
-                                                    )}
-                                                    {(formData.primaryPlatform === 'linkedin' || formData.primaryPlatform === 'both') && formData.linkedin && (
-                                                        <div className="space-y-1.5 p-3 rounded-xl hover:bg-white/[0.02] transition-all">
-                                                            <p className="text-[9px] font-black text-gray-600 uppercase tracking-widest">LinkedIn</p>
-                                                            <p className="font-bold text-neon-blue text-base truncate">{formData.linkedin} ({Number(formData.linkedinFollowers || 0).toLocaleString()} connections)</p>
-                                                        </div>
-                                                    )}
-                                                    {(() => {
-                                                        if (!formData.referredBy) return null;
-                                                        const referrer = creators.find(c => 
-                                                            c.uid === formData.referredBy.trim() || 
-                                                            (c.creatorId && c.creatorId.toUpperCase() === formData.referredBy.trim().toUpperCase()) ||
-                                                            (c.instagram && c.instagram.toLowerCase() === formData.referredBy.trim().toLowerCase())
-                                                        );
-                                                        const displayValue = referrer 
-                                                            ? `${referrer.displayName || referrer.name || 'Creator'} (@${referrer.instagram || 'no_handle'})`
-                                                            : formData.referredBy;
-                                                        return (
-                                                            <div className="space-y-1.5 p-3 rounded-xl hover:bg-white/[0.02] transition-all">
-                                                                <p className="text-[9px] font-black text-gray-600 uppercase tracking-widest">Referred By</p>
-                                                                <p className="font-bold text-neon-blue text-base truncate">{displayValue}</p>
-                                                            </div>
-                                                        );
-                                                    })()}
-                                                </div>
-
-                                                <button 
-                                                    onClick={handleSubmit} 
-                                                    disabled={isSubmitting}
-                                                    className="w-full h-16 sm:h-20 rounded-2xl font-black font-heading uppercase tracking-[0.2em] bg-neon-blue text-black hover:shadow-[0_0_50px_rgba(0,240,255,0.4)] transition-all flex items-center justify-center gap-4 disabled:opacity-50"
-                                                >
-                                                    {isSubmitting ? <LoadingSpinner size="xs" color="black" /> : 'Finalize Registration'}
-                                                    {!isSubmitting && <ArrowRight size={20} />}
-                                                </button>
-                                            </div>
-                                        )}
-                                    </motion.div>
-                                </AnimatePresence>
-                            </div>
-
-                            {/* Control row */}
-                            {currentQuestionIndex > 0 && (
-                                <div className="flex justify-between items-center pt-8 border-t border-white/5 shrink-0 select-none">
-                                    <button 
-                                        type="button" 
-                                        onClick={handlePrev} 
-                                        className="text-[10px] font-black text-gray-500 hover:text-white uppercase tracking-[0.3em] transition-colors flex items-center gap-2"
-                                    >
-                                        <ArrowRight size={14} className="rotate-180" /> Back
-                                    </button>
-
-                                    {currentQuestion.type !== 'submit' && (
-                                        <button
-                                            type="button"
-                                            onClick={handleNext}
-                                            disabled={currentQuestion.type === 'phone' && !isPhoneVerified}
-                                            className="h-14 sm:h-16 px-6 sm:px-10 rounded-xl sm:rounded-2xl text-[10px] font-black font-heading uppercase tracking-[0.2em] bg-white text-black hover:bg-neon-blue hover:scale-105 active:scale-95 transition-all flex items-center gap-3 disabled:opacity-30 disabled:pointer-events-none"
-                                        >
-                                            Continue <ArrowRight size={14} />
-                                        </button>
+                                    {formData.city === 'Others' && (
+                                        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="space-y-2">
+                                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Specify City</label>
+                                            <Input name="customCity" value={formData.customCity} onChange={handleChange} placeholder="e.g. Pune, Indore" className="h-16 bg-white/[0.02] border-white/10 rounded-2xl text-base font-bold px-6 focus:border-neon-blue" />
+                                        </motion.div>
                                     )}
                                 </div>
-                            )}
-                        </div>
+                            </div>
+
+                            {/* Card 2: Content Niche */}
+                            <div className="bg-zinc-950/60 backdrop-blur-3xl border border-white/[0.08] rounded-3xl md:rounded-[3rem] p-6 md:p-10 shadow-[inset_0_1px_1px_rgba(255,255,255,0.15),0_30px_60px_rgba(0,0,0,0.4)] relative overflow-hidden">
+                                <div className="absolute top-0 left-0 w-64 h-64 bg-neon-pink/5 blur-[100px] pointer-events-none" />
+                                <div className="flex items-center gap-4 mb-8 border-b border-white/10 pb-6">
+                                    <div className="w-12 h-12 bg-neon-pink/10 rounded-xl flex items-center justify-center border border-neon-pink/20">
+                                        <Tag className="text-neon-pink" size={24} />
+                                    </div>
+                                    <h3 className="text-2xl font-black font-heading uppercase italic tracking-tight">Content Profile</h3>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Primary Content Niche</label>
+                                        <CustomSelect value={formData.categories} onChange={handleChange} options={NICHES} name="categories" placeholder="Select Niche" icon={Activity} />
+                                    </div>
+
+                                    {formData.categories === 'Others' && (
+                                        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="space-y-2">
+                                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Specify Niche</label>
+                                            <Input name="customNiche" value={formData.customNiche} onChange={handleChange} placeholder="e.g. Comedy, Art" className="h-16 bg-white/[0.02] border-white/10 rounded-2xl text-base font-bold px-6 focus:border-neon-blue" />
+                                        </motion.div>
+                                    )}
+
+                                    <AnimatePresence>
+                                        {(formData.categories === 'Student/ Campus Creator' || formData.categories === 'Student Creator/ Campus Creator' || formData.categories === 'College Pages') && (
+                                            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="md:col-span-2 space-y-2 overflow-hidden">
+                                                <label className="text-[10px] font-black text-neon-blue uppercase tracking-widest pl-1">College / University Name (Required)</label>
+                                                <Input name="collegeName" value={formData.collegeName} onChange={handleChange} placeholder="e.g. Delhi University, IIT" className="h-16 bg-white/[0.02] border-white/10 rounded-2xl text-base font-bold px-6 focus:border-neon-blue border-neon-blue/30" />
+                                                <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest pl-1 mt-1">Helps us connect you with regional campus campaigns.</p>
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
+                                </div>
+                            </div>
+
+                            {/* Card 3: Social Links */}
+                            <div className="bg-zinc-950/60 backdrop-blur-3xl border border-white/[0.08] rounded-3xl md:rounded-[3rem] p-6 md:p-10 shadow-[inset_0_1px_1px_rgba(255,255,255,0.15),0_30px_60px_rgba(0,0,0,0.4)] relative overflow-hidden">
+                                <div className="absolute bottom-0 right-0 w-64 h-64 bg-neon-blue/5 blur-[100px] pointer-events-none" />
+                                <div className="flex items-center gap-4 mb-8 border-b border-white/10 pb-6">
+                                    <div className="w-12 h-12 bg-white/5 rounded-xl flex items-center justify-center border border-white/10">
+                                        <Globe className="text-white" size={24} />
+                                    </div>
+                                    <h3 className="text-2xl font-black font-heading uppercase italic tracking-tight">Social Platforms</h3>
+                                </div>
+
+                                <div className="space-y-8">
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Primary Platform</label>
+                                        <CustomSelect
+                                            value={formData.primaryPlatform} onChange={handleChange}
+                                            options={[{ value: 'instagram', label: 'Instagram' }, { value: 'linkedin', label: 'LinkedIn' }, { value: 'both', label: 'Both Instagram & LinkedIn' }]}
+                                            name="primaryPlatform" placeholder="Select Primary Platform" icon={Users}
+                                        />
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <AnimatePresence>
+                                            {(formData.primaryPlatform === 'instagram' || formData.primaryPlatform === 'both') && (
+                                                <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="space-y-4 md:col-span-2 p-6 bg-gradient-to-br from-pink-500/5 to-purple-500/5 border border-pink-500/10 rounded-3xl">
+                                                    <div className="flex items-center gap-2 text-pink-500 mb-2"><Instagram size={20} /> <span className="font-black uppercase tracking-wider text-xs">Instagram Info</span></div>
+                                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                        <div className="space-y-2">
+                                                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Handle</label>
+                                                            <Input name="instagram" value={formData.instagram} onChange={handleChange} placeholder="@yourhandle" className="h-16 bg-black/40 border-white/10 rounded-2xl text-base font-bold px-6 focus:border-pink-500" />
+                                                        </div>
+                                                        <div className="space-y-2">
+                                                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Followers Count</label>
+                                                            <Input type="number" name="instagramFollowers" value={formData.instagramFollowers} onChange={handleChange} placeholder="e.g. 5000" className="h-16 bg-black/40 border-white/10 rounded-2xl text-base font-bold px-6 focus:border-pink-500" />
+                                                        </div>
+                                                    </div>
+                                                </motion.div>
+                                            )}
+                                            {(formData.primaryPlatform === 'linkedin' || formData.primaryPlatform === 'both') && (
+                                                <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="space-y-4 md:col-span-2 p-6 bg-gradient-to-br from-blue-500/5 to-cyan-500/5 border border-blue-500/10 rounded-3xl">
+                                                    <div className="flex items-center gap-2 text-blue-500 mb-2"><Linkedin size={20} /> <span className="font-black uppercase tracking-wider text-xs">LinkedIn Info</span></div>
+                                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                        <div className="space-y-2">
+                                                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Profile URL</label>
+                                                            <Input name="linkedin" value={formData.linkedin} onChange={handleChange} placeholder="https://linkedin.com/in/username" className="h-16 bg-black/40 border-white/10 rounded-2xl text-base font-bold px-6 focus:border-blue-500" />
+                                                        </div>
+                                                        <div className="space-y-2">
+                                                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Connections/Followers</label>
+                                                            <Input type="number" name="linkedinFollowers" value={formData.linkedinFollowers} onChange={handleChange} placeholder="e.g. 500" className="h-16 bg-black/40 border-white/10 rounded-2xl text-base font-bold px-6 focus:border-blue-500" />
+                                                        </div>
+                                                    </div>
+                                                </motion.div>
+                                            )}
+                                        </AnimatePresence>
+                                        
+                                        <div className="space-y-2">
+                                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1 flex items-center gap-1.5"><Youtube size={12}/> YouTube URL (Optional)</label>
+                                            <Input name="youtube" value={formData.youtube} onChange={handleChange} placeholder="Channel URL" className="h-16 bg-white/[0.02] border-white/10 rounded-2xl text-base font-bold px-6 focus:border-red-500" />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1 flex items-center gap-1.5"><Twitter size={12}/> X / Website (Optional)</label>
+                                            <Input name="twitter" value={formData.twitter} onChange={handleChange} placeholder="X handle or link" className="h-16 bg-white/[0.02] border-white/10 rounded-2xl text-base font-bold px-6 focus:border-white" />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Card 4: Collaboration Details */}
+                            <div className="bg-zinc-950/60 backdrop-blur-3xl border border-white/[0.08] rounded-3xl md:rounded-[3rem] p-6 md:p-10 shadow-[inset_0_1px_1px_rgba(255,255,255,0.15),0_30px_60px_rgba(0,0,0,0.4)] relative overflow-hidden">
+                                <div className="flex items-center gap-4 mb-8 border-b border-white/10 pb-6">
+                                    <div className="w-12 h-12 bg-neon-green/10 rounded-xl flex items-center justify-center border border-neon-green/20">
+                                        <FileText className="text-neon-green" size={24} />
+                                    </div>
+                                    <h3 className="text-2xl font-black font-heading uppercase italic tracking-tight">Collaboration Details</h3>
+                                </div>
+
+                                <div className="space-y-8">
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Professional Bio</label>
+                                        <textarea name="bio" value={formData.bio} onChange={handleChange} placeholder="Describe your content niche and why brands should collaborate with you..." className="w-full bg-white/[0.02] border border-white/10 rounded-[2rem] p-6 text-white text-base font-medium leading-relaxed focus:border-neon-blue focus:outline-none h-40 resize-none shadow-inner scrollbar-thin scrollbar-thumb-white/10" />
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div className="space-y-2">
+                                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Barter Collaborations</label>
+                                            <CustomSelect
+                                                value={formData.doBarter} onChange={handleChange}
+                                                options={[{ value: 'yes', label: 'Yes, I do barter' }, { value: 'no', label: 'No, only paid' }, { value: 'selective', label: 'Selective (Depends on brand)' }]}
+                                                name="doBarter" placeholder="Select Preference" icon={Zap}
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Commercial Rates</label>
+                                            <Input name="commercials" value={formData.commercials} onChange={handleChange} placeholder="e.g. 5k/Reel, 2k/Story or Open" className="h-16 bg-white/[0.02] border-white/10 rounded-2xl text-base font-bold px-6 focus:border-neon-blue" />
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-2 pt-4 border-t border-white/5">
+                                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1 flex justify-between">
+                                            <span>Referral Code (Optional)</span>
+                                            {isReferralCodeLocked && <span className="text-neon-blue">LOCKED 🔒</span>}
+                                        </label>
+                                        <Input name="referredBy" value={formData.referredBy} onChange={handleChange} disabled={isReferralCodeLocked} placeholder="UID or Username of referrer" className="h-16 bg-white/[0.02] border-white/10 rounded-2xl text-base font-bold px-6 focus:border-neon-blue disabled:opacity-60 disabled:cursor-not-allowed" />
+                                        {isReferralCodeLocked && <p className="text-[9px] font-bold text-neon-blue uppercase tracking-widest pl-1 mt-1">Applied from invite link.</p>}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Submit Button */}
+                            <div className="sticky bottom-8 z-50 pt-4">
+                                <button type="submit" disabled={isSubmitting} className="w-full h-20 rounded-[2rem] font-black font-heading uppercase tracking-[0.2em] bg-neon-blue text-black hover:shadow-[0_0_50px_rgba(0,240,255,0.4)] transition-all flex items-center justify-center gap-4 disabled:opacity-50 hover:scale-[1.02] active:scale-[0.98]">
+                                    {isSubmitting ? <LoadingSpinner size="sm" color="black" /> : 'Finalize & Submit Registration'}
+                                    {!isSubmitting && <ArrowRight size={24} />}
+                                </button>
+                            </div>
+                        </form>
                     </div>
                 )}
             </div>

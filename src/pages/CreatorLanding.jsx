@@ -336,7 +336,7 @@ const CreatorLanding = () => {
                 )}
             </AnimatePresence>
 
-            <main className="relative z-10 max-w-[1700px] mx-auto px-4 sm:px-6 lg:px-12 pt-32 md:pt-40 space-y-32 md:space-y-40">
+            <main className="relative z-10 max-w-[1700px] mx-auto px-4 sm:px-6 lg:px-12 pt-32 md:pt-40 space-y-16 lg:space-y-32">
                 {/* CINEMATIC HERO SECTION */}
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16 items-center pt-8">
                     <motion.div 

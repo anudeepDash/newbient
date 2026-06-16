@@ -272,7 +272,7 @@ const AuthOverlay = () => {
 
     return (
         <AnimatePresence>
-            <div className="fixed inset-0 z-[100] flex items-start md:items-center justify-center p-4 bg-black/80 backdrop-blur-md overflow-y-auto pt-24 md:pt-4 pb-20">
+            <div className="fixed inset-0 z-[100] flex items-end md:items-center justify-center bg-black/60 md:bg-black/80 backdrop-blur-md sm:p-4">
                 {/* Backdrop */}
                 <motion.div
                     initial={{ opacity: 0 }}
@@ -282,275 +282,310 @@ const AuthOverlay = () => {
                     className="fixed inset-0 bg-transparent"
                 />
 
-                {/* Content */}
+                {/* Content Modal */}
                 <motion.div
-                    initial={{ scale: 0.9, opacity: 0, y: 20 }}
-                    animate={{ scale: 1, opacity: 1, y: 0 }}
-                    exit={{ scale: 0.9, opacity: 0, y: 20 }}
-                    className="relative w-full max-w-md z-10 shrink-0"
+                    initial={{ y: '100%', opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    exit={{ y: '100%', opacity: 0 }}
+                    transition={{ type: "spring", damping: 25, stiffness: 200 }}
+                    className="relative w-full max-w-4xl z-10 bg-zinc-950 md:bg-zinc-900 rounded-t-[2rem] md:rounded-3xl border-t md:border border-white/10 shadow-2xl overflow-hidden flex flex-col md:flex-row max-h-[90vh] md:max-h-[85vh]"
                 >
-                    <Card className="p-8 border border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.5)]">
-                        <button
-                            onClick={onClose}
-                            className="absolute top-4 right-4 p-2 text-gray-400 hover:text-white transition-colors"
-                        >
-                            <X size={20} />
-                        </button>
+                    {/* Mobile Drag Handle */}
+                    <div className="w-full flex justify-center pt-4 pb-2 md:hidden">
+                        <div className="w-12 h-1.5 bg-white/20 rounded-full" />
+                    </div>
 
-                        <div className="text-center mb-8">
-                            <h2 className="text-2xl font-bold font-heading text-transparent bg-clip-text bg-gradient-to-r from-neon-pink to-neon-blue">
+                    <button
+                        onClick={onClose}
+                        className="absolute top-4 md:top-6 right-4 md:right-6 p-2 bg-black/50 hover:bg-white/10 rounded-full text-gray-400 hover:text-white transition-all z-20"
+                    >
+                        <X size={20} />
+                    </button>
+
+                    {/* Left Branding Column (Desktop Only) */}
+                    <div className="hidden md:flex flex-col justify-between w-1/2 p-12 relative overflow-hidden bg-gradient-to-br from-zinc-950 via-zinc-900 to-zinc-950 border-r border-white/5">
+                        {/* Abstract Background Elements */}
+                        <div className="absolute -top-24 -left-24 w-64 h-64 bg-neon-blue/20 rounded-full blur-[80px]" />
+                        <div className="absolute -bottom-24 -right-24 w-64 h-64 bg-neon-pink/20 rounded-full blur-[80px]" />
+                        
+                        <div className="relative z-10">
+                            <h2 className="text-3xl lg:text-4xl font-black font-heading italic tracking-tighter text-white mb-2">NEWBI ENT.</h2>
+                            <p className="text-gray-400 font-medium tracking-widest text-xs uppercase">The Pulse of Youth</p>
+                        </div>
+
+                        <div className="relative z-10 mt-auto">
+                            <motion.h3 
+                                key={mode}
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                className="text-4xl lg:text-5xl font-black text-white leading-tight mb-4"
+                            >
+                                {mode === 'signIn' ? 'Welcome\nBack.' : mode === 'signUp' ? 'Join the\nTribe.' : mode === 'forgot' ? 'Reset\nPassword.' : 'Secure\nAccess.'}
+                            </motion.h3>
+                            <p className="text-gray-400 text-sm leading-relaxed max-w-sm">
+                                {mode === 'signIn' ? 'Experience premium events, creator campaigns, and community perks all in one place.' : mode === 'signUp' ? 'Create an account to discover exclusive opportunities and manage your collaborations.' : 'Enter your details to securely verify your identity and manage your account.'}
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* Right Form Column */}
+                    <div className="w-full md:w-1/2 bg-zinc-950 p-6 md:p-12 overflow-y-auto mobile-scrollbar-hide relative flex flex-col pb-[env(safe-area-inset-bottom)]">
+                        <div className="md:hidden text-center mb-8">
+                            <h2 className="text-3xl font-black font-heading text-transparent bg-clip-text bg-gradient-to-r from-neon-pink to-neon-blue">
                                 {mode === 'signIn' ? 'Welcome Back' : mode === 'signUp' ? 'Join the Tribe' : mode === 'forgot' ? 'Reset Password' : 'Phone Sign In'}
                             </h2>
-                            <p className="text-gray-400 mt-2 text-sm">
+                            <p className="text-gray-400 mt-2 text-xs">
                                 {mode === 'signIn' ? 'Sign in to access exclusive perks' : mode === 'signUp' ? 'Create an account to join the community' : mode === 'forgot' ? 'Enter your email to reset' : 'Sign in using your mobile number'}
                             </p>
                         </div>
+                        
+                        <div className="flex-1 flex flex-col justify-center max-w-sm mx-auto w-full">
+                            {error && (
+                                <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="mb-6 p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-xs font-medium text-center">
+                                    {error}
+                                </motion.div>
+                            )}
 
-                        {error && (
-                            <div className="mb-6 p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-red-500 text-sm text-center">
-                                {error}
-                            </div>
-                        )}
-
-                        {resetSent ? (
-                            <div className="flex flex-col items-center gap-4 py-6 text-center">
-                                <CheckCircle2 size={40} className="text-neon-green" />
-                                <p className="text-sm font-bold text-white">Reset link sent!</p>
-                                <p className="text-xs text-gray-500">Check your inbox at <span className="text-neon-blue">{formData.email}</span></p>
-                                <button onClick={() => { setMode('signIn'); setResetSent(false); }} className="text-xs text-neon-pink hover:underline mt-2">Back to Sign In</button>
-                            </div>
-                        ) : mode === 'phone' ? (
-                            <div className="space-y-6">
-                                <div id="recaptcha-auth-container" className="fixed bottom-0 right-0 z-[200]"></div>
-                                {step === 'input' ? (
-                                    <form onSubmit={handleSendOTP} className="space-y-4">
-                                        <div className="space-y-1">
-                                            <label className="text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">Phone Number</label>
-                                            <div className="flex gap-2">
-                                                <select 
-                                                    value={countryCode} 
-                                                    onChange={(e) => setCountryCode(e.target.value)}
-                                                    className="w-24 h-12 bg-white/5 border border-white/10 rounded-lg text-white text-sm px-2 focus:border-neon-blue focus:outline-none"
-                                                >
-                                                    <option value="+91" className="bg-gray-900">🇮🇳 +91</option>
-                                                    <option value="+1" className="bg-gray-900">🇺🇸 +1</option>
-                                                    <option value="+44" className="bg-gray-900">🇬🇧 +44</option>
-                                                    <option value="+971" className="bg-gray-900">🇦🇪 +971</option>
-                                                    <option value="+61" className="bg-gray-900">🇦🇺 +61</option>
-                                                    <option value="+65" className="bg-gray-900">🇸🇬 +65</option>
-                                                    <option value="+1" className="bg-gray-900">🇨🇦 +1</option>
-                                                </select>
-                                                <div className="relative flex-1">
-                                                    <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
+                            {resetSent ? (
+                                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center gap-4 py-6 text-center">
+                                    <CheckCircle2 size={48} className="text-neon-green" />
+                                    <p className="text-base font-bold text-white">Reset link sent!</p>
+                                    <p className="text-xs text-gray-400">Check your inbox at <span className="text-neon-blue">{formData.email}</span></p>
+                                    <button onClick={() => { setMode('signIn'); setResetSent(false); }} className="text-xs text-neon-pink hover:underline mt-4 tracking-widest uppercase font-bold">Back to Sign In</button>
+                                </motion.div>
+                            ) : mode === 'phone' ? (
+                                <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-6">
+                                    <div id="recaptcha-auth-container" className="fixed bottom-0 right-0 z-[200]"></div>
+                                    {step === 'input' ? (
+                                        <form onSubmit={handleSendOTP} className="space-y-5">
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Phone Number</label>
+                                                <div className="flex gap-2">
+                                                    <select 
+                                                        value={countryCode} 
+                                                        onChange={(e) => setCountryCode(e.target.value)}
+                                                        className="w-24 h-14 bg-zinc-900 border border-white/5 rounded-xl text-white text-sm px-2 focus:border-neon-blue focus:ring-1 focus:ring-neon-blue transition-all outline-none"
+                                                    >
+                                                        <option value="+91" className="bg-zinc-900">🇮🇳 +91</option>
+                                                        <option value="+1" className="bg-zinc-900">🇺🇸 +1</option>
+                                                        <option value="+44" className="bg-zinc-900">🇬🇧 +44</option>
+                                                        <option value="+971" className="bg-zinc-900">🇦🇪 +971</option>
+                                                    </select>
+                                                    <div className="relative flex-1 group">
+                                                        <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-neon-blue transition-colors" size={18} />
+                                                        <Input
+                                                            type="tel"
+                                                            placeholder="99999 99999"
+                                                            className="pl-12 h-14 bg-zinc-900 border-white/5 focus:border-neon-blue transition-all"
+                                                            value={phone}
+                                                            onChange={(e) => setPhone(e.target.value)}
+                                                            required
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <Button type="submit" className="w-full h-14 rounded-xl text-sm tracking-widest uppercase font-bold" disabled={loading || cooldown > 0}>
+                                                {loading ? <LoadingSpinner size="xs" color="#FFFFFF" /> : cooldown > 0 ? `Resend OTP in ${cooldown}s` : 'Send OTP'}
+                                            </Button>
+                                        </form>
+                                    ) : (
+                                        <form onSubmit={handleVerifyOTP} className="space-y-5">
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">6-Digit Code</label>
+                                                <div className="relative group">
+                                                    <Hash className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-neon-blue transition-colors" size={18} />
                                                     <Input
-                                                        type="tel"
-                                                        placeholder="99999 99999"
-                                                        className="pl-12"
-                                                        value={phone}
-                                                        onChange={(e) => setPhone(e.target.value)}
+                                                        type="text"
+                                                        maxLength={6}
+                                                        placeholder="000000"
+                                                        className="pl-12 h-14 bg-zinc-900 border-white/5 focus:border-neon-blue tracking-[0.5em] text-center font-mono text-lg transition-all"
+                                                        value={otpCode}
+                                                        onChange={(e) => setOtpCode(e.target.value)}
                                                         required
                                                     />
                                                 </div>
                                             </div>
+                                            <Button type="submit" className="w-full h-14 rounded-xl text-sm tracking-widest uppercase font-bold" disabled={loading}>
+                                                {loading ? <LoadingSpinner size="xs" color="#FFFFFF" /> : 'Verify & Sign In'}
+                                            </Button>
+                                            <button 
+                                                type="button" 
+                                                onClick={() => setStep('input')}
+                                                className="w-full text-xs text-gray-500 hover:text-white transition-colors py-2"
+                                            >
+                                                Change Phone Number
+                                            </button>
+                                        </form>
+                                    )}
+                                    <button 
+                                        onClick={() => setMode('signIn')}
+                                        className="w-full text-[10px] font-black text-neon-blue hover:text-white uppercase tracking-widest transition-colors py-2"
+                                    >
+                                        BACK TO EMAIL LOGIN
+                                    </button>
+                                </motion.div>
+                            ) : mode === 'complete_profile' ? (
+                                <motion.form initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} onSubmit={handleCompleteProfile} className="space-y-5">
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Full Name</label>
+                                        <div className="relative group">
+                                            <User className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-neon-blue transition-colors" size={18} />
+                                            <Input
+                                                placeholder="Enter your name"
+                                                className="pl-12 h-14 bg-zinc-900 border-white/5 focus:border-neon-blue transition-all"
+                                                value={formData.name}
+                                                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                                required
+                                            />
                                         </div>
-                                        <Button type="submit" className="w-full h-12" disabled={loading || cooldown > 0}>
-                                            {loading ? <LoadingSpinner size="xs" color="#FFFFFF" /> : cooldown > 0 ? `Resend OTP in ${cooldown}s` : 'Send OTP'}
-                                        </Button>
-                                    </form>
-                                ) : (
-                                    <form onSubmit={handleVerifyOTP} className="space-y-4">
-                                        <div className="space-y-1">
-                                            <label className="text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">6-Digit Code</label>
-                                            <div className="relative">
-                                                <Hash className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
-                                                <Input
-                                                    type="text"
-                                                    maxLength={6}
-                                                    placeholder="000000"
-                                                    className="pl-12 tracking-[1em] text-center"
-                                                    value={otpCode}
-                                                    onChange={(e) => setOtpCode(e.target.value)}
-                                                    required
-                                                />
-                                            </div>
-                                        </div>
-                                        <Button type="submit" className="w-full h-12" disabled={loading}>
-                                            {loading ? <LoadingSpinner size="xs" color="#FFFFFF" /> : 'Verify & Sign In'}
-                                        </Button>
-                                        <button 
-                                            type="button" 
-                                            onClick={() => setStep('input')}
-                                            className="w-full text-xs text-gray-500 hover:text-white"
-                                        >
-                                            Change Phone Number
-                                        </button>
-                                    </form>
-                                )}
-                                <button 
-                                    onClick={() => setMode('signIn')}
-                                    className="w-full text-xs text-neon-blue hover:underline"
-                                >
-                                </button>
-                            </div>
-                        ) : mode === 'complete_profile' ? (
-                            <form onSubmit={handleCompleteProfile} className="space-y-6">
-                                <div className="space-y-1">
-                                    <label className="text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">Full Name</label>
-                                    <div className="relative">
-                                        <User className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
-                                        <Input
-                                            placeholder="Enter your name"
-                                            className="pl-12"
-                                            value={formData.name}
-                                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                            required
-                                        />
                                     </div>
-                                </div>
-                                <div className="space-y-1">
-                                    <label className="text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">Email Address</label>
-                                    <div className="relative">
-                                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Email Address</label>
+                                        <div className="relative group">
+                                            <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-neon-blue transition-colors" size={18} />
+                                            <Input
+                                                type="email"
+                                                placeholder="email@example.com"
+                                                className="pl-12 h-14 bg-zinc-900 border-white/5 focus:border-neon-blue transition-all"
+                                                value={formData.email}
+                                                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                                                required
+                                            />
+                                        </div>
+                                    </div>
+                                    <Button type="submit" className="w-full h-14 rounded-xl text-sm tracking-widest uppercase font-bold" disabled={loading}>
+                                        {loading ? <LoadingSpinner size="xs" color="#FFFFFF" /> : 'Complete Registration'}
+                                    </Button>
+                                </motion.form>
+                            ) : (
+                            <motion.form key={mode} initial={{ opacity: 0, x: mode === 'signIn' ? -20 : 20 }} animate={{ opacity: 1, x: 0 }} onSubmit={handleSubmit} className="space-y-5">
+                                {mode === 'signUp' && (
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Full Name</label>
+                                        <div className="relative group">
+                                            <User className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-neon-pink transition-colors" size={18} />
+                                            <Input
+                                                placeholder="John Doe"
+                                                className="pl-12 h-14 bg-zinc-900 border-white/5 focus:border-neon-pink transition-all"
+                                                value={formData.name}
+                                                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                                required
+                                            />
+                                        </div>
+                                    </div>
+                                )}
+
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Email Address</label>
+                                    <div className="relative group">
+                                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-neon-blue transition-colors" size={18} />
                                         <Input
                                             type="email"
-                                            placeholder="email@example.com"
-                                            className="pl-12"
+                                            placeholder="you@example.com"
+                                            className="pl-12 h-14 bg-zinc-900 border-white/5 focus:border-neon-blue transition-all"
                                             value={formData.email}
                                             onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                                             required
                                         />
                                     </div>
                                 </div>
-                                <Button type="submit" className="w-full h-12" disabled={loading}>
-                                    {loading ? <LoadingSpinner size="xs" color="#FFFFFF" /> : 'Complete Registration'}
-                                </Button>
-                            </form>
-                        ) : (
-                        <form onSubmit={handleSubmit} className="space-y-4">
-                            {mode === 'signUp' && (
-                                <div className="space-y-1">
-                                    <label className="text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">Full Name</label>
-                                    <div className="relative">
-                                        <User className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
-                                        <Input
-                                            placeholder="John Doe"
-                                            className="pl-12"
-                                            value={formData.name}
-                                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                            required
-                                        />
+
+                                {mode !== 'forgot' && (
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Password</label>
+                                        <div className="relative group">
+                                            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-neon-blue transition-colors" size={18} />
+                                            <Input
+                                                type="password"
+                                                placeholder="••••••••"
+                                                className="pl-12 h-14 bg-zinc-900 border-white/5 focus:border-neon-blue transition-all"
+                                                value={formData.password}
+                                                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                                                required
+                                            />
+                                        </div>
                                     </div>
-                                </div>
-                            )}
+                                )}
 
-                            <div className="space-y-1">
-                                <label className="text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">Email Address</label>
-                                <div className="relative">
-                                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
-                                    <Input
-                                        type="email"
-                                        placeholder="you@example.com"
-                                        className="pl-12"
-                                        value={formData.email}
-                                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                        required
-                                    />
-                                </div>
-                            </div>
-
-                            {mode !== 'forgot' && (
-                                <div className="space-y-1">
-                                    <label className="text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">Password</label>
-                                    <div className="relative">
-                                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
-                                        <Input
-                                            type="password"
-                                            placeholder="••••••••"
-                                            className="pl-12"
-                                            value={formData.password}
-                                            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                                            required
-                                        />
+                                {mode === 'signIn' && (
+                                    <div className="text-right">
+                                        <button
+                                            type="button"
+                                            onClick={() => setMode('forgot')}
+                                            className="text-[10px] font-bold tracking-wider text-neon-blue hover:text-white transition-colors py-1"
+                                        >
+                                            FORGOT PASSWORD?
+                                        </button>
                                     </div>
-                                </div>
-                            )}
+                                )}
 
-                            {mode === 'signIn' && (
-                                <div className="text-right">
-                                    <button
-                                        type="button"
-                                        onClick={() => setMode('forgot')}
-                                        className="text-xs text-neon-blue hover:text-white transition-colors"
-                                    >
-                                        Forgot Password?
-                                    </button>
-                                </div>
-                            )}
-
-                            <Button
-                                type="submit"
-                                className="w-full h-12 shadow-[0_0_20px_rgba(255,0,128,0.3)]"
-                                disabled={loading}
-                            >
-                                {loading ? <LoadingSpinner size="xs" color="#FFFFFF" /> : mode === 'signIn' ? 'Sign In' : mode === 'signUp' ? 'Create Account' : 'Send Reset Link'}
-                            </Button>
-                        </form>
-                        )}
-
-                        <div className="relative my-8">
-                            <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-white/5"></div></div>
-                            <div className="relative flex justify-center text-xs uppercase"><span className="bg-[#0a0a0a] px-2 text-gray-500">Or continue with</span></div>
-                        </div>
-
-                        <div className="space-y-3">
-                            <button
-                                type="button"
-                                onClick={handleGoogleLogin}
-                                className="w-full h-12 bg-white hover:bg-gray-50 text-gray-900 border border-white rounded-lg flex items-center justify-center gap-3 transition-all font-medium"
-                                disabled={loading}
-                            >
-                                <svg className="w-5 h-5" viewBox="0 0 24 24">
-                                    <path
-                                        d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                                        fill="#4285F4"
-                                    />
-                                    <path
-                                        d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                                        fill="#34A853"
-                                    />
-                                    <path
-                                        d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-                                        fill="#FBBC05"
-                                    />
-                                    <path
-                                        d="M12 5.38c1.62 0 3.06.56 4.21 1.66l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-                                        fill="#EA4335"
-                                    />
-                                </svg>
-                                <span className="text-sm">Sign in with Google</span>
-                            </button>
-
-                            {mode !== 'phone' && (
-                                <button
-                                    type="button"
-                                    onClick={() => setMode('phone')}
-                                    className="w-full h-12 bg-white/5 hover:bg-white/10 text-gray-300 border border-white/10 hover:text-white rounded-lg flex items-center justify-center gap-3 transition-all font-medium"
+                                <Button
+                                    type="submit"
+                                    className={`w-full h-14 rounded-xl text-sm tracking-widest uppercase font-bold shadow-2xl ${mode === 'signUp' ? 'bg-neon-pink hover:bg-pink-600 text-white shadow-[0_0_20px_rgba(255,79,139,0.3)]' : 'bg-white text-black hover:bg-gray-200 shadow-[0_0_20px_rgba(255,255,255,0.1)]'}`}
                                     disabled={loading}
                                 >
-                                    <Phone size={18} />
-                                    <span className="text-sm">Sign in with Phone OTP</span>
-                                </button>
+                                    {loading ? <LoadingSpinner size="xs" color={mode === 'signUp' ? '#FFFFFF' : '#000000'} /> : mode === 'signIn' ? 'Sign In' : mode === 'signUp' ? 'Create Account' : 'Send Reset Link'}
+                                </Button>
+                            </motion.form>
                             )}
-                        </div>
 
-                        <div className="mt-8 text-center text-sm text-gray-500">
-                            {mode === 'signIn' ? (
-                                <>Don't have an account? <button onClick={() => setMode('signUp')} className="text-neon-pink hover:underline">Sign Up</button></>
-                            ) : mode === 'signUp' ? (
-                                <>Already have an account? <button onClick={() => setMode('signIn')} className="text-neon-pink hover:underline">Sign In</button></>
-                            ) : null}
+                            <div className="relative my-8">
+                                <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-white/5"></div></div>
+                                <div className="relative flex justify-center text-[10px] font-bold tracking-widest uppercase"><span className="bg-zinc-950 px-4 text-gray-500">Or continue with</span></div>
+                            </div>
+
+                            <div className="space-y-3">
+                                <button
+                                    type="button"
+                                    onClick={handleGoogleLogin}
+                                    className="w-full h-14 bg-zinc-900 hover:bg-zinc-800 text-white border border-white/5 hover:border-white/20 rounded-xl flex items-center justify-center gap-3 transition-all font-medium group"
+                                    disabled={loading}
+                                >
+                                    <svg className="w-5 h-5 group-hover:scale-110 transition-transform" viewBox="0 0 24 24">
+                                        <path
+                                            d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                                            fill="#4285F4"
+                                        />
+                                        <path
+                                            d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                                            fill="#34A853"
+                                        />
+                                        <path
+                                            d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+                                            fill="#FBBC05"
+                                        />
+                                        <path
+                                            d="M12 5.38c1.62 0 3.06.56 4.21 1.66l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                                            fill="#EA4335"
+                                        />
+                                    </svg>
+                                    <span className="text-sm tracking-wide">Google</span>
+                                </button>
+
+                                {mode !== 'phone' && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setMode('phone')}
+                                        className="w-full h-14 bg-zinc-900 hover:bg-zinc-800 text-white border border-white/5 hover:border-white/20 rounded-xl flex items-center justify-center gap-3 transition-all font-medium group"
+                                        disabled={loading}
+                                    >
+                                        <Phone size={18} className="text-gray-400 group-hover:text-neon-blue group-hover:scale-110 transition-all" />
+                                        <span className="text-sm tracking-wide">Phone OTP</span>
+                                    </button>
+                                )}
+                            </div>
+
+                            <div className="mt-8 pt-4 text-center text-xs font-medium text-gray-500 border-t border-white/5">
+                                {mode === 'signIn' ? (
+                                    <>Don't have an account? <button onClick={() => setMode('signUp')} className="text-neon-pink hover:text-white transition-colors ml-1 font-bold tracking-widest uppercase">Sign Up</button></>
+                                ) : mode === 'signUp' ? (
+                                    <>Already have an account? <button onClick={() => setMode('signIn')} className="text-neon-blue hover:text-white transition-colors ml-1 font-bold tracking-widest uppercase">Sign In</button></>
+                                ) : (
+                                    <button onClick={() => setMode('signIn')} className="text-gray-400 hover:text-white transition-colors font-bold tracking-widest uppercase">Back to Sign In</button>
+                                )}
+                            </div>
                         </div>
-                    </Card>
+                    </div>
                 </motion.div>
             </div>
         </AnimatePresence>

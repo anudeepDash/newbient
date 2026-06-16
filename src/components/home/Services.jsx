@@ -114,7 +114,7 @@ const Services = () => {
                     onMouseLeave={() => setIsPaused(false)}
                     onTouchStart={() => setIsPaused(true)}
                     onTouchEnd={() => setIsPaused(false)}
-                    className="flex overflow-x-auto md:grid md:grid-cols-3 gap-6 md:gap-8 overflow-y-hidden md:overflow-visible pb-12 md:pb-0 scrollbar-hide snap-x snap-mandatory -mx-4 px-4 md:mx-0 md:px-0"
+                    className="flex md:grid md:grid-cols-3 gap-6 md:gap-8 overflow-x-auto md:overflow-visible pb-12 md:pb-0 scrollbar-hide snap-x snap-mandatory -mx-4 px-4 md:mx-0 md:px-0"
                 >
                     {services.map((service, index) => (
                         <div key={index} className={cn("min-w-[85vw] md:min-w-0 snap-center", service.className)}>
@@ -122,23 +122,6 @@ const Services = () => {
                          </div>
                     ))}
                 </div>
-
-                {services.length > 1 && (
-                    <div className="flex md:hidden items-center justify-center gap-4 mt-2">
-                        <button 
-                            onClick={() => scroll('left')}
-                            className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-white active:bg-white active:text-black transition-all"
-                        >
-                            <ChevronLeft size={16} />
-                        </button>
-                        <button 
-                            onClick={() => scroll('right')}
-                            className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-white active:bg-white active:text-black transition-all"
-                        >
-                            <ChevronRight size={16} />
-                        </button>
-                    </div>
-                )}
 
                 {/* CTA Section */}
                 <motion.div 
@@ -172,15 +155,19 @@ const Services = () => {
 };
 
 const ServiceCard = ({ service, index }) => {
+    const [isExpanded, setIsExpanded] = useState(false);
+
     return (
         <motion.div
             layout
+            onClick={() => setIsExpanded(!isExpanded)}
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.5, delay: index * 0.1 }}
             className={cn(
-                "group relative bg-zinc-900/40 backdrop-blur-3xl border border-white/5 p-6 md:p-10 rounded-3xl md:rounded-[2.5rem] overflow-hidden transition-all duration-700 hover:border-white/20 flex flex-col min-h-[280px] md:min-h-[340px]",
+                "group relative bg-zinc-900/40 backdrop-blur-3xl border border-white/5 p-6 md:p-10 rounded-3xl md:rounded-[2.5rem] overflow-hidden transition-all duration-700 hover:border-white/20 flex flex-col cursor-pointer",
+                isExpanded ? "h-auto" : "min-h-[240px] md:min-h-[340px]",
                 service.className
             )}
         >
@@ -190,27 +177,30 @@ const ServiceCard = ({ service, index }) => {
                         "w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center transition-all duration-700 md:group-hover:bg-white md:group-hover:text-black md:group-hover:scale-110",
                         service.color === 'neon-green' ? 'text-neon-green' : (service.color === 'neon-blue' ? 'text-neon-blue' : (service.color === 'neon-pink' ? 'text-neon-pink' : 'text-white'))
                     )}>
-                        <service.icon size={32} />
+                        <service.icon className="w-12 h-12 md:w-8 md:h-8" />
                     </div>
                 </div>
 
                 <div className="space-y-4 mt-6">
-                    <h3 className="text-xl md:text-2xl font-extrabold font-heading text-white tracking-tight leading-none md:group-hover:translate-x-2 transition-transform duration-500">
+                    <h3 className="text-[16px] md:text-2xl font-extrabold font-heading text-white tracking-tight leading-none md:group-hover:translate-x-2 transition-transform duration-500">
                         {service.title}
                     </h3>
 
-                    <p className="text-gray-500 text-[10px] font-bold uppercase tracking-[0.2em] leading-tight">
+                    <p className="text-gray-500 text-xs font-bold uppercase tracking-[0.2em] leading-tight">
                         {service.shortDesc}
                     </p>
 
-                    <p className="text-gray-400 text-sm font-medium leading-relaxed opacity-100 translate-y-0 md:opacity-0 md:group-hover:opacity-100 md:translate-y-4 md:group-hover:translate-y-0 transition-all duration-700">
+                    <div className={cn(
+                        "text-gray-400 text-sm font-medium leading-relaxed transition-all duration-700 overflow-hidden",
+                        isExpanded ? "opacity-100 max-h-[500px] mt-4" : "opacity-0 max-h-0 md:max-h-[500px] md:opacity-0 md:group-hover:opacity-100 md:mt-4 md:group-hover:mt-4"
+                    )}>
                         {service.fullDesc}
-                    </p>
+                    </div>
                 </div>
             </div>
 
             {/* Background Icon Aura */}
-            <div className="absolute -bottom-10 -right-10 opacity-[0.02] group-hover:opacity-[0.08] transition-all duration-1000 rotate-12 scale-150">
+            <div className="absolute -bottom-10 -right-10 opacity-[0.02] group-hover:opacity-[0.08] transition-all duration-1000 rotate-12 scale-150 pointer-events-none">
                 <service.icon size={200} />
             </div>
         </motion.div>
