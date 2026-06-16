@@ -5,14 +5,40 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    --safe-area-inset-top: env(safe-area-inset-top, 0px);
+    --safe-area-inset-bottom: env(safe-area-inset-bottom, 0px);
+    --mobile-spacing: 1rem;
+  }
+
   body {
     @apply bg-black text-white font-sans overflow-x-hidden;
+  }
+
+  @media (max-width: 768px) {
+    html {
+      font-size: 16px;
+    }
+    
+    /* Prevent massive text from overlapping due to tight line heights on mobile */
+    .leading-none {
+      line-height: 1.1 !important;
+    }
+    
+    h1, h2, .text-7xl, .text-8xl, .text-9xl {
+      line-height: 1.1 !important;
+    }
   }
 }
 
 @layer utilities {
   .glass-card {
     @apply bg-zinc-950/35 backdrop-blur-3xl border border-white/5 rounded-3xl;
+  }
+  @media (max-width: 768px) {
+    .glass-card {
+      @apply backdrop-blur-xl;
+    }
   }
 
   .text-glow-green {
@@ -21,6 +47,21 @@
 
   .text-glow-pink {
     text-shadow: 0 0 4px rgba(255, 79, 139, 0.6);
+  }
+
+  /* Touch Utilities */
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .mobile-container {
+    padding-left: var(--mobile-spacing);
+    padding-right: var(--mobile-spacing);
+    padding-bottom: var(--safe-area-inset-bottom);
+    width: 100%;
   }
 
   /* 3D Transform Utilities */
@@ -36,7 +77,67 @@
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
+  .scrollbar-default::-webkit-scrollbar {
+    display: block;
+  }
+  
+  @media (max-width: 768px) {
+    .mobile-scrollbar-hide::-webkit-scrollbar {
+      display: none;
+    }
+    .mobile-scrollbar-hide {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+  }
 }
+
+/* Mobile specific animations */
+@keyframes slide-up-sheet {
+  from { transform: translateY(100%); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes spring-bounce {
+  0% { transform: scale(1); }
+  50% { transform: scale(0.95); }
+  100% { transform: scale(1); }
+}
+
+@keyframes swipe-reveal {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+.animate-slide-up-sheet {
+  animation: slide-up-sheet 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-spring-bounce {
+  animation: spring-bounce 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.animate-swipe-reveal {
+  animation: swipe-reveal 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@media (max-width: 768px) {
+  /* Refactor heavy blur effects globally for mobile */
+  .glass-panel {
+    backdrop-filter: blur(12px) !important;
+  }
+  .premium-table-container {
+    backdrop-filter: blur(12px) !important;
+  }
+  .admin-hub-content-container div[class*="bg-[#0A0A0A]"],
+  .admin-hub-content-container div[class*="bg-[#050505]"],
+  .admin-hub-content-container div[class*="bg-[#0a0a0a]"],
+  .admin-hub-content-container div[class*="bg-[#050505]/"],
+  .admin-hub-content-container div[class*="bg-zinc-900"] {
+    backdrop-filter: blur(12px) !important;
+  }
+}
+
 
 /* Custom Scrollbar */
 ::-webkit-scrollbar {

@@ -11,14 +11,14 @@ const CallToAction = () => {
                 <div className="absolute bottom-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-white/10 to-transparent" />
             </div>
 
-            <div className="max-w-6xl mx-auto px-6 text-center relative z-10">
+            <div className="max-w-6xl mx-auto px-4 md:px-6 text-center relative z-10 w-full">
 
 
                 <motion.h2
                     initial={{ opacity: 0, y: 30 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
-                    className="text-6xl md:text-8xl lg:text-9xl font-black font-heading tracking-tighter leading-[0.8] mb-6 md:mb-8 text-white"
+                    className="text-6xl md:text-8xl lg:text-9xl font-black font-heading tracking-tighter leading-none md:leading-[0.8] mb-6 md:mb-8 text-white"
                 >
                     Let's Create <br />
                     <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-neon-green">History</span>
@@ -38,7 +38,7 @@ const CallToAction = () => {
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
                     transition={{ delay: 0.2 }}
-                    className="flex flex-col md:flex-row items-center justify-center gap-4 md:gap-6"
+                    className="flex flex-col md:flex-row items-center justify-center gap-4 md:gap-6 w-full"
                 >
                     <a 
                         href="https://wa.me/919304372773" 

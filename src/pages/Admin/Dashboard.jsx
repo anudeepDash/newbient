@@ -58,8 +58,8 @@ const scrollContainer = (id, direction) => {
 };
 
 const DashboardSection = ({ title, gradient, children, icon }) => (
-    <section className="relative">
-        <div className="flex flex-col md:flex-row md:items-center gap-4 mb-10 md:mb-12">
+    <section className="relative mb-12">
+        <div className="flex flex-col md:flex-row md:items-center gap-4 mb-6 md:mb-12">
             <div className="flex items-center gap-4">
                 <div className={cn("p-2.5 rounded-xl bg-white/5 border border-white/10 text-white/40 transition-colors duration-500", gradient.includes('neon-green') ? 'group-hover:text-neon-green' : (gradient.includes('neon-pink') ? 'group-hover:text-neon-pink' : 'group-hover:text-neon-blue'))}>
                     {icon}
@@ -70,30 +70,16 @@ const DashboardSection = ({ title, gradient, children, icon }) => (
             </div>
             <div className="flex-1 h-px bg-gradient-to-r from-white/10 via-white/5 to-transparent" />
         </div>
-        <div className="relative group/section">
-            <button 
-                onClick={() => scrollContainer(`section-${title.replace(/\s+/g, '-').toLowerCase()}`, 'left')}
-                className="absolute left-2 md:-left-12 top-1/2 -translate-y-1/2 z-40 w-10 h-10 md:w-12 md:h-12 rounded-full bg-white/5 border border-white/10 backdrop-blur-md flex items-center justify-center text-white hover:bg-neon-green hover:text-black lg:hidden opacity-0 group-hover/section:opacity-100 -translate-x-2 md:-translate-x-4 md:group-hover/section:translate-x-0 transition-all duration-300 active:scale-90 shadow-xl"
-            >
-                <ChevronLeft size={20} />
-            </button>
-            <button 
-                onClick={() => scrollContainer(`section-${title.replace(/\s+/g, '-').toLowerCase()}`, 'right')}
-                className="absolute right-2 md:-right-12 top-1/2 -translate-y-1/2 z-40 w-10 h-10 md:w-12 md:h-12 rounded-full bg-white/5 border border-white/10 backdrop-blur-md flex items-center justify-center text-white hover:bg-neon-green hover:text-black lg:hidden opacity-0 group-hover/section:opacity-100 translate-x-2 md:translate-x-4 md:group-hover/section:translate-x-0 transition-all duration-300 active:scale-90 shadow-xl"
-            >
-                <ChevronRight size={20} />
-            </button>
-            <div id={`section-${title.replace(/\s+/g, '-').toLowerCase()}`} className="flex items-stretch overflow-x-auto lg:overflow-x-visible lg:grid lg:grid-cols-4 gap-4 md:gap-8 pb-12 md:pb-0 scrollbar-hide snap-x snap-mandatory -mx-4 px-4 md:mx-0 md:px-0">
-                {React.Children.map(children, (child) => (
-                    <motion.div 
-                        whileHover={{ y: -5 }}
-                        transition={{ type: "spring", stiffness: 400, damping: 10 }}
-                        className="h-full w-full min-w-[280px] lg:min-w-0 snap-center flex flex-col items-stretch"
-                    >
-                        {child}
-                    </motion.div>
-                ))}
-            </div>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-8">
+            {React.Children.map(children, (child) => (
+                <motion.div 
+                    whileHover={{ y: -5 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 10 }}
+                    className="h-full w-full flex flex-col items-stretch"
+                >
+                    {child}
+                </motion.div>
+            ))}
         </div>
     </section>
 );
@@ -125,12 +111,12 @@ const ControlCard = ({ title, desc, icon: IconComponent, logo, color, link, coun
         <Link to={(isHidden || comingSoon) ? '#' : (link || '#')} className={cn("group relative flex flex-col h-full", (isHidden || comingSoon) && "pointer-events-none")}>
             {/* Glow Effect */}
             <div className={cn(
-                "absolute inset-0 rounded-3xl opacity-0 group-hover:opacity-15 transition-all duration-700 blur-2xl",
+                "absolute inset-0 rounded-2xl md:rounded-3xl opacity-0 group-hover:opacity-15 transition-all duration-700 blur-2xl",
                 getGlowColor()
             )} />
         
             <div className={cn(
-                "relative p-5 sm:p-8 md:p-10 w-full flex-1 border transition-all duration-500 rounded-3xl flex flex-col items-center text-center group overflow-hidden backdrop-blur-3xl shadow-[0_20px_50px_rgba(0,0,0,0.5)]",
+                "relative p-4 sm:p-6 md:p-10 w-full flex-1 border transition-all duration-500 rounded-2xl md:rounded-3xl flex flex-col items-center text-center group overflow-hidden backdrop-blur-3xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] select-none",
                 isHidden 
                     ? "bg-black/40 border-white/5 opacity-40 grayscale" 
                     : (comingSoon 
@@ -139,13 +125,13 @@ const ControlCard = ({ title, desc, icon: IconComponent, logo, color, link, coun
             )}>
 
                 {comingSoon && !isHidden && (
-                    <span className="absolute top-6 right-6 px-3 py-1 bg-white/5 border border-white/10 rounded-full text-[7px] font-black uppercase tracking-[0.3em] text-gray-500">
-                        Coming Soon
+                    <span className="absolute top-3 right-3 md:top-6 md:right-6 px-2 py-0.5 md:px-3 md:py-1 bg-white/5 border border-white/10 rounded-full text-[6px] md:text-[7px] font-black uppercase tracking-[0.3em] text-gray-500">
+                        Soon
                     </span>
                 )}
 
                 <div className={cn(
-                    "w-14 h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 rounded-2xl md:rounded-3xl border flex items-center justify-center mb-6 md:mb-8 group-hover:scale-110 group-hover:-rotate-3 transition-all duration-700 relative",
+                    "w-10 h-10 sm:w-14 sm:h-14 md:w-20 md:h-20 rounded-xl md:rounded-3xl border flex items-center justify-center mb-3 md:mb-8 group-hover:scale-110 group-hover:-rotate-3 transition-all duration-700 relative",
                     color === 'neon-green' ? 'bg-[#39FF14]/5 border-[#39FF14]/10 text-[#39FF14] group-hover:border-[#39FF14]/30' : 
                     (color === 'neon-blue' ? 'bg-[#00F0FF]/5 border-[#00F0FF]/10 text-[#00F0FF] group-hover:border-[#00F0FF]/30' : 
                     (color === 'neon-purple' ? 'bg-[#A855F7]/5 border-[#A855F7]/10 text-[#A855F7] group-hover:border-[#A855F7]/30' : 
@@ -153,20 +139,21 @@ const ControlCard = ({ title, desc, icon: IconComponent, logo, color, link, coun
                     (color === 'yellow-400' ? 'bg-yellow-400/5 border-yellow-400/10 text-yellow-400 group-hover:border-yellow-400/30' : 
                     'bg-white/5 border-white/10 text-white group-hover:border-white/20'))))
                 )}>
-                    <div className="absolute inset-0 bg-current opacity-0 group-hover:opacity-10 rounded-3xl blur-md transition-opacity" />
+                    <div className="absolute inset-0 bg-current opacity-0 group-hover:opacity-10 rounded-xl md:rounded-3xl blur-md transition-opacity" />
                     {logo ? (
-                        <img src={logo} alt={title} className="w-10 h-10 md:w-14 md:h-14 object-contain relative z-10" />
+                        <img src={logo} alt={title} className="w-6 h-6 md:w-14 md:h-14 object-contain relative z-10" />
                     ) : (
-                        IconComponent && <IconComponent className="w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 relative z-10" />
+                        IconComponent && <IconComponent className="w-5 h-5 sm:w-6 sm:h-6 md:w-10 md:h-10 relative z-10" />
                     )}
                 </div>
 
-                <h3 className="text-base sm:text-lg md:text-xl font-extrabold font-heading text-white mb-2 md:mb-3 tracking-tight group-hover:text-neon-green transition-colors">{title}</h3>
-                <p className="text-gray-500 text-[9px] md:text-[11px] font-bold leading-relaxed px-2 uppercase tracking-wide opacity-80 group-hover:opacity-100 transition-opacity">{desc}</p>
+                <h3 className="text-sm sm:text-base md:text-xl font-extrabold font-heading text-white mb-1 md:mb-3 tracking-tight group-hover:text-neon-green transition-colors">{title}</h3>
+                
+                <p className="text-gray-500 text-[8px] md:text-[11px] font-bold leading-relaxed px-1 md:px-2 uppercase tracking-wide opacity-0 max-h-0 md:opacity-80 md:max-h-20 md:group-hover:opacity-100 group-active:opacity-100 group-active:max-h-20 overflow-hidden transition-all duration-300">{desc}</p>
                 
                 {count !== undefined && (
-                    <div className="mt-8 px-5 py-2 rounded-2xl bg-white/5 border border-white/5 text-[9px] font-black text-gray-400 uppercase tracking-[0.3em] group-hover:border-white/10 group-hover:bg-white/10 transition-all">
-                        {count} ENTRIES
+                    <div className="mt-2 md:mt-8 px-3 py-1 md:px-5 md:py-2 rounded-xl md:rounded-2xl bg-white/5 border border-white/5 text-[7px] md:text-[9px] font-black text-gray-400 uppercase tracking-[0.3em] group-hover:border-white/10 group-hover:bg-white/10 transition-all">
+                        {count} <span className="hidden md:inline">ENTRIES</span>
                     </div>
                 )}
                 
@@ -175,7 +162,7 @@ const ControlCard = ({ title, desc, icon: IconComponent, logo, color, link, coun
 
             {isHidden && (
                 <div className="absolute inset-0 flex items-center justify-center z-30 pointer-events-none">
-                    <div className="px-6 py-3 rounded-2xl bg-black/80 border border-red-500/30 backdrop-blur-md text-red-500 text-[10px] font-black uppercase tracking-[0.4em] shadow-2xl">
+                    <div className="px-4 py-2 md:px-6 md:py-3 rounded-xl md:rounded-2xl bg-black/80 border border-red-500/30 backdrop-blur-md text-red-500 text-[8px] md:text-[10px] font-black uppercase tracking-[0.4em] shadow-2xl">
                         OFFLINE
                     </div>
                 </div>
@@ -491,20 +478,8 @@ const Dashboard = () => {
                 {isFirstRun && <BootstrapAlert onClaim={handleClaimOwnership} />}
 
                 {/* Metrics Hub Readouts - Optimized for Mobile Horizontal Scroll */}
-                <div className="relative group/metrics mb-16 md:mb-24">
-                    <button 
-                        onClick={() => scrollContainer('metrics-hub', 'left')}
-                        className="absolute left-2 top-1/2 -translate-y-1/2 z-40 w-10 h-10 rounded-full bg-black/60 border border-white/10 backdrop-blur-md flex items-center justify-center text-gray-400 hover:text-white md:hidden opacity-0 group-hover/metrics:opacity-100 transition-all duration-300 active:scale-90 shadow-xl"
-                    >
-                        <ChevronLeft size={20} />
-                    </button>
-                    <button 
-                        onClick={() => scrollContainer('metrics-hub', 'right')}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 z-40 w-10 h-10 rounded-full bg-black/60 border border-white/10 backdrop-blur-md flex items-center justify-center text-gray-400 hover:text-white md:hidden opacity-0 group-hover/metrics:opacity-100 transition-all duration-300 active:scale-90 shadow-xl"
-                    >
-                        <ChevronRight size={20} />
-                    </button>
-                    <div id="metrics-hub" className="flex overflow-x-auto lg:overflow-x-visible md:grid md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 pb-6 md:pb-0 scrollbar-hide snap-x snap-mandatory -mx-4 px-4 md:mx-0 md:px-0">
+                <div className="relative mb-16 md:mb-24">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
                     {stats.map((stat, i) => {
                         const hoverBorder = stat.color === 'neon-green' ? 'group-hover:border-neon-green/30' :
                                             (stat.color === 'neon-blue' ? 'group-hover:border-neon-blue/30' :
@@ -516,7 +491,7 @@ const Dashboard = () => {
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: i * 0.1 }}
-                                className="group relative min-w-[85vw] md:min-w-0 snap-center flex flex-col items-stretch"
+                                className="group relative w-full flex flex-col items-stretch"
                             >
                                 <Link to={stat.link} className="block h-full w-full flex flex-col items-stretch">
                                     <div className={cn("absolute -inset-px rounded-3xl opacity-0 group-hover:opacity-15 transition-opacity blur-xl bg-gradient-to-br", 
@@ -540,10 +515,10 @@ const Dashboard = () => {
                                             </div>
                                         </div>
                                         <div>
-                                            <h3 className="text-3xl md:text-5xl font-extrabold font-heading tracking-tight text-white mb-2 leading-none">{stat.value}</h3>
-                                            <p className="text-gray-500 text-[9px] font-black uppercase tracking-[0.3em]">{stat.label}</p>
+                                            <h3 className="text-4xl md:text-5xl font-extrabold font-heading tracking-tight text-white mb-2 leading-none">{stat.value}</h3>
+                                            <p className="text-gray-500 text-[10px] md:text-[9px] font-black uppercase tracking-[0.3em]">{stat.label}</p>
                                             <div className="mt-6 pt-6 border-t border-white/5 flex items-center justify-between">
-                                                <p className="text-gray-600 text-[9px] font-bold uppercase tracking-widest">{stat.detail}</p>
+                                                <p className="text-gray-600 text-[10px] md:text-[9px] font-bold uppercase tracking-widest">{stat.detail}</p>
                                             </div>
                                         </div>
                                         <div className="absolute top-0 right-0 p-8 opacity-0 group-hover:opacity-[0.03] transition-opacity pointer-events-none transform translate-x-4 -translate-y-4">
@@ -607,94 +582,128 @@ const Dashboard = () => {
             <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] w-[90%] max-w-[420px] h-16 bg-[#050505]/80 backdrop-blur-2xl border border-white/10 rounded-full flex items-center justify-between p-2 shadow-2xl md:hidden">
                 <Link
                     to="/admin"
-                    className="w-10 h-10 rounded-full bg-white/5 border border-white/5 hover:bg-white/10 flex items-center justify-center text-gray-400 hover:text-white transition-all active:scale-90"
-                    title="Admin Dashboard"
+                    className="w-12 h-12 rounded-full bg-white/5 border border-white/5 hover:bg-white/10 flex items-center justify-center text-gray-400 hover:text-white transition-all active:scale-90"
+                    title="Dashboard"
                 >
-                    <LayoutDashboard size={16} />
+                    <LayoutDashboard size={20} />
                 </Link>
                 
                 <button
                     onClick={() => setIsMenuOpen(!isMenuOpen)}
-                    className="flex-1 mx-2 h-10 rounded-full bg-gradient-to-r from-neon-green/10 via-neon-blue/10 to-neon-pink/10 border border-white/10 hover:border-white/20 flex items-center justify-center gap-2 text-[9px] font-black uppercase tracking-[0.2em] text-white transition-all active:scale-[0.98]"
+                    className="flex-1 mx-2 h-12 rounded-full bg-gradient-to-r from-neon-green/10 via-neon-blue/10 to-neon-pink/10 border border-white/10 hover:border-white/20 flex flex-col items-center justify-center text-[10px] font-black uppercase tracking-[0.2em] text-white transition-all active:scale-[0.98]"
                 >
-                    <Compass size={14} className="text-neon-blue animate-pulse" />
-                    <span>ADMIN MENU</span>
-                    {isMenuOpen ? <X size={12} className="ml-1" /> : <Menu size={12} className="ml-1" />}
+                    <span className="flex items-center gap-2">
+                        {isMenuOpen ? <X size={14} className="text-neon-pink" /> : <Compass size={14} className="text-neon-blue animate-pulse" />}
+                        {isMenuOpen ? 'CLOSE MENU' : 'QUICK JUMP'}
+                    </span>
                 </button>
                 
                 <Link
                     to="/admin/messages"
-                    className="w-10 h-10 rounded-full bg-white/5 border border-white/5 hover:bg-white/10 flex items-center justify-center text-gray-400 hover:text-white relative transition-all active:scale-90"
+                    className="w-12 h-12 rounded-full bg-white/5 border border-white/5 hover:bg-white/10 flex items-center justify-center text-gray-400 hover:text-white relative transition-all active:scale-90"
                     title="Inbox"
                 >
-                    <Mail size={16} />
+                    <Bell size={20} />
                     {unreadCount > 0 && (
-                        <span className="absolute top-0 right-0 w-2.5 h-2.5 bg-neon-pink border-2 border-black rounded-full animate-pulse shadow-[0_0_8px_rgba(255,79,139,0.8)]" />
+                        <span className="absolute top-2 right-2 w-2.5 h-2.5 bg-neon-pink border-2 border-black rounded-full animate-pulse shadow-[0_0_8px_rgba(255,79,139,0.8)]" />
                     )}
                 </Link>
             </div>
 
-            {/* Switcher Drawer Overlay */}
+            {/* Mobile Bottom Sheet Menu */}
             <AnimatePresence>
                 {isMenuOpen && (
-                    <motion.div
-                        initial={{ opacity: 0, y: '100%' }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: '100%' }}
-                        transition={{ type: "spring", stiffness: 260, damping: 26 }}
-                        className="fixed inset-0 z-[90] bg-[#020202]/98 backdrop-blur-3xl overflow-y-auto px-6 pt-28 pb-32 md:hidden flex flex-col"
-                    >
-                        <div className="max-w-md mx-auto w-full space-y-8">
-                            <div className="text-center">
-                                <div className="inline-flex p-3 rounded-2xl bg-white/5 border border-white/10 mb-4">
-                                    <Sparkles className="text-neon-green w-6 h-6" />
-                                </div>
-                                <h2 className="text-2xl font-black font-heading uppercase tracking-tighter text-white leading-none">ADMIN NAVIGATION</h2>
-                                <p className="text-[8px] font-black uppercase tracking-[0.4em] text-gray-500 mt-2">Administrative Portal Modules</p>
+                    <>
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={() => setIsMenuOpen(false)}
+                            className="fixed inset-0 z-[80] bg-black/60 backdrop-blur-sm md:hidden"
+                        />
+                        <motion.div
+                            initial={{ y: '100%' }}
+                            animate={{ y: 0 }}
+                            exit={{ y: '100%' }}
+                            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                            className="fixed inset-x-0 bottom-0 z-[90] h-[85vh] bg-[#0a0a0a] border-t border-white/10 rounded-t-[2.5rem] md:hidden flex flex-col overflow-hidden shadow-[0_-20px_50px_rgba(0,0,0,0.5)]"
+                        >
+                            {/* Handle */}
+                            <div className="w-full flex justify-center py-4 bg-[#0a0a0a] z-10 shrink-0">
+                                <div className="w-12 h-1.5 bg-white/20 rounded-full" />
                             </div>
 
-                            <div className="space-y-6">
-                                {sections.map((section) => {
-                                    if (!section.visible) return null;
-                                    const visibleLinks = section.links.filter(l => l.show);
-                                    if (visibleLinks.length === 0) return null;
-
-                                    return (
-                                        <div key={section.title} className="space-y-2">
-                                            <h4 className={cn("text-[9px] font-black uppercase tracking-[0.3em] pl-3", section.color)}>
-                                                {section.title}
-                                            </h4>
-                                            <div className="grid grid-cols-1 gap-2">
-                                                {visibleLinks.map((link) => {
-                                                    const LinkIcon = link.icon;
-                                                    const isActive = location.pathname === link.path;
-                                                    return (
-                                                        <Link
-                                                            key={link.name}
-                                                            to={link.path}
-                                                            onClick={() => setIsMenuOpen(false)}
-                                                            className={cn(
-                                                                "flex items-center justify-between p-3.5 rounded-2xl transition-all duration-300 border",
-                                                                isActive 
-                                                                    ? "bg-white text-black font-black border-white"
-                                                                    : "bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white border-white/5"
-                                                            )}
-                                                        >
-                                                            <div className="flex items-center gap-3">
-                                                                <LinkIcon size={16} className={isActive ? "text-black" : `text-${link.color}`} />
-                                                                <span className="text-[10px] font-bold uppercase tracking-widest">{link.name}</span>
-                                                            </div>
-                                                            <ChevronRight size={14} className="opacity-40" />
-                                                        </Link>
-                                                    );
-                                                })}
-                                            </div>
+                            <div className="flex-1 overflow-y-auto px-6 pb-24 scrollbar-hide">
+                                {/* Search / Quick Stats */}
+                                <div className="mb-6 space-y-4">
+                                    <div className="relative">
+                                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 w-4 h-4" />
+                                        <input 
+                                            type="text" 
+                                            placeholder="Search modules..." 
+                                            className="w-full h-12 bg-white/5 border border-white/10 rounded-2xl pl-11 pr-4 text-sm font-medium text-white placeholder-gray-500 focus:outline-none focus:border-neon-blue/50 transition-colors"
+                                        />
+                                    </div>
+                                    <div className="flex items-center justify-between gap-3 overflow-x-auto scrollbar-hide">
+                                        <div className="flex-1 min-w-[120px] p-3 rounded-2xl bg-gradient-to-br from-neon-green/10 to-transparent border border-neon-green/20">
+                                            <p className="text-[10px] text-gray-400 font-bold uppercase">Net Revenue</p>
+                                            <p className="text-lg font-black text-white mt-1">₹{totalPaidRevenue.toLocaleString('en-IN')}</p>
                                         </div>
-                                    );
-                                })}
+                                        <div className="flex-1 min-w-[120px] p-3 rounded-2xl bg-gradient-to-br from-neon-pink/10 to-transparent border border-neon-pink/20">
+                                            <p className="text-[10px] text-gray-400 font-bold uppercase">Tickets</p>
+                                            <p className="text-lg font-black text-white mt-1">{ticketSalesCount}</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-6">
+                                    {sections.map((section) => {
+                                        if (!section.visible) return null;
+                                        const visibleLinks = section.links.filter(l => l.show);
+                                        if (visibleLinks.length === 0) return null;
+
+                                        return (
+                                            <div key={section.title} className="space-y-3">
+                                                <div className="flex items-center gap-2">
+                                                    <div className={cn("w-2 h-2 rounded-full", 
+                                                        section.color === 'text-neon-green' ? 'bg-neon-green' :
+                                                        section.color === 'text-neon-blue' ? 'bg-neon-blue' :
+                                                        section.color === 'text-neon-pink' ? 'bg-neon-pink' :
+                                                        section.color === 'text-yellow-400' ? 'bg-yellow-400' : 'bg-white'
+                                                    )} />
+                                                    <h4 className={cn("text-[10px] font-black uppercase tracking-[0.2em]", section.color)}>
+                                                        {section.title}
+                                                    </h4>
+                                                </div>
+                                                <div className="grid grid-cols-2 gap-2">
+                                                    {visibleLinks.map((link) => {
+                                                        const LinkIcon = link.icon;
+                                                        const isActive = location.pathname === link.path;
+                                                        return (
+                                                            <Link
+                                                                key={link.name}
+                                                                to={link.path}
+                                                                onClick={() => setIsMenuOpen(false)}
+                                                                className={cn(
+                                                                    "flex flex-col gap-2 p-3.5 rounded-2xl transition-all duration-300 border",
+                                                                    isActive 
+                                                                        ? "bg-white text-black font-black border-white"
+                                                                        : "bg-white/5 hover:bg-white/10 text-gray-300 border-white/5"
+                                                                )}
+                                                            >
+                                                                <LinkIcon size={18} className={isActive ? "text-black" : `text-${link.color}`} />
+                                                                <span className="text-[11px] font-bold tracking-wide">{link.name}</span>
+                                                            </Link>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
                             </div>
-                        </div>
-                    </motion.div>
+                        </motion.div>
+                    </>
                 )}
             </AnimatePresence>
         </div>

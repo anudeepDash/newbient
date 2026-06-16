@@ -969,7 +969,7 @@ const TicketingManagement = () => {
                                     </div>
                                 </div>
                                 <div className="overflow-x-auto">
-                                    <table className="w-full text-left border-collapse">
+                                    <table className="w-full text-left border-collapse hidden md:table">
                                         <thead>
                                             <tr className="bg-black/80 border-b border-white/10 text-[10px] font-black uppercase tracking-widest text-gray-500">
                                                 <th className="p-8 font-medium">Guest Details</th>
@@ -1048,6 +1048,81 @@ const TicketingManagement = () => {
                                             )}
                                         </tbody>
                                     </table>
+                                    {/* Mobile Stacked Cards for Guestlist */}
+                                    <div className="flex md:hidden flex-col gap-4 p-4">
+                                        {guestlistEntries.length > 0 ? guestlistEntries.filter(e => 
+                                            !searchQuery || 
+                                            (e.customerName || e.name)?.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                                            e.bookingRef?.includes(searchQuery)
+                                        ).map((entry) => (
+                                            <div key={entry.id} className="bg-white/[0.02] border border-white/5 rounded-2xl p-4 flex flex-col gap-4">
+                                                <div className="flex justify-between items-start">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-10 h-10 rounded-xl bg-neon-blue/10 flex items-center justify-center text-neon-blue">
+                                                            <Users size={20} />
+                                                        </div>
+                                                        <div>
+                                                            <p className="font-black text-white text-base tracking-tight">{entry.customerName || entry.name}</p>
+                                                            <p className="text-[10px] font-bold text-gray-500 tracking-widest mt-1 italic">{entry.customerEmail || entry.email}</p>
+                                                        </div>
+                                                    </div>
+                                                    <div className="text-right">
+                                                        <span className="font-mono text-[11px] text-gray-400 bg-black/20 px-2 py-1 rounded">{entry.bookingRef}</span>
+                                                    </div>
+                                                </div>
+
+                                                <div className="flex justify-between items-center bg-white/5 rounded-xl p-3">
+                                                    <span className="text-[11px] font-black text-neon-blue bg-neon-blue/10 px-4 py-2 rounded-xl border border-neon-blue/20">
+                                                        {entry.guestsCount || 1} GUEST(S)
+                                                    </span>
+                                                    <div>
+                                                        {entry.attended ? (
+                                                            <div className="flex items-center gap-2 text-neon-green">
+                                                                <CheckCircle2 size={14} />
+                                                                <span className="text-[9px] font-black uppercase tracking-widest">Attended</span>
+                                                            </div>
+                                                        ) : (
+                                                            <div className="flex items-center gap-2 text-gray-600">
+                                                                <div className="w-1.5 h-1.5 rounded-full bg-gray-600" />
+                                                                <span className="text-[9px] font-black uppercase tracking-widest">Pending</span>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+
+                                                <div className="flex flex-wrap justify-end gap-2 pt-2 border-t border-white/5">
+                                                    <span className="px-3 py-1 bg-white/5 text-gray-400 border border-white/10 rounded-md text-[9px] font-black uppercase tracking-widest">Verified</span>
+                                                    <button
+                                                        onClick={async () => {
+                                                            if (window.confirm(`Remove ${entry.customerName || entry.name} from the guestlist?`)) {
+                                                                try {
+                                                                    await deleteDoc(doc(db, 'guestlists', targetId, 'entries', entry.id));
+                                                                    try {
+                                                                        await updateDoc(doc(db, 'guestlists', targetId), {
+                                                                            currentSpots: increment(-(entry.guestsCount || 1))
+                                                                        });
+                                                                    } catch (e) { }
+                                                                    useStore.getState().addToast('Entry removed.', 'success');
+                                                                } catch (err) {
+                                                                    console.error(err);
+                                                                    useStore.getState().addToast("Couldn't remove the entry. Please try again.", 'error');
+                                                                }
+                                                            }
+                                                        }}
+                                                        className="p-2.5 rounded-xl bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all"
+                                                        title="Remove entry"
+                                                    >
+                                                        <Trash2 size={14} />
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        )) : (
+                                            <div className="p-10 text-center text-gray-500 bg-black/20 rounded-2xl">
+                                                <Users size={40} className="mx-auto mb-4 opacity-20" />
+                                                <p className="text-xs font-black uppercase tracking-[0.4em]">No guestlist entries yet.</p>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                             </Card>
                         </motion.div>
@@ -1080,7 +1155,7 @@ const TicketingManagement = () => {
                                     </div>
                                 </div>
                                 <div className="overflow-x-auto">
-                                    <table className="w-full text-left border-collapse">
+                                    <table className="w-full text-left border-collapse hidden md:table">
                                         <thead>
                                             <tr className="bg-black/80 border-b border-white/10 text-[10px] font-black uppercase tracking-widest text-gray-500">
                                                 <th className="p-8 font-medium">Customer Details</th>
@@ -1135,6 +1210,59 @@ const TicketingManagement = () => {
                                             )}
                                         </tbody>
                                     </table>
+                                    
+                                    {/* Mobile Stacked Cards for Buyers */}
+                                    <div className="flex md:hidden flex-col gap-4 p-4">
+                                        {filteredOrders.length > 0 ? filteredOrders.map((order) => (
+                                            <div key={order.id} className="bg-white/[0.02] border border-white/5 rounded-2xl p-4 flex flex-col gap-4">
+                                                <div className="flex justify-between items-start">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-10 h-10 rounded-xl bg-neon-blue/10 flex items-center justify-center text-neon-blue">
+                                                            <Users size={20} />
+                                                        </div>
+                                                        <div>
+                                                            <p className="font-black text-white text-base tracking-tight">{order.customerName || order.name}</p>
+                                                            <p className="text-[10px] font-bold text-gray-500 tracking-widest mt-1">{order.customerPhone || order.phone}</p>
+                                                        </div>
+                                                    </div>
+                                                    <div className="text-right">
+                                                        <span className="font-mono text-[11px] text-gray-400 bg-black/20 px-2 py-1 rounded">{order.paymentRef}</span>
+                                                    </div>
+                                                </div>
+                                                
+                                                <div className="flex justify-between items-center bg-white/5 rounded-xl p-3">
+                                                    <div className="flex flex-wrap gap-2">
+                                                        {(Array.isArray(order.items) ? order.items : Object.entries(order.items || {}).map(([k, v]) => ({ name: k, count: v }))).map((item, i) => (
+                                                            <div key={i} className="text-[9px] font-black uppercase tracking-widest bg-white/5 border border-white/10 px-3 py-1.5 rounded-lg inline-block">
+                                                                {item.count}x <span className="text-white">{item.name}</span>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                    <div>
+                                                        {order.status === 'pending' && <span className="px-3 py-1 bg-yellow-500/10 text-yellow-500 border border-yellow-500/20 rounded-md text-[9px] font-black uppercase tracking-widest">Pending</span>}
+                                                        {order.status === 'approved' && <span className="px-3 py-1 bg-neon-blue/10 text-neon-blue border border-neon-blue/20 rounded-md text-[9px] font-black uppercase tracking-widest">Verified</span>}
+                                                        {order.status === 'dispatched' && <span className="px-3 py-1 bg-neon-green/10 text-neon-green border border-neon-green/20 rounded-md text-[9px] font-black uppercase tracking-widest">Dispatched</span>}
+                                                    </div>
+                                                </div>
+
+                                                {order.status === 'pending' && (
+                                                    <div className="flex flex-wrap justify-end gap-2 pt-2 border-t border-white/5">
+                                                        <button onClick={() => handleApprove(order.id)} className="w-10 h-10 rounded-xl bg-neon-green/10 text-neon-green hover:bg-neon-green hover:text-black inline-flex items-center justify-center transition-all border border-neon-green/20" title="Verify Payment">
+                                                            <Check size={20} />
+                                                        </button>
+                                                        <button onClick={() => handleReject(order.id)} className="w-10 h-10 rounded-xl bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white inline-flex items-center justify-center transition-all border border-red-500/20" title="Reject Payment">
+                                                            <X size={20} />
+                                                        </button>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )) : (
+                                            <div className="p-10 text-center text-gray-500 bg-black/20 rounded-2xl">
+                                                <Search size={40} className="mx-auto mb-4 opacity-20" />
+                                                <p className="text-xs font-black uppercase tracking-[0.4em]">No records found.</p>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                             </Card>
                         </motion.div>

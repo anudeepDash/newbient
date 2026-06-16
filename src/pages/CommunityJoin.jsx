@@ -368,7 +368,7 @@ const CommunityJoin = () => {
                                                           initial={{ opacity: 0, y: 30 }}
                                                       whileInView={{ opacity: 1, y: 0 }}
                                                       viewport={{ once: true }}
-                                                      className="relative w-[300px] md:w-full flex-shrink-0 snap-center md:snap-none"
+                                                      className="relative w-[80vw] sm:w-[300px] md:w-full flex-shrink-0 snap-center md:snap-none"
                                                   >
                                                       <CommunityCard 
                                                           item={item} 
@@ -387,12 +387,12 @@ const CommunityJoin = () => {
                           {/* 1. Status UI & Quick Join */}
                           {!user?.hasJoinedWhatsapp && (
                               <section className="max-w-6xl">
-                                  <div className="bg-slate-900/30 border border-white/5 rounded-[3rem] p-10 md:p-16 flex flex-col md:flex-row items-center gap-10 relative overflow-hidden group backdrop-blur-3xl shadow-2xl hover:border-white/10 transition-all duration-300">
+                                  <div className="bg-slate-900/30 border border-white/5 rounded-[3rem] p-6 lg:p-10 md:p-16 flex flex-col md:flex-row items-center gap-10 relative overflow-hidden group backdrop-blur-3xl shadow-2xl hover:border-white/10 transition-all duration-300">
                                      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-neon-green/5 blur-[100px] pointer-events-none" />
                                      <div className="w-24 h-24 bg-neon-green rounded-[2rem] flex items-center justify-center text-black shadow-[0_0_50px_rgba(57,255,20,0.3)] shrink-0">
                                          <CheckCircle2 size={40} />
                                      </div>
-                                     <div className="flex-1 text-center md:text-left relative z-10">
+                                     <div className="flex-1 text-center md:text-left relative z-10 mx-auto max-w-[95%]">
                                           <h3 className="text-2xl md:text-3xl font-extrabold font-heading text-white mb-4 leading-tight pr-4">Your Tribe Access is Active.</h3>
                                          <p className="text-gray-400 text-sm md:text-base font-medium leading-relaxed tracking-tight">Join the primary communication channel below for instant updates.</p>
                                      </div>
@@ -513,7 +513,7 @@ const CommunityJoin = () => {
                                                           initial={{ opacity: 0, y: 30 }}
                                                           whileInView={{ opacity: 1, y: 0 }}
                                                           viewport={{ once: true }}
-                                                          className="w-[300px] md:w-full flex-shrink-0 snap-center md:snap-none"
+                                                          className="w-[80vw] sm:w-[300px] md:w-full flex-shrink-0 snap-center md:snap-none"
                                                       >
                                                           <CommunityCard 
                                                               item={item} 

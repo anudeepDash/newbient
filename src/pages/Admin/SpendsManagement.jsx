@@ -1210,8 +1210,8 @@ const SpendsManagement = () => {
                         </motion.div>
                     ) : (
                         <motion.div key="table" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="overflow-x-auto scrollbar-hide">
-                            <Card className="min-w-[1000px] bg-zinc-900/40 border-white/5 rounded-3xl p-0 border overflow-hidden">
-                                <table className="w-full text-left">
+                            <Card className="md:min-w-[1000px] bg-zinc-900/40 border-white/5 rounded-3xl p-0 border overflow-hidden">
+                                <table className="w-full text-left hidden md:table">
                                     <thead>
                                         <tr className="border-b border-white/5 text-[9px] font-black uppercase tracking-[0.2em] text-gray-500">
                                             <th className="p-6">Spend Item</th>
@@ -1294,6 +1294,60 @@ const SpendsManagement = () => {
                                         ))}
                                     </tbody>
                                 </table>
+
+                                {/* Mobile Stacked Cards for Spends */}
+                                <div className="flex md:hidden flex-col gap-4 p-4">
+                                    {filteredSpends.map((sp) => (
+                                        <div key={sp.id} className="bg-white/[0.02] border border-white/5 rounded-2xl p-4 flex flex-col gap-4">
+                                            <div className="flex justify-between items-start">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-10 h-10 rounded-xl bg-neon-pink/10 flex items-center justify-center text-neon-pink">
+                                                        <CreditCard size={20} />
+                                                    </div>
+                                                    <div>
+                                                        <div className="text-xs font-black text-white">{sp.title}</div>
+                                                        {sp.notes && <div className="text-[8px] text-gray-600 tracking-wide mt-1 lowercase normal-case">{sp.notes}</div>}
+                                                    </div>
+                                                </div>
+                                                <div className="text-right">
+                                                    <div className="text-sm font-black text-white tabular-nums">₹{sp.amount?.toLocaleString()}</div>
+                                                    <div className="text-[10px] text-gray-500 font-mono mt-0.5">{new Date(sp.date).toLocaleDateString()}</div>
+                                                </div>
+                                            </div>
+                                            
+                                            <div className="flex justify-between items-center bg-white/5 rounded-xl p-3">
+                                                <div>
+                                                    <div className="text-xs font-black text-white">{sp.receiverName || sp.paidTo || 'N/A'}</div>
+                                                    <div className="text-[8px] font-bold text-neon-pink uppercase mt-0.5">{sp.payoutType || 'General Expense'}</div>
+                                                </div>
+                                                <button 
+                                                    onClick={() => handleToggleStatus(sp)}
+                                                    className={cn(
+                                                        "px-3 py-1.5 rounded-xl text-[8px] font-black uppercase tracking-[0.2em] border",
+                                                        sp.status === 'Paid' 
+                                                            ? "bg-neon-green/10 text-neon-green border-neon-green/20" 
+                                                            : "bg-yellow-500/10 text-yellow-500 border-yellow-500/20"
+                                                    )}
+                                                >
+                                                    {sp.status === 'Paid' ? 'Cleared' : 'Pending'}
+                                                </button>
+                                            </div>
+
+                                            <div className="flex flex-wrap justify-end gap-2 pt-2 border-t border-white/5">
+                                                {sp.status === 'Paid' && (
+                                                    <button onClick={() => handleViewReceiptSlip(sp)} className="p-2 bg-white/5 rounded-lg text-gray-400 hover:text-neon-pink transition-colors" title="Print Payout Slip"><Printer size={16} /></button>
+                                                )}
+                                                {sp.receiptUrl && (
+                                                    <a href={sp.receiptUrl} target="_blank" rel="noopener noreferrer" className="p-2 bg-white/5 rounded-lg text-gray-400 hover:text-white transition-colors"><Eye size={16} /></a>
+                                                )}
+                                                <button onClick={() => openEdit(sp)} className="p-2 bg-white/5 rounded-lg text-gray-400 hover:text-white transition-colors"><Edit size={16} /></button>
+                                                {user?.role !== 'editor' && user?.role !== 'content_admin' && (
+                                                    <button onClick={() => handleDeleteSpend(sp.id)} className="p-2 bg-white/5 rounded-lg text-gray-400 hover:text-red-500 transition-colors"><Trash2 size={16} /></button>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
                             </Card>
                         </motion.div>
                     )}

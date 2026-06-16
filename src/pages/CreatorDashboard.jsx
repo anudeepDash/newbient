@@ -512,7 +512,7 @@ const CreatorSettingsView = ({ profile }) => {
                                                                     onChange={e => handleOtpChange(e.target.value, idx)}
                                                                     onKeyDown={e => handleOtpKeyDown(e, idx)}
                                                                     onPaste={handleOtpPaste}
-                                                                    className="w-8 h-10 sm:w-10 sm:h-12 bg-black/60 border border-white/10 rounded-xl text-center text-sm sm:text-lg font-black text-white focus:border-neon-green focus:outline-none transition-all"
+                                                                    className="flex-1 h-12 max-w-[3.5rem] md:h-14 bg-black/60 border border-white/10 rounded-xl text-center text-sm sm:text-lg font-black text-white focus:border-neon-green focus:outline-none transition-all"
                                                                 />
                                                             ))}
                                                         </div>
@@ -1110,7 +1110,7 @@ const CreatorDashboard = () => {
                         animate={{ opacity: 1, x: 0 }}
                         className="lg:col-span-7 space-y-8"
                     >
-                        <div className="flex flex-col sm:flex-row items-center sm:items-center text-center sm:text-left gap-6 md:gap-8">
+                        <div className="flex flex-col items-start text-left sm:flex-row sm:items-center gap-6 md:gap-8">
                             <div className="relative shrink-0">
                                 <div className="relative w-28 h-28 md:w-36 md:h-36 rounded-3xl bg-zinc-950/60 border border-neon-green/30 p-1.5 shadow-[0_0_20px_rgba(57,255,20,0.15)] flex items-center justify-center">
                                     <div className="w-full h-full rounded-2xl overflow-hidden bg-zinc-900 border border-white/5 flex items-center justify-center">

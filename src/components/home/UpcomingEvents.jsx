@@ -233,7 +233,7 @@ const UpcomingEvents = () => {
                         onMouseLeave={() => setIsPaused(false)}
                         onTouchStart={() => setIsPaused(true)}
                         onTouchEnd={() => setIsPaused(false)}
-                        className="flex overflow-x-auto gap-4 md:gap-8 pb-12 snap-x horizontal-scrollbar scroll-smooth px-8 md:px-0"
+                        className="flex overflow-x-auto gap-4 md:gap-8 pb-12 snap-x snap-mandatory horizontal-scrollbar scroll-smooth px-4 md:px-0"
                         style={{ scrollbarWidth: 'auto', msOverflowStyle: 'auto' }}
                     >
                         {upcomingEvents.map((event) => {
@@ -256,7 +256,7 @@ const UpcomingEvents = () => {
                             };
 
                             return (
-                                <div key={event.id} id={`event-card-${event.id}`} className="w-[320px] md:w-[380px] flex-shrink-0 snap-start">
+                                <div key={event.id} id={`event-card-${event.id}`} className="w-[calc(100vw-2rem)] md:w-[380px] flex-shrink-0 snap-center md:snap-start">
                                     <div className="block w-full h-full relative cursor-default group">
                                         <EventCard 
                                             item={event}

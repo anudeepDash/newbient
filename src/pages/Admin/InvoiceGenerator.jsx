@@ -526,13 +526,6 @@ const InvoiceGenerator = () => {
                 </div>
 
                 <div className="flex items-center gap-1.5 md:gap-4 shrink-0">
-                    <button 
-                        onClick={() => setShowPreviewMobile(!showPreviewMobile)} 
-                        className="lg:hidden h-10 px-3 bg-neon-blue/10 rounded-xl border border-neon-blue/20 text-neon-blue flex items-center gap-2 active:scale-95 transition-all"
-                    >
-                        <Eye size={14} />
-                        <span className="text-[8px] font-black uppercase tracking-widest">Preview</span>
-                    </button>
                     {autosaveStatus !== 'idle' && (
                         <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white/5 border border-white/10 select-none">
                             <span className={cn(
@@ -548,11 +541,11 @@ const InvoiceGenerator = () => {
                             </span>
                         </div>
                     )}
-                    <button onClick={handleSave} className="h-10 md:h-12 px-3 md:px-6 bg-white/5 hover:bg-white/10 text-white border border-white/10 font-black uppercase tracking-widest text-[9px] md:text-[10px] rounded-xl transition-all flex items-center gap-2">
+                    <button onClick={handleSave} className="hidden lg:flex h-10 md:h-12 px-3 md:px-6 bg-white/5 hover:bg-white/10 text-white border border-white/10 font-black uppercase tracking-widest text-[9px] md:text-[10px] rounded-xl transition-all items-center gap-2">
                         <Save size={14} className="sm:hidden" />
                         <span className="hidden sm:inline">Save</span>
                     </button>
-                    <button onClick={generatePDF} className="h-10 md:h-12 px-4 md:px-8 bg-neon-blue text-black font-black uppercase tracking-widest text-[9px] md:text-[10px] rounded-xl hover:scale-105 transition-all shadow-[0_10px_30px_rgba(0,209,255,0.2)] flex items-center gap-2">
+                    <button onClick={generatePDF} className="hidden lg:flex h-10 md:h-12 px-4 md:px-8 bg-neon-blue text-black font-black uppercase tracking-widest text-[9px] md:text-[10px] rounded-xl hover:scale-105 transition-all shadow-[0_10px_30px_rgba(0,209,255,0.2)] items-center gap-2">
                         <Download size={14} className="sm:hidden" />
                         <span className="hidden sm:inline">Export</span>
                     </button>
@@ -588,6 +581,27 @@ const InvoiceGenerator = () => {
                             {activeTab === tab.id && <div className="w-1 h-1 rounded-full bg-neon-blue mt-1 shadow-[0_0_8px_#00D1FF]" />}
                         </button>
                     ))}
+                </div>
+
+                {/* Mobile Action Bar (Sticky above bottom nav) */}
+                <div className="lg:hidden fixed bottom-20 left-0 right-0 p-3 bg-gradient-to-t from-black via-black/90 to-transparent z-[90] flex items-center justify-end gap-2 pointer-events-none">
+                    <div className="flex gap-2 w-full pointer-events-auto">
+                        <button 
+                            onClick={() => setShowPreviewMobile(!showPreviewMobile)} 
+                            className="h-10 px-3 flex-1 bg-neon-blue/10 rounded-xl border border-neon-blue/20 text-neon-blue flex items-center justify-center gap-2 active:scale-95 transition-all shadow-lg backdrop-blur-md"
+                        >
+                            <Eye size={14} />
+                            <span className="text-[9px] font-black uppercase tracking-widest">Preview</span>
+                        </button>
+                        <button onClick={handleSave} className="h-10 px-3 flex-1 bg-white/5 text-white border border-white/10 font-black uppercase tracking-widest text-[9px] rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg backdrop-blur-md">
+                            <Save size={14} />
+                            <span>Save</span>
+                        </button>
+                        <button onClick={generatePDF} className="h-10 px-3 flex-1 bg-neon-blue text-black font-black uppercase tracking-widest text-[9px] rounded-xl transition-all flex items-center justify-center gap-2 shadow-[0_10px_30px_rgba(0,209,255,0.2)]">
+                            <Download size={14} />
+                            <span>Export</span>
+                        </button>
+                    </div>
                 </div>
 
                 {/* Editor */}
@@ -636,7 +650,7 @@ const InvoiceGenerator = () => {
                                             <div className="flex justify-between items-center px-4">
                                                 <h4 className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Invoiced By (Sender)</h4>
                                             </div>
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-8 bg-zinc-900/40 border border-white/5 rounded-[2.5rem]">
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 md:p-8 bg-zinc-900/40 border border-white/5 rounded-[2.5rem]">
                                                 <div className="space-y-4">
                                                     <label className="text-[10px] font-black text-gray-600 uppercase tracking-widest px-2">Entity Name</label>
                                                     <input value={formData.senderName} onChange={e => setFormData({...formData, senderName: e.target.value})} className="w-full bg-black/40 border border-white/10 h-14 px-6 rounded-2xl font-bold text-sm outline-none focus:border-neon-blue/40" />
@@ -697,12 +711,12 @@ const InvoiceGenerator = () => {
                                         <div className="space-y-4">
                                             {items.map((item, idx) => (
                                                 <div key={item.id} className="flex flex-col bg-zinc-900/40 p-6 rounded-3xl border border-white/5 group transition-all hover:bg-zinc-900/60 gap-4">
-                                                    <div className="flex items-start gap-6">
-                                                        <div className="flex-1 space-y-3">
+                                                    <div className="flex flex-col md:flex-row md:items-start gap-4 md:gap-6">
+                                                        <div className="flex-1 space-y-3 w-full">
                                                             <input value={item.name} onChange={e => { const newItems = [...items]; newItems[idx].name = e.target.value; setItems(newItems); }} className="w-full bg-transparent border-b border-white/10 pb-2 text-sm font-black uppercase italic outline-none focus:border-neon-blue/40 transition-all text-white placeholder:text-gray-600" placeholder="Service Name (e.g. Brand Activation)" />
                                                             <textarea value={item.description} onChange={e => { const newItems = [...items]; newItems[idx].description = e.target.value; setItems(newItems); }} rows={1} className="w-full bg-transparent border-none p-0 text-[10px] font-bold uppercase tracking-widest outline-none resize-none scrollbar-hide text-gray-400 placeholder:text-gray-700" placeholder="Detailed description..." />
                                                         </div>
-                                                        <div className="flex items-center gap-6">
+                                                        <div className="flex flex-wrap items-center gap-4 md:gap-6 w-full md:w-auto">
                                                             <div className="flex flex-col items-center"><span className="text-[8px] font-black text-gray-500 uppercase tracking-widest mb-1.5">Qty</span><input type="number" value={item.qty} onChange={e => { const newItems = [...items]; newItems[idx].qty = Number(e.target.value); setItems(newItems); }} className="w-16 bg-black/40 border border-white/10 h-10 rounded-lg text-center text-xs font-black outline-none focus:border-neon-blue/50" /></div>
                                                             <div className="flex flex-col items-end"><span className="text-[8px] font-black text-gray-500 uppercase tracking-widest mb-1.5 pr-2">Price</span><div className="relative"><span className="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] font-black text-neon-blue">₹</span><input type="number" value={item.price} onChange={e => { const newItems = [...items]; newItems[idx].price = Number(e.target.value); setItems(newItems); }} className="w-32 bg-black/40 border border-white/10 h-10 pl-7 pr-4 rounded-lg text-right text-xs font-black text-neon-blue outline-none focus:border-neon-blue/50" /></div></div>
                                                             <button onClick={() => setItems(items.filter(i => i.id !== item.id))} className="p-2.5 text-gray-600 hover:text-red-500 transition-colors hover:bg-red-500/10 rounded-lg"><Trash2 size={16} /></button>
@@ -813,7 +827,7 @@ const InvoiceGenerator = () => {
                                             </div>
 
                                         {/* PayU Gateway */}
-                                        <div className="p-8 bg-zinc-900 border border-white/10 rounded-[2.5rem] space-y-8 mt-8">
+                                        <div className="p-4 md:p-8 bg-zinc-900 border border-white/10 rounded-[2.5rem] space-y-8 mt-8">
                                             <div className="flex items-center justify-between border-b border-white/5 pb-4">
                                                 <div>
                                                     <h4 className="text-[10px] font-black text-neon-blue uppercase tracking-widest mb-1">PayU Checkout Gateway</h4>
@@ -936,7 +950,7 @@ const InvoiceGenerator = () => {
                                                     
                                                     <div className="relative h-48 bg-black/40 rounded-[32px] border border-white/5 flex items-center justify-center group overflow-hidden">
                                                         {formData.providerSignature ? (
-                                                            <div className="relative group w-full h-full flex items-center justify-center p-8">
+                                                            <div className="relative group w-full h-full flex items-center justify-center p-4 md:p-8">
                                                                 <img src={formData.providerSignature} alt="Provider Signature" className="max-h-full object-contain invert brightness-200" />
                                                                 <button 
                                                                     onClick={() => setFormData({...formData, providerSignature: ''})}

@@ -73,7 +73,7 @@ const GigCard = ({ gig, index, totalGigs, onEdit, onMove, onUpdate, onDelete }) 
         <Card 
             key={gig.id} 
             onMouseMove={handleMouseMove}
-            className="p-0 bg-zinc-950/40 backdrop-blur-2xl border border-white/5 rounded-[2.5rem] overflow-hidden group hover:border-neon-green/30 transition-all duration-700 shadow-2xl flex flex-col h-[480px] relative"
+            className="p-0 bg-zinc-950/40 backdrop-blur-2xl border border-white/5 rounded-[2.5rem] overflow-hidden group hover:border-neon-green/30 transition-all duration-700 shadow-2xl flex flex-col min-h-[480px] relative"
             style={{ 
                 background: `radial-gradient(circle at ${mousePos.x}% ${mousePos.y}%, ${gig.highlightColor || '#39FF14'}10 0%, transparent 60%)`
             }}
@@ -138,7 +138,7 @@ const GigCard = ({ gig, index, totalGigs, onEdit, onMove, onUpdate, onDelete }) 
                 </div>
 
                 <div className="mt-8 pt-6 border-t border-white/5 space-y-4">
-                    <div className="flex items-center gap-3">
+                    <div className="flex flex-wrap items-center gap-3">
                         <Button 
                             variant="outline" 
                             onClick={async () => {
@@ -162,7 +162,7 @@ const GigCard = ({ gig, index, totalGigs, onEdit, onMove, onUpdate, onDelete }) 
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-3">
+                    <div className="flex flex-wrap items-center gap-3">
                         <Button 
                             variant="outline" 
                             onClick={() => onEdit(gig)} 

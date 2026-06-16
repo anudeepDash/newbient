@@ -249,8 +249,8 @@ const ContractManagement = () => {
                         </motion.div>
                     ) : (
                         <motion.div key="table" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="overflow-x-auto scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0">
-                            <Card className="min-w-[800px] bg-zinc-900/40 border-white/5 rounded-[2rem] md:rounded-[2.5rem] p-0 border overflow-hidden">
-                                <table className="w-full text-left">
+                            <Card className="md:min-w-[800px] bg-zinc-900/40 border-white/5 rounded-[2rem] md:rounded-[2.5rem] p-0 border overflow-hidden">
+                                <table className="w-full text-left hidden md:table">
                                     <thead><tr className="border-b border-white/5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-500"><th className="p-6 md:p-8">Document</th><th className="p-6 md:p-8">Client</th><th className="p-6 md:p-8">Type</th><th className="p-6 md:p-8">Created</th><th className="p-6 md:p-8">Status</th><th className="p-6 md:p-8 text-right">Actions</th></tr></thead>
                                     <tbody className="divide-y divide-white/5">
                                         {filtered.map(a => (
@@ -277,6 +277,54 @@ const ContractManagement = () => {
                                         ))}
                                     </tbody>
                                 </table>
+                                
+                                {/* Mobile Stacked Cards */}
+                                <div className="flex md:hidden flex-col gap-4 p-4">
+                                    {filtered.map((a) => (
+                                        <div key={a.id} className="bg-white/[0.02] border border-white/5 rounded-2xl p-4 flex flex-col gap-4">
+                                            <div className="flex justify-between items-start">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-10 h-10 rounded-xl bg-neon-purple/10 flex items-center justify-center text-neon-purple">
+                                                        <Scale size={20} />
+                                                    </div>
+                                                    <div>
+                                                        <div className="text-xs font-black uppercase tracking-widest text-white">{a.agreementNumber}</div>
+                                                        <div className="text-[10px] font-bold text-gray-500 uppercase mt-0.5">CONTRACT</div>
+                                                    </div>
+                                                </div>
+                                                <div className="text-right">
+                                                    <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-0.5">
+                                                        {a.effectiveDate ? new Date(a.effectiveDate).toLocaleDateString() : '—'}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <div className="flex justify-between items-center bg-white/5 rounded-xl p-3">
+                                                <div>
+                                                    <div className="text-xs font-black uppercase tracking-tight text-white">{a.parties?.secondParty?.name}</div>
+                                                    <div className="text-[8px] font-bold text-gray-400 uppercase mt-0.5">{a.template || a.type || 'Service'}</div>
+                                                </div>
+                                                <div className={cn("inline-flex px-3 py-1 rounded-full border text-[8px] font-black uppercase tracking-[0.2em]", statusColor(a.status))}>
+                                                    {a.status}
+                                                </div>
+                                            </div>
+
+                                            <div className="flex flex-wrap justify-end gap-2 pt-2 border-t border-white/5">
+                                                <Link to={`/agreement/${a.id}`} className="p-2 bg-white/5 rounded-lg text-gray-400 hover:text-white"><Eye size={16} /></Link>
+                                                <button onClick={() => setEmailModalAgreement(a)} className="p-2 bg-white/5 rounded-lg text-gray-400 hover:text-neon-purple" title="Email Contract"><Mail size={16} /></button>
+                                                <button onClick={() => handleNativeShare(a)} className="p-2 bg-white/5 rounded-lg text-gray-400 hover:text-neon-purple"><Share2 size={16} /></button>
+                                                <button onClick={() => handleDuplicate(a.id)} className="p-2 bg-white/5 rounded-lg text-gray-400 hover:text-white"><History size={16} /></button>
+                                                <Link to={`/admin/agreements/edit/${a.id}`} className="p-2 bg-white/5 rounded-lg text-gray-400 hover:text-white"><Edit size={16} /></Link>
+                                                {user?.role !== 'editor' && user?.role !== 'content_admin' && (
+                                                    <>
+                                                        <button onClick={() => setSelectedAnalytics(a)} className="p-2 bg-white/5 rounded-lg text-gray-400 hover:text-neon-purple transition-colors"><Activity size={16} /></button>
+                                                        <button onClick={() => setShowDeleteModal(a.id)} className="p-2 bg-white/5 rounded-lg text-gray-400 hover:text-red-500"><Trash2 size={16} /></button>
+                                                    </>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
                                 {filtered.length === 0 && <div className="py-20 text-center"><Scale className="mx-auto text-gray-700 mb-4" size={40} /><p className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-600">No contracts found.</p></div>}
                             </Card>
                         </motion.div>

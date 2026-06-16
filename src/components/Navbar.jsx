@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, Zap, Star, Users, LogOut, Settings, Home, Music, Image as ImageIcon, User as UserIcon, PlusCircle, LayoutGrid, Mic2 } from 'lucide-react';
+import { Menu, X, Zap, Star, Users, LogOut, Settings, Home, Music, Image as ImageIcon, User as UserIcon, PlusCircle, LayoutGrid, Mic2, Search, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../lib/utils';
 import NotificationBell from './NotificationBell';
@@ -204,26 +204,55 @@ const Navbar = () => {
             </nav>
             )}
 
-            {/* Bottom Navigation (Mobile Only) - Hidden on Document Engines and Admin Panel */}
+            {/* iOS-Style Bottom Navigation (Mobile Only) */}
             {!location.pathname.toLowerCase().startsWith('/admin') && !location.pathname.toLowerCase().includes('/admin/') && (
-                <div className="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-[90%] max-w-sm">
-                    <div className="bg-black/60 backdrop-blur-3xl border border-white/10 rounded-3xl p-2 shadow-[0_-8px_32px_rgba(0,0,0,0.5)]">
-                    <div className="flex items-center justify-around">
+                <div 
+                    className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-black/80 backdrop-blur-3xl border-t border-white/10"
+                    style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+                >
+                    <div className="flex items-center justify-around px-2 pt-2 pb-3">
                         {mobilePrimaryLinks.map((link) => {
                             const isActive = link.matchPaths ? link.matchPaths.includes(location.pathname) : location.pathname === link.path;
                             const Icon = link.icon;
                             const isUnderMaintenance = link.featureId && (maintenanceState.global || maintenanceState.pages?.[link.featureId]);
                             const isClickable = !isUnderMaintenance || user?.role === 'developer';
 
+                            const content = (
+                                <>
+                                    <motion.div
+                                        animate={{ scale: isActive ? 1.15 : 1 }}
+                                        transition={{ type: "spring", stiffness: 400, damping: 17 }}
+                                        className="relative"
+                                    >
+                                        <Icon size={22} className={isActive ? "text-neon-green drop-shadow-[0_0_8px_rgba(57,255,20,0.6)]" : "text-zinc-400"} />
+                                        {isUnderMaintenance && (
+                                            <div className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-black" />
+                                        )}
+                                    </motion.div>
+                                    <span className={cn(
+                                        "text-[9px] font-bold mt-1 tracking-wide",
+                                        isActive ? "text-white" : "text-zinc-500"
+                                    )}>
+                                        {link.name}
+                                    </span>
+                                    {isActive && (
+                                        <motion.div 
+                                            layoutId="ios-bottom-nav-active"
+                                            className="absolute -top-2 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-neon-green rounded-full shadow-[0_0_10px_rgba(57,255,20,1)]"
+                                            transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                                        />
+                                    )}
+                                </>
+                            );
+
                             if (link.action) {
                                 return (
                                     <button
                                         key={link.name}
                                         onClick={link.action}
-                                        className="flex flex-col items-center gap-1 p-2 text-gray-400 hover:text-white transition-all relative"
+                                        className="flex flex-col items-center justify-center flex-1 py-1 relative"
                                     >
-                                        <Icon size={20} />
-                                        <span className="text-[8px] font-black uppercase tracking-tighter">{link.name}</span>
+                                        {content}
                                     </button>
                                 );
                             }
@@ -233,154 +262,199 @@ const Navbar = () => {
                                     key={link.name}
                                     to={isClickable ? link.path : '#'}
                                     className={cn(
-                                        "flex flex-col items-center gap-1 p-2 transition-all relative",
-                                        isActive ? "text-neon-green" : "text-gray-400 hover:text-white",
+                                        "flex flex-col items-center justify-center flex-1 py-1 relative",
                                         isUnderMaintenance && !isClickable && "opacity-50 grayscale cursor-not-allowed"
                                     )}
                                 >
-                                    <div className="relative">
-                                        <Icon size={20} />
-                                        {isUnderMaintenance && (
-                                            <div className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full border border-black " />
-                                        )}
-                                    </div>
-                                    <span className="text-[8px] font-black uppercase tracking-tighter">{link.name}</span>
-                                    {isActive && (
-                                        <motion.div 
-                                            layoutId="bottom-nav-active"
-                                            className="absolute -bottom-1 w-1 h-1 bg-neon-green rounded-full "
-                                        />
-                                    )}
+                                    {content}
                                 </Link>
                             );
                         })}
                     </div>
                 </div>
-            </div>
             )}
 
-            {/* Full-screen Mobile Menu */}
+            {/* Bottom-Sheet Mobile Menu */}
             <AnimatePresence>
                 {isOpen && (
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.95 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.95 }}
-                        transition={{ type: "spring", damping: 25, stiffness: 200 }}
-                        className="fixed inset-0 z-[100] md:hidden bg-black/95 backdrop-blur-2xl flex flex-col justify-start px-6 pt-24 pb-32 overflow-y-auto"
-                    >
-                        <button 
+                    <>
+                        <motion.div 
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
                             onClick={() => setIsOpen(false)}
-                            className="absolute top-10 right-10 p-4 rounded-full bg-white/5 border border-white/10 text-white"
+                            className="fixed inset-0 z-[90] bg-black/60 backdrop-blur-sm md:hidden"
+                        />
+                        <motion.div
+                            initial={{ y: "100%" }}
+                            animate={{ y: 0 }}
+                            exit={{ y: "100%" }}
+                            transition={{ type: "spring", damping: 25, stiffness: 200 }}
+                            drag="y"
+                            dragConstraints={{ top: 0 }}
+                            dragElastic={0.2}
+                            onDragEnd={(e, { offset, velocity }) => {
+                                if (offset.y > 150 || velocity.y > 500) {
+                                    setIsOpen(false);
+                                }
+                            }}
+                            className="fixed bottom-0 left-0 right-0 z-[100] md:hidden bg-zinc-950 border-t border-white/10 rounded-t-3xl flex flex-col max-h-[90vh]"
+                            style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
                         >
-                            <X size={24} />
-                        </button>
+                            {/* Drag Handle */}
+                            <div className="w-full flex justify-center py-4 shrink-0 cursor-grab active:cursor-grabbing">
+                                <div className="w-12 h-1.5 bg-white/20 rounded-full" />
+                            </div>
 
-                        <div className="w-full space-y-2 mb-auto shrink-0 pb-12">
-                            <p className="text-[10px] font-black text-gray-500 uppercase tracking-[0.4em] mb-6 text-center">Navigation</p>
-                            {allLinks.map((link, idx) => {
-                                const isActive = link.matchPaths ? link.matchPaths.includes(location.pathname) : location.pathname === link.path;
-                                const Icon = link.icon;
-                                const isUnderMaintenance = link.featureId && (maintenanceState.global || maintenanceState.pages?.[link.featureId]);
-                                const isClickable = !isUnderMaintenance || user?.role === 'developer';
+                            <div className="overflow-y-auto px-6 pb-8 custom-scrollbar">
+                                {/* Search Bar */}
+                                <div className="relative mb-6">
+                                    <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
+                                        <Search size={18} className="text-zinc-500" />
+                                    </div>
+                                    <input 
+                                        type="text"
+                                        placeholder="Search anything..."
+                                        className="w-full h-12 bg-white/5 border border-white/10 rounded-2xl pl-12 pr-4 text-white placeholder:text-zinc-500 focus:outline-none focus:border-neon-green/50 focus:ring-1 focus:ring-neon-green/50 transition-all text-sm"
+                                    />
+                                </div>
 
-                                return (
-                                    <motion.div
-                                        key={link.name}
-                                        initial={{ opacity: 0, x: -20 }}
-                                        animate={{ opacity: 1, x: 0 }}
-                                        transition={{ delay: idx * 0.05 }}
-                                    >
-                                        <Link
-                                            to={isClickable ? link.path : '#'}
-                                            onClick={() => isClickable && setIsOpen(false)}
-                                            className={cn(
-                                                "flex items-center gap-6 p-6 rounded-3xl border border-transparent transition-all group",
-                                                isActive 
-                                                    ? "bg-white/5 border-white/10 text-neon-green" 
-                                                    : "text-gray-400 hover:text-white hover:bg-white/5",
-                                                isUnderMaintenance && !isClickable && "opacity-40 grayscale cursor-not-allowed"
-                                            )}
-                                        >
-                                            <div className={cn(
-                                                "w-12 h-12 rounded-2xl flex items-center justify-center transition-all relative",
-                                                isActive ? "bg-neon-green/10 text-neon-green" : "bg-white/5 text-gray-500 group-hover:text-white"
-                                            )}>
-                                                <Icon size={22} />
-                                                {isUnderMaintenance && (
-                                                    <div className="absolute -top-1 -right-1 px-1.5 py-0.5 bg-red-500 text-[8px] font-black text-white rounded-md ">
-                                                        OFFLINE
-                                                    </div>
+                                {/* Quick Action Grid */}
+                                <div className="grid grid-cols-4 gap-4 mb-8">
+                                    {allLinks.filter(l => ['HOME', 'COMMUNITY', 'CREATOR', 'CONTACT'].includes(l.name)).map(link => {
+                                        const Icon = link.icon;
+                                        const isUnderMaintenance = link.featureId && (maintenanceState.global || maintenanceState.pages?.[link.featureId]);
+                                        const isClickable = !isUnderMaintenance || user?.role === 'developer';
+                                        return (
+                                            <Link 
+                                                key={`quick-${link.name}`}
+                                                to={isClickable ? link.path : '#'}
+                                                onClick={() => isClickable && setIsOpen(false)}
+                                                className={cn(
+                                                    "flex flex-col items-center gap-2 group",
+                                                    isUnderMaintenance && !isClickable && "opacity-40 grayscale cursor-not-allowed"
                                                 )}
-                                            </div>
-                                            <div className="flex flex-col">
-                                                <span className="text-2xl font-black uppercase italic tracking-tighter">{link.name}</span>
-                                                {isUnderMaintenance && (
-                                                    <span className="text-[10px] font-black uppercase text-red-500/80 tracking-[0.2em]">Maintenance in progress</span>
-                                                )}
-                                            </div>
-                                        </Link>
-                                    </motion.div>
-                                );
-                            })}
-                        </div>
+                                            >
+                                                <div className="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-zinc-400 group-hover:text-neon-green group-hover:border-neon-green/30 group-hover:bg-neon-green/5 transition-all">
+                                                    <Icon size={24} />
+                                                </div>
+                                                <span className="text-[10px] font-bold text-zinc-400 group-hover:text-white transition-colors">{link.name}</span>
+                                            </Link>
+                                        );
+                                    })}
+                                </div>
 
-                        <div className="w-full pt-8 mt-4 border-t border-white/10 flex flex-col items-stretch gap-6 shrink-0">
-                            {user ? (
-                                <div className="space-y-4">
-                                    <div className="w-full flex items-center justify-between bg-white/5 p-6 rounded-3xl border border-white/10">
-                                        <div 
-                                            className="flex items-center gap-4 flex-1 min-w-0 pr-2 cursor-pointer group/profile"
-                                            onClick={() => { setIsProfileOpen(true); setIsOpen(false); }}
-                                        >
-                                            <div className="w-12 h-12 rounded-full bg-neon-green/10 border border-neon-blue/20 flex items-center justify-center text-neon-green shrink-0">
-                                                <UserIcon size={20} />
-                                            </div>
-                                            <div className="flex flex-col flex-1 min-w-0">
-                                                <span className="text-lg font-black text-white italic capitalize truncate group-hover/profile:text-neon-green transition-colors">{user.displayName || 'Tribe Member'}</span>
-                                                <span className="text-[10px] text-gray-500 uppercase tracking-widest truncate">
-                                                    {(() => {
-                                                        if (user.role === 'developer') return 'DEV';
-                                                        if (user.role === 'founder') return 'FOUNDER';
-                                                        if (user.role === 'super_admin') return 'ADMIN';
-                                                        const isApprovedArtist = artists?.some(a => a.uid === user.uid && a.profileStatus === 'approved');
-                                                        const isApprovedCreator = creators?.some(c => c.uid === user.uid && c.profileStatus === 'approved');
-                                                        if (isApprovedArtist) return 'ARTIST';
-                                                        if (isApprovedCreator) return 'CREATOR';
-                                                        return 'TRIBE MEMBER';
-                                                    })()}
-                                                </span>
-                                            </div>
+                                {/* Menu List Sections */}
+                                <div className="space-y-6">
+                                    <div>
+                                        <p className="text-[11px] font-black text-zinc-500 uppercase tracking-widest mb-3 pl-2">Explore</p>
+                                        <div className="bg-white/5 border border-white/10 rounded-3xl overflow-hidden">
+                                            {allLinks.map((link, idx) => {
+                                                const Icon = link.icon;
+                                                const isActive = link.matchPaths ? link.matchPaths.includes(location.pathname) : location.pathname === link.path;
+                                                const isUnderMaintenance = link.featureId && (maintenanceState.global || maintenanceState.pages?.[link.featureId]);
+                                                const isClickable = !isUnderMaintenance || user?.role === 'developer';
+                                                
+                                                return (
+                                                    <Link
+                                                        key={link.name}
+                                                        to={isClickable ? link.path : '#'}
+                                                        onClick={() => isClickable && setIsOpen(false)}
+                                                        className={cn(
+                                                            "flex items-center justify-between p-4 transition-all",
+                                                            idx !== allLinks.length - 1 && "border-b border-white/5",
+                                                            isActive ? "bg-neon-green/5" : "hover:bg-white/5",
+                                                            isUnderMaintenance && !isClickable && "opacity-40 grayscale cursor-not-allowed"
+                                                        )}
+                                                    >
+                                                        <div className="flex items-center gap-4">
+                                                            <div className={cn(
+                                                                "w-10 h-10 rounded-xl flex items-center justify-center transition-all",
+                                                                isActive ? "bg-neon-green/20 text-neon-green" : "bg-white/5 text-zinc-400"
+                                                            )}>
+                                                                <Icon size={20} />
+                                                            </div>
+                                                            <span className={cn(
+                                                                "text-sm font-bold",
+                                                                isActive ? "text-neon-green" : "text-zinc-200"
+                                                            )}>{link.name}</span>
+                                                        </div>
+                                                        {isUnderMaintenance ? (
+                                                            <span className="text-[9px] font-bold uppercase text-red-500 tracking-widest bg-red-500/10 px-2 py-1 rounded-md">Offline</span>
+                                                        ) : (
+                                                            <ChevronRight size={18} className="text-zinc-600" />
+                                                        )}
+                                                    </Link>
+                                                );
+                                            })}
                                         </div>
-                                        <button
-                                            onClick={() => { useStore.getState().logout(); setIsOpen(false); }}
-                                            className="p-3 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-500 hover:bg-red-500 hover:text-white transition-all shrink-0"
-                                        >
-                                            <LogOut size={20} />
-                                        </button>
                                     </div>
 
-                                    {['developer', 'super_admin', 'founder'].includes(user.role) && (
-                                        <Link 
-                                            to="/admin" 
-                                            onClick={() => setIsOpen(false)}
-                                            className="w-full h-16 bg-neon-green text-black flex items-center justify-center gap-3 rounded-2xl font-black font-heading uppercase tracking-widest shadow-[0_10px_30px_rgba(57,255,20,0.2)] active:scale-95 transition-all"
-                                        >
-                                            <LayoutGrid size={18} />
-                                            ADMIN DASHBOARD
-                                        </Link>
-                                    )}
+                                    {/* Account Section */}
+                                    <div>
+                                        <p className="text-[11px] font-black text-zinc-500 uppercase tracking-widest mb-3 pl-2">Account</p>
+                                        {user ? (
+                                            <div className="bg-white/5 border border-white/10 rounded-3xl overflow-hidden">
+                                                <div 
+                                                    className="flex items-center justify-between p-4 border-b border-white/5 cursor-pointer hover:bg-white/5 transition-all"
+                                                    onClick={() => { setIsProfileOpen(true); setIsOpen(false); }}
+                                                >
+                                                    <div className="flex items-center gap-4">
+                                                        <div className="w-10 h-10 rounded-xl bg-neon-green/10 border border-neon-blue/20 flex items-center justify-center text-neon-green">
+                                                            <UserIcon size={20} />
+                                                        </div>
+                                                        <div className="flex flex-col">
+                                                            <span className="text-sm font-bold text-white capitalize">{user.displayName || 'Tribe Member'}</span>
+                                                            <span className="text-[10px] text-zinc-500 uppercase tracking-widest">Profile & Settings</span>
+                                                        </div>
+                                                    </div>
+                                                    <ChevronRight size={18} className="text-zinc-600" />
+                                                </div>
+
+                                                {['developer', 'super_admin', 'founder'].includes(user.role) && (
+                                                    <Link 
+                                                        to="/admin" 
+                                                        onClick={() => setIsOpen(false)}
+                                                        className="flex items-center justify-between p-4 border-b border-white/5 hover:bg-white/5 transition-all"
+                                                    >
+                                                        <div className="flex items-center gap-4">
+                                                            <div className="w-10 h-10 rounded-xl bg-purple-500/10 text-purple-400 flex items-center justify-center">
+                                                                <LayoutGrid size={20} />
+                                                            </div>
+                                                            <span className="text-sm font-bold text-white">Admin Dashboard</span>
+                                                        </div>
+                                                        <ChevronRight size={18} className="text-zinc-600" />
+                                                    </Link>
+                                                )}
+
+                                                <button
+                                                    onClick={() => { useStore.getState().logout(); setIsOpen(false); }}
+                                                    className="w-full flex items-center justify-between p-4 hover:bg-red-500/5 transition-all text-red-500"
+                                                >
+                                                    <div className="flex items-center gap-4">
+                                                        <div className="w-10 h-10 rounded-xl bg-red-500/10 flex items-center justify-center">
+                                                            <LogOut size={20} />
+                                                        </div>
+                                                        <span className="text-sm font-bold">Log Out</span>
+                                                    </div>
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            <div className="bg-white/5 border border-white/10 rounded-3xl p-4 flex flex-col items-center text-center gap-4">
+                                                <p className="text-sm text-zinc-400">Join the tribe to access all features</p>
+                                                <button
+                                                    onClick={() => { useStore.getState().setAuthModal(true); setIsOpen(false); }}
+                                                    className="w-full h-12 rounded-xl bg-neon-green text-black font-black uppercase tracking-widest text-xs hover:scale-[1.02] active:scale-95 transition-all shadow-[0_0_20px_rgba(57,255,20,0.2)]"
+                                                >
+                                                    Login / Sign Up
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
-                            ) : (
-                                <button
-                                    onClick={() => { useStore.getState().setAuthModal(true); setIsOpen(false); }}
-                                    className="w-full h-16 rounded-2xl bg-neon-green text-black font-black uppercase tracking-widest text-sm hover:scale-105 active:scale-95 transition-all shadow-[0_0_30px_rgba(57,255,20,0.3)]"
-                                >
-                                    Get Started
-                                </button>
-                            )}
-                        </div>
-                    </motion.div>
+                            </div>
+                        </motion.div>
+                    </>
                 )}
             </AnimatePresence>
             <ProfilePanel 

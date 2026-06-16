@@ -5,7 +5,7 @@ import logo from '../../assets/logo.png';
 
 const Hero = () => {
     return (
-        <section className="relative min-h-screen flex flex-col justify-center overflow-hidden pt-32 md:pt-40 pb-16 md:pb-24 bg-dark">
+        <section className="relative min-h-screen flex flex-col justify-center overflow-hidden pt-20 md:pt-40 pb-16 md:pb-24 bg-dark">
             {/* Immersive Background Effects */}
             <div className="absolute inset-0 z-0">
                 {/* Subtle Ambient Spotlights */}
@@ -60,9 +60,9 @@ const Hero = () => {
                         initial={{ opacity: 0, y: 30 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 1, delay: 0.2, ease: "easeOut" }}
-                        className="font-heading text-[6.8vw] xs:text-[7vw] sm:text-6xl md:text-7xl lg:text-8xl xl:text-9xl font-black tracking-tight leading-none text-white whitespace-nowrap overflow-visible select-none py-2"
+                        className="font-heading text-[clamp(2.5rem,10vw,6rem)] sm:text-6xl md:text-7xl lg:text-8xl xl:text-9xl font-black tracking-tight leading-none text-white md:whitespace-nowrap overflow-visible select-none py-2"
                     >
-                        The Pulse of <span className="bg-gradient-to-r from-white via-neutral-100 to-gray-400 bg-clip-text text-transparent">Youth.</span>
+                        The Pulse of <br className="md:hidden" /><span className="bg-gradient-to-r from-white via-neutral-100 to-gray-400 bg-clip-text text-transparent">Youth.</span>
                     </motion.h1>
                 </div>
 
@@ -81,11 +81,11 @@ const Hero = () => {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 1, delay: 0.5, ease: "easeOut" }}
-                    className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-10 px-6 sm:px-0"
+                    className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-10 px-6 sm:px-0 w-full"
                 >
                     <a
                         href="/contact"
-                        className="group relative w-full sm:w-auto h-14 md:h-16 px-10 flex items-center justify-center bg-white text-black font-bold uppercase tracking-[0.2em] text-[10px] md:text-xs rounded-xl transition-all duration-300 hover:bg-neutral-100 hover:scale-[1.02] active:scale-95 shadow-xl"
+                        className="group relative w-full sm:w-auto h-[56px] md:h-16 px-10 flex items-center justify-center bg-white text-black font-bold uppercase tracking-[0.2em] text-sm md:text-base rounded-xl transition-all duration-300 hover:bg-neutral-100 hover:scale-[1.02] active:scale-95 shadow-xl"
                     >
                         CONTACT US
                         <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
@@ -93,7 +93,7 @@ const Hero = () => {
 
                     <a
                         href="/community"
-                        className="group relative w-full sm:w-auto h-14 md:h-16 px-10 flex items-center justify-center bg-slate-900/40 border border-white/10 text-white font-bold uppercase tracking-[0.2em] text-[10px] md:text-xs rounded-xl transition-all duration-300 hover:border-white/20 hover:bg-slate-900/60 active:scale-95 shadow-inner"
+                        className="group relative w-full sm:w-auto h-[56px] md:h-16 px-10 flex items-center justify-center bg-slate-900/40 border border-white/10 text-white font-bold uppercase tracking-[0.2em] text-[10px] md:text-xs rounded-xl transition-all duration-300 hover:border-white/20 hover:bg-slate-900/60 active:scale-95 shadow-inner"
                     >
                         JOIN OUR COMMUNITY
                     </a>

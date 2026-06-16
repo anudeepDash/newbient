@@ -153,7 +153,7 @@ const CampaignBadgeCard = ({ campaign, onSelect, onEdit, onDelete, updateCampaig
     <motion.div 
         layout
         onClick={onSelect}
-        className="group relative bg-[#0A0A0A] border border-white/5 hover:border-neon-blue/40 rounded-[2.5rem] p-5 sm:p-6 cursor-pointer overflow-hidden transition-all duration-700 hover:-translate-y-2 hover:shadow-[0_40px_100px_rgba(0,0,0,0.9)] flex flex-col h-auto min-h-[510px]"
+        className="group relative bg-[#0A0A0A] border border-white/5 hover:border-neon-blue/40 rounded-[2.5rem] p-4 md:p-8 cursor-pointer overflow-hidden transition-all duration-700 hover:-translate-y-2 hover:shadow-[0_40px_100px_rgba(0,0,0,0.9)] flex flex-col h-auto min-h-[510px]"
     >
         <div className="absolute inset-0 bg-gradient-to-br from-neon-blue/5 via-transparent to-neon-pink/5 opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
         
@@ -884,12 +884,12 @@ const CampaignManager = () => {
                                             {editingId ? 'EDIT' : 'NEW'} <span className="text-neon-blue">CAMPAIGN DETAILS</span>
                                         </h2>
                                     </div>
-                                    <div className="flex gap-4">
+                                    <div className="fixed md:relative bottom-0 left-0 right-0 z-50 flex items-center justify-center md:justify-end gap-4 bg-[#0A0A0A]/95 md:bg-transparent backdrop-blur-2xl md:backdrop-blur-none border-t border-white/10 md:border-none p-4 md:p-0 shadow-[0_-20px_40px_rgba(0,0,0,0.8)] md:shadow-none">
                                         <button onClick={resetForm} className="text-[10px] font-black text-gray-500 hover:text-white uppercase tracking-widest transition-colors">Discard</button>
                                         <button 
                                             onClick={handleSubmit} 
                                             disabled={isDeploying || isUploading}
-                                            className="h-12 px-10 bg-white text-black font-black uppercase tracking-widest rounded-full hover:scale-105 transition-all flex items-center justify-center gap-3 min-w-[140px]"
+                                            className="h-12 px-10 bg-white text-black font-black uppercase tracking-widest rounded-full hover:scale-105 transition-all flex items-center justify-center gap-3 min-w-[140px] flex-1 md:flex-none"
                                         >
                                             {isDeploying ? <LoadingSpinner size="xs" color="black" /> : 'SAVE'}
                                         </button>
@@ -898,7 +898,7 @@ const CampaignManager = () => {
 
                                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
                                     <div className="lg:col-span-7 space-y-8">
-                                        <Card className="p-8 md:p-10 bg-[#0A0A0A]/60 backdrop-blur-3xl border-white/5 rounded-[2.5rem] shadow-2xl space-y-8">
+                                        <Card className="p-4 md:p-8 bg-[#0A0A0A]/60 backdrop-blur-3xl border-white/5 rounded-[2.5rem] shadow-2xl space-y-8">
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                                 <div className="space-y-2">
                                                     <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">TITLE</label>
@@ -999,7 +999,7 @@ const CampaignManager = () => {
 
                                     <div className="lg:col-span-5 space-y-8 lg:sticky lg:top-32 h-fit">
                                         <LivePreview type="campaign" data={formData} />
-                                        <Card className="p-8 md:p-10 bg-[#0A0A0A]/60 backdrop-blur-3xl border-white/5 rounded-[2.5rem] shadow-2xl">
+                                        <Card className="p-4 md:p-8 bg-[#0A0A0A]/60 backdrop-blur-3xl border-white/5 rounded-[2.5rem] shadow-2xl">
                                             <div className="flex items-center justify-between mb-8">
                                                 <h3 className="text-sm font-black text-white uppercase tracking-[0.3em] flex items-center gap-3">
                                                     <Zap size={18} className="text-neon-blue" /> TASKS
@@ -1461,7 +1461,7 @@ const CampaignDetailView = ({ campaignId, onClose, onEdit, onToggleShortlist, on
                                         </div>
                                     </div>
                                 ) : (campaign.tasks || []).map((task, idx) => (
-                                    <div key={task.id} className="space-y-6 bg-[#0A0A0A]/60 backdrop-blur-3xl border border-white/10 rounded-[2.5rem] p-8 md:p-10 shadow-xl">
+                                    <div key={task.id} className="space-y-6 bg-[#0A0A0A]/60 backdrop-blur-3xl border border-white/10 rounded-[2.5rem] p-4 md:p-8 shadow-xl">
                                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/5 pb-6">
                                             <div className="flex items-center gap-6">
                                                 <div className="w-14 h-14 rounded-2xl bg-neon-blue/10 border border-neon-blue/20 flex items-center justify-center font-black text-neon-blue text-lg shadow-inner">{idx + 1}</div>
@@ -1587,7 +1587,7 @@ const TaskEditorCard = React.memo(({ task, index, totalTasks, onUpdate, onRemove
         >
             <div className={cn("absolute top-0 left-0 w-full h-1", task.priority === 'required' ? 'bg-neon-blue shadow-[0_0_10px_rgba(46,191,255,0.3)]' : 'bg-white/10')} />
 
-            <div className="flex items-center gap-4 p-6 cursor-pointer hover:bg-white/[0.02] transition-colors" onClick={() => setIsExpanded(!isExpanded)}>
+            <div className="flex items-center gap-4 flex-wrap p-4 md:p-8 cursor-pointer hover:bg-white/[0.02] transition-colors" onClick={() => setIsExpanded(!isExpanded)}>
                 <div className="flex items-center gap-3 shrink-0">
                     <div className="flex flex-col gap-1">
                         <button type="button" onClick={e => { e.stopPropagation(); onMoveUp(index); }} disabled={index === 0} className="text-gray-700 hover:text-white disabled:opacity-20 transition-colors"><ArrowUp size={12} /></button>

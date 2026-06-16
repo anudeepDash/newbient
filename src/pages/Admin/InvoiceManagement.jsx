@@ -430,8 +430,8 @@ const InvoiceManagement = () => {
                             exit={{ opacity: 0, y: -20 }}
                             className="overflow-x-auto scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0"
                         >
-                            <Card className="min-w-[800px] bg-zinc-900/40 backdrop-blur-3xl border-white/5 rounded-[2rem] md:rounded-[2.5rem] p-0 border overflow-hidden">
-                                <table className="w-full text-left">
+                            <Card className="md:min-w-[800px] bg-zinc-900/40 backdrop-blur-3xl border-white/5 rounded-[2rem] md:rounded-[2.5rem] p-0 border overflow-hidden">
+                                <table className="w-full text-left hidden md:table">
                                     <thead>
                                         <tr className="border-b border-white/5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">
                                             <th className="p-6 md:p-8">Reference</th>
@@ -494,6 +494,55 @@ const InvoiceManagement = () => {
                                         ))}
                                     </tbody>
                                 </table>
+
+                                {/* Mobile Stacked Cards */}
+                                <div className="flex md:hidden flex-col gap-4 p-4">
+                                    {filteredInvoices.map((invoice) => (
+                                        <div key={invoice.id} className="bg-white/[0.02] border border-white/5 rounded-2xl p-4 flex flex-col gap-4">
+                                            <div className="flex justify-between items-start">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-10 h-10 rounded-xl bg-neon-blue/10 flex items-center justify-center text-neon-blue">
+                                                        <Receipt size={20} />
+                                                    </div>
+                                                    <div>
+                                                        <div className="text-xs font-black uppercase tracking-widest text-white">{invoice.invoiceNumber || 'NEWBI-INV'}</div>
+                                                        <div className="text-[10px] font-bold text-gray-500 uppercase mt-0.5">FINANCIAL DOC</div>
+                                                    </div>
+                                                </div>
+                                                <div className="text-right">
+                                                    <div className="text-sm font-black text-white tabular-nums">₹{Number(invoice.total || invoice.amount || 0).toLocaleString()}</div>
+                                                    <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-0.5">
+                                                        {new Date(invoice.createdAt || invoice.issueDate).toLocaleDateString()}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <div className="flex justify-between items-center bg-white/5 rounded-xl p-3">
+                                                <div className="text-xs font-black uppercase tracking-tight text-white">{invoice.clientName}</div>
+                                                <div className={cn(
+                                                    "inline-flex px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-[0.2em]",
+                                                    invoice.status === 'Paid' ? 'bg-emerald-500/10 text-emerald-500' : 
+                                                    (invoice.status === 'Pending' ? 'bg-yellow-500/10 text-yellow-500' : 'bg-gray-600/10 text-gray-600')
+                                                )}>
+                                                    {invoice.status}
+                                                </div>
+                                            </div>
+
+                                            <div className="flex flex-wrap justify-end gap-2 pt-2 border-t border-white/5">
+                                                <Link to={`/invoice/${invoice.id}`} className="p-2 bg-white/5 rounded-lg text-gray-400 hover:text-white transition-colors"><Eye size={16} /></Link>
+                                                {user?.role !== 'editor' && user?.role !== 'content_admin' && (
+                                                    <>
+                                                        <button onClick={() => setSelectedAnalytics(invoice)} className="p-2 bg-white/5 rounded-lg text-gray-400 hover:text-neon-blue transition-colors"><Activity size={16} /></button>
+                                                        <button onClick={() => handleDelete(invoice.id, invoice)} className="p-2 bg-white/5 rounded-lg text-gray-400 hover:text-red-500 transition-colors"><Trash2 size={16} /></button>
+                                                    </>
+                                                )}
+                                                <button onClick={() => handleDuplicate(invoice)} className="p-2 bg-white/5 rounded-lg text-gray-400 hover:text-white transition-colors"><History size={16} /></button>
+                                                <button onClick={() => handleNativeShare(invoice)} className="p-2 bg-white/5 rounded-lg text-gray-400 hover:text-neon-blue transition-colors"><Share2 size={16} /></button>
+                                                <Link to={`/admin/edit-invoice/${invoice.id}`} className="p-2 bg-white/5 rounded-lg text-gray-400 hover:text-white transition-colors"><Edit size={16} /></Link>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
                             </Card>
                         </motion.div>
                     )}

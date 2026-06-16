@@ -32,6 +32,13 @@ const ProfilePanel = ({ isOpen, onClose }) => {
     const [ticketFilter, setTicketFilter] = useState('upcoming'); // 'upcoming' or 'past'
     const [guestlistEntries, setGuestlistEntries] = useState([]);
     const [loadingEntries, setLoadingEntries] = useState(false);
+    const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' && window.innerWidth < 768);
+
+    useEffect(() => {
+        const handleResize = () => setIsMobile(window.innerWidth < 768);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
 
     useEffect(() => {
         if (!isOpen || !user?.uid) return;
@@ -284,18 +291,33 @@ const ProfilePanel = ({ isOpen, onClose }) => {
                     />
 
                     <motion.div
-                        initial={{ x: '100%' }}
-                        animate={{ x: 0 }}
-                        exit={{ x: '100%' }}
+                        initial={isMobile ? { y: '100%' } : { x: '100%' }}
+                        animate={isMobile ? { y: 0 } : { x: 0 }}
+                        exit={isMobile ? { y: '100%' } : { x: '100%' }}
                         transition={{ type: "spring", damping: 25, stiffness: 200 }}
-                        className="fixed top-0 right-0 h-full w-full max-w-xl bg-[#050505] border-l border-white/10 z-[101] overflow-hidden flex flex-col shadow-[-20px_0_50px_rgba(0,0,0,0.5)]"
+                        drag={isMobile ? "y" : false}
+                        dragConstraints={{ top: 0, bottom: 0 }}
+                        dragElastic={0.2}
+                        onDragEnd={(e, info) => {
+                            if (isMobile && info.offset.y > 100) {
+                                onClose();
+                            }
+                        }}
+                        className="fixed bottom-0 left-0 w-full h-[95vh] md:h-full md:w-full md:max-w-xl md:top-0 md:right-0 md:left-auto md:bottom-auto bg-[#050505] border-t md:border-t-0 md:border-l border-white/10 z-[101] overflow-hidden flex flex-col shadow-[0_-20px_50px_rgba(0,0,0,0.5)] md:shadow-[-20px_0_50px_rgba(0,0,0,0.5)] rounded-t-[2.5rem] md:rounded-none"
                     >
+                        {/* Drag Handle for Mobile */}
+                        {isMobile && (
+                            <div className="w-full flex justify-center pt-4 pb-2 cursor-grab active:cursor-grabbing shrink-0 relative z-20">
+                                <div className="w-12 h-1.5 rounded-full bg-white/20" />
+                            </div>
+                        )}
+
                         {/* Dynamic Background */}
                         <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-neon-blue/5 blur-[120px] pointer-events-none" />
                         <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-neon-pink/5 blur-[120px] pointer-events-none" />
 
                         {/* Top Header */}
-                        <div className="p-6 flex items-center justify-between relative z-10">
+                        <div className="px-6 py-2 md:p-6 flex items-center justify-between relative z-10">
                             <div className="flex items-center gap-2">
                                 <div className="w-2 h-2 rounded-full bg-neon-blue animate-pulse shadow-[0_0_10px_#38b6ff]" />
                                 <h2 className="text-[10px] font-black text-gray-500 uppercase tracking-[0.4em]">Personal Hub</h2>
@@ -309,99 +331,99 @@ const ProfilePanel = ({ isOpen, onClose }) => {
                         </div>
 
                         {/* Profile Identity Header */}
-                        <div className="px-8 pb-6 pt-2 relative z-10 border-b border-white/5">
-                            <div className="flex items-center gap-6">
-                                <div className="relative group">
-                                    <div className="absolute -inset-1 bg-gradient-to-r from-neon-blue via-neon-pink to-neon-purple rounded-2xl blur opacity-40 group-hover:opacity-70 transition duration-500"></div>
-                                    <div className="relative w-20 h-20 rounded-2xl bg-zinc-900 border border-white/10 flex items-center justify-center overflow-hidden">
-                                        <span className="text-3xl font-black text-white italic uppercase select-none">
-                                            {user.displayName ? user.displayName.charAt(0) : 'U'}
-                                        </span>
-                                    </div>
-                                    <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-[#050505] rounded-full flex items-center justify-center p-0.5">
-                                        <div className="w-full h-full bg-neon-green rounded-full shadow-[0_0_10px_#39FF14] flex items-center justify-center">
-                                            <div className="w-1 h-1 bg-black rounded-full animate-pulse" />
-                                        </div>
+                        <div className="px-6 md:px-8 pb-6 pt-2 md:pt-4 relative z-10 border-b border-white/5 flex flex-col items-center text-center">
+                            <div className="relative group mb-4">
+                                <div className="absolute -inset-1 bg-gradient-to-r from-neon-blue via-neon-pink to-neon-purple rounded-[2rem] md:rounded-[2.5rem] blur opacity-40 group-hover:opacity-70 transition duration-500"></div>
+                                <div className="relative w-24 h-24 md:w-32 md:h-32 rounded-[2rem] md:rounded-[2.5rem] bg-zinc-900 border border-white/10 flex items-center justify-center overflow-hidden">
+                                    <span className="text-4xl md:text-6xl font-black text-white italic uppercase select-none">
+                                        {user.displayName ? user.displayName.charAt(0) : 'U'}
+                                    </span>
+                                </div>
+                                <div className="absolute -bottom-1 -right-1 w-8 h-8 bg-[#050505] rounded-full flex items-center justify-center p-0.5">
+                                    <div className="w-full h-full bg-neon-green rounded-full shadow-[0_0_10px_#39FF14] flex items-center justify-center">
+                                        <div className="w-1.5 h-1.5 bg-black rounded-full animate-pulse" />
                                     </div>
                                 </div>
-                                <div className="flex-1">
-                                    <div className="flex items-center gap-3 mb-1">
-                                        <h3 className="text-xl font-black font-heading text-white italic tracking-tighter capitalize leading-none">
-                                            {user.displayName || 'Member'}
-                                        </h3>
-                                        {isApprovedCreator && <ShieldCheck size={16} className="text-neon-blue" />}
-                                        {isApprovedArtist && <Mic size={16} className="text-[#FF6B6B]" />}
-                                    </div>
-                                        <div className="flex flex-wrap items-center gap-2">
-                                            {user.role === 'developer' && (
-                                                <span className="text-[8px] font-black px-2 py-0.5 rounded-full uppercase tracking-widest border bg-red-500/10 text-red-500 border-red-500/20">
-                                                    DEVELOPER
-                                                </span>
-                                            )}
-                                            {user.role === 'founder' && (
-                                                <span className="text-[8px] font-black px-2 py-0.5 rounded-full uppercase tracking-widest border bg-[#FFD700]/10 text-[#FFD700] border-[#FFD700]/20 animate-pulse">
-                                                    FOUNDER
-                                                </span>
-                                            )}
-                                            {user.role === 'super_admin' && (
-                                                <span className="text-[8px] font-black px-2 py-0.5 rounded-full uppercase tracking-widest border bg-neon-blue/10 text-neon-blue border-neon-blue/20">
-                                                    SYSTEM ADMIN
-                                                </span>
-                                            )}
-                                            {isApprovedCreator && (
-                                                <span className="text-[8px] font-black px-2 py-0.5 rounded-full uppercase tracking-widest border bg-neon-green/10 text-neon-green border-neon-green/20">
-                                                    VERIFIED CREATOR
-                                                </span>
-                                            )}
-                                            {isApprovedArtist && (
-                                                <span className="text-[8px] font-black px-2 py-0.5 rounded-full uppercase tracking-widest border bg-[#FF6B6B]/10 text-[#FF6B6B] border-[#FF6B6B]/20">
-                                                    VERIFIED ARTIST
-                                                </span>
-                                            )}
-                                            {user.hasJoinedTribe && (
-                                                <span className="text-[8px] font-black px-2 py-0.5 rounded-full uppercase tracking-widest border bg-neon-blue/10 text-neon-blue border-neon-blue/20">
-                                                    TRIBE MEMBER
-                                                </span>
-                                            )}
-                                            {(!isApprovedCreator && !isApprovedArtist && !user.hasJoinedTribe && user.role !== 'developer' && user.role !== 'founder' && user.role !== 'super_admin') && (
-                                                <span className="text-[8px] font-black px-2 py-0.5 rounded-full uppercase tracking-widest border bg-white/5 text-gray-500 border-white/5">
-                                                    MEMBER
-                                                </span>
-                                            )}
-                                        <div className="flex items-center gap-1.5 text-[8px] text-gray-500 font-bold uppercase tracking-wider bg-white/5 px-2 py-0.5 rounded-full border border-white/5">
-                                            <Calendar size={8} className="text-yellow-500" />
-                                            Joined {new Date(user.createdAt || Date.now()).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
-                                        </div>
+                            </div>
+                            <div className="flex flex-col items-center gap-2">
+                                <div className="flex items-center gap-3">
+                                    <h3 className="text-2xl md:text-3xl font-black font-heading text-white italic tracking-tighter capitalize leading-none">
+                                        {user.displayName || 'Member'}
+                                    </h3>
+                                    {isApprovedCreator && <ShieldCheck size={20} className="text-neon-blue" />}
+                                    {isApprovedArtist && <Mic size={20} className="text-[#FF6B6B]" />}
+                                </div>
+                                <div className="flex flex-wrap items-center justify-center gap-2 mt-1">
+                                    {user.role === 'developer' && (
+                                        <span className="text-[8px] font-black px-2 py-0.5 rounded-full uppercase tracking-widest border bg-red-500/10 text-red-500 border-red-500/20">
+                                            DEVELOPER
+                                        </span>
+                                    )}
+                                    {user.role === 'founder' && (
+                                        <span className="text-[8px] font-black px-2 py-0.5 rounded-full uppercase tracking-widest border bg-[#FFD700]/10 text-[#FFD700] border-[#FFD700]/20 animate-pulse">
+                                            FOUNDER
+                                        </span>
+                                    )}
+                                    {user.role === 'super_admin' && (
+                                        <span className="text-[8px] font-black px-2 py-0.5 rounded-full uppercase tracking-widest border bg-neon-blue/10 text-neon-blue border-neon-blue/20">
+                                            SYSTEM ADMIN
+                                        </span>
+                                    )}
+                                    {isApprovedCreator && (
+                                        <span className="text-[8px] font-black px-2 py-0.5 rounded-full uppercase tracking-widest border bg-neon-green/10 text-neon-green border-neon-green/20">
+                                            VERIFIED CREATOR
+                                        </span>
+                                    )}
+                                    {isApprovedArtist && (
+                                        <span className="text-[8px] font-black px-2 py-0.5 rounded-full uppercase tracking-widest border bg-[#FF6B6B]/10 text-[#FF6B6B] border-[#FF6B6B]/20">
+                                            VERIFIED ARTIST
+                                        </span>
+                                    )}
+                                    {user.hasJoinedTribe && (
+                                        <span className="text-[8px] font-black px-2 py-0.5 rounded-full uppercase tracking-widest border bg-neon-blue/10 text-neon-blue border-neon-blue/20">
+                                            TRIBE MEMBER
+                                        </span>
+                                    )}
+                                    {(!isApprovedCreator && !isApprovedArtist && !user.hasJoinedTribe && user.role !== 'developer' && user.role !== 'founder' && user.role !== 'super_admin') && (
+                                        <span className="text-[8px] font-black px-2 py-0.5 rounded-full uppercase tracking-widest border bg-white/5 text-gray-500 border-white/5">
+                                            MEMBER
+                                        </span>
+                                    )}
+                                    <div className="flex items-center gap-1.5 text-[8px] text-gray-500 font-bold uppercase tracking-wider bg-white/5 px-2 py-0.5 rounded-full border border-white/5">
+                                        <Calendar size={8} className="text-yellow-500" />
+                                        Joined {new Date(user.createdAt || Date.now()).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
                                     </div>
                                 </div>
                             </div>
                         </div>
 
                         {/* Navigation Tabs */}
-                        <div className="flex items-center px-4 pt-4 border-b border-white/5 relative z-10 bg-black/20 backdrop-blur-xl">
-                            {tabs.map((tab) => {
-                                const Icon = tab.icon;
-                                const isActive = activeTab === tab.id;
-                                return (
-                                    <button
-                                        key={tab.id}
-                                        onClick={() => setActiveTab(tab.id)}
-                                        className={cn(
-                                            "flex-1 flex flex-col items-center gap-2 py-4 relative group transition-all",
-                                            isActive ? "text-white" : "text-gray-500 hover:text-gray-300"
-                                        )}
-                                    >
-                                        <Icon size={18} className={cn("transition-transform duration-300", isActive && "scale-110")} />
-                                        <span className="text-[10px] font-black uppercase tracking-widest">{tab.label}</span>
-                                        {isActive && (
-                                            <motion.div 
-                                                layoutId="activeTab"
-                                                className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-neon-blue to-neon-pink"
-                                            />
-                                        )}
-                                    </button>
-                                );
-                            })}
+                        <div className="px-4 md:px-6 py-4 border-b border-white/5 relative z-10 bg-black/20 backdrop-blur-xl shrink-0">
+                            <div className="flex p-1 bg-white/5 rounded-2xl border border-white/10">
+                                {tabs.map((tab) => {
+                                    const Icon = tab.icon;
+                                    const isActive = activeTab === tab.id;
+                                    return (
+                                        <button
+                                            key={tab.id}
+                                            onClick={() => setActiveTab(tab.id)}
+                                            className={cn(
+                                                "flex-1 flex flex-col md:flex-row items-center justify-center gap-1 md:gap-2 py-2 md:py-3 rounded-xl transition-all relative z-10",
+                                                isActive ? "text-white shadow-lg" : "text-gray-500 hover:text-gray-300"
+                                            )}
+                                        >
+                                            {isActive && (
+                                                <motion.div 
+                                                    layoutId="activeTabBg"
+                                                    className="absolute inset-0 bg-white/10 rounded-xl"
+                                                />
+                                            )}
+                                            <Icon size={16} className={cn("relative z-10 transition-transform duration-300", isActive && "scale-110")} />
+                                            <span className="relative z-10 text-[8px] md:text-[10px] font-black uppercase tracking-widest">{tab.label}</span>
+                                        </button>
+                                    );
+                                })}
+                            </div>
                         </div>
 
                         {/* Content Area */}
@@ -413,41 +435,41 @@ const ProfilePanel = ({ isOpen, onClose }) => {
                                     animate={{ opacity: 1, y: 0 }}
                                     exit={{ opacity: 0, y: -10 }}
                                     transition={{ duration: 0.2 }}
-                                    className="p-8"
+                                    className="p-4 md:p-8"
                                 >
                                     {activeTab === 'overview' && (
-                                        <div className="space-y-8">
+                                        <div className="space-y-6 md:space-y-8 pb-8 md:pb-0">
                                             {/* Quick Stats/Summary Cards */}
-                                            <div className="grid grid-cols-2 gap-4">
-                                                <div className="p-6 rounded-3xl bg-gradient-to-br from-white/5 to-transparent border border-white/10 group hover:border-neon-blue/30 transition-all cursor-pointer" onClick={() => setActiveTab('tickets')}>
-                                                    <div className="flex items-center justify-between mb-4">
-                                                        <div className="w-10 h-10 rounded-2xl bg-neon-blue/10 flex items-center justify-center text-neon-blue">
-                                                            <Ticket size={20} />
+                                            <div className="grid grid-cols-2 gap-3 md:gap-4">
+                                                <div className="p-4 md:p-6 rounded-[1.5rem] bg-gradient-to-br from-white/5 to-transparent border border-white/10 group hover:border-neon-blue/30 transition-all cursor-pointer" onClick={() => setActiveTab('tickets')}>
+                                                    <div className="flex items-center justify-between mb-3 md:mb-4">
+                                                        <div className="w-8 h-8 md:w-10 md:h-10 rounded-xl md:rounded-2xl bg-neon-blue/10 flex items-center justify-center text-neon-blue">
+                                                            <Ticket size={16} className="md:w-5 md:h-5" />
                                                         </div>
                                                         <ChevronRight size={16} className="text-gray-700 group-hover:text-white transition-all" />
                                                     </div>
-                                                    <p className="text-2xl font-black text-white italic">{userTickets.length}</p>
-                                                    <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-1">Tickets</p>
+                                                    <p className="text-xl md:text-2xl font-black text-white italic">{userTickets.length}</p>
+                                                    <p className="text-[9px] md:text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-1">Tickets</p>
                                                 </div>
-                                                <div className="p-6 rounded-3xl bg-gradient-to-br from-white/5 to-transparent border border-white/10 group hover:border-neon-pink/30 transition-all">
-                                                    <div className="flex items-center justify-between mb-4">
-                                                        <div className="w-10 h-10 rounded-2xl bg-neon-pink/10 flex items-center justify-center text-neon-pink">
-                                                            <Briefcase size={20} />
+                                                <div className="p-4 md:p-6 rounded-[1.5rem] bg-gradient-to-br from-white/5 to-transparent border border-white/10 group hover:border-neon-pink/30 transition-all">
+                                                    <div className="flex items-center justify-between mb-3 md:mb-4">
+                                                        <div className="w-8 h-8 md:w-10 md:h-10 rounded-xl md:rounded-2xl bg-neon-pink/10 flex items-center justify-center text-neon-pink">
+                                                            <Briefcase size={16} className="md:w-5 md:h-5" />
                                                         </div>
                                                         <ChevronRight size={16} className="text-gray-700 group-hover:text-white transition-all" />
                                                     </div>
-                                                    <p className="text-2xl font-black text-white italic">{isCreator ? 'ACTIVE' : 'NONE'}</p>
-                                                    <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-1">Creator Status</p>
+                                                    <p className="text-xl md:text-2xl font-black text-white italic">{isCreator ? 'ACTIVE' : 'NONE'}</p>
+                                                    <p className="text-[9px] md:text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-1">Creator Status</p>
                                                 </div>
-                                                <div className="p-6 rounded-3xl bg-gradient-to-br from-white/5 to-transparent border border-white/10 group hover:border-[#FF6B6B]/30 transition-all cursor-pointer" onClick={() => { navigate('/artistant'); onClose(); }}>
-                                                    <div className="flex items-center justify-between mb-4">
-                                                        <div className="w-10 h-10 rounded-2xl bg-[#FF6B6B]/10 flex items-center justify-center text-[#FF6B6B]">
-                                                            <Mic size={20} />
+                                                <div className="p-4 md:p-6 rounded-[1.5rem] bg-gradient-to-br from-white/5 to-transparent border border-white/10 group hover:border-[#FF6B6B]/30 transition-all cursor-pointer col-span-2 sm:col-span-1" onClick={() => { navigate('/artistant'); onClose(); }}>
+                                                    <div className="flex items-center justify-between mb-3 md:mb-4">
+                                                        <div className="w-8 h-8 md:w-10 md:h-10 rounded-xl md:rounded-2xl bg-[#FF6B6B]/10 flex items-center justify-center text-[#FF6B6B]">
+                                                            <Mic size={16} className="md:w-5 md:h-5" />
                                                         </div>
                                                         <ChevronRight size={16} className="text-gray-700 group-hover:text-white transition-all" />
                                                     </div>
-                                                    <p className="text-2xl font-black text-white italic">{isArtist ? 'VERIFIED' : 'NONE'}</p>
-                                                    <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-1">Artist Status</p>
+                                                    <p className="text-xl md:text-2xl font-black text-white italic">{isArtist ? 'VERIFIED' : 'NONE'}</p>
+                                                    <p className="text-[9px] md:text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-1">Artist Status</p>
                                                 </div>
                                             </div>
 
@@ -709,7 +731,7 @@ const ProfilePanel = ({ isOpen, onClose }) => {
                                                             disabled={!isEditingName || isUpdating}
                                                             value={isEditingName ? newDisplayName : (user.displayName || '')} 
                                                             onChange={(e) => setNewDisplayName(e.target.value)}
-                                                            className="relative w-full h-16 bg-white/5 border border-white/10 rounded-2xl px-6 text-sm font-bold text-white focus:border-neon-blue transition-all disabled:opacity-50 outline-none"
+                                                            className="relative w-full h-14 bg-white/5 border border-white/10 rounded-2xl px-6 text-sm font-bold text-white focus:border-neon-blue transition-all disabled:opacity-50 outline-none"
                                                             placeholder="Member Display Name"
                                                         />
                                                         <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
@@ -748,7 +770,7 @@ const ProfilePanel = ({ isOpen, onClose }) => {
                                                              disabled={!isEditingPhone || isUpdating}
                                                              value={isEditingPhone ? newPhone : (user.phoneNumber || '')} 
                                                              onChange={(e) => setNewPhone(e.target.value)}
-                                                             className="relative w-full h-16 bg-white/5 border border-white/10 rounded-2xl px-6 text-sm font-bold text-white focus:border-neon-blue transition-all disabled:opacity-50 outline-none"
+                                                             className="relative w-full h-14 bg-white/5 border border-white/10 rounded-2xl px-6 text-sm font-bold text-white focus:border-neon-blue transition-all disabled:opacity-50 outline-none"
                                                              placeholder="+91 XXXXX XXXXX"
                                                          />
                                                          <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
@@ -777,7 +799,7 @@ const ProfilePanel = ({ isOpen, onClose }) => {
                                                 {/* Email View */}
                                                 <div className="space-y-3">
                                                     <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest pl-1">Email Address</label>
-                                                    <div className="w-full h-16 bg-white/[0.02] border border-white/5 rounded-2xl px-6 flex items-center justify-between group">
+                                                    <div className="w-full h-14 bg-white/[0.02] border border-white/5 rounded-2xl px-6 flex items-center justify-between group">
                                                         <span className="text-sm font-bold text-gray-500">{user.email}</span>
                                                         <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-gray-700">
                                                             <Mail size={16} />

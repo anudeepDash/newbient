@@ -173,7 +173,7 @@ const ConcertManager = () => {
                                             <LivePreview type="portfolio" categories={portfolioCategories} data={{ ...newPortfolio, image: selectedFile ? URL.createObjectURL(selectedFile) : newPortfolio.image }} />
                                         </motion.div>
                                     ) : (
-                                        <Card className="p-8 md:p-10 bg-zinc-900/40 backdrop-blur-3xl border-white/5 rounded-[2.5rem]">
+                                        <Card className="p-4 md:p-8 bg-zinc-900/40 backdrop-blur-3xl border-white/5 rounded-[2.5rem]">
                                     <div className="flex justify-between items-center mb-10">
                                         <h2 className="text-xl font-black font-heading tracking-tighter uppercase italic text-white flex items-center gap-3">
                                             <Sparkles className="text-neon-purple" size={22} /> {editingId ? 'EDIT' : 'NEW'} RECORD
@@ -250,7 +250,7 @@ const ConcertManager = () => {
                                                         Reset
                                                     </button>
                                                 </div>
-                                                <div className="grid grid-cols-3 gap-6">
+                                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                                     {[
                                                         { label: 'Scale', key: 'scale', min: 1, max: 3, step: 0.01, unit: 'x', format: v => v.toFixed(2) },
                                                         { label: 'X-Pos', key: 'x', min: -100, max: 100, step: 1, unit: '%', format: v => v },
@@ -279,7 +279,7 @@ const ConcertManager = () => {
                                                 className="h-14 bg-black/50 border-white/5 rounded-2xl text-[10px] font-black px-6" />
                                         </div>
 
-                                        <div className="flex gap-4 pt-6 border-t border-white/10">
+                                        <div className="sticky bottom-0 z-50 bg-zinc-900/90 backdrop-blur-xl p-4 md:p-8 -mx-4 md:-mx-8 -mb-4 md:-mb-8 rounded-b-[2.5rem] border-t border-white/10 flex gap-4 mt-8">
                                             <Button type="button" variant="outline" onClick={resetForms} className="h-14 px-8 flex-1 rounded-2xl border-white/10 text-gray-400 font-black uppercase tracking-widest text-[10px]">Abort</Button>
                                             <Button type="submit" disabled={uploading} className="h-14 px-10 flex-[2] bg-neon-purple text-black font-black uppercase tracking-widest rounded-2xl shadow-xl text-[10px] hover:scale-105 active:scale-95 transition-all">
                                                 {uploading ? <Loader className="animate-spin mr-2" size={16} /> : (editingId ? 'UPDATE RECORD' : 'SAVE RECORD')}

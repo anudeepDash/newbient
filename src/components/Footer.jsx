@@ -1,17 +1,20 @@
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useStore } from '../lib/store';
-import { Instagram, Linkedin, Twitter, ArrowUp, Mail, MapPin, ExternalLink } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { Instagram, Linkedin, Twitter, ArrowUp, Mail, MapPin, ExternalLink, ChevronDown } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const Footer = () => {
     const { siteDetails } = useStore();
+    const [navOpen, setNavOpen] = useState(false);
+    const [portalOpen, setPortalOpen] = useState(false);
 
     const scrollToTop = () => {
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
     return (
-        <footer className="bg-black pt-24 pb-12 px-6 md:px-12 relative overflow-hidden">
+        <footer className="bg-black pt-24 pb-32 lg:pb-12 px-6 md:px-12 relative overflow-hidden">
             {/* Background Texture & Light Effects */}
             <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'url("https://www.transparenttextures.com/patterns/carbon-fibre.png")' }} />
             <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
@@ -40,32 +43,44 @@ const Footer = () => {
                             </div>
                         </motion.div>
 
-                        <div className="flex items-center gap-6">
-                            <a href="https://www.instagram.com/newbi.live" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-white transition-all text-[10px] font-black uppercase tracking-[0.3em]">INSTAGRAM</a>
-                            <a href="https://linkedin.com/company/newbi-ent" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-white transition-all text-[10px] font-black uppercase tracking-[0.3em]">LINKEDIN</a>
-                            <a href="mailto:partnership@newbi.live" className="text-gray-500 hover:text-white transition-all text-[10px] font-black uppercase tracking-[0.3em]">EMAIL</a>
+                        <div className="flex flex-col sm:flex-row gap-4 sm:items-center lg:gap-6">
+                            <a href="https://www.instagram.com/newbi.live" target="_blank" rel="noopener noreferrer" className="flex items-center h-12 sm:h-auto text-gray-500 hover:text-white transition-all text-[10px] font-black uppercase tracking-[0.3em]">INSTAGRAM</a>
+                            <a href="https://linkedin.com/company/newbi-ent" target="_blank" rel="noopener noreferrer" className="flex items-center h-12 sm:h-auto text-gray-500 hover:text-white transition-all text-[10px] font-black uppercase tracking-[0.3em]">LINKEDIN</a>
+                            <a href="mailto:partnership@newbi.live" className="flex items-center h-12 sm:h-auto text-gray-500 hover:text-white transition-all text-[10px] font-black uppercase tracking-[0.3em]">EMAIL</a>
                         </div>
                     </div>
 
                     {/* Navigation Columns */}
-                    <div className="lg:col-span-6 grid grid-cols-2 gap-12 lg:justify-end relative">
-                        <div className="space-y-8 lg:text-right">
-                            <h4 className="text-[10px] font-black uppercase tracking-[0.4em] text-white/40">Navigation</h4>
-                            <nav className="flex flex-col gap-6 text-xs font-black text-white uppercase tracking-[0.2em]">
-                                <Link to="/" className="hover:text-neon-green transition-colors">HOME</Link>
-                                <Link to="/community" className="hover:text-neon-green transition-colors">COMMUNITY</Link>
-                                <Link to="/artistant" className="hover:text-neon-pink transition-colors">ARTISTANT</Link>
-                                <Link to="/creator" className="hover:text-neon-green transition-colors">CREATORS</Link>
-                                <Link to="/concertzone" className="hover:text-neon-green transition-colors">CONCERT ZONE</Link>
-                            </nav>
+                    <div className="lg:col-span-6 grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-12 lg:justify-end relative">
+                        <div className="space-y-4 lg:space-y-8 lg:text-right border-b border-white/5 lg:border-none pb-4 lg:pb-0">
+                            <button 
+                                onClick={() => setNavOpen(!navOpen)}
+                                className="w-full flex items-center justify-between lg:block lg:pointer-events-none text-left lg:text-right py-2 lg:py-0 group"
+                            >
+                                <h4 className="text-[10px] font-black uppercase tracking-[0.4em] text-white/40">Navigation</h4>
+                                <ChevronDown size={16} className={`text-white/40 lg:hidden transition-transform duration-300 ${navOpen ? 'rotate-180' : ''}`} />
+                            </button>
+                            <div className={`flex-col gap-6 text-xs font-black text-white uppercase tracking-[0.2em] ${navOpen ? 'flex' : 'hidden lg:flex'} pb-4 lg:pb-0`}>
+                                <Link to="/" className="hover:text-neon-green transition-colors flex items-center lg:justify-end min-h-[44px] lg:min-h-0">HOME</Link>
+                                <Link to="/community" className="hover:text-neon-green transition-colors flex items-center lg:justify-end min-h-[44px] lg:min-h-0">COMMUNITY</Link>
+                                <Link to="/artistant" className="hover:text-neon-pink transition-colors flex items-center lg:justify-end min-h-[44px] lg:min-h-0">ARTISTANT</Link>
+                                <Link to="/creator" className="hover:text-neon-green transition-colors flex items-center lg:justify-end min-h-[44px] lg:min-h-0">CREATORS</Link>
+                                <Link to="/concertzone" className="hover:text-neon-green transition-colors flex items-center lg:justify-end min-h-[44px] lg:min-h-0">CONCERT ZONE</Link>
+                            </div>
                         </div>
 
-                        <div className="space-y-8 lg:text-right">
-                            <h4 className="text-[10px] font-black uppercase tracking-[0.4em] text-white/40">Portal</h4>
-                            <nav className="flex flex-col gap-6 text-xs font-black text-white uppercase tracking-[0.2em]">
-                                <Link to="/contact" className="hover:text-neon-blue transition-colors">CONTACT</Link>
-                                <Link to="/admin" className="hover:text-neon-blue transition-colors">ADMIN</Link>
-                            </nav>
+                        <div className="space-y-4 lg:space-y-8 lg:text-right border-b border-white/5 lg:border-none pb-4 lg:pb-0">
+                            <button 
+                                onClick={() => setPortalOpen(!portalOpen)}
+                                className="w-full flex items-center justify-between lg:block lg:pointer-events-none text-left lg:text-right py-2 lg:py-0 group"
+                            >
+                                <h4 className="text-[10px] font-black uppercase tracking-[0.4em] text-white/40">Portal</h4>
+                                <ChevronDown size={16} className={`text-white/40 lg:hidden transition-transform duration-300 ${portalOpen ? 'rotate-180' : ''}`} />
+                            </button>
+                            <div className={`flex-col gap-6 text-xs font-black text-white uppercase tracking-[0.2em] ${portalOpen ? 'flex' : 'hidden lg:flex'} pb-4 lg:pb-0`}>
+                                <Link to="/contact" className="hover:text-neon-blue transition-colors flex items-center lg:justify-end min-h-[44px] lg:min-h-0">CONTACT</Link>
+                                <Link to="/admin" className="hover:text-neon-blue transition-colors flex items-center lg:justify-end min-h-[44px] lg:min-h-0">ADMIN</Link>
+                            </div>
                             
                             <div className="pt-10 flex lg:justify-end">
                                 <button 
