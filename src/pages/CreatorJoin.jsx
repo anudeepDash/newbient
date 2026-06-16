@@ -522,10 +522,12 @@ const CreatorJoin = () => {
 
                         <form onSubmit={handleSubmit} className="space-y-8">
                             {/* Card 1: Identity & Contact */}
-                            <div className="bg-zinc-950/60 backdrop-blur-3xl border border-white/[0.08] rounded-3xl md:rounded-[3rem] p-6 md:p-10 shadow-[inset_0_1px_1px_rgba(255,255,255,0.15),0_30px_60px_rgba(0,0,0,0.4)] relative overflow-hidden">
-                                <div className="absolute top-0 right-0 w-64 h-64 bg-neon-blue/5 blur-[100px] pointer-events-none" />
+                            <div className="bg-zinc-950/60 backdrop-blur-3xl border border-white/[0.08] rounded-3xl md:rounded-[3rem] p-6 md:p-10 shadow-[inset_0_1px_1px_rgba(255,255,255,0.15),0_30px_60px_rgba(0,0,0,0.4)] relative">
+                                <div className="absolute inset-0 overflow-hidden rounded-3xl md:rounded-[3rem] pointer-events-none">
+                                    <div className="absolute top-0 right-0 w-64 h-64 bg-neon-blue/5 blur-[100px]" />
+                                </div>
                                 
-                                <div className="flex items-center gap-4 mb-8 border-b border-white/10 pb-6">
+                                <div className="relative z-10 flex items-center gap-4 mb-8 border-b border-white/10 pb-6">
                                     <div className="w-12 h-12 bg-neon-blue/10 rounded-xl flex items-center justify-center border border-neon-blue/20">
                                         <User className="text-neon-blue" size={24} />
                                     </div>
@@ -631,9 +633,11 @@ const CreatorJoin = () => {
                             </div>
 
                             {/* Card 2: Content Niche */}
-                            <div className="bg-zinc-950/60 backdrop-blur-3xl border border-white/[0.08] rounded-3xl md:rounded-[3rem] p-6 md:p-10 shadow-[inset_0_1px_1px_rgba(255,255,255,0.15),0_30px_60px_rgba(0,0,0,0.4)] relative overflow-hidden">
-                                <div className="absolute top-0 left-0 w-64 h-64 bg-neon-pink/5 blur-[100px] pointer-events-none" />
-                                <div className="flex items-center gap-4 mb-8 border-b border-white/10 pb-6">
+                            <div className="bg-zinc-950/60 backdrop-blur-3xl border border-white/[0.08] rounded-3xl md:rounded-[3rem] p-6 md:p-10 shadow-[inset_0_1px_1px_rgba(255,255,255,0.15),0_30px_60px_rgba(0,0,0,0.4)] relative z-20">
+                                <div className="absolute inset-0 overflow-hidden rounded-3xl md:rounded-[3rem] pointer-events-none">
+                                    <div className="absolute top-0 left-0 w-64 h-64 bg-neon-pink/5 blur-[100px]" />
+                                </div>
+                                <div className="relative z-10 flex items-center gap-4 mb-8 border-b border-white/10 pb-6">
                                     <div className="w-12 h-12 bg-neon-pink/10 rounded-xl flex items-center justify-center border border-neon-pink/20">
                                         <Tag className="text-neon-pink" size={24} />
                                     </div>
@@ -666,9 +670,11 @@ const CreatorJoin = () => {
                             </div>
 
                             {/* Card 3: Social Links */}
-                            <div className="bg-zinc-950/60 backdrop-blur-3xl border border-white/[0.08] rounded-3xl md:rounded-[3rem] p-6 md:p-10 shadow-[inset_0_1px_1px_rgba(255,255,255,0.15),0_30px_60px_rgba(0,0,0,0.4)] relative overflow-hidden">
-                                <div className="absolute bottom-0 right-0 w-64 h-64 bg-neon-blue/5 blur-[100px] pointer-events-none" />
-                                <div className="flex items-center gap-4 mb-8 border-b border-white/10 pb-6">
+                            <div className="bg-zinc-950/60 backdrop-blur-3xl border border-white/[0.08] rounded-3xl md:rounded-[3rem] p-6 md:p-10 shadow-[inset_0_1px_1px_rgba(255,255,255,0.15),0_30px_60px_rgba(0,0,0,0.4)] relative z-10">
+                                <div className="absolute inset-0 overflow-hidden rounded-3xl md:rounded-[3rem] pointer-events-none">
+                                    <div className="absolute bottom-0 right-0 w-64 h-64 bg-neon-blue/5 blur-[100px]" />
+                                </div>
+                                <div className="relative z-10 flex items-center gap-4 mb-8 border-b border-white/10 pb-6">
                                     <div className="w-12 h-12 bg-white/5 rounded-xl flex items-center justify-center border border-white/10">
                                         <Globe className="text-white" size={24} />
                                     </div>
@@ -732,8 +738,8 @@ const CreatorJoin = () => {
                             </div>
 
                             {/* Card 4: Collaboration Details */}
-                            <div className="bg-zinc-950/60 backdrop-blur-3xl border border-white/[0.08] rounded-3xl md:rounded-[3rem] p-6 md:p-10 shadow-[inset_0_1px_1px_rgba(255,255,255,0.15),0_30px_60px_rgba(0,0,0,0.4)] relative overflow-hidden">
-                                <div className="flex items-center gap-4 mb-8 border-b border-white/10 pb-6">
+                            <div className="bg-zinc-950/60 backdrop-blur-3xl border border-white/[0.08] rounded-3xl md:rounded-[3rem] p-6 md:p-10 shadow-[inset_0_1px_1px_rgba(255,255,255,0.15),0_30px_60px_rgba(0,0,0,0.4)] relative">
+                                <div className="relative z-10 flex items-center gap-4 mb-8 border-b border-white/10 pb-6">
                                     <div className="w-12 h-12 bg-neon-green/10 rounded-xl flex items-center justify-center border border-neon-green/20">
                                         <FileText className="text-neon-green" size={24} />
                                     </div>
