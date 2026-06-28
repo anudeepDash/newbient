@@ -2046,6 +2046,7 @@ const Proposal = () => {
                                             <div className="w-20 h-1.5 bg-neon-green" />
                                             <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">
                                                 SUPPORTING INSTRUMENTS & DOCUMENTATION
+                                            </p>
                                         </div>
                                         
                                         <div className="flex flex-col gap-10 mt-12 pb-10">
@@ -2107,11 +2108,10 @@ const Proposal = () => {
                                                     </div>
                                                 );
                                             })}
-                                        </div>}
+                                        </div>
                                         </div>
                                     </div>
-                                </div>
-                            )}
+                                )}
                             </div>
                         </div>
                         <div className="mt-auto pt-8 pb-10 border-t border-gray-100 flex justify-between items-center text-[9px] font-black text-gray-400 uppercase tracking-[0.4em]">
