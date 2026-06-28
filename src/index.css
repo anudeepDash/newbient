@@ -49,6 +49,58 @@
     text-shadow: 0 0 4px rgba(255, 79, 139, 0.6);
   }
 
+  /* Campus — Apple Education Scribble Aesthetic */
+  @keyframes campus-bob {
+    0%, 100% { transform: translateY(0px) rotate(0deg); }
+    50% { transform: translateY(-12px) rotate(2deg); }
+  }
+  @keyframes campus-bob-alt {
+    0%, 100% { transform: translateY(0px) rotate(0deg); }
+    50% { transform: translateY(-10px) rotate(-3deg); }
+  }
+  @keyframes scribble-draw {
+    to { stroke-dashoffset: 0; }
+  }
+  @keyframes pulse-ring {
+    0% { transform: scale(0); opacity: 1; }
+    80% { transform: scale(1.4); opacity: 0; }
+    100% { transform: scale(1.4); opacity: 0; }
+  }
+  @keyframes shimmer-slide {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+  }
+  @keyframes counter-fill {
+    from { stroke-dashoffset: 283; }
+  }
+  .campus-bob { animation: campus-bob 4s ease-in-out infinite; }
+  .campus-bob-alt { animation: campus-bob-alt 5s ease-in-out infinite; }
+  .campus-bob-delay-1 { animation-delay: -1s; }
+  .campus-bob-delay-2 { animation-delay: -2s; }
+  .campus-bob-delay-3 { animation-delay: -3s; }
+  .scribble-underline {
+    stroke-dasharray: 300;
+    stroke-dashoffset: 300;
+    animation: scribble-draw 1.5s ease forwards;
+  }
+  .campus-card {
+    position: relative;
+    overflow: hidden;
+  }
+  .campus-card::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.03) 45%, transparent 50%);
+    animation: shimmer-slide 6s ease-in-out infinite;
+    pointer-events: none;
+  }
+  .progress-ring-circle {
+    transition: stroke-dashoffset 1s ease-out;
+    transform: rotate(-90deg);
+    transform-origin: 50% 50%;
+  }
+
   /* Touch Utilities */
   .touch-target {
     min-height: 44px;

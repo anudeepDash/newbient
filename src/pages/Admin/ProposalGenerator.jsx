@@ -62,6 +62,7 @@ import { cn } from '../../lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import AdminDashboardLink from '../../components/admin/AdminDashboardLink';
 import StudioRichEditor, { MultiPageRichEditor } from '../../components/ui/StudioRichEditor';
+import CompanyProfileManager from '../../components/admin/CompanyProfileManager';
 import { generateFullDocument, reviseDocument, refineFieldContent } from '../../lib/ai';
 import DocumentSeal from '../../components/ui/DocumentSeal';
 

@@ -30,6 +30,7 @@ import ListChecks from 'lucide-react/dist/esm/icons/list-checks';
 import Scale from 'lucide-react/dist/esm/icons/scale';
 import FolderOpen from 'lucide-react/dist/esm/icons/folder-open';
 import Briefcase from 'lucide-react/dist/esm/icons/briefcase';
+import GraduationCap from 'lucide-react/dist/esm/icons/graduation-cap';
 import ChevronLeft from 'lucide-react/dist/esm/icons/chevron-left';
 import ChevronRight from 'lucide-react/dist/esm/icons/chevron-right';
 import Menu from 'lucide-react/dist/esm/icons/menu';
@@ -242,7 +243,7 @@ const BootstrapAlert = ({ onClaim }) => (
 const Dashboard = () => {
     const { 
         invoices, spends, otherIncomes, proposals, agreements, concerts, portfolio, announcements, user, 
-        artists, clientRequests, upcomingEvents, ticketOrders, documents,
+        artists, clientRequests, upcomingEvents, ticketOrders, documents, genDocuments,
         checkUserRole, maintenanceState, archivePastEvents 
     } = useStore();
     const cards = maintenanceState?.features || {};
@@ -544,6 +545,7 @@ const Dashboard = () => {
                             )}
                             <ControlCard title="Proposal Vault" desc="Strategic quotations and client dossiers." icon={FileSpreadsheet} color="neon-green" link="/admin/proposals" count={proposals?.length || 0} isHidden={cards.docs} />
                             <ControlCard title="Contracts" desc="Legal MOU and contract generator." icon={Scale} color="neon-purple" link="/admin/agreements" count={agreements?.length || 0} isHidden={cards.docs} />
+                            <ControlCard title="Gen. Documents" desc="Custom PDF generator and records." icon={FolderOpen} color="neon-green" link="/admin/gen-documents" count={genDocuments?.length || 0} isHidden={cards.docs} />
                             <ControlCard title="Document Hub" desc="Host Google Docs, Sheets, Drive files and PDFs." icon={FolderOpen} color="neon-blue" link="/admin/documents" count={documents?.length || 0} isNew />
                         </DashboardSection>
                     )}
@@ -565,6 +567,7 @@ const Dashboard = () => {
                     {user?.role !== 'scanner' && user?.role !== 'gate_manager' && user?.role !== 'blog_writer' && (
                         <DashboardSection title="Personnel & Community Ops" gradient="from-neon-blue via-neon-green to-white" icon={<Users size={20} />}>
                             <ControlCard title="Community Hub" desc="Volunteer coordination and gig ops." icon={Users} color="neon-green" link="/admin/volunteer-gigs" isHidden={cards.community} />
+                            <ControlCard title="Campus Connect" desc="Student ambassadors and campus brand reps." icon={GraduationCap} color="neon-blue" link="/admin/campus" isNew />
                             <ControlCard title="Creator Studio" desc="Influencer validation and mission management." icon={Star} color="neon-blue" link="/admin/creators" isHidden={cards.influencer} />
                             <ControlCard title="Giveaways" desc="Viral engagement and reward distribution." icon={Gift} color="purple-500" link="/admin/giveaways" isNew isHidden={cards.giveaways} />
                             <ControlCard title="Artistant" desc="Artist roster and client onboarding hub." logo={artistantLogo} color="neon-blue" link="/admin/artistant" isNew isHidden={cards.artists} />

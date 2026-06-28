@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import FileText from 'lucide-react/dist/esm/icons/file-text';
 import Plus from 'lucide-react/dist/esm/icons/plus';
 import Search from 'lucide-react/dist/esm/icons/search';
@@ -19,6 +19,7 @@ import Tag from 'lucide-react/dist/esm/icons/tag';
 import CheckCircle from 'lucide-react/dist/esm/icons/check-circle';
 import ShieldCheck from 'lucide-react/dist/esm/icons/shield-check';
 import FileSpreadsheet from 'lucide-react/dist/esm/icons/file-spreadsheet';
+import FileBadge from 'lucide-react/dist/esm/icons/file-badge';
 import { useStore } from '../../lib/store';
 import { Card } from '../../components/ui/Card';
 import { Input } from '../../components/ui/Input';
@@ -259,6 +260,7 @@ const DocumentHub = () => {
         ...(['developer', 'founder'].includes(user?.role) ? [{ name: 'Invoices', path: '/admin/invoices', icon: FileText, color: 'text-neon-blue' }] : []),
         { name: 'Proposals', path: '/admin/proposals', icon: FileSpreadsheet, color: 'text-neon-green' },
         { name: 'Contracts', path: '/admin/agreements', icon: ShieldCheck, color: 'text-neon-purple' },
+        { name: 'Gen. Documents', path: '/admin/gen-documents', icon: FileBadge, color: 'text-neon-green' },
         { name: 'Documents', path: '/admin/documents', icon: FolderOpen, color: 'text-neon-blue' },
     ];
 

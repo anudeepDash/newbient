@@ -300,7 +300,13 @@ export const useStore = create((set, get) => ({
     volunteerGigs: [], // New state
     proposals: [], // New Proposal Generator state
     agreements: [], // New Agreement Generator state
+    genDocuments: [], // Generated Document PDFs state
     creators: [], // Influencer Marketing
+    campusProfiles: [], // Role-based campus hub
+    campusActivations: [], // Gamified events
+    campusActivationEntries: [],
+    campusWallPosts: [], // Spotted & Gigs micro-bulletin feed
+    campusGuestlistPasses: [], // Dynamic QR guestlist passes
     campaigns: [], // Influencer Marketing
     giveaways: [], // Giveaway Campaigns
     giveawayEntries: [], // Giveaway Entries
@@ -416,6 +422,8 @@ export const useStore = create((set, get) => ({
         const unsubGuestlist = sub('guestlists', 'guestlists');
         const unsubGiveaways = sub('giveaways', 'giveaways');
         const unsubPosts = sub('posts', 'posts');
+        const unsubWallPosts = sub('campus_wall_posts', 'campusWallPosts');
+        const unsubGuestlistPasses = sub('campus_guestlist_passes', 'campusGuestlistPasses');
 
         // Admin-only subscriptions (only run if isAdmin is true)
         let unsub4 = null;
@@ -424,6 +432,9 @@ export const useStore = create((set, get) => ({
         let unsubFinancePayees = null;
         let unsubMessages = null;
         let unsubCreators = null;
+        let unsubCampus = null;
+        let unsubCampusAct = null;
+        let unsubCampusEntries = null;
         let unsubCampaigns = null;
         let unsubProposals = null;
         let unsubAgreements = null;
@@ -435,6 +446,7 @@ export const useStore = create((set, get) => ({
         let unsubTicketOrders = null;
         let unsubCoupons = null;
         let unsubDocuments = null;
+        let unsubGenDocuments = null;
 
         if (isAdmin) {
             unsub4 = sub('invoices', 'invoices');
@@ -443,6 +455,9 @@ export const useStore = create((set, get) => ({
             unsubFinancePayees = sub('finance_payees', 'financePayees');
             unsubMessages = sub('messages', 'messages');
             unsubCreators = sub('creators', 'creators');
+            unsubCampus = sub('campus_profiles', 'campusProfiles');
+            unsubCampusAct = sub('campus_activations', 'campusActivations');
+            unsubCampusEntries = sub('campus_activation_entries', 'campusActivationEntries');
             unsubCampaigns = sub('campaigns', 'campaigns');
             unsubProposals = sub('proposals', 'proposals');
             unsubAgreements = sub('agreements', 'agreements');
@@ -454,6 +469,7 @@ export const useStore = create((set, get) => ({
             unsubTicketOrders = sub('ticket_orders', 'ticketOrders');
             unsubCoupons = sub('coupons', 'coupons');
             unsubDocuments = sub('documents', 'documents');
+            unsubGenDocuments = sub('gen_documents', 'genDocuments');
         }
 
         // Site Settings Subscription (Single Doc)
@@ -525,7 +541,7 @@ export const useStore = create((set, get) => ({
         return () => {
             clearTimeout(loadingTimeout);
             unsub1(); unsub2(); unsub3(); unsub5(); unsub7(); unsub8(); unsub9(); unsub10(); unsub11(); unsub12(); unsubCategory(); unsubGuestlist(); unsubGiveaways();
-            unsubPosts(); 
+            unsubPosts(); unsubWallPosts(); unsubGuestlistPasses();
             unsubAI();
 
             if (unsub4) unsub4();
@@ -534,6 +550,9 @@ export const useStore = create((set, get) => ({
             if (unsubFinancePayees) unsubFinancePayees();
             if (unsubMessages) unsubMessages();
             if (unsubCreators) unsubCreators();
+            if (unsubCampus) unsubCampus();
+            if (unsubCampusAct) unsubCampusAct();
+            if (unsubCampusEntries) unsubCampusEntries();
             if (unsubCampaigns) unsubCampaigns();
             if (unsubProposals) unsubProposals();
             if (unsubAgreements) unsubAgreements();
@@ -545,6 +564,7 @@ export const useStore = create((set, get) => ({
             if (unsubTicketOrders) unsubTicketOrders();
             if (unsubCoupons) unsubCoupons();
             if (unsubDocuments) unsubDocuments();
+            if (unsubGenDocuments) unsubGenDocuments();
         };
     },
 
@@ -911,8 +931,13 @@ export const useStore = create((set, get) => ({
     deleteCategory: async (id) => {
         await deleteDoc(doc(db, 'portfolio_categories', id));
     },
-
+    
     // Site Settings
+    updateSiteSettings: async (updates) => {
+        await updateDoc(doc(db, 'site_settings', 'general'), updates);
+    },
+
+    // Utilities Settings
     toggleUpcomingSectionVisibility: async (currentValue) => {
         await setDoc(doc(db, 'site_settings', 'general'), { showUpcomingEvents: !currentValue }, { merge: true });
     },
@@ -1250,6 +1275,49 @@ export const useStore = create((set, get) => ({
     },
     deleteProposal: async (id) => {
         await deleteDoc(doc(db, 'proposals', id));
+    },
+
+    // Generated Document PDFs
+    addGenDocument: async (genDoc) => {
+        const user = get().user;
+        const deepClean = (obj) => {
+            if (Array.isArray(obj)) return obj.map(deepClean);
+            if (obj !== null && typeof obj === 'object' && !(obj instanceof Date)) {
+                return Object.entries(obj).reduce((acc, [k, v]) => {
+                    if (v !== undefined) acc[k] = deepClean(v);
+                    return acc;
+                }, {});
+            }
+            return obj;
+        };
+        const cleaned = deepClean({
+            ...genDoc,
+            createdAt: new Date().toISOString(),
+            createdBy: user?.uid || null,
+            createdByEmail: user?.email || null
+        });
+        delete cleaned.id;
+        const docRef = doc(collection(db, 'gen_documents'));
+        await setDoc(docRef, cleaned);
+        return docRef.id;
+    },
+    updateGenDocument: async (id, updates) => {
+        const deepClean = (obj) => {
+            if (Array.isArray(obj)) return obj.map(deepClean);
+            if (obj !== null && typeof obj === 'object' && !(obj instanceof Date)) {
+                return Object.entries(obj).reduce((acc, [k, v]) => {
+                    if (v !== undefined) acc[k] = deepClean(v);
+                    return acc;
+                }, {});
+            }
+            return obj;
+        };
+        const cleaned = deepClean({ ...updates });
+        delete cleaned.id;
+        await updateDoc(doc(db, 'gen_documents', id), cleaned);
+    },
+    deleteGenDocument: async (id) => {
+        await deleteDoc(doc(db, 'gen_documents', id));
     },
     duplicateProposal: async (id) => {
         const { proposals, addProposal } = get();
@@ -1638,6 +1706,95 @@ export const useStore = create((set, get) => ({
     },
     deleteMessage: async (id) => {
         await deleteDoc(doc(db, 'messages', id));
+    },
+
+    // Campus Profiles
+    addCampusProfile: async (profile) => {
+        const namePart = (profile.fullName || 'CAMPUS').split(' ')[0].toUpperCase().replace(/[^A-Z0-9]/g, '');
+        const randomPart = Math.random().toString(36).substring(2, 6).toUpperCase();
+        const referralCode = `CAMPUS-${namePart}-${randomPart}`;
+
+        const finalProfile = await processAndUploadBase64Fields({
+            ...profile,
+            referralCode,
+            referralsCount: 0,
+            campusPoints: 0,
+            redeemedPerks: [],
+        }, `campus/${profile.uid}`);
+        await setDoc(doc(db, 'campus_profiles', profile.uid), finalProfile);
+    },
+    redeemCampusPerk: async (uid, perk, cost) => {
+        const profileRef = doc(db, 'campus_profiles', uid);
+        await updateDoc(profileRef, {
+            campusPoints: increment(-cost),
+            redeemedPerks: arrayUnion({ perkId: perk.id, title: perk.title, cost, redeemedAt: new Date().toISOString() })
+        });
+    },
+    updateCampusProfile: async (uid, data) => {
+        const finalData = await processAndUploadBase64Fields(data, `campus/${uid}`);
+        await updateDoc(doc(db, 'campus_profiles', uid), finalData);
+    },
+    deleteCampusProfile: async (uid) => {
+        await deleteDoc(doc(db, 'campus_profiles', uid));
+    },
+
+    // Campus Activations
+    addCampusActivation: async (activation) => {
+        const finalActivation = await processAndUploadBase64Fields({
+            ...activation,
+            createdAt: serverTimestamp()
+        }, `campus_activations/${Date.now()}`);
+        await addDoc(collection(db, 'campus_activations'), finalActivation);
+    },
+    updateCampusActivation: async (id, data) => {
+        const finalData = await processAndUploadBase64Fields(data, `campus_activations/${id}`);
+        await updateDoc(doc(db, 'campus_activations', id), finalData);
+    },
+    deleteCampusActivation: async (id) => {
+        await deleteDoc(doc(db, 'campus_activations', id));
+    },
+    
+    // Campus Activation Entries (Gamification Tracking)
+    joinCampusActivation: async (campaignId, userId, userData) => {
+        const entryId = `${campaignId}_${userId}`;
+        await setDoc(doc(db, 'campus_activation_entries', entryId), {
+            campaignId,
+            userId,
+            ...userData,
+            points: 0,
+            completedTasks: [],
+            joinedAt: serverTimestamp()
+        });
+    },
+    completeActivationTask: async (entryId, taskId, points) => {
+        const entryRef = doc(db, 'campus_activation_entries', entryId);
+        await updateDoc(entryRef, {
+            completedTasks: arrayUnion(taskId),
+            points: increment(points)
+        });
+    },
+
+    // Campus Wall Posts (Spotted & Gigs)
+    addCampusWallPost: async (post) => {
+        await addDoc(collection(db, 'campus_wall_posts'), {
+            ...post,
+            createdAt: serverTimestamp()
+        });
+    },
+    deleteCampusWallPost: async (id) => {
+        await deleteDoc(doc(db, 'campus_wall_posts', id));
+    },
+
+    // Campus Guestlist Passes (Dynamic QR)
+    generateGuestlistPass: async (eventId, userId, userData) => {
+        const passId = `${eventId}_${userId}`;
+        await setDoc(doc(db, 'campus_guestlist_passes', passId), {
+            eventId,
+            userId,
+            ...userData,
+            claimedAt: serverTimestamp(),
+            status: 'active'
+        });
     },
 
     // Creators / Influencers

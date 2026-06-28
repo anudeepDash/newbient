@@ -14,6 +14,8 @@ import ConcertZone from './pages/ConcertZone';
 import Contact from './pages/Contact';
 import Invoice from './pages/Invoice';
 import Dashboard from './pages/Admin/Dashboard';
+import CampusActivationBuilder from './pages/Admin/CampusActivationBuilder';
+import CampusActivationPage from './pages/CampusActivationPage';
 const InvoiceGenerator = lazy(() => import('./pages/Admin/InvoiceGenerator'));
 const InvoiceManagement = lazy(() => import('./pages/Admin/InvoiceManagement'));
 const FinanceDashboard = lazy(() => import('./pages/Admin/FinanceDashboard'));
@@ -28,6 +30,8 @@ const ClientRequestManager = lazy(() => import('./pages/Admin/ClientRequestManag
 const ProposalManagement = lazy(() => import('./pages/Admin/ProposalManagement'));
 const AIStudio = lazy(() => import('./pages/Admin/AIStudio'));
 const ProposalGenerator = lazy(() => import('./pages/Admin/ProposalGenerator'));
+const DocumentPDFGenerator = lazy(() => import('./pages/Admin/DocumentPDFGenerator'));
+const DocumentPDFManagement = lazy(() => import('./pages/Admin/DocumentPDFManagement'));
 const AgreementGenerator = lazy(() => import('./pages/Admin/AgreementGenerator'));
 const Proposal = lazy(() => import('./pages/Proposal'));
 const Agreement = lazy(() => import('./pages/Agreement'));
@@ -72,6 +76,9 @@ const PayeeRegistration = lazy(() => import('./pages/PayeeRegistration'));
 const VerifyPayout = lazy(() => import('./pages/VerifyPayout'));
 const DocumentHub = lazy(() => import('./pages/Admin/DocumentHub'));
 const DocumentViewer = lazy(() => import('./pages/DocumentViewer'));
+const CampusConnect = lazy(() => import('./pages/CampusConnect'));
+
+const CampusManager = lazy(() => import('./pages/Admin/CampusManager'));
 
 
 // Guards & Components
@@ -133,6 +140,8 @@ function AppContent() {
             <Route path="proposal/:id" element={<MaintenanceGuard isPage featureId="docs"><Proposal /></MaintenanceGuard>} />
             <Route path="agreement/:id" element={<MaintenanceGuard isPage featureId="docs"><Agreement /></MaintenanceGuard>} />
             <Route path="community" element={<MaintenanceGuard isPage featureId="community"><CommunityJoin /></MaintenanceGuard>} />
+            <Route path="campus" element={<MaintenanceGuard isPage featureId="campus"><CampusConnect /></MaintenanceGuard>} />
+            <Route path="campus/activation/:slug" element={<MaintenanceGuard isPage featureId="campus"><CampusActivationPage /></MaintenanceGuard>} />
             <Route path="creator" element={<MaintenanceGuard isPage featureId="influencer_public"><CreatorLanding /></MaintenanceGuard>} />
             <Route path="creator/join" element={<MaintenanceGuard isPage featureId="influencer_public"><CreatorJoin /></MaintenanceGuard>} />
             <Route path="campaigns" element={<MaintenanceGuard isPage featureId="influencer_public"><LiveCampaigns /></MaintenanceGuard>} />
@@ -171,6 +180,10 @@ function AppContent() {
             <Route path="admin/agreements" element={<AdminGuard><MaintenanceGuard featureId="docs"><AgreementManagement /></MaintenanceGuard></AdminGuard>} />
             <Route path="admin/agreements/new" element={<AdminGuard><MaintenanceGuard featureId="docs"><AgreementGenerator /></MaintenanceGuard></AdminGuard>} />
             <Route path="admin/agreements/edit/:id" element={<AdminGuard><MaintenanceGuard featureId="docs"><AgreementGenerator /></MaintenanceGuard></AdminGuard>} />
+            
+            <Route path="admin/gen-documents" element={<AdminGuard><MaintenanceGuard featureId="docs"><DocumentPDFManagement /></MaintenanceGuard></AdminGuard>} />
+            <Route path="admin/create-gen-document" element={<AdminGuard><MaintenanceGuard featureId="docs"><DocumentPDFGenerator /></MaintenanceGuard></AdminGuard>} />
+            <Route path="admin/edit-gen-document/:id" element={<AdminGuard><MaintenanceGuard featureId="docs"><DocumentPDFGenerator /></MaintenanceGuard></AdminGuard>} />
             <Route path="admin/ai-studio" element={<AdminGuard><MaintenanceGuard featureId="docs"><AIStudio /></MaintenanceGuard></AdminGuard>} />
 
             <Route path="admin/forms" element={<AdminGuard><MaintenanceGuard featureId="forms_public"><FormManager /></MaintenanceGuard></AdminGuard>} />
@@ -182,6 +195,9 @@ function AppContent() {
             <Route path="admin/volunteer-gigs" element={<AdminGuard><MaintenanceGuard featureId="community"><VolunteerGigManager /></MaintenanceGuard></AdminGuard>} />
             <Route path="admin/guestlists" element={<AdminGuard><MaintenanceGuard featureId="guestlists"><GuestlistManager /></MaintenanceGuard></AdminGuard>} />
             <Route path="admin/upcoming-events" element={<AdminGuard><MaintenanceGuard featureId="upcoming_events"><UpcomingEventsManager /></MaintenanceGuard></AdminGuard>} />
+            <Route path="admin/campus" element={<AdminGuard><MaintenanceGuard featureId="campus"><CampusManager /></MaintenanceGuard></AdminGuard>} />
+            <Route path="admin/campus/activation/new" element={<AdminGuard><MaintenanceGuard featureId="campus"><CampusActivationBuilder /></MaintenanceGuard></AdminGuard>} />
+            <Route path="admin/campus/activation/edit/:id" element={<AdminGuard><MaintenanceGuard featureId="campus"><CampusActivationBuilder /></MaintenanceGuard></AdminGuard>} />
             <Route path="admin/creators" element={<AdminGuard><MaintenanceGuard featureId="influencer"><CreatorManager /></MaintenanceGuard></AdminGuard>} />
             <Route path="admin/creators/leaderboard" element={<AdminGuard><MaintenanceGuard featureId="influencer"><CreatorManager showLeaderboardOnly={true} /></MaintenanceGuard></AdminGuard>} />
             <Route path="admin/creators/:id" element={<AdminGuard><MaintenanceGuard featureId="influencer"><CreatorManager /></MaintenanceGuard></AdminGuard>} />
