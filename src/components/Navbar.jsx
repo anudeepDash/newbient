@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, Zap, Star, Users, LogOut, Settings, Home, Music, Image as ImageIcon, User as UserIcon, PlusCircle, LayoutGrid, Mic2, Search, ChevronRight } from 'lucide-react';
+import { Menu, X, Zap, Star, Users, LogOut, Settings, Home, Music, Image as ImageIcon, User as UserIcon, PlusCircle, LayoutGrid, Mic2, Search, ChevronRight, GraduationCap } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../lib/utils';
 import NotificationBell from './NotificationBell';
@@ -19,6 +19,7 @@ const Navbar = () => {
         { name: 'HOME', path: '/', icon: Home },
         { name: 'ARTISTANT', path: '/artistant', icon: Mic2 },
         { name: 'COMMUNITY', path: '/community', featureId: 'community', icon: Users },
+        { name: 'CAMPUS', path: '/campus', featureId: 'campus', icon: GraduationCap },
         { name: 'CREATOR', path: '/creator', matchPaths: ['/creator-dashboard', '/creator'], featureId: 'influencer', icon: Zap },
         { name: 'CONCERT ZONE', path: '/concertzone', featureId: 'concerts', icon: Music },
         { name: 'CONTACT', path: '/contact', featureId: 'contact', icon: LayoutGrid },
@@ -29,7 +30,7 @@ const Navbar = () => {
     const mobilePrimaryLinks = [
         { name: 'HOME', path: '/', icon: Home },
         { name: 'ARTISTANT', path: '/artistant', icon: Mic2 },
-        { name: 'COMMUNITY', path: '/community', featureId: 'community', icon: Users },
+        { name: 'CAMPUS', path: '/campus', featureId: 'campus', icon: GraduationCap },
         { name: 'CREATOR', path: '/creator', matchPaths: ['/creator-dashboard', '/creator'], featureId: 'influencer', icon: Zap },
         { name: 'MORE', action: () => setIsOpen(true), icon: Menu },
     ];

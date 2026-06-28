@@ -14,6 +14,7 @@ const Layout = () => {
     // Identify document editors and viewers to hide global navigation
     const isSpecialPage = 
         location.pathname === '/creator' ||
+        location.pathname.startsWith('/campus') ||
         location.pathname.startsWith('/invoice/') || 
         location.pathname.startsWith('/proposal/') ||
         location.pathname.startsWith('/artistant') ||
