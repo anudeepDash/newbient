@@ -3537,9 +3537,40 @@ const ProposalGenerator = () => {
                                                                 const uniqueId = Math.random().toString(36).substring(2, 9);
                                                                 const cleanName = file.name.replace(/[^a-zA-Z0-9.]/g, '_');
                                                                 const storagePath = `proposals/attachments/${uniqueId}_${cleanName}`;
-                                                                const storageRef = ref(storage, storagePath);
-                                                                await uploadBytes(storageRef, file);
-                                                                const downloadUrl = await getDownloadURL(storageRef);
+                                                                
+                                                                let downloadUrl = '';
+                                                                
+                                                                try {
+                                                                    const storageRef = ref(storage, storagePath);
+                                                                    const uploadPromise = uploadBytes(storageRef, file);
+                                                                    const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('Firebase upload timed out')), 15000));
+                                                                    await Promise.race([uploadPromise, timeoutPromise]);
+                                                                    downloadUrl = await getDownloadURL(storageRef);
+                                                                } catch (firebaseErr) {
+                                                                    console.warn("Firebase upload failed, attempting Cloudinary fallback...", firebaseErr);
+                                                                    const preset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET || "maw1e4ud";
+                                                                    const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || "dgtalrz4n";
+                                                                    const data = new FormData();
+                                                                    data.append("file", file);
+                                                                    data.append("upload_preset", preset);
+                                                                    data.append("cloud_name", cloudName);
+
+                                                                    let resourceType = "raw";
+                                                                    const mimeType = file.type || '';
+                                                                    if (mimeType.startsWith("image/")) resourceType = "image";
+                                                                    else if (mimeType.startsWith("video/") || mimeType.startsWith("audio/")) resourceType = "video";
+
+                                                                    const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/${resourceType}/upload`, { 
+                                                                        method: "POST", 
+                                                                        body: data 
+                                                                    });
+                                                                    if (!res.ok) {
+                                                                        const errData = await res.json().catch(() => ({}));
+                                                                        throw new Error(errData.error?.message || "Cloudinary fallback also failed");
+                                                                    }
+                                                                    const uploadedFile = await res.json();
+                                                                    downloadUrl = uploadedFile.secure_url;
+                                                                }
                                                                 
                                                                 const ext = file.name.split('.').pop()?.toLowerCase();
                                                                 let fileType = 'other';
@@ -3560,9 +3591,11 @@ const ProposalGenerator = () => {
                                                                 }));
                                                                 addToast('Attachment uploaded successfully', 'success');
                                                             } catch (err) {
+                                                                console.error("Upload error:", err);
                                                                 addToast(`Upload failed: ${err.message}`, 'error');
                                                             } finally {
                                                                 setIsUploadingFile(false);
+                                                                if (e.target) e.target.value = '';
                                                             }
                                                         }}
                                                     />
