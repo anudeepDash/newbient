@@ -1568,12 +1568,35 @@ const Proposal = () => {
                                                 </p>
                                             </div>
                                             
-                                            <div className="grid grid-cols-2 gap-8 mt-12">
+                                            <div className="flex flex-col gap-10 mt-12 pb-10">
                                                 {(page.attachments || []).map((attachment, idx) => {
                                                     const isSpreadsheet = attachment.fileType === 'spreadsheet';
                                                     const isPdf = attachment.fileType === 'pdf';
+                                                    const isImage = attachment.fileType === 'image';
                                                     const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(attachment.url)}`;
                                                     
+                                                    if (isImage) {
+                                                        return (
+                                                            <div key={idx} className="w-full relative rounded-2xl overflow-hidden border border-gray-200">
+                                                                <img src={attachment.url} alt={attachment.name} className="w-full h-auto object-contain" />
+                                                                <div className="absolute top-4 left-4 bg-black/80 backdrop-blur-md px-4 py-2 rounded-full text-white text-[10px] font-black uppercase tracking-wider">
+                                                                    {attachment.name}
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    }
+                                                    
+                                                    if (isPdf) {
+                                                        return (
+                                                            <div key={idx} className="w-full h-[600px] relative rounded-2xl overflow-hidden border border-gray-200">
+                                                                <iframe src={attachment.url} title={attachment.name} className="w-full h-full border-none bg-gray-50" />
+                                                                <div className="absolute top-4 left-4 bg-black/80 backdrop-blur-md px-4 py-2 rounded-full text-white text-[10px] font-black uppercase tracking-wider pointer-events-none">
+                                                                    {attachment.name}
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    }
+
                                                     return (
                                                         <div key={idx} className="p-6 border border-gray-200 rounded-[2rem] flex flex-col justify-between h-44 relative bg-gray-50/50">
                                                             <div className="flex items-start justify-between gap-4">
@@ -1585,14 +1608,6 @@ const Proposal = () => {
                                                                         {attachment.type === 'file' ? 'Uploaded Storage File' : 'Linked URL'}
                                                                     </p>
                                                                 </div>
-                                                                <span className={cn(
-                                                                    "text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border shrink-0",
-                                                                    isSpreadsheet && "bg-[#107C41]/10 border-[#107C41]/20 text-[#107C41]",
-                                                                    isPdf && "bg-red-500/10 border-red-500/20 text-red-500",
-                                                                    (!isSpreadsheet && !isPdf) && "bg-blue-500/10 border-blue-500/20 text-blue-500"
-                                                                )}>
-                                                                    {attachment.fileType || 'Link'}
-                                                                </span>
                                                             </div>
                                                             
                                                             <div className="flex items-end justify-between mt-4">
@@ -2031,15 +2046,37 @@ const Proposal = () => {
                                             <div className="w-20 h-1.5 bg-neon-green" />
                                             <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">
                                                 SUPPORTING INSTRUMENTS & DOCUMENTATION
-                                            </p>
                                         </div>
                                         
-                                        <div className="grid grid-cols-2 gap-8 mt-12">
+                                        <div className="flex flex-col gap-10 mt-12 pb-10">
                                             {(page.attachments || []).map((attachment, idx) => {
                                                 const isSpreadsheet = attachment.fileType === 'spreadsheet';
                                                 const isPdf = attachment.fileType === 'pdf';
+                                                const isImage = attachment.fileType === 'image';
                                                 const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(attachment.url)}`;
                                                 
+                                                if (isImage) {
+                                                    return (
+                                                        <div key={idx} className="w-full relative rounded-2xl overflow-hidden border border-gray-200">
+                                                            <img src={attachment.url} alt={attachment.name} className="w-full h-auto object-contain" />
+                                                            <div className="absolute top-4 left-4 bg-black/80 backdrop-blur-md px-4 py-2 rounded-full text-white text-[10px] font-black uppercase tracking-wider">
+                                                                {attachment.name}
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                }
+                                                
+                                                if (isPdf) {
+                                                    return (
+                                                        <div key={idx} className="w-full h-[600px] relative rounded-2xl overflow-hidden border border-gray-200">
+                                                            <iframe src={attachment.url} title={attachment.name} className="w-full h-full border-none bg-gray-50" />
+                                                            <div className="absolute top-4 left-4 bg-black/80 backdrop-blur-md px-4 py-2 rounded-full text-white text-[10px] font-black uppercase tracking-wider pointer-events-none">
+                                                                {attachment.name}
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                }
+
                                                 return (
                                                     <div key={idx} className="p-6 border border-gray-200 rounded-[2rem] flex flex-col justify-between h-44 relative bg-gray-50/50">
                                                         <div className="flex items-start justify-between gap-4">
@@ -2051,14 +2088,6 @@ const Proposal = () => {
                                                                     {attachment.type === 'file' ? 'Uploaded Storage File' : 'Linked URL'}
                                                                 </p>
                                                             </div>
-                                                            <span className={cn(
-                                                                "text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border shrink-0",
-                                                                isSpreadsheet && "bg-[#107C41]/10 border-[#107C41]/20 text-[#107C41]",
-                                                                isPdf && "bg-red-500/10 border-red-500/20 text-red-500",
-                                                                (!isSpreadsheet && !isPdf) && "bg-blue-500/10 border-blue-500/20 text-blue-500"
-                                                            )}>
-                                                                {attachment.fileType || 'Link'}
-                                                            </span>
                                                         </div>
                                                         
                                                         <div className="flex items-end justify-between mt-4">
@@ -2069,7 +2098,7 @@ const Proposal = () => {
                                                                 className="text-[9px] font-black uppercase tracking-widest text-neon-green bg-black hover:bg-zinc-800 transition-colors px-3 py-1.5 rounded-xl inline-block"
                                                             >
                                                                 View Document &rarr;
-                                                                </a>
+                                                            </a>
                                                             
                                                             <div className="w-14 h-14 bg-white p-0.5 rounded-lg border border-gray-200 shadow-sm shrink-0">
                                                                 <img src={qrCodeUrl} alt="QR Access" className="w-full h-full object-contain" />
@@ -2078,6 +2107,7 @@ const Proposal = () => {
                                                     </div>
                                                 );
                                             })}
+                                        </div>}
                                         </div>
                                     </div>
                                 </div>
