@@ -19,7 +19,7 @@ const Navbar = () => {
         { name: 'HOME', path: '/', icon: Home },
         { name: 'ARTISTANT', path: '/artistant', icon: Mic2 },
         { name: 'COMMUNITY', path: '/community', featureId: 'community', icon: Users },
-        { name: 'CAMPUS', path: '/campus', featureId: 'campus', icon: GraduationCap },
+
         { name: 'CREATOR', path: '/creator', matchPaths: ['/creator-dashboard', '/creator'], featureId: 'influencer', icon: Zap },
         { name: 'CONCERT ZONE', path: '/concertzone', featureId: 'concerts', icon: Music },
         { name: 'CONTACT', path: '/contact', featureId: 'contact', icon: LayoutGrid },
@@ -30,7 +30,7 @@ const Navbar = () => {
     const mobilePrimaryLinks = [
         { name: 'HOME', path: '/', icon: Home },
         { name: 'ARTISTANT', path: '/artistant', icon: Mic2 },
-        { name: 'CAMPUS', path: '/campus', featureId: 'campus', icon: GraduationCap },
+
         { name: 'CREATOR', path: '/creator', matchPaths: ['/creator-dashboard', '/creator'], featureId: 'influencer', icon: Zap },
         { name: 'MORE', action: () => setIsOpen(true), icon: Menu },
     ];
