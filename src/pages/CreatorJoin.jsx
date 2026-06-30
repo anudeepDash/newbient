@@ -228,7 +228,19 @@ const CreatorJoin = () => {
     };
     const [confirmationResult, setConfirmationResult] = useState(null);
     const recaptchaVerifier = useRef(null);
+    const recaptchaId = useRef(`recaptcha-creator-${Math.random().toString(36).slice(2, 11)}`).current;
     const otpRefs = useRef([]);
+
+    useEffect(() => {
+        return () => {
+            if (recaptchaVerifier.current) {
+                try {
+                    recaptchaVerifier.current.clear();
+                } catch (e) {}
+                recaptchaVerifier.current = null;
+            }
+        };
+    }, []);
 
     useEffect(() => {
         if (user) {
@@ -303,14 +315,21 @@ const CreatorJoin = () => {
                 return;
             }
             if (!recaptchaVerifier.current) {
-                recaptchaVerifier.current = new RecaptchaVerifier(auth, 'recaptcha-creator-container', {
-                    size: 'invisible',
-                    callback: () => {},
-                    'expired-callback': () => {
-                        useStore.getState().addToast("reCAPTCHA expired. Please try again.", 'error');
-                        if (recaptchaVerifier.current) { recaptchaVerifier.current.clear(); recaptchaVerifier.current = null; }
-                    }
-                });
+                try {
+                    recaptchaVerifier.current = new RecaptchaVerifier(auth, recaptchaId, {
+                        size: 'invisible',
+                        callback: () => {},
+                        'expired-callback': () => {
+                            useStore.getState().addToast("reCAPTCHA expired. Please try again.", 'error');
+                            if (recaptchaVerifier.current) { 
+                                try { recaptchaVerifier.current.clear(); } catch(e) {} 
+                                recaptchaVerifier.current = null; 
+                            }
+                        }
+                    });
+                } catch (error) {
+                    console.error("Recaptcha init error:", error);
+                }
             }
             const cleanPhone = formData.phone.replace(/\D/g, '');
             const formattedPhone = `${countryCode}${cleanPhone}`;
@@ -487,7 +506,7 @@ const CreatorJoin = () => {
                 <div className="absolute bottom-[10%] left-[-10%] w-[50%] h-[50%] bg-neon-pink/10 rounded-full blur-[180px]" />
             </div>
 
-            <div id="recaptcha-creator-container" className="fixed bottom-0 right-0 z-[200]"></div>
+            <div id={recaptchaId} className="fixed bottom-0 right-0 z-[200]"></div>
 
             <div className="relative z-10 w-full max-w-4xl mx-auto">
                 {!user ? (
