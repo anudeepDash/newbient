@@ -31,6 +31,18 @@ const AuthOverlay = () => {
     const [step, setStep] = useState('input'); // 'input', 'verify' for phone mode
     const [cooldown, setCooldown] = useState(0);
     const recaptchaVerifier = useRef(null);
+    const recaptchaId = useRef(`recaptcha-auth-${Math.random().toString(36).slice(2, 11)}`).current;
+
+    useEffect(() => {
+        return () => {
+            if (recaptchaVerifier.current) {
+                try {
+                    recaptchaVerifier.current.clear();
+                } catch (e) {}
+                recaptchaVerifier.current = null;
+            }
+        };
+    }, []);
 
     useEffect(() => {
         if (cooldown <= 0) return;
@@ -66,10 +78,10 @@ const AuthOverlay = () => {
     useEffect(() => {
         if (mode === 'phone' && isAuthOpen && !recaptchaVerifier.current) {
             const timer = setTimeout(() => {
-                const container = document.getElementById('recaptcha-auth-container');
+                const container = document.getElementById(recaptchaId);
                 if (container && !recaptchaVerifier.current) {
                     try {
-                        recaptchaVerifier.current = new RecaptchaVerifier(auth, 'recaptcha-auth-container', {
+                        recaptchaVerifier.current = new RecaptchaVerifier(auth, recaptchaId, {
                             size: 'invisible',
                             callback: () => {},
                             'expired-callback': () => {
@@ -187,19 +199,23 @@ const AuthOverlay = () => {
         try {
             // Initialize verifier only if it doesn't exist
             if (!recaptchaVerifier.current) {
-                recaptchaVerifier.current = new RecaptchaVerifier(auth, 'recaptcha-auth-container', {
-                    size: 'invisible',
-                    callback: () => {
-                        // reCAPTCHA solved
-                    },
-                    'expired-callback': () => {
-                        setError("reCAPTCHA expired. Please try again.");
-                        if (recaptchaVerifier.current) {
-                            recaptchaVerifier.current.clear();
-                            recaptchaVerifier.current = null;
+                try {
+                    recaptchaVerifier.current = new RecaptchaVerifier(auth, recaptchaId, {
+                        size: 'invisible',
+                        callback: () => {
+                            // reCAPTCHA solved
+                        },
+                        'expired-callback': () => {
+                            setError("reCAPTCHA expired. Please try again.");
+                            if (recaptchaVerifier.current) {
+                                try { recaptchaVerifier.current.clear(); } catch(e){}
+                                recaptchaVerifier.current = null;
+                            }
                         }
-                    }
-                });
+                    });
+                } catch (e) {
+                    console.error("Recaptcha init error:", e);
+                }
             }
 
             const cleanPhone = phone.replace(/\D/g, '');
@@ -355,7 +371,7 @@ const AuthOverlay = () => {
                                 </motion.div>
                             ) : mode === 'phone' ? (
                                 <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-6">
-                                    <div id="recaptcha-auth-container" className="fixed bottom-0 right-0 z-[200]"></div>
+                                    <div id={recaptchaId} className="fixed bottom-0 right-0 z-[200]"></div>
                                     {step === 'input' ? (
                                         <form onSubmit={handleSendOTP} className="space-y-5">
                                             <div className="space-y-2">
