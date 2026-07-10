@@ -158,31 +158,57 @@ const CreatorSettingsView = ({ profile }) => {
     const [confirmationResult, setConfirmationResult] = useState(null);
     const [countryCode, setCountryCode] = useState('+91');
     const recaptchaVerifier = useRef(null);
+    const recaptchaId = useRef(`recaptcha-settings-${Math.random().toString(36).slice(2, 11)}`).current;
     const otpRefs = useRef([]);
+
+    const cleanupRecaptcha = () => {
+        if (recaptchaVerifier.current) {
+            try {
+                recaptchaVerifier.current.clear();
+            } catch (e) {
+                console.error("Error clearing recaptcha:", e);
+            }
+            recaptchaVerifier.current = null;
+        }
+        const container = document.getElementById(recaptchaId);
+        if (container) {
+            container.remove();
+        }
+    };
+
+    useEffect(() => {
+        return () => {
+            cleanupRecaptcha();
+        };
+    }, []);
 
     useEffect(() => {
         if (!isPhoneVerified && !recaptchaVerifier.current) {
             const timer = setTimeout(() => {
-                const container = document.getElementById('recaptcha-settings-container');
-                if (container && !recaptchaVerifier.current) {
-                    try {
-                        recaptchaVerifier.current = new RecaptchaVerifier(auth, 'recaptcha-settings-container', {
-                            size: 'invisible',
-                            callback: () => {},
-                            'expired-callback': () => {
-                                useStore.getState().addToast("reCAPTCHA expired. Please try again.", 'error');
-                                if (recaptchaVerifier.current) {
-                                    recaptchaVerifier.current.clear();
-                                    recaptchaVerifier.current = null;
-                                }
-                            }
-                        });
-                        recaptchaVerifier.current.render().catch(err => {
-                            console.error("Error pre-rendering recaptcha:", err);
-                        });
-                    } catch (e) {
-                        console.error("Error creating RecaptchaVerifier:", e);
-                    }
+                // Ensure any existing container is removed
+                const existing = document.getElementById(recaptchaId);
+                if (existing) existing.remove();
+
+                // Create a new container element dynamically
+                const container = document.createElement('div');
+                container.id = recaptchaId;
+                container.className = "z-50";
+                document.body.appendChild(container);
+
+                try {
+                    recaptchaVerifier.current = new RecaptchaVerifier(auth, container, {
+                        size: 'invisible',
+                        callback: () => {},
+                        'expired-callback': () => {
+                            useStore.getState().addToast("reCAPTCHA expired. Please try again.", 'error');
+                            cleanupRecaptcha();
+                        }
+                    });
+                    recaptchaVerifier.current.render().catch(err => {
+                        console.error("Error pre-rendering recaptcha:", err);
+                    });
+                } catch (e) {
+                    console.error("Error creating RecaptchaVerifier:", e);
                 }
             }, 200);
             return () => clearTimeout(timer);
@@ -206,15 +232,22 @@ const CreatorSettingsView = ({ profile }) => {
             }
 
             if (!recaptchaVerifier.current) {
-                recaptchaVerifier.current = new RecaptchaVerifier(auth, 'recaptcha-settings-container', {
+                // Ensure any existing container is removed
+                const existing = document.getElementById(recaptchaId);
+                if (existing) existing.remove();
+
+                // Create a new container element dynamically
+                const container = document.createElement('div');
+                container.id = recaptchaId;
+                container.className = "z-50";
+                document.body.appendChild(container);
+
+                recaptchaVerifier.current = new RecaptchaVerifier(auth, container, {
                     size: 'invisible',
                     callback: () => {},
                     'expired-callback': () => {
                         useStore.getState().addToast("reCAPTCHA expired. Please try again.", 'error');
-                        if (recaptchaVerifier.current) {
-                            recaptchaVerifier.current.clear();
-                            recaptchaVerifier.current = null;
-                        }
+                        cleanupRecaptcha();
                     }
                 });
                 await recaptchaVerifier.current.render();
@@ -235,10 +268,7 @@ const CreatorSettingsView = ({ profile }) => {
         } catch (err) {
             console.error("Phone verification error:", err);
             useStore.getState().addToast(err.message || "Could not send SMS verification code. Try again.", 'error');
-            if (recaptchaVerifier.current) {
-                try { recaptchaVerifier.current.clear(); } catch(e){}
-                recaptchaVerifier.current = null;
-            }
+            cleanupRecaptcha();
         } finally {
             setIsSendingOtp(false);
         }
@@ -484,7 +514,6 @@ const CreatorSettingsView = ({ profile }) => {
 
                                         {!isPhoneVerified && (
                                             <div className="mt-4 p-4 bg-zinc-950/60 border border-white/[0.08] rounded-2xl space-y-4">
-                                                <div id="recaptcha-settings-container" className="z-50"></div>
                                                 
                                                 {!otpSent ? (
                                                     <button

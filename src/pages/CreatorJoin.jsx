@@ -231,14 +231,24 @@ const CreatorJoin = () => {
     const recaptchaId = useRef(`recaptcha-creator-${Math.random().toString(36).slice(2, 11)}`).current;
     const otpRefs = useRef([]);
 
+    const cleanupRecaptcha = () => {
+        if (recaptchaVerifier.current) {
+            try {
+                recaptchaVerifier.current.clear();
+            } catch (e) {
+                console.error("Error clearing recaptcha:", e);
+            }
+            recaptchaVerifier.current = null;
+        }
+        const container = document.getElementById(recaptchaId);
+        if (container) {
+            container.remove();
+        }
+    };
+
     useEffect(() => {
         return () => {
-            if (recaptchaVerifier.current) {
-                try {
-                    recaptchaVerifier.current.clear();
-                } catch (e) {}
-                recaptchaVerifier.current = null;
-            }
+            cleanupRecaptcha();
         };
     }, []);
 
@@ -315,16 +325,23 @@ const CreatorJoin = () => {
                 return;
             }
             if (!recaptchaVerifier.current) {
+                // Ensure any existing container is removed
+                const existing = document.getElementById(recaptchaId);
+                if (existing) existing.remove();
+
+                // Create a new container element dynamically
+                const container = document.createElement('div');
+                container.id = recaptchaId;
+                container.className = "fixed bottom-0 right-0 z-[200]";
+                document.body.appendChild(container);
+
                 try {
-                    recaptchaVerifier.current = new RecaptchaVerifier(auth, recaptchaId, {
+                    recaptchaVerifier.current = new RecaptchaVerifier(auth, container, {
                         size: 'invisible',
                         callback: () => {},
                         'expired-callback': () => {
                             useStore.getState().addToast("reCAPTCHA expired. Please try again.", 'error');
-                            if (recaptchaVerifier.current) { 
-                                try { recaptchaVerifier.current.clear(); } catch(e) {} 
-                                recaptchaVerifier.current = null; 
-                            }
+                            cleanupRecaptcha();
                         }
                     });
                 } catch (error) {
@@ -340,7 +357,7 @@ const CreatorJoin = () => {
         } catch (err) {
             console.error("Phone verification error:", err);
             useStore.getState().addToast(err.message || "Could not send SMS verification code.", 'error');
-            if (recaptchaVerifier.current) { try { recaptchaVerifier.current.clear(); } catch(e){} recaptchaVerifier.current = null; }
+            cleanupRecaptcha();
         } finally {
             setIsSendingOtp(false);
         }
@@ -505,8 +522,6 @@ const CreatorJoin = () => {
                 <div className="absolute top-[10%] right-[-10%] w-[60%] h-[60%] bg-neon-blue/15 rounded-full blur-[180px]" />
                 <div className="absolute bottom-[10%] left-[-10%] w-[50%] h-[50%] bg-neon-pink/10 rounded-full blur-[180px]" />
             </div>
-
-            <div id={recaptchaId} className="fixed bottom-0 right-0 z-[200]"></div>
 
             <div className="relative z-10 w-full max-w-4xl mx-auto">
                 {!user ? (
