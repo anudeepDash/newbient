@@ -26,7 +26,8 @@ const AuthOverlay = () => {
     const [resetSent, setResetSent] = useState(false);
     const [phone, setPhone] = useState('');
     const [countryCode, setCountryCode] = useState('+91');
-    const [otpCode, setOtpCode] = useState('');
+    const [otpValues, setOtpValues] = useState(['', '', '', '', '', '']);
+    const otpRefs = useRef([]);
     const [confirmationResult, setConfirmationResult] = useState(null);
     const [step, setStep] = useState('input'); // 'input', 'verify' for phone mode
     const [cooldown, setCooldown] = useState(0);
@@ -74,7 +75,7 @@ const AuthOverlay = () => {
             setConfirmationResult(null);
             setStep('input');
             setPhone('');
-            setOtpCode('');
+            setOtpValues(['', '', '', '', '', '']);
             setError('');
             cleanupRecaptcha();
         }
@@ -254,15 +255,90 @@ const AuthOverlay = () => {
         }
     };
 
-    const handleVerifyOTP = async (e) => {
+    const handleOtpChange = (value, idx) => {
+        const val = value.replace(/\D/g, ''); // only allow digits
+        if (!val) {
+            const newOtp = [...otpValues];
+            newOtp[idx] = '';
+            setOtpValues(newOtp);
+            return;
+        }
+
+        const newOtp = [...otpValues];
+        newOtp[idx] = val.slice(-1);
+        setOtpValues(newOtp);
+
+        // Move focus to next input
+        if (idx < 5) {
+            otpRefs.current[idx + 1]?.focus();
+        } else if (idx === 5) {
+            // Auto submit
+            const fullCode = newOtp.join('');
+            if (fullCode.length === 6) {
+                setTimeout(() => {
+                    handleAutoVerify(fullCode);
+                }, 100);
+            }
+        }
+    };
+
+    const handleOtpKeyDown = (e, idx) => {
+        if (e.key === 'Backspace') {
+            if (otpValues[idx] === '' && idx > 0) {
+                const newOtp = [...otpValues];
+                newOtp[idx - 1] = '';
+                setOtpValues(newOtp);
+                otpRefs.current[idx - 1]?.focus();
+            } else {
+                const newOtp = [...otpValues];
+                newOtp[idx] = '';
+                setOtpValues(newOtp);
+            }
+        }
+    };
+
+    const handleOtpPaste = (e) => {
         e.preventDefault();
-        if (otpCode.length !== 6) return setError("Enter 6-digit code.");
+        const pasteData = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
+        if (pasteData.length === 6) {
+            const digits = pasteData.split('');
+            setOtpValues(digits);
+            otpRefs.current[5]?.focus();
+            setTimeout(() => {
+                handleAutoVerify(pasteData);
+            }, 100);
+        }
+    };
+
+    const handleAutoVerify = async (code) => {
+        setLoading(true);
+        setError('');
+        try {
+            const result = await confirmationResult.confirm(code);
+            const user = result.user;
+            if (!user.displayName || !user.email) {
+                setMode('complete_profile');
+            } else {
+                onClose();
+            }
+        } catch (err) {
+            console.error("OTP Auto Verification Error:", err);
+            setError(getFriendlyErrorMessage(err));
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleVerifyOTP = async (e) => {
+        if (e) e.preventDefault();
+        const code = otpValues.join('');
+        if (code.length !== 6) return setError("Enter 6-digit code.");
         
         setLoading(true);
         setError('');
         
         try {
-            const result = await confirmationResult.confirm(otpCode);
+            const result = await confirmationResult.confirm(code);
             const user = result.user;
             
             // Check if profile is incomplete (common for first-time phone signups)
@@ -417,32 +493,82 @@ const AuthOverlay = () => {
                                             </Button>
                                         </form>
                                     ) : (
-                                        <form onSubmit={handleVerifyOTP} className="space-y-5">
-                                            <div className="space-y-2">
-                                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">6-Digit Code</label>
-                                                <div className="relative group">
-                                                    <Hash className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-neon-blue transition-colors" size={18} />
-                                                    <Input
-                                                        type="text"
-                                                        maxLength={6}
-                                                        placeholder="000000"
-                                                        className="pl-12 h-14 bg-zinc-900 border-white/5 focus:border-neon-blue tracking-[0.5em] text-center font-mono text-lg transition-all"
-                                                        value={otpCode}
-                                                        onChange={(e) => setOtpCode(e.target.value)}
-                                                        required
-                                                    />
+                                        <form onSubmit={handleVerifyOTP} className="space-y-6">
+                                            <div className="space-y-3">
+                                                <div className="flex justify-between items-center ml-1">
+                                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">6-Digit Code</label>
+                                                    <span className="text-[10px] font-medium text-gray-400">
+                                                        Sent to {countryCode} {phone ? `******${phone.slice(-4)}` : ''}
+                                                    </span>
                                                 </div>
+                                                
+                                                <motion.div 
+                                                    initial="hidden"
+                                                    animate="visible"
+                                                    variants={{
+                                                        hidden: { opacity: 0 },
+                                                        visible: {
+                                                            opacity: 1,
+                                                            transition: {
+                                                                staggerChildren: 0.05
+                                                            }
+                                                        }
+                                                    }}
+                                                    className="flex justify-between gap-2 max-w-sm mx-auto"
+                                                >
+                                                    {otpValues.map((digit, idx) => (
+                                                        <motion.input
+                                                            key={idx}
+                                                            ref={el => otpRefs.current[idx] = el}
+                                                            type="text"
+                                                            maxLength={1}
+                                                            value={digit}
+                                                            disabled={loading}
+                                                            onChange={e => handleOtpChange(e.target.value, idx)}
+                                                            onKeyDown={e => handleOtpKeyDown(e, idx)}
+                                                            onPaste={handleOtpPaste}
+                                                            variants={{
+                                                                hidden: { opacity: 0, scale: 0.8, y: 10 },
+                                                                visible: { opacity: 1, scale: 1, y: 0 }
+                                                            }}
+                                                            whileFocus={{ scale: 1.05 }}
+                                                            className="w-12 h-16 sm:w-14 sm:h-20 bg-zinc-900/60 backdrop-blur-md border border-white/10 rounded-2xl text-center text-2xl font-black text-white focus:border-neon-pink focus:shadow-[0_0_20px_rgba(244,63,94,0.3)] transition-all outline-none"
+                                                        />
+                                                    ))}
+                                                </motion.div>
                                             </div>
-                                            <Button type="submit" className="w-full h-14 rounded-xl text-sm tracking-widest uppercase font-bold" disabled={loading}>
+
+                                            <Button 
+                                                type="submit" 
+                                                className="w-full h-14 rounded-xl text-sm tracking-widest uppercase font-black bg-gradient-to-r from-neon-pink to-pink-600 hover:shadow-[0_0_30px_rgba(244,63,94,0.4)] hover:scale-[1.01] active:scale-95 transition-all" 
+                                                disabled={loading || otpValues.join('').length !== 6}
+                                            >
                                                 {loading ? <LoadingSpinner size="xs" color="#FFFFFF" /> : 'Verify & Sign In'}
                                             </Button>
-                                            <button 
-                                                type="button" 
-                                                onClick={() => setStep('input')}
-                                                className="w-full text-xs text-gray-500 hover:text-white transition-colors py-2"
-                                            >
-                                                Change Phone Number
-                                            </button>
+
+                                            <div className="flex flex-col gap-3 pt-2 text-center">
+                                                {cooldown > 0 ? (
+                                                    <span className="text-[10px] font-bold text-gray-500 tracking-wider uppercase">
+                                                        Resend Code in <span className="text-neon-pink">{cooldown}s</span>
+                                                    </span>
+                                                ) : (
+                                                    <button 
+                                                        type="button"
+                                                        onClick={handleSendOTP}
+                                                        className="text-xs font-black text-neon-blue hover:text-white uppercase tracking-widest transition-colors"
+                                                    >
+                                                        Resend Verification Code
+                                                    </button>
+                                                )}
+                                                
+                                                <button 
+                                                    type="button" 
+                                                    onClick={() => { setStep('input'); setOtpValues(['', '', '', '', '', '']); }}
+                                                    className="text-xs text-gray-500 hover:text-white transition-colors"
+                                                >
+                                                    Change Phone Number
+                                                </button>
+                                            </div>
                                         </form>
                                     )}
                                     <button 
