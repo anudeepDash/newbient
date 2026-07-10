@@ -100,7 +100,7 @@ function AppContent() {
   };
 
   const currentColor = getColorByPath(location.pathname);
-  const isAdmin = ['developer', 'super_admin', 'editor', 'admin', 'founder'].includes(user?.role) || localStorage.getItem('adminAuth') === 'true';
+  const isAdmin = ['developer', 'super_admin', 'editor', 'admin', 'founder', 'content_admin', 'gate_manager', 'scanner', 'blog_writer'].includes(user?.role) || localStorage.getItem('adminAuth') === 'true';
 
   useEffect(() => {
     const unsubscribeData = subscribeToData(isAdmin);

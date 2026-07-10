@@ -147,7 +147,7 @@ const Navbar = () => {
                                     <Settings size={14} />
                                 </Link>
                             )}
-                            {user && ['developer', 'super_admin', 'founder'].includes(user.role) && (
+                            {user && ['developer', 'super_admin', 'editor', 'admin', 'founder', 'content_admin', 'gate_manager', 'scanner', 'blog_writer'].includes(user.role) && (
                                 <Link 
                                     to="/admin" 
                                     className="p-2 rounded-xl bg-neon-green/10 border border-neon-green/20 text-neon-green hover:bg-neon-green hover:text-black transition-all"
@@ -412,7 +412,7 @@ const Navbar = () => {
                                                     <ChevronRight size={18} className="text-zinc-600" />
                                                 </div>
 
-                                                {['developer', 'super_admin', 'founder'].includes(user.role) && (
+                                                {['developer', 'super_admin', 'editor', 'admin', 'founder', 'content_admin', 'gate_manager', 'scanner', 'blog_writer'].includes(user.role) && (
                                                     <Link 
                                                         to="/admin" 
                                                         onClick={() => setIsOpen(false)}

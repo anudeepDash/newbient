@@ -12,7 +12,7 @@ const Maintenance = () => {
     const navigate = useNavigate();
     const { user } = useStore();
 
-    const isAdmin = ['developer', 'super_admin', 'editor', 'admin'].includes(user?.role);
+    const isAdmin = ['developer', 'super_admin', 'editor', 'admin', 'founder', 'content_admin', 'gate_manager', 'scanner', 'blog_writer'].includes(user?.role);
 
     return (
         <div className="min-h-[80vh] flex items-center justify-center p-4 relative overflow-hidden">
