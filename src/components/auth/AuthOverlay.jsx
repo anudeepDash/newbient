@@ -230,6 +230,7 @@ const AuthOverlay = () => {
                             cleanupRecaptcha();
                         }
                     });
+                    await recaptchaVerifier.current.render();
                 } catch (e) {
                     console.error("Recaptcha init error:", e);
                 }
