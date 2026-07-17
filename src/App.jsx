@@ -160,7 +160,6 @@ function AppContent() {
             <Route path="verify-payout" element={<VerifyPayout />} />
 
             <Route path="admin" element={<AdminGuard><Dashboard /></AdminGuard>} />
-            <Route path="admin/system-command" element={<AdminGuard><DevSettings /></AdminGuard>} />
             <Route path="admin/manage-admins" element={<AdminGuard><MaintenanceGuard featureId="admins"><AdminManager /></MaintenanceGuard></AdminGuard>} />
             <Route path="admin/finance" element={<AdminGuard><FinanceGuard><MaintenanceGuard featureId="invoices"><FinanceDashboard /></MaintenanceGuard></FinanceGuard></AdminGuard>} />
             <Route path="admin/spends" element={<AdminGuard><FinanceGuard><MaintenanceGuard featureId="invoices"><SpendsManagement /></MaintenanceGuard></FinanceGuard></AdminGuard>} />

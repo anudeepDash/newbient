@@ -1,4 +1,3 @@
-console.log('[BOOT] 🔐 Auth Library Loading...');
 import { initializeApp, getApps, cert } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 
@@ -44,21 +43,20 @@ try {
                     privateKey: formattedKey,
                 }),
             });
-            console.log('[AUTH INIT] ✅ Firebase Admin initialized successfully');
         } else if (projectId) {
             // Initialize with just projectId (sufficient for token verification)
             app = initializeApp({
                 projectId
             });
-            console.log('[AUTH INIT] ✅ Firebase Admin initialized with projectId only (token verification active)');
         } else {
-            console.error('[AUTH INIT] ❌ Missing Firebase Admin environment variables!');
+            throw new Error('CRITICAL: Missing Firebase Admin environment variables. App refuses to start.');
         }
     } else {
         app = getApps()[0];
     }
 } catch (error) {
-    console.error('[AUTH INIT] 💥 CRITICAL INITIALIZATION ERROR:', error.message);
+    console.error('[AUTH INIT] CRITICAL INITIALIZATION ERROR:', error.message);
+    throw error; // Rethrow to refuse startup
 }
 
 const auth = app ? getAuth(app) : null;
@@ -81,7 +79,7 @@ export const verifyToken = async (req) => {
         const decodedToken = await auth.verifyIdToken(token, true);
         return decodedToken;
     } catch (error) {
-        console.error('Error verifying Firebase ID token:', error);
+        console.error('Error verifying Firebase ID token:', error.message);
         return null;
     }
 };

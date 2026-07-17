@@ -260,6 +260,9 @@ export default defineConfig(({ mode }) => {
     optimizeDeps: {
       include: ['lucide-react'],
     },
+    esbuild: {
+      drop: ['console', 'debugger'],
+    },
     build: {
       rollupOptions: {
         output: {

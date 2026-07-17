@@ -1,6 +1,29 @@
 import nodemailer from 'nodemailer';
 import { auth } from './lib/auth.js';
 
+const rateLimitCache = new Map();
+const RATE_LIMIT_MAX_REQUESTS = 3;
+const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000; // 1 hour
+
+function checkRateLimit(ip) {
+    if (!ip || ip === 'unknown') return true; // Fallback if IP cannot be determined
+    const now = Date.now();
+    const userRecord = rateLimitCache.get(ip) || { count: 0, resetTime: now + RATE_LIMIT_WINDOW_MS };
+
+    if (now > userRecord.resetTime) {
+        userRecord.count = 1;
+        userRecord.resetTime = now + RATE_LIMIT_WINDOW_MS;
+    } else {
+        userRecord.count++;
+    }
+
+    // Optional: cleanup old entries to prevent memory leak
+    if (rateLimitCache.size > 10000) rateLimitCache.clear();
+    
+    rateLimitCache.set(ip, userRecord);
+    return userRecord.count <= RATE_LIMIT_MAX_REQUESTS;
+}
+
 export default async function handler(req, res) {
     // Enable CORS
     const allowedOrigins = ['https://www.newbi.live', 'https://newbi.live', 'https://newbi-ent.vercel.app', 'http://localhost:5173'];
@@ -29,7 +52,10 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: 'Missing email' });
     }
 
-    console.log(`[RESET] 🚀 Initializing reset protocol for: ${email}`);
+    const clientIp = req.headers['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown';
+    if (!checkRateLimit(clientIp)) {
+        return res.status(429).json({ error: 'Too many requests. Please try again later.' });
+    }
 
     try {
         if (!auth) {
@@ -42,7 +68,6 @@ export default async function handler(req, res) {
             url: `${requestOrigin}/login`,
         };
         
-        console.log(`[RESET] 🔗 Generating link via Firebase...`);
         const firebaseLink = await auth.generatePasswordResetLink(email, actionCodeSettings);
         
         // Convert the Firebase link into a custom link pointing to our custom ActionHandler page
@@ -53,7 +78,6 @@ export default async function handler(req, res) {
         urlObj.pathname = '/auth/action';
         
         const resetLink = urlObj.toString();
-        console.log(`[RESET] ✅ Custom link generated successfully: ${resetLink}`);
 
         // 2. Setup Transporter
         const smtpHost = process.env.SMTP_HOST || 'smtp.gmail.com';
@@ -64,8 +88,7 @@ export default async function handler(req, res) {
         let smtpPass = process.env.SMTP_PASS_SECURITY || process.env.SMTP_PASS;
 
         if (!smtpUser || !smtpPass) {
-            console.error('[RESET] ❌ Missing SMTP_USER or SMTP_PASS environment variables!');
-            throw new Error('SMTP credentials are not configured. Please set SMTP_USER and SMTP_PASS in your environment.');
+            throw new Error('CRITICAL: SMTP credentials are not configured. App refuses to start.');
         }
 
         smtpUser = smtpUser.trim();
@@ -75,11 +98,6 @@ export default async function handler(req, res) {
         if ((smtpUser.startsWith('"') && smtpUser.endsWith('"')) || (smtpUser.startsWith("'") && smtpUser.endsWith("'"))) {
             smtpUser = smtpUser.slice(1, -1).trim();
         }
-        if ((smtpPass.startsWith('"') && smtpPass.endsWith('"')) || (smtpPass.startsWith("'") && smtpPass.endsWith("'"))) {
-            smtpPass = smtpPass.slice(1, -1).trim();
-        }
-
-        console.log(`[RESET] 🔧 SMTP Config: host=${smtpHost}, port=${smtpPort}, user=${smtpUser}, passLength=${smtpPass.length}`);
 
         const transporter = nodemailer.createTransport({
             host: smtpHost,
@@ -172,7 +190,6 @@ export default async function handler(req, res) {
 
         const fromAddress = `"${fromDisplayName}" <${fromEmailAddress}>`;
         
-        console.log(`[RESET] ✉️ Sending email via SMTP...`);
         const info = await transporter.sendMail({
             from: fromAddress,
             sender: smtpUser, // Envelope sender to prevent SMTP auth sender mismatch errors
@@ -181,26 +198,13 @@ export default async function handler(req, res) {
             html: html,
         });
 
-        console.log(`[RESET] 🎊 Email sent successfully: ${info.messageId}`);
         return res.status(200).json({ success: true, messageId: info.messageId });
     } catch (error) {
-        console.error('[RESET] ❌ FATAL ERROR:', error.message);
-        console.error('[RESET] ❌ Error code:', error.code);
-        console.error('[RESET] ❌ Error response:', error.response);
-        console.error('[RESET] ❌ Error responseCode:', error.responseCode);
-        console.error('[RESET] ❌ Full error:', JSON.stringify(error, Object.getOwnPropertyNames(error)));
+        const correlationId = Math.random().toString(36).substring(2, 15);
+        console.error(`[RESET] Error [Correlation ID: ${correlationId}]:`, error);
         
-        // Categorize common errors for better UI feedback
-        let userMessage = error.message;
-        if (error.code === 'auth/user-not-found' || error.message?.includes('no user')) {
-            userMessage = 'This email address is not registered in our system.';
-        } else if (error.code === 'EAUTH' || error.message?.includes('Invalid login')) {
-            userMessage = 'SMTP Authentication failed. The App Password may be expired or revoked. Please generate a new one in Google Account settings.';
-        } else if (error.message?.includes('DECODER') || error.message?.includes('OAuth2')) {
-            userMessage = 'Firebase Admin credential error. Private key may be malformed.';
-        }
-        
-        return res.status(500).json({ error: 'Failed to process request', details: userMessage });
+        // Return generic error as requested (no internal details)
+        return res.status(500).json({ error: 'Internal server error', correlationId });
     }
 }
 

@@ -15,7 +15,7 @@ async function run() {
             const fields = doc.fields || {};
             const email = fields.email?.stringValue || 'N/A';
             const role = fields.role?.stringValue || 'N/A';
-            console.log(`- ID: ${name}, Email: ${email}, Role: ${role}`);
+            console.log(`- ID: ${name}, Email: [REDACTED], Role: ${role}`);
         }
     } catch (e) {
         console.error("Error occurred:", e);
