@@ -2,6 +2,28 @@ import { getFirestore } from 'firebase-admin/firestore';
 import nodemailer from 'nodemailer';
 import { verifyToken, auth } from './lib/auth.js';
 
+const rateLimitCache = new Map();
+const RATE_LIMIT_MAX_REQUESTS = 3;
+const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000; // 1 hour
+
+function checkRateLimit(ip) {
+    if (!ip || ip === 'unknown') return true;
+    const now = Date.now();
+    const userRecord = rateLimitCache.get(ip) || { count: 0, resetTime: now + RATE_LIMIT_WINDOW_MS };
+
+    if (now > userRecord.resetTime) {
+        userRecord.count = 1;
+        userRecord.resetTime = now + RATE_LIMIT_WINDOW_MS;
+    } else {
+        userRecord.count++;
+    }
+
+    if (rateLimitCache.size > 10000) rateLimitCache.clear();
+    
+    rateLimitCache.set(ip, userRecord);
+    return userRecord.count <= RATE_LIMIT_MAX_REQUESTS;
+}
+
 export default async function handler(req, res) {
     // Enable CORS
     const allowedOrigins = ['https://www.newbi.live', 'https://newbi.live', 'https://newbi-ent.vercel.app', 'http://localhost:5173'];
@@ -29,6 +51,11 @@ export default async function handler(req, res) {
         return res.status(401).json({ error: 'Unauthorized: Valid Firebase ID Token required' });
     }
 
+    const clientIp = req.headers['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown';
+    if (!checkRateLimit(clientIp)) {
+        return res.status(429).json({ error: 'Too many requests. Please try again later.' });
+    }
+
     const { targetUid, targetEmail } = req.body;
     const callerUid = decodedToken.uid;
     let uidToRevoke = targetUid;
@@ -46,7 +73,7 @@ export default async function handler(req, res) {
                 const userRecord = await auth.getUserByEmail(targetEmail);
                 uidToRevoke = userRecord.uid;
             } catch (err) {
-                console.error(`[REVOKE] User with email ${targetEmail} not found in Auth:`, err);
+                console.error(`[REVOKE] User with email [REDACTED] not found in Auth:`, err);
                 return res.status(404).json({ error: `User with email ${targetEmail} not found` });
             }
         }
@@ -61,7 +88,7 @@ export default async function handler(req, res) {
         try {
             userRecord = await auth.getUser(uidToRevoke);
         } catch (err) {
-            console.error(`[REVOKE] Failed to fetch user record for UID: ${uidToRevoke}`, err);
+            // User might not exist or we don't have permissions
         }
 
         // 2. Perform permission checks if revoking someone else's sessions
@@ -99,7 +126,6 @@ export default async function handler(req, res) {
         }
 
         // 3. Revoke the sessions on Firebase Auth
-        console.log(`[REVOKE] Revoking sessions for UID: ${uidToRevoke} initiated by UID: ${callerUid}`);
         await auth.revokeRefreshTokens(uidToRevoke);
 
         // 4. Update the user document to enforce local logout via real-time check
@@ -116,6 +142,10 @@ export default async function handler(req, res) {
                 const smtpPort = parseInt(process.env.SMTP_PORT || '587', 10);
                 let smtpUser = process.env.SMTP_USER_SECURITY || process.env.SMTP_USER;
                 let smtpPass = process.env.SMTP_PASS_SECURITY || process.env.SMTP_PASS;
+                
+                if (!smtpUser || !smtpPass) {
+                    throw new Error('CRITICAL: SMTP credentials are not configured. App refuses to start.');
+                }
 
                 if (smtpUser && smtpPass) {
                     smtpUser = smtpUser.trim();
@@ -226,18 +256,17 @@ export default async function handler(req, res) {
                         subject: 'Devices Logged Out',
                         html: html,
                     });
-                    console.log(`[REVOKE] Confirmation email dispatched successfully to: ${email}`);
                 }
             } catch (mailError) {
-                console.error('[REVOKE] Failed to send revocation email:', mailError);
+                console.error('[REVOKE] Failed to send revocation email:', mailError.message);
             }
         }
 
-        console.log(`[REVOKE] Successfully revoked all sessions for UID: ${uidToRevoke}`);
         return res.status(200).json({ success: true, message: 'Sessions successfully revoked.' });
 
     } catch (error) {
-        console.error('[REVOKE] Error revoking sessions:', error);
-        return res.status(500).json({ error: 'Failed to revoke sessions', details: error.message });
+        const correlationId = Math.random().toString(36).substring(2, 15);
+        console.error(`[REVOKE] Error revoking sessions [Correlation ID: ${correlationId}]:`, error);
+        return res.status(500).json({ error: 'Internal server error', correlationId });
     }
 }

@@ -14,3 +14,7 @@ The React Compiler is not enabled on this template because of its impact on dev 
 ## Expanding the ESLint configuration
 
 If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+
+## Security Warning
+
+**IMPORTANT:** Previously, a Firebase API Key and potentially other configuration values may have been hardcoded into the source code of this repository. Even though they have now been moved to environment variables, those old keys are still present in your Git commit history. If this repository is or will become public, **you MUST rotate your Firebase API Key and any other exposed credentials immediately** via the Google Cloud/Firebase Console to prevent unauthorized access.

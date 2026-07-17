@@ -1,6 +1,32 @@
 import nodemailer from 'nodemailer';
 import { verifyToken } from './lib/auth.js';
 
+if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+    throw new Error('CRITICAL: Missing default SMTP credentials. App refuses to start.');
+}
+
+const rateLimitCache = new Map();
+const RATE_LIMIT_MAX_REQUESTS = 10;
+const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000; // 1 hour
+
+function checkRateLimit(ip) {
+    if (!ip || ip === 'unknown') return true;
+    const now = Date.now();
+    const userRecord = rateLimitCache.get(ip) || { count: 0, resetTime: now + RATE_LIMIT_WINDOW_MS };
+
+    if (now > userRecord.resetTime) {
+        userRecord.count = 1;
+        userRecord.resetTime = now + RATE_LIMIT_WINDOW_MS;
+    } else {
+        userRecord.count++;
+    }
+
+    if (rateLimitCache.size > 10000) rateLimitCache.clear();
+    
+    rateLimitCache.set(ip, userRecord);
+    return userRecord.count <= RATE_LIMIT_MAX_REQUESTS;
+}
+
 // Helper to resolve name and email from "Name <email>" or "email" formats
 function parseAlias(fromStr) {
     if (!fromStr) return {};
@@ -62,6 +88,23 @@ function getEmailConfig(serviceKey, defaultName, defaultEmail) {
 }
 
 export default async function handler(req, res) {
+    // Enable CORS
+    const allowedOrigins = ['https://www.newbi.live', 'https://newbi.live', 'https://newbi-ent.vercel.app', 'http://localhost:5173'];
+    const origin = req.headers.origin;
+    
+    if (allowedOrigins.includes(origin)) {
+        res.setHeader('Access-Control-Allow-Origin', origin);
+    }
+    
+    res.setHeader('Access-Control-Allow-Credentials', true);
+    res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
+    res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization');
+
+    if (req.method === 'OPTIONS') {
+        res.status(200).end();
+        return;
+    }
+
     if (req.method !== 'POST') {
         return res.status(405).json({ error: 'Method not allowed' });
     }
@@ -69,6 +112,11 @@ export default async function handler(req, res) {
     const decodedToken = await verifyToken(req);
     if (!decodedToken) {
         return res.status(401).json({ error: 'Unauthorized: Valid Firebase ID Token required' });
+    }
+
+    const clientIp = req.headers['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown';
+    if (!checkRateLimit(clientIp)) {
+        return res.status(429).json({ error: 'Too many requests. Please try again later.' });
     }
 
     const { to, cc, bcc, subject, text, html, attachments, accountType = 'official', fromName, fromEmail } = req.body;
@@ -137,7 +185,7 @@ export default async function handler(req, res) {
     const smtpPort = parseInt(process.env.SMTP_PORT || '587', 10);
     
     if (!smtpUser || !smtpPass) {
-        console.error(`[MAIL] ❌ Missing credentials for service: ${serviceKey}`);
+        throw new Error(`CRITICAL: Missing credentials for service: ${serviceKey}`);
     }
 
     const transporter = nodemailer.createTransport({
@@ -179,10 +227,10 @@ export default async function handler(req, res) {
 
         const info = await transporter.sendMail(mailOptions);
 
-        console.log(`[MAIL] ✅ ${serviceKey} mail sent: ${info.messageId}`);
         return res.status(200).json({ success: true, messageId: info.messageId });
     } catch (error) {
-        console.error(`[MAIL] 💥 ${serviceKey} mail failed:`, error);
-        return res.status(500).json({ error: 'Failed to send email', details: error.message });
+        const correlationId = Math.random().toString(36).substring(2, 15);
+        console.error(`[MAIL] 💥 ${serviceKey} mail failed [Correlation ID: ${correlationId}]:`, error);
+        return res.status(500).json({ error: 'Failed to send email', correlationId });
     }
 }

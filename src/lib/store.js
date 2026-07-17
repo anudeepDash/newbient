@@ -2571,9 +2571,14 @@ export const useStore = create((set, get) => ({
             hasJoinedWhatsapp: hasJoinedWhatsapp
         };
 
-        // Cache the session for instant retrieval on refresh
+        // Cache the session for instant retrieval on refresh, strictly excluding PII (email, phoneNumber)
         localStorage.setItem(AUTH_CACHE_KEY, JSON.stringify({
-            user: finalUser,
+            user: {
+                uid: finalUser.uid,
+                role: finalUser.role,
+                hasJoinedTribe: finalUser.hasJoinedTribe,
+                hasJoinedWhatsapp: finalUser.hasJoinedWhatsapp
+            },
             timestamp: Date.now()
         }));
 
@@ -2720,6 +2725,32 @@ export const useStore = create((set, get) => ({
         await auth.signOut();
         localStorage.removeItem(AUTH_CACHE_KEY);
         set({ user: null, userListenerUnsubscribe: null });
+    },
+
+    deleteAccount: async () => {
+        try {
+            const { getAuth, deleteUser } = await import('firebase/auth');
+            const auth = getAuth();
+            const currentUser = auth.currentUser;
+            if (!currentUser) throw new Error("No authenticated user");
+            
+            // Delete user document from Firestore
+            await deleteDoc(doc(db, 'users', currentUser.uid));
+            
+            // Delete user from Firebase Auth
+            await deleteUser(currentUser);
+            
+            // Clean up state
+            get().logout();
+            get().addToast("Your account has been successfully deleted.", "success");
+        } catch (error) {
+            console.error("Error deleting account:", error);
+            if (error.code === 'auth/requires-recent-login') {
+                get().addToast("For security reasons, please log out and log back in before deleting your account.", "error");
+            } else {
+                get().addToast("Failed to delete account. Please contact support.", "error");
+            }
+        }
     },
 
     setupUserListener: (uid) => {
@@ -2962,19 +2993,12 @@ export const useStore = create((set, get) => ({
     },
 
     // --- NOTIFICATION ACTIONS ---
-    addNotification: async (notification) => {
-        const nData = {
-            ...notification,
-            isRead: false,
-            createdAt: new Date().toISOString()
-        };
-        return await addDoc(collection(db, 'notifications'), nData);
-    },
-    markNotificationRead: async (id) => {
-        await updateDoc(doc(db, 'notifications', id), { isRead: true });
-    },
     deleteNotification: async (id) => {
-        await deleteDoc(doc(db, 'notifications', id));
+        try {
+            await deleteDoc(doc(db, 'notifications', id));
+        } catch (error) {
+            console.error("Failed to delete notification:", error);
+        }
     },
 
     saveFcmToken: async (token) => {

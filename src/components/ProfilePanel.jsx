@@ -19,7 +19,7 @@ const ProfilePanel = ({ isOpen, onClose }) => {
         user, logout, creators, artists, addNotification, 
         resetPassword, updateDisplayName, verifyInstagramFollowers, 
         ticketOrders, notifications, upcomingEvents, portfolio, guestlists,
-        revokeSessions
+        revokeSessions, deleteAccount
     } = useStore();
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState('overview'); // 'overview', 'tickets', 'settings', 'security'
@@ -33,6 +33,7 @@ const ProfilePanel = ({ isOpen, onClose }) => {
     const [guestlistEntries, setGuestlistEntries] = useState([]);
     const [loadingEntries, setLoadingEntries] = useState(false);
     const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' && window.innerWidth < 768);
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
     useEffect(() => {
         const handleResize = () => setIsMobile(window.innerWidth < 768);
@@ -206,6 +207,20 @@ const ProfilePanel = ({ isOpen, onClose }) => {
             });
         } finally {
             setIsUpdating(false);
+        }
+    };
+
+    const handleDeleteAccount = async () => {
+        setIsUpdating(true);
+        try {
+            await deleteAccount();
+            onClose();
+            navigate('/');
+        } catch (err) {
+            console.error("Account deletion failed:", err);
+        } finally {
+            setIsUpdating(false);
+            setShowDeleteConfirm(false);
         }
     };
 
@@ -857,6 +872,21 @@ const ProfilePanel = ({ isOpen, onClose }) => {
                                                         </button>
 
                                                         <button 
+                                                            onClick={() => setShowDeleteConfirm(true)}
+                                                            disabled={isUpdating}
+                                                            className="w-full h-20 rounded-3xl bg-red-500/5 border border-red-500/20 hover:bg-red-500 hover:text-white transition-all flex items-center justify-between px-8 group disabled:opacity-50 mt-4"
+                                                        >
+                                                            <div className="flex items-center gap-5">
+                                                                <X size={22} className="text-red-500 transition-transform group-hover:scale-110 duration-500" />
+                                                                <div className="text-left">
+                                                                    <span className="block text-xs font-black uppercase tracking-widest text-red-500 group-hover:text-white">Delete Account</span>
+                                                                    <span className="block text-[9px] text-red-500/70 font-bold uppercase mt-1 group-hover:text-white/80">Permanently erase your data</span>
+                                                                </div>
+                                                            </div>
+                                                            <ArrowRight size={18} className="text-red-500 opacity-50 group-hover:text-white group-hover:opacity-100 transition-all group-hover:translate-x-1" />
+                                                        </button>
+
+                                                        <button 
                                                             onClick={handleSignOutAllDevices}
                                                             disabled={isUpdating}
                                                             className="w-full h-20 rounded-3xl bg-red-500/5 border border-red-500/10 hover:bg-red-500 hover:text-white transition-all flex items-center justify-between px-8 group disabled:opacity-50 text-red-500"
@@ -898,6 +928,50 @@ const ProfilePanel = ({ isOpen, onClose }) => {
                         </div>
 
                     </motion.div>
+
+                    <AnimatePresence>
+                        {showDeleteConfirm && (
+                            <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+                                <motion.div 
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    exit={{ opacity: 0 }}
+                                    className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+                                    onClick={() => !isUpdating && setShowDeleteConfirm(false)}
+                                />
+                                <motion.div 
+                                    initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                                    exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                                    className="relative w-full max-w-sm bg-[#0a0a0a] border border-white/10 rounded-3xl p-6"
+                                >
+                                    <div className="w-12 h-12 rounded-full bg-red-500/10 flex items-center justify-center mb-6">
+                                        <AlertCircle size={24} className="text-red-500" />
+                                    </div>
+                                    <h3 className="text-xl font-black uppercase tracking-widest mb-2">Delete Account</h3>
+                                    <p className="text-sm text-gray-400 font-medium mb-8">
+                                        This action cannot be undone. All your personal data, access history, and preferences will be permanently erased.
+                                    </p>
+                                    <div className="flex gap-3">
+                                        <button 
+                                            onClick={() => setShowDeleteConfirm(false)}
+                                            disabled={isUpdating}
+                                            className="flex-1 h-12 rounded-2xl bg-white/5 hover:bg-white/10 font-bold uppercase tracking-wider text-xs transition-colors disabled:opacity-50"
+                                        >
+                                            Cancel
+                                        </button>
+                                        <button 
+                                            onClick={handleDeleteAccount}
+                                            disabled={isUpdating}
+                                            className="flex-1 h-12 rounded-2xl bg-red-500 hover:bg-red-600 text-white font-black uppercase tracking-wider text-xs transition-colors flex items-center justify-center disabled:opacity-50"
+                                        >
+                                            {isUpdating ? <Loader2 size={16} className="animate-spin" /> : "Delete"}
+                                        </button>
+                                    </div>
+                                </motion.div>
+                            </div>
+                        )}
+                    </AnimatePresence>
                 </>
             )}
         </AnimatePresence>

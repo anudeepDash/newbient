@@ -87,33 +87,37 @@ const getNotificationIcon = (type, title) => {
  * Triggers an in-app and potentially a push notification.
  */
 export const triggerNotification = async ({ userId, type, title, content, link, image }) => {
-    const { addNotification } = useStore.getState();
-    const resolvedImage = image || getNotificationIcon(type, title);
-    
-    const notificationData = {
-        userId: userId || null, // null means global
-        type: type || 'announcement',
-        title,
-        content,
-        link: link || '',
-        image: resolvedImage,
-    };
+    try {
+        const { addNotification } = useStore.getState();
+        const resolvedImage = image || getNotificationIcon(type, title);
+        
+        const notificationData = {
+            userId: userId || null, // null means global
+            type: type || 'announcement',
+            title,
+            content,
+            link: link || '',
+            image: resolvedImage,
+        };
 
-    await addNotification(notificationData);
-    console.log(`[Notification Triggered] Type: ${type}, Title: ${title}`);
+        await addNotification(notificationData);
+        console.log(`[Notification Triggered] Type: ${type}, Title: ${title}`);
 
-    // Show Native OS Notification if permitted
-    if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
-        try {
-            new Notification(title, {
-                body: content,
-                icon: resolvedImage,
-                badge: '/favicon.png', // Small icon for mobile status bar
-                data: { link: link || '' } 
-            });
-        } catch (e) {
-            console.error("Error showing native notification:", e);
+        // Show Native OS Notification if permitted
+        if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+            try {
+                new Notification(title, {
+                    body: content,
+                    icon: resolvedImage,
+                    badge: '/favicon.png', // Small icon for mobile status bar
+                    data: { link: link || '' } 
+                });
+            } catch (e) {
+                console.error("Error showing native notification:", e);
+            }
         }
+    } catch (error) {
+        console.error("Failed to trigger notification:", error);
     }
 };
 

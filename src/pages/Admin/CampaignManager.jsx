@@ -625,7 +625,8 @@ const CampaignManager = () => {
             }
             resetForm();
         } catch (error) {
-            useStore.getState().addToast("Storage error.", 'error');
+            console.error("Failed to save campaign:", error);
+            useStore.getState().addToast(`Storage error: ${error.message || error}`, 'error');
         } finally {
             setIsDeploying(false);
         }

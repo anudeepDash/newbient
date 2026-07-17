@@ -4,18 +4,30 @@ import fs from 'fs';
 import path from 'path';
 
 const firebaseConfig = {
-    apiKey: "AIzaSyBnl7hSfXXUj4khyV3yrhT5oUtMQfdoH_A",
-    authDomain: "newbi-ent-v2.firebaseapp.com",
-    projectId: "newbi-ent-v2",
-    storageBucket: "newbi-ent-v2.firebasestorage.app",
-    messagingSenderId: "860370467784",
-    appId: "1:860370467784:web:d7b4dfc66336f6da50defd"
+    apiKey: process.env.VITE_FIREBASE_API_KEY,
+    authDomain: process.env.VITE_FIREBASE_AUTH_DOMAIN || "newbi-ent-v2.firebaseapp.com",
+    projectId: process.env.VITE_FIREBASE_PROJECT_ID || "newbi-ent-v2",
+    storageBucket: process.env.VITE_FIREBASE_STORAGE_BUCKET || "newbi-ent-v2.firebasestorage.app",
+    messagingSenderId: process.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "860370467784",
+    appId: process.env.VITE_FIREBASE_APP_ID || "1:860370467784:web:d7b4dfc66336f6da50defd"
 };
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
 export default async function handler(req, res) {
+    const allowedOrigins = ['https://www.newbi.live', 'https://newbi.live', 'https://newbi-ent.vercel.app', 'http://localhost:5173'];
+    const origin = req.headers.origin;
+    if (allowedOrigins.includes(origin)) {
+        res.setHeader('Access-Control-Allow-Origin', origin);
+    }
+    res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS');
+
+    if (req.method === 'OPTIONS') {
+        res.status(200).end();
+        return;
+    }
+
     const { 
         event: eventId, 
         giveaway: giveawaySlug, 
@@ -153,7 +165,8 @@ export default async function handler(req, res) {
             }
         }
     } catch (error) {
-        console.error("Error fetching dynamic OG data:", error);
+        const correlationId = Math.random().toString(36).substring(2, 15);
+        console.error(`[OG] Error fetching dynamic OG data [Correlation ID: ${correlationId}]:`, error);
     }
 
     // Load the index.html from the filesystem

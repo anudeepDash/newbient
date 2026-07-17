@@ -1,4 +1,3 @@
-console.log('[BOOT] 🛰️ AI Proxy Booting...');
 import { GoogleGenAI } from "@google/genai";
 import { verifyToken } from './lib/auth.js';
 
@@ -10,6 +9,10 @@ import { verifyToken } from './lib/auth.js';
 const GEMINI_API_KEY = process.env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY;
 const OPENROUTER_API_KEY = process.env.VITE_OPENROUTER_API_KEY || process.env.OPENROUTER_API_KEY;
 const PERPLEXITY_API_KEY = process.env.VITE_PERPLEXITY_API_KEY || process.env.PERPLEXITY_API_KEY;
+
+if (!GEMINI_API_KEY && !OPENROUTER_API_KEY) {
+    throw new Error('CRITICAL: Missing AI API keys. App refuses to start.');
+}
 
 const ai = GEMINI_API_KEY ? new GoogleGenAI({ apiKey: GEMINI_API_KEY }) : null;
 
@@ -50,7 +53,6 @@ async function discoverModels() {
     }
 
     try {
-        console.log('[AI PROXY] 🔍 Discovering available Gemini models...');
         const response = await fetch(
             `https://generativelanguage.googleapis.com/v1beta/models?key=${GEMINI_API_KEY}`
         );
@@ -99,7 +101,6 @@ async function discoverModels() {
         if (flashModels.length > 0) {
             cachedModels = flashModels;
             modelCacheTimestamp = now;
-            console.log(`[AI PROXY] ✅ Discovered ${flashModels.length} Flash models: [${flashModels.join(', ')}]`);
             return flashModels;
         }
 
@@ -157,19 +158,17 @@ export default async function handler(req, res) {
                 cacheAge: cachedModels ? Math.round((Date.now() - modelCacheTimestamp) / 1000) + 's' : 'none'
             });
         } catch (e) {
-            return res.status(200).json({ status: 'ok', version: '2.0', error: e.message });
+            const correlationId = Math.random().toString(36).substring(2, 15);
+            console.error(`[AI PROXY] Health Check Error [Correlation ID: ${correlationId}]:`, e);
+            return res.status(500).json({ status: 'error', error: 'Internal server error', correlationId });
         }
     }
-
-    console.log(`[AI PROXY] 🛰️ Neural request from origin: ${origin}`);
-    console.log(`[AI PROXY] 🔑 Key Status: Gemini=${!!GEMINI_API_KEY}, OpenRouter=${!!OPENROUTER_API_KEY}, Perplexity=${!!PERPLEXITY_API_KEY}`);
 
     const decodedToken = await verifyToken(req);
     if (!decodedToken) {
         console.warn('[AI PROXY] 🚨 Auth Failed: Missing or invalid token');
         return res.status(401).json({ error: 'Unauthorized: Valid Firebase ID Token required' });
     }
-    console.log(`[AI PROXY] ✅ Auth Success: User=${decodedToken.email || decodedToken.uid}`);
 
     if (req.method !== 'POST') {
         return res.status(405).json({ error: 'Method Not Allowed' });
@@ -180,8 +179,6 @@ export default async function handler(req, res) {
     if (!userPrompt) {
         return res.status(400).json({ error: 'User prompt is required' });
     }
-
-    console.log(`[AI PROXY] Starting neural pulse for type: ${type}`);
 
     try {
         // ═══════════════════════════════════════════════════════════════
@@ -196,7 +193,6 @@ export default async function handler(req, res) {
             } else {
                 for (const modelName of models) {
                     try {
-                        console.log(`[AI PROXY] 🚀 Trying Gemini model: ${modelName}`);
                         const response = await ai.models.generateContent({
                             model: modelName,
                             contents: userPrompt,
@@ -208,7 +204,6 @@ export default async function handler(req, res) {
 
                         const text = response.text;
                         if (text && text.length > 20) {
-                            console.log(`[AI PROXY] ✨ Success: Gemini (${modelName})`);
                             return res.status(200).json({ content: text, provider: `gemini-${modelName}` });
                         }
                         console.warn(`[AI PROXY] ⚠️ ${modelName} returned empty/short response, trying next...`);
@@ -265,7 +260,6 @@ export default async function handler(req, res) {
 
             for (const orModel of orModels) {
                 try {
-                    console.log(`[AI PROXY] Path: OpenRouter (${orModel})`);
                     const orRes = await fetch('https://openrouter.ai/api/v1/chat/completions', {
                         method: 'POST',
                         headers: {
@@ -288,7 +282,6 @@ export default async function handler(req, res) {
                     if (orRes.ok) {
                         const data = await orRes.json();
                         if (data.choices?.[0]?.message?.content) {
-                            console.log(`[AI PROXY] ✨ Success: OpenRouter (${orModel})`);
                             return res.status(200).json({ 
                                 content: data.choices[0].message.content, 
                                 provider: `openrouter-${orModel}` 
@@ -310,7 +303,6 @@ export default async function handler(req, res) {
         // 3. TRY AIRFORCE (FREE PROXY)
         // ═══════════════════════════════════════════════════════════════
         try {
-            console.log('[AI PROXY] Path: Airforce');
             const afRes = await fetch('https://api.airforce/v1/chat/completions', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -337,7 +329,6 @@ export default async function handler(req, res) {
         // 4. TRY POLLINATIONS (FREE KEYLESS PROXY)
         // ═══════════════════════════════════════════════════════════════
         try {
-            console.log('[AI PROXY] Path: Pollinations');
             const pollRes = await fetch('https://text.pollinations.ai/', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -365,7 +356,8 @@ export default async function handler(req, res) {
         res.status(503).json({ error: 'All neural paths failed. Please try again later.' });
 
     } catch (globalError) {
-        console.error('[AI PROXY] Global Collapse:', globalError);
-        res.status(500).json({ error: 'Internal Neural Collapse', details: globalError.message });
+        const correlationId = Math.random().toString(36).substring(2, 15);
+        console.error(`[AI PROXY] Global Collapse [Correlation ID: ${correlationId}]:`, globalError);
+        res.status(500).json({ error: 'Internal server error', correlationId });
     }
 }
