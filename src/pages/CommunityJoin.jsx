@@ -482,7 +482,7 @@ const CommunityJoin = () => {
                                              </div>
                                              <div>
                                                   <h2 className="text-3xl md:text-4xl font-extrabold font-heading tracking-tight text-white leading-none pb-2 pr-4">
-                                                      {section.title === 'VOLUNTEER GIGS' ? 'Volunteer Gigs' : (section.title === 'EXCLUSIVE GUESTLISTS' ? 'Exclusive Guestlists' : 'Community Forms')}
+                                                      {section.title}
                                                   </h2>
                                                  <p className="text-xs font-bold text-gray-500 uppercase tracking-[0.2em] pl-1">
                                                      {section.items?.length || 0} {section.subtitleText}
