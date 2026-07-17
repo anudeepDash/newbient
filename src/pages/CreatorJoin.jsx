@@ -31,7 +31,7 @@ import { cn } from '../lib/utils';
 import GlobalLoader from '../components/ui/GlobalLoader';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import useDynamicMeta from '../hooks/useDynamicMeta';
-import { RecaptchaVerifier, signInWithPhoneNumber, PhoneAuthProvider, linkWithCredential } from 'firebase/auth';
+import { RecaptchaVerifier, PhoneAuthProvider, linkWithCredential } from 'firebase/auth';
 import { auth } from '../lib/firebase';
 
 const NICHES = [
@@ -344,14 +344,19 @@ const CreatorJoin = () => {
                             cleanupRecaptcha();
                         }
                     });
+                    await recaptchaVerifier.current.render();
                 } catch (error) {
                     console.error("Recaptcha init error:", error);
                 }
             }
             const cleanPhone = formData.phone.replace(/\D/g, '');
             const formattedPhone = `${countryCode}${cleanPhone}`;
-            const result = await signInWithPhoneNumber(auth, formattedPhone, recaptchaVerifier.current);
-            setConfirmationResult(result);
+            const phoneProvider = new PhoneAuthProvider(auth);
+            const verificationId = await phoneProvider.verifyPhoneNumber(
+                formattedPhone,
+                recaptchaVerifier.current
+            );
+            setConfirmationResult(verificationId);
             setOtpSent(true);
             useStore.getState().addToast("Verification code sent to your phone!", 'success');
         } catch (err) {
@@ -374,7 +379,7 @@ const CreatorJoin = () => {
                 useStore.getState().addToast("Phone verified (Local Bypass)!", 'success');
                 return;
             }
-            const credential = PhoneAuthProvider.credential(confirmationResult.verificationId, fullCode);
+            const credential = PhoneAuthProvider.credential(confirmationResult, fullCode);
             await linkWithCredential(auth.currentUser, credential);
             setPhoneVerified(true);
             useStore.getState().addToast("Phone verified successfully!", 'success');
