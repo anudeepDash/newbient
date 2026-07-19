@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 
 import { Link } from 'react-router-dom';
 import { useStore } from '../../lib/store';
+import { useStoreSubscription } from '../../hooks/useStoreSubscription';
 import { PREDEFINED_CITIES, ARTIST_CATEGORIES } from '../../lib/constants';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -89,6 +90,7 @@ const getPageNumbers = (currentPage, totalPages) => {
 };
 
 const ArtistManager = ({ isEmbedded = false }) => {
+    useStoreSubscription(['artists', 'upcomingEvents']);
     const { artists, upcomingEvents, updateArtist, deleteArtist, castArtistToGig } = useStore();
     const [searchTerm, setSearchTerm] = useState('');
     const [currentPage, setCurrentPage] = useState(1);

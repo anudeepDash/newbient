@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useStore } from '../lib/store';
+import { useStoreSubscription } from '../hooks/useStoreSubscription';
 import { motion } from 'framer-motion';
 import { CheckCircle2, ArrowRight, ShieldCheck, MapPin, Globe } from 'lucide-react';
 import useDynamicMeta from '../hooks/useDynamicMeta';
@@ -8,6 +9,7 @@ import GlobalLoader from '../components/ui/GlobalLoader';
 import { cn } from '../lib/utils';
 
 const CampusActivationPage = () => {
+    useStoreSubscription(['campusActivations', 'campusActivationEntries', 'campusProfiles', 'creators']);
     const { slug } = useParams();
     const { campusActivations, user, joinCampusActivation, completeActivationTask, campusActivationEntries, addCampusProfile, campusProfiles, creators } = useStore();
     const [campaign, setCampaign] = useState(null);

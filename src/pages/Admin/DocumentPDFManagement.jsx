@@ -13,6 +13,7 @@ import FolderOpen from 'lucide-react/dist/esm/icons/folder-open';
 import FileBadge from 'lucide-react/dist/esm/icons/file-badge';
 import Loader from 'lucide-react/dist/esm/icons/loader';
 import { useStore } from '../../lib/store';
+import { useStoreSubscription } from '../../hooks/useStoreSubscription';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -117,6 +118,7 @@ const DocumentPDFCard = ({ doc, onEdit, onDelete, onDownload, isDownloading }) =
 };
 
 const DocumentPDFManagement = () => {
+    useStoreSubscription(['genDocuments']);
     const navigate = useNavigate();
     const { genDocuments, deleteGenDocument, addToast, user } = useStore();
     const [search, setSearch] = useState('');

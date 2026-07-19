@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Plus, Trash2, Pin, LayoutGrid, Save, Sparkles, ChevronUp, ChevronDown, X, Clock, Eye, Edit, Mail, Megaphone, Calendar, Radio, FileText, Music, RotateCcw } from 'lucide-react';
 import { useStore } from '../../lib/store';
+import { useStoreSubscription } from '../../hooks/useStoreSubscription';
 import { notifyAllUsers } from '../../lib/notificationTriggers';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -13,6 +14,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import AdminCommunityHubLayout from '../../components/admin/AdminCommunityHubLayout';
 
 const AnnouncementsManager = () => {
+    useStoreSubscription(['announcements']);
     const { announcements, addAnnouncement, updateAnnouncement, togglePinAnnouncement, deleteAnnouncement, reorderAnnouncements, cleanupExpiredAnnouncements } = useStore();
     const [isAdding, setIsAdding] = useState(false);
     const [editingId, setEditingId] = useState(null);

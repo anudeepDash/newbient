@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
 import { useStore } from '../lib/store';
+import { useStoreSubscription } from '../hooks/useStoreSubscription';
 import { cn } from '../lib/utils';
 import { 
     Zap, ArrowRight, ArrowLeft, Instagram, Youtube, Users, Target, 
@@ -15,6 +16,7 @@ import ProfilePanel from '../components/ProfilePanel';
 import NotificationBell from '../components/NotificationBell';
 
 const CreatorLanding = () => {
+    useStoreSubscription(['creators', 'campaigns']);
     useDynamicMeta({
         title: "Newbi Creator",
         description: "Explore campaign opportunities and collaborate with local brands.",

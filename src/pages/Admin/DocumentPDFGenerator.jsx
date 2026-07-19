@@ -11,6 +11,7 @@ import AlertCircle from 'lucide-react/dist/esm/icons/alert-circle';
 import StudioRichEditor from '../../components/ui/StudioRichEditor';
 import CompanyProfileManager from '../../components/admin/CompanyProfileManager';
 import { useStore } from '../../lib/store';
+import { useStoreSubscription } from '../../hooks/useStoreSubscription';
 import { cn } from '../../lib/utils';
 
 const logoOptions = [
@@ -20,6 +21,7 @@ const logoOptions = [
 ];
 
 const DocumentPDFGenerator = () => {
+    useStoreSubscription(['genDocuments']);
     const { id } = useParams();
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();

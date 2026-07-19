@@ -13,6 +13,7 @@ import Ticket from 'lucide-react/dist/esm/icons/ticket';
 import RefreshCw from 'lucide-react/dist/esm/icons/refresh-cw';
 import CheckCircle2 from 'lucide-react/dist/esm/icons/check-circle-2';
 import { useStore } from '../../lib/store';
+import { useStoreSubscription } from '../../hooks/useStoreSubscription';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -20,6 +21,7 @@ import { cn } from '../../lib/utils';
 import { Html5Qrcode } from 'html5-qrcode';
 
 const EventScanner = () => {
+    useStoreSubscription(['upcomingEvents', 'portfolio', 'guestlists']);
     const { upcomingEvents, portfolio = [], guestlists = [], scanTicket, user } = useStore();
     const [searchParams] = useSearchParams();
     const eventIdFromUrl = searchParams.get('eventId');

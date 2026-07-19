@@ -15,6 +15,7 @@ import X from 'lucide-react/dist/esm/icons/x';
 import PenTool from 'lucide-react/dist/esm/icons/pen-tool';
 import CheckCircle2 from 'lucide-react/dist/esm/icons/check-circle-2';
 import { useStore } from '../lib/store';
+import { useStoreSubscription } from '../hooks/useStoreSubscription';
 import { Button } from '../components/ui/Button';
 import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -106,6 +107,7 @@ const renderContent = (content, baseClass = 'text-[12px] font-medium text-black 
 };
 
 const Agreement = () => {
+    useStoreSubscription(['agreements']);
     const { id } = useParams();
     const { agreements, updateAgreement, logDocumentAccess, user, loading: storeLoading } = useStore();
     const [displayAgreement, setDisplayAgreement] = useState(null);

@@ -3,12 +3,14 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Save, X, Image, Type, FileText, Eye, ChevronLeft, Loader2, User, Settings, Sparkles, Zap } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useStore } from '../../lib/store';
+import { useStoreSubscription } from '../../hooks/useStoreSubscription';
 import { notifyAllUsers } from '../../lib/notificationTriggers';
 import StudioRichEditor from '../../components/ui/StudioRichEditor';
 import { cn } from '../../lib/utils';
 import { extractDominantColor } from '../../lib/colorUtils';
 
 const BlogPostEditor = () => {
+    useStoreSubscription(['posts']);
     const { id } = useParams();
     const navigate = useNavigate();
     const { posts, addPost, updatePost, user, addToast } = useStore();

@@ -12,6 +12,7 @@ import Filter from 'lucide-react/dist/esm/icons/filter';
 import Search from 'lucide-react/dist/esm/icons/search';
 import X from 'lucide-react/dist/esm/icons/x';
 import { useStore } from '../../lib/store';
+import { useStoreSubscription } from '../../hooks/useStoreSubscription';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
@@ -20,6 +21,7 @@ import AdminCommunityHubLayout from '../../components/admin/AdminCommunityHubLay
 import { cn } from '../../lib/utils';
 
 const MessageManager = () => {
+    useStoreSubscription(['messages']);
     const { messages, markMessageRead, deleteMessage } = useStore();
     const [filter, setFilter] = useState('all'); // 'all', 'unread', 'read'
     const [searchTerm, setSearchTerm] = useState('');

@@ -3,12 +3,14 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Search, Filter, Edit2, Trash2, Eye, MoreVertical, Newspaper, Clock, Star, Mail, Sparkles, CheckCircle2, LayoutGrid, List, Calendar, Radio, Music, FileText, TrendingUp, Users, Zap, MoreHorizontal } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useStore } from '../../lib/store';
+import { useStoreSubscription } from '../../hooks/useStoreSubscription';
 import { notifyAllUsers } from '../../lib/notificationTriggers';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import AdminCommunityHubLayout from '../../components/admin/AdminCommunityHubLayout';
 
 const BlogManager = () => {
+    useStoreSubscription(['posts', 'subscribers']);
     const { posts, deletePost, updatePost, subscribers, siteSettings, updateGeneralSettings } = useStore();
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('All');

@@ -18,6 +18,7 @@ import Home from 'lucide-react/dist/esm/icons/home';
 import Instagram from 'lucide-react/dist/esm/icons/instagram';
 import Eye from 'lucide-react/dist/esm/icons/eye';
 import { useStore } from '../lib/store';
+import { useStoreSubscription } from '../hooks/useStoreSubscription';
 import BlogNewsletter from '../components/blog/BlogNewsletter';
 import AdSenseSlot from '../components/blog/AdSenseSlot';
 import useDynamicMeta from '../hooks/useDynamicMeta';
@@ -220,6 +221,7 @@ const StoryCard = ({ post }) => {
 };
 
 const ConcertZoneBlog = () => {
+    useStoreSubscription(['posts']);
     useDynamicMeta({
         title: "Concert Zone",
         description: "Latest music, live events, artists, guides, and concert news from Newbi.",

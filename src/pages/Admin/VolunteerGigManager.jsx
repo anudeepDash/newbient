@@ -29,6 +29,7 @@ import UserCheck from 'lucide-react/dist/esm/icons/user-check';
 import LinkIcon from 'lucide-react/dist/esm/icons/link';
 import ShieldCheck from 'lucide-react/dist/esm/icons/shield-check';
 import { useStore } from '../../lib/store';
+import { useStoreSubscription } from '../../hooks/useStoreSubscription';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
@@ -205,6 +206,7 @@ const GigCard = ({ gig, index, totalGigs, onEdit, onMove, onUpdate, onDelete }) 
 };
 
 const VolunteerGigManager = () => {
+    useStoreSubscription(['volunteerGigs']);
     const navigate = useNavigate();
     const colorPresets = [
         { name: 'Neon Green', value: '#39FF14' },

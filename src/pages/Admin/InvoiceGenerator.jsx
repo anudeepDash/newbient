@@ -35,6 +35,7 @@ import MessageCircle from 'lucide-react/dist/esm/icons/message-circle';
 import Upload from 'lucide-react/dist/esm/icons/upload';
 import CheckCircle2 from 'lucide-react/dist/esm/icons/check-circle-2';
 import { useStore } from '../../lib/store';
+import { useStoreSubscription } from '../../hooks/useStoreSubscription';
 import { Card } from '../../components/ui/Card';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
@@ -51,6 +52,7 @@ import DocumentSeal from '../../components/ui/DocumentSeal';
 // Markdown-like formatting toolbar for textareas
 
 const InvoiceGenerator = () => {
+    useStoreSubscription(['invoices']);
     const { id } = useParams();
     const navigate = useNavigate();
     const { addInvoice, updateInvoice, invoices, uploadToCloudinary, user } = useStore();

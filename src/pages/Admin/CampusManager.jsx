@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { useStore } from '../../lib/store';
+import { useStoreSubscription } from '../../hooks/useStoreSubscription';
 import { Users, Search, CheckCircle2, XCircle, Mail, Phone, MapPin, GraduationCap, ChevronLeft, Calendar, Hash, Link as LinkIcon } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { cn } from '../../lib/utils';
 import useDynamicMeta from '../../hooks/useDynamicMeta';
 
 const CampusManager = () => {
+    useStoreSubscription(['campusProfiles', 'creators']);
     useDynamicMeta({
         title: "Manage Campus Ambassadors",
     });

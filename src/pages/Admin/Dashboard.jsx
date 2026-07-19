@@ -41,6 +41,7 @@ import { collection, query, where, onSnapshot, getDocs, addDoc } from 'firebase/
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, sendPasswordResetEmail, signInWithPopup } from 'firebase/auth';
 import { db, auth, googleProvider } from '../../lib/firebase';
 import { useStore } from '../../lib/store';
+import { useStoreSubscription } from '../../hooks/useStoreSubscription';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import AdminCarousel from '../../components/admin/AdminCarousel';
@@ -241,6 +242,7 @@ const BootstrapAlert = ({ onClaim }) => (
 // --- Main Dashboard Component ---
 
 const Dashboard = () => {
+    useStoreSubscription(['invoices', 'spends', 'otherIncomes', 'proposals', 'agreements', 'concerts', 'portfolio', 'announcements', 'artists', 'clientRequests', 'upcomingEvents', 'ticketOrders', 'documents', 'genDocuments']);
     const { 
         invoices, spends, otherIncomes, proposals, agreements, concerts, portfolio, announcements, user, 
         artists, clientRequests, upcomingEvents, ticketOrders, documents, genDocuments,

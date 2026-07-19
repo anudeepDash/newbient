@@ -21,6 +21,7 @@ import Percent from 'lucide-react/dist/esm/icons/percent';
 import Tag from 'lucide-react/dist/esm/icons/tag';
 import ChevronRight from 'lucide-react/dist/esm/icons/chevron-right';
 import { useStore } from '../../lib/store';
+import { useStoreSubscription } from '../../hooks/useStoreSubscription';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
@@ -32,6 +33,7 @@ import { db } from '../../lib/firebase';
 import { collection, query, orderBy, onSnapshot, deleteDoc, doc, updateDoc, increment } from 'firebase/firestore';
 
 const TicketingManagement = () => {
+    useStoreSubscription(['upcomingEvents', 'portfolio', 'ticketOrders']);
     const { upcomingEvents, portfolio = [], ticketOrders = [], updateTicketOrderStatus, user } = useStore();
     const storeGuestlists = useStore(state => state.guestlists) || [];
     const isScanner = user?.role === 'scanner';

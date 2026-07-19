@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useStore } from '../lib/store';
+import { useStoreSubscription } from '../hooks/useStoreSubscription';
 import { cn } from '../lib/utils';
 import { 
     Search, 
@@ -32,6 +33,7 @@ const PLATFORMS = {
 };
 
 const LiveCampaigns = () => {
+    useStoreSubscription(['campaigns']);
     const navigate = useNavigate();
     const { campaigns } = useStore();
     

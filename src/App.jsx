@@ -104,7 +104,7 @@ function AppContent() {
 
   useEffect(() => {
     const unsubscribeData = subscribeToData(isAdmin);
-    const unsubscribeNotifications = subscribeToNotifications();
+    const unsubscribeNotifications = subscribeToNotifications(user?.uid);
     initForegroundMessaging();
     
     const unsubAuth = onAuthStateChanged(auth, (user) => {
@@ -121,7 +121,7 @@ function AppContent() {
       if (unsubscribeNotifications) unsubscribeNotifications();
       if (unsubAuth) unsubAuth();
     };
-  }, [subscribeToData, subscribeToNotifications, isAdmin]);
+  }, [subscribeToData, subscribeToNotifications, isAdmin, user?.uid]);
 
   return (
     <>

@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useStore } from '../../lib/store';
+import { useStoreSubscription } from '../../hooks/useStoreSubscription';
 import { PREDEFINED_CITIES } from '../../lib/constants';
 import Users from 'lucide-react/dist/esm/icons/users';
 import Search from 'lucide-react/dist/esm/icons/search';
@@ -91,6 +92,7 @@ const getPageNumbers = (currentPage, totalPages) => {
 };
 
 const CreatorManager = ({ showLeaderboardOnly = false }) => {
+    useStoreSubscription(['creators', 'campaigns']);
     const { creators, campaigns, updateCreator, deleteCreator } = useStore();
     const navigate = useNavigate();
     const location = useLocation();

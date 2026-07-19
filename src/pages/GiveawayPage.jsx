@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useSearchParams, Link } from 'react-router-dom';
 import { useStore } from '../lib/store';
+import { useStoreSubscription } from '../hooks/useStoreSubscription';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import Gift from 'lucide-react/dist/esm/icons/gift';
@@ -29,6 +30,7 @@ import { cn } from '../lib/utils';
 import useDynamicMeta from '../hooks/useDynamicMeta';
 
 const GiveawayPage = () => {
+    useStoreSubscription(['giveaways']);
     const { slug } = useParams();
     const [searchParams] = useSearchParams();
     const referredBy = searchParams.get('ref');

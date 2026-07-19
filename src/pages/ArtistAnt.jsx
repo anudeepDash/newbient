@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useStore } from '../lib/store';
+import { useStoreSubscription } from '../hooks/useStoreSubscription';
 import FileText from 'lucide-react/dist/esm/icons/file-text';
 import Briefcase from 'lucide-react/dist/esm/icons/briefcase';
 import UserCheck from 'lucide-react/dist/esm/icons/user-check';
@@ -125,6 +126,7 @@ const ECOSYSTEM_FEATURES = [
 ];
 
 const ArtistAnt = () => {
+    useStoreSubscription(['artists']);
     const { 
         user, authInitialized, setAuthModal, artists, addArtist, 
         addClientRequest, deleteArtist, updateArtist, uploadToCloudinary, addToast 

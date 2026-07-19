@@ -19,6 +19,7 @@ import Zap from 'lucide-react/dist/esm/icons/zap';
 import Star from 'lucide-react/dist/esm/icons/star';
 import { notifyAllUsers } from '../../lib/notificationTriggers';
 import { useStore } from '../../lib/store';
+import { useStoreSubscription } from '../../hooks/useStoreSubscription';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
@@ -28,6 +29,7 @@ import { cn } from '../../lib/utils';
 import StudioSelect from '../../components/ui/StudioSelect';
 
 const FormBuilder = () => {
+    useStoreSubscription(['forms']);
     const colorPresets = [
         { name: 'Neon Pink', value: '#FF4F8B' },
         { name: 'Neon Green', value: '#39FF14' },

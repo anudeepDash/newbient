@@ -32,12 +32,14 @@ import {
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { Link, useNavigate } from 'react-router-dom';
 import { useStore } from '../../lib/store';
+import { useStoreSubscription } from '../../hooks/useStoreSubscription';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import { cn } from '../../lib/utils';
 import AdminCommunityHubLayout from '../../components/admin/AdminCommunityHubLayout';
 
 const ConcertZoneStudio = () => {
+    useStoreSubscription(['posts']);
     const { posts, deletePost, updatePost, siteSettings, updateGeneralSettings, addToast } = useStore();
     const [activeTab, setActiveTab] = useState('LAYOUT');
     const [isSaving, setIsSaving] = useState(false);

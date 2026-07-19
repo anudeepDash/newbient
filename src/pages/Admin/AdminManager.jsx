@@ -25,6 +25,7 @@ import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { useStore } from '../../lib/store';
+import { useStoreSubscription } from '../../hooks/useStoreSubscription';
 import { cn } from '../../lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import AdminCommunityHubLayout from '../../components/admin/AdminCommunityHubLayout';
@@ -96,6 +97,7 @@ const getSelectAccentColor = (role) => {
 };
 
 const AdminManager = () => {
+    useStoreSubscription(['creators', 'artists']);
     const { user, blockUser, unblockUser, creators, artists } = useStore();
     const [activeTab, setActiveTab] = useState('members');
 

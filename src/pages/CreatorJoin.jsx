@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useStore } from '../lib/store';
+import { useStoreSubscription } from '../hooks/useStoreSubscription';
 import confetti from 'canvas-confetti';
 import { PREDEFINED_CITIES } from '../lib/constants';
 import { Button } from '../components/ui/Button';
@@ -199,6 +200,7 @@ const CustomSelect = ({ value, onChange, options, name, placeholder, icon: Icon,
 };
 
 const CreatorJoin = () => {
+    useStoreSubscription(['creators']);
     useDynamicMeta({ title: "Join Creator Network", description: "Register to join Newbi's Elite Creator Network.", url: window.location.href });
 
     const { user, authInitialized, setAuthModal, addCreator, creators, uploadToCloudinary, loading } = useStore();

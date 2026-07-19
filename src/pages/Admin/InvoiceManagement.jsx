@@ -30,6 +30,7 @@ import Receipt from 'lucide-react/dist/esm/icons/receipt';
 import AlertTriangle from 'lucide-react/dist/esm/icons/alert-triangle';
 import FolderOpen from 'lucide-react/dist/esm/icons/folder-open';
 import { useStore } from '../../lib/store';
+import { useStoreSubscription } from '../../hooks/useStoreSubscription';
 import { sendInvoiceEmail, generateInvoiceEmailHTML, sendPaymentApprovedEmail, sendPaymentDeclinedEmail } from '../../lib/email';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -41,6 +42,7 @@ import InvoiceEmailModal from '../../components/admin/InvoiceEmailModal';
 import PaymentClaimReview from '../../components/admin/PaymentClaimReview';
 
 const InvoiceManagement = () => {
+    useStoreSubscription(['invoices']);
     const navigate = useNavigate();
     const { invoices, updateInvoice, deleteInvoice, addInvoice, user } = useStore();
     const [filter, setFilter] = useState('All');
