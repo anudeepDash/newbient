@@ -211,7 +211,7 @@ const PortfolioCard = ({ item, categories, index }) => {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: '-50px' }}
             transition={{ duration: 0.6, delay: Math.min(index * 0.08, 0.3) }}
-            className="group relative aspect-[4/5] rounded-[2.5rem] overflow-hidden bg-zinc-950 border border-white/5 hover:border-white/15 transition-all duration-700 shadow-[0_30px_80px_rgba(0,0,0,0.5)] cursor-default"
+            className="group relative aspect-[4/5] rounded-[2.5rem] overflow-hidden bg-zinc-950 border border-white/5 hover:border-white/15 transition-[background-color,border-color,box-shadow] duration-700 shadow-[0_30px_80px_rgba(0,0,0,0.5)] cursor-default"
         >
             {/* ── Glow Halo ── */}
             <div className="absolute -inset-px rounded-[2.5rem] bg-gradient-to-br from-neon-green/10 to-neon-blue/5 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none blur-xl" />

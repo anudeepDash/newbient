@@ -224,7 +224,7 @@ const UnifiedGuestlistModal = ({ isOpen, onClose, guestlist }) => {
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         onClick={onClose}
-                        className="absolute inset-0 bg-[#020202]/95 backdrop-blur-[60px] transition-all"
+                        className="absolute inset-0 bg-[#020202]/95 backdrop-blur-[60px]"
                     />
 
                     {/* Modal Content: Mobile Drawer / Desktop Compact Card */}

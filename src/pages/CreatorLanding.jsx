@@ -685,36 +685,38 @@ const CreatorLanding = () => {
                     ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 pt-4">
                             {liveCampaigns.slice(0, 3).map((camp) => (
-                                <div key={camp.id} className="group bg-[#111622]/40 backdrop-blur-2xl border border-white/5 hover:border-neon-green/20 rounded-3xl overflow-hidden flex flex-col transition-all duration-500 hover:-translate-y-1.5 shadow-2xl">
+                                <div key={camp.id} className="group bg-zinc-950/45 backdrop-blur-3xl border border-white/[0.08] hover:border-neon-green/30 rounded-[2.2rem] overflow-hidden flex flex-col transition-all duration-500 hover:-translate-y-2 shadow-[inset_0_1px_1px_rgba(255,255,255,0.1),0_10px_30px_rgba(0,0,0,0.5)] hover:shadow-[0_20px_50px_rgba(57,255,20,0.1)] relative">
                                     {camp.thumbnail && (
-                                        <div className="h-56 relative overflow-hidden bg-zinc-900">
-                                            <img src={camp.thumbnail} alt={camp.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 opacity-80" />
-                                            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
+                                        <div className="aspect-video relative overflow-hidden bg-zinc-900 shrink-0">
+                                            <img src={camp.thumbnail} alt={camp.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out opacity-80" />
+                                            <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/20 to-transparent pointer-events-none" />
                                             <div className="absolute top-6 left-6 flex flex-wrap gap-2 z-10">
-                                                <span className="px-3 py-1.5 rounded-xl bg-black/60 backdrop-blur-md border border-white/10 text-[9px] font-black uppercase tracking-widest text-neon-green flex items-center gap-1.5 shadow-xl">
+                                                <span className="px-3.5 py-1.5 rounded-full bg-black/60 backdrop-blur-md border border-white/10 text-[9px] font-black uppercase tracking-widest text-neon-green flex items-center gap-1.5 shadow-xl">
                                                     <MapPin size={12} /> {camp.targetCity || 'Universal'}
                                                 </span>
                                             </div>
                                         </div>
                                     )}
-                                    <div className="p-8 flex-1 flex flex-col justify-between space-y-6 bg-gradient-to-b from-transparent to-black/60">
+                                    <div className="p-6 sm:p-8 flex-1 flex flex-col justify-between space-y-6 bg-gradient-to-b from-transparent to-zinc-950/40">
                                         <div className="space-y-3">
-                                            <span className="text-[10px] font-bold text-neon-green uppercase tracking-widest">{camp.category || 'Brand Mission'}</span>
-                                            <h4 className="text-xl font-extrabold font-heading tracking-tight text-white group-hover:text-neon-green transition-colors line-clamp-2">{camp.title}</h4>
-                                            <div className="flex items-center gap-4 text-[10px] font-black uppercase tracking-widest text-gray-400 pt-2 border-t border-white/5">
+                                            <span className="text-[10px] font-black text-neon-green uppercase tracking-[0.2em]">{camp.category || 'Brand Mission'}</span>
+                                            <h4 className="text-xl md:text-2xl font-black font-heading tracking-tight text-white group-hover:text-neon-green transition-colors line-clamp-2 uppercase italic leading-none">{camp.title}</h4>
+                                            <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-gray-400 pt-3 border-t border-white/5">
+                                                <Users size={12} className="text-neon-green" />
                                                 <span>Min. {Number(camp.minInstagramFollowers || 0).toLocaleString()} Followers Required</span>
                                             </div>
                                         </div>
-                                        <div className="flex items-center justify-between pt-4 border-t border-white/5">
+                                        <div className="flex items-center justify-between pt-4 border-t border-white/5 mt-auto">
                                             <div>
                                                 <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-0.5">Reward</p>
-                                                <p className="text-sm font-black text-neon-green uppercase truncate max-w-[150px]">{camp.reward}</p>
+                                                <p className="text-sm font-black text-neon-green uppercase truncate max-w-[150px] italic">{camp.reward}</p>
                                             </div>
                                             <Button 
                                                 onClick={() => navigate(`/campaign/${camp.id}`)}
-                                                className="h-12 px-6 rounded-xl bg-white text-black font-black uppercase tracking-widest text-[10px] group-hover:bg-neon-green group-hover:text-black transition-all shadow-xl"
+                                                className="h-12 px-6 rounded-full bg-white text-black font-black uppercase tracking-widest text-[10px] group-hover:bg-neon-green group-hover:text-black transition-all duration-300 hover:scale-105 shadow-xl flex items-center gap-2 border-none"
                                             >
-                                                View Brief
+                                                <span>View Brief</span>
+                                                <ArrowRight size={12} className="group-hover:translate-x-1 transition-transform" />
                                             </Button>
                                         </div>
                                     </div>

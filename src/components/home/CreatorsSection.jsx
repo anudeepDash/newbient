@@ -38,7 +38,7 @@ const CreatorsSection = () => {
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true }}
                         transition={{ duration: 0.6 }}
-                        className="group relative bg-zinc-900/35 backdrop-blur-3xl border border-white/5 p-6 md:p-14 rounded-3xl overflow-hidden hover:border-white/10 transition-all duration-700 min-h-[380px] md:min-h-[460px] flex flex-col justify-between"
+                        className="group relative bg-zinc-900/35 backdrop-blur-3xl border border-white/5 p-6 md:p-14 rounded-3xl overflow-hidden hover:border-white/10 transition-[background-color,border-color,box-shadow] duration-700 min-h-[380px] md:min-h-[460px] flex flex-col justify-between"
                     >
                         <div className="space-y-6">
                             <div className="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-neon-green group-hover:bg-white group-hover:text-black transition-all duration-700 group-hover:scale-110 shadow-lg">
@@ -87,7 +87,7 @@ const CreatorsSection = () => {
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true }}
                         transition={{ duration: 0.6, delay: 0.2 }}
-                        className="group relative bg-zinc-900/35 backdrop-blur-3xl border border-white/5 p-6 md:p-14 rounded-3xl overflow-hidden hover:border-white/10 transition-all duration-700 min-h-[380px] md:min-h-[460px] flex flex-col justify-between"
+                        className="group relative bg-zinc-900/35 backdrop-blur-3xl border border-white/5 p-6 md:p-14 rounded-3xl overflow-hidden hover:border-white/10 transition-[background-color,border-color,box-shadow] duration-700 min-h-[380px] md:min-h-[460px] flex flex-col justify-between"
                     >
                         <div className="space-y-6">
                             <div className="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-white group-hover:bg-white group-hover:text-black transition-all duration-700 group-hover:scale-110 shadow-lg">

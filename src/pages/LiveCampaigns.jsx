@@ -182,11 +182,11 @@ const LiveCampaigns = () => {
                                         animate={{ opacity: 1, scale: 1 }}
                                         exit={{ opacity: 0, scale: 0.95 }}
                                         transition={{ duration: 0.4 }}
-                                        className="group bg-black/40 backdrop-blur-2xl border border-white/10 hover:border-neon-blue/40 rounded-[2.5rem] overflow-hidden flex flex-col justify-between transition-all duration-500 hover:-translate-y-2 shadow-2xl relative"
+                                        className="group bg-zinc-950/45 backdrop-blur-3xl border border-white/[0.08] hover:border-neon-blue/30 rounded-[2.2rem] overflow-hidden flex flex-col justify-between transition-all duration-500 hover:-translate-y-2 shadow-[inset_0_1px_1px_rgba(255,255,255,0.1),0_10px_30px_rgba(0,0,0,0.5)] hover:shadow-[0_20px_50px_rgba(0,240,255,0.1)] relative"
                                     >
-                                        <div className="h-64 relative overflow-hidden bg-zinc-900 shrink-0">
-                                            <img src={camp.thumbnail || 'https://images.unsplash.com/photo-1539109136881-3be0616acf4b?auto=format&fit=crop&q=80&w=800'} alt={camp.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 opacity-80" />
-                                            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent" />
+                                        <div className="aspect-video relative overflow-hidden bg-zinc-900 shrink-0">
+                                            <img src={camp.thumbnail || 'https://images.unsplash.com/photo-1539109136881-3be0616acf4b?auto=format&fit=crop&q=80&w=800'} alt={camp.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out opacity-80" />
+                                            <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/20 to-transparent pointer-events-none" />
                                             <div className="absolute top-6 left-6 right-6 flex items-center justify-between z-10 gap-2">
                                                 <span className="px-3.5 py-1.5 rounded-full bg-black/60 backdrop-blur-md border border-white/10 text-[9px] font-black uppercase tracking-widest text-neon-pink flex items-center gap-1.5 shadow-xl">
                                                     <MapPin size={12} /> {camp.targetCity || 'Universal'}
@@ -202,20 +202,20 @@ const LiveCampaigns = () => {
                                                             {camp.status}
                                                         </span>
                                                     )}
-                                                    <div className="w-10 h-10 rounded-xl bg-black/60 backdrop-blur-md border border-white/10 flex items-center justify-center text-white shadow-xl">
-                                                        <PlatIcon size={18} />
+                                                    <div className="w-9 h-9 rounded-xl bg-black/60 backdrop-blur-md border border-white/10 flex items-center justify-center text-white shadow-xl">
+                                                        <PlatIcon size={16} />
                                                     </div>
                                                 </div>
                                             </div>
                                         </div>
 
-                                        <div className="p-6 sm:p-8 flex-1 flex flex-col justify-between space-y-6 sm:space-y-8 bg-gradient-to-b from-transparent to-black/60">
+                                        <div className="p-6 sm:p-8 flex-1 flex flex-col justify-between space-y-6 sm:space-y-8 bg-gradient-to-b from-transparent to-zinc-950/40">
                                             <div className="space-y-4">
-                                                <h3 className="text-2xl font-black uppercase italic tracking-tight text-white group-hover:text-neon-blue transition-colors line-clamp-2 pr-2">{camp.title}</h3>
-                                                <p className="text-gray-400 text-xs font-medium leading-relaxed line-clamp-3">{camp.description || 'Exclusive brand mission requiring verified creator fulfillment and professional engagement deliverables.'}</p>
+                                                <h3 className="text-2xl font-black uppercase italic tracking-tight text-white group-hover:text-neon-blue transition-colors line-clamp-2 pr-2 leading-none">{camp.title}</h3>
+                                                <p className="text-gray-400 text-xs font-medium leading-relaxed line-clamp-2">{camp.description || 'Exclusive brand mission requiring verified creator fulfillment and professional engagement deliverables.'}</p>
                                                 
-                                                <div className="flex flex-wrap items-center gap-3 pt-4 border-t border-white/5">
-                                                    <span className="px-3 py-1.5 rounded-xl bg-white/[0.03] border border-white/5 text-[9px] font-black uppercase tracking-widest text-gray-300 flex items-center gap-1.5">
+                                                <div className="flex flex-wrap items-center gap-3 pt-3 border-t border-white/5">
+                                                    <span className="px-3.5 py-1.5 rounded-xl bg-white/[0.03] border border-white/5 text-[9px] font-black uppercase tracking-widest text-gray-300 flex items-center gap-1.5">
                                                         <Users size={12} className="text-neon-blue" /> Min. {Number(camp.minInstagramFollowers || 0).toLocaleString()} Followers
                                                     </span>
                                                 </div>
@@ -224,21 +224,27 @@ const LiveCampaigns = () => {
                                             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-6 border-t border-white/5 mt-auto shrink-0">
                                                 <div>
                                                     <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-0.5">Reward Payout</p>
-                                                    <p className="text-base font-black text-neon-green uppercase truncate max-w-[160px]">{camp.reward}</p>
+                                                    <p className="text-base font-black text-neon-green uppercase truncate max-w-[160px] italic">{camp.reward}</p>
                                                 </div>
                                                 <Button 
                                                     onClick={() => navigate(`/campaign/${camp.id}`)}
                                                     className={cn(
-                                                        "w-full sm:w-auto h-12 sm:h-14 px-6 sm:px-8 rounded-xl font-black uppercase tracking-widest text-xs transition-all shadow-xl",
+                                                        "w-full sm:w-auto h-12 sm:h-14 px-6 sm:px-8 rounded-full font-black uppercase tracking-widest text-[10px] transition-all duration-300 shadow-xl flex items-center justify-center gap-2 border-none",
                                                         (!camp.status || camp.status.toLowerCase() === 'open')
-                                                            ? "bg-white text-black group-hover:bg-neon-blue group-hover:text-black"
+                                                            ? "bg-white text-black group-hover:bg-neon-blue group-hover:text-black hover:scale-105"
                                                             : "bg-white/5 text-gray-400 border border-white/10 hover:bg-white/10 hover:text-white"
                                                     )}
                                                 >
                                                     {(!camp.status || camp.status.toLowerCase() === 'open') ? (
-                                                        <>View Brief & Apply <ArrowRight size={16} className="ml-2 inline" /></>
+                                                        <>
+                                                            <span>View Brief & Apply</span> 
+                                                            <ArrowRight size={12} className="group-hover:translate-x-1 transition-transform" />
+                                                        </>
                                                     ) : (
-                                                        <>View Brief <ArrowRight size={16} className="ml-2 inline" /></>
+                                                        <>
+                                                            <span>View Brief</span>
+                                                            <ArrowRight size={12} className="group-hover:translate-x-1 transition-transform" />
+                                                        </>
                                                     )}
                                                 </Button>
                                             </div>

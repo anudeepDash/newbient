@@ -278,41 +278,43 @@ const CampaignPublicView = () => {
             </div>
 
             {/* Hero Image Section */}
-            {campaign.thumbnail ? (
-                <div className="relative w-full h-[40vh] md:h-[55vh] overflow-hidden">
-                    <img 
-                        src={campaign.thumbnail} 
-                        alt={campaign.title} 
-                        className="w-full h-full object-cover opacity-90 scale-105 animate-pulse-slow"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-[#050505]/10 to-transparent" />
-                    <div className="absolute inset-0 bg-gradient-to-b from-[#050505]/30 via-transparent to-transparent" />
-                    <div className="absolute bottom-8 left-4 md:left-8 flex items-center gap-3 z-10">
-                        <div className="p-3.5 rounded-2xl bg-black/60 backdrop-blur-xl border border-white/10 text-neon-blue shadow-2xl">
-                            <Instagram size={24} />
-                        </div>
-                        <div className="px-4 py-2 rounded-2xl bg-black/60 backdrop-blur-xl border border-white/10 text-xs font-black uppercase tracking-widest text-white shadow-2xl flex items-center gap-2">
-                            <MapPin size={14} className="text-neon-pink" /> {campaign.targetCity || 'Universal'}
-                        </div>
-                    </div>
-                </div>
-            ) : (
-                <div className="relative w-full h-[35vh] bg-gradient-to-r from-neon-blue/20 via-neon-purple/20 to-[#050505] overflow-hidden flex items-end p-8 border-b border-white/5">
-                    <div className="absolute -right-20 -top-20 w-80 h-80 bg-neon-blue/10 rounded-full blur-3xl pointer-events-none" />
-                    <div className="flex items-center gap-4 z-10">
-                        <div className="p-4 rounded-2xl bg-black/60 backdrop-blur-xl border border-white/10 text-neon-blue shadow-2xl">
-                            <Instagram size={28} />
-                        </div>
-                        <div>
-                            <span className="text-[10px] font-black text-neon-blue uppercase tracking-[0.4em] block mb-1">Creator Opportunity</span>
-                            <div className="flex items-center gap-2 text-sm font-black uppercase tracking-wider text-white">
-                                <MapPin size={14} className="text-neon-pink" /> {campaign.targetCity || 'Universal'}
+            <div className="max-w-7xl mx-auto px-4 md:px-8 pt-8">
+                {campaign.thumbnail ? (
+                    <div className="relative w-full aspect-video rounded-[2rem] md:rounded-[2.5rem] overflow-hidden border border-white/10 shadow-2xl bg-zinc-950">
+                        <img 
+                            src={campaign.thumbnail} 
+                            alt={campaign.title} 
+                            className="w-full h-full object-cover opacity-90 scale-100 transition-all duration-700"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-[#050505]/20 to-transparent pointer-events-none" />
+                        <div className="absolute inset-0 bg-gradient-to-b from-[#050505]/10 via-transparent to-transparent pointer-events-none" />
+                        <div className="absolute bottom-6 left-6 flex items-center gap-3 z-10">
+                            <div className="p-3 rounded-xl bg-black/60 backdrop-blur-md border border-white/10 text-neon-blue shadow-lg">
+                                <Instagram size={18} />
+                            </div>
+                            <div className="px-3 py-1.5 rounded-xl bg-black/60 backdrop-blur-md border border-white/10 text-[9px] font-black uppercase tracking-widest text-white shadow-lg flex items-center gap-1.5">
+                                <MapPin size={12} className="text-neon-pink" /> {campaign.targetCity || 'Universal'}
                             </div>
                         </div>
                     </div>
-                    <div className="absolute bottom-0 left-0 w-full h-16 bg-gradient-to-t from-[#050505] to-transparent pointer-events-none" />
-                </div>
-            )}
+                ) : (
+                    <div className="relative w-full aspect-[21/9] min-h-[250px] bg-gradient-to-r from-neon-blue/20 via-neon-purple/20 to-[#050505] rounded-[2rem] md:rounded-[2.5rem] overflow-hidden flex items-end p-8 border border-white/10 shadow-2xl">
+                        <div className="absolute -right-20 -top-20 w-80 h-80 bg-neon-blue/10 rounded-full blur-3xl pointer-events-none" />
+                        <div className="flex items-center gap-4 z-10">
+                            <div className="p-3.5 rounded-2xl bg-black/60 backdrop-blur-xl border border-white/10 text-neon-blue shadow-2xl">
+                                <Instagram size={24} />
+                            </div>
+                            <div>
+                                <span className="text-[9px] font-black text-neon-blue uppercase tracking-[0.4em] block mb-1">Creator Opportunity</span>
+                                <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-white">
+                                    <MapPin size={12} className="text-neon-pink" /> {campaign.targetCity || 'Universal'}
+                                </div>
+                            </div>
+                        </div>
+                        <div className="absolute bottom-0 left-0 w-full h-16 bg-gradient-to-t from-[#050505] to-transparent pointer-events-none" />
+                    </div>
+                )}
+            </div>
 
             <div className="relative z-10 max-w-7xl mx-auto px-4 md:px-8 py-12">
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-16 items-start">
