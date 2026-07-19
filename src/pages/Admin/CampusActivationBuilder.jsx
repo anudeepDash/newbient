@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useStore } from '../../lib/store';
+import { useStoreSubscription } from '../../hooks/useStoreSubscription';
 import { Plus, Trash2, ArrowLeft, Save, Star, Image as ImageIcon, Copy, ExternalLink, Hash } from 'lucide-react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import useDynamicMeta from '../../hooks/useDynamicMeta';
@@ -7,6 +8,7 @@ import { cn } from '../../lib/utils';
 import GlobalLoader from '../../components/ui/GlobalLoader';
 
 const CampusActivationBuilder = () => {
+    useStoreSubscription(['campusActivations']);
     useDynamicMeta({ title: "Campaign Builder" });
     const { id } = useParams();
     const navigate = useNavigate();

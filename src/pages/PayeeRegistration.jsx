@@ -11,11 +11,13 @@ import Building from 'lucide-react/dist/esm/icons/building';
 import Info from 'lucide-react/dist/esm/icons/info';
 
 import { useStore } from '../lib/store';
+import { useStoreSubscription } from '../hooks/useStoreSubscription';
 import { Input } from '../components/ui/Input';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 
 const PayeeRegistration = () => {
+    useStoreSubscription(['financePayees']);
     const { addFinancePayee, updateFinancePayee, financePayees } = useStore();
     const [searchParams] = useSearchParams();
 

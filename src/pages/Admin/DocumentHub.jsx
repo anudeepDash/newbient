@@ -21,6 +21,7 @@ import ShieldCheck from 'lucide-react/dist/esm/icons/shield-check';
 import FileSpreadsheet from 'lucide-react/dist/esm/icons/file-spreadsheet';
 import FileBadge from 'lucide-react/dist/esm/icons/file-badge';
 import { useStore } from '../../lib/store';
+import { useStoreSubscription } from '../../hooks/useStoreSubscription';
 import { Card } from '../../components/ui/Card';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
@@ -254,6 +255,7 @@ const DocumentCard = ({ doc, onPreview, onCopyLink, onTogglePublic, onDelete }) 
 // ─── Component ──────────────────────────────────────────────────────────────────
 
 const DocumentHub = () => {
+    useStoreSubscription(['documents']);
     const { documents, addDocument, updateDocument, deleteDocument, uploadDocumentFile, user, addToast } = useStore();
 
     const vaultTabs = [

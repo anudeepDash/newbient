@@ -2,6 +2,7 @@ import React, { useState, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { useStore } from '../lib/store';
+import { useStoreSubscription } from '../hooks/useStoreSubscription';
 import { cn } from '../lib/utils';
 import {
     GraduationCap, ArrowRight, ArrowLeft, ChevronDown, CheckCircle2,
@@ -292,6 +293,7 @@ const CampusDashboard = ({ user, profile, store }) => {
 //  MAIN PAGE
 // ═══════════════════════════════════════════
 const CampusConnect = () => {
+    useStoreSubscription(['campusProfiles', 'creators']);
     useDynamicMeta({ title: "Newbi Campus", description: "Where brands meet campuses. Earn points. Unlock perks.", url: window.location.href });
 
     const store = useStore();

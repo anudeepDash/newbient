@@ -44,6 +44,13 @@ const ProfilePanel = ({ isOpen, onClose }) => {
     useEffect(() => {
         if (!isOpen || !user?.uid) return;
         
+        // On-demand subscriptions when profile panel is open
+        const store = useStore.getState();
+        const unsub1 = store.subscribeToTicketOrders ? store.subscribeToTicketOrders() : null;
+        const unsub2 = store.subscribeToUpcomingEvents ? store.subscribeToUpcomingEvents() : null;
+        const unsub3 = store.subscribeToPortfolio ? store.subscribeToPortfolio() : null;
+        const unsub4 = store.subscribeToGuestlists ? store.subscribeToGuestlists() : null;
+        
         setLoadingEntries(true);
         const fetchEntries = async () => {
             try {
@@ -101,6 +108,13 @@ const ProfilePanel = ({ isOpen, onClose }) => {
             }
         };
         fetchEntries();
+
+        return () => {
+            if (unsub1) unsub1();
+            if (unsub2) unsub2();
+            if (unsub3) unsub3();
+            if (unsub4) unsub4();
+        };
     }, [isOpen, user?.uid, user?.email]);
 
     if (!user) return null;

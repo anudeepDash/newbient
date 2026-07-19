@@ -24,6 +24,7 @@ import ShieldCheck from 'lucide-react/dist/esm/icons/shield-check';
 import Mail from 'lucide-react/dist/esm/icons/mail';
 import FolderOpen from 'lucide-react/dist/esm/icons/folder-open';
 import { useStore } from '../../lib/store';
+import { useStoreSubscription } from '../../hooks/useStoreSubscription';
 import { sendProposalEmail } from '../../lib/email';
 import ProposalEmailModal from '../../components/admin/ProposalEmailModal';
 import { Card } from '../../components/ui/Card';
@@ -35,6 +36,7 @@ import AdminDashboardLink from '../../components/admin/AdminDashboardLink';
 import AdminCommunityHubLayout from '../../components/admin/AdminCommunityHubLayout';
 
 const ProposalManagement = () => {
+    useStoreSubscription(['proposals']);
     const navigate = useNavigate();
     const { proposals, deleteProposal, updateProposalStatus, duplicateProposal, user } = useStore();
     

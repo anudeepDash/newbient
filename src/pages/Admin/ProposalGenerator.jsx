@@ -52,6 +52,7 @@ import Award from 'lucide-react/dist/esm/icons/award';
 import Megaphone from 'lucide-react/dist/esm/icons/megaphone';
 
 import { useStore } from '../../lib/store';
+import { useStoreSubscription } from '../../hooks/useStoreSubscription';
 import { Card } from '../../components/ui/Card';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
@@ -541,6 +542,7 @@ const COLUMN_TYPES = [
 ];
 
 const ProposalGenerator = () => {
+    useStoreSubscription(['proposals']);
     const { id } = useParams();
     const navigate = useNavigate();
     const { addProposal, updateProposal, proposals, user, addToast, activeModel } = useStore();

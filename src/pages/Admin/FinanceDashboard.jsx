@@ -15,11 +15,13 @@ import Info from 'lucide-react/dist/esm/icons/info';
 import CreditCard from 'lucide-react/dist/esm/icons/credit-card';
 
 import { useStore } from '../../lib/store';
+import { useStoreSubscription } from '../../hooks/useStoreSubscription';
 import { Card } from '../../components/ui/Card';
 import AdminCommunityHubLayout from '../../components/admin/AdminCommunityHubLayout';
 import { cn } from '../../lib/utils';
 
 const FinanceDashboard = () => {
+    useStoreSubscription(['invoices', 'spends', 'otherIncomes']);
     const { invoices, spends, otherIncomes } = useStore();
 
     // Isolated Finance-only navigation tabs - Professional Names

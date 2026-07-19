@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation, Link } from 'react-router-dom';
 import { useStore } from '../lib/store';
+import { useStoreSubscription } from '../hooks/useStoreSubscription';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -52,6 +53,7 @@ const PLATFORMS = {
 };
 
 const CampaignPublicView = () => {
+    useStoreSubscription(['campaigns', 'creators']);
     const { id } = useParams();
     const navigate = useNavigate();
     const location = useLocation();

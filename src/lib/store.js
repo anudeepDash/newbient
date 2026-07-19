@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { db, storage } from './firebase';
-import { collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, getDocs, where, setDoc, getDoc, increment, arrayUnion, collectionGroup, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, getDocs, where, setDoc, getDoc, increment, arrayUnion, collectionGroup, serverTimestamp, limit } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { sendBookingConfirmation, sendCreatorWelcomeEmail, sendNewCampaignNotificationEmail, sendCreatorApprovedEmail } from './email';
 
@@ -164,6 +164,8 @@ const notifyMatchingCreatorsOfCampaign = async (campaignData, creatorsList) => {
 };
 
 const initialUser = getCachedSession();
+
+const activeListeners = {};
 
 export const useStore = create((set, get) => ({
     // ... existing state ...
@@ -341,8 +343,97 @@ export const useStore = create((set, get) => ({
     userListenerUnsubscribe: null,
 
     // Real-time Subscription Init
+    // Reference-counted subscription helper
+    subscribeToKey: (stateKey, colName, sortFn = null) => {
+        if (!activeListeners[stateKey]) {
+            console.log(`[Store] Opening Firestore listener for: ${stateKey} (${colName})`);
+            const q = query(collection(db, colName));
+            const unsub = onSnapshot(q, (snapshot) => {
+                let data = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+                if (sortFn) {
+                    data = sortFn(data);
+                }
+                set({ [stateKey]: data });
+            }, (error) => {
+                console.error(`Error fetching ${stateKey} (${colName}):`, error);
+            });
+            activeListeners[stateKey] = { unsub, count: 1 };
+        } else {
+            activeListeners[stateKey].count++;
+            console.log(`[Store] Reusing listener for: ${stateKey} (Count: ${activeListeners[stateKey].count})`);
+        }
+
+        return () => {
+            if (activeListeners[stateKey]) {
+                activeListeners[stateKey].count--;
+                console.log(`[Store] Decrementing listener for: ${stateKey} (Count: ${activeListeners[stateKey].count})`);
+                if (activeListeners[stateKey].count === 0) {
+                    console.log(`[Store] Closing Firestore listener for: ${stateKey}`);
+                    activeListeners[stateKey].unsub();
+                    delete activeListeners[stateKey];
+                }
+            }
+        };
+    },
+
+    // Public On-Demand Subscriptions
+    subscribeToConcerts: () => get().subscribeToKey('concerts', 'concerts'),
+    subscribeToPortfolio: () => get().subscribeToKey('portfolio', 'portfolio', (data) => data.sort((a, b) => {
+        if (a.isPinned !== b.isPinned) return b.isPinned ? -1 : 1;
+        return (a.order || 0) - (b.order || 0);
+    })),
+    subscribeToPortfolioCategories: () => get().subscribeToKey('portfolioCategories', 'portfolio_categories'),
+    subscribeToForms: () => get().subscribeToKey('forms', 'forms', (data) => data.sort((a, b) => {
+        if (a.isPinned !== b.isPinned) return b.isPinned ? -1 : 1;
+        return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
+    })),
+    subscribeToVolunteerGigs: () => get().subscribeToKey('volunteerGigs', 'volunteer_gigs', (data) => data.sort((a, b) => {
+        if (a.isPinned !== b.isPinned) return b.isPinned ? -1 : 1;
+        return (a.order || 0) - (b.order || 0);
+    })),
+    subscribeToUpcomingEvents: () => get().subscribeToKey('upcomingEvents', 'upcoming_events', (data) => data.sort((a, b) => {
+        if (a.isPinned !== b.isPinned) return b.isPinned ? -1 : 1;
+        return (a.order || 0) - (b.order || 0);
+    })),
+    subscribeToGuestlists: () => get().subscribeToKey('guestlists', 'guestlists', (data) => data.sort((a, b) => {
+        if (a.isPinned !== b.isPinned) return b.isPinned ? -1 : 1;
+        return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
+    })),
+    subscribeToGiveaways: () => get().subscribeToKey('giveaways', 'giveaways'),
+    subscribeToPosts: () => get().subscribeToKey('posts', 'posts'),
+    subscribeToCampusWallPosts: () => get().subscribeToKey('campusWallPosts', 'campus_wall_posts'),
+    subscribeToCampusGuestlistPasses: () => get().subscribeToKey('campusGuestlistPasses', 'campus_guestlist_passes'),
+
+    // Admin On-Demand Subscriptions
+    subscribeToInvoices: () => get().subscribeToKey('invoices', 'invoices', (data) => data.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))),
+    subscribeToSpends: () => get().subscribeToKey('spends', 'spends', (data) => data.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))),
+    subscribeToOtherIncomes: () => get().subscribeToKey('otherIncomes', 'other_incomes', (data) => data.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))),
+    subscribeToFinancePayees: () => get().subscribeToKey('financePayees', 'finance_payees', (data) => data.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))),
+    subscribeToMessages: () => get().subscribeToKey('messages', 'messages', (data) => data.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))),
+    subscribeToCreators: () => get().subscribeToKey('creators', 'creators'),
+    subscribeToCampusProfiles: () => get().subscribeToKey('campusProfiles', 'campus_profiles'),
+    subscribeToCampusActivations: () => get().subscribeToKey('campusActivations', 'campus_activations'),
+    subscribeToCampusActivationEntries: () => get().subscribeToKey('campusActivationEntries', 'campus_activation_entries'),
+    subscribeToCampaigns: () => get().subscribeToKey('campaigns', 'campaigns'),
+    subscribeToProposals: () => get().subscribeToKey('proposals', 'proposals', (data) => data.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))),
+    subscribeToAgreements: () => get().subscribeToKey('agreements', 'agreements', (data) => data.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))),
+    subscribeToSubscribers: () => get().subscribeToKey('subscribers', 'subscribers'),
+    subscribeToAllUsers: () => get().subscribeToKey('allUsers', 'users'),
+    subscribeToArtists: () => get().subscribeToKey('artists', 'artists'),
+    subscribeToAdmins: () => get().subscribeToKey('admins', 'admins'),
+    subscribeToClientRequests: () => get().subscribeToKey('clientRequests', 'client_requests'),
+    subscribeToTicketOrders: () => get().subscribeToKey('ticketOrders', 'ticket_orders'),
+    subscribeToCoupons: () => get().subscribeToKey('coupons', 'coupons'),
+    subscribeToDocuments: () => get().subscribeToKey('documents', 'documents'),
+    subscribeToGenDocuments: () => get().subscribeToKey('genDocuments', 'gen_documents'),
+    subscribeToAnnouncements: () => get().subscribeToKey('announcements', 'announcements', (data) => data.sort((a, b) => {
+        if (a.isPinned !== b.isPinned) return b.isPinned ? -1 : 1;
+        return (a.order || 0) - (b.order || 0);
+    })),
+
+    // Real-time Subscription Init (Global configuration documents and announcements)
     subscribeToData: (isAdmin) => {
-        console.log(`Initializing Firebase Subscriptions (Admin mode: ${!!isAdmin})...`);
+        console.log("Initializing Core Subscriptions...");
         
         // Safety timeout to prevent stuck loading screen
         const loadingTimeout = setTimeout(() => {
@@ -350,134 +441,28 @@ export const useStore = create((set, get) => ({
                 console.log("[Auto-Recovery] Forcing loading to false after timeout.");
                 set({ loading: false });
             }
-        }, 2500);
+        }, 1500);
 
         const loadedKeys = new Set();
-        const criticalKeys = ['announcements', 'upcomingEvents', 'siteSettings'];
+        const criticalKeys = ['siteSettings', 'announcements'];
 
-        // Helper for collections
-        const sub = (colName, stateKey) => {
-            const q = query(collection(db, colName));
-            return onSnapshot(q, (snapshot) => {
-                const data = snapshot.docs.map(doc => {
-                    const d = doc.data();
-                    return { ...d, id: doc.id };
-                });
+        // Announcements
+        const unsubAnnouncements = get().subscribeToAnnouncements();
 
-                // Sort by 'isPinned' (descending) first, then by 'order' or 'createdAt'
-                if (colName === 'portfolio' || colName === 'upcoming_events' || colName === 'announcements' || colName === 'volunteer_gigs' || colName === 'guestlists' || colName === 'forms') {
-                    data.sort((a, b) => {
-                        if (a.isPinned !== b.isPinned) {
-                            return b.isPinned ? -1 : 1;
-                        }
-                        if (colName === 'portfolio' || colName === 'upcoming_events' || colName === 'announcements' || colName === 'volunteer_gigs') {
-                            return (a.order || 0) - (b.order || 0);
-                        }
-                        return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
-                    });
-                }
-
-                // Sort invoices by createdAt (descending) - Newest First
-                if (colName === 'invoices' || colName === 'spends' || colName === 'other_incomes' || colName === 'finance_payees') {
-                    data.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
-                }
-
-                // Sort messages by createdAt (descending)
-                if (colName === 'messages') {
-                    data.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
-                }
-
-                // Sort proposals by createdAt (descending)
-                if (colName === 'proposals' || colName === 'agreements') {
-                    data.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
-                }
-
-                console.log(`Updated ${stateKey}:`, data.length);
-                set({ [stateKey]: data });
-
-                // Set loading false once ALL core public data is ready
-                if (criticalKeys.includes(stateKey)) {
-                    loadedKeys.add(stateKey);
-                    if (criticalKeys.every(key => loadedKeys.has(key))) {
-                        set({ loading: false });
-                    }
-                }
-            }, (error) => {
-                console.error(`Error fetching ${stateKey}:`, error);
-                if (criticalKeys.includes(stateKey)) {
-                    loadedKeys.add(stateKey);
-                    if (criticalKeys.every(key => loadedKeys.has(key))) set({ loading: false });
-                }
-            });
-        };
-
-        // Always Subscribed (Public Data)
-        const unsub1 = sub('announcements', 'announcements');
-        const unsub2 = sub('concerts', 'concerts');
-        const unsub3 = sub('portfolio', 'portfolio');
-        const unsub5 = sub('forms', 'forms');
-        const unsub7 = sub('volunteer_gigs', 'volunteerGigs');
-        const unsub8 = sub('upcoming_events', 'upcomingEvents');
-        const unsubCategory = sub('portfolio_categories', 'portfolioCategories');
-        const unsubGuestlist = sub('guestlists', 'guestlists');
-        const unsubGiveaways = sub('giveaways', 'giveaways');
-        const unsubPosts = sub('posts', 'posts');
-        const unsubWallPosts = sub('campus_wall_posts', 'campusWallPosts');
-        const unsubGuestlistPasses = sub('campus_guestlist_passes', 'campusGuestlistPasses');
-
-        // Admin-only subscriptions (only run if isAdmin is true)
-        let unsub4 = null;
-        let unsubSpends = null;
-        let unsubOtherIncomes = null;
-        let unsubFinancePayees = null;
-        let unsubMessages = null;
-        let unsubCreators = null;
-        let unsubCampus = null;
-        let unsubCampusAct = null;
-        let unsubCampusEntries = null;
-        let unsubCampaigns = null;
-        let unsubProposals = null;
-        let unsubAgreements = null;
-        let unsubSubscribers = null;
-        let unsubAllUsers = null;
-        let unsubArtists = null;
-        let unsubAdmins = null;
-        let unsubClientRequests = null;
-        let unsubTicketOrders = null;
-        let unsubCoupons = null;
-        let unsubDocuments = null;
-        let unsubGenDocuments = null;
-
-        if (isAdmin) {
-            unsub4 = sub('invoices', 'invoices');
-            unsubSpends = sub('spends', 'spends');
-            unsubOtherIncomes = sub('other_incomes', 'otherIncomes');
-            unsubFinancePayees = sub('finance_payees', 'financePayees');
-            unsubMessages = sub('messages', 'messages');
-            unsubCreators = sub('creators', 'creators');
-            unsubCampus = sub('campus_profiles', 'campusProfiles');
-            unsubCampusAct = sub('campus_activations', 'campusActivations');
-            unsubCampusEntries = sub('campus_activation_entries', 'campusActivationEntries');
-            unsubCampaigns = sub('campaigns', 'campaigns');
-            unsubProposals = sub('proposals', 'proposals');
-            unsubAgreements = sub('agreements', 'agreements');
-            unsubSubscribers = sub('subscribers', 'subscribers');
-            unsubAllUsers = sub('users', 'allUsers');
-            unsubArtists = sub('artists', 'artists');
-            unsubAdmins = sub('admins', 'admins');
-            unsubClientRequests = sub('client_requests', 'clientRequests');
-            unsubTicketOrders = sub('ticket_orders', 'ticketOrders');
-            unsubCoupons = sub('coupons', 'coupons');
-            unsubDocuments = sub('documents', 'documents');
-            unsubGenDocuments = sub('gen_documents', 'genDocuments');
-        }
+        // Check loaded state when announcements list updates
+        const unsubAnnouncementsCheck = onSnapshot(query(collection(db, 'announcements')), () => {
+            loadedKeys.add('announcements');
+            if (criticalKeys.every(key => loadedKeys.has(key))) set({ loading: false });
+        }, () => {
+            loadedKeys.add('announcements');
+            if (criticalKeys.every(key => loadedKeys.has(key))) set({ loading: false });
+        });
 
         // Site Settings Subscription (Single Doc)
         const unsub9 = onSnapshot(doc(db, 'site_settings', 'general'), (docSnap) => {
             if (docSnap.exists()) {
                 set({ siteSettings: docSnap.data() });
             } else {
-                console.log("Initializing site_settings/general");
                 const initialSettings = { showUpcomingEvents: true };
                 set({ siteSettings: initialSettings });
             }
@@ -540,31 +525,13 @@ export const useStore = create((set, get) => ({
 
         return () => {
             clearTimeout(loadingTimeout);
-            unsub1(); unsub2(); unsub3(); unsub5(); unsub7(); unsub8(); unsub9(); unsub10(); unsub11(); unsub12(); unsubCategory(); unsubGuestlist(); unsubGiveaways();
-            unsubPosts(); unsubWallPosts(); unsubGuestlistPasses();
+            unsubAnnouncements();
+            unsubAnnouncementsCheck();
+            unsub9();
+            unsub10();
+            unsub11();
+            unsub12();
             unsubAI();
-
-            if (unsub4) unsub4();
-            if (unsubSpends) unsubSpends();
-            if (unsubOtherIncomes) unsubOtherIncomes();
-            if (unsubFinancePayees) unsubFinancePayees();
-            if (unsubMessages) unsubMessages();
-            if (unsubCreators) unsubCreators();
-            if (unsubCampus) unsubCampus();
-            if (unsubCampusAct) unsubCampusAct();
-            if (unsubCampusEntries) unsubCampusEntries();
-            if (unsubCampaigns) unsubCampaigns();
-            if (unsubProposals) unsubProposals();
-            if (unsubAgreements) unsubAgreements();
-            if (unsubSubscribers) unsubSubscribers();
-            if (unsubAllUsers) unsubAllUsers();
-            if (unsubArtists) unsubArtists();
-            if (unsubAdmins) unsubAdmins();
-            if (unsubClientRequests) unsubClientRequests();
-            if (unsubTicketOrders) unsubTicketOrders();
-            if (unsubCoupons) unsubCoupons();
-            if (unsubDocuments) unsubDocuments();
-            if (unsubGenDocuments) unsubGenDocuments();
         };
     },
 
@@ -608,18 +575,18 @@ export const useStore = create((set, get) => ({
     },
 
     // Notifications Subscription
-    subscribeToNotifications: () => {
-        const user = get().user;
+    subscribeToNotifications: (uid) => {
         const q = query(
             collection(db, 'notifications'), 
-            orderBy('createdAt', 'desc')
+            orderBy('createdAt', 'desc'),
+            limit(50)
         );
 
         return onSnapshot(q, (snapshot) => {
             const data = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
             
             // Filter: Target UID, or global (userId: null)
-            const filtered = data.filter(n => !n.userId || n.userId === user?.uid);
+            const filtered = data.filter(n => !n.userId || n.userId === uid);
             const unreadCount = filtered.filter(n => !n.isRead).length;
             
             set({ notifications: filtered, unreadNotificationsCount: unreadCount });

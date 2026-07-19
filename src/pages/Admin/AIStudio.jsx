@@ -37,6 +37,7 @@ import ChevronUp from 'lucide-react/dist/esm/icons/chevron-up';
 import FileSpreadsheet from 'lucide-react/dist/esm/icons/file-spreadsheet';
 import AlertTriangle from 'lucide-react/dist/esm/icons/alert-triangle';
 import { useStore } from '../../lib/store';
+import { useStoreSubscription } from '../../hooks/useStoreSubscription';
 import { Card } from '../../components/ui/Card';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
@@ -570,6 +571,7 @@ const splitTextIntoPages = (rawText, maxPageHeight = 800) => {
 
 
 const AIStudio = () => {
+    useStoreSubscription(['proposals', 'agreements']);
     const { id } = useParams();
     const navigate = useNavigate();
     const location = useLocation();

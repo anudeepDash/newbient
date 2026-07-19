@@ -15,6 +15,7 @@ import DocumentSeal from '../components/ui/DocumentSeal';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { useStore } from '../lib/store';
+import { useStoreSubscription } from '../hooks/useStoreSubscription';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { cn } from '../lib/utils';
@@ -24,6 +25,7 @@ import { notifyAdmins } from '../lib/notificationTriggers';
 
 
 const Invoice = () => {
+    useStoreSubscription(['invoices']);
     const { id } = useParams();
     const { invoices, updateInvoiceStatus, loading: storeLoading, user, logDocumentAccess } = useStore();
     const [localInvoice, setLocalInvoice] = React.useState(null);

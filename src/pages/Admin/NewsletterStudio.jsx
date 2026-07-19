@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Layout, Zap, Newspaper, Monitor, Smartphone, Send, ArrowLeft, Shield, Users, ChevronRight, LayoutGrid, Sparkles, Mail } from 'lucide-react';
 import { useStore } from '../../lib/store';
+import { useStoreSubscription } from '../../hooks/useStoreSubscription';
 import { cn } from '../../lib/utils';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
@@ -12,6 +13,7 @@ import StudioRichEditor from '../../components/ui/StudioRichEditor';
 import EmailPreviewIframe from '../../components/ui/EmailPreviewIframe';
 
 const NewsletterStudio = () => {
+    useStoreSubscription(['posts', 'subscribers', 'allUsers', 'admins']);
     const { posts, subscribers, allUsers, admins, addToast } = useStore();
     const [selectedPosts, setSelectedPosts] = useState([]);
     const [viewMode, setViewMode] = useState('desktop');

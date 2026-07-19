@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useStore } from '../lib/store';
+import { useStoreSubscription } from '../hooks/useStoreSubscription';
 import { motion } from 'framer-motion';
 import { GraduationCap, ArrowLeft, ArrowRight, User, MapPin, Phone, Mail, Instagram, Linkedin, MessageCircle, Copy, Hash, CheckCircle2, Clock, XCircle, Star, Users, Briefcase, Calendar, ChevronDown } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
@@ -183,6 +184,7 @@ const AmbassadorDashboard = ({ profile }) => {
 };
 
 const CampusJoin = () => {
+    useStoreSubscription(['campusActivations', 'campusProfiles', 'creators']);
     useDynamicMeta({
         title: "Join Campus Network",
         description: "Apply to be a part of the Newbi Campus Network.",

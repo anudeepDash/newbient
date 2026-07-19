@@ -1,9 +1,11 @@
 import React from 'react';
 import { useParams } from 'react-router-dom';
 import { useStore } from '../lib/store';
+import { useStoreSubscription } from '../hooks/useStoreSubscription';
 import { Card } from '../components/ui/Card';
 
 const FormViewer = ({ formIdOverride }) => {
+    useStoreSubscription(['forms']);
     const { id } = useParams();
     const { forms } = useStore();
     const formId = formIdOverride || id;

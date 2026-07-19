@@ -22,6 +22,7 @@ import Copy from 'lucide-react/dist/esm/icons/copy';
 import CreditCard from 'lucide-react/dist/esm/icons/credit-card';
 
 import { useStore } from '../../lib/store';
+import { useStoreSubscription } from '../../hooks/useStoreSubscription';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
@@ -30,6 +31,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import AdminCommunityHubLayout from '../../components/admin/AdminCommunityHubLayout';
 
 const OtherIncomeManagement = () => {
+    useStoreSubscription(['otherIncomes']);
     const { otherIncomes, addOtherIncome, updateOtherIncome, deleteOtherIncome, uploadToCloudinary, user } = useStore();
     const [searchTerm, setSearchTerm] = useState('');
     const [monthFilter, setMonthFilter] = useState(

@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useStore } from '../../lib/store';
+import { useStoreSubscription } from '../../hooks/useStoreSubscription';
 import Trophy from 'lucide-react/dist/esm/icons/trophy';
 import { notifySpecificUser, notifyAllUsers } from '../../lib/notificationTriggers';
 import { PREDEFINED_CITIES } from '../../lib/constants';
@@ -449,6 +450,7 @@ const getPageNumbers = (currentPage, totalPages) => {
 /* --- Main Campaign Manager Component --- */
 
 const CampaignManager = () => {
+    useStoreSubscription(['campaigns', 'creators']);
     const { campaigns, addCampaign, updateCampaign, deleteCampaign, user, uploadToCloudinary } = useStore();
     const navigate = useNavigate();
     const location = useLocation();

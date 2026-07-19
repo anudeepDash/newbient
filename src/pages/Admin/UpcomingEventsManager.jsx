@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 
 import { useStore } from '../../lib/store';
+import { useStoreSubscription } from '../../hooks/useStoreSubscription';
 import { notifyAllUsers } from '../../lib/notificationTriggers';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -26,6 +27,7 @@ import EventHubModal from '../../components/community/EventHubModal';
 import AdminCommunityHubLayout from '../../components/admin/AdminCommunityHubLayout';
 
 const UpcomingEventsManager = () => {
+    useStoreSubscription(['upcomingEvents', 'portfolioCategories', 'volunteerGigs', 'campaigns', 'forms']);
     const { 
         upcomingEvents, addUpcomingEvent, updateUpcomingEvent, 
         deleteUpcomingEvent, updateUpcomingEventOrder, siteSettings, 

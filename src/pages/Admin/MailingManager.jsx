@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { LayoutGrid, Send, Sparkles, Mail, Users, Monitor, Smartphone, Image as ImageIcon, ExternalLink, X, Upload, Loader, Link as LinkIcon, Shield, Zap } from 'lucide-react';
 import { useStore } from '../../lib/store';
+import { useStoreSubscription } from '../../hooks/useStoreSubscription';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
@@ -24,6 +25,7 @@ const ALIASES = [
 ];
 
 const MailingManager = () => {
+    useStoreSubscription(['subscribers', 'allUsers', 'admins']);
     const { subscribers, allUsers, admins, addToast } = useStore();
     const [searchParams] = useSearchParams();
     

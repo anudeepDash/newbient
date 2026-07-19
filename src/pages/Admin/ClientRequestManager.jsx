@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { useStore } from '../../lib/store';
+import { useStoreSubscription } from '../../hooks/useStoreSubscription';
 import Users from 'lucide-react/dist/esm/icons/users';
 import Search from 'lucide-react/dist/esm/icons/search';
 import MapPin from 'lucide-react/dist/esm/icons/map-pin';
@@ -79,6 +80,7 @@ const getPageNumbers = (currentPage, totalPages) => {
 };
 
 const ClientRequestManager = ({ isEmbedded = false }) => {
+    useStoreSubscription(['clientRequests']);
     const { clientRequests } = useStore();
     const [searchTerm, setSearchTerm] = useState('');
     const [filterStatus, setFilterStatus] = useState('All');

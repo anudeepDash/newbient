@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useStore } from '../lib/store';
+import { useStoreSubscription } from '../hooks/useStoreSubscription';
 import { Link, useNavigate } from 'react-router-dom';
 import useDynamicMeta from '../hooks/useDynamicMeta';
 import { serverTimestamp } from 'firebase/firestore';
@@ -407,6 +408,7 @@ const DashboardGrid = ({ user, profile, store }) => {
 // MASTER COMPONENT
 // ==========================================
 export default function NewbiCampus() {
+    useStoreSubscription(['campusProfiles', 'creators']);
     useDynamicMeta("Newbi Campus | Hub", "The GenZ Campus Network.");
     const navigate = useNavigate();
     const store = useStore();

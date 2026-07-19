@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useStore } from '../lib/store';
+import { useStoreSubscription } from '../hooks/useStoreSubscription';
 import Hero from '../components/home/Hero';
 import About from '../components/home/About';
 import Services from '../components/home/Services';
@@ -16,6 +17,7 @@ import FeaturedBlog from '../components/home/FeaturedBlog';
 import MaintenanceGuard from '../components/MaintenanceGuard';
 
 const Home = () => {
+    useStoreSubscription(['upcomingEvents', 'portfolio', 'portfolioCategories', 'posts', 'giveaways']);
     const { siteSettings } = useStore();
 
     return (

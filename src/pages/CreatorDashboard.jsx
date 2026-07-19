@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useStore } from '../lib/store';
+import { useStoreSubscription } from '../hooks/useStoreSubscription';
 import { PREDEFINED_CITIES } from '../lib/constants';
 import { Button } from '../components/ui/Button';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -998,6 +999,7 @@ const CreatorReferralsView = ({ profile }) => {
 
 
 const CreatorDashboard = () => {
+    useStoreSubscription(['creators', 'campaigns']);
     const { user, authInitialized, creators, campaigns, uploadToCloudinary, loading } = useStore();
     const navigate = useNavigate();
     const location = useLocation();

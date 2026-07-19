@@ -35,6 +35,7 @@ import SignaturePad from '../components/ui/SignaturePad';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { useStore } from '../lib/store';
+import { useStoreSubscription } from '../hooks/useStoreSubscription';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { cn } from '../lib/utils';
@@ -297,6 +298,7 @@ const defaultColumns = [
 ];
 
 const Proposal = () => {
+    useStoreSubscription(['proposals']);
     const { id } = useParams();
     const { proposals, updateProposalStatus, loading: storeLoading, user } = useStore();
     const [localProposal, setLocalProposal] = useState(null);

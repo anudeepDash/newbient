@@ -51,6 +51,7 @@ import Award from 'lucide-react/dist/esm/icons/award';
 import Megaphone from 'lucide-react/dist/esm/icons/megaphone';
 import Cpu from 'lucide-react/dist/esm/icons/cpu';
 import { useStore } from '../../lib/store';
+import { useStoreSubscription } from '../../hooks/useStoreSubscription';
 import { Card } from '../../components/ui/Card';
 import { Input } from '../../components/ui/Input';
 import SignatureModal from '../../components/ui/SignatureModal';
@@ -133,6 +134,7 @@ const renderChatMessage = (text) => {
 
 
 const ContractGenerator = () => {
+    useStoreSubscription(['agreements']);
     const { id } = useParams();
     const navigate = useNavigate();
     const { addAgreement, updateAgreement, agreements, user, addToast, activeModel } = useStore();

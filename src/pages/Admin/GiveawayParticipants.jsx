@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useStore } from '../../lib/store';
+import { useStoreSubscription } from '../../hooks/useStoreSubscription';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import Gift from 'lucide-react/dist/esm/icons/gift';
@@ -22,6 +23,7 @@ import { notifySpecificUser } from '../../lib/notificationTriggers';
 import AdminCommunityHubLayout from '../../components/admin/AdminCommunityHubLayout';
 
 const GiveawayParticipants = () => {
+    useStoreSubscription(['giveaways']);
     const { giveawayId } = useParams();
     const { giveaways, giveawayEntries, updateGiveaway, updateGiveawayEntry, deleteGiveawayEntry } = useStore();
     const [searchTerm, setSearchTerm] = useState('');

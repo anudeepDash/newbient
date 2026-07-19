@@ -22,6 +22,7 @@ import Zap from 'lucide-react/dist/esm/icons/zap';
 import Instagram from 'lucide-react/dist/esm/icons/instagram';
 import Eye from 'lucide-react/dist/esm/icons/eye';
 import { useStore } from '../lib/store';
+import { useStoreSubscription } from '../hooks/useStoreSubscription';
 import { cn } from '../lib/utils';
 import BlogNewsletter from '../components/blog/BlogNewsletter';
 import BlogCard from '../components/blog/BlogCard';
@@ -81,6 +82,7 @@ const getVideoEmbedUrl = (url) => {
 };
 
 const BlogPostDetail = () => {
+    useStoreSubscription(['posts']);
     const { category, slug } = useParams();
     const { posts } = useStore();
     const navigate = useNavigate();

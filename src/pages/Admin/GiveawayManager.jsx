@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useStore } from '../../lib/store';
+import { useStoreSubscription } from '../../hooks/useStoreSubscription';
 import { notifyAllUsers } from '../../lib/notificationTriggers';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -39,6 +40,7 @@ import AdminCommunityHubLayout from '../../components/admin/AdminCommunityHubLay
 import { downloadCSV } from '../../components/admin/CSVHandler';
 
 const GiveawayManager = () => {
+    useStoreSubscription(['giveaways']);
     const { giveaways = [], giveawayEntries = [], addGiveaway, updateGiveaway, deleteGiveaway, user } = useStore();
     const [searchTerm, setSearchTerm] = useState('');
     const [filter, setFilter] = useState('all');

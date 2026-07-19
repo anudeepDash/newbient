@@ -24,6 +24,7 @@ import CreditCard from 'lucide-react/dist/esm/icons/credit-card';
 import Clock from 'lucide-react/dist/esm/icons/clock';
 
 import { useStore } from '../../lib/store';
+import { useStoreSubscription } from '../../hooks/useStoreSubscription';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
@@ -31,6 +32,7 @@ import { cn } from '../../lib/utils';
 import AdminCommunityHubLayout from '../../components/admin/AdminCommunityHubLayout';
 
 const PayeeRegistry = () => {
+    useStoreSubscription(['financePayees', 'upcomingEvents']);
     const { financePayees, deleteFinancePayee, upcomingEvents, addUpcomingEvent, user } = useStore();
     
     // Search and filter states

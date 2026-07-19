@@ -19,6 +19,7 @@ import FileText from 'lucide-react/dist/esm/icons/file-text';
 import Lock from 'lucide-react/dist/esm/icons/lock';
 import Unlock from 'lucide-react/dist/esm/icons/unlock';
 import { useStore } from '../../lib/store';
+import { useStoreSubscription } from '../../hooks/useStoreSubscription';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import AdminCommunityHubLayout from '../../components/admin/AdminCommunityHubLayout';
@@ -26,6 +27,7 @@ import { cn } from '../../lib/utils';
 import { notifyAllUsers } from '../../lib/notificationTriggers';
 
 const FormManager = () => {
+    useStoreSubscription(['forms']);
     const { forms, deleteForm, addAnnouncement } = useStore();
     const navigate = useNavigate();
 

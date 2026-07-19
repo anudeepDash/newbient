@@ -28,6 +28,7 @@ import Star from 'lucide-react/dist/esm/icons/star';
 import { notifyAllUsers } from '../../lib/notificationTriggers';
 
 import { useStore } from '../../lib/store';
+import { useStoreSubscription } from '../../hooks/useStoreSubscription';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
@@ -183,6 +184,7 @@ const GuestlistCard = ({ gl, navigate, updateGuestlist, deleteGuestlist, handleE
 };
 
 const GuestlistManager = () => {
+    useStoreSubscription(['guestlists']);
     const navigate = useNavigate();
     const colorPresets = [
         { name: 'Cyber Blue', value: '#2ebfff' },

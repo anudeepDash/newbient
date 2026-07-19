@@ -31,6 +31,7 @@ import Smartphone from 'lucide-react/dist/esm/icons/smartphone';
 import CheckCircle2 from 'lucide-react/dist/esm/icons/check-circle-2';
 import AgreementEmailModal from '../../components/admin/AgreementEmailModal';
 import { useStore } from '../../lib/store';
+import { useStoreSubscription } from '../../hooks/useStoreSubscription';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { cn } from '../../lib/utils';
@@ -39,6 +40,7 @@ import AdminCommunityHubLayout from '../../components/admin/AdminCommunityHubLay
 
 
 const ContractManagement = () => {
+    useStoreSubscription(['agreements']);
     const navigate = useNavigate();
     const { agreements, deleteAgreement, updateAgreement, duplicateAgreement, user } = useStore();
     const [viewMode, setViewMode] = useState('grid');

@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { useStore } from '../lib/store';
+import { useStoreSubscription } from '../hooks/useStoreSubscription';
 import { cn } from '../lib/utils';
 import useDynamicMeta from '../hooks/useDynamicMeta';
 import {
@@ -11,6 +12,7 @@ import {
 } from 'lucide-react';
 
 export default function CampusWall() {
+    useStoreSubscription(['campusProfiles', 'campusWallPosts', 'campusActivations', 'guestlists', 'campusGuestlistPasses', 'creators']);
     useDynamicMeta("Campus Wall | Newbi", "Your hyper-local campus feed.");
     
     const { 

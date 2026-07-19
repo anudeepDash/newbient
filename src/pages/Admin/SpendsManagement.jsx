@@ -36,6 +36,7 @@ import MessageCircle from 'lucide-react/dist/esm/icons/message-circle';
 import ReceiptEmailModal from '../../components/admin/ReceiptEmailModal';
 
 import { useStore } from '../../lib/store';
+import { useStoreSubscription } from '../../hooks/useStoreSubscription';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
@@ -44,6 +45,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import AdminCommunityHubLayout from '../../components/admin/AdminCommunityHubLayout';
 
 const SpendsManagement = () => {
+    useStoreSubscription(['spends', 'financePayees', 'invoices', 'upcomingEvents']);
     const { spends, addSpend, updateSpend, deleteSpend, uploadToCloudinary, user, financePayees, invoices, upcomingEvents, addUpcomingEvent } = useStore();
     
     // Filter states

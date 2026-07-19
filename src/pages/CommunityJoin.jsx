@@ -14,6 +14,7 @@ import Layout from 'lucide-react/dist/esm/icons/layout';
 import ChevronRight from 'lucide-react/dist/esm/icons/chevron-right';
 import CheckCircle2 from 'lucide-react/dist/esm/icons/check-circle-2';
 import { useStore } from '../lib/store';
+import { useStoreSubscription } from '../hooks/useStoreSubscription';
 import { Button } from '../components/ui/Button';
 import { cn } from '../lib/utils';
 import CommunityCard from '../components/community/CommunityCard';
@@ -21,6 +22,7 @@ import EventTicketingModal from '../components/tickets/EventTicketingModal';
 import useDynamicMeta from '../hooks/useDynamicMeta';
 
 const CommunityJoin = () => {
+    useStoreSubscription(['volunteerGigs', 'guestlists', 'giveaways', 'campaigns']);
     const scrollContainer = (id, direction) => {
         const container = document.getElementById(id);
         if (container) {
