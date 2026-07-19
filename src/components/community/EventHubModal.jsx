@@ -88,7 +88,7 @@ const EventHubModal = ({ event, isOpen, onClose }) => {
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         onClick={onClose}
-                        className="absolute inset-0 bg-black/75 backdrop-blur-md transition-all"
+                        className="absolute inset-0 bg-black/75 backdrop-blur-md"
                     />
 
                     {/* Modal Content */}
@@ -97,7 +97,7 @@ const EventHubModal = ({ event, isOpen, onClose }) => {
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95, y: 20 }}
                         className={cn(
-                            "relative w-full max-w-4xl bg-[#020202]/60 backdrop-blur-3xl border border-white/10 shadow-[0_30px_70px_rgba(0,0,0,0.8)] overflow-hidden flex flex-col h-full md:h-auto md:max-h-[92vh] md:rounded-3xl z-10 transition-all duration-300",
+                            "relative w-full max-w-4xl bg-[#020202]/60 backdrop-blur-3xl border border-white/10 shadow-[0_30px_70px_rgba(0,0,0,0.8)] overflow-hidden flex flex-col h-full md:h-auto md:max-h-[92vh] md:rounded-3xl z-10 transition-[max-width] duration-300",
                             activeView === 'ticketing' && "max-w-3xl"
                         )}
                     >

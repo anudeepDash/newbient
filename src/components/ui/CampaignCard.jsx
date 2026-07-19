@@ -36,8 +36,9 @@ const CampaignCard = ({ campaign, profile, type, onOpenMission }) => {
         <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
+            whileTap={{ scale: 0.98 }}
             onClick={() => onOpenMission(campaign)}
-            className="bg-zinc-950/45 border border-white/[0.08] backdrop-blur-3xl shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)] hover:border-white/20 hover:shadow-[inset_0_1px_1px_rgba(255,255,255,0.2),0_40px_80px_rgba(0,0,0,0.7)] rounded-3xl overflow-hidden flex flex-col group transition-all duration-500 h-full relative cursor-pointer active:scale-[0.98]"
+            className="bg-zinc-950/45 border border-white/[0.08] backdrop-blur-3xl shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)] hover:border-white/20 hover:shadow-[inset_0_1px_1px_rgba(255,255,255,0.2),0_40px_80px_rgba(0,0,0,0.7)] rounded-3xl overflow-hidden flex flex-col group transition-[background-color,border-color,box-shadow] duration-500 h-full relative cursor-pointer"
         >
             {/* Progress Strip */}
             {isJoined && (
