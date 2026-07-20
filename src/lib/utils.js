@@ -98,3 +98,10 @@ function inlineMarkdownToHtml(text) {
         .replace(/_(.*?)_/g, '<em>$1</em>');
 }
 
+export function normalizePhoneNumber(phone) {
+    if (!phone) return '';
+    const digits = phone.toString().replace(/\D/g, '');
+    return digits.length >= 10 ? digits.slice(-10) : digits;
+}
+
+

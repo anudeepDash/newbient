@@ -43,7 +43,7 @@ import Users from 'lucide-react/dist/esm/icons/users';
 import Trash2 from 'lucide-react/dist/esm/icons/trash-2';
 import CheckCircle2 from 'lucide-react/dist/esm/icons/check-circle-2';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { cn } from '../lib/utils';
+import { cn, normalizePhoneNumber } from '../lib/utils';
 import { getEarnedBadges } from '../lib/badges';
 import GlobalLoader from '../components/ui/GlobalLoader';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
@@ -222,6 +222,16 @@ const CreatorSettingsView = ({ profile }) => {
             useStore.getState().addToast("Please enter a contact number", 'error');
             return;
         }
+
+        const normPhone = normalizePhoneNumber(form.phone);
+        if (normPhone) {
+            const creators = useStore.getState().creators;
+            const existing = creators.find(c => c.uid !== profile.uid && normalizePhoneNumber(c.phone) === normPhone);
+            if (existing) {
+                return useStore.getState().addToast(`This mobile number is already linked to another creator account (${existing.email || 'existing account'}).`, 'error');
+            }
+        }
+
         setIsSendingOtp(true);
         try {
             const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
@@ -286,6 +296,15 @@ const CreatorSettingsView = ({ profile }) => {
         try {
             const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
             if (isLocal) {
+                const normPhone = normalizePhoneNumber(form.phone);
+                if (normPhone) {
+                    const creators = useStore.getState().creators;
+                    const existing = creators.find(c => c.uid !== profile.uid && normalizePhoneNumber(c.phone) === normPhone);
+                    if (existing) {
+                        setIsPhoneVerified(false);
+                        return useStore.getState().addToast(`This mobile number is already linked to another creator account.`, 'error');
+                    }
+                }
                 setIsPhoneVerified(true);
                 await updateCreator(profile.uid, { isPhoneVerified: true, phone: form.phone });
                 useStore.getState().addToast("Phone verified (Local Bypass)!", 'success');
@@ -296,15 +315,24 @@ const CreatorSettingsView = ({ profile }) => {
             const credential = PhoneAuthProvider.credential(confirmationResult, fullCode);
             await linkWithCredential(auth.currentUser, credential);
 
+            const normPhone = normalizePhoneNumber(form.phone);
+            if (normPhone) {
+                const creators = useStore.getState().creators;
+                const existing = creators.find(c => c.uid !== profile.uid && normalizePhoneNumber(c.phone) === normPhone);
+                if (existing) {
+                    setIsPhoneVerified(false);
+                    return useStore.getState().addToast(`This mobile number is already linked to another creator profile (${existing.email || 'existing account'}).`, 'error');
+                }
+            }
+
             setIsPhoneVerified(true);
             await updateCreator(profile.uid, { isPhoneVerified: true, phone: form.phone });
             useStore.getState().addToast("Phone verified successfully!", 'success');
         } catch (err) {
             console.error("OTP Verification Error:", err);
             if (err.code === 'auth/credential-already-in-use') {
-                setIsPhoneVerified(true);
-                await updateCreator(profile.uid, { isPhoneVerified: true, phone: form.phone });
-                useStore.getState().addToast("Phone verified! (Number linked to another account)", 'success');
+                setIsPhoneVerified(false);
+                useStore.getState().addToast("This mobile number is already linked to another account. Multiple profiles for the same phone number are not permitted.", 'error');
             } else {
                 useStore.getState().addToast("Invalid code or verification expired. Please try again.", 'error');
             }

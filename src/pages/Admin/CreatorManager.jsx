@@ -41,7 +41,7 @@ import Calendar from 'lucide-react/dist/esm/icons/calendar';
 import CheckCircle2 from 'lucide-react/dist/esm/icons/check-circle-2';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { motion, AnimatePresence } from 'framer-motion';
-import { cn } from '../../lib/utils';
+import { cn, normalizePhoneNumber } from '../../lib/utils';
 import AdminDashboardLink from '../../components/admin/AdminDashboardLink';
 import AdminCommunityHubLayout from '../../components/admin/AdminCommunityHubLayout';
 import jsPDF from 'jspdf';
@@ -1832,6 +1832,16 @@ const AddCreatorModal = ({ onClose }) => {
             return;
         }
 
+        const normPhone = normalizePhoneNumber(form.phone);
+        if (normPhone) {
+            const creators = useStore.getState().creators;
+            const existing = creators.find(c => normalizePhoneNumber(c.phone) === normPhone);
+            if (existing) {
+                useStore.getState().addToast(`The mobile number ${form.phone} is already linked to creator profile ${existing.name || existing.displayName} (${existing.email}).`, 'error');
+                return;
+            }
+        }
+
         setIsSaving(true);
         try {
             const finalCity = form.city === 'Others' ? form.customCity : form.city;
@@ -1865,7 +1875,7 @@ const AddCreatorModal = ({ onClose }) => {
             onClose();
         } catch (err) {
             console.error("Error manually adding creator:", err);
-            useStore.getState().addToast("Failed to add creator profile.", 'error');
+            useStore.getState().addToast(err.message || "Failed to add creator profile.", 'error');
         } finally {
             setIsSaving(false);
         }

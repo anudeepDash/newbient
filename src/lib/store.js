@@ -3,6 +3,7 @@ import { db, storage } from './firebase';
 import { collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, getDocs, where, setDoc, getDoc, increment, arrayUnion, collectionGroup, serverTimestamp, limit } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { sendBookingConfirmation, sendCreatorWelcomeEmail, sendNewCampaignNotificationEmail, sendCreatorApprovedEmail } from './email';
+import { normalizePhoneNumber } from './utils';
 
 const AUTH_CACHE_KEY = 'nb_auth_session';
 const getCachedSession = () => {
@@ -1776,6 +1777,15 @@ export const useStore = create((set, get) => ({
 
     // Creators / Influencers
     addCreator: async (creator, sendWelcome = true) => {
+        const { creators } = get();
+        const normPhone = normalizePhoneNumber(creator.phone);
+        if (normPhone) {
+            const existing = creators.find(c => c.uid !== creator.uid && normalizePhoneNumber(c.phone) === normPhone);
+            if (existing) {
+                throw new Error(`The mobile number ${creator.phone} is already linked to another Creator account (${existing.email || existing.displayName || 'Existing Account'}). Multiple creator accounts for the same mobile number are not allowed.`);
+            }
+        }
+
         const creatorId = (creator.creatorId || creator.uid.slice(0, 8)).toUpperCase();
         const finalCreator = {
             ...creator,
@@ -1787,7 +1797,6 @@ export const useStore = create((set, get) => ({
 
         if (creator.referredBy) {
             const referredBy = creator.referredBy.trim();
-            const { creators } = get();
             
             const referrer = creators.find(c => 
                 c.uid === referredBy || 
@@ -1820,6 +1829,17 @@ export const useStore = create((set, get) => ({
 
 
     updateCreator: async (uid, updates) => {
+        if (updates.phone) {
+            const { creators } = get();
+            const normPhone = normalizePhoneNumber(updates.phone);
+            if (normPhone) {
+                const existing = creators.find(c => c.uid !== uid && normalizePhoneNumber(c.phone) === normPhone);
+                if (existing) {
+                    throw new Error(`The mobile number ${updates.phone} is already registered to another Creator account.`);
+                }
+            }
+        }
+
         const creatorRef = doc(db, 'creators', uid);
         let prevStatus = null;
         let email = null;
