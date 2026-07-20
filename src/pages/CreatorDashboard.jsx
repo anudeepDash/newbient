@@ -292,19 +292,21 @@ const CreatorSettingsView = ({ profile }) => {
             useStore.getState().addToast("Please enter the 6-digit verification code.", 'error');
             return;
         }
+
+        const normPhone = normalizePhoneNumber(form.phone);
+        if (normPhone) {
+            const creators = useStore.getState().creators;
+            const existing = creators.find(c => c.uid !== profile.uid && normalizePhoneNumber(c.phone) === normPhone);
+            if (existing) {
+                setIsPhoneVerified(false);
+                return useStore.getState().addToast(`This mobile number is already linked to creator profile ${existing.displayName || existing.name} (${existing.email}).`, 'error');
+            }
+        }
+
         setIsVerifyingOtp(true);
         try {
             const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
             if (isLocal) {
-                const normPhone = normalizePhoneNumber(form.phone);
-                if (normPhone) {
-                    const creators = useStore.getState().creators;
-                    const existing = creators.find(c => c.uid !== profile.uid && normalizePhoneNumber(c.phone) === normPhone);
-                    if (existing) {
-                        setIsPhoneVerified(false);
-                        return useStore.getState().addToast(`This mobile number is already linked to another creator account.`, 'error');
-                    }
-                }
                 setIsPhoneVerified(true);
                 await updateCreator(profile.uid, { isPhoneVerified: true, phone: form.phone });
                 useStore.getState().addToast("Phone verified (Local Bypass)!", 'success');
@@ -315,26 +317,27 @@ const CreatorSettingsView = ({ profile }) => {
             const credential = PhoneAuthProvider.credential(confirmationResult, fullCode);
             await linkWithCredential(auth.currentUser, credential);
 
-            const normPhone = normalizePhoneNumber(form.phone);
-            if (normPhone) {
-                const creators = useStore.getState().creators;
-                const existing = creators.find(c => c.uid !== profile.uid && normalizePhoneNumber(c.phone) === normPhone);
-                if (existing) {
-                    setIsPhoneVerified(false);
-                    return useStore.getState().addToast(`This mobile number is already linked to another creator profile (${existing.email || 'existing account'}).`, 'error');
-                }
-            }
-
             setIsPhoneVerified(true);
             await updateCreator(profile.uid, { isPhoneVerified: true, phone: form.phone });
             useStore.getState().addToast("Phone verified successfully!", 'success');
         } catch (err) {
             console.error("OTP Verification Error:", err);
-            if (err.code === 'auth/credential-already-in-use') {
+            const creators = useStore.getState().creators;
+            const existing = normPhone ? creators.find(c => c.uid !== profile.uid && normalizePhoneNumber(c.phone) === normPhone) : null;
+            if (existing) {
+                setIsPhoneVerified(false);
+                useStore.getState().addToast(`This mobile number is already linked to creator profile ${existing.displayName || existing.name} (${existing.email}).`, 'error');
+            } else if (
+                err.code === 'auth/credential-already-in-use' ||
+                err.code === 'auth/provider-already-linked' ||
+                err.code === 'auth/phone-number-already-exists' ||
+                err.code === 'auth/account-exists-with-different-credential' ||
+                err.message?.toLowerCase().includes('already')
+            ) {
                 setIsPhoneVerified(false);
                 useStore.getState().addToast("This mobile number is already linked to another account. Multiple profiles for the same phone number are not permitted.", 'error');
             } else {
-                useStore.getState().addToast("Invalid code or verification expired. Please try again.", 'error');
+                useStore.getState().addToast(err.message || "Invalid verification code. Please try again.", 'error');
             }
         } finally {
             setIsVerifyingOtp(false);
