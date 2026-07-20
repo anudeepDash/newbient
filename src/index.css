@@ -32,6 +32,15 @@
 }
 
 @layer utilities {
+  /* Safari Backdrop Blur Hardware Acceleration */
+  [class*="backdrop-blur"] {
+    transform: translate3d(0, 0, 0);
+    -webkit-transform: translate3d(0, 0, 0);
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    will-change: transform, filter;
+  }
+
   .glass-card {
     @apply bg-zinc-950/35 backdrop-blur-3xl border border-white/5 rounded-3xl;
   }

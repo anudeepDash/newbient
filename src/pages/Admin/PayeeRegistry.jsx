@@ -25,9 +25,6 @@ import Clock from 'lucide-react/dist/esm/icons/clock';
 
 import { useStore } from '../../lib/store';
 import { useStoreSubscription } from '../../hooks/useStoreSubscription';
-import { Card } from '../../components/ui/Card';
-import { Button } from '../../components/ui/Button';
-import { Input } from '../../components/ui/Input';
 import { cn } from '../../lib/utils';
 import AdminCommunityHubLayout from '../../components/admin/AdminCommunityHubLayout';
 
@@ -57,60 +54,11 @@ const PayeeRegistry = () => {
         { name: 'Payee Registry', path: '/admin/payees', icon: User, color: 'text-neon-blue' }
     ];
 
-    // District Category Navigation setup
-    const categories = [
-        {
-            name: 'Overview',
-            desc: 'Liquidity Dashboard',
-            info: 'Real-time metrics, cash flow graphs & indicators',
-            path: '/admin/finance',
-            icon: LayoutGrid,
-            color: 'text-[#39FF14]',
-            glow: 'hover:shadow-[0_0_30px_rgba(57,255,20,0.15)] hover:border-[#39FF14]/40',
-            bgGradient: 'from-[#39FF14]/5 via-zinc-950/20 to-transparent',
-            borderColor: 'border-[#39FF14]/15',
-            badge: 'COMMAND',
-            active: false
-        },
-        {
-            name: 'Spends Ledger',
-            desc: 'Expenditures & Debits',
-            info: 'Track payroll, supplier bills, and vendor payouts',
-            path: '/admin/spends',
-            icon: CreditCard,
-            color: 'text-[#FF2E90]',
-            glow: 'hover:shadow-[0_0_30px_rgba(255,46,144,0.15)] hover:border-[#FF2E90]/40',
-            bgGradient: 'from-[#FF2E90]/5 via-zinc-950/20 to-transparent',
-            borderColor: 'border-[#FF2E90]/15',
-            badge: 'DEBITS',
-            active: false
-        },
-        {
-            name: 'Other Income',
-            desc: 'Revenue & Capital Inflow',
-            info: 'Manage sponsorships, tickets, and external grants',
-            path: '/admin/other-income',
-            icon: FileSpreadsheet,
-            color: 'text-[#39FF14]',
-            glow: 'hover:shadow-[0_0_30px_rgba(57,255,20,0.15)] hover:border-[#39FF14]/40',
-            bgGradient: 'from-[#39FF14]/5 via-zinc-950/20 to-transparent',
-            borderColor: 'border-[#39FF14]/15',
-            badge: 'INFLOW',
-            active: false
-        },
-        {
-            name: 'Payee Registry',
-            desc: 'Beneficiary Directory',
-            info: 'Manage rosters of volunteers, retainers, and crews',
-            path: '/admin/payees',
-            icon: User,
-            color: 'text-[#00F0FF]',
-            glow: 'hover:shadow-[0_0_30px_rgba(0,240,255,0.15)] hover:border-[#00F0FF]/40',
-            bgGradient: 'from-[#00F0FF]/5 via-zinc-950/20 to-transparent',
-            borderColor: 'border-[#00F0FF]/15',
-            badge: 'REGISTRY',
-            active: true
-        }
+    const navPills = [
+        { name: 'Overview', path: '/admin/finance', icon: LayoutGrid, isActive: false },
+        { name: 'Expense Ledger', path: '/admin/spends', icon: IndianRupee, isActive: false },
+        { name: 'Other Revenue', path: '/admin/other-income', icon: FileSpreadsheet, isActive: false },
+        { name: 'Payee Database', path: '/admin/payees', icon: User, isActive: true }
     ];
 
     const roles = [
@@ -199,36 +147,6 @@ const PayeeRegistry = () => {
         setTimeout(() => setCopiedLink(false), 2000);
     };
 
-    // Circular progress proportion metric drawing
-    const renderProportionCircle = (count, total, colorClass) => {
-        const percentage = total > 0 ? (count / total) * 100 : 0;
-        const radius = 14;
-        const circumference = 2 * Math.PI * radius;
-        const strokeDashoffset = circumference - (percentage / 100) * circumference;
-        
-        return (
-            <div className="relative w-10 h-10 shrink-0">
-                <svg className="w-full h-full transform -rotate-90">
-                    <circle cx="20" cy="20" r={radius} className="stroke-white/5" strokeWidth="2.5" fill="transparent" />
-                    <circle 
-                        cx="20" 
-                        cy="20" 
-                        r={radius} 
-                        className={cn("transition-all duration-1000", colorClass)} 
-                        strokeWidth="2.5" 
-                        fill="transparent" 
-                        strokeDasharray={circumference} 
-                        strokeDashoffset={strokeDashoffset} 
-                        strokeLinecap="round" 
-                    />
-                </svg>
-                <span className="absolute inset-0 flex items-center justify-center text-[7px] font-black text-white/50">
-                    {Math.round(percentage)}%
-                </span>
-            </div>
-        );
-    };
-
     return (
         <AdminCommunityHubLayout
             studioHeader={{
@@ -241,47 +159,30 @@ const PayeeRegistry = () => {
             accentColor="neon-blue"
         >
             <div className="space-y-8 relative">
-                {/* District Category Booking Tiles Navigation Grid */}
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                    {categories.map((cat) => {
-                        const IconComp = cat.icon;
+                {/* Nav Pills */}
+                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="flex flex-wrap gap-3">
+                    {navPills.map((pill) => {
+                        const Icon = pill.icon;
                         return (
-                            <Link 
-                                key={cat.name} 
-                                to={cat.path}
+                            <Link key={pill.name} to={pill.path}
                                 className={cn(
-                                    "relative overflow-hidden group p-5 rounded-3xl border bg-gradient-to-br bg-zinc-900/40 backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:bg-zinc-900/60 select-none",
-                                    cat.borderColor,
-                                    cat.glow,
-                                    cat.active && "border-[#00F0FF]/40 bg-[#00F0FF]/5 shadow-[0_0_20px_rgba(0,240,255,0.06)]"
+                                    "flex items-center gap-2 px-5 py-2.5 rounded-full border text-[10px] font-black uppercase tracking-widest transition-all duration-300 group",
+                                    pill.isActive 
+                                        ? "bg-neon-green text-black border-neon-green shadow-[0_0_15px_rgba(57,255,20,0.3)]" 
+                                        : "bg-white/[0.03] text-zinc-400 border-white/10 hover:border-white/30 hover:text-white hover:bg-white/[0.05]"
                                 )}
                             >
-                                <div className={cn("absolute inset-0 bg-gradient-to-br opacity-[0.03] transition-opacity duration-300 group-hover:opacity-[0.07]", cat.bgGradient)} />
-                                <div className="flex justify-between items-start mb-4">
-                                    <div className={cn("p-2.5 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center shrink-0 transition-transform group-hover:scale-110", cat.color)}>
-                                        <IconComp size={16} />
-                                    </div>
-                                    <span className={cn(
-                                        "text-[7px] font-black px-2 py-0.5 rounded-full tracking-widest border uppercase",
-                                        cat.active 
-                                            ? "bg-[#00F0FF]/10 text-[#00F0FF] border-[#00F0FF]/20" 
-                                            : "bg-white/5 text-gray-500 border-white/5"
-                                    )}>
-                                        {cat.badge}
-                                    </span>
-                                </div>
-                                <h4 className="text-xs font-black uppercase text-white tracking-wider mb-1">{cat.name}</h4>
-                                <p className="text-[9px] font-bold text-gray-400 leading-snug line-clamp-1">{cat.desc}</p>
-                                <p className="text-[8px] font-medium text-gray-600 leading-normal line-clamp-2 mt-1.5 group-hover:text-gray-500 transition-colors">{cat.info}</p>
+                                <Icon size={14} className={cn("transition-transform group-hover:scale-110", pill.isActive ? "text-black" : "text-neon-green")} />
+                                {pill.name}
                             </Link>
-                        );
+                        )
                     })}
-                </div>
-                
+                </motion.div>
+
                 {/* Upper Grid: Link Builder Console & Quick Stats */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     {/* Registration Link Generator Console */}
-                    <Card className="lg:col-span-2 p-6 md:p-8 bg-zinc-900/40 border-white/5 hover:border-white/10 transition-all rounded-[2.5rem] border shadow-[0_15px_30px_rgba(0,0,0,0.5)]">
+                    <div className="lg:col-span-2 p-6 md:p-8 bg-white/[0.03] backdrop-blur-xl border border-white/10 rounded-3xl hover:border-white/20 transition-all">
                         <div className="flex items-center justify-between mb-4">
                             <div>
                                 <h3 className="text-lg font-black font-heading tracking-tighter uppercase italic text-white mb-1 flex items-center gap-2">
@@ -345,7 +246,7 @@ const PayeeRegistry = () => {
                                                         setSelectedEvent(e.target.value);
                                                         if (e.target.value) setCustomEvent('');
                                                     }}
-                                                    className="w-full bg-zinc-950 border border-white/10 h-12 rounded-xl text-xs font-bold px-4 text-white outline-none focus:border-neon-blue focus:ring-1 focus:ring-neon-blue/30 transition-all appearance-none cursor-pointer"
+                                                    className="w-full bg-zinc-950/40 border border-white/10 rounded-xl text-[10px] font-extrabold uppercase tracking-widest text-white h-10 px-3 outline-none focus:border-neon-blue transition-all appearance-none cursor-pointer"
                                                 >
                                                     <option value="" className="bg-zinc-950">-- Select Active Event --</option>
                                                     {upcomingEvents.map(ev => (
@@ -358,14 +259,14 @@ const PayeeRegistry = () => {
 
                                         <div className="space-y-1.5">
                                             <label className="text-[8px] font-black text-gray-500 uppercase tracking-widest pl-1">Or Specify Custom Gig Title</label>
-                                            <Input
+                                            <input
                                                 value={customEvent}
                                                 onChange={(e) => {
                                                     setCustomEvent(e.target.value);
                                                     if (e.target.value) setSelectedEvent('');
                                                 }}
                                                 placeholder="e.g. Summer Festival 2026 Coordinator"
-                                                className="h-12 border-white/10 bg-zinc-950 focus:border-neon-blue"
+                                                className="w-full bg-zinc-950/40 border border-white/10 rounded-xl text-[10px] font-extrabold uppercase tracking-widest text-white h-10 px-3 outline-none focus:border-neon-blue transition-all placeholder:text-gray-600"
                                             />
                                         </div>
                                     </motion.div>
@@ -374,17 +275,17 @@ const PayeeRegistry = () => {
 
                             {/* Generated Output View Block */}
                             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 pt-4 border-t border-white/5">
-                                <Button 
+                                <button 
                                     type="submit" 
-                                    className="h-12 px-8 bg-gradient-to-r from-neon-blue to-blue-600 text-black font-black uppercase tracking-widest text-[9px] rounded-xl hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2 shadow-[0_5px_15px_rgba(59,130,246,0.2)] shrink-0"
+                                    className="h-10 px-8 bg-gradient-to-r from-neon-blue to-blue-600 text-black font-black uppercase tracking-widest text-[9px] rounded-xl hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2 shadow-[0_5px_15px_rgba(59,130,246,0.2)] shrink-0"
                                 >
                                     <LinkIcon size={12} /> {copiedLink ? 'Copied URL!' : 'Forge Provision Link'}
-                                </Button>
+                                </button>
                                 {generatedLink && (
                                     <motion.div 
                                         initial={{ opacity: 0, scale: 0.95 }}
                                         animate={{ opacity: 1, scale: 1 }}
-                                        className="text-[8px] text-neon-blue bg-neon-blue/5 border border-neon-blue/20 px-4 rounded-xl truncate font-mono select-all flex-1 h-12 flex items-center justify-between gap-4 group"
+                                        className="text-[8px] text-neon-blue bg-neon-blue/5 border border-neon-blue/20 px-4 rounded-xl truncate font-mono select-all flex-1 h-10 flex items-center justify-between gap-4 group"
                                     >
                                         <span className="truncate">{generatedLink}</span>
                                         <button
@@ -403,10 +304,10 @@ const PayeeRegistry = () => {
                                 )}
                             </div>
                         </form>
-                    </Card>
+                    </div>
 
                     {/* Stats summary panel */}
-                    <Card className="p-6 md:p-8 bg-zinc-900/40 border-white/5 hover:border-white/10 transition-all rounded-[2.5rem] border shadow-[0_15px_30px_rgba(0,0,0,0.5)] flex flex-col justify-between">
+                    <div className="p-6 md:p-8 bg-white/[0.03] backdrop-blur-xl border border-white/10 rounded-3xl hover:border-white/20 transition-all flex flex-col justify-between">
                         <div>
                             <h3 className="text-lg font-black font-heading tracking-tighter uppercase italic text-white mb-1">
                                 registry status
@@ -416,64 +317,52 @@ const PayeeRegistry = () => {
                             </p>
                         </div>
                         <div className="grid grid-cols-2 gap-4">
-                            <div className="p-4 bg-black/40 border border-white/5 rounded-2xl flex items-center justify-between gap-4">
-                                <div className="space-y-0.5">
-                                    <span className="text-[7px] font-black text-gray-600 block uppercase tracking-widest">Total Payees</span>
-                                    <span className="text-2xl font-black text-white block mt-1">{financePayees.length}</span>
-                                </div>
-                                {renderProportionCircle(financePayees.length, financePayees.length, 'stroke-white')}
+                            <div className="p-4 bg-black/40 border border-white/5 rounded-2xl flex flex-col gap-1">
+                                <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Total Payees</span>
+                                <span className="text-2xl font-mono font-black text-white">{financePayees.length}</span>
                             </div>
-                            <div className="p-4 bg-black/40 border border-white/5 rounded-2xl flex items-center justify-between gap-4">
-                                <div className="space-y-0.5">
-                                    <span className="text-[7px] font-black text-gray-600 block uppercase tracking-widest">Volunteers</span>
-                                    <span className="text-2xl font-black text-neon-green block mt-1">
-                                        {financePayees.filter(p => p.type === 'Volunteer').length}
-                                    </span>
-                                </div>
-                                {renderProportionCircle(financePayees.filter(p => p.type === 'Volunteer').length, financePayees.length, 'stroke-neon-green')}
+                            <div className="p-4 bg-black/40 border border-white/5 rounded-2xl flex flex-col gap-1">
+                                <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Volunteers</span>
+                                <span className="text-2xl font-mono font-black text-neon-green">
+                                    {financePayees.filter(p => p.type === 'Volunteer').length}
+                                </span>
                             </div>
-                            <div className="p-4 bg-black/40 border border-white/5 rounded-2xl flex items-center justify-between gap-4">
-                                <div className="space-y-0.5">
-                                    <span className="text-[7px] font-black text-gray-600 block uppercase tracking-widest">Vendors</span>
-                                    <span className="text-2xl font-black text-neon-pink block mt-1">
-                                        {financePayees.filter(p => p.type === 'Vendor').length}
-                                    </span>
-                                </div>
-                                {renderProportionCircle(financePayees.filter(p => p.type === 'Vendor').length, financePayees.length, 'stroke-neon-pink')}
+                            <div className="p-4 bg-black/40 border border-white/5 rounded-2xl flex flex-col gap-1">
+                                <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Vendors</span>
+                                <span className="text-2xl font-mono font-black text-neon-pink">
+                                    {financePayees.filter(p => p.type === 'Vendor').length}
+                                </span>
                             </div>
-                            <div className="p-4 bg-black/40 border border-white/5 rounded-2xl flex items-center justify-between gap-4">
-                                <div className="space-y-0.5">
-                                    <span className="text-[7px] font-black text-gray-600 block uppercase tracking-widest">Core & Artists</span>
-                                    <span className="text-2xl font-black text-neon-blue block mt-1">
-                                        {financePayees.filter(p => p.type === 'Salary' || p.type === 'Artist').length}
-                                    </span>
-                                </div>
-                                {renderProportionCircle(financePayees.filter(p => p.type === 'Salary' || p.type === 'Artist').length, financePayees.length, 'stroke-neon-blue')}
+                            <div className="p-4 bg-black/40 border border-white/5 rounded-2xl flex flex-col gap-1">
+                                <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Core & Artists</span>
+                                <span className="text-2xl font-mono font-black text-neon-blue">
+                                    {financePayees.filter(p => p.type === 'Salary' || p.type === 'Artist').length}
+                                </span>
                             </div>
                         </div>
-                    </Card>
-                </div>
+                    </div>
+                </motion.div>
 
                 {/* Filters & Control Console */}
-                <div className="bg-zinc-900/40 border border-white/5 rounded-[2rem] md:rounded-[2.5rem] p-4 backdrop-blur-3xl space-y-4">
+                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="bg-white/[0.03] backdrop-blur-xl border border-white/10 rounded-2xl p-4">
                     <div className="flex flex-col md:flex-row items-center gap-4">
                         {/* Search Input */}
                         <div className="relative flex-1 w-full group">
-                            <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-neon-blue transition-colors" size={18} />
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-white transition-colors" size={14} />
                             <input 
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
-                                placeholder="Search payees by name, contact info, destination, gig reference..."
-                                className="w-full bg-zinc-900/40 hover:bg-zinc-900/60 h-14 pl-16 pr-6 rounded-xl text-[9px] md:text-[11px] font-black uppercase tracking-widest outline-none transition-all placeholder:text-gray-600 border border-white/5 focus:border-neon-blue focus:shadow-[0_0_15px_rgba(59,130,246,0.1)]"
+                                placeholder="Search payees by name, contact info..."
+                                className="w-full bg-zinc-950/40 border border-white/10 rounded-xl text-[10px] font-extrabold uppercase tracking-widest text-white h-10 pl-9 pr-3 outline-none focus:border-white/30 transition-all placeholder:text-gray-600"
                             />
                         </div>
 
                         {/* Payee Type Filter */}
-                        <div className="w-full md:w-48 space-y-1">
+                        <div className="w-full md:w-48 relative">
                             <select 
                                 value={typeFilter} 
                                 onChange={(e) => setTypeFilter(e.target.value)}
-                                className="w-full bg-zinc-900/80 border border-white/10 h-14 rounded-xl px-4 text-gray-300 outline-none focus:border-neon-blue/40 transition-all text-[9px] font-black uppercase tracking-widest cursor-pointer"
+                                className="w-full bg-zinc-950/40 border border-white/10 rounded-xl text-[10px] font-extrabold uppercase tracking-widest text-white h-10 px-3 outline-none focus:border-white/30 transition-all appearance-none cursor-pointer"
                             >
                                 <option value="All" className="bg-zinc-950">All Types</option>
                                 <option value="Volunteer" className="bg-zinc-950">Volunteers</option>
@@ -481,20 +370,22 @@ const PayeeRegistry = () => {
                                 <option value="Salary" className="bg-zinc-950">Core Team</option>
                                 <option value="Artist" className="bg-zinc-950">Artists</option>
                             </select>
+                            <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
                         </div>
 
                         {/* Payment Mode Filter */}
-                        <div className="w-full md:w-48 space-y-1">
+                        <div className="w-full md:w-48 relative">
                             <select 
                                 value={paymentModeFilter} 
                                 onChange={(e) => setPaymentModeFilter(e.target.value)}
-                                className="w-full bg-zinc-900/80 border border-white/10 h-14 rounded-xl px-4 text-gray-300 outline-none focus:border-neon-blue/40 transition-all text-[9px] font-black uppercase tracking-widest cursor-pointer"
+                                className="w-full bg-zinc-950/40 border border-white/10 rounded-xl text-[10px] font-extrabold uppercase tracking-widest text-white h-10 px-3 outline-none focus:border-white/30 transition-all appearance-none cursor-pointer"
                             >
                                 <option value="All" className="bg-zinc-950">All Modes</option>
                                 <option value="UPI" className="bg-zinc-950">UPI</option>
                                 <option value="Bank Transfer" className="bg-zinc-950">Bank Transfer</option>
                                 <option value="Other" className="bg-zinc-950">Other Methods</option>
                             </select>
+                            <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
                         </div>
 
                         {/* Clear button */}
@@ -504,24 +395,24 @@ const PayeeRegistry = () => {
                                 setTypeFilter('All');
                                 setPaymentModeFilter('All');
                             }}
-                            className="w-full md:w-auto h-14 px-6 bg-white/5 hover:bg-white/10 text-white rounded-xl transition-all border border-white/5 flex items-center justify-center gap-2 font-black tracking-widest uppercase text-[9px] shrink-0"
+                            className="w-full md:w-auto h-10 px-5 bg-white/5 hover:bg-white/10 text-white rounded-xl transition-all border border-white/10 flex items-center justify-center gap-2 font-black tracking-widest uppercase text-[10px] shrink-0"
                         >
                             <X size={12} /> Clear
                         </button>
                     </div>
-                </div>
+                </motion.div>
 
-                {/* MOBILE DECK VIEW: Hidden on desktop, layout optimized for touch cards */}
-                <div className="grid grid-cols-1 gap-4 lg:hidden">
+                {/* MOBILE DECK VIEW */}
+                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="grid grid-cols-1 gap-4 lg:hidden">
                     {filteredPayees.length > 0 ? (
                         filteredPayees.map((payee) => {
                             const isExpanded = expandedPayeeId === payee.id;
                             return (
-                                <Card key={payee.id} className="p-5 bg-zinc-900/40 border-white/5 rounded-2xl flex flex-col gap-4 relative overflow-hidden">
+                                <div key={payee.id} className="bg-white/[0.03] border border-white/10 rounded-2xl p-5 hover:bg-white/[0.04] hover:border-white/20 transition-all flex flex-col gap-4 relative overflow-hidden">
                                     <div className="flex justify-between items-start gap-4">
                                         <div>
                                             <h4 className="text-sm font-black text-white">{payee.name}</h4>
-                                            <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest font-mono select-all block mt-0.5">ID: {payee.id.slice(0, 8)}...</span>
+                                            <span className="text-[8px] font-black text-zinc-500 uppercase tracking-widest font-mono select-all block mt-0.5">ID: {payee.id.slice(0, 8)}...</span>
                                         </div>
                                         <span className={cn(
                                             "px-2.5 py-0.5 rounded-full border font-black uppercase tracking-widest text-[8px]",
@@ -534,14 +425,14 @@ const PayeeRegistry = () => {
                                         </span>
                                     </div>
                                     
-                                    <div className="space-y-1.5 text-[10px] text-gray-400 border-t border-white/5 pt-3">
-                                        <div className="flex items-center gap-2 select-all"><Mail size={12} className="text-gray-600 shrink-0" /> {payee.email}</div>
-                                        <div className="flex items-center gap-2 select-all"><Phone size={12} className="text-gray-600 shrink-0" /> {payee.phone}</div>
-                                        <div className="flex items-center gap-2 select-all"><CreditCard size={12} className="text-gray-600 shrink-0" /> {payee.paymentMode}: {payee.destinationDetails || 'N/A'}</div>
+                                    <div className="space-y-1.5 text-[10px] text-zinc-400 border-t border-white/5 pt-3">
+                                        <div className="flex items-center gap-2 select-all"><Mail size={12} className="text-zinc-500 shrink-0" /> {payee.email}</div>
+                                        <div className="flex items-center gap-2 select-all"><Phone size={12} className="text-zinc-500 shrink-0" /> {payee.phone}</div>
+                                        <div className="flex items-center gap-2 select-all"><CreditCard size={12} className="text-zinc-500 shrink-0" /> {payee.paymentMode}: {payee.destinationDetails || 'N/A'}</div>
                                     </div>
 
                                     {payee.notes && (
-                                        <div className="text-[9px] text-gray-500 leading-normal font-semibold normal-case italic bg-white/[0.01] p-3 rounded-lg border border-white/5 mt-1">
+                                        <div className="text-[9px] text-zinc-400 leading-normal font-semibold normal-case italic bg-white/[0.01] p-3 rounded-lg border border-white/5 mt-1">
                                             {payee.notes}
                                         </div>
                                     )}
@@ -553,7 +444,7 @@ const PayeeRegistry = () => {
                                         <div className="flex gap-2">
                                             <button 
                                                 onClick={() => handleCopyDetails(payee.destinationDetails)} 
-                                                className="p-2 text-gray-500 hover:text-white transition-colors border border-white/5 rounded-lg bg-zinc-900/60"
+                                                className="p-2 text-zinc-400 hover:text-white transition-colors border border-white/10 rounded-lg bg-zinc-950/40 hover:bg-zinc-800"
                                                 title="Copy Payment Address"
                                             >
                                                 <Copy size={12} />
@@ -561,7 +452,7 @@ const PayeeRegistry = () => {
                                             {user?.role !== 'editor' && user?.role !== 'content_admin' && (
                                                 <button 
                                                     onClick={() => handleDeletePayee(payee.id)} 
-                                                    className="p-2 text-gray-500 hover:text-red-500 transition-colors border border-white/5 rounded-lg bg-zinc-900/60"
+                                                    className="p-2 text-zinc-400 hover:text-red-500 transition-colors border border-white/10 rounded-lg bg-zinc-950/40 hover:bg-red-500/10 hover:border-red-500/30"
                                                     title="Remove Payee"
                                                 >
                                                     <Trash2 size={12} />
@@ -569,22 +460,22 @@ const PayeeRegistry = () => {
                                             )}
                                         </div>
                                     </div>
-                                </Card>
+                                </div>
                             );
                         })
                     ) : (
-                        <Card className="p-8 text-center text-[10px] text-gray-500 uppercase tracking-widest font-black font-mono bg-zinc-900/40 border-white/5 rounded-2xl">
-                            No registered payees found matching criteria.
-                        </Card>
+                        <div className="flex items-center justify-center py-20 bg-white/[0.03] border border-white/10 rounded-2xl">
+                            <span className="text-[10px] font-black uppercase tracking-widest text-zinc-600">No records found</span>
+                        </div>
                     )}
-                </div>
+                </motion.div>
 
-                {/* DESKTOP SHEET TABLE VIEW: Hidden on mobile viewports */}
-                <div className="hidden lg:block overflow-x-auto scrollbar-hide">
-                    <Card className="min-w-[1000px] bg-zinc-900/40 border-white/5 rounded-3xl p-0 border overflow-hidden">
+                {/* DESKTOP TABLE VIEW */}
+                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} className="hidden lg:block overflow-x-auto scrollbar-hide">
+                    <div className="min-w-[1000px] bg-white/[0.03] backdrop-blur-xl border border-white/10 rounded-3xl p-0 overflow-hidden">
                         <table className="w-full text-left border-collapse">
                             <thead>
-                                <tr className="border-b border-white/5 text-[9px] font-black uppercase tracking-[0.2em] text-gray-500">
+                                <tr className="border-b border-white/5 text-[9px] font-black uppercase tracking-[0.2em] text-zinc-500 bg-white/[0.02]">
                                     <th className="p-6">payee name</th>
                                     <th className="p-6">classification</th>
                                     <th className="p-6">contact details</th>
@@ -602,14 +493,14 @@ const PayeeRegistry = () => {
                                         return (
                                             <React.Fragment key={payee.id}>
                                                 <tr className={cn(
-                                                    "hover:bg-white/[0.01] transition-all group cursor-pointer",
-                                                    isExpanded && "bg-white/[0.02]"
+                                                    "border-b border-white/5 hover:bg-white/[0.03] transition-all group cursor-pointer",
+                                                    isExpanded && "bg-white/[0.04]"
                                                 )}
                                                     onClick={() => setExpandedPayeeId(isExpanded ? null : payee.id)}
                                                 >
                                                     <td className="p-6">
                                                         <div className="flex items-center gap-2">
-                                                            {isExpanded ? <ChevronUp size={12} className="text-neon-blue" /> : <ChevronDown size={12} className="text-gray-500 group-hover:text-white" />}
+                                                            {isExpanded ? <ChevronUp size={12} className="text-neon-blue" /> : <ChevronDown size={12} className="text-zinc-500 group-hover:text-white" />}
                                                             <div className="text-xs font-black text-white">{payee.name}</div>
                                                         </div>
                                                     </td>
@@ -624,38 +515,38 @@ const PayeeRegistry = () => {
                                                             {payee.type}
                                                         </span>
                                                     </td>
-                                                    <td className="p-6 text-gray-400 space-y-1 text-[10px]">
-                                                        <div className="flex items-center gap-1.5 lowercase select-all"><Mail size={10} className="text-gray-600 shrink-0" /> {payee.email}</div>
-                                                        <div className="flex items-center gap-1.5 select-all"><Phone size={10} className="text-gray-600 shrink-0" /> {payee.phone}</div>
+                                                    <td className="p-6 text-zinc-400 space-y-1 text-[10px]">
+                                                        <div className="flex items-center gap-1.5 lowercase select-all"><Mail size={10} className="text-zinc-500 shrink-0" /> {payee.email}</div>
+                                                        <div className="flex items-center gap-1.5 select-all"><Phone size={10} className="text-zinc-500 shrink-0" /> {payee.phone}</div>
                                                     </td>
-                                                    <td className="p-6 text-gray-300 text-[10px]">{payee.paymentMode}</td>
-                                                    <td className="p-6 text-gray-400">
+                                                    <td className="p-6 text-zinc-300 text-[10px]">{payee.paymentMode}</td>
+                                                    <td className="p-6 text-zinc-400">
                                                         {payee.destinationDetails ? (
                                                             <div className="flex items-center gap-2 max-w-[240px]" onClick={e => e.stopPropagation()}>
                                                                 <span className="font-mono text-[9px] truncate text-white select-all">{payee.destinationDetails}</span>
                                                                 <button 
                                                                     onClick={() => handleCopyDetails(payee.destinationDetails)}
-                                                                    className="p-1.5 hover:bg-white/10 text-gray-500 rounded hover:text-white transition-all shrink-0 border border-white/5"
+                                                                    className="p-1.5 hover:bg-white/10 text-zinc-500 rounded hover:text-white transition-all shrink-0 border border-white/5"
                                                                     title="Copy Payout Address"
                                                                 >
                                                                     <Copy size={10} />
                                                                 </button>
                                                             </div>
                                                         ) : (
-                                                            <span className="text-[8px] text-gray-700 font-black">N/A</span>
+                                                            <span className="text-[8px] text-zinc-700 font-black">N/A</span>
                                                         )}
                                                     </td>
                                                     <td className="p-6 text-neon-blue text-[9px] font-mono select-all">
                                                         {payee.linkedGig || (payee.type === 'Volunteer' ? 'General gig' : 'N/A')}
                                                     </td>
-                                                    <td className="p-6 text-gray-500 font-mono text-[10px]">
+                                                    <td className="p-6 text-zinc-500 font-mono text-[10px]">
                                                         {payee.createdAt ? new Date(payee.createdAt).toLocaleDateString() : 'N/A'}
                                                     </td>
                                                     <td className="p-6 text-right" onClick={e => e.stopPropagation()}>
                                                         <div className="flex justify-end gap-2">
                                                             <button 
                                                                 onClick={() => handleCopyDetails(payee.destinationDetails)} 
-                                                                className="p-2 text-gray-500 hover:text-white transition-colors border border-white/5 rounded-lg bg-zinc-900/60"
+                                                                className="p-2 text-zinc-400 hover:text-white transition-colors border border-white/10 rounded-lg bg-zinc-950/40 hover:bg-zinc-800"
                                                                 title="Copy Payment Address"
                                                             >
                                                                 <Copy size={14} />
@@ -663,7 +554,7 @@ const PayeeRegistry = () => {
                                                             {user?.role !== 'editor' && user?.role !== 'content_admin' && (
                                                                 <button 
                                                                     onClick={() => handleDeletePayee(payee.id)} 
-                                                                    className="p-2 text-gray-500 hover:text-red-500 transition-colors border border-white/5 rounded-lg bg-zinc-900/60"
+                                                                    className="p-2 text-zinc-400 hover:text-red-500 transition-colors border border-white/10 rounded-lg bg-zinc-950/40 hover:bg-red-500/10 hover:border-red-500/30"
                                                                     title="Remove Payee"
                                                                 >
                                                                     <Trash2 size={14} />
@@ -675,7 +566,7 @@ const PayeeRegistry = () => {
                                                 
                                                 {/* Expanded Details Drawer */}
                                                 {isExpanded && (
-                                                    <tr className="bg-black/40 border-b border-white/5">
+                                                    <tr className="bg-zinc-950/40 border-b border-white/5">
                                                         <td colSpan="8" className="p-0">
                                                             <motion.div
                                                                 initial={{ height: 0, opacity: 0 }}
@@ -687,36 +578,36 @@ const PayeeRegistry = () => {
                                                                 <div className="p-6 grid grid-cols-3 gap-6 text-left border-l-2 border-neon-blue bg-white/[0.01]">
                                                                     {/* Notes / Bio */}
                                                                     <div className="space-y-2">
-                                                                        <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest flex items-center gap-1.5">
+                                                                        <span className="text-[8px] font-black text-zinc-500 uppercase tracking-widest flex items-center gap-1.5">
                                                                             <FileText size={10} className="text-neon-blue" /> Payee Biography & Notes
                                                                         </span>
-                                                                        <p className="text-[10px] text-gray-300 normal-case font-semibold leading-relaxed italic bg-black/40 border border-white/5 p-4 rounded-xl min-h-[90px]">
+                                                                        <p className="text-[10px] text-zinc-300 normal-case font-semibold leading-relaxed italic bg-zinc-950/40 border border-white/5 p-4 rounded-xl min-h-[90px]">
                                                                             {payee.notes || "No notes or specific instructions provided for this payee profile."}
                                                                         </p>
                                                                     </div>
                                                                     
                                                                     {/* Bank details info */}
                                                                     <div className="space-y-2">
-                                                                        <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest flex items-center gap-1.5">
+                                                                        <span className="text-[8px] font-black text-zinc-500 uppercase tracking-widest flex items-center gap-1.5">
                                                                             <CreditCard size={10} className="text-neon-green" /> Payout Credentials
                                                                         </span>
-                                                                        <div className="bg-black/40 border border-white/5 p-4 rounded-xl space-y-2 text-[10px] min-h-[90px] flex flex-col justify-center">
+                                                                        <div className="bg-zinc-950/40 border border-white/5 p-4 rounded-xl space-y-2 text-[10px] min-h-[90px] flex flex-col justify-center">
                                                                             <div className="flex justify-between items-center">
-                                                                                <span className="text-gray-500 font-bold uppercase">Payment Mode</span>
+                                                                                <span className="text-zinc-500 font-bold uppercase">Payment Mode</span>
                                                                                 <span className="text-white font-black">{payee.paymentMode}</span>
                                                                             </div>
                                                                             <div className="flex justify-between items-start gap-4">
-                                                                                <span className="text-gray-500 font-bold uppercase shrink-0">Address</span>
+                                                                                <span className="text-zinc-500 font-bold uppercase shrink-0">Address</span>
                                                                                 <span className="text-white font-mono break-all font-semibold select-all text-right">{payee.destinationDetails || 'N/A'}</span>
                                                                             </div>
                                                                             {payee.bankDetails && (
                                                                                 <>
                                                                                     <div className="flex justify-between items-center">
-                                                                                        <span className="text-gray-500 font-bold uppercase">Bank Name</span>
+                                                                                        <span className="text-zinc-500 font-bold uppercase">Bank Name</span>
                                                                                         <span className="text-white font-black">{payee.bankDetails.bankName}</span>
                                                                                     </div>
                                                                                     <div className="flex justify-between items-center">
-                                                                                        <span className="text-gray-500 font-bold uppercase">Bank IFSC</span>
+                                                                                        <span className="text-zinc-500 font-bold uppercase">Bank IFSC</span>
                                                                                         <span className="text-white font-mono font-black">{payee.bankDetails.ifscCode}</span>
                                                                                     </div>
                                                                                 </>
@@ -726,20 +617,20 @@ const PayeeRegistry = () => {
 
                                                                     {/* Record info */}
                                                                     <div className="space-y-2">
-                                                                        <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest flex items-center gap-1.5">
+                                                                        <span className="text-[8px] font-black text-zinc-500 uppercase tracking-widest flex items-center gap-1.5">
                                                                             <Clock size={10} className="text-neon-pink" /> Record Metadata
                                                                         </span>
-                                                                        <div className="bg-black/40 border border-white/5 p-4 rounded-xl space-y-2 text-[10px] min-h-[90px] flex flex-col justify-center">
+                                                                        <div className="bg-zinc-950/40 border border-white/5 p-4 rounded-xl space-y-2 text-[10px] min-h-[90px] flex flex-col justify-center">
                                                                             <div className="flex justify-between items-center">
-                                                                                <span className="text-gray-500 font-bold uppercase">Registry ID</span>
+                                                                                <span className="text-zinc-500 font-bold uppercase">Registry ID</span>
                                                                                 <span className="text-white font-mono text-[9px] select-all">{payee.id}</span>
                                                                             </div>
                                                                             <div className="flex justify-between items-center">
-                                                                                <span className="text-gray-500 font-bold uppercase">Onboarded</span>
+                                                                                <span className="text-zinc-500 font-bold uppercase">Onboarded</span>
                                                                                 <span className="text-white font-semibold">{payee.createdAt ? new Date(payee.createdAt).toLocaleString('en-IN') : 'N/A'}</span>
                                                                             </div>
                                                                             <div className="flex justify-between items-center">
-                                                                                <span className="text-gray-500 font-bold uppercase">Gig Scope</span>
+                                                                                <span className="text-zinc-500 font-bold uppercase">Gig Scope</span>
                                                                                 <span className="text-neon-blue font-black uppercase tracking-wider text-[9px]">{payee.linkedGig || 'Global Retainer'}</span>
                                                                             </div>
                                                                         </div>
@@ -754,15 +645,17 @@ const PayeeRegistry = () => {
                                     })
                                 ) : (
                                     <tr>
-                                        <td colSpan="8" className="p-12 text-center text-[10px] text-gray-500 uppercase tracking-widest font-black font-mono">
-                                            No registered payees found matching criteria.
+                                        <td colSpan="8" className="p-12">
+                                            <div className="flex items-center justify-center">
+                                                <span className="text-[10px] font-black uppercase tracking-widest text-zinc-600">No records found</span>
+                                            </div>
                                         </td>
                                     </tr>
                                 )}
                             </tbody>
                         </table>
-                    </Card>
-                </div>
+                    </div>
+                </motion.div>
             </div>
         </AdminCommunityHubLayout>
     );
