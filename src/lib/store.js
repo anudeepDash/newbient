@@ -357,8 +357,13 @@ export const useStore = create((set, get) => ({
             }, (error) => {
                 console.error(`Error fetching ${stateKey} (${colName}):`, error);
             });
-            activeListeners[stateKey] = { unsub, count: 1 };
+            activeListeners[stateKey] = { unsub, count: 1, timeoutId: null };
         } else {
+            if (activeListeners[stateKey].timeoutId) {
+                console.log(`[Store] Cancelling pending teardown timer for: ${stateKey}`);
+                clearTimeout(activeListeners[stateKey].timeoutId);
+                activeListeners[stateKey].timeoutId = null;
+            }
             activeListeners[stateKey].count++;
             console.log(`[Store] Reusing listener for: ${stateKey} (Count: ${activeListeners[stateKey].count})`);
         }
@@ -368,9 +373,14 @@ export const useStore = create((set, get) => ({
                 activeListeners[stateKey].count--;
                 console.log(`[Store] Decrementing listener for: ${stateKey} (Count: ${activeListeners[stateKey].count})`);
                 if (activeListeners[stateKey].count === 0) {
-                    console.log(`[Store] Closing Firestore listener for: ${stateKey}`);
-                    activeListeners[stateKey].unsub();
-                    delete activeListeners[stateKey];
+                    console.log(`[Store] Scheduling delayed teardown (15s) for: ${stateKey}`);
+                    activeListeners[stateKey].timeoutId = setTimeout(() => {
+                        console.log(`[Store] Delayed teardown executing for: ${stateKey}`);
+                        if (activeListeners[stateKey] && activeListeners[stateKey].count === 0) {
+                            activeListeners[stateKey].unsub();
+                            delete activeListeners[stateKey];
+                        }
+                    }, 15000);
                 }
             }
         };

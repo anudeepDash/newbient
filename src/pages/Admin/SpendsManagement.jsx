@@ -37,9 +37,6 @@ import ReceiptEmailModal from '../../components/admin/ReceiptEmailModal';
 
 import { useStore } from '../../lib/store';
 import { useStoreSubscription } from '../../hooks/useStoreSubscription';
-import { Card } from '../../components/ui/Card';
-import { Button } from '../../components/ui/Button';
-import { Input } from '../../components/ui/Input';
 import { cn } from '../../lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import AdminCommunityHubLayout from '../../components/admin/AdminCommunityHubLayout';
@@ -322,7 +319,7 @@ const SpendsManagement = () => {
                     <div className="flex flex-col items-center justify-center p-1.5 bg-white rounded-xl border border-white/10 w-fit mx-auto shadow-inner mb-2.5">
                         <img 
                             src={`https://api.qrserver.com/v1/create-qr-code/?size=80x80&color=020202&data=${encodeURIComponent(
-                                `https://newbi.live/verify-payout?ref=${finalUTR}&amt=${data.amount}&payee=${encodeURIComponent(data.receiverName)}${(data.receiptUrl || data.proofUrl) ? `&proof=${encodeURIComponent(data.receiptUrl || data.proofUrl)}` : ''}`
+                                `https://newbi.live/verify-payout?ref=${finalUTR}&amt=${data.amount}&payee=${encodeURIComponent(data.receiverName)}&date=${encodeURIComponent(data.date)}&mode=${encodeURIComponent(data.paymentMode)}${(data.receiptUrl || data.proofUrl) ? `&proof=${encodeURIComponent(data.receiptUrl || data.proofUrl)}` : ''}`
                             )}`}
                             alt="Verification QR"
                             className="w-12 h-12 rounded-md"
@@ -463,60 +460,11 @@ const SpendsManagement = () => {
         { name: 'Payee Registry', path: '/admin/payees', icon: User, color: 'text-neon-blue' }
     ];
 
-    // District Category Navigation setup
-    const categories = [
-        {
-            name: 'Overview',
-            desc: 'Liquidity Dashboard',
-            info: 'Real-time metrics, cash flow graphs & indicators',
-            path: '/admin/finance',
-            icon: LayoutGrid,
-            color: 'text-[#39FF14]',
-            glow: 'hover:shadow-[0_0_30px_rgba(57,255,20,0.15)] hover:border-[#39FF14]/40',
-            bgGradient: 'from-[#39FF14]/5 via-zinc-950/20 to-transparent',
-            borderColor: 'border-[#39FF14]/15',
-            badge: 'COMMAND',
-            active: false
-        },
-        {
-            name: 'Spends Ledger',
-            desc: 'Expenditures & Debits',
-            info: 'Track payroll, supplier bills, and vendor payouts',
-            path: '/admin/spends',
-            icon: CreditCard,
-            color: 'text-[#FF2E90]',
-            glow: 'hover:shadow-[0_0_30px_rgba(255,46,144,0.15)] hover:border-[#FF2E90]/40',
-            bgGradient: 'from-[#FF2E90]/5 via-zinc-950/20 to-transparent',
-            borderColor: 'border-[#FF2E90]/15',
-            badge: 'DEBITS',
-            active: true
-        },
-        {
-            name: 'Other Income',
-            desc: 'Revenue & Capital Inflow',
-            info: 'Manage sponsorships, tickets, and external grants',
-            path: '/admin/other-income',
-            icon: FileSpreadsheet,
-            color: 'text-[#39FF14]',
-            glow: 'hover:shadow-[0_0_30px_rgba(57,255,20,0.15)] hover:border-[#39FF14]/40',
-            bgGradient: 'from-[#39FF14]/5 via-zinc-950/20 to-transparent',
-            borderColor: 'border-[#39FF14]/15',
-            badge: 'INFLOW',
-            active: false
-        },
-        {
-            name: 'Payee Registry',
-            desc: 'Beneficiary Directory',
-            info: 'Manage rosters of volunteers, retainers, and crews',
-            path: '/admin/payees',
-            icon: User,
-            color: 'text-[#00F0FF]',
-            glow: 'hover:shadow-[0_0_30px_rgba(0,240,255,0.15)] hover:border-[#00F0FF]/40',
-            bgGradient: 'from-[#00F0FF]/5 via-zinc-950/20 to-transparent',
-            borderColor: 'border-[#00F0FF]/15',
-            badge: 'REGISTRY',
-            active: false
-        }
+    const navPills = [
+        { name: 'Overview', path: '/admin/finance', icon: LayoutGrid, isActive: false },
+        { name: 'Expense Ledger', path: '/admin/spends', icon: IndianRupee, isActive: true },
+        { name: 'Other Revenue', path: '/admin/other-income', icon: FileSpreadsheet, isActive: false },
+        { name: 'Payee Database', path: '/admin/payees', icon: User, isActive: false }
     ];
 
     const payoutTypes = ['Salary', 'Volunteer Payout', 'Vendor Payout', 'Artist Fee', 'General Expense'];
@@ -561,6 +509,42 @@ const SpendsManagement = () => {
         return matchesSearch && matchesMonth && matchesPayoutType && matchesStatus && matchesAccount;
     });
 
+    // Compute stats for current selection
+    const stats = useMemo(() => {
+        const cleared = filteredSpends.filter(s => s.status === 'Paid');
+        const pending = filteredSpends.filter(s => s.status === 'Pending');
+        const totalCleared = cleared.reduce((sum, s) => sum + Number(s.amount || 0), 0);
+        const totalPending = pending.reduce((sum, s) => sum + Number(s.amount || 0), 0);
+        const avgOutlay = filteredSpends.length > 0 
+            ? (filteredSpends.reduce((sum, s) => sum + Number(s.amount || 0), 0) / filteredSpends.length) 
+            : 0;
+
+        // Top Category
+        const catSums = {};
+        filteredSpends.forEach(s => {
+            const type = s.payoutType || 'General Expense';
+            catSums[type] = (catSums[type] || 0) + Number(s.amount || 0);
+        });
+        let topCat = 'None';
+        let maxCatVal = 0;
+        Object.entries(catSums).forEach(([cat, val]) => {
+            if (val > maxCatVal) {
+                maxCatVal = val;
+                topCat = cat;
+            }
+        });
+
+        return {
+            totalCleared,
+            totalPending,
+            avgOutlay,
+            topCat,
+            maxCatVal,
+            countCleared: cleared.length,
+            countPending: pending.length
+        };
+    }, [filteredSpends]);
+
     // Central uploader helper
     const handleReceiptUpload = async (e, setUrl) => {
         const file = e.target.files[0];
@@ -584,8 +568,6 @@ const SpendsManagement = () => {
         useStore.getState().addToast('Payout info copied to clipboard!', 'success');
     };
 
-
-
     // Create Spend submission
     const handleCreateSpend = async (e) => {
         if (e && e.preventDefault) e.preventDefault();
@@ -596,8 +578,7 @@ const SpendsManagement = () => {
         }
 
         try {
-            const newSpendRef = paymentMode === 'UPI' && customUTR ? customUTR : `TXN-${Date.now().toString().slice(-6)}`;
-            const finalStatus = (paymentMode === 'UPI' && customUTR) ? 'Paid' : status;
+            const newSpendRef = status === 'Paid' ? (customUTR?.trim() || `TXN-${Date.now().toString().slice(-6)}`) : 'PENDING';
             
             const spendData = {
                 title,
@@ -606,13 +587,13 @@ const SpendsManagement = () => {
                 date,
                 accountType,
                 paymentMode,
-                status: finalStatus,
+                status,
                 notes,
                 receiptUrl,
-                receiverName: payoutType === 'Salary' || payoutType === 'Volunteer Payout' || payoutType === 'Artist Fee' ? receiverName : paidTo,
-                paidTo: payoutType === 'Vendor Payout' ? paidTo : receiverName,
+                receiverName: payoutType === 'Salary' || payoutType === 'Volunteer Payout' || payoutType === 'Artist Fee' || payoutType === 'General Expense' ? receiverName : paidTo,
+                paidTo: payoutType === 'Vendor Payout' || payoutType === 'General Expense' ? paidTo : receiverName,
                 paidBy: accountType === 'personal' ? (receiverName || 'Team Member') : 'Newbi Core',
-                designation: payoutType === 'Salary' ? designation : '',
+                designation: payoutType === 'Salary' || payoutType === 'General Expense' ? designation : '',
                 salaryPeriod: payoutType === 'Salary' ? salaryPeriod : '',
                 volunteerPhone: payoutType === 'Volunteer Payout' ? volunteerPhone : '',
                 linkedGig: payoutType === 'Volunteer Payout' || payoutType === 'Artist Fee' ? linkedGig : '',
@@ -630,7 +611,7 @@ const SpendsManagement = () => {
             setShowAddModal(false);
             
             // Only trigger receipt printer if status is Paid
-            if (finalStatus === 'Paid') {
+            if (status === 'Paid') {
                 const slip = {
                     date: new Date(date).toLocaleString(),
                     reference: newSpendRef,
@@ -731,7 +712,8 @@ const SpendsManagement = () => {
         }
 
         try {
-            const existingRef = showEditModal.paymentRef || `TXN-${Date.now().toString().slice(-6)}`;
+            const existingRef = showEditModal.paymentRef && showEditModal.paymentRef !== 'OFFLINE' && showEditModal.paymentRef !== 'PENDING' ? showEditModal.paymentRef : `TXN-${Date.now().toString().slice(-6)}`;
+            const newSpendRef = status === 'Paid' ? (customUTR?.trim() || existingRef) : 'PENDING';
             
             await updateSpend(showEditModal.id, {
                 title,
@@ -743,10 +725,10 @@ const SpendsManagement = () => {
                 status,
                 notes,
                 receiptUrl,
-                receiverName: payoutType === 'Salary' || payoutType === 'Volunteer Payout' || payoutType === 'Artist Fee' ? receiverName : paidTo,
-                paidTo: payoutType === 'Vendor Payout' ? paidTo : receiverName,
+                receiverName: payoutType === 'Salary' || payoutType === 'Volunteer Payout' || payoutType === 'Artist Fee' || payoutType === 'General Expense' ? receiverName : paidTo,
+                paidTo: payoutType === 'Vendor Payout' || payoutType === 'General Expense' ? paidTo : receiverName,
                 paidBy: accountType === 'personal' ? receiverName : 'Newbi Core',
-                designation: payoutType === 'Salary' ? designation : '',
+                designation: payoutType === 'Salary' || payoutType === 'General Expense' ? designation : '',
                 salaryPeriod: payoutType === 'Salary' ? salaryPeriod : '',
                 volunteerPhone: payoutType === 'Volunteer Payout' ? volunteerPhone : '',
                 linkedGig: payoutType === 'Volunteer Payout' || payoutType === 'Artist Fee' ? linkedGig : '',
@@ -754,7 +736,7 @@ const SpendsManagement = () => {
                 destinationDetails,
                 linkedInvoiceId: payoutType === 'Volunteer Payout' ? linkedInvoiceId : '',
                 linkedInvoiceNumber: payoutType === 'Volunteer Payout' ? linkedInvoiceNumber : '',
-                paymentRef: status === 'Paid' ? existingRef : 'OFFLINE'
+                paymentRef: newSpendRef
             });
 
             useStore.getState().addToast('Spend record updated.', 'success');
@@ -780,7 +762,8 @@ const SpendsManagement = () => {
     const handleToggleStatus = async (spend) => {
         try {
             const newStatus = spend.status === 'Paid' ? 'Pending' : 'Paid';
-            await updateSpend(spend.id, { status: newStatus });
+            const autoTxnId = newStatus === 'Paid' ? `TXN-${Date.now().toString().slice(-6)}` : 'PENDING';
+            await updateSpend(spend.id, { status: newStatus, paymentRef: autoTxnId });
             useStore.getState().addToast(`Spend marked as ${newStatus}.`, 'success');
         } catch (err) {
             useStore.getState().addToast('Failed to update spend status.', 'error');
@@ -807,6 +790,7 @@ const SpendsManagement = () => {
         setDestinationDetails('');
         setLinkedInvoiceId('');
         setLinkedInvoiceNumber('');
+        setCustomUTR('');
     };
 
     const openEdit = (spend) => {
@@ -830,6 +814,7 @@ const SpendsManagement = () => {
         setDestinationDetails(spend.destinationDetails || '');
         setLinkedInvoiceId(spend.linkedInvoiceId || '');
         setLinkedInvoiceNumber(spend.linkedInvoiceNumber || '');
+        setCustomUTR(spend.paymentRef && !spend.paymentRef.startsWith('TXN-') && spend.paymentRef !== 'OFFLINE' && spend.paymentRef !== 'PENDING' ? spend.paymentRef : '');
     };
 
     // CSV Exporter
@@ -902,60 +887,65 @@ const SpendsManagement = () => {
             }
         >
             <div className="space-y-8 relative">
-                {/* Ambient Background Glow Blobs for Glassmorphism */}
-                <div className="absolute inset-0 pointer-events-none overflow-hidden -z-10">
-                    <div className="absolute top-[15%] right-[5%] w-[350px] h-[350px] rounded-full bg-[#FF2E90]/5 blur-[120px] animate-pulse duration-[10000ms]" />
-                    <div className="absolute bottom-[20%] left-[10%] w-[400px] h-[400px] rounded-full bg-[#00F0FF]/5 blur-[150px] animate-pulse duration-[8000ms]" />
-                </div>
-
-                {/* District Category Booking Tiles Navigation Grid */}
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                    {categories.map((cat) => {
-                        const IconComp = cat.icon;
+                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="flex flex-wrap gap-3">
+                    {navPills.map((pill) => {
+                        const Icon = pill.icon;
                         return (
-                            <Link 
-                                key={cat.name} 
-                                to={cat.path}
+                            <Link key={pill.name} to={pill.path}
                                 className={cn(
-                                    "relative overflow-hidden group p-5 rounded-3xl border bg-gradient-to-br bg-zinc-900/40 backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:bg-zinc-900/60 select-none",
-                                    cat.borderColor,
-                                    cat.glow,
-                                    cat.active && "border-[#FF2E90]/40 bg-[#FF2E90]/5 shadow-[0_0_20px_rgba(255,46,144,0.06)]"
+                                    "flex items-center gap-2 px-5 py-2.5 rounded-full border text-[10px] font-black uppercase tracking-widest transition-all duration-300 group",
+                                    pill.isActive 
+                                        ? "bg-neon-pink text-white border-neon-pink shadow-[0_0_15px_rgba(255,79,139,0.3)]" 
+                                        : "bg-white/[0.03] text-zinc-400 border-white/10 hover:border-white/30 hover:text-white hover:bg-white/[0.05]"
                                 )}
                             >
-                                <div className={cn("absolute inset-0 bg-gradient-to-br opacity-[0.03] transition-opacity duration-300 group-hover:opacity-[0.07]", cat.bgGradient)} />
-                                <div className="flex justify-between items-start mb-4">
-                                    <div className={cn("p-2.5 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center shrink-0 transition-transform group-hover:scale-110", cat.color)}>
-                                        <IconComp size={16} />
-                                    </div>
-                                    <span className={cn(
-                                        "text-[7px] font-black px-2 py-0.5 rounded-full tracking-widest border uppercase",
-                                        cat.active 
-                                            ? "bg-[#FF2E90]/10 text-[#FF2E90] border-[#FF2E90]/20" 
-                                            : "bg-white/5 text-gray-500 border-white/5"
-                                    )}>
-                                        {cat.badge}
-                                    </span>
-                                </div>
-                                <h4 className="text-xs font-black uppercase text-white tracking-wider mb-1">{cat.name}</h4>
-                                <p className="text-[9px] font-bold text-gray-400 leading-snug line-clamp-1">{cat.desc}</p>
-                                <p className="text-[8px] font-medium text-gray-600 leading-normal line-clamp-2 mt-1.5 group-hover:text-gray-500 transition-colors">{cat.info}</p>
+                                <Icon size={14} className={cn("transition-transform group-hover:scale-110", pill.isActive ? "text-white" : "text-neon-pink")} />
+                                {pill.name}
                             </Link>
-                        );
+                        )
                     })}
-                </div>
+                </motion.div>
+
+                {/* Stats Panel Overhaul */}
+                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
+                    className="bg-zinc-950/35 backdrop-blur-xl border border-white/10 rounded-3xl overflow-hidden flex flex-col md:flex-row">
+                    {/* Card 1: Cleared Outflow */}
+                    <div className="flex-1 p-5 border-b md:border-b-0 md:border-r border-white/10 hover:bg-white/[0.04] transition-colors">
+                        <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest block mb-2">Cleared Debits</span>
+                        <div className="text-2xl font-mono font-black text-white">₹{stats.totalCleared.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</div>
+                        <p className="text-[9px] font-black text-zinc-500 uppercase tracking-widest mt-1">{stats.countCleared} cleared records</p>
+                    </div>
+                    {/* Card 2: Pending Outflow */}
+                    <div className="flex-1 p-5 border-b md:border-b-0 md:border-r border-white/10 hover:bg-white/[0.04] transition-colors">
+                        <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest block mb-2">Pending Outflow</span>
+                        <div className="text-2xl font-mono font-black text-amber-500">₹{stats.totalPending.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</div>
+                        <p className="text-[9px] font-black text-zinc-500 uppercase tracking-widest mt-1">{stats.countPending} payouts outstanding</p>
+                    </div>
+                    {/* Card 3: Avg Transaction */}
+                    <div className="flex-1 p-5 border-b md:border-b-0 md:border-r border-white/10 hover:bg-white/[0.04] transition-colors">
+                        <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest block mb-2">Average Outlay</span>
+                        <div className="text-2xl font-mono font-black text-white">₹{Math.round(stats.avgOutlay).toLocaleString('en-IN', { maximumFractionDigits: 0 })}</div>
+                        <p className="text-[9px] font-black text-zinc-500 uppercase tracking-widest mt-1">Per filtered entry</p>
+                    </div>
+                    {/* Card 4: Top Category */}
+                    <div className="flex-1 p-5 hover:bg-white/[0.04] transition-colors">
+                        <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest block mb-2">Primary Channel</span>
+                        <div className="text-xl font-mono font-black text-white uppercase truncate">{stats.topCat}</div>
+                        <p className="text-[9px] font-black text-zinc-500 uppercase tracking-widest mt-1">₹{stats.maxCatVal.toLocaleString('en-IN', { maximumFractionDigits: 0 })} Outlay</p>
+                    </div>
+                </motion.div>
 
                 {/* Advanced Command Filter Panel */}
-                <div className="bg-zinc-900/40 border border-white/5 rounded-2xl md:rounded-[2.5rem] p-4 backdrop-blur-3xl space-y-4">
+                <div className="bg-white/[0.03] backdrop-blur-xl border border-white/10 rounded-2xl p-6 space-y-4">
                     {/* First Row: Search & View modes */}
                     <div className="flex flex-col xl:flex-row items-center gap-4">
                         <div className="relative flex-1 w-full group">
-                            <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-neon-pink transition-colors" size={18} />
+                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-neon-pink transition-colors" size={16} />
                             <input 
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                                 placeholder="Search by recipient name, vendor, note or title..."
-                                className="w-full bg-zinc-900/40 hover:bg-zinc-900/60 h-14 pl-16 pr-6 rounded-xl text-[9px] md:text-[11px] font-black uppercase tracking-widest outline-none transition-all placeholder:text-gray-600 border border-white/5 focus:border-neon-pink focus:shadow-[0_0_15px_rgba(255,79,139,0.1)]"
+                                className="w-full bg-zinc-950/40 border border-white/10 rounded-xl text-[10px] font-extrabold uppercase tracking-widest text-white h-12 pl-12 pr-6 outline-none focus:border-neon-pink transition-all placeholder:text-gray-600"
                             />
                         </div>
 
@@ -964,20 +954,20 @@ const SpendsManagement = () => {
                             <button
                                 onClick={() => setViewMode('grid')}
                                 className={cn(
-                                    "flex-1 xl:flex-none px-6 py-3 rounded-lg transition-all flex justify-center gap-2 text-[9px] font-black uppercase tracking-widest",
+                                    "flex-1 xl:flex-none px-6 py-2.5 rounded-lg transition-all flex justify-center gap-2 text-[9px] font-black uppercase tracking-widest",
                                     viewMode === 'grid' ? "bg-white text-black shadow-lg" : "text-gray-500 hover:text-white"
                                 )}
                             >
-                                <LayoutGrid size={16} /> Grid
+                                <LayoutGrid size={14} /> Grid
                             </button>
                             <button
                                 onClick={() => setViewMode('table')}
                                 className={cn(
-                                    "flex-1 xl:flex-none px-6 py-3 rounded-lg transition-all flex justify-center gap-2 text-[9px] font-black uppercase tracking-widest",
+                                    "flex-1 xl:flex-none px-6 py-2.5 rounded-lg transition-all flex justify-center gap-2 text-[9px] font-black uppercase tracking-widest",
                                     viewMode === 'table' ? "bg-white text-black shadow-lg" : "text-gray-500 hover:text-white"
                                 )}
                             >
-                                <FileText size={16} /> Table
+                                <FileText size={14} /> Table
                             </button>
                         </div>
                     </div>
@@ -990,7 +980,7 @@ const SpendsManagement = () => {
                             <select 
                                 value={monthFilter} 
                                 onChange={(e) => setMonthFilter(e.target.value)}
-                                className="w-full bg-zinc-900/80 border border-white/10 h-12 rounded-xl px-4 text-gray-300 outline-none focus:border-neon-pink/40 transition-all font-bold"
+                                className="w-full bg-zinc-950/40 border border-white/10 h-10 rounded-xl px-3 text-white outline-none focus:border-neon-pink transition-all font-bold font-mono"
                             >
                                 {monthOptions.map(m => <option key={m} value={m} className="bg-zinc-950">{m}</option>)}
                             </select>
@@ -1002,9 +992,9 @@ const SpendsManagement = () => {
                             <select 
                                 value={payoutTypeFilter} 
                                 onChange={(e) => setPayoutTypeFilter(e.target.value)}
-                                className="w-full bg-zinc-900/80 border border-white/10 h-12 rounded-xl px-4 text-gray-300 outline-none focus:border-neon-pink/40 transition-all font-bold"
+                                className="w-full bg-zinc-950/40 border border-white/10 h-10 rounded-xl px-3 text-white outline-none focus:border-neon-pink transition-all font-bold"
                             >
-                                <option value="All" className="bg-zinc-950">All Types</option>
+                                <option value="All" className="bg-zinc-950 font-bold">All Types</option>
                                 {payoutTypes.map(pt => <option key={pt} value={pt} className="bg-zinc-950">{pt}</option>)}
                             </select>
                         </div>
@@ -1015,7 +1005,7 @@ const SpendsManagement = () => {
                             <select 
                                 value={accountFilter} 
                                 onChange={(e) => setAccountFilter(e.target.value)}
-                                className="w-full bg-zinc-900/80 border border-white/10 h-12 rounded-xl px-4 text-gray-300 outline-none focus:border-neon-pink/40 transition-all font-bold"
+                                className="w-full bg-zinc-950/40 border border-white/10 h-10 rounded-xl px-3 text-white outline-none focus:border-neon-pink transition-all font-bold"
                             >
                                 <option value="All" className="bg-zinc-950">All Accounts</option>
                                 <option value="newbi" className="bg-zinc-950">Newbi Official</option>
@@ -1029,7 +1019,7 @@ const SpendsManagement = () => {
                             <select 
                                 value={statusFilter} 
                                 onChange={(e) => setStatusFilter(e.target.value)}
-                                className="w-full bg-zinc-900/80 border border-white/10 h-12 rounded-xl px-4 text-gray-300 outline-none focus:border-neon-pink/40 transition-all font-bold"
+                                className="w-full bg-zinc-950/40 border border-white/10 h-10 rounded-xl px-3 text-white outline-none focus:border-neon-pink transition-all font-bold"
                             >
                                 <option value="All" className="bg-zinc-950">All Status</option>
                                 <option value="Paid" className="bg-zinc-950">Paid / Cleared</option>
@@ -1047,7 +1037,7 @@ const SpendsManagement = () => {
                                     setStatusFilter('All');
                                     setAccountFilter('All');
                                 }}
-                                className="w-full h-12 bg-white/5 hover:bg-white/10 text-white rounded-xl transition-all border border-white/5 flex items-center justify-center gap-2 font-black tracking-widest uppercase"
+                                className="w-full h-10 bg-white/5 hover:bg-white/10 text-white rounded-xl transition-all border border-white/5 flex items-center justify-center gap-2 font-black tracking-widest uppercase text-[9px]"
                             >
                                 <X size={12} /> Clear Filters
                             </button>
@@ -1061,7 +1051,7 @@ const SpendsManagement = () => {
                         <motion.div key="grid" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                             {filteredSpends.map((sp, i) => (
                                 <motion.div key={sp.id} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: i * 0.05 }} className="h-full flex flex-col">
-                                    <Card className="group relative p-6 bg-white/[0.03] backdrop-blur-xl border border-white/10 shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)] rounded-[2.5rem] flex flex-col justify-between h-full overflow-hidden hover:border-white/20 duration-500 hover:-translate-y-1 hover:shadow-[0_15px_40px_rgba(255,46,144,0.06)]">
+                                    <div className="group relative p-6 bg-white/[0.03] backdrop-blur-xl border border-white/10 shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)] rounded-[2.5rem] flex flex-col justify-between h-full overflow-hidden hover:border-white/20 duration-500 hover:-translate-y-1 hover:shadow-[0_15px_40px_rgba(255,46,144,0.06)]">
                                         <div className="absolute top-0 right-0 p-8 opacity-[0.03] group-hover:scale-110 transition-transform pointer-events-none"><IndianRupee size={100} /></div>
                                         <div>
                                             {/* Top badges */}
@@ -1142,6 +1132,13 @@ const SpendsManagement = () => {
                                                     </>
                                                 )}
 
+                                                {sp.payoutType === 'General Expense' && (
+                                                    <>
+                                                        <div className="flex justify-between"><span className="text-gray-600">Payee:</span> <span className="text-white">{sp.receiverName || sp.paidTo || 'N/A'}</span></div>
+                                                        {sp.designation && <div className="flex justify-between"><span className="text-gray-600">Category:</span> <span className="text-white">{sp.designation}</span></div>}
+                                                    </>
+                                                )}
+
                                                 <div className="flex justify-between pt-2 border-t border-white/5"><span className="text-gray-600">Account:</span> <span className="text-white">{sp.accountType === 'personal' ? `Personal (${sp.receiverName || sp.paidBy})` : 'Newbi Official'}</span></div>
                                                 <div className="flex justify-between"><span className="text-gray-600">Mode:</span> <span className="text-white">{sp.paymentMode}</span></div>
                                                 <div className="flex justify-between"><span className="text-gray-600">Date:</span> <span className="text-gray-400 font-mono">{new Date(sp.date).toLocaleDateString()}</span></div>
@@ -1206,13 +1203,13 @@ const SpendsManagement = () => {
                                                 </button>
                                             </div>
                                         </div>
-                                    </Card>
+                                    </div>
                                 </motion.div>
                             ))}
                         </motion.div>
                     ) : (
                         <motion.div key="table" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="overflow-x-auto scrollbar-hide">
-                            <Card className="md:min-w-[1000px] bg-zinc-900/40 border-white/5 rounded-3xl p-0 border overflow-hidden">
+                            <div className="md:min-w-[1000px] bg-zinc-900/40 border-white/5 rounded-3xl p-0 border overflow-hidden">
                                 <table className="w-full text-left hidden md:table">
                                     <thead>
                                         <tr className="border-b border-white/5 text-[9px] font-black uppercase tracking-[0.2em] text-gray-500">
@@ -1244,6 +1241,7 @@ const SpendsManagement = () => {
                                                 <td className="p-6 text-gray-400">
                                                     <div className="text-xs font-black text-white">{sp.receiverName || sp.paidTo || 'N/A'}</div>
                                                     {sp.payoutType === 'Salary' && sp.designation && <div className="text-[8px] text-gray-600 mt-0.5">{sp.designation}</div>}
+                                                    {sp.payoutType === 'General Expense' && sp.designation && <div className="text-[8px] text-gray-600 mt-0.5">{sp.designation}</div>}
                                                     {sp.payoutType === 'Volunteer Payout' && sp.volunteerPhone && <div className="text-[8px] text-gray-600 font-mono mt-0.5">{sp.volunteerPhone}</div>}
                                                     {sp.linkedGig && <div className="text-[8px] text-neon-pink font-black mt-0.5">🎤 {sp.linkedGig}</div>}
                                                     {sp.linkedInvoiceNumber && <div className="text-[8px] text-neon-blue font-black font-mono mt-0.5">Inv: #{sp.linkedInvoiceNumber}</div>}
@@ -1350,7 +1348,7 @@ const SpendsManagement = () => {
                                         </div>
                                     ))}
                                 </div>
-                            </Card>
+                            </div>
                         </motion.div>
                     )}
                 </AnimatePresence>
@@ -1367,14 +1365,14 @@ const SpendsManagement = () => {
                             animate={{ x: 0 }} 
                             exit={{ x: '100%' }}
                             transition={{ type: "spring", damping: 30, stiffness: 300 }}
-                            className="fixed top-0 right-0 h-full w-full max-w-xl bg-zinc-950/95 border-l-2 border-neon-pink shadow-2xl z-[101] flex flex-col text-white"
+                            className="fixed top-0 right-0 h-full w-full max-w-xl bg-zinc-950/95 backdrop-blur-3xl border-l border-white/10 z-[101] flex flex-col text-white"
                         >
                             <div className="p-6 border-b border-white/5 flex items-center justify-between">
                                 <div>
                                     <h2 className="text-xl font-black font-heading tracking-tighter uppercase italic text-white">LOG <span className="text-neon-pink">PAYOUT.</span></h2>
                                     <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest mt-1">Central Expense & Payout Registration Console</p>
                                 </div>
-                                <button type="button" onClick={() => setShowAddModal(false)} className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white hover:text-black transition-all"><X size={14} /></button>
+                                <button type="button" onClick={() => setShowAddModal(false)} className="w-8 h-8 rounded-full bg-zinc-900/50 border border-white/10 flex items-center justify-center hover:bg-white hover:text-black transition-all"><X size={14} /></button>
                             </div>
                             
                             <form onSubmit={handleCreateSpend} className="flex-1 flex flex-col overflow-hidden">
@@ -1382,7 +1380,7 @@ const SpendsManagement = () => {
                                 {/* Quick Fill Selection */}
                                 {financePayees && financePayees.length > 0 && (
                                     <div className="space-y-1.5 p-4 bg-white/[0.02] border border-white/5 rounded-2xl">
-                                        <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest pl-1 text-neon-pink">Quick Fill from Registered Payee</label>
+                                        <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest text-neon-pink">Quick Fill from Registered Payee</label>
                                         <select 
                                             onChange={(e) => {
                                                 const payeeId = e.target.value;
@@ -1428,7 +1426,7 @@ const SpendsManagement = () => {
                                 {/* Payout classification selection */}
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="space-y-1.5">
-                                        <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest pl-1">Payout Classification *</label>
+                                        <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Payout Classification *</label>
                                         <select 
                                             value={payoutType} 
                                             onChange={(e) => {
@@ -1440,25 +1438,25 @@ const SpendsManagement = () => {
                                                 else if (e.target.value === 'Artist Fee') setTitle('Artist Clearance');
                                                 else setTitle('');
                                             }} 
-                                            className="w-full bg-white/5 border border-white/10 h-12 rounded-xl text-xs font-bold px-4 text-white outline-none focus:border-neon-pink focus:ring-1 focus:ring-neon-pink transition-all"
+                                            className="w-full bg-zinc-900/50 border border-white/10 h-12 rounded-xl text-xs font-bold px-4 text-white outline-none focus:border-neon-pink focus:ring-1 focus:ring-neon-pink transition-all"
                                         >
                                             {payoutTypes.map(pt => <option key={pt} value={pt} className="bg-zinc-950 text-white">{pt}</option>)}
                                         </select>
                                     </div>
                                     <div className="space-y-1.5">
-                                        <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest pl-1">Amount (INR) *</label>
-                                        <Input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="Enter amount to pay" className="h-12 border-white/10 bg-white/5 focus:border-neon-pink" required />
+                                        <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Amount (INR) *</label>
+                                        <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="Enter amount to pay" className="h-12 bg-zinc-900/50 border border-white/10 rounded-xl text-white focus:border-neon-pink" required />
                                     </div>
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="space-y-1.5">
-                                        <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest pl-1">Transaction Label / Title *</label>
-                                        <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Graphic design monthly retainer" className="h-12 border-white/10 bg-white/5 focus:border-neon-pink" required />
+                                        <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Transaction Label / Title *</label>
+                                        <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Graphic design monthly retainer" className="h-12 bg-zinc-900/50 border border-white/10 rounded-xl text-white focus:border-neon-pink" required />
                                     </div>
                                     <div className="space-y-1.5">
-                                        <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest pl-1">Value Date *</label>
-                                        <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="h-12 border-white/10 bg-white/5 focus:border-neon-pink" required />
+                                        <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Value Date *</label>
+                                        <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="h-12 bg-zinc-900/50 border border-white/10 rounded-xl text-white focus:border-neon-pink" required />
                                     </div>
                                 </div>
 
@@ -1476,15 +1474,15 @@ const SpendsManagement = () => {
                                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-5 bg-white/[0.02] border border-white/5 rounded-2xl">
                                                 <div className="space-y-1.5">
                                                     <label className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Core Member Name *</label>
-                                                    <Input value={receiverName} onChange={(e) => setReceiverName(e.target.value)} placeholder="Recipient name" className="h-11 border-white/10 bg-white/5 focus:border-neon-pink" required />
+                                                    <input value={receiverName} onChange={(e) => setReceiverName(e.target.value)} placeholder="Recipient name" className="h-11 bg-zinc-900/50 border border-white/10 rounded-xl text-white focus:border-neon-pink" required />
                                                 </div>
                                                 <div className="space-y-1.5">
                                                     <label className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Designation/Role *</label>
-                                                    <Input value={designation} onChange={(e) => setDesignation(e.target.value)} placeholder="e.g. Creative Director" className="h-11 border-white/10 bg-white/5 focus:border-neon-pink" required />
+                                                    <input value={designation} onChange={(e) => setDesignation(e.target.value)} placeholder="e.g. Creative Director" className="h-11 bg-zinc-900/50 border border-white/10 rounded-xl text-white focus:border-neon-pink" required />
                                                 </div>
                                                 <div className="space-y-1.5">
                                                     <label className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Salary Month *</label>
-                                                    <Input value={salaryPeriod} onChange={(e) => setSalaryPeriod(e.target.value)} placeholder="e.g. May 2026" className="h-11 border-white/10 bg-white/5 focus:border-neon-pink" required />
+                                                    <input value={salaryPeriod} onChange={(e) => setSalaryPeriod(e.target.value)} placeholder="e.g. May 2026" className="h-11 bg-zinc-900/50 border border-white/10 rounded-xl text-white focus:border-neon-pink" required />
                                                 </div>
                                             </div>
                                         )}
@@ -1494,15 +1492,15 @@ const SpendsManagement = () => {
                                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-5 bg-white/[0.02] border border-white/5 rounded-2xl">
                                                 <div className="space-y-1.5">
                                                     <label className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Volunteer Name *</label>
-                                                    <Input value={receiverName} onChange={(e) => setReceiverName(e.target.value)} placeholder="Volunteer full name" className="h-11 border-white/10 bg-white/5 focus:border-neon-pink" required />
+                                                    <input value={receiverName} onChange={(e) => setReceiverName(e.target.value)} placeholder="Volunteer full name" className="h-11 bg-zinc-900/50 border border-white/10 rounded-xl text-white focus:border-neon-pink" required />
                                                 </div>
                                                 <div className="space-y-1.5">
                                                     <label className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Volunteer Phone</label>
-                                                    <Input value={volunteerPhone} onChange={(e) => setVolunteerPhone(e.target.value)} placeholder="Phone number" className="h-11 border-white/10 bg-white/5 focus:border-neon-pink" />
+                                                    <input value={volunteerPhone} onChange={(e) => setVolunteerPhone(e.target.value)} placeholder="Phone number" className="h-11 bg-zinc-900/50 border border-white/10 rounded-xl text-white focus:border-neon-pink" />
                                                 </div>
                                                 <div className="space-y-1.5">
                                                     <label className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Gig Title / Link</label>
-                                                    <Input value={linkedGig} onChange={(e) => setLinkedGig(e.target.value)} placeholder="e.g. Arena Concert Gate" className="h-11 border-white/10 bg-white/5 focus:border-neon-pink" />
+                                                    <input value={linkedGig} onChange={(e) => setLinkedGig(e.target.value)} placeholder="e.g. Arena Concert Gate" className="h-11 bg-zinc-900/50 border border-white/10 rounded-xl text-white focus:border-neon-pink" />
                                                 </div>
                                                 {invoices && invoices.length > 0 && (
                                                     <div className="space-y-1.5 col-span-full pt-2">
@@ -1534,11 +1532,11 @@ const SpendsManagement = () => {
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-5 bg-white/[0.02] border border-white/5 rounded-2xl">
                                                 <div className="space-y-1.5">
                                                     <label className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Vendor Entity Name *</label>
-                                                    <Input value={paidTo} onChange={(e) => setPaidTo(e.target.value)} placeholder="e.g. Sound Rentals Ltd." className="h-11 border-white/10 bg-white/5 focus:border-neon-pink" required />
+                                                    <input value={paidTo} onChange={(e) => setPaidTo(e.target.value)} placeholder="e.g. Sound Rentals Ltd." className="h-11 bg-zinc-900/50 border border-white/10 rounded-xl text-white focus:border-neon-pink" required />
                                                 </div>
                                                 <div className="space-y-1.5">
                                                     <label className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Invoice Reference #</label>
-                                                    <Input value={invoiceRef} onChange={(e) => setInvoiceRef(e.target.value)} placeholder="e.g. INV-10023" className="h-11 border-white/10 bg-white/5 focus:border-neon-pink" />
+                                                    <input value={invoiceRef} onChange={(e) => setInvoiceRef(e.target.value)} placeholder="e.g. INV-10023" className="h-11 bg-zinc-900/50 border border-white/10 rounded-xl text-white focus:border-neon-pink" />
                                                 </div>
                                             </div>
                                         )}
@@ -1548,11 +1546,24 @@ const SpendsManagement = () => {
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-5 bg-white/[0.02] border border-white/5 rounded-2xl">
                                                 <div className="space-y-1.5">
                                                     <label className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Artist / DJ Name *</label>
-                                                    <Input value={receiverName} onChange={(e) => setReceiverName(e.target.value)} placeholder="Artist name" className="h-11 border-white/10 bg-white/5 focus:border-neon-pink" required />
+                                                    <input value={receiverName} onChange={(e) => setReceiverName(e.target.value)} placeholder="Artist name" className="h-11 bg-zinc-900/50 border border-white/10 rounded-xl text-white focus:border-neon-pink" required />
                                                 </div>
                                                 <div className="space-y-1.5">
                                                     <label className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Event Reference</label>
-                                                    <Input value={linkedGig} onChange={(e) => setLinkedGig(e.target.value)} placeholder="e.g. Sunburn Stage" className="h-11 border-white/10 bg-white/5 focus:border-neon-pink" />
+                                                    <input value={linkedGig} onChange={(e) => setLinkedGig(e.target.value)} placeholder="e.g. Sunburn Stage" className="h-11 bg-zinc-900/50 border border-white/10 rounded-xl text-white focus:border-neon-pink" />
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {payoutType === 'General Expense' && (
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-5 bg-white/[0.02] border border-white/5 rounded-2xl">
+                                                <div className="space-y-1.5">
+                                                    <label className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Recipient / Payee Name *</label>
+                                                    <input value={receiverName} onChange={(e) => { setReceiverName(e.target.value); setPaidTo(e.target.value); }} placeholder="e.g. Amazon Office Supplies" className="h-11 bg-zinc-900/50 border border-white/10 rounded-xl text-white focus:border-neon-pink" required />
+                                                </div>
+                                                <div className="space-y-1.5">
+                                                    <label className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Expense Category</label>
+                                                    <input value={designation} onChange={(e) => setDesignation(e.target.value)} placeholder="e.g. Office Operations / Travel / F&B" className="h-11 bg-zinc-900/50 border border-white/10 rounded-xl text-white focus:border-neon-pink" />
                                                 </div>
                                             </div>
                                         )}
@@ -1561,8 +1572,8 @@ const SpendsManagement = () => {
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="space-y-1.5">
-                                        <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest pl-1">Source Account *</label>
-                                        <select value={accountType} onChange={(e) => setAccountType(e.target.value)} className="w-full bg-white/5 border border-white/10 h-12 rounded-xl text-xs font-bold px-4 text-white outline-none focus:border-neon-pink focus:ring-1 focus:ring-neon-pink transition-all">
+                                        <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Source Account *</label>
+                                        <select value={accountType} onChange={(e) => setAccountType(e.target.value)} className="w-full bg-zinc-900/50 border border-white/10 h-12 rounded-xl text-xs font-bold px-4 text-white outline-none focus:border-neon-pink focus:ring-1 focus:ring-neon-pink transition-all">
                                             <option value="newbi" className="bg-zinc-950 text-white">Official Newbi Account</option>
                                             <option value="personal" className="bg-zinc-950 text-white">Personal Account (Core Member Reimbursement)</option>
                                         </select>
@@ -1570,36 +1581,48 @@ const SpendsManagement = () => {
                                     
                                     {accountType === 'personal' && (
                                         <div className="space-y-1.5">
-                                            <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest pl-1">Payer Name (Team Member) *</label>
-                                            <Input value={receiverName} onChange={(e) => setReceiverName(e.target.value)} placeholder="Name of member paying" className="h-12 border-white/10 bg-white/5 focus:border-neon-pink" required />
+                                            <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Payer Name (Team Member) *</label>
+                                            <input value={receiverName} onChange={(e) => setReceiverName(e.target.value)} placeholder="Name of member paying" className="h-12 bg-zinc-900/50 border border-white/10 rounded-xl text-white focus:border-neon-pink" required />
                                         </div>
                                     )}
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="space-y-1.5">
-                                        <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest pl-1">Payment Method</label>
-                                        <select value={paymentMode} onChange={(e) => setPaymentMode(e.target.value)} className="w-full bg-white/5 border border-white/10 h-12 rounded-xl text-xs font-bold px-4 text-white outline-none focus:border-neon-pink focus:ring-1 focus:ring-neon-pink transition-all">
+                                        <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Payment Method</label>
+                                        <select value={paymentMode} onChange={(e) => setPaymentMode(e.target.value)} className="w-full bg-zinc-900/50 border border-white/10 h-12 rounded-xl text-xs font-bold px-4 text-white outline-none focus:border-neon-pink focus:ring-1 focus:ring-neon-pink transition-all">
                                             {paymentModes.map(m => <option key={m} value={m} className="bg-zinc-950 text-white">{m}</option>)}
                                         </select>
                                     </div>
                                     <div className="space-y-1.5">
-                                        <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest pl-1">Cleared / Paid Status</label>
-                                        <select value={status} onChange={(e) => setStatus(e.target.value)} className="w-full bg-white/5 border border-white/10 h-12 rounded-xl text-xs font-bold px-4 text-white outline-none focus:border-neon-pink focus:ring-1 focus:ring-neon-pink transition-all">
+                                        <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Cleared / Paid Status</label>
+                                        <select value={status} onChange={(e) => setStatus(e.target.value)} className="w-full bg-zinc-900/50 border border-white/10 h-12 rounded-xl text-xs font-bold px-4 text-white outline-none focus:border-neon-pink focus:ring-1 focus:ring-neon-pink transition-all">
                                             <option value="Paid" className="bg-zinc-950 text-white">Cleared / Settled</option>
                                             <option value="Pending" className="bg-zinc-950 text-white">Pending / Unpaid</option>
                                         </select>
                                     </div>
                                 </div>
 
+                                {status === 'Paid' && (
+                                    <div className="space-y-1.5">
+                                        <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Transaction Ref / UTR (Optional)</label>
+                                        <input 
+                                            value={customUTR} 
+                                            onChange={(e) => setCustomUTR(e.target.value)} 
+                                            placeholder="Enter UPI UTR, Bank Ref ID, or receipt number" 
+                                            className="h-12 bg-zinc-900/50 border border-white/10 rounded-xl text-white focus:border-neon-pink font-mono"
+                                        />
+                                    </div>
+                                )}
+
                                 <div className="space-y-1.5">
-                                    <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest pl-1">Payout Destination Details (UPI ID / Bank details to copy)</label>
-                                    <Input value={destinationDetails} onChange={(e) => setDestinationDetails(e.target.value)} placeholder="e.g. UPI: name@okaxis or Bank transfer details" className="h-12 border-white/10 bg-white/5 focus:border-neon-pink" />
+                                    <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Payout Destination Details (UPI ID / Bank details to copy)</label>
+                                    <input value={destinationDetails} onChange={(e) => setDestinationDetails(e.target.value)} placeholder="e.g. UPI: name@okaxis or Bank transfer details" className="h-12 bg-zinc-900/50 border border-white/10 rounded-xl text-white focus:border-neon-pink" />
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="space-y-1.5 md:col-span-2">
-                                        <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest pl-1">Payout Slip / Receipt Attachment</label>
+                                        <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Payout Slip / Receipt Attachment</label>
                                         <div className="relative group cursor-pointer h-12 border border-dashed border-white/10 rounded-xl flex items-center justify-center gap-3 bg-white/5 hover:border-neon-pink/40 transition-all">
                                             <input type="file" onChange={(e) => handleReceiptUpload(e, setReceiptUrl)} className="absolute inset-0 opacity-0 cursor-pointer z-10" />
                                             <Upload className="text-gray-500 group-hover:text-neon-pink" size={16} />
@@ -1616,8 +1639,8 @@ const SpendsManagement = () => {
                                 </div>
 
                                 <div className="space-y-1.5">
-                                    <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest pl-1">Internal Operational Notes</label>
-                                    <textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Add transaction notes or descriptions..." className="w-full bg-white/5 border border-white/10 h-20 rounded-xl text-xs font-semibold p-4 text-white outline-none focus:border-neon-pink placeholder:text-white/20 transition-all" />
+                                    <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Internal Operational Notes</label>
+                                    <textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Add transaction notes or descriptions..." className="w-full bg-zinc-900/50 border border-white/10 h-20 rounded-xl text-xs font-semibold p-4 text-white outline-none focus:border-neon-pink placeholder:text-white/20 transition-all" />
                                 </div>
 
                                 {paymentMode === 'UPI' && destinationDetails.includes('@') ? (
@@ -1663,13 +1686,13 @@ const SpendsManagement = () => {
                                                     <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest text-center">Scan QR Code with any UPI App</span>
                                                 </div>
                                                 <div className="space-y-1.5">
-                                                    <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest pl-1">Transaction Ref / UTR *</label>
+                                                    <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Transaction Ref / UTR *</label>
                                                     <div className="flex gap-2">
-                                                        <Input 
+                                                        <input 
                                                             value={customUTR} 
                                                             onChange={(e) => setCustomUTR(e.target.value)} 
                                                             placeholder="Enter 12-digit UPI UTR / Ref Number" 
-                                                            className="h-11 border-white/10 bg-white/5 focus:border-neon-pink font-mono"
+                                                            className="h-11 bg-zinc-900/50 border border-white/10 rounded-xl text-white focus:border-neon-pink font-mono"
                                                         />
                                                         <button
                                                             type="button"
@@ -1698,9 +1721,9 @@ const SpendsManagement = () => {
                                         <button type="button" onClick={() => setShowAddModal(false)} className="flex-1 h-12 bg-white/5 hover:bg-white/10 text-white font-black uppercase tracking-widest text-[9px] rounded-xl border border-white/10 transition-all font-bold">
                                             Cancel
                                         </button>
-                                        <Button type="submit" className="flex-1 h-12 bg-neon-pink text-white font-black uppercase tracking-[0.2em] text-[9px] rounded-xl shadow-[0_4px_15px_rgba(255,79,139,0.2)] hover:scale-[1.01]" disabled={uploadingReceipt}>
+                                        <button type="submit" className="flex-1 h-12 bg-neon-pink text-white font-black uppercase tracking-[0.2em] text-[9px] rounded-xl shadow-[0_4px_15px_rgba(255,79,139,0.2)] hover:scale-[1.01]" disabled={uploadingReceipt}>
                                             LOG SPEND RECORD
-                                        </Button>
+                                        </button>
                                     </div>
                                 )}
                                 </div>
@@ -1720,14 +1743,14 @@ const SpendsManagement = () => {
                             animate={{ x: 0 }} 
                             exit={{ x: '100%' }}
                             transition={{ type: "spring", damping: 30, stiffness: 300 }}
-                            className="fixed top-0 right-0 h-full w-full max-w-xl bg-zinc-950/95 border-l-2 border-neon-pink shadow-2xl z-[101] flex flex-col text-white"
+                            className="fixed top-0 right-0 h-full w-full max-w-xl bg-zinc-950/95 backdrop-blur-3xl border-l border-white/10 z-[101] flex flex-col text-white"
                         >
                             <div className="p-6 border-b border-white/5 flex items-center justify-between">
                                 <div>
                                     <h2 className="text-xl font-black font-heading tracking-tighter uppercase italic text-white">EDIT <span className="text-neon-pink">PAYOUT.</span></h2>
                                     <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest mt-1">Update Payout Record #{showEditModal.id?.substring(0, 8)}</p>
                                 </div>
-                                <button type="button" onClick={() => setShowEditModal(null)} className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white hover:text-black transition-all"><X size={14} /></button>
+                                <button type="button" onClick={() => setShowEditModal(null)} className="w-8 h-8 rounded-full bg-zinc-900/50 border border-white/10 flex items-center justify-center hover:bg-white hover:text-black transition-all"><X size={14} /></button>
                             </div>
                             
                             <form onSubmit={handleUpdateSpend} className="flex-1 flex flex-col overflow-hidden">
@@ -1735,7 +1758,7 @@ const SpendsManagement = () => {
                                 {/* Quick Fill Selection */}
                                 {financePayees && financePayees.length > 0 && (
                                     <div className="space-y-1.5 p-4 bg-white/[0.02] border border-white/5 rounded-2xl">
-                                        <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest pl-1 text-neon-pink">Quick Fill from Registered Payee</label>
+                                        <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest text-neon-pink">Quick Fill from Registered Payee</label>
                                         <select 
                                             onChange={(e) => {
                                                 const payeeId = e.target.value;
@@ -1780,25 +1803,25 @@ const SpendsManagement = () => {
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="space-y-1.5">
-                                        <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest pl-1">Payout Classification *</label>
-                                        <select value={payoutType} onChange={(e) => setPayoutType(e.target.value)} className="w-full bg-white/5 border border-white/10 h-12 rounded-xl text-xs font-bold px-4 text-white outline-none focus:border-neon-pink focus:ring-1 focus:ring-neon-pink transition-all">
+                                        <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Payout Classification *</label>
+                                        <select value={payoutType} onChange={(e) => setPayoutType(e.target.value)} className="w-full bg-zinc-900/50 border border-white/10 h-12 rounded-xl text-xs font-bold px-4 text-white outline-none focus:border-neon-pink focus:ring-1 focus:ring-neon-pink transition-all">
                                             {payoutTypes.map(pt => <option key={pt} value={pt} className="bg-zinc-950 text-white">{pt}</option>)}
                                         </select>
                                     </div>
                                     <div className="space-y-1.5">
-                                        <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest pl-1">Amount (INR) *</label>
-                                        <Input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="Enter amount to pay" className="h-12 border-white/10 bg-white/5 focus:border-neon-pink" required />
+                                        <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Amount (INR) *</label>
+                                        <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="Enter amount to pay" className="h-12 bg-zinc-900/50 border border-white/10 rounded-xl text-white focus:border-neon-pink" required />
                                     </div>
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="space-y-1.5">
-                                        <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest pl-1">Transaction Label / Title *</label>
-                                        <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Monthly salary retainer" className="h-12 border-white/10 bg-white/5 focus:border-neon-pink" required />
+                                        <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Transaction Label / Title *</label>
+                                        <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Monthly salary retainer" className="h-12 bg-zinc-900/50 border border-white/10 rounded-xl text-white focus:border-neon-pink" required />
                                     </div>
                                     <div className="space-y-1.5">
-                                        <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest pl-1">Value Date *</label>
-                                        <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="h-12 border-white/10 bg-white/5 focus:border-neon-pink" required />
+                                        <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Value Date *</label>
+                                        <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="h-12 bg-zinc-900/50 border border-white/10 rounded-xl text-white focus:border-neon-pink" required />
                                     </div>
                                 </div>
 
@@ -1808,15 +1831,15 @@ const SpendsManagement = () => {
                                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-5 bg-white/[0.02] border border-white/5 rounded-2xl">
                                             <div className="space-y-1.5">
                                                 <label className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Core Member Name *</label>
-                                                <Input value={receiverName} onChange={(e) => setReceiverName(e.target.value)} placeholder="Recipient name" className="h-11 border-white/10 bg-white/5 focus:border-neon-pink" required />
+                                                <input value={receiverName} onChange={(e) => setReceiverName(e.target.value)} placeholder="Recipient name" className="h-11 bg-zinc-900/50 border border-white/10 rounded-xl text-white focus:border-neon-pink" required />
                                             </div>
                                             <div className="space-y-1.5">
                                                 <label className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Designation/Role *</label>
-                                                <Input value={designation} onChange={(e) => setDesignation(e.target.value)} placeholder="e.g. Creative Director" className="h-11 border-white/10 bg-white/5 focus:border-neon-pink" required />
+                                                <input value={designation} onChange={(e) => setDesignation(e.target.value)} placeholder="e.g. Creative Director" className="h-11 bg-zinc-900/50 border border-white/10 rounded-xl text-white focus:border-neon-pink" required />
                                             </div>
                                             <div className="space-y-1.5">
                                                 <label className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Salary Month *</label>
-                                                <Input value={salaryPeriod} onChange={(e) => setSalaryPeriod(e.target.value)} placeholder="e.g. May 2026" className="h-11 border-white/10 bg-white/5 focus:border-neon-pink" required />
+                                                <input value={salaryPeriod} onChange={(e) => setSalaryPeriod(e.target.value)} placeholder="e.g. May 2026" className="h-11 bg-zinc-900/50 border border-white/10 rounded-xl text-white focus:border-neon-pink" required />
                                             </div>
                                         </div>
                                     )}
@@ -1825,15 +1848,15 @@ const SpendsManagement = () => {
                                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-5 bg-white/[0.02] border border-white/5 rounded-2xl">
                                             <div className="space-y-1.5">
                                                 <label className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Volunteer Name *</label>
-                                                <Input value={receiverName} onChange={(e) => setReceiverName(e.target.value)} placeholder="Volunteer full name" className="h-11 border-white/10 bg-white/5 focus:border-neon-pink" required />
+                                                <input value={receiverName} onChange={(e) => setReceiverName(e.target.value)} placeholder="Volunteer full name" className="h-11 bg-zinc-900/50 border border-white/10 rounded-xl text-white focus:border-neon-pink" required />
                                             </div>
                                             <div className="space-y-1.5">
                                                 <label className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Volunteer Phone</label>
-                                                <Input value={volunteerPhone} onChange={(e) => setVolunteerPhone(e.target.value)} placeholder="Phone number" className="h-11 border-white/10 bg-white/5 focus:border-neon-pink" />
+                                                <input value={volunteerPhone} onChange={(e) => setVolunteerPhone(e.target.value)} placeholder="Phone number" className="h-11 bg-zinc-900/50 border border-white/10 rounded-xl text-white focus:border-neon-pink" />
                                             </div>
                                             <div className="space-y-1.5">
                                                 <label className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Gig Title / Link</label>
-                                                <Input value={linkedGig} onChange={(e) => setLinkedGig(e.target.value)} placeholder="e.g. Arena Concert Gate" className="h-11 border-white/10 bg-white/5 focus:border-neon-pink" />
+                                                <input value={linkedGig} onChange={(e) => setLinkedGig(e.target.value)} placeholder="e.g. Arena Concert Gate" className="h-11 bg-zinc-900/50 border border-white/10 rounded-xl text-white focus:border-neon-pink" />
                                             </div>
                                             {invoices && invoices.length > 0 && (
                                                 <div className="space-y-1.5 col-span-full pt-2">
@@ -1864,11 +1887,11 @@ const SpendsManagement = () => {
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-5 bg-white/[0.02] border border-white/5 rounded-2xl">
                                             <div className="space-y-1.5">
                                                 <label className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Vendor Entity Name *</label>
-                                                <Input value={paidTo} onChange={(e) => setPaidTo(e.target.value)} placeholder="e.g. Sound Rentals Ltd." className="h-11 border-white/10 bg-white/5 focus:border-neon-pink" required />
+                                                <input value={paidTo} onChange={(e) => setPaidTo(e.target.value)} placeholder="e.g. Sound Rentals Ltd." className="h-11 bg-zinc-900/50 border border-white/10 rounded-xl text-white focus:border-neon-pink" required />
                                             </div>
                                             <div className="space-y-1.5">
                                                 <label className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Invoice Reference #</label>
-                                                <Input value={invoiceRef} onChange={(e) => setInvoiceRef(e.target.value)} placeholder="e.g. INV-10023" className="h-11 border-white/10 bg-white/5 focus:border-neon-pink" />
+                                                <input value={invoiceRef} onChange={(e) => setInvoiceRef(e.target.value)} placeholder="e.g. INV-10023" className="h-11 bg-zinc-900/50 border border-white/10 rounded-xl text-white focus:border-neon-pink" />
                                             </div>
                                         </div>
                                     )}
@@ -1877,11 +1900,24 @@ const SpendsManagement = () => {
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-5 bg-white/[0.02] border border-white/5 rounded-2xl">
                                             <div className="space-y-1.5">
                                                 <label className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Artist / DJ Name *</label>
-                                                <Input value={receiverName} onChange={(e) => setReceiverName(e.target.value)} placeholder="Artist name" className="h-11 border-white/10 bg-white/5 focus:border-neon-pink" required />
+                                                <input value={receiverName} onChange={(e) => setReceiverName(e.target.value)} placeholder="Artist name" className="h-11 bg-zinc-900/50 border border-white/10 rounded-xl text-white focus:border-neon-pink" required />
                                             </div>
                                             <div className="space-y-1.5">
                                                 <label className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Event Reference</label>
-                                                <Input value={linkedGig} onChange={(e) => setLinkedGig(e.target.value)} placeholder="e.g. Stage 1 VIP" className="h-11 border-white/10 bg-white/5 focus:border-neon-pink" />
+                                                <input value={linkedGig} onChange={(e) => setLinkedGig(e.target.value)} placeholder="e.g. Stage 1 VIP" className="h-11 bg-zinc-900/50 border border-white/10 rounded-xl text-white focus:border-neon-pink" />
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {payoutType === 'General Expense' && (
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-5 bg-white/[0.02] border border-white/5 rounded-2xl">
+                                            <div className="space-y-1.5">
+                                                <label className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Recipient / Payee Name *</label>
+                                                <input value={receiverName} onChange={(e) => { setReceiverName(e.target.value); setPaidTo(e.target.value); }} placeholder="e.g. Amazon Office Supplies" className="h-11 bg-zinc-900/50 border border-white/10 rounded-xl text-white focus:border-neon-pink" required />
+                                            </div>
+                                            <div className="space-y-1.5">
+                                                <label className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Expense Category</label>
+                                                <input value={designation} onChange={(e) => setDesignation(e.target.value)} placeholder="e.g. Office Operations / Travel / F&B" className="h-11 bg-zinc-900/50 border border-white/10 rounded-xl text-white focus:border-neon-pink" />
                                             </div>
                                         </div>
                                     )}
@@ -1889,8 +1925,8 @@ const SpendsManagement = () => {
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="space-y-1.5">
-                                        <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest pl-1">Source Account *</label>
-                                        <select value={accountType} onChange={(e) => setAccountType(e.target.value)} className="w-full bg-white/5 border border-white/10 h-12 rounded-xl text-xs font-bold px-4 text-white outline-none focus:border-neon-pink focus:ring-1 focus:ring-neon-pink transition-all">
+                                        <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Source Account *</label>
+                                        <select value={accountType} onChange={(e) => setAccountType(e.target.value)} className="w-full bg-zinc-900/50 border border-white/10 h-12 rounded-xl text-xs font-bold px-4 text-white outline-none focus:border-neon-pink focus:ring-1 focus:ring-neon-pink transition-all">
                                             <option value="newbi" className="bg-zinc-950 text-white">Official Newbi Account</option>
                                             <option value="personal" className="bg-zinc-950 text-white">Personal Account (Core Member Reimbursement)</option>
                                         </select>
@@ -1898,36 +1934,48 @@ const SpendsManagement = () => {
                                     
                                     {accountType === 'personal' && (
                                         <div className="space-y-1.5">
-                                            <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest pl-1">Payer Name (Team Member) *</label>
-                                            <Input value={receiverName} onChange={(e) => setReceiverName(e.target.value)} placeholder="Name of member paying" className="h-12 border-white/10 bg-white/5 focus:border-neon-pink" required />
+                                            <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Payer Name (Team Member) *</label>
+                                            <input value={receiverName} onChange={(e) => setReceiverName(e.target.value)} placeholder="Name of member paying" className="h-12 bg-zinc-900/50 border border-white/10 rounded-xl text-white focus:border-neon-pink" required />
                                         </div>
                                     )}
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="space-y-1.5">
-                                        <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest pl-1">Payment Method</label>
-                                        <select value={paymentMode} onChange={(e) => setPaymentMode(e.target.value)} className="w-full bg-white/5 border border-white/10 h-12 rounded-xl text-xs font-bold px-4 text-white outline-none focus:border-neon-pink focus:ring-1 focus:ring-neon-pink transition-all">
+                                        <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Payment Method</label>
+                                        <select value={paymentMode} onChange={(e) => setPaymentMode(e.target.value)} className="w-full bg-zinc-900/50 border border-white/10 h-12 rounded-xl text-xs font-bold px-4 text-white outline-none focus:border-neon-pink focus:ring-1 focus:ring-neon-pink transition-all">
                                             {paymentModes.map(m => <option key={m} value={m} className="bg-zinc-950 text-white">{m}</option>)}
                                         </select>
                                     </div>
                                     <div className="space-y-1.5">
-                                        <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest pl-1">Cleared / Paid Status</label>
-                                        <select value={status} onChange={(e) => setStatus(e.target.value)} className="w-full bg-white/5 border border-white/10 h-12 rounded-xl text-xs font-bold px-4 text-white outline-none focus:border-neon-pink focus:ring-1 focus:ring-neon-pink transition-all">
+                                        <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Cleared / Paid Status</label>
+                                        <select value={status} onChange={(e) => setStatus(e.target.value)} className="w-full bg-zinc-900/50 border border-white/10 h-12 rounded-xl text-xs font-bold px-4 text-white outline-none focus:border-[#FF2E90] focus:ring-1 focus:ring-[#FF2E90] transition-all">
                                             <option value="Paid" className="bg-zinc-950 text-white">Cleared / Settled</option>
                                             <option value="Pending" className="bg-zinc-950 text-white">Pending / Unpaid</option>
                                         </select>
                                     </div>
                                 </div>
 
+                                {status === 'Paid' && (
+                                    <div className="space-y-1.5">
+                                        <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Transaction Ref / UTR (Optional)</label>
+                                        <input 
+                                            value={customUTR} 
+                                            onChange={(e) => setCustomUTR(e.target.value)} 
+                                            placeholder="Enter UPI UTR, Bank Ref ID, or receipt number" 
+                                            className="h-12 bg-zinc-900/50 border border-white/10 rounded-xl text-white focus:border-[#FF2E90] font-mono"
+                                        />
+                                    </div>
+                                )}
+
                                 <div className="space-y-1.5">
-                                    <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest pl-1">Payout Destination Details (UPI ID / Bank details to copy)</label>
-                                    <Input value={destinationDetails} onChange={(e) => setDestinationDetails(e.target.value)} placeholder="e.g. UPI: name@okaxis or Bank transfer details" className="h-12 border-white/10 bg-white/5 focus:border-neon-pink" />
+                                    <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Payout Destination Details (UPI ID / Bank details to copy)</label>
+                                    <input value={destinationDetails} onChange={(e) => setDestinationDetails(e.target.value)} placeholder="e.g. UPI: name@okaxis or Bank transfer details" className="h-12 bg-zinc-900/50 border border-white/10 rounded-xl text-white focus:border-neon-pink" />
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="space-y-1.5 md:col-span-2">
-                                        <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest pl-1">Payout Slip / Receipt Attachment</label>
+                                        <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Payout Slip / Receipt Attachment</label>
                                         <div className="relative group cursor-pointer h-12 border border-dashed border-white/10 rounded-xl flex items-center justify-center gap-3 bg-white/5 hover:border-neon-pink/40 transition-all">
                                             <input type="file" onChange={(e) => handleReceiptUpload(e, setReceiptUrl)} className="absolute inset-0 opacity-0 cursor-pointer z-10" />
                                             <Upload className="text-gray-500 group-hover:text-neon-pink" size={16} />
@@ -1944,17 +1992,17 @@ const SpendsManagement = () => {
                                 </div>
 
                                 <div className="space-y-1.5">
-                                    <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest pl-1">Internal Notes</label>
-                                    <textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Add transaction notes or descriptions..." className="w-full bg-white/5 border border-white/10 h-20 rounded-xl text-xs font-semibold p-4 text-white outline-none focus:border-neon-pink placeholder:text-white/20 transition-all" />
+                                    <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Internal Notes</label>
+                                    <textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Add transaction notes or descriptions..." className="w-full bg-zinc-900/50 border border-white/10 h-20 rounded-xl text-xs font-semibold p-4 text-white outline-none focus:border-neon-pink placeholder:text-white/20 transition-all" />
                                 </div>
 
                                 <div className="pt-4 flex gap-3">
                                     <button type="button" onClick={() => setShowEditModal(null)} className="flex-1 h-12 bg-white/5 hover:bg-white/10 text-white font-black uppercase tracking-widest text-[9px] rounded-xl border border-white/10 transition-all font-bold">
                                         Cancel
                                     </button>
-                                    <Button type="submit" className="flex-1 h-12 bg-neon-pink text-white font-black uppercase tracking-[0.2em] text-[9px] rounded-xl shadow-[0_4px_15px_rgba(255,79,139,0.2)] hover:scale-[1.01]" disabled={uploadingReceipt}>
+                                    <button type="submit" className="flex-1 h-12 bg-neon-pink text-white font-black uppercase tracking-[0.2em] text-[9px] rounded-xl shadow-[0_4px_15px_rgba(255,79,139,0.2)] hover:scale-[1.01]" disabled={uploadingReceipt}>
                                         UPDATE SPEND ENTRY
-                                    </Button>
+                                    </button>
                                 </div>
                                 </div>
                             </form>
@@ -1973,14 +2021,14 @@ const SpendsManagement = () => {
                             animate={{ x: 0 }} 
                             exit={{ x: '100%' }}
                             transition={{ type: "spring", damping: 30, stiffness: 300 }}
-                            className="fixed top-0 right-0 h-full w-full max-w-xl bg-zinc-950/95 border-l-2 border-neon-pink shadow-2xl z-[101] flex flex-col text-white"
+                            className="fixed top-0 right-0 h-full w-full max-w-xl bg-zinc-950/95 backdrop-blur-3xl border-l border-white/10 z-[101] flex flex-col text-white"
                         >
                             <div className="p-6 border-b border-white/5 flex items-center justify-between">
                                 <div>
                                     <h2 className="text-xl font-black font-heading tracking-tighter uppercase italic text-white">BULK <span className="text-neon-pink">PAYOUTS.</span></h2>
                                     <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest mt-1">Disburse payments to registered event volunteers in batches</p>
                                 </div>
-                                <button type="button" onClick={() => setShowBulkModal(false)} className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white hover:text-black transition-all"><X size={14} /></button>
+                                <button type="button" onClick={() => setShowBulkModal(false)} className="w-8 h-8 rounded-full bg-zinc-900/50 border border-white/10 flex items-center justify-center hover:bg-white hover:text-black transition-all"><X size={14} /></button>
                             </div>
                             
                             <div className="flex-1 overflow-y-auto p-6 space-y-5 custom-scrollbar pb-24">
@@ -1989,11 +2037,11 @@ const SpendsManagement = () => {
                                 <div className="space-y-6">
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <div className="space-y-1.5">
-                                            <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest pl-1">Select Event Gig *</label>
+                                            <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Select Event Gig *</label>
                                             <select 
                                                 value={selectedBulkEvent} 
                                                 onChange={(e) => setSelectedBulkEvent(e.target.value)} 
-                                                className="w-full bg-white/5 border border-white/10 h-12 rounded-xl text-xs font-bold px-4 text-white outline-none focus:border-neon-blue focus:ring-1 focus:ring-neon-blue transition-all"
+                                                className="w-full bg-zinc-900/50 border border-white/10 h-12 rounded-xl text-xs font-bold px-4 text-white outline-none focus:border-neon-blue focus:ring-1 focus:ring-neon-blue transition-all"
                                             >
                                                 <option value="" className="bg-zinc-950 text-gray-400">-- Choose an Event --</option>
                                                 {upcomingEvents && upcomingEvents.map(evt => (
@@ -2002,11 +2050,11 @@ const SpendsManagement = () => {
                                             </select>
                                             {/* Create New Event inline */}
                                             <div className="flex items-center gap-2 mt-2">
-                                                <Input 
+                                                <input 
                                                     placeholder="Or type a new event name..." 
                                                     value={bulkNewEventName || ''} 
                                                     onChange={(e) => setBulkNewEventName(e.target.value)}
-                                                    className="h-9 text-[10px] border-white/10 bg-white/5 focus:border-neon-blue flex-1"
+                                                    className="h-9 text-[10px] bg-zinc-900/50 border border-white/10 rounded-xl text-white focus:border-neon-blue flex-1"
                                                 />
                                                 <button
                                                     type="button"
@@ -2045,8 +2093,8 @@ const SpendsManagement = () => {
                                             </div>
                                         </div>
                                         <div className="space-y-1.5">
-                                            <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest pl-1">Default Payout Rate (INR) *</label>
-                                            <Input type="number" value={bulkPayoutAmount} onChange={(e) => setBulkPayoutAmount(e.target.value)} className="h-12 border-white/10 bg-white/5 focus:border-neon-blue" required />
+                                            <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Default Payout Rate (INR) *</label>
+                                            <input type="number" value={bulkPayoutAmount} onChange={(e) => setBulkPayoutAmount(e.target.value)} className="h-12 bg-zinc-900/50 border border-white/10 rounded-xl text-white focus:border-neon-blue" required />
                                         </div>
                                     </div>
 
@@ -2092,7 +2140,7 @@ const SpendsManagement = () => {
                                                                                 setSelectedVolunteerIds(prev => [...prev, vol.id]);
                                                                             }
                                                                         }}
-                                                                        className="rounded border-white/10 bg-white/5 text-neon-blue focus:ring-0 w-4 h-4 cursor-pointer"
+                                                                        className="rounded bg-zinc-900/50 border border-white/10 rounded-xl text-white text-neon-blue focus:ring-0 w-4 h-4 cursor-pointer"
                                                                     />
                                                                     <div>
                                                                         <span className="text-xs font-bold text-white block">{vol.name}</span>
@@ -2122,28 +2170,28 @@ const SpendsManagement = () => {
                                     {/* Settings */}
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                         <div className="space-y-1.5">
-                                            <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest pl-1">Payment Method</label>
-                                            <select value={bulkPaymentMode} onChange={(e) => setBulkPaymentMode(e.target.value)} className="w-full bg-white/5 border border-white/10 h-12 rounded-xl text-xs font-bold px-4 text-white outline-none focus:border-neon-blue focus:ring-1 focus:ring-neon-blue transition-all">
+                                            <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Payment Method</label>
+                                            <select value={bulkPaymentMode} onChange={(e) => setBulkPaymentMode(e.target.value)} className="w-full bg-zinc-900/50 border border-white/10 h-12 rounded-xl text-xs font-bold px-4 text-white outline-none focus:border-neon-blue focus:ring-1 focus:ring-neon-blue transition-all">
                                                 {paymentModes.map(m => <option key={m} value={m} className="bg-zinc-950 text-white">{m}</option>)}
                                             </select>
                                         </div>
                                         <div className="space-y-1.5">
-                                            <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest pl-1">Source Account</label>
-                                            <select value={bulkAccountType} onChange={(e) => setBulkAccountType(e.target.value)} className="w-full bg-white/5 border border-white/10 h-12 rounded-xl text-xs font-bold px-4 text-white outline-none focus:border-neon-blue focus:ring-1 focus:ring-neon-blue transition-all">
+                                            <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Source Account</label>
+                                            <select value={bulkAccountType} onChange={(e) => setBulkAccountType(e.target.value)} className="w-full bg-zinc-900/50 border border-white/10 h-12 rounded-xl text-xs font-bold px-4 text-white outline-none focus:border-neon-blue focus:ring-1 focus:ring-neon-blue transition-all">
                                                 <option value="newbi" className="bg-zinc-950 text-white">Official Newbi Account</option>
                                                 <option value="personal" className="bg-zinc-950 text-white">Personal Account</option>
                                             </select>
                                         </div>
                                         <div className="space-y-1.5">
-                                            <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest pl-1">Value Date</label>
-                                            <Input type="date" value={bulkDate} onChange={(e) => setBulkDate(e.target.value)} className="h-12 border-white/10 bg-white/5 focus:border-neon-blue" required />
+                                            <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Value Date</label>
+                                            <input type="date" value={bulkDate} onChange={(e) => setBulkDate(e.target.value)} className="h-12 bg-zinc-900/50 border border-white/10 rounded-xl text-white focus:border-neon-blue" required />
                                         </div>
                                     </div>
 
                                     {/* Invoice Link */}
                                     {invoices && invoices.length > 0 && (
                                         <div className="space-y-1.5">
-                                            <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest pl-1">Link Payouts with Incoming Client Invoice (Optional)</label>
+                                            <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Link Payouts with Incoming Client Invoice (Optional)</label>
                                             <select
                                                 value={bulkLinkedInvoiceId}
                                                 onChange={(e) => {
@@ -2152,7 +2200,7 @@ const SpendsManagement = () => {
                                                     const inv = invoices.find(i => i.id === invId);
                                                     setBulkLinkedInvoiceNumber(inv ? (inv.invoiceNumber || inv.id) : '');
                                                 }}
-                                                className="w-full bg-white/5 border border-white/10 h-12 rounded-xl text-xs font-bold px-4 text-white outline-none focus:border-neon-blue focus:ring-1 focus:ring-neon-blue transition-all"
+                                                className="w-full bg-zinc-900/50 border border-white/10 h-12 rounded-xl text-xs font-bold px-4 text-white outline-none focus:border-neon-blue focus:ring-1 focus:ring-neon-blue transition-all"
                                             >
                                                 <option value="" className="bg-zinc-950 text-gray-400">-- Select Client Invoice --</option>
                                                 {invoices.map(inv => (
@@ -2165,8 +2213,8 @@ const SpendsManagement = () => {
                                     )}
 
                                     <div className="space-y-1.5">
-                                        <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest pl-1">Notes</label>
-                                        <textarea value={bulkNotes} onChange={(e) => setBulkNotes(e.target.value)} placeholder="Add bulk notes..." className="w-full bg-white/5 border border-white/10 h-20 rounded-xl text-xs font-semibold p-4 text-white outline-none focus:border-neon-blue placeholder:text-white/20 transition-all" />
+                                        <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Notes</label>
+                                        <textarea value={bulkNotes} onChange={(e) => setBulkNotes(e.target.value)} placeholder="Add bulk notes..." className="w-full bg-zinc-900/50 border border-white/10 h-20 rounded-xl text-xs font-semibold p-4 text-white outline-none focus:border-neon-blue placeholder:text-white/20 transition-all" />
                                     </div>
 
                                     <button
@@ -2238,7 +2286,7 @@ const SpendsManagement = () => {
                                                                 onChange={(e) => {
                                                                     setCompletedPayments(prev => ({ ...prev, [vol.id]: e.target.checked }));
                                                                 }}
-                                                                className="rounded border-white/10 bg-white/5 text-neon-green focus:ring-0 w-4 h-4 cursor-pointer"
+                                                                className="rounded bg-zinc-900/50 border border-white/10 rounded-xl text-white text-neon-green focus:ring-0 w-4 h-4 cursor-pointer"
                                                             />
                                                         </div>
                                                     </div>
@@ -2281,7 +2329,7 @@ const SpendsManagement = () => {
                             animate={{ scale: 1, opacity: 1, y: 0 }}
                             exit={{ scale: 0.95, opacity: 0, y: 40 }}
                             transition={{ type: "spring", stiffness: 260, damping: 22 }}
-                            className={`relative w-full z-10 bg-zinc-950 border border-white/10 rounded-[2.5rem] p-4 sm:p-6 md:p-8 shadow-2xl overflow-y-auto max-h-[90vh] custom-scrollbar transition-all duration-300 ${
+                            className={`relative w-full z-10 bg-zinc-950/95 backdrop-blur-3xl border border-white/10 rounded-3xl p-4 sm:p-6 md:p-8 shadow-2xl overflow-y-auto max-h-[90vh] custom-scrollbar transition-all duration-300 ${
                                 printerStage === 'verify' && (activeSlipData.status === 'Pending' || activeSlipData.status === 'Unpaid') 
                                     ? 'max-w-3xl' 
                                     : 'max-w-md'
@@ -2456,18 +2504,18 @@ const SpendsManagement = () => {
 
                                                     {/* UTR Input Form */}
                                                     <div className="space-y-2 pt-2">
-                                                        <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest pl-1">Transaction UTR / Ref Number</label>
+                                                        <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Transaction UTR / Ref Number</label>
                                                         <Input
                                                             value={verificationUTR}
                                                             onChange={(e) => setVerificationUTR(e.target.value)}
                                                             placeholder="Enter UPI UTR or Bank Ref ID"
-                                                            className="h-12 border-white/10 bg-white/5 focus:border-[#39ff14] font-mono tracking-widest text-center text-white"
+                                                            className="h-12 bg-zinc-900/50 border border-white/10 rounded-xl text-white focus:border-[#39ff14] font-mono tracking-widest text-center text-white"
                                                         />
                                                     </div>
 
                                                     {/* Payment Proof Upload */}
                                                     <div className="space-y-2 pt-1">
-                                                        <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest pl-1">Payment Proof (Screenshot / PDF)</label>
+                                                        <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Payment Proof (Screenshot / PDF)</label>
                                                         <div className="relative">
                                                             <input type="file" onChange={(e) => handleReceiptUpload(e, setVerificationReceiptUrl)} className="absolute inset-0 opacity-0 cursor-pointer z-10" />
                                                             <div className="h-10 bg-white/5 hover:bg-white/10 border border-dashed border-white/10 rounded-xl flex items-center justify-center gap-2 text-[9px] font-black text-gray-400 uppercase tracking-widest transition-all cursor-pointer">
@@ -2570,18 +2618,18 @@ const SpendsManagement = () => {
 
                                                 {/* UTR Input Form */}
                                                 <div className="space-y-2">
-                                                    <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest pl-1">Transaction UTR / Ref Number</label>
+                                                    <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Transaction UTR / Ref Number</label>
                                                     <Input
                                                         value={verificationUTR}
                                                         onChange={(e) => setVerificationUTR(e.target.value)}
                                                         placeholder="Enter UPI UTR or Bank Ref ID"
-                                                        className="h-12 border-white/10 bg-white/5 focus:border-[#39ff14] font-mono tracking-widest text-center text-white"
+                                                        className="h-12 bg-zinc-900/50 border border-white/10 rounded-xl text-white focus:border-[#39ff14] font-mono tracking-widest text-center text-white"
                                                     />
                                                 </div>
 
                                                 {/* Payment Proof Upload */}
                                                 <div className="space-y-2">
-                                                    <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest pl-1">Payment Proof (Screenshot / PDF)</label>
+                                                    <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Payment Proof (Screenshot / PDF)</label>
                                                     <div className="relative">
                                                         <input type="file" onChange={(e) => handleReceiptUpload(e, setVerificationReceiptUrl)} className="absolute inset-0 opacity-0 cursor-pointer z-10" />
                                                         <div className="h-10 bg-white/5 hover:bg-white/10 border border-dashed border-white/10 rounded-xl flex items-center justify-center gap-2 text-[9px] font-black text-gray-400 uppercase tracking-widest transition-all cursor-pointer">
