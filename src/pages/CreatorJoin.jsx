@@ -28,7 +28,7 @@ import ChevronDown from 'lucide-react/dist/esm/icons/chevron-down';
 import User from 'lucide-react/dist/esm/icons/user';
 import FileText from 'lucide-react/dist/esm/icons/file-text';
 import { useNavigate } from 'react-router-dom';
-import { cn } from '../lib/utils';
+import { cn, normalizePhoneNumber } from '../lib/utils';
 import GlobalLoader from '../components/ui/GlobalLoader';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import useDynamicMeta from '../hooks/useDynamicMeta';
@@ -316,8 +316,24 @@ const CreatorJoin = () => {
         }
     };
 
+    const existingAccountForUserPhone = React.useMemo(() => {
+        if (!user || !creators) return null;
+        const targetPhoneNorm = normalizePhoneNumber(formData.phone || user.phoneNumber);
+        if (!targetPhoneNorm) return null;
+        return creators.find(c => c.uid !== user.uid && normalizePhoneNumber(c.phone) === targetPhoneNorm);
+    }, [user, creators, formData.phone]);
+
     const handleSendOTP = async () => {
         if (!formData.phone) return useStore.getState().addToast("Please enter a contact number", 'error');
+        
+        const normPhone = normalizePhoneNumber(formData.phone);
+        if (normPhone && creators) {
+            const existing = creators.find(c => c.uid !== user?.uid && normalizePhoneNumber(c.phone) === normPhone);
+            if (existing) {
+                return useStore.getState().addToast(`This mobile number is already registered to a creator account (${existing.email || 'existing account'}). Multiple accounts with the same phone number are not allowed.`, 'error');
+            }
+        }
+
         setIsSendingOtp(true);
         try {
             const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
@@ -377,18 +393,36 @@ const CreatorJoin = () => {
         try {
             const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
             if (isLocal) {
+                const normPhone = normalizePhoneNumber(formData.phone);
+                if (normPhone && creators) {
+                    const existing = creators.find(c => c.uid !== user?.uid && normalizePhoneNumber(c.phone) === normPhone);
+                    if (existing) {
+                        setPhoneVerified(false);
+                        return useStore.getState().addToast(`This mobile number is already linked to another creator account.`, 'error');
+                    }
+                }
                 setPhoneVerified(true);
                 useStore.getState().addToast("Phone verified (Local Bypass)!", 'success');
                 return;
             }
             const credential = PhoneAuthProvider.credential(confirmationResult, fullCode);
             await linkWithCredential(auth.currentUser, credential);
+
+            const normPhone = normalizePhoneNumber(formData.phone);
+            if (normPhone && creators) {
+                const existing = creators.find(c => c.uid !== user?.uid && normalizePhoneNumber(c.phone) === normPhone);
+                if (existing) {
+                    setPhoneVerified(false);
+                    return useStore.getState().addToast(`This mobile number is already linked to another creator profile (${existing.email || 'existing user'}).`, 'error');
+                }
+            }
+
             setPhoneVerified(true);
             useStore.getState().addToast("Phone verified successfully!", 'success');
         } catch (err) {
             if (err.code === 'auth/credential-already-in-use') {
-                setPhoneVerified(true);
-                useStore.getState().addToast("Phone verified! (Number linked to another account)", 'success');
+                setPhoneVerified(false);
+                useStore.getState().addToast("This mobile number is already linked to another user account. Multiple accounts for the same creator are not allowed.", 'error');
             } else {
                 useStore.getState().addToast("Invalid code. Please try again.", 'error');
             }
@@ -435,6 +469,15 @@ const CreatorJoin = () => {
         if (!formData.name?.trim()) return "Full Name is required.";
         if (!isPhoneVerifiedRef.current) return "Please verify your contact number via OTP.";
         if (!formData.email?.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) return "Please enter a valid email address.";
+        
+        const normPhone = normalizePhoneNumber(formData.phone);
+        if (normPhone && creators) {
+            const existing = creators.find(c => c.uid !== user?.uid && normalizePhoneNumber(c.phone) === normPhone);
+            if (existing) {
+                return `This mobile number is already registered to another creator profile (${existing.email || 'existing account'}). Multiple creator accounts with the same phone number are not allowed.`;
+            }
+        }
+
         if (!formData.city) return "Please select a Hub City.";
         if (formData.city === 'Others' && !formData.customCity?.trim()) return "Please specify your custom city.";
         
@@ -560,6 +603,21 @@ const CreatorJoin = () => {
                                 Complete your profile to unlock exclusive brand collaborations, digital products, and analytics.
                             </p>
                         </div>
+
+                        {existingAccountForUserPhone && (
+                            <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="p-6 sm:p-8 bg-gradient-to-r from-amber-500/10 via-yellow-500/10 to-amber-500/10 border border-amber-500/30 rounded-3xl text-left space-y-3 relative z-40 shadow-xl backdrop-blur-2xl">
+                                <div className="flex items-center gap-3 text-amber-400 font-black uppercase text-sm tracking-wider">
+                                    <ShieldCheck className="text-amber-400 shrink-0" size={24} />
+                                    <span>Account Notice: Existing Creator Profile Found</span>
+                                </div>
+                                <p className="text-sm text-gray-300 font-medium leading-relaxed">
+                                    A Creator account (<span className="text-white font-bold">{existingAccountForUserPhone.displayName || existingAccountForUserPhone.name}</span>) is already registered with mobile number ending in <span className="text-amber-400 font-bold">...{normalizePhoneNumber(existingAccountForUserPhone.phone).slice(-4)}</span> under email <span className="text-amber-400 font-bold">{existingAccountForUserPhone.email || 'another account'}</span>.
+                                </p>
+                                <p className="text-xs text-gray-400 font-medium">
+                                    Multiple creator profiles for the same mobile number are not allowed. Please log out and sign in with <span className="text-amber-400 font-bold">{existingAccountForUserPhone.email}</span> to access your Creator Dashboard.
+                                </p>
+                            </motion.div>
+                        )}
 
                         <form onSubmit={handleSubmit} className="space-y-8">
                             {/* Card 1: Identity & Contact */}

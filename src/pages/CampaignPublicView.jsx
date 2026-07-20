@@ -29,7 +29,7 @@ import ChevronLeft from 'lucide-react/dist/esm/icons/chevron-left';
 import ExternalLink from 'lucide-react/dist/esm/icons/external-link';
 import FileText from 'lucide-react/dist/esm/icons/file-text';
 import Check from 'lucide-react/dist/esm/icons/check';
-import { cn } from '../lib/utils';
+import { cn, normalizePhoneNumber } from '../lib/utils';
 import { PREDEFINED_CITIES } from '../lib/constants';
 import StudioSelect from '../components/ui/StudioSelect';
 import useDynamicMeta from '../hooks/useDynamicMeta';
@@ -142,6 +142,14 @@ const CampaignPublicView = () => {
             return useStore.getState().addToast("Please verify your Instagram eligibility before applying.", 'error');
         }
 
+        const normPhone = normalizePhoneNumber(form.phone);
+        if (normPhone && creators) {
+            const existing = creators.find(c => c.uid !== user.uid && normalizePhoneNumber(c.phone) === normPhone);
+            if (existing) {
+                return useStore.getState().addToast(`The mobile number ${form.phone} is already linked to another creator profile (${existing.email || 'existing account'}).`, 'error');
+            }
+        }
+
         setIsJoining(true);
         try {
             const currentJoined = profile?.joinedCampaigns || [];
@@ -173,7 +181,7 @@ const CampaignPublicView = () => {
 
             setJoinSuccess(true);
         } catch (error) {
-            useStore.getState().addToast("Couldn't submit your application. Please try again.", 'error');
+            useStore.getState().addToast(error.message || "Couldn't submit your application. Please try again.", 'error');
         } finally {
             setIsJoining(false);
         }
