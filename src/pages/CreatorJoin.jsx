@@ -149,12 +149,12 @@ const CustomSelect = ({ value, onChange, options, name, placeholder, icon: Icon,
     const displayLabel = currentOption ? (typeof currentOption === 'object' ? currentOption.label : currentOption.toUpperCase()) : placeholder;
 
     return (
-        <div ref={containerRef} className={cn("relative", isCountryCode ? "w-24 sm:w-36 shrink-0" : "w-full")}>
+        <div ref={containerRef} className={cn("relative", isCountryCode ? "w-20 sm:w-32 shrink-0" : "w-full")}>
             <button
                 type="button" onClick={handleToggle}
                 className={cn(
                     "w-full h-16 bg-white/[0.02] border border-white/10 rounded-2xl text-base font-bold text-left focus:border-neon-blue focus:outline-none transition-all flex items-center justify-between group",
-                    isCountryCode ? "px-3" : "pl-12 pr-10",
+                    isCountryCode ? "px-2.5 sm:px-3 text-sm sm:text-base" : "pl-12 pr-10",
                     isOpen && "border-neon-blue/50 ring-1 ring-neon-blue/50",
                     className
                 )}

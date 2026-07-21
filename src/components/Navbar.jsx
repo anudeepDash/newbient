@@ -106,7 +106,7 @@ const Navbar = () => {
                     </div>
 
                     {/* Center: Desktop Menu */}
-                    <div className="hidden md:flex items-center gap-1 bg-black/20 p-1.5 rounded-full border border-white/5 backdrop-blur-3xl">
+                    <div className="hidden md:flex items-center gap-1 bg-black/20 p-1.5 rounded-full border border-white/5">
                         {allLinks.map((link) => {
                             const isUnderMaintenance = link.featureId && (maintenanceState.global || maintenanceState.pages?.[link.featureId]);
                             const isActive = link.matchPaths ? link.matchPaths.includes(location.pathname) : location.pathname === link.path;
