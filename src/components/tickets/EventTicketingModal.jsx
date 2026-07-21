@@ -1342,12 +1342,12 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
 
                                     {!otpSent ? (
                                         <div className="space-y-6">
-                                            <div className="flex gap-4">
+                                            <div className="flex gap-2 sm:gap-4">
                                                 <select 
                                                     value={countryCode} 
                                                     onChange={(e) => setCountryCode(e.target.value)} 
                                                     disabled={isPhoneVerified}
-                                                    className="w-24 sm:w-36 h-14 bg-white/[0.02] border border-white/10 rounded-xl text-white text-base font-bold px-3 outline-none focus:border-neon-green transition-all disabled:opacity-50"
+                                                    className="w-20 sm:w-36 shrink-0 h-14 bg-white/[0.02] border border-white/10 rounded-xl text-white text-sm sm:text-base font-bold px-2 sm:px-3 outline-none focus:border-neon-green transition-all disabled:opacity-50"
                                                 >
                                                     <option value="+91" className="bg-zinc-900">🇮🇳 +91</option>
                                                     <option value="+1" className="bg-zinc-900">🇺🇸 +1</option>
@@ -1355,7 +1355,7 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
                                                     <option value="+971" className="bg-zinc-900">🇦🇪 +971</option>
                                                     <option value="+61" className="bg-zinc-900">🇦🇺 +61</option>
                                                 </select>
-                                                <div className="relative flex-1">
+                                                <div className="relative flex-1 min-w-0">
                                                     <Input 
                                                         type="tel"
                                                         name="phone" 
@@ -1363,7 +1363,7 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
                                                         onChange={e => setFormData({ ...formData, phone: e.target.value.replace(/\D/g, '') })} 
                                                         disabled={isPhoneVerified}
                                                         placeholder="99999 99999" 
-                                                        className="h-14 bg-white/[0.02] border-white/10 rounded-xl text-base font-bold px-6 focus:border-neon-green disabled:opacity-70" 
+                                                        className="h-14 bg-white/[0.02] border-white/10 rounded-xl text-sm sm:text-base font-bold px-4 sm:px-6 focus:border-neon-green disabled:opacity-70" 
                                                         autoFocus
                                                     />
                                                     {isPhoneVerified && (
