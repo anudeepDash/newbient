@@ -676,18 +676,18 @@ const CreatorJoin = () => {
                                     <div className="md:col-span-2 space-y-2">
                                         <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Contact Number</label>
                                         {!otpSent ? (
-                                            <div className="flex gap-3">
+                                            <div className="flex gap-2 sm:gap-3">
                                                 <CustomSelect value={countryCode} onChange={(e) => setCountryCode(e.target.value)} options={COUNTRY_OPTIONS} name="countryCode" placeholder="+91" isCountryCode />
-                                                <div className="relative flex-1">
-                                                    <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" size={20} />
-                                                    <Input type="tel" name="phone" value={formData.phone} onChange={handleChange} disabled={isPhoneVerified} placeholder="99999 99999" className="h-16 pl-12 pr-6 bg-white/[0.02] border-white/10 rounded-2xl text-base font-bold focus:border-neon-blue" />
+                                                <div className="relative flex-1 min-w-0">
+                                                    <Phone className="absolute left-3.5 sm:left-4 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
+                                                    <Input type="tel" name="phone" value={formData.phone} onChange={handleChange} disabled={isPhoneVerified} placeholder="99999 99999" className="h-16 pl-10 sm:pl-12 pr-3 sm:pr-6 bg-white/[0.02] border-white/10 rounded-2xl text-sm sm:text-base font-bold focus:border-neon-blue" />
                                                 </div>
                                                 {isPhoneVerified ? (
-                                                    <div className="h-16 px-4 bg-neon-green/10 border border-neon-green/20 rounded-2xl flex items-center justify-center text-neon-green">
+                                                    <div className="h-16 px-4 bg-neon-green/10 border border-neon-green/20 rounded-2xl flex items-center justify-center text-neon-green shrink-0">
                                                         <ShieldCheck size={20} />
                                                     </div>
                                                 ) : (
-                                                    <button type="button" onClick={handleSendOTP} disabled={isSendingOtp || !formData.phone} className="h-16 px-6 sm:px-8 rounded-2xl bg-neon-blue text-black font-black uppercase tracking-widest text-xs hover:scale-105 active:scale-95 transition-all disabled:opacity-50 whitespace-nowrap">
+                                                    <button type="button" onClick={handleSendOTP} disabled={isSendingOtp || !formData.phone} className="h-16 px-3.5 sm:px-8 rounded-2xl bg-neon-blue text-black font-black uppercase tracking-wider sm:tracking-widest text-[11px] sm:text-xs hover:scale-105 active:scale-95 transition-all disabled:opacity-50 whitespace-nowrap shrink-0">
                                                         {isSendingOtp ? <LoadingSpinner size="xs" color="black" /> : 'Send OTP'}
                                                     </button>
                                                 )}

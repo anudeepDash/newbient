@@ -512,12 +512,12 @@ const CreatorSettingsView = ({ profile }) => {
                                     </div>
                                     <div className="space-y-3">
                                         <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Contact Number</label>
-                                        <div className="flex gap-4">
+                                        <div className="flex gap-2 sm:gap-4">
                                             {!isPhoneVerified && (
                                                 <select
                                                     value={countryCode}
                                                     onChange={(e) => setCountryCode(e.target.value)}
-                                                    className="h-14 bg-black/40 border border-white/10 rounded-xl px-3 text-sm font-bold focus:border-neon-green transition-all appearance-none cursor-pointer text-white w-24"
+                                                    className="h-14 bg-black/40 border border-white/10 rounded-xl px-2 sm:px-3 text-sm font-bold focus:border-neon-green transition-all appearance-none cursor-pointer text-white w-20 sm:w-24 shrink-0"
                                                 >
                                                     <option value="+91" className="bg-zinc-900">🇮🇳 +91</option>
                                                     <option value="+1" className="bg-zinc-900">🇺🇸 +1</option>
@@ -526,7 +526,7 @@ const CreatorSettingsView = ({ profile }) => {
                                                     <option value="+61" className="bg-zinc-900">🇦🇺 +61</option>
                                                 </select>
                                             )}
-                                            <div className="relative flex-1">
+                                            <div className="relative flex-1 min-w-0">
                                                 <input 
                                                     required 
                                                     name="phone" 
