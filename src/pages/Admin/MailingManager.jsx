@@ -159,8 +159,13 @@ const MailingManager = () => {
                 addToast("Template saved successfully!", "success");
             }
         } catch (error) {
-            console.error("Save template failed:", error);
-            addToast(error.message || "Failed to save template", 'error');
+            console.error("Save template notice:", error);
+            if (error.message && error.message.startsWith("SAVED_LOCALLY")) {
+                const noticeMsg = error.message.replace("SAVED_LOCALLY: ", "");
+                addToast(noticeMsg, "info");
+            } else {
+                addToast(error.message || "Failed to save template", 'error');
+            }
         } finally {
             setSavingTemplate(false);
         }

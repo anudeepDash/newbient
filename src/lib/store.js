@@ -438,11 +438,21 @@ export const useStore = create((set, get) => ({
     subscribeToCoupons: () => get().subscribeToKey('coupons', 'coupons'),
     subscribeToDocuments: () => get().subscribeToKey('documents', 'documents'),
     subscribeToGenDocuments: () => get().subscribeToKey('genDocuments', 'gen_documents'),
-    subscribeToEmailTemplates: () => get().subscribeToKey('emailTemplates', 'email_templates', (data) => data.sort((a, b) => {
-        const timeA = new Date(a.createdAt || a.updatedAt || 0).getTime() || 0;
-        const timeB = new Date(b.createdAt || b.updatedAt || 0).getTime() || 0;
-        return timeB - timeA;
-    })),
+    subscribeToEmailTemplates: () => get().subscribeToKey('emailTemplates', 'email_templates', (data) => {
+        let localTemplates = [];
+        try {
+            const stored = localStorage.getItem('nb_local_email_templates');
+            if (stored) localTemplates = JSON.parse(stored);
+        } catch (e) {}
+
+        const remoteIds = new Set(data.map(d => d.id));
+        const merged = [...data, ...localTemplates.filter(l => !remoteIds.has(l.id))];
+        return merged.sort((a, b) => {
+            const timeA = new Date(a.createdAt || a.updatedAt || 0).getTime() || 0;
+            const timeB = new Date(b.createdAt || b.updatedAt || 0).getTime() || 0;
+            return timeB - timeA;
+        });
+    }),
     subscribeToAnnouncements: () => get().subscribeToKey('announcements', 'announcements', (data) => data.sort((a, b) => {
         if (a.isPinned !== b.isPinned) return b.isPinned ? -1 : 1;
         return (a.order || 0) - (b.order || 0);
@@ -3099,22 +3109,102 @@ export const useStore = create((set, get) => ({
             }
         });
 
-        // Automatically upload any embedded base64 images to Firebase Storage
-        const processedData = await processAndUploadBase64Fields(cleanData, `email_templates/${id || 'new'}`);
+        // Automatically upload any embedded base64 images to Firebase Storage if permitted
+        let processedData = cleanData;
+        try {
+            processedData = await processAndUploadBase64Fields(cleanData, `email_templates/${id || 'new'}`);
+        } catch (storageErr) {
+            console.warn("Storage upload warning:", storageErr);
+        }
         
-        if (id) {
-            processedData.updatedAt = new Date().toISOString();
-            await updateDoc(doc(db, 'email_templates', id), processedData);
-            return id;
-        } else {
-            const now = new Date().toISOString();
-            processedData.createdAt = now;
-            processedData.updatedAt = now;
-            const docRef = await addDoc(collection(db, 'email_templates'), processedData);
-            return docRef.id;
+        const now = new Date().toISOString();
+
+        const getLocalTemplates = () => {
+            try {
+                const stored = localStorage.getItem('nb_local_email_templates');
+                return stored ? JSON.parse(stored) : [];
+            } catch (e) { return []; }
+        };
+        const saveLocalTemplates = (list) => {
+            try { localStorage.setItem('nb_local_email_templates', JSON.stringify(list)); } catch (e) {}
+        };
+
+        try {
+            if (id && !id.startsWith('tpl_local_')) {
+                processedData.updatedAt = now;
+                await updateDoc(doc(db, 'email_templates', id), processedData);
+                return id;
+            } else {
+                processedData.createdAt = now;
+                processedData.updatedAt = now;
+                const docRef = await addDoc(collection(db, 'email_templates'), processedData);
+                
+                // If it was previously saved locally, clean up local copy now that remote succeeded
+                if (id && id.startsWith('tpl_local_')) {
+                    const filtered = getLocalTemplates().filter(t => t.id !== id);
+                    saveLocalTemplates(filtered);
+                }
+                return docRef.id;
+            }
+        } catch (error) {
+            console.warn("Firestore email_templates write notice:", error);
+            const isPermissionError = error.code === 'permission-denied' || 
+                                      (error.message && error.message.toLowerCase().includes('permission'));
+
+            // Generate fallback local ID if new or previous local
+            const fallbackId = id || `tpl_local_${Date.now()}`;
+            const fallbackObj = {
+                id: fallbackId,
+                ...processedData,
+                createdAt: processedData.createdAt || now,
+                updatedAt: now,
+                isLocalFallback: true
+            };
+
+            const localList = getLocalTemplates();
+            const idx = localList.findIndex(t => t.id === fallbackId);
+            if (idx >= 0) localList[idx] = fallbackObj;
+            else localList.unshift(fallbackObj);
+            saveLocalTemplates(localList);
+
+            // Update in-memory state so UI dropdown updates immediately
+            const currentList = get().emailTemplates || [];
+            const mergedList = [fallbackObj, ...currentList.filter(t => t.id !== fallbackId)].sort((a, b) => {
+                const timeA = new Date(a.createdAt || a.updatedAt || 0).getTime() || 0;
+                const timeB = new Date(b.createdAt || b.updatedAt || 0).getTime() || 0;
+                return timeB - timeA;
+            });
+            set({ emailTemplates: mergedList });
+
+            if (isPermissionError) {
+                throw new Error("SAVED_LOCALLY: Template saved locally in your browser. (Note: Grant write access to 'email_templates' in Firestore Security Rules to sync across all admin devices).");
+            }
+            return fallbackId;
         }
     },
     deleteEmailTemplate: async (id) => {
-        await deleteDoc(doc(db, 'email_templates', id));
+        try {
+            const getLocalTemplates = () => {
+                try {
+                    const stored = localStorage.getItem('nb_local_email_templates');
+                    return stored ? JSON.parse(stored) : [];
+                } catch (e) { return []; }
+            };
+            const saveLocalTemplates = (list) => {
+                try { localStorage.setItem('nb_local_email_templates', JSON.stringify(list)); } catch (e) {}
+            };
+
+            const filtered = getLocalTemplates().filter(t => t.id !== id);
+            saveLocalTemplates(filtered);
+            set(state => ({
+                emailTemplates: (state.emailTemplates || []).filter(t => t.id !== id)
+            }));
+
+            if (id && !id.startsWith('tpl_local_')) {
+                await deleteDoc(doc(db, 'email_templates', id));
+            }
+        } catch (err) {
+            console.warn("Delete template error:", err);
+        }
     }
 }));
