@@ -3,7 +3,7 @@ import {
     Bold, Italic, List, ListOrdered, Undo2, Redo2, 
     Type, AlignLeft, AlignCenter, AlignRight, 
     Link as LinkIcon, Image as ImageIcon,
-    Loader2, Heading1, Heading2, Table, Split
+    Loader2, Heading1, Heading2, Table, Split, Tag
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useEditorHistory } from '../../hooks/useEditorHistory';
@@ -16,7 +16,8 @@ const StudioRichEditor = ({
     className,
     label,
     minHeight = "150px",
-    accentColor = "neon-blue"
+    accentColor = "neon-blue",
+    tags = []
 }) => {
     const editorRef = useRef(null);
     const fileInputRef = useRef(null);
@@ -663,6 +664,37 @@ const StudioRichEditor = ({
                                 )}
                             </div>
                         </div>
+
+                        {/* Merge Tags Group */}
+                        {tags && tags.length > 0 && (
+                            <>
+                                <div className="w-[1px] h-5 bg-gradient-to-b from-transparent via-white/10 to-transparent self-center hidden sm:block" />
+                                <div className="flex items-center gap-1.5 bg-zinc-950/40 border border-white/5 rounded-xl px-2 py-1">
+                                    <Tag size={12} className="text-neon-green" />
+                                    <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wider hidden lg:inline">Tags:</span>
+                                    <div className="flex items-center gap-1">
+                                        {tags.map((tag) => (
+                                            <button
+                                                key={tag}
+                                                type="button"
+                                                onMouseDown={(e) => e.preventDefault()}
+                                                onClick={() => {
+                                                    if (editorRef.current) {
+                                                        editorRef.current.focus();
+                                                        document.execCommand('insertText', false, `{{${tag}}}`);
+                                                        updateValue(editorRef.current.innerHTML);
+                                                    }
+                                                }}
+                                                className="px-1.5 py-0.5 text-[9px] font-mono font-bold text-neon-green bg-neon-green/10 border border-neon-green/20 rounded hover:bg-neon-green/20 hover:border-neon-green/40 transition-all cursor-pointer"
+                                                title={`Click to insert {{${tag}}}`}
+                                            >
+                                                +&#123;&#123;{tag}&#125;&#125;
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            </>
+                        )}
                     </div>
                 </div>
 
