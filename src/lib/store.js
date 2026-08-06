@@ -3086,10 +3086,18 @@ export const useStore = create((set, get) => ({
     // ========== Email Templates ==========
     saveEmailTemplate: async (templateData) => {
         const cleanData = { ...templateData };
+        const id = cleanData.id;
         delete cleanData.id;
-        cleanData.createdAt = new Date().toISOString();
-        const docRef = await addDoc(collection(db, 'email_templates'), cleanData);
-        return docRef.id;
+        
+        if (id) {
+            cleanData.updatedAt = new Date().toISOString();
+            await updateDoc(doc(db, 'email_templates', id), cleanData);
+            return id;
+        } else {
+            cleanData.createdAt = new Date().toISOString();
+            const docRef = await addDoc(collection(db, 'email_templates'), cleanData);
+            return docRef.id;
+        }
     },
     deleteEmailTemplate: async (id) => {
         await deleteDoc(doc(db, 'email_templates', id));
