@@ -438,7 +438,11 @@ export const useStore = create((set, get) => ({
     subscribeToCoupons: () => get().subscribeToKey('coupons', 'coupons'),
     subscribeToDocuments: () => get().subscribeToKey('documents', 'documents'),
     subscribeToGenDocuments: () => get().subscribeToKey('genDocuments', 'gen_documents'),
-    subscribeToEmailTemplates: () => get().subscribeToKey('emailTemplates', 'email_templates', (data) => data.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))),
+    subscribeToEmailTemplates: () => get().subscribeToKey('emailTemplates', 'email_templates', (data) => data.sort((a, b) => {
+        const timeA = new Date(a.createdAt || a.updatedAt || 0).getTime() || 0;
+        const timeB = new Date(b.createdAt || b.updatedAt || 0).getTime() || 0;
+        return timeB - timeA;
+    })),
     subscribeToAnnouncements: () => get().subscribeToKey('announcements', 'announcements', (data) => data.sort((a, b) => {
         if (a.isPinned !== b.isPinned) return b.isPinned ? -1 : 1;
         return (a.order || 0) - (b.order || 0);
@@ -3083,19 +3087,30 @@ export const useStore = create((set, get) => ({
         await deleteDoc(doc(db, 'documents', id));
     },
 
-    // ========== Email Templates ==========
     saveEmailTemplate: async (templateData) => {
         const cleanData = { ...templateData };
         const id = cleanData.id;
         delete cleanData.id;
         
+        // Remove undefined keys so Firestore doesn't throw invalid data errors
+        Object.keys(cleanData).forEach(key => {
+            if (cleanData[key] === undefined) {
+                delete cleanData[key];
+            }
+        });
+
+        // Automatically upload any embedded base64 images to Firebase Storage
+        const processedData = await processAndUploadBase64Fields(cleanData, `email_templates/${id || 'new'}`);
+        
         if (id) {
-            cleanData.updatedAt = new Date().toISOString();
-            await updateDoc(doc(db, 'email_templates', id), cleanData);
+            processedData.updatedAt = new Date().toISOString();
+            await updateDoc(doc(db, 'email_templates', id), processedData);
             return id;
         } else {
-            cleanData.createdAt = new Date().toISOString();
-            const docRef = await addDoc(collection(db, 'email_templates'), cleanData);
+            const now = new Date().toISOString();
+            processedData.createdAt = now;
+            processedData.updatedAt = now;
+            const docRef = await addDoc(collection(db, 'email_templates'), processedData);
             return docRef.id;
         }
     },
