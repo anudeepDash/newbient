@@ -99,14 +99,15 @@ const MailingManager = () => {
         addToast(`Added ${trimmed}`, 'success');
     };
 
-    const handleSaveTemplate = async () => {
+    const handleSaveTemplate = async (saveAsNew = false) => {
         if (!mailData.subject) {
             addToast("Please enter a subject line before saving as a template", 'error');
             return;
         }
         setSavingTemplate(true);
         try {
-            await saveEmailTemplate({
+            const templateId = await saveEmailTemplate({
+                id: (!saveAsNew && selectedTemplateId) ? selectedTemplateId : undefined,
                 subject: mailData.subject || '',
                 headerText: mailData.headerText || '',
                 messageBody: mailData.messageBody || '',
@@ -116,7 +117,13 @@ const MailingManager = () => {
                 customCategory: mailData.customCategory || '',
                 theme: mailData.theme || 'light'
             });
-            addToast("Template saved successfully!", "success");
+
+            if (!saveAsNew && selectedTemplateId) {
+                addToast("Template updated successfully!", "success");
+            } else {
+                setSelectedTemplateId(templateId);
+                addToast("Template saved successfully!", "success");
+            }
         } catch (error) {
             console.error("Save template failed:", error);
             addToast("Failed to save template", 'error');
@@ -707,15 +714,38 @@ const MailingManager = () => {
                                             )}
                                         </Button>
 
-                                        <Button
-                                            type="button"
-                                            onClick={handleSaveTemplate}
-                                            disabled={savingTemplate || !mailData.subject}
-                                            className="h-16 px-6 bg-zinc-800 hover:bg-zinc-700 text-white font-black text-xs uppercase tracking-widest border border-white/10 rounded-2xl transition-all flex items-center justify-center gap-2.5 disabled:opacity-50 shrink-0"
-                                        >
-                                            {savingTemplate ? <LoadingSpinner size="xs" color="white" /> : <Save size={16} />}
-                                            <span>Save Template</span>
-                                        </Button>
+                                        {selectedTemplateId ? (
+                                            <>
+                                                <Button
+                                                    type="button"
+                                                    onClick={() => handleSaveTemplate(false)}
+                                                    disabled={savingTemplate || !mailData.subject}
+                                                    className="h-16 px-6 bg-zinc-800 hover:bg-zinc-700 text-white font-black text-xs uppercase tracking-widest border border-white/10 rounded-2xl transition-all flex items-center justify-center gap-2.5 disabled:opacity-50 shrink-0"
+                                                >
+                                                    {savingTemplate ? <LoadingSpinner size="xs" color="white" /> : <Save size={16} />}
+                                                    <span>Update Template</span>
+                                                </Button>
+                                                <Button
+                                                    type="button"
+                                                    onClick={() => handleSaveTemplate(true)}
+                                                    disabled={savingTemplate || !mailData.subject}
+                                                    className="h-16 px-6 bg-zinc-900/60 hover:bg-zinc-800 text-gray-300 font-black text-xs uppercase tracking-widest border border-white/5 rounded-2xl transition-all flex items-center justify-center gap-2.5 disabled:opacity-50 shrink-0"
+                                                >
+                                                    {savingTemplate ? <LoadingSpinner size="xs" color="white" /> : <Plus size={16} />}
+                                                    <span>Save as New</span>
+                                                </Button>
+                                            </>
+                                        ) : (
+                                            <Button
+                                                type="button"
+                                                onClick={() => handleSaveTemplate(false)}
+                                                disabled={savingTemplate || !mailData.subject}
+                                                className="h-16 px-6 bg-zinc-800 hover:bg-zinc-700 text-white font-black text-xs uppercase tracking-widest border border-white/10 rounded-2xl transition-all flex items-center justify-center gap-2.5 disabled:opacity-50 shrink-0"
+                                            >
+                                                {savingTemplate ? <LoadingSpinner size="xs" color="white" /> : <Save size={16} />}
+                                                <span>Save Template</span>
+                                            </Button>
+                                        )}
                                     </div>
 
                                     <p className="text-center text-[9px] font-bold text-gray-500 uppercase tracking-widest">
