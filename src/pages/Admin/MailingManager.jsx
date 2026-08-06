@@ -32,16 +32,26 @@ const MailingManager = () => {
     const { subscribers, allUsers, admins, creators, artists, emailTemplates, addToast, saveEmailTemplate, deleteEmailTemplate } = useStore();
     const [searchParams] = useSearchParams();
     
-    // Mail Maker State
-    const [mailData, setMailData] = useState({
-        subject: searchParams.get('subject') || '',
-        headerText: searchParams.get('header') || '',
-        messageBody: searchParams.get('body') || '',
-        ctaText: searchParams.get('ctaText') || '',
-        ctaUrl: searchParams.get('ctaUrl') || '',
-        category: 'OFFICIAL',
-        customCategory: '',
-        theme: 'light'
+    // Mail Maker State with local draft recovery
+    const [mailData, setMailData] = useState(() => {
+        const savedDraft = localStorage.getItem('nb_mailing_draft');
+        let initial = {
+            subject: searchParams.get('subject') || '',
+            headerText: searchParams.get('header') || '',
+            messageBody: searchParams.get('body') || '',
+            ctaText: searchParams.get('ctaText') || '',
+            ctaUrl: searchParams.get('ctaUrl') || '',
+            category: 'OFFICIAL',
+            customCategory: '',
+            theme: 'light'
+        };
+        if (savedDraft && !searchParams.get('subject') && !searchParams.get('body')) {
+            try {
+                const parsed = JSON.parse(savedDraft);
+                initial = { ...initial, ...parsed };
+            } catch (e) {}
+        }
+        return initial;
     });
 
     const [recipientType, setRecipientType] = useState('subscribers'); 
@@ -59,6 +69,29 @@ const MailingManager = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [savingTemplate, setSavingTemplate] = useState(false);
     const [selectedTemplateId, setSelectedTemplateId] = useState('');
+
+    // Save mailData changes to draft storage
+    React.useEffect(() => {
+        try {
+            localStorage.setItem('nb_mailing_draft', JSON.stringify(mailData));
+        } catch (e) {}
+    }, [mailData]);
+
+    const handleNewDraft = () => {
+        setSelectedTemplateId('');
+        setMailData({
+            subject: '',
+            headerText: '',
+            messageBody: '',
+            ctaText: '',
+            ctaUrl: '',
+            category: 'OFFICIAL',
+            customCategory: '',
+            theme: 'light'
+        });
+        localStorage.removeItem('nb_mailing_draft');
+        addToast("Started new blank draft", "info");
+    };
 
     const allKnownUsers = useMemo(() => {
         const merged = [...(subscribers || []), ...(allUsers || []), ...(admins || []), ...(creators || []), ...(artists || [])];
@@ -100,7 +133,8 @@ const MailingManager = () => {
     };
 
     const handleSaveTemplate = async (saveAsNew = false) => {
-        if (!mailData.subject) {
+        const subject = mailData.subject?.trim();
+        if (!subject) {
             addToast("Please enter a subject line before saving as a template", 'error');
             return;
         }
@@ -108,13 +142,13 @@ const MailingManager = () => {
         try {
             const templateId = await saveEmailTemplate({
                 id: (!saveAsNew && selectedTemplateId) ? selectedTemplateId : undefined,
-                subject: mailData.subject || '',
+                subject: subject,
                 headerText: mailData.headerText || '',
                 messageBody: mailData.messageBody || '',
                 ctaText: mailData.ctaText || '',
                 ctaUrl: mailData.ctaUrl || '',
-                category: mailData.category === 'CUSTOM' ? (mailData.customCategory || 'OFFICIAL') : mailData.category,
-                customCategory: mailData.customCategory || '',
+                category: mailData.category === 'CUSTOM' ? (mailData.customCategory?.trim() || 'OFFICIAL') : mailData.category,
+                customCategory: mailData.customCategory?.trim() || '',
                 theme: mailData.theme || 'light'
             });
 
@@ -126,7 +160,7 @@ const MailingManager = () => {
             }
         } catch (error) {
             console.error("Save template failed:", error);
-            addToast("Failed to save template", 'error');
+            addToast(error.message || "Failed to save template", 'error');
         } finally {
             setSavingTemplate(false);
         }
@@ -294,6 +328,15 @@ const MailingManager = () => {
 
                                 {/* Template Selector with Full Width and Proper Padding */}
                                 <div className="flex items-center gap-2 w-full sm:w-auto">
+                                    <Button
+                                        type="button"
+                                        onClick={handleNewDraft}
+                                        className="h-11 px-3 bg-white/5 hover:bg-white/10 text-gray-300 border border-white/10 rounded-2xl transition-all flex items-center justify-center shrink-0 text-[10px] font-black uppercase tracking-wider"
+                                        title="Start a new blank draft"
+                                    >
+                                        <Plus size={14} className="mr-1" /> New Draft
+                                    </Button>
+
                                     <div className="relative w-full sm:w-72 md:w-80">
                                         <select
                                             value={selectedTemplateId}
