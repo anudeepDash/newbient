@@ -222,12 +222,10 @@ const MailingManager = () => {
             };
 
             const htmlContent = generateOfficialHTML(finalMailData);
-            const bccList = recipients.map(r => r.email).filter(Boolean);
-            
             const fromName = selectedAlias.key === 'custom' ? customName : selectedAlias.name;
             const fromEmail = selectedAlias.key === 'custom' ? customEmail : selectedAlias.email;
 
-            const mailResult = await sendMassEmail(bccList, mailData.subject, htmlContent, 'official', null, fromName, fromEmail);
+            const mailResult = await sendMassEmail(recipients, mailData.subject, htmlContent, 'official', null, fromName, fromEmail, finalMailData);
 
             if (!mailResult.success) {
                 throw new Error(mailResult.error || "Failed to broadcast");
@@ -247,10 +245,38 @@ const MailingManager = () => {
         ? (mailData.customCategory || 'OFFICIAL') 
         : mailData.category;
 
-    const previewMailData = useMemo(() => ({
-        ...mailData,
-        category: effectiveCategory
-    }), [mailData, effectiveCategory]);
+    const sampleRecipient = useMemo(() => {
+        if (recipients && recipients.length > 0) {
+            const first = recipients[0];
+            const fullName = first.displayName || first.name || first.email?.split('@')[0] || 'Alex Rivera';
+            return {
+                name: fullName,
+                firstName: fullName.split(' ')[0] || 'Alex',
+                email: first.email || 'alex@example.com',
+                role: first.role || 'Member'
+            };
+        }
+        return { name: 'Alex Rivera', firstName: 'Alex', email: 'alex@example.com', role: 'Member' };
+    }, [recipients]);
+
+    const previewMailData = useMemo(() => {
+        const replaceSampleTags = (str) => {
+            if (!str) return '';
+            return str
+                .replace(/\{\{?\s*name\s*\}?\}/gi, sampleRecipient.name)
+                .replace(/\{\{?\s*first_name\s*\}?\}/gi, sampleRecipient.firstName)
+                .replace(/\{\{?\s*email\s*\}?\}/gi, sampleRecipient.email)
+                .replace(/\{\{?\s*role\s*\}?\}/gi, sampleRecipient.role);
+        };
+
+        return {
+            ...mailData,
+            category: effectiveCategory,
+            headerText: replaceSampleTags(mailData.headerText || ''),
+            messageBody: replaceSampleTags(mailData.messageBody || ''),
+            ctaText: replaceSampleTags(mailData.ctaText || '')
+        };
+    }, [mailData, effectiveCategory, sampleRecipient]);
 
     return (
         <AdminCommunityHubLayout 
@@ -664,7 +690,30 @@ const MailingManager = () => {
 
                                     {/* Subject Line */}
                                     <div className="space-y-2">
-                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">Subject Line</label>
+                                        <div className="flex flex-wrap items-center justify-between gap-2">
+                                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">Subject Line</label>
+                                            <div className="flex flex-wrap items-center gap-1.5">
+                                                <span className="text-[9px] font-black uppercase tracking-widest text-gray-500 flex items-center gap-1">
+                                                    <Tag size={10} className="text-neon-pink" /> Insert Tag:
+                                                </span>
+                                                {['first_name', 'name', 'email', 'role'].map(tag => (
+                                                    <button
+                                                        key={tag}
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setMailData(prev => ({
+                                                                ...prev,
+                                                                subject: prev.subject + ` {{${tag}}}`
+                                                            }));
+                                                        }}
+                                                        className="px-1.5 py-0.5 text-[9px] font-mono font-bold text-neon-pink bg-neon-pink/10 border border-neon-pink/20 rounded hover:bg-neon-pink/20 transition-all cursor-pointer"
+                                                        title={`Click to append {{${tag}}} to Subject Line`}
+                                                    >
+                                                        +&#123;&#123;{tag}&#125;&#125;
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
                                         <Input 
                                             value={mailData.subject}
                                             onChange={(e) => setMailData({...mailData, subject: e.target.value})}
@@ -695,6 +744,7 @@ const MailingManager = () => {
                                             placeholder="Type your official broadcast message here..."
                                             minHeight="280px"
                                             accentColor="white"
+                                            tags={['first_name', 'name', 'email', 'role']}
                                         />
                                     </div>
 
@@ -801,28 +851,33 @@ const MailingManager = () => {
 
                     {/* Right Column - Live Preview */}
                     <div className="lg:col-span-5 sticky top-28 space-y-4">
-                        <div className="flex items-center justify-between px-2">
-                            <div className="flex items-center gap-2">
-                                <Sparkles size={14} className="text-neon-pink" />
-                                <h3 className="text-xs font-black uppercase tracking-[0.3em] text-white">Live Email Preview</h3>
+                        <div className="flex flex-col gap-1 px-2">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                    <Sparkles size={14} className="text-neon-pink" />
+                                    <h3 className="text-xs font-black uppercase tracking-[0.3em] text-white">Live Email Preview</h3>
+                                </div>
+                                
+                                <div className="flex bg-black/60 p-1 rounded-xl border border-white/10">
+                                    <button 
+                                        onClick={() => setViewMode('desktop')}
+                                        className={cn("p-2 rounded-lg transition-all", viewMode === 'desktop' ? "bg-white text-black shadow-md" : "text-gray-400 hover:text-white")}
+                                        title="Desktop View"
+                                    >
+                                        <Monitor size={14} />
+                                    </button>
+                                    <button 
+                                        onClick={() => setViewMode('mobile')}
+                                        className={cn("p-2 rounded-lg transition-all", viewMode === 'mobile' ? "bg-white text-black shadow-md" : "text-gray-400 hover:text-white")}
+                                        title="Mobile View"
+                                    >
+                                        <Smartphone size={14} />
+                                    </button>
+                                </div>
                             </div>
-                            
-                            <div className="flex bg-black/60 p-1 rounded-xl border border-white/10">
-                                <button 
-                                    onClick={() => setViewMode('desktop')}
-                                    className={cn("p-2 rounded-lg transition-all", viewMode === 'desktop' ? "bg-white text-black shadow-md" : "text-gray-400 hover:text-white")}
-                                    title="Desktop View"
-                                >
-                                    <Monitor size={14} />
-                                </button>
-                                <button 
-                                    onClick={() => setViewMode('mobile')}
-                                    className={cn("p-2 rounded-lg transition-all", viewMode === 'mobile' ? "bg-white text-black shadow-md" : "text-gray-400 hover:text-white")}
-                                    title="Mobile View"
-                                >
-                                    <Smartphone size={14} />
-                                </button>
-                            </div>
+                            <p className="text-[9px] font-mono text-neon-pink/80 tracking-wider">
+                                Previewing for: <span className="text-white font-bold">{sampleRecipient.name} ({sampleRecipient.email})</span>
+                            </p>
                         </div>
 
                         {/* Outer Device Frame */}
@@ -838,8 +893,13 @@ const MailingManager = () => {
                                         <span className="w-2.5 h-2.5 rounded-full bg-yellow-500/80" />
                                         <span className="w-2.5 h-2.5 rounded-full bg-green-500/80" />
                                     </div>
-                                    <span className="text-[9px] font-mono text-gray-500 truncate max-w-[200px]">
-                                        {mailData.subject ? mailData.subject : 'Subject Preview'}
+                                    <span className="text-[9px] font-mono text-gray-300 truncate max-w-[200px]">
+                                        {(mailData.subject || 'Subject Preview')
+                                            .replace(/\{\{?\s*name\s*\}?\}/gi, sampleRecipient.name)
+                                            .replace(/\{\{?\s*first_name\s*\}?\}/gi, sampleRecipient.firstName)
+                                            .replace(/\{\{?\s*email\s*\}?\}/gi, sampleRecipient.email)
+                                            .replace(/\{\{?\s*role\s*\}?\}/gi, sampleRecipient.role)
+                                        }
                                     </span>
                                     <div className="w-8" />
                                 </div>

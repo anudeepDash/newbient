@@ -6,6 +6,38 @@ const getBaseUrl = () => {
 };
 
 /**
+ * Ensures all images in email body content are responsive and stay constrained within the email container width.
+ * Prevents images from scaling up beyond 100% of container width or overflowing layout.
+ */
+export const formatEmailBodyHtml = (htmlString) => {
+    if (!htmlString || typeof htmlString !== 'string') return '';
+
+    return htmlString.replace(/<img\b([^>]*)>/gi, (match, attributes) => {
+        // Strip out HTML width and height attributes like width="100%" or width="4000" that break in email clients like Outlook
+        let cleanAttrs = attributes.replace(/\bwidth=["']?(\d+%?|\d+px)["']?/gi, '');
+        cleanAttrs = cleanAttrs.replace(/\bheight=["']?(\d+%?|\d+px)["']?/gi, '');
+
+        let cleanStyle = '';
+        if (/style=["']/i.test(cleanAttrs)) {
+            cleanAttrs = cleanAttrs.replace(/style=["']([^"']*)["']/i, (m, styleValue) => {
+                cleanStyle = styleValue;
+                if (!/max-width\s*:/i.test(cleanStyle)) {
+                    cleanStyle += '; max-width: 100% !important;';
+                }
+                if (!/height\s*:/i.test(cleanStyle)) {
+                    cleanStyle += '; height: auto !important;';
+                }
+                return `style="${cleanStyle}"`;
+            });
+        } else {
+            cleanAttrs += ` style="max-width: 100% !important; height: auto !important; display: block; border-radius: 8px; margin: 12px 0;"`;
+        }
+
+        return `<img${cleanAttrs}>`;
+    });
+};
+
+/**
  * Generates the HTML for an official Newbi communication.
  * Cleaner, professional, and minimalist. Supports Dark/Light themes.
  */
@@ -19,6 +51,8 @@ export const generateOfficialHTML = (data) => {
         theme = "light",
         isPreview = false
     } = data;
+
+    const formattedBody = formatEmailBodyHtml(messageBody);
 
     const isDark = theme === 'dark';
     const bgColor = isDark ? '#000000' : '#fcfcfc';
@@ -64,6 +98,7 @@ export const generateOfficialHTML = (data) => {
                 .category-badge { display: inline-block; padding: 6px 12px; background: ${NEWBI_GREEN}; color: #000000; font-size: 9px; font-weight: 900; border-radius: 6px; letter-spacing: 2px; margin-bottom: 20px; text-transform: uppercase; }
                 .title { font-size: 28px; font-weight: 800; color: ${textColor}; margin-bottom: 24px; line-height: 1.2; letter-spacing: -0.5px; }
                 .body-text { color: ${subTextColor}; font-size: 15px; line-height: 1.6; font-weight: 400; margin-bottom: 40px; }
+                .body-text img, .content img { max-width: 100% !important; height: auto !important; border-radius: 10px; margin: 15px 0; display: block; }
                 .body-text ul, .content ul { list-style-type: disc !important; padding-left: 20px !important; margin-top: 10px !important; margin-bottom: 10px !important; }
                 .body-text ol, .content ol { list-style-type: decimal !important; padding-left: 20px !important; margin-top: 10px !important; margin-bottom: 10px !important; }
                 .body-text li, .content li { margin-bottom: 5px !important; line-height: 1.6 !important; }
@@ -96,7 +131,7 @@ export const generateOfficialHTML = (data) => {
                 <div class="content" style="padding: 50px; text-align: left;">
                     <div class="category-badge" style="display: inline-block; padding: 6px 12px; background: ${NEWBI_GREEN}; color: #000000; font-size: 9px; font-weight: 900; border-radius: 6px; letter-spacing: 2px; margin-bottom: 20px; text-transform: uppercase;">${category}</div>
                     <h1 class="title" style="font-size: 28px; font-weight: 800; color: ${textColor}; margin-bottom: 24px; line-height: 1.2; letter-spacing: -0.5px; margin-top: 0;">${headerText}</h1>
-                    <div class="body-text" style="color: ${subTextColor}; font-size: 15px; line-height: 1.6; font-weight: 400; margin-bottom: 40px;">${messageBody}</div>
+                    <div class="body-text" style="color: ${subTextColor}; font-size: 15px; line-height: 1.6; font-weight: 400; margin-bottom: 40px;">${formattedBody}</div>
                     ${ctaText ? `<a href="${ctaUrl}" class="cta-button" style="display: inline-block; padding: 16px 30px; background-color: ${NEWBI_GREEN}; color: #000000 !important; text-decoration: none; font-weight: 700; font-size: 12px; border-radius: 10px;">${ctaText}</a>` : ''}
                 </div>
                 <div class="footer" style="padding: 40px 50px; background-color: ${isDark ? '#050505' : '#fafafa'}; border-top: 1px solid ${borderColor}; text-align: center;">
@@ -468,6 +503,8 @@ export const generateInvoiceEmailHTML = (data) => {
         isPreview = false
     } = data;
 
+    const formattedBody = formatEmailBodyHtml(messageBody);
+
     const isDark = theme === 'dark';
     const bgColor = isDark ? '#000000' : '#fcfcfc';
     const containerBg = isDark ? '#0a0a0a' : '#ffffff';
@@ -517,6 +554,7 @@ export const generateInvoiceEmailHTML = (data) => {
                 .category-badge { display: inline-block; padding: 6px 12px; background: ${NEWBI_GREEN}; color: #000000; font-size: 9px; font-weight: 900; border-radius: 6px; letter-spacing: 2px; margin-bottom: 20px; text-transform: uppercase; }
                 .title { font-size: 28px; font-weight: 800; color: ${textColor}; margin-bottom: 24px; line-height: 1.2; letter-spacing: -0.5px; }
                 .body-text { color: ${subTextColor}; font-size: 15px; line-height: 1.6; font-weight: 400; margin-bottom: 30px; }
+                .body-text img, .content img { max-width: 100% !important; height: auto !important; border-radius: 10px; margin: 15px 0; display: block; }
                 .body-text ul, .content ul { list-style-type: disc !important; padding-left: 20px !important; margin-top: 10px !important; margin-bottom: 10px !important; }
                 .body-text ol, .content ol { list-style-type: decimal !important; padding-left: 20px !important; margin-top: 10px !important; margin-bottom: 10px !important; }
                 .body-text li, .content li { margin-bottom: 5px !important; line-height: 1.6 !important; }
@@ -566,7 +604,7 @@ export const generateInvoiceEmailHTML = (data) => {
                 <div class="content" style="padding: 50px; text-align: left;">
                     <div class="category-badge" style="display: inline-block; padding: 6px 12px; background: ${NEWBI_GREEN}; color: #000000; font-size: 9px; font-weight: 900; border-radius: 6px; letter-spacing: 2px; margin-bottom: 20px; text-transform: uppercase;">INVOICE</div>
                     <h1 class="title" style="font-size: 28px; font-weight: 800; color: ${textColor}; margin-bottom: 24px; line-height: 1.2; letter-spacing: -0.5px; margin-top: 0;">${headerText}</h1>
-                    <div class="body-text" style="color: ${subTextColor}; font-size: 15px; line-height: 1.6; font-weight: 400; margin-bottom: 30px;">${messageBody}</div>
+                    <div class="body-text" style="color: ${subTextColor}; font-size: 15px; line-height: 1.6; font-weight: 400; margin-bottom: 30px;">${formattedBody}</div>
 
                     <!-- Attachment-Style Invoice Card (Table-based for maximum email client compatibility) -->
                     <table class="attachment-card" width="100%" cellpadding="0" cellspacing="0" style="width: 100%; border-collapse: collapse; background: ${cardBg}; border: 1px solid ${cardBorder}; border-radius: 16px; margin: 30px 0; overflow: hidden; color: ${textColor};">
@@ -955,30 +993,151 @@ export const generateWeeklyHTML = (data) => {
 
 
 /**
- * Sends a mass email to multiple recipients via BCC to protect privacy.
- * Batches recipients into groups of 45 to stay under SMTP provider limits
- * (Gmail/Workspace caps at ~100 recipients per message).
- * Supports account switching via accountType parameter.
+ * Sends a mass email to multiple recipients.
+ * If merge tags (like {{name}}, {{first_name}}, {{email}}, {{role}}) are detected in the subject or body,
+ * sends personalized emails per recipient.
+ * Otherwise, batches recipients into BCC groups of 45 for max delivery efficiency.
  */
-export const sendMassEmail = async (bccArray, subject, htmlContent, accountType = 'official', onProgress = null, fromName = null, fromEmail = null) => {
+export const sendMassEmail = async (
+    recipientList, 
+    subject, 
+    htmlContent, 
+    accountType = 'official', 
+    onProgress = null, 
+    fromName = null, 
+    fromEmail = null,
+    mailData = null
+) => {
     const BATCH_SIZE = 45;
     const DELAY_BETWEEN_BATCHES_MS = 1500;
     const toAddress = accountType === 'weekly' ? 'weekly@newbi.live' : 'partnership@newbi.live';
 
-    // Deduplicate and filter empty emails
-    const uniqueEmails = [...new Set(bccArray.filter(Boolean).map(e => e.trim().toLowerCase()))];
+    // Parse array of email strings OR recipient objects ({ email, name, displayName, role })
+    const normalizedRecipients = (recipientList || []).map(item => {
+        if (typeof item === 'string') {
+            const trimmed = item.trim().toLowerCase();
+            return trimmed ? { email: trimmed, name: '', role: '' } : null;
+        }
+        if (!item || !item.email) return null;
+        return {
+            email: item.email.trim().toLowerCase(),
+            name: item.displayName || item.name || item.fullName || '',
+            role: item.role || item.category || ''
+        };
+    }).filter(Boolean);
 
-    if (uniqueEmails.length === 0) {
+    // Deduplicate by email address
+    const uniqueRecipients = Array.from(new Map(normalizedRecipients.map(r => [r.email, r])).values());
+
+    if (uniqueRecipients.length === 0) {
         return { success: false, error: 'No valid recipients' };
     }
 
-    // Split into batches
+    // Check if subject, htmlContent, or mailData contains merge tags (e.g. {{name}}, {{first_name}}, {{email}}, {{role}})
+    const tagRegex = /\{\{?\s*(name|first_name|email|role)\s*\}?\}/i;
+    const hasTags = tagRegex.test(subject || '') || 
+                     tagRegex.test(htmlContent || '') || 
+                     (mailData && (tagRegex.test(mailData.headerText || '') || tagRegex.test(mailData.messageBody || '')));
+
+    if (hasTags) {
+        console.log(`[Mass Mail] Personalized Mode enabled for ${uniqueRecipients.length} recipient(s)`);
+        let successCount = 0;
+        let failCount = 0;
+        const errors = [];
+
+        for (let i = 0; i < uniqueRecipients.length; i++) {
+            const user = uniqueRecipients[i];
+            const userEmail = user.email;
+            const fullName = user.name || userEmail.split('@')[0] || 'Subscriber';
+            const firstName = fullName.split(' ')[0] || 'Subscriber';
+            const userRole = user.role || 'Member';
+
+            const replaceUserTags = (text) => {
+                if (!text || typeof text !== 'string') return text;
+                return text
+                    .replace(/\{\{?\s*name\s*\}?\}/gi, fullName)
+                    .replace(/\{\{?\s*first_name\s*\}?\}/gi, firstName)
+                    .replace(/\{\{?\s*email\s*\}?\}/gi, userEmail)
+                    .replace(/\{\{?\s*role\s*\}?\}/gi, userRole);
+            };
+
+            const personalizedSubject = replaceUserTags(subject);
+            let personalizedHtml = htmlContent;
+
+            if (mailData) {
+                const personalizedMailData = {
+                    ...mailData,
+                    headerText: replaceUserTags(mailData.headerText || ''),
+                    messageBody: replaceUserTags(mailData.messageBody || ''),
+                    ctaText: replaceUserTags(mailData.ctaText || '')
+                };
+                personalizedHtml = generateOfficialHTML(personalizedMailData);
+            } else {
+                personalizedHtml = replaceUserTags(htmlContent);
+            }
+
+            try {
+                const result = await apiFetch('/api/mail', {
+                    to: userEmail,
+                    subject: personalizedSubject,
+                    html: personalizedHtml,
+                    accountType: accountType,
+                    fromName: fromName,
+                    fromEmail: fromEmail,
+                    headers: {
+                        'List-Unsubscribe': '<https://newbi.live/unsubscribe>'
+                    }
+                });
+
+                if (result.success) {
+                    successCount++;
+                    console.log(`[Mass Mail] ✅ Personalized mail ${i + 1}/${uniqueRecipients.length} sent to ${userEmail}`);
+                } else {
+                    failCount++;
+                    errors.push(`${userEmail}: ${result.error}`);
+                    console.error(`[Mass Mail] ❌ Personalized mail to ${userEmail} failed:`, result.error);
+                }
+            } catch (error) {
+                failCount++;
+                errors.push(`${userEmail}: ${error.message}`);
+                console.error(`[Mass Mail] ❌ Personalized mail exception for ${userEmail}:`, error);
+            }
+
+            if (onProgress) {
+                onProgress({
+                    currentBatch: i + 1,
+                    totalBatches: uniqueRecipients.length,
+                    sent: successCount,
+                    failed: failCount,
+                    total: uniqueRecipients.length
+                });
+            }
+
+            // Small throttle delay between individual personalized sends
+            if (i < uniqueRecipients.length - 1) {
+                await new Promise(resolve => setTimeout(resolve, 300));
+            }
+        }
+
+        const allSucceeded = failCount === 0;
+        return {
+            success: allSucceeded,
+            sent: successCount,
+            failed: failCount,
+            total: uniqueRecipients.length,
+            batches: uniqueRecipients.length,
+            error: errors.length > 0 ? errors.join('; ') : undefined
+        };
+    }
+
+    // Standard BCC Batching mode when no merge tags are present
+    const uniqueEmails = uniqueRecipients.map(r => r.email);
     const batches = [];
     for (let i = 0; i < uniqueEmails.length; i += BATCH_SIZE) {
         batches.push(uniqueEmails.slice(i, i + BATCH_SIZE));
     }
 
-    console.log(`[Mass Mail] Sending to ${uniqueEmails.length} recipients in ${batches.length} batch(es) via ${accountType}`);
+    console.log(`[Mass Mail] Standard BCC Mode: Sending to ${uniqueEmails.length} recipients in ${batches.length} batch(es) via ${accountType}`);
 
     let successCount = 0;
     let failCount = 0;
@@ -1014,7 +1173,6 @@ export const sendMassEmail = async (bccArray, subject, htmlContent, accountType 
             console.error(`[Mass Mail] ❌ Batch ${i + 1} exception:`, error);
         }
 
-        // Report progress if callback provided
         if (onProgress) {
             onProgress({
                 currentBatch: i + 1,
@@ -1025,7 +1183,6 @@ export const sendMassEmail = async (bccArray, subject, htmlContent, accountType 
             });
         }
 
-        // Delay between batches to avoid SMTP rate limits (skip after last batch)
         if (i < batches.length - 1) {
             await new Promise(resolve => setTimeout(resolve, DELAY_BETWEEN_BATCHES_MS));
         }
@@ -1059,6 +1216,8 @@ export const generateProposalEmailHTML = (data) => {
         theme = "light",
         isPreview = false
     } = data;
+
+    const formattedBody = formatEmailBodyHtml(messageBody);
 
     const isDark = theme === 'dark';
     const bgColor = isDark ? '#000000' : '#fcfcfc';
@@ -1107,6 +1266,7 @@ export const generateProposalEmailHTML = (data) => {
                 .category-badge { display: inline-block; padding: 6px 12px; background: ${NEWBI_GREEN}; color: #000000; font-size: 9px; font-weight: 900; border-radius: 6px; letter-spacing: 2px; margin-bottom: 20px; text-transform: uppercase; }
                 .title { font-size: 28px; font-weight: 800; color: ${textColor}; margin-bottom: 24px; line-height: 1.2; letter-spacing: -0.5px; }
                 .body-text { color: ${subTextColor}; font-size: 15px; line-height: 1.6; font-weight: 400; margin-bottom: 30px; }
+                .body-text img, .content img { max-width: 100% !important; height: auto !important; border-radius: 10px; margin: 15px 0; display: block; }
                 .body-text ul, .content ul { list-style-type: disc !important; padding-left: 20px !important; margin-top: 10px !important; margin-bottom: 10px !important; }
                 .body-text ol, .content ol { list-style-type: decimal !important; padding-left: 20px !important; margin-top: 10px !important; margin-bottom: 10px !important; }
                 .body-text li, .content li { margin-bottom: 5px !important; line-height: 1.6 !important; }
@@ -1153,7 +1313,7 @@ export const generateProposalEmailHTML = (data) => {
                 <div class="content" style="padding: 50px; text-align: left;">
                     <div class="category-badge" style="display: inline-block; padding: 6px 12px; background: ${NEWBI_GREEN}; color: #000000; font-size: 9px; font-weight: 900; border-radius: 6px; letter-spacing: 2px; margin-bottom: 20px; text-transform: uppercase;">PROPOSAL</div>
                     <h1 class="title" style="font-size: 28px; font-weight: 800; color: ${textColor}; margin-bottom: 24px; line-height: 1.2; letter-spacing: -0.5px; margin-top: 0;">${headerText}</h1>
-                    <div class="body-text" style="color: ${subTextColor}; font-size: 15px; line-height: 1.6; font-weight: 400; margin-bottom: 30px;">${messageBody}</div>
+                    <div class="body-text" style="color: ${subTextColor}; font-size: 15px; line-height: 1.6; font-weight: 400; margin-bottom: 30px;">${formattedBody}</div>
 
                     <!-- Attachment-Style Proposal Card (Table-based) -->
                     <table class="attachment-card" width="100%" cellpadding="0" cellspacing="0" style="width: 100%; border-collapse: collapse; background: ${cardBg}; border: 1px solid ${cardBorder}; border-radius: 16px; margin: 30px 0; overflow: hidden;">
