@@ -13,27 +13,37 @@ export const formatEmailBodyHtml = (htmlString) => {
     if (!htmlString || typeof htmlString !== 'string') return '';
 
     return htmlString.replace(/<img\b([^>]*)>/gi, (match, attributes) => {
-        // Strip out HTML width and height attributes like width="100%" or width="4000" that break in email clients like Outlook
-        let cleanAttrs = attributes.replace(/\bwidth=["']?(\d+%?|\d+px)["']?/gi, '');
-        cleanAttrs = cleanAttrs.replace(/\bheight=["']?(\d+%?|\d+px)["']?/gi, '');
+        // Strip raw HTML width and height attributes (e.g. width="100%" or width="2400") that break in email clients
+        let cleanAttrs = attributes
+            .replace(/\bwidth\s*=\s*["']?[^"'\s>]+["']?/gi, '')
+            .replace(/\bheight\s*=\s*["']?[^"'\s>]+["']?/gi, '');
 
-        let cleanStyle = '';
-        if (/style=["']/i.test(cleanAttrs)) {
-            cleanAttrs = cleanAttrs.replace(/style=["']([^"']*)["']/i, (m, styleValue) => {
-                cleanStyle = styleValue;
-                if (!/max-width\s*:/i.test(cleanStyle)) {
-                    cleanStyle += '; max-width: 100% !important;';
-                }
-                if (!/height\s*:/i.test(cleanStyle)) {
-                    cleanStyle += '; height: auto !important;';
-                }
-                return `style="${cleanStyle}"`;
-            });
-        } else {
-            cleanAttrs += ` style="max-width: 100% !important; height: auto !important; display: block; border-radius: 8px; margin: 12px 0;"`;
+        // Preserve explicit width percentage if set by editor (e.g. 50%, 75%, 25%, 100%)
+        let targetWidth = '100%';
+        const widthMatch = attributes.match(/width\s*:\s*(\d+%)['";\s]/i);
+        if (widthMatch && widthMatch[1]) {
+            targetWidth = widthMatch[1];
         }
 
-        return `<img${cleanAttrs}>`;
+        // Determine margin alignment
+        let marginStyle = '16px auto';
+        if (/margin-left\s*:\s*0/i.test(attributes)) {
+            marginStyle = '16px auto 16px 0';
+        } else if (/margin-right\s*:\s*0/i.test(attributes)) {
+            marginStyle = '16px 0 16px auto';
+        }
+
+        // Strict inline styles to guarantee containment across Gmail, Outlook, Apple Mail, iOS Mail
+        const robustStyle = `width: ${targetWidth} !important; max-width: 100% !important; height: auto !important; display: block !important; margin: ${marginStyle} !important; border-radius: 12px; box-sizing: border-box !important;`;
+
+        if (/style=["']/i.test(cleanAttrs)) {
+            cleanAttrs = cleanAttrs.replace(/style=["']([^"']*)["']/i, () => `style="${robustStyle}"`);
+        } else {
+            cleanAttrs += ` style="${robustStyle}"`;
+        }
+
+        // Include width="600" as a safe fallback for Outlook Desktop rendering engine
+        return `<img${cleanAttrs} width="600" />`;
     });
 };
 

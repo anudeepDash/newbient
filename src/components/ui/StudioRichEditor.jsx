@@ -188,8 +188,11 @@ const StudioRichEditor = ({
     const resizeImage = (widthPercent) => {
         if (selectedImage) {
             selectedImage.style.width = widthPercent;
+            selectedImage.style.maxWidth = '100%';
             selectedImage.style.height = 'auto'; // Prevent elongation!
-            selectedImage.setAttribute('width', widthPercent);
+            selectedImage.style.display = 'block';
+            selectedImage.removeAttribute('width');
+            selectedImage.removeAttribute('height');
             updateValue(editorRef.current.innerHTML);
             setTimeout(() => {
                 if (selectedImage && editorRef.current) {
@@ -249,7 +252,8 @@ const StudioRichEditor = ({
                         selection.removeAllRanges();
                         selection.addRange(savedRange);
                     }
-                    document.execCommand('insertImage', false, url);
+                    const imgHtml = `<img src="${url}" style="width: 100%; max-width: 100%; height: auto; display: block; margin: 16px auto; border-radius: 12px;" />`;
+                    document.execCommand('insertHTML', false, imgHtml);
                     updateValue(editorRef.current.innerHTML);
                 }
             } catch (err) {
@@ -742,7 +746,8 @@ const StudioRichEditor = ({
                                                 selection.addRange(savedRange);
                                             }
                                             // Insert image at cursor
-                                            document.execCommand('insertImage', false, url);
+                                            const imgHtml = `<img src="${url}" style="width: 100%; max-width: 100%; height: auto; display: block; margin: 16px auto; border-radius: 12px;" />`;
+                                            document.execCommand('insertHTML', false, imgHtml);
                                             updateValue(editorRef.current.innerHTML);
                                         }
                                     } catch (err) {
@@ -844,7 +849,8 @@ const StudioRichEditor = ({
                                                     selection.removeAllRanges();
                                                     selection.addRange(dropRange);
                                                 }
-                                                document.execCommand('insertImage', false, url);
+                                                const imgHtml = `<img src="${url}" style="width: 100%; max-width: 100%; height: auto; display: block; margin: 16px auto; border-radius: 12px;" />`;
+                                                document.execCommand('insertHTML', false, imgHtml);
                                                 updateValue(editorRef.current.innerHTML);
                                             }
                                         } catch (err) {
