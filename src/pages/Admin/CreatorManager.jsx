@@ -246,6 +246,7 @@ const CreatorManager = ({ showLeaderboardOnly = false }) => {
         return creators.filter(c => {
             const specs = c.specializations || c.niches || [];
             const matchesSearch = c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                (c.instagram && c.instagram.toLowerCase().includes(searchTerm.toLowerCase())) ||
                 specs.some(n => n.toLowerCase().includes(searchTerm.toLowerCase()));
             const matchesCity = filterCity === 'All' || c.city === filterCity;
             const matchesStatus = filterStatus === 'All' || 
