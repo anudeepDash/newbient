@@ -320,6 +320,7 @@ export const useStore = create((set, get) => ({
     admins: [], // All Administrators
     clientRequests: [], // Artistant Client Onboarding
     notifications: [], // Notifications System
+    emailTemplates: [], // Mailing Manager Templates
     unreadNotificationsCount: 0,
     fcmToken: null,
     paymentDetails: { upiId: '', qrCodeUrl: '' }, // New state
@@ -437,6 +438,7 @@ export const useStore = create((set, get) => ({
     subscribeToCoupons: () => get().subscribeToKey('coupons', 'coupons'),
     subscribeToDocuments: () => get().subscribeToKey('documents', 'documents'),
     subscribeToGenDocuments: () => get().subscribeToKey('genDocuments', 'gen_documents'),
+    subscribeToEmailTemplates: () => get().subscribeToKey('emailTemplates', 'email_templates', (data) => data.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))),
     subscribeToAnnouncements: () => get().subscribeToKey('announcements', 'announcements', (data) => data.sort((a, b) => {
         if (a.isPinned !== b.isPinned) return b.isPinned ? -1 : 1;
         return (a.order || 0) - (b.order || 0);
@@ -3080,4 +3082,16 @@ export const useStore = create((set, get) => ({
         }
         await deleteDoc(doc(db, 'documents', id));
     },
+
+    // ========== Email Templates ==========
+    saveEmailTemplate: async (templateData) => {
+        const cleanData = { ...templateData };
+        delete cleanData.id;
+        cleanData.createdAt = new Date().toISOString();
+        const docRef = await addDoc(collection(db, 'email_templates'), cleanData);
+        return docRef.id;
+    },
+    deleteEmailTemplate: async (id) => {
+        await deleteDoc(doc(db, 'email_templates', id));
+    }
 }));
