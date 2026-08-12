@@ -97,21 +97,43 @@ const getSelectAccentColor = (role) => {
 };
 
 const AdminManager = () => {
-    useStoreSubscription(['creators', 'artists']);
-    const { user, blockUser, unblockUser, creators, artists } = useStore();
+    useStoreSubscription(['creators', 'artists', 'allUsers', 'admins']);
+    const { user, blockUser, unblockUser, creators, artists, allUsers, admins: storeAdmins } = useStore();
     const [activeTab, setActiveTab] = useState('members');
 
     // Admin State
-    const [admins, setAdmins] = useState([]);
-    const pendingRequests = admins.filter(a => a.role === 'pending');
+    const [localAdmins, setLocalAdmins] = useState([]);
     const [loadingAdmins, setLoadingAdmins] = useState(true);
     const [newAdminEmail, setNewAdminEmail] = useState('');
     const [newAdminRole, setNewAdminRole] = useState('content_admin');
 
+    const admins = useMemo(() => {
+        const source = (storeAdmins && storeAdmins.length > 0) ? storeAdmins : localAdmins;
+        return (source || []).map(a => ({
+            ...a,
+            id: a.id || a.uid,
+            uid: a.uid || a.id
+        }));
+    }, [storeAdmins, localAdmins]);
+
+    const pendingRequests = useMemo(() => admins.filter(a => a.role === 'pending'), [admins]);
+
     // Member State
-    const [members, setMembers] = useState([]);
-    const [loadingMembers, setLoadingMembers] = useState(true);
+    const [localMembers, setLocalMembers] = useState([]);
+    const [localLoadingMembers, setLocalLoadingMembers] = useState(true);
     const [memberSearch, setMemberSearch] = useState('');
+
+    const members = useMemo(() => {
+        const source = (allUsers && allUsers.length > 0) ? allUsers : localMembers;
+        const list = (source || []).map(m => ({
+            ...m,
+            id: m.id || m.uid,
+            uid: m.uid || m.id
+        }));
+        return list.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+    }, [allUsers, localMembers]);
+
+    const loadingMembers = (!allUsers || allUsers.length === 0) && localLoadingMembers;
 
     // Pagination & Filter State
     const [viewMode, setViewMode] = useState('grid');
@@ -125,10 +147,11 @@ const AdminManager = () => {
         try {
             const querySnapshot = await getDocs(collection(db, "admins"));
             const adminList = querySnapshot.docs.map(doc => ({
+                ...doc.data(),
                 id: doc.id,
-                ...doc.data()
+                uid: doc.id
             }));
-            setAdmins(adminList);
+            setLocalAdmins(adminList);
         } catch (error) {
             console.error("Error fetching admins:", error);
         } finally {
@@ -137,19 +160,20 @@ const AdminManager = () => {
     };
 
     const fetchMembers = async () => {
-        setLoadingMembers(true);
+        setLocalLoadingMembers(true);
         try {
             const querySnapshot = await getDocs(collection(db, "users"));
             const memberList = querySnapshot.docs.map(doc => ({
+                ...doc.data(),
                 id: doc.id,
-                ...doc.data()
+                uid: doc.id
             }));
             memberList.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
-            setMembers(memberList);
+            setLocalMembers(memberList);
         } catch (error) {
             console.error("Error fetching members:", error);
         } finally {
-            setLoadingMembers(false);
+            setLocalLoadingMembers(false);
         }
     };
 

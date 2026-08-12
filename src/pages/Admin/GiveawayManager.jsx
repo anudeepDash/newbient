@@ -40,7 +40,7 @@ import AdminCommunityHubLayout from '../../components/admin/AdminCommunityHubLay
 import { downloadCSV } from '../../components/admin/CSVHandler';
 
 const GiveawayManager = () => {
-    useStoreSubscription(['giveaways']);
+    useStoreSubscription(['giveaways', 'giveawayEntries']);
     const { giveaways = [], giveawayEntries = [], addGiveaway, updateGiveaway, deleteGiveaway, user } = useStore();
     const [searchTerm, setSearchTerm] = useState('');
     const [filter, setFilter] = useState('all');

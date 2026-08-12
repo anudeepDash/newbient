@@ -23,9 +23,17 @@ import { notifySpecificUser } from '../../lib/notificationTriggers';
 import AdminCommunityHubLayout from '../../components/admin/AdminCommunityHubLayout';
 
 const GiveawayParticipants = () => {
-    useStoreSubscription(['giveaways']);
+    useStoreSubscription(['giveaways', 'giveawayEntries']);
     const { giveawayId } = useParams();
-    const { giveaways, giveawayEntries, updateGiveaway, updateGiveawayEntry, deleteGiveawayEntry } = useStore();
+    const { giveaways = [], giveawayEntries = [], updateGiveaway, updateGiveawayEntry, deleteGiveawayEntry } = useStore();
+
+    React.useEffect(() => {
+        if (!giveawayId) return;
+        const unsub = useStore.getState().subscribeToGiveawayEntries(giveawayId);
+        return () => {
+            if (unsub) unsub();
+        };
+    }, [giveawayId]);
     const [searchTerm, setSearchTerm] = useState('');
     const [filter, setFilter] = useState('all'); // all, winners, referrals
 
