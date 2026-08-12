@@ -562,16 +562,16 @@ export const useStore = create((set, get) => ({
         };
     },
 
-    // Campaign-specific Giveaway Entries Subscription (to avoid loading all entries globally)
-    subscribeToGiveawayEntries: (campaignId) => {
-        if (!campaignId) return () => {};
-        console.log(`Subscribing to giveaway entries for campaign: ${campaignId}`);
-        const q = query(collection(db, 'giveaway_entries'), where('campaignId', '==', campaignId));
+    // Campaign-specific or global Giveaway Entries Subscription
+    subscribeToGiveawayEntries: (campaignId = null) => {
+        console.log(`Subscribing to giveaway entries${campaignId ? ` for campaign: ${campaignId}` : ''}`);
+        const colRef = collection(db, 'giveaway_entries');
+        const q = campaignId ? query(colRef, where('campaignId', '==', campaignId)) : query(colRef);
         return onSnapshot(q, (snapshot) => {
             const data = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
             set({ giveawayEntries: data });
         }, (error) => {
-            console.error("Error fetching giveaway entries for campaign:", campaignId, error);
+            console.error("Error fetching giveaway entries:", campaignId, error);
         });
     },
 

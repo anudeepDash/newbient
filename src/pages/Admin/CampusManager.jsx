@@ -120,10 +120,10 @@ const CampusManager = () => {
                         </div>
                     ) : (
                         <div className="grid gap-3">
-                            {filteredProfiles.map((amb) => (
+                            {filteredProfiles.map((prof) => (
                                 <div 
-                                    key={prof.uid}
-                                    onClick={() => setselectedProfile(amb)}
+                                    key={prof.uid || prof.id}
+                                    onClick={() => setSelectedProfile(prof)}
                                     className={cn(
                                         "group p-4 rounded-2xl border transition-all cursor-pointer flex items-center justify-between gap-4",
                                         selectedProfile?.uid === prof.uid ? "bg-neon-blue/10 border-neon-blue/50" : "bg-black/40 border-white/5 hover:border-white/20"
