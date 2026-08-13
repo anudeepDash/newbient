@@ -97,8 +97,8 @@ const getSelectAccentColor = (role) => {
 };
 
 const AdminManager = () => {
-    useStoreSubscription(['creators', 'artists', 'allUsers', 'admins']);
-    const { user, blockUser, unblockUser, creators, artists, allUsers, admins: storeAdmins } = useStore();
+    useStoreSubscription(['creators', 'artists', 'allUsers', 'admins', 'campusProfiles', 'subscribers']);
+    const { user, blockUser, unblockUser, creators = [], artists = [], campusProfiles = [], subscribers = [], allUsers = [], admins: storeAdmins = [] } = useStore();
     const [activeTab, setActiveTab] = useState('members');
 
     // Admin State
@@ -124,16 +124,104 @@ const AdminManager = () => {
     const [memberSearch, setMemberSearch] = useState('');
 
     const members = useMemo(() => {
-        const source = (allUsers && allUsers.length > 0) ? allUsers : localMembers;
-        const list = (source || []).map(m => ({
-            ...m,
-            id: m.id || m.uid,
-            uid: m.uid || m.id
-        }));
-        return list.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
-    }, [allUsers, localMembers]);
+        const userList = (allUsers && allUsers.length > 0) ? allUsers : localMembers;
+        const adminList = (storeAdmins && storeAdmins.length > 0) ? storeAdmins : localAdmins;
 
-    const loadingMembers = (!allUsers || allUsers.length === 0) && localLoadingMembers;
+        const combined = [
+            ...(userList || []),
+            ...(creators || []).map(c => ({
+                id: c.uid || c.id,
+                email: c.email,
+                displayName: c.name || c.fullName || c.displayName,
+                createdAt: c.createdAt,
+                hasJoinedTribe: true,
+                isCreator: true,
+                ...c
+            })),
+            ...(artists || []).map(a => ({
+                id: a.uid || a.id,
+                email: a.email,
+                displayName: a.stageName || a.name || a.displayName,
+                createdAt: a.createdAt,
+                hasJoinedTribe: true,
+                isArtist: true,
+                ...a
+            })),
+            ...(campusProfiles || []).map(cp => ({
+                id: cp.uid || cp.id,
+                email: cp.email,
+                displayName: cp.fullName || cp.name || cp.displayName,
+                createdAt: cp.createdAt,
+                hasJoinedTribe: true,
+                isCampus: true,
+                ...cp
+            })),
+            ...(adminList || []).map(adm => ({
+                id: adm.uid || adm.id,
+                email: adm.email,
+                displayName: adm.displayName || adm.name,
+                createdAt: adm.createdAt,
+                isAdmin: true,
+                ...adm
+            })),
+            ...(subscribers || []).map(s => ({
+                id: s.id,
+                email: s.email,
+                displayName: s.displayName || s.name || (s.email ? s.email.split('@')[0] : 'Subscriber'),
+                createdAt: s.createdAt,
+                isSubscriber: true,
+                ...s
+            }))
+        ];
+
+        const memberMap = new Map();
+        combined.forEach(item => {
+            if (!item) return;
+            const emailKey = item.email ? item.email.toLowerCase().trim() : null;
+            const idKey = item.id || item.uid;
+            const key = emailKey || idKey;
+            if (!key) return;
+
+            if (!memberMap.has(key)) {
+                memberMap.set(key, {
+                    id: idKey || key,
+                    uid: idKey || key,
+                    email: item.email || '',
+                    displayName: item.displayName || item.fullName || item.name || (item.email ? item.email.split('@')[0] : 'UNNAMED_MEMBER'),
+                    createdAt: item.createdAt || null,
+                    lastActive: item.lastActive || item.createdAt || null,
+                    isBlocked: item.isBlocked || false,
+                    hasJoinedTribe: item.hasJoinedTribe || false,
+                    isCreator: !!item.isCreator,
+                    isArtist: !!item.isArtist,
+                    isCampus: !!item.isCampus,
+                    role: item.role || 'Member',
+                    ...item
+                });
+            } else {
+                const existing = memberMap.get(key);
+                memberMap.set(key, {
+                    ...item,
+                    ...existing,
+                    id: existing.id || idKey,
+                    uid: existing.uid || idKey,
+                    displayName: (existing.displayName && existing.displayName !== 'UNNAMED_MEMBER') ? existing.displayName : (item.displayName || item.fullName || item.name || existing.displayName),
+                    hasJoinedTribe: existing.hasJoinedTribe || item.hasJoinedTribe || false,
+                    isBlocked: existing.isBlocked || item.isBlocked || false,
+                    isCreator: existing.isCreator || !!item.isCreator,
+                    isArtist: existing.isArtist || !!item.isArtist,
+                    isCampus: existing.isCampus || !!item.isCampus,
+                    createdAt: existing.createdAt || item.createdAt || null,
+                    lastActive: existing.lastActive || item.lastActive || null
+                });
+            }
+        });
+
+        const list = Array.from(memberMap.values());
+        return list.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+    }, [allUsers, localMembers, storeAdmins, localAdmins, creators, artists, campusProfiles, subscribers]);
+
+    const loadingMembers = (!allUsers || allUsers.length === 0) && localLoadingMembers && (!creators || creators.length === 0) && (!artists || artists.length === 0);
 
     // Pagination & Filter State
     const [viewMode, setViewMode] = useState('grid');
@@ -366,8 +454,8 @@ const AdminManager = () => {
             if (memberFilter === 'authorized') return !m.isBlocked;
             if (memberFilter === 'suspended') return m.isBlocked;
             if (memberFilter === 'tribe') return m.hasJoinedTribe;
-            if (memberFilter === 'creators') return creators?.some(c => c.uid === m.id);
-            if (memberFilter === 'artists') return artists?.some(a => a.uid === m.id && a.profileStatus === 'approved');
+            if (memberFilter === 'creators') return m.isCreator || creators?.some(c => c.uid === m.id || c.email === m.email);
+            if (memberFilter === 'artists') return m.isArtist || artists?.some(a => (a.uid === m.id || a.email === m.email) && a.profileStatus === 'approved');
 
             return true;
         });
@@ -700,8 +788,9 @@ const AdminManager = () => {
                                         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                                             {paginatedMembers.map(member => {
                                                 const isTribe = member.hasJoinedTribe;
-                                                const isCreator = creators?.some(c => c.uid === member.id);
-                                                const isArtist = artists?.some(a => a.uid === member.id && a.profileStatus === 'approved');
+                                                const isCreator = member.isCreator || creators?.some(c => c.uid === member.id || c.email === member.email);
+                                                const isArtist = member.isArtist || artists?.some(a => (a.uid === member.id || a.email === member.email) && a.profileStatus === 'approved');
+                                                const isCampus = member.isCampus || campusProfiles?.some(cp => cp.uid === member.id || cp.email === member.email);
                                                 
                                                 return (
                                                     <motion.div
@@ -816,8 +905,9 @@ const AdminManager = () => {
                                                     <tbody className="divide-y divide-white/5">
                                                         {paginatedMembers.map(member => {
                                                             const isTribe = member.hasJoinedTribe;
-                                                            const isCreator = creators?.some(c => c.uid === member.id);
-                                                            const isArtist = artists?.some(a => a.uid === member.id && a.profileStatus === 'approved');
+                                                            const isCreator = member.isCreator || creators?.some(c => c.uid === member.id || c.email === member.email);
+                                                            const isArtist = member.isArtist || artists?.some(a => (a.uid === member.id || a.email === member.email) && a.profileStatus === 'approved');
+                                                            const isCampus = member.isCampus || campusProfiles?.some(cp => cp.uid === member.id || cp.email === member.email);
                                                             
                                                             return (
                                                                 <tr key={member.id} className="group hover:bg-white/[0.02] transition-colors">
