@@ -38,6 +38,7 @@ import Agreement from './pages/Agreement';
 import FormManager from './pages/Admin/FormManager';
 import FormBuilder from './pages/Admin/FormBuilder';
 import AdminManager from './pages/Admin/AdminManager';
+import ActiveUsers from './pages/Admin/ActiveUsers';
 import FormViewer from './pages/FormViewer';
 import CommunityJoin from './pages/CommunityJoin';
 import CreatorJoin from './pages/CreatorJoin';
@@ -160,6 +161,7 @@ function AppContent() {
 
             <Route path="admin" element={<AdminGuard><Dashboard /></AdminGuard>} />
             <Route path="admin/manage-admins" element={<AdminGuard><MaintenanceGuard featureId="admins"><AdminManager /></MaintenanceGuard></AdminGuard>} />
+            <Route path="admin/active-users" element={<AdminGuard><MaintenanceGuard featureId="admins"><ActiveUsers /></MaintenanceGuard></AdminGuard>} />
             <Route path="admin/finance" element={<AdminGuard><FinanceGuard><MaintenanceGuard featureId="invoices"><FinanceDashboard /></MaintenanceGuard></FinanceGuard></AdminGuard>} />
             <Route path="admin/spends" element={<AdminGuard><FinanceGuard><MaintenanceGuard featureId="invoices"><SpendsManagement /></MaintenanceGuard></FinanceGuard></AdminGuard>} />
             <Route path="admin/other-income" element={<AdminGuard><FinanceGuard><MaintenanceGuard featureId="invoices"><OtherIncomeManagement /></MaintenanceGuard></FinanceGuard></AdminGuard>} />

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
     Users, ClipboardList, ListChecks, Sparkles, LayoutGrid, FolderOpen, 
-    Menu, X, Mail, Compass, TrendingUp, Ticket, LayoutDashboard, Shield,
+    Menu, X, Mail, Compass, TrendingUp, Ticket, LayoutDashboard, Shield, UserCheck,
     Calendar, Radio, FileText, Music, Settings, ChevronRight
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -87,6 +87,7 @@ const AdminCommunityHubLayout = ({ children, title, description, action, studioH
                 { name: "Giveaways", path: "/admin/giveaways", icon: Sparkles, color: "neon-purple", show: !cards.giveaways },
                 { name: "Artistant", path: "/admin/artistant", icon: Music, color: "neon-blue", show: !cards.artists },
                 { name: "Mailing", path: "/admin/mailing", icon: Mail, color: "neon-blue", show: !cards.mailing },
+                { name: "Active Users", path: "/admin/active-users", icon: UserCheck, color: "neon-green", show: user?.role !== 'editor' && user?.role !== 'content_admin' && user?.role !== 'blog_writer' && !cards.admins },
                 { name: "Members", path: "/admin/manage-admins", icon: Shield, color: "neon-blue", show: user?.role !== 'editor' && user?.role !== 'content_admin' && user?.role !== 'blog_writer' && !cards.admins },
                 { name: "Inbox", path: "/admin/messages", icon: Mail, color: "white", show: !cards.messages }
             ]
