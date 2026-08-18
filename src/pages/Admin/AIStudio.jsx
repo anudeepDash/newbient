@@ -318,6 +318,11 @@ const logoOptions = [
         return renderFormatted(content, baseClass);
     };
 
+const isHtmlEmpty = (html) => {
+    if (!html) return true;
+    const clean = String(html).replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim();
+    return clean.length === 0;
+};
 
 const estimateBlockHeight = (rawText) => {
     if (!rawText) return 0;
@@ -704,6 +709,16 @@ const AIStudio = () => {
         }
     };
 
+    const toggleFieldHidden = (field) => {
+        setProposalDataState(prev => {
+            const current = prev.hiddenFields || [];
+            const updated = current.includes(field)
+                ? current.filter(f => f !== field)
+                : [...current, field];
+            return { ...prev, hiddenFields: updated };
+        });
+    };
+
     const setProposalItemsState = (updater) => {
         if (isBulkMode && bulkProposals.length > 0) {
             setBulkProposals(prevBulk => {
@@ -951,7 +966,7 @@ const AIStudio = () => {
 
         if (!isFieldHidden('strategy') && (!isFieldHidden('overview') || !isFieldHidden('primaryGoal'))) {
             const overviewHtml = !isFieldHidden('overview') ? (activeProposalData.overview || '') : '';
-            const primaryGoalHtml = !isFieldHidden('primaryGoal') ? (activeProposalData.primaryGoal || '') : '';
+            const primaryGoalHtml = (!isFieldHidden('primaryGoal') && !isHtmlEmpty(activeProposalData.primaryGoal)) ? (activeProposalData.primaryGoal || '') : '';
             
             const overviewPages = splitTextIntoPages(overviewHtml, 800);
             const lastOverviewPage = overviewPages[overviewPages.length - 1] || '';
@@ -2175,7 +2190,7 @@ const AIStudio = () => {
                                                     : "text-zinc-500 hover:text-zinc-300"
                                             )}
                                         >
-                                            {tab.label}
+                                    {tab.label}
                                         </button>
                                     ))}
                                 </div>
@@ -2198,8 +2213,97 @@ const AIStudio = () => {
                                                 <Input label="Section Title" value={activeProposalData.strategyTitle} onChange={(e) => setProposalDataState({ strategyTitle: e.target.value })} placeholder="EXECUTIVE SUMMARY" />
                                                 <Input label="Section Subtitle" value={activeProposalData.strategySub} onChange={(e) => setProposalDataState({ strategySub: e.target.value })} placeholder="STRATEGIC OUTLINE" />
                                             </div>
-                                            <MultiPageRichEditor label="Executive Overview" value={activeProposalData.overview} onChange={(val) => setProposalDataState({ overview: val })} minHeight="200px" accentColor="neon-green" />
-                                            <Input label="Primary Goal" value={activeProposalData.primaryGoal} onChange={(e) => setProposalDataState({ primaryGoal: e.target.value })} placeholder="Dominant marketing or brand statement..." textarea />
+                                            <div className="space-y-2">
+                                                <div className="flex justify-between items-center px-1">
+                                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Executive Overview</label>
+                                                    <div className="flex items-center gap-2">
+                                                        <button 
+                                                            type="button" 
+                                                            onClick={() => {
+                                                                const hidden = activeProposalData.hiddenFields || [];
+                                                                const newHidden = hidden.includes('overview') 
+                                                                    ? hidden.filter(f => f !== 'overview') 
+                                                                    : [...hidden, 'overview'];
+                                                                setProposalDataState({ hiddenFields: newHidden });
+                                                            }}
+                                                            className={cn(
+                                                                "flex items-center gap-1 px-2.5 py-1 rounded-full border text-[9px] font-black uppercase tracking-wider transition-all",
+                                                                isFieldHidden('overview')
+                                                                    ? "bg-red-500/10 border-red-500/20 text-red-400"
+                                                                    : "bg-[#39FF14]/10 border-[#39FF14]/20 text-[#39FF14]"
+                                                            )}
+                                                        >
+                                                            {isFieldHidden('overview') ? <EyeOff size={10} /> : <Eye size={10} />}
+                                                            {isFieldHidden('overview') ? 'Hidden' : 'Live'}
+                                                        </button>
+                                                        <button 
+                                                            type="button" 
+                                                            onClick={() => {
+                                                                const hidden = activeProposalData.hiddenFields || [];
+                                                                const newHidden = hidden.includes('overview') ? hidden : [...hidden, 'overview'];
+                                                                setProposalDataState({ overview: '', hiddenFields: newHidden });
+                                                            }}
+                                                            className="px-2.5 py-1 text-[9px] font-black uppercase tracking-wider text-red-400 hover:text-red-300 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 rounded-full transition-all flex items-center gap-1"
+                                                            title="Remove Executive Overview"
+                                                        >
+                                                            <Trash2 size={10} /> Remove
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                                <MultiPageRichEditor 
+                                                    value={activeProposalData.overview} 
+                                                    onChange={(val) => setProposalDataState({ overview: val })} 
+                                                    minHeight="200px" 
+                                                    accentColor="neon-green" 
+                                                    className={cn(isFieldHidden('overview') && 'opacity-30')}
+                                                />
+                                            </div>
+
+                                            <div className="space-y-2">
+                                                <div className="flex justify-between items-center px-1">
+                                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Primary Objective / Project Objectives</label>
+                                                    <div className="flex items-center gap-2">
+                                                        <button 
+                                                            type="button" 
+                                                            onClick={() => {
+                                                                const hidden = activeProposalData.hiddenFields || [];
+                                                                const newHidden = hidden.includes('primaryGoal') 
+                                                                    ? hidden.filter(f => f !== 'primaryGoal') 
+                                                                    : [...hidden, 'primaryGoal'];
+                                                                setProposalDataState({ hiddenFields: newHidden });
+                                                            }}
+                                                            className={cn(
+                                                                "flex items-center gap-1 px-2.5 py-1 rounded-full border text-[9px] font-black uppercase tracking-wider transition-all",
+                                                                isFieldHidden('primaryGoal')
+                                                                    ? "bg-red-500/10 border-red-500/20 text-red-400"
+                                                                    : "bg-[#39FF14]/10 border-[#39FF14]/20 text-[#39FF14]"
+                                                            )}
+                                                        >
+                                                            {isFieldHidden('primaryGoal') ? <EyeOff size={10} /> : <Eye size={10} />}
+                                                            {isFieldHidden('primaryGoal') ? 'Hidden' : 'Live'}
+                                                        </button>
+                                                        <button 
+                                                            type="button" 
+                                                            onClick={() => {
+                                                                const hidden = activeProposalData.hiddenFields || [];
+                                                                const newHidden = hidden.includes('primaryGoal') ? hidden : [...hidden, 'primaryGoal'];
+                                                                setProposalDataState({ primaryGoal: '', hiddenFields: newHidden });
+                                                            }}
+                                                            className="px-2.5 py-1 text-[9px] font-black uppercase tracking-wider text-red-400 hover:text-red-300 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 rounded-full transition-all flex items-center gap-1"
+                                                            title="Remove Project Objectives"
+                                                        >
+                                                            <Trash2 size={10} /> Remove
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                                <Input 
+                                                    value={activeProposalData.primaryGoal} 
+                                                    onChange={(e) => setProposalDataState({ primaryGoal: e.target.value })} 
+                                                    placeholder="Dominant marketing or brand statement / Project Goal..." 
+                                                    textarea 
+                                                    className={cn(isFieldHidden('primaryGoal') && 'opacity-30')}
+                                                />
+                                            </div>
                                         </div>
                                     )}
 
@@ -2558,7 +2662,7 @@ const AIStudio = () => {
                                                         </p>
                                                     </div>
                                                     {paginatedPages[currentPreviewPage]?.overviewText && <div className="text-lg font-medium leading-[1.7] text-gray-700">{renderContent(paginatedPages[currentPreviewPage]?.overviewText)}</div>}
-                                                    {paginatedPages[currentPreviewPage]?.primaryGoalText && (
+                                                    {paginatedPages[currentPreviewPage]?.primaryGoalText && !isHtmlEmpty(paginatedPages[currentPreviewPage]?.primaryGoalText) && (
                                                         <div className="pt-12">
                                                             <div className="p-12 border-2 border-black rounded-[2.5rem] space-y-6">
                                                                 <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest">Primary Objective</p>
@@ -2925,7 +3029,7 @@ const AIStudio = () => {
                                             </p>
                                         </div>
                                         {page.overviewText && <div className="text-lg font-medium leading-[1.7] text-gray-700">{renderContent(page.overviewText)}</div>}
-                                        {page.primaryGoalText && (
+                                        {page.primaryGoalText && !isHtmlEmpty(page.primaryGoalText) && (
                                             <div className="pt-12">
                                                 <div className="p-12 border-2 border-black rounded-[2.5rem] space-y-6">
                                                     <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest">Primary Objective</p>
