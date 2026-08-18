@@ -12,13 +12,13 @@ import { useStore } from './store';
 
 // ── Newbi Error System ──────────────────────────────────────────────────
 export const ERROR_CODES = {
-    UNSUPPORTED_TYPE: { code: 'NB-101', message: 'The document type requested is not currently supported by our AI engine.' },
-    EMPTY_PROMPT: { code: 'NB-202', message: 'The prompt provided is too brief. Please provide more context for a premium result.' },
-    PARSING_FAILED: { code: 'NB-302', message: 'AI extraction failed to produce valid data structure. Please try a more specific prompt.' },
-    AUTH_FAILED: { code: 'NB-401', message: 'AI authentication failed. Please verify your AI API configuration in settings.' },
-    RATE_LIMITED: { code: 'NB-429', message: 'AI capacity reached. Please wait a moment while we recalibrate our path.' },
-    ORCHESTRATION_COLLAPSE: { code: 'NB-503', message: 'All AI paths are currently unresponsive. Activating local failproof backup.' },
-    TIMEOUT: { code: 'NB-504', message: 'The AI took too long to respond. Our AI path may be congested.' }
+    UNSUPPORTED_TYPE: { code: 'NB-101', message: "Whoa, we don't support that document type yet! Try a proposal, contract, or invoice." },
+    EMPTY_PROMPT: { code: 'NB-202', message: "Your prompt is too short for us to work with. Give us a bit more detail about what you need!" },
+    PARSING_FAILED: { code: 'NB-302', message: "Our AI got a bit confused with the response. Mind trying again with a clearer prompt?" },
+    AUTH_FAILED: { code: 'NB-401', message: "Looks like your session expired. Please sign in again to use the AI features." },
+    RATE_LIMITED: { code: 'NB-429', message: "Our AI is super busy right now! Give it a moment and try again — we're on it." },
+    ORCHESTRATION_COLLAPSE: { code: 'NB-503', message: "All our AI paths are taking a nap. Don't worry, we've activated a backup to keep things moving!" },
+    TIMEOUT: { code: 'NB-504', message: "The AI took too long to think. Try a shorter or simpler prompt and we'll get it done faster." }
 };
 
 export class NBError extends Error {
@@ -385,7 +385,8 @@ const SCHEMAS = {
         deliverables: [{ item: "string", qty: "string", timeline: "string" }],
         clientRequirements: [{ description: "string" }],
         items: [{ description: "string — Service line item", qty: "number", unit: "string", price: "number — INR price (Estimated Cost)" }],
-        terms: "string — Numbered terms on separate lines"
+        terms: "string — Numbered terms on separate lines",
+        customPages: "[{ title: 'string — Page title', subtitle: 'string — Optional subtitle', content: 'string — Page body content with markdown formatting' }] — Optional extra pages the AI deems useful"
     },
     bulk_proposal: {
         clientName: "string — Client/company name",
@@ -393,7 +394,8 @@ const SCHEMAS = {
         campaignName: "string — Project, Event, or Mission title",
         campaignDuration: "string — e.g. '3 Months' or 'Oct 15-20, 2024'",
         coverDescription: "string — 2-3 sentence cover summary, plain text only",
-        scopeOfWork: "string — MANDATORY. A beautifully structured, persuasive markdown string. You MUST invent appropriate professional section titles using Markdown headings (##). NEVER use bullet points for headers. Use bullet points ONLY for lists. Rewrite and elevate the language."
+        scopeOfWork: "string — MANDATORY. A beautifully structured, persuasive markdown string. You MUST invent appropriate professional section titles using Markdown headings (##). NEVER use bullet points for headers. Use bullet points ONLY for lists. Rewrite and elevate the language.",
+        customPages: "[{ title: 'string — Page title', subtitle: 'string — Optional subtitle', content: 'string — Page body content with markdown formatting' }] — Optional extra pages"
     },
     contract: {
         parties: {
@@ -449,6 +451,7 @@ RULES:
 - items: 3-5 service line items with realistic INR prices (₹5,000 – ₹10,00,000) — this section is the "Estimated Cost"
 - clientRequirements: 2-4 items
 - terms: 4-5 numbered items on separate lines, include "Advance Fee" instead of "activation fee"
+- customPages: optional array of extra pages (e.g. Timeline, Risk Assessment) with title and rich content — include 1-2 if relevant
 - Return valid JSON matching the schema`,
 
     bulk_proposal: `You are an elite business copywriter and document structurer for Newbi Entertainment. Transform the provided raw data into a beautifully structured, persuasive premium business document.
@@ -460,6 +463,7 @@ RULES:
     - NEVER use bullet points (* or -) for section titles. Use bullet points ONLY for actual lists under the sections.
     - You MUST rewrite, arrange, and elevate the language to sound like a premium, persuasive business proposal.
     - DO NOT just regurgitate the exact text. Transform it into a polished, structured masterpiece while retaining all key details.
+    - customPages: optional array of extra pages (e.g. Timeline, Risk Assessment) with title and rich content — include 1-2 if relevant
     - Return valid JSON matching the schema`,
 
     contract: `You are an expert legal drafter for Newbi Entertainment, a premium entertainment & marketing company in India.

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useMemo } from 'react';
+import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate, Link, useParams } from 'react-router-dom';
 import Plus from 'lucide-react/dist/esm/icons/plus';
 import Trash2 from 'lucide-react/dist/esm/icons/trash-2';
@@ -50,6 +50,9 @@ import Smile from 'lucide-react/dist/esm/icons/smile';
 import Trophy from 'lucide-react/dist/esm/icons/trophy';
 import Award from 'lucide-react/dist/esm/icons/award';
 import Megaphone from 'lucide-react/dist/esm/icons/megaphone';
+import Copy from 'lucide-react/dist/esm/icons/copy';
+import MessageCircle from 'lucide-react/dist/esm/icons/message-circle';
+import AlertTriangle from 'lucide-react/dist/esm/icons/alert-triangle';
 
 import { useStore } from '../../lib/store';
 import { useStoreSubscription } from '../../hooks/useStoreSubscription';
@@ -599,14 +602,340 @@ const ProposalGenerator = () => {
     const [aiTone, setAiTone] = useState('balanced'); // 'creative' | 'balanced' | 'formal'
     const [aiLength, setAiLength] = useState('balanced'); // 'concise' | 'balanced' | 'detailed'
 
-    const handleRefineClick = (fieldKey, fieldLabel, currentValue) => {
-        setRefinementContext({
+    // Inline AI Refinement Popup state
+    const [inlineRefineState, setInlineRefineState] = useState(null); // { fieldKey, fieldLabel, currentValue, anchorRect }
+    const [inlineRefinePrompt, setInlineRefinePrompt] = useState('');
+    const [inlineRefineLoading, setInlineRefineLoading] = useState(false);
+    const [inlineRefineSuccess, setInlineRefineSuccess] = useState(false);
+    const inlineRefineInputRef = useRef(null);
+
+    // Resizable chat popup state
+    const [chatPopupSize, setChatPopupSize] = useState({ width: 420, height: 560 });
+    const [isResizingChat, setIsResizingChat] = useState(false);
+    const chatResizeRef = useRef(null);
+    const [unreadChatCount, setUnreadChatCount] = useState(0);
+
+    const handleRefineClick = (fieldKey, fieldLabel, currentValue, e) => {
+        // Open inline popup anchored near the button
+        const rect = e?.currentTarget?.getBoundingClientRect?.();
+        setInlineRefineState({
             fieldKey,
             fieldLabel,
-            currentValue
+            currentValue: typeof currentValue === 'string' ? currentValue.substring(0, 200) : '',
+            anchorRect: rect || null
         });
-        setActiveTab('ai');
+        setInlineRefinePrompt('');
+        setInlineRefineSuccess(false);
+        setTimeout(() => inlineRefineInputRef.current?.focus(), 100);
     };
+
+    const handleInlineRefineSubmit = async () => {
+        if (!inlineRefinePrompt.trim() || inlineRefineLoading || !inlineRefineState) return;
+        setInlineRefineLoading(true);
+        try {
+            const refined = await refineFieldContent(
+                'proposal',
+                inlineRefineState.fieldLabel,
+                inlineRefineState.currentValue,
+                inlineRefinePrompt.trim(),
+                'Premium'
+            );
+            const fieldKey = inlineRefineState.fieldKey;
+            if (fieldKey.startsWith('deliverables[')) {
+                const match = fieldKey.match(/deliverables\[(\d+)\]\.(item|qty|timeline)/);
+                if (match) {
+                    const idx = parseInt(match[1]);
+                    const field = match[2];
+                    const updated = [...formData.deliverables];
+                    updated[idx] = { ...updated[idx], [field]: refined };
+                    setFormData({ ...formData, deliverables: updated });
+                }
+            } else if (fieldKey.startsWith('clientRequirements[')) {
+                const match = fieldKey.match(/clientRequirements\[(\d+)\]\.description/);
+                if (match) {
+                    const idx = parseInt(match[1]);
+                    const updated = [...formData.clientRequirements];
+                    updated[idx] = { ...updated[idx], description: refined };
+                    setFormData({ ...formData, clientRequirements: updated });
+                }
+            } else if (fieldKey.startsWith('items[')) {
+                const match = fieldKey.match(/items\[(\d+)\]\.(description|qty|price)/);
+                if (match) {
+                    const idx = parseInt(match[1]);
+                    const field = match[2];
+                    const newItems = [...items];
+                    let val = refined;
+                    if (field === 'qty' || field === 'price') val = Number(refined) || 0;
+                    newItems[idx] = { ...newItems[idx], [field]: val };
+                    setItems(newItems);
+                }
+            } else if (fieldKey.startsWith('customPages[')) {
+                const match = fieldKey.match(/customPages\[(\d+)\]\.content/);
+                if (match) {
+                    const idx = parseInt(match[1]);
+                    const updated = [...(formData.customPages || [])];
+                    updated[idx] = { ...updated[idx], content: refined };
+                    setFormData({ ...formData, customPages: updated });
+                }
+            } else {
+                setFormData(prev => ({ ...prev, [fieldKey]: refined }));
+            }
+            addToast(`"${inlineRefineState.fieldLabel}" refined successfully!`, 'success');
+            setInlineRefineSuccess(true);
+            setTimeout(() => {
+                setInlineRefineState(null);
+                setInlineRefineSuccess(false);
+            }, 1200);
+        } catch (err) {
+            addToast(`Oops! Couldn't refine "${inlineRefineState.fieldLabel}". ${err.message || 'Try again with a different prompt.'}`, 'error');
+        } finally {
+            setInlineRefineLoading(false);
+        }
+    };
+
+    // Auto bulk mode detection
+    const detectBulkMode = useCallback((prompt) => {
+        if (!prompt || prompt.trim().length < 20) return false;
+        const trimmed = prompt.trim();
+        // Explicit separators
+        if (trimmed.includes('---') || trimmed.includes('___')) return true;
+        // Multiple paragraphs (3+ separated by double newlines)
+        const paragraphs = trimmed.split(/\n\n+/).filter(p => p.trim().length > 10);
+        if (paragraphs.length >= 3) return true;
+        // Keywords
+        const bulkKeywords = /\b(batch|bulk|multiple proposals|create \d+ proposals|for each client|generate all|for all clients|separate proposals)\b/i;
+        if (bulkKeywords.test(trimmed)) return true;
+        // Numbered list pattern (1. ... 2. ... 3. ...)
+        const numberedItems = trimmed.match(/^\d+[\.\)]\s+.{10,}/gm);
+        if (numberedItems && numberedItems.length >= 3) return true;
+        return false;
+    }, []);
+
+    // Page duplication helpers
+    const duplicateCustomPage = (idx) => {
+        const pages = [...(formData.customPages || [])];
+        const original = pages[idx];
+        if (!original) return;
+        const cloned = {
+            ...original,
+            id: String(Date.now()) + '-dup',
+            title: `${original.title} (Copy)`
+        };
+        pages.splice(idx + 1, 0, cloned);
+        setFormData(prev => ({ ...prev, customPages: pages }));
+        addToast(`Page "${original.title}" duplicated!`, 'success');
+    };
+
+    const duplicateAllCustomPages = () => {
+        const pages = [...(formData.customPages || [])];
+        if (pages.length === 0) return;
+        const clones = pages.map(p => ({
+            ...p,
+            id: String(Date.now()) + '-' + Math.random().toString(36).substr(2, 5),
+            title: `${p.title} (Copy)`
+        }));
+        setFormData(prev => ({ ...prev, customPages: [...pages, ...clones] }));
+        addToast(`All ${pages.length} pages duplicated!`, 'success');
+    };
+
+    // Chat popup resizer handlers
+    const handleStartResize = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsResizingChat(true);
+        const startX = e.clientX;
+        const startY = e.clientY;
+        const startWidth = chatPopupSize.width;
+        const startHeight = chatPopupSize.height;
+
+        const onMouseMove = (moveEvent) => {
+            const deltaX = startX - moveEvent.clientX;
+            const deltaY = startY - moveEvent.clientY;
+            const newWidth = Math.max(320, Math.min(window.innerWidth - 32, startWidth + deltaX));
+            const newHeight = Math.max(380, Math.min(window.innerHeight - 100, startHeight + deltaY));
+            setChatPopupSize({ width: newWidth, height: newHeight });
+        };
+
+        const onMouseUp = () => {
+            setIsResizingChat(false);
+            window.removeEventListener('mousemove', onMouseMove);
+            window.removeEventListener('mouseup', onMouseUp);
+        };
+
+        window.addEventListener('mousemove', onMouseMove);
+        window.addEventListener('mouseup', onMouseUp);
+    };
+
+    const handleTouchStartResize = (e) => {
+        const touch = e.touches[0];
+        if (!touch) return;
+        setIsResizingChat(true);
+        const startX = touch.clientX;
+        const startY = touch.clientY;
+        const startWidth = chatPopupSize.width;
+        const startHeight = chatPopupSize.height;
+
+        const onTouchMove = (moveEvent) => {
+            const moveTouch = moveEvent.touches[0];
+            if (!moveTouch) return;
+            const deltaX = startX - moveTouch.clientX;
+            const deltaY = startY - moveTouch.clientY;
+            const newWidth = Math.max(300, Math.min(window.innerWidth - 20, startWidth + deltaX));
+            const newHeight = Math.max(350, Math.min(window.innerHeight - 60, startHeight + deltaY));
+            setChatPopupSize({ width: newWidth, height: newHeight });
+        };
+
+        const onTouchEnd = () => {
+            setIsResizingChat(false);
+            window.removeEventListener('touchmove', onTouchMove);
+            window.removeEventListener('touchend', onTouchEnd);
+        };
+
+        window.addEventListener('touchmove', onTouchMove);
+        window.addEventListener('touchend', onTouchEnd);
+    };
+
+    // Render Inline AI Field Refinement Popup anchored near the clicked field
+    const renderInlineRefinePopup = () => {
+        if (!inlineRefineState) return null;
+
+        let top = 120;
+        let left = 20;
+        if (inlineRefineState.anchorRect) {
+            const { bottom, left: aLeft, top: aTop } = inlineRefineState.anchorRect;
+            const popupWidth = Math.min(380, window.innerWidth - 32);
+            const popupHeight = 260;
+            
+            // Prefer placing below, flip to above if near viewport bottom
+            if (bottom + popupHeight < window.innerHeight - 20) {
+                top = bottom + 8;
+            } else {
+                top = Math.max(20, aTop - popupHeight - 8);
+            }
+            // Horizontal clamp
+            left = Math.max(16, Math.min(window.innerWidth - popupWidth - 16, aLeft - 100));
+        }
+
+        return (
+            <div 
+                className="fixed z-[999] w-[92vw] max-w-[380px] bg-zinc-950/95 backdrop-blur-2xl border border-neon-green/30 rounded-3xl p-5 shadow-[0_20px_60px_rgba(0,0,0,0.85),0_0_30px_rgba(57,255,20,0.15)] animate-fade-in flex flex-col gap-3 font-['Outfit']"
+                style={{ top: `${top}px`, left: `${left}px` }}
+                onClick={(e) => e.stopPropagation()}
+            >
+                {/* Header */}
+                <div className="flex items-center justify-between border-b border-white/10 pb-3">
+                    <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-lg bg-neon-green/10 border border-neon-green/20 flex items-center justify-center">
+                            <Sparkles size={12} className="text-neon-green animate-pulse" />
+                        </div>
+                        <div className="min-w-0">
+                            <h4 className="text-[11px] font-black uppercase tracking-wider text-white truncate">
+                                Refine with AI
+                            </h4>
+                            <p className="text-[9px] font-bold text-neon-green truncate">
+                                {inlineRefineState.fieldLabel}
+                            </p>
+                        </div>
+                    </div>
+                    <button
+                        type="button"
+                        onClick={() => setInlineRefineState(null)}
+                        className="p-1 text-zinc-500 hover:text-white rounded-lg hover:bg-white/5 transition-all"
+                    >
+                        <X size={14} />
+                    </button>
+                </div>
+
+                {/* Current Value Preview (if any) */}
+                {inlineRefineState.currentValue && (
+                    <div className="bg-black/40 border border-white/5 rounded-xl px-3 py-2 text-[10px] text-zinc-400 italic line-clamp-2">
+                        "{inlineRefineState.currentValue}"
+                    </div>
+                )}
+
+                {/* Quick Instruction Presets */}
+                <div className="flex flex-wrap gap-1.5">
+                    {[
+                        'Make it more formal',
+                        'Shorten & punchy',
+                        'Expand details',
+                        'Improve phrasing'
+                    ].map((preset) => (
+                        <button
+                            key={preset}
+                            type="button"
+                            onClick={() => setInlineRefinePrompt(preset)}
+                            className="px-2.5 py-1 bg-white/5 hover:bg-neon-green/10 border border-white/5 hover:border-neon-green/20 rounded-lg text-[8px] font-bold uppercase tracking-wider text-zinc-400 hover:text-neon-green transition-all"
+                        >
+                            {preset}
+                        </button>
+                    ))}
+                </div>
+
+                {/* Instruction Input */}
+                <div className="relative">
+                    <textarea
+                        ref={inlineRefineInputRef}
+                        value={inlineRefinePrompt}
+                        onChange={(e) => setInlineRefinePrompt(e.target.value)}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter' && !e.shiftKey) {
+                                e.preventDefault();
+                                handleInlineRefineSubmit();
+                            }
+                            if (e.key === 'Escape') {
+                                setInlineRefineState(null);
+                            }
+                        }}
+                        placeholder="Type how you want to revise this text (e.g. Add 2 more key objectives, make it punchier)..."
+                        disabled={inlineRefineLoading || inlineRefineSuccess}
+                        className="w-full bg-black/60 border border-white/10 focus:border-neon-green/50 rounded-xl p-3 text-xs text-white placeholder:text-zinc-600 outline-none resize-none min-h-[70px] scrollbar-hide font-medium"
+                    />
+                </div>
+
+                {/* Action Row */}
+                <div className="flex items-center justify-between pt-1">
+                    <button
+                        type="button"
+                        onClick={() => setInlineRefineState(null)}
+                        className="px-3 py-1.5 text-[9px] font-black uppercase tracking-widest text-zinc-500 hover:text-zinc-300 transition-colors"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        type="button"
+                        onClick={handleInlineRefineSubmit}
+                        disabled={!inlineRefinePrompt.trim() || inlineRefineLoading || inlineRefineSuccess}
+                        className={cn(
+                            "px-4 py-2 rounded-xl font-black uppercase text-[9px] tracking-widest transition-all flex items-center gap-1.5 shadow-lg",
+                            inlineRefineSuccess
+                                ? "bg-emerald-500 text-black shadow-[0_0_15px_rgba(16,185,129,0.4)]"
+                                : "bg-neon-green text-black hover:scale-105 active:scale-95 disabled:opacity-30 disabled:scale-100 shadow-[0_0_15px_rgba(57,255,20,0.3)]"
+                        )}
+                    >
+                        {inlineRefineLoading ? (
+                            <>
+                                <RefreshCw className="animate-spin" size={12} />
+                                <span>Refining...</span>
+                            </>
+                        ) : inlineRefineSuccess ? (
+                            <>
+                                <Check size={12} />
+                                <span>Applied!</span>
+                            </>
+                        ) : (
+                            <>
+                                <Sparkles size={12} />
+                                <span>Refine Field</span>
+                            </>
+                        )}
+                    </button>
+                </div>
+            </div>
+        );
+    };
+
+
     const [messages, setMessages] = useState([
         {
             id: 'init-msg',
@@ -618,6 +947,7 @@ const ProposalGenerator = () => {
     const chatContainerRef = useRef(null);
     const [isFloatingChatOpen, setIsFloatingChatOpen] = useState(false);
     const floatingChatContainerRef = useRef(null);
+
 
     const [generationStage, setGenerationStage] = useState(0);
     const [generationProgress, setGenerationProgress] = useState(0);
@@ -1503,6 +1833,89 @@ const ProposalGenerator = () => {
         setMessages(prev => [...prev, { id: String(Date.now()) + '-user', sender: 'user', text: currentPrompt }]);
         setIsGenerating(true);
 
+        // Auto-detect bulk mode
+        if (!isBulkMode && detectBulkMode(currentPrompt)) {
+            setIsBulkMode(true);
+            setBulkRawText(currentPrompt);
+            setMessages(prev => [...prev, {
+                id: String(Date.now()) + '-ai-bulk',
+                sender: 'ai',
+                text: "🔄 Looks like you have multiple proposals in your request! I've automatically switched to **Bulk Mode** to generate them separately. Hang tight..."
+            }]);
+            if (!isFloatingChatOpen) setUnreadChatCount(prev => prev + 1);
+            // Trigger bulk generation
+            setIsBulkGenerating(true);
+            try {
+                let prompts = [];
+                if (currentPrompt.includes('---') || currentPrompt.includes('___')) {
+                    prompts = currentPrompt.split(/\n?[-_]{3,}\n?/).map(p => p.trim()).filter(p => p.length > 5);
+                } else {
+                    prompts = currentPrompt.split(/\n\n+/).map(p => p.trim()).filter(p => p.length > 10);
+                }
+                if (prompts.length === 0) prompts = [currentPrompt];
+
+                setBulkProgress({ current: 0, total: prompts.length });
+                const generatedProposals = [];
+                for (let i = 0; i < prompts.length; i++) {
+                    const data = await generateFullDocument('proposal', prompts[i], 'Premium', {});
+                    const finalProposal = {
+                        clientName: data.clientName || `Client 0${i + 1}`,
+                        clientAddress: data.clientAddress || 'Corporate Headquarters',
+                        campaignName: data.campaignName || 'PROPOSAL PLAN',
+                        campaignDuration: data.campaignDuration || 'TBD',
+                        proposalNumber: `NBQ-${Math.floor(1000 + Math.random() * 9000)}`,
+                        coverDescription: data.coverDescription || 'This document contains the beautifully formatted and arranged synthesis of your data.',
+                        overview: data.overview || '', primaryGoal: data.primaryGoal || '',
+                        numericTargets: '', audienceAge: '', audienceLocation: '', audienceInterests: '',
+                        selectedChannels: [], contentCount: { reels: 0, posts: 0, stories: 0 },
+                        deliverables: data.deliverables?.length ? data.deliverables.map((d, index) => ({ id: Date.now() + index + Math.random(), item: d.item || d.name || '', qty: d.qty || '1', timeline: d.timeline || 'TBD' })) : [],
+                        clientRequirements: data.clientRequirements?.length ? data.clientRequirements.map((r, index) => ({ id: Date.now() + 100 + index + Math.random(), description: r.description || r.requirement || '' })) : [],
+                        scopeOfWork: data.scopeOfWork || prompts[i],
+                        terms: data.terms || '1. 50% Advance Fee required.\n2. Balance on delivery.\n3. Taxes as applicable (18% GST).\n4. Quote valid for 14 days.',
+                        paymentDetails: 'Account Name: Newbi Entertainment\nAccount Number: 0000000000\nIFSC: YOUR000000\nUPI: newbi@upi',
+                        gstRate: 18, advanceRequested: 50, showGst: true, showPaymentDetails: true,
+                        showSeal: false, showSignatures: true, signatureType: 'handwritten',
+                        providerSignature: '', clientSignature: '',
+                        senderName: 'Authorized Signatory', senderDesignation: 'Director of Operations',
+                        status: 'Draft', hiddenFields: [], selectedLogo: 'entertainment',
+                        customPages: (data.customPages || []).map((cp, cpIdx) => ({ id: String(Date.now()) + '-cp-' + cpIdx, title: cp.title || 'Additional Page', subtitle: cp.subtitle || '', content: cp.content || '', insertAfter: 'default' })),
+                        items: data.items?.length ? data.items.map((item, idx) => ({ id: Date.now() + 200 + idx + Math.random(), description: item.description || item.name || '', qty: Number(item.qty) || 1, unit: item.unit || 'Unit', price: Number(item.price) || 0 })) : [],
+                        subtotal: 0, gstAmount: 0, totalAmount: 0, hideTotalColumn: false, isBulkGenerated: true,
+                        strategyTitle: 'EXECUTIVE SUMMARY', strategySub: 'STRATEGIC OUTLINE',
+                        scopeTitle: 'SCOPE OF WORK', scopeSub: 'RESOURCE DELIVERABLES',
+                        proposalTitle: 'DELIVERABLES', proposalSub: 'PROJECT INVENTORY',
+                        inventoryTitle: 'RESOURCE INVENTORY', inventorySub: 'COMMERCIALS BREAKDOWN',
+                        commercialsTitle: 'COMMERCIAL TERMS', commercialsSub: 'SETTLEMENT & SIGN-OFF'
+                    };
+                    generatedProposals.push(finalProposal);
+                    setBulkProgress({ current: i + 1, total: prompts.length });
+                }
+                setBulkProposals(prev => {
+                    const newVault = [...prev, ...generatedProposals];
+                    setSelectedBulkIndex(newVault.length - generatedProposals.length);
+                    return newVault;
+                });
+                setMessages(prev => [...prev, {
+                    id: String(Date.now()) + '-ai',
+                    sender: 'ai',
+                    text: `✓ Successfully generated **${generatedProposals.length} proposals** in Bulk Mode! You can browse through them using the proposal selector in the preview panel.`
+                }]);
+                if (!isFloatingChatOpen) setUnreadChatCount(prev => prev + 1);
+                addToast(`${generatedProposals.length} proposals generated in Bulk Mode!`, 'success');
+            } catch (err) {
+                setMessages(prev => [...prev, {
+                    id: String(Date.now()) + '-ai-err',
+                    sender: 'ai',
+                    text: `⚠ **${err.code || 'NB-500'}** — ${err.message || "Something went wrong during bulk generation. Try simplifying your input."}\n\n💡 **Tip:** Need help? Try separating each proposal with \`---\` or simplify your prompt.`
+                }]);
+                if (!isFloatingChatOpen) setUnreadChatCount(prev => prev + 1);
+                addToast(err.message || 'Bulk generation failed', 'error');
+            }
+            setIsBulkGenerating(false);
+            setIsGenerating(false);
+            return;
+        }
+
         try {
             if (refinementContext) {
                 // Field refinement
@@ -1553,84 +1966,160 @@ const ProposalGenerator = () => {
                     text: `✓ Refinement applied to "${refinementContext.fieldLabel}"! Output updated in the preview.`
                 }]);
                 setRefinementContext(null);
+                if (!isFloatingChatOpen) setUnreadChatCount(prev => prev + 1);
                 addToast(`Field "${refinementContext.fieldLabel}" successfully refined!`, 'success');
             } else {
-                const isInitialGeneration = !singleFormData.clientName || singleFormData.clientName.trim() === '' || messages.length <= 1;
-                if (isInitialGeneration) {
+                // In bulk mode, AI creates new proposals instead of editing
+                if (isBulkMode) {
+                    setIsBulkGenerating(true);
                     const data = await generateFullDocument('proposal', currentPrompt, 'Premium', {});
-                    setSingleFormData(prev => ({
-                        ...prev,
-                        clientName: data.clientName || prev.clientName,
-                        clientAddress: data.clientAddress || prev.clientAddress,
-                        campaignName: data.campaignName || prev.campaignName,
-                        campaignDuration: data.campaignDuration || prev.campaignDuration,
-                        coverDescription: data.coverDescription || prev.coverDescription,
-                        overview: data.overview || prev.overview,
-                        primaryGoal: data.primaryGoal || prev.primaryGoal,
-                        scopeOfWork: data.scopeOfWork || prev.scopeOfWork,
-                        terms: data.terms || prev.terms,
-                        deliverables: data.deliverables?.length 
-                            ? data.deliverables.map((d, i) => ({ 
-                                id: Date.now() + i, 
-                                item: d.item || d.name || '', 
-                                qty: d.qty || '1', 
-                                timeline: d.timeline || 'TBD' 
-                            })) 
-                            : prev.deliverables,
-                        clientRequirements: data.clientRequirements?.length 
-                            ? data.clientRequirements.map((r, i) => ({ 
-                                id: Date.now() + 100 + i, 
-                                description: r.description || r.requirement || '' 
-                            })) 
-                            : prev.clientRequirements,
-                    }));
-                    if (data.items && data.items.length > 0) {
-                        setSingleItems(data.items.map((item, idx) => ({
-                            id: Date.now() + 200 + idx,
-                            description: item.description || item.name || '',
-                            qty: Number(item.qty) || 1,
-                            unit: item.unit || 'Unit',
-                            price: Number(item.price) || 0
-                        })));
-                    }
-
+                    const newProposal = {
+                        clientName: data.clientName || 'New Client',
+                        clientAddress: data.clientAddress || 'Corporate Headquarters',
+                        campaignName: data.campaignName || 'PROPOSAL PLAN',
+                        campaignDuration: data.campaignDuration || 'TBD',
+                        proposalNumber: `NBQ-${Math.floor(1000 + Math.random() * 9000)}`,
+                        coverDescription: data.coverDescription || '',
+                        overview: data.overview || '', primaryGoal: data.primaryGoal || '',
+                        numericTargets: '', audienceAge: '', audienceLocation: '', audienceInterests: '',
+                        selectedChannels: [], contentCount: { reels: 0, posts: 0, stories: 0 },
+                        deliverables: data.deliverables?.length ? data.deliverables.map((d, i) => ({ id: Date.now() + i, item: d.item || d.name || '', qty: d.qty || '1', timeline: d.timeline || 'TBD' })) : [],
+                        clientRequirements: data.clientRequirements?.length ? data.clientRequirements.map((r, i) => ({ id: Date.now() + 100 + i, description: r.description || r.requirement || '' })) : [],
+                        scopeOfWork: data.scopeOfWork || '', terms: data.terms || '',
+                        paymentDetails: formData.paymentDetails || '', gstRate: 18, advanceRequested: 50,
+                        showGst: true, showPaymentDetails: true, showSeal: false, showSignatures: true,
+                        signatureType: 'handwritten', providerSignature: '', clientSignature: '',
+                        senderName: 'Authorized Signatory', senderDesignation: 'Director of Operations',
+                        status: 'Draft', hiddenFields: [], selectedLogo: 'entertainment',
+                        customPages: (data.customPages || []).map((cp, cpIdx) => ({ id: String(Date.now()) + '-cp-' + cpIdx, title: cp.title || 'Additional Page', subtitle: cp.subtitle || '', content: cp.content || '', insertAfter: 'default' })),
+                        items: data.items?.length ? data.items.map((item, idx) => ({ id: Date.now() + 200 + idx, description: item.description || item.name || '', qty: Number(item.qty) || 1, unit: item.unit || 'Unit', price: Number(item.price) || 0 })) : [],
+                        isBulkGenerated: true,
+                        strategyTitle: 'EXECUTIVE SUMMARY', strategySub: 'STRATEGIC OUTLINE',
+                        scopeTitle: 'SCOPE OF WORK', scopeSub: 'RESOURCE DELIVERABLES',
+                        proposalTitle: 'DELIVERABLES', proposalSub: 'PROJECT INVENTORY',
+                        inventoryTitle: 'RESOURCE INVENTORY', inventorySub: 'COMMERCIALS BREAKDOWN',
+                        commercialsTitle: 'COMMERCIAL TERMS', commercialsSub: 'SETTLEMENT & SIGN-OFF'
+                    };
+                    setBulkProposals(prev => {
+                        const updated = [...prev, newProposal];
+                        setSelectedBulkIndex(updated.length - 1);
+                        return updated;
+                    });
                     setMessages(prev => [...prev, {
                         id: String(Date.now()) + '-ai',
                         sender: 'ai',
-                        text: `✓ Proposal for "${data.clientName || 'Partner'}" generated successfully! I added ${data.items?.length || 0} financial line items. \n\nYou can continue chatting here to modify the proposal, or edit using the manual tabs.`
+                        text: `✓ New proposal for "${data.clientName || 'Partner'}" added to your Bulk Vault! Total proposals: ${bulkProposals.length + 1}.`
                     }]);
-                    addToast('Proposal successfully generated!', 'success');
+                    if (!isFloatingChatOpen) setUnreadChatCount(prev => prev + 1);
+                    addToast('New proposal added to Bulk Vault!', 'success');
+                    setIsBulkGenerating(false);
                 } else {
-                    const currentDoc = singleFormData;
-                    const currentDocWithItems = { ...currentDoc, items };
-                    const updatedDoc = await reviseDocument(currentDocWithItems, currentPrompt, 'Premium');
-                    
-                    setFormData(updatedDoc);
-                    if (updatedDoc.items && updatedDoc.items.length > 0) {
-                        setItems(updatedDoc.items.map((item, idx) => ({
-                            id: Date.now() + 200 + idx,
-                            description: item.description || item.name || item.item || '',
-                            qty: Number(item.qty) || 1,
-                            unit: item.unit || 'Unit',
-                            price: Number(item.price) || 0
-                        })));
-                    }
+                    const isInitialGeneration = !singleFormData.clientName || singleFormData.clientName.trim() === '' || messages.length <= 1;
+                    if (isInitialGeneration) {
+                        const data = await generateFullDocument('proposal', currentPrompt, 'Premium', {});
+                        setSingleFormData(prev => ({
+                            ...prev,
+                            clientName: data.clientName || prev.clientName,
+                            clientAddress: data.clientAddress || prev.clientAddress,
+                            campaignName: data.campaignName || prev.campaignName,
+                            campaignDuration: data.campaignDuration || prev.campaignDuration,
+                            coverDescription: data.coverDescription || prev.coverDescription,
+                            overview: data.overview || prev.overview,
+                            primaryGoal: data.primaryGoal || prev.primaryGoal,
+                            scopeOfWork: data.scopeOfWork || prev.scopeOfWork,
+                            terms: data.terms || prev.terms,
+                            deliverables: data.deliverables?.length 
+                                ? data.deliverables.map((d, i) => ({ 
+                                    id: Date.now() + i, 
+                                    item: d.item || d.name || '', 
+                                    qty: d.qty || '1', 
+                                    timeline: d.timeline || 'TBD' 
+                                })) 
+                                : prev.deliverables,
+                            clientRequirements: data.clientRequirements?.length 
+                                ? data.clientRequirements.map((r, i) => ({ 
+                                    id: Date.now() + 100 + i, 
+                                    description: r.description || r.requirement || '' 
+                                })) 
+                                : prev.clientRequirements,
+                            customPages: data.customPages?.length
+                                ? [
+                                    ...(prev.customPages || []),
+                                    ...data.customPages.map((cp, cpIdx) => ({
+                                        id: String(Date.now()) + '-aicp-' + cpIdx,
+                                        title: cp.title || 'AI Generated Page',
+                                        subtitle: cp.subtitle || '',
+                                        content: cp.content || '',
+                                        insertAfter: 'default'
+                                    }))
+                                ]
+                                : prev.customPages,
+                        }));
+                        if (data.items && data.items.length > 0) {
+                            setSingleItems(data.items.map((item, idx) => ({
+                                id: Date.now() + 200 + idx,
+                                description: item.description || item.name || '',
+                                qty: Number(item.qty) || 1,
+                                unit: item.unit || 'Unit',
+                                price: Number(item.price) || 0
+                            })));
+                        }
 
-                    setMessages(prev => [...prev, {
-                        id: String(Date.now()) + '-ai',
-                        sender: 'ai',
-                        text: `✓ Document refined according to request: "${currentPrompt}". You can inspect the updated preview on the right.`
-                    }]);
-                    addToast('Document successfully refined!', 'success');
+                        const extraPagesMsg = data.customPages?.length ? ` I also created ${data.customPages.length} additional page(s) for you.` : '';
+                        setMessages(prev => [...prev, {
+                            id: String(Date.now()) + '-ai',
+                            sender: 'ai',
+                            text: `✓ Proposal for "${data.clientName || 'Partner'}" generated successfully! I added ${data.items?.length || 0} financial line items.${extraPagesMsg} \n\nYou can continue chatting here to modify the proposal, or edit using the manual tabs.`
+                        }]);
+                        if (!isFloatingChatOpen) setUnreadChatCount(prev => prev + 1);
+                        addToast('Proposal successfully generated!', 'success');
+                    } else {
+                        const currentDoc = singleFormData;
+                        const currentDocWithItems = { ...currentDoc, items };
+                        const updatedDoc = await reviseDocument(currentDocWithItems, currentPrompt, 'Premium');
+                        
+                        // Handle custom pages from revision
+                        if (updatedDoc.customPages && updatedDoc.customPages.length > 0) {
+                            updatedDoc.customPages = updatedDoc.customPages.map((cp, cpIdx) => ({
+                                id: cp.id || String(Date.now()) + '-rcp-' + cpIdx,
+                                title: cp.title || 'Page',
+                                subtitle: cp.subtitle || '',
+                                content: cp.content || '',
+                                insertAfter: cp.insertAfter || 'default'
+                            }));
+                        }
+                        
+                        setFormData(updatedDoc);
+                        if (updatedDoc.items && updatedDoc.items.length > 0) {
+                            setItems(updatedDoc.items.map((item, idx) => ({
+                                id: Date.now() + 200 + idx,
+                                description: item.description || item.name || item.item || '',
+                                qty: Number(item.qty) || 1,
+                                unit: item.unit || 'Unit',
+                                price: Number(item.price) || 0
+                            })));
+                        }
+
+                        setMessages(prev => [...prev, {
+                            id: String(Date.now()) + '-ai',
+                            sender: 'ai',
+                            text: `✓ Document refined according to request: "${currentPrompt}". You can inspect the updated preview on the right.`
+                        }]);
+                        if (!isFloatingChatOpen) setUnreadChatCount(prev => prev + 1);
+                        addToast('Document successfully refined!', 'success');
+                    }
                 }
             }
         } catch (err) {
+            const errCode = err.code || 'NB-500';
+            const errMsg = err.message || "Something unexpected happened. Give it another shot!";
             setMessages(prev => [...prev, {
                 id: String(Date.now()) + '-ai-err',
                 sender: 'ai',
-                text: `⚠ Failed to process request: ${err.message}`
+                text: `⚠ **${errCode}** — ${errMsg}\n\n💡 **Tip:** Need help? Try simplifying your prompt or check your internet connection.`
             }]);
-            addToast(`Error: ${err.message}`, 'error');
+            if (!isFloatingChatOpen) setUnreadChatCount(prev => prev + 1);
+            addToast(errMsg, 'error');
         } finally {
             setIsGenerating(false);
             setIsBulkGenerating(false);
@@ -1639,134 +2128,54 @@ const ProposalGenerator = () => {
 
     const renderChatbot = (isFloating = false) => {
         return (
-            <div className={cn(
-                "flex flex-col relative w-full",
-                isFloating ? "flex-grow flex-1 min-h-0 h-full overflow-hidden" : "h-auto"
-            )}>
-                {/* Orbital Glow in Background */}
-                <div className={cn("absolute top-0 left-1/2 -translate-x-1/2 bg-neon-green/5 rounded-full blur-3xl pointer-events-none", isFloating ? "w-48 h-48" : "w-64 h-64")} />
+            <div className="flex flex-col relative w-full h-full min-h-0 overflow-hidden font-['Outfit']">
+                {/* Subtle Background Glow */}
+                <div className="absolute -top-10 left-1/2 -translate-x-1/2 w-40 h-40 bg-neon-green/5 rounded-full blur-3xl pointer-events-none" />
 
-                {/* Brand Header */}
-                <div className={cn(
-                    "bg-zinc-950/45 border border-white/[0.06] backdrop-blur-2xl rounded-2xl flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 shrink-0 relative z-10 shadow-lg",
-                    isFloating ? "p-3 mb-2" : "p-4 mb-6"
-                )}>
-                    <div className="flex items-center gap-3.5 animate-fade-in">
-                        <div className={cn(
-                            "rounded-xl flex items-center justify-center border relative shadow-sm shrink-0",
-                            isFloating ? "w-9 h-9 bg-neon-green/5 border-neon-green/10 text-neon-green" : "w-11 h-11 bg-neon-green/[0.02] border-neon-green/10 text-neon-green shadow-[0_0_15px_rgba(57,255,20,0.05)]"
-                        )}>
-                            <div className="absolute inset-0 rounded-inherit bg-neon-green/5 opacity-40 animate-pulse pointer-events-none" />
-                            <Cpu size={isFloating ? 16 : 18} className="text-neon-green animate-pulse" />
-                        </div>
-                        <div className="space-y-0.5">
-                            <div className="flex items-center gap-2">
-                                <span className="text-[8px] font-black text-zinc-500 uppercase tracking-[0.25em] block leading-none">Primary Model</span>
-                                <span className="relative flex h-1.5 w-1.5">
-                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-neon-green opacity-75"></span>
-                                    <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-neon-green"></span>
-                                </span>
-                            </div>
-                            <div className="flex items-center gap-1.5">
-                                <h3 className="text-xs font-bold text-zinc-200 tracking-wide leading-none">
-                                    {activeModel || 'Gemini 3.5 Flash'}
-                                </h3>
-                                <span className="h-3 w-px bg-white/10" />
-                                <span className="text-[8px] text-zinc-500 font-mono font-medium lowercase tracking-wide">live pulse</span>
-                            </div>
+                {/* Minimal Sleek Header */}
+                <div className="flex items-center justify-between px-3 py-2.5 border-b border-white/5 bg-zinc-950/40 rounded-2xl shrink-0 relative z-10 mb-2">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="w-2 h-2 rounded-full bg-neon-green shadow-[0_0_8px_#39FF14] shrink-0 animate-pulse" />
+                        <div className="min-w-0 flex items-center gap-2">
+                            <span className="text-xs font-bold text-white tracking-wide truncate">
+                                AI Proposal Assistant
+                            </span>
+                            <span className="text-[9px] font-mono text-zinc-500 font-medium px-1.5 py-0.5 rounded bg-white/5 border border-white/5 shrink-0">
+                                {activeModel || 'Gemini'}
+                            </span>
                         </div>
                     </div>
-                    {/* Mode status indicator */}
-                    <div className="flex items-center justify-between sm:justify-end gap-4 border-t sm:border-t-0 border-white/5 pt-2 sm:pt-0">
-                        <div className="flex items-center gap-2.5">
-                            <span className="text-[8px] font-black text-zinc-500 uppercase tracking-[0.2em] leading-none">Active Mode</span>
-                            <div className="flex items-center gap-2 bg-white/[0.02] border border-white/10 px-3 py-1.5 rounded-full shadow-inner">
-                                <span className="h-1.5 w-1.5 rounded-full bg-neon-green animate-pulse" />
-                                <span className="text-[9px] font-bold uppercase tracking-widest text-zinc-300">
-                                    {refinementContext ? 'Field Refinement' : (messages.length <= 1 ? 'First Draft' : 'Refinement & Chat')}
-                                </span>
-                            </div>
-                        </div>
+
+                    <div className="flex items-center gap-1.5 shrink-0">
                         {messages.length > 1 && (
                             <button
                                 type="button"
                                 onClick={() => {
-                                    setSingleFormData({
-                                        clientName: '',
-                                        clientAddress: '',
-                                        campaignName: '',
-                                        campaignDuration: '',
-                                        proposalNumber: `NBQ-${Math.floor(1000 + Math.random() * 9000)}`,
-                                        coverDescription: 'This comprehensive commercial instrument details the strategic execution architecture and deployment framework proposed by Newbi Entertainment for the success of your upcoming mission.',
-                                        overview: '',
-                                        primaryGoal: '',
-                                        numericTargets: '',
-                                        audienceAge: '',
-                                        audienceLocation: '',
-                                        audienceInterests: '',
-                                        selectedChannels: [],
-                                        contentCount: { reels: 0, posts: 0, stories: 0 },
-                                        deliverables: [{ id: 1, item: '', qty: '', timeline: '' }],
-                                        clientRequirements: [{ id: 1, description: '' }],
-                                        scopeOfWork: '',
-                                        terms: '1. 50% Advance Fee required.\n2. Balance on delivery.\n3. Taxes as applicable (18% GST).\n4. Quote valid for 14 days.',
-                                        paymentDetails: 'Account Name: YOUR NAME\nAccount Number: 0000000000\nIFSC: YOUR000000\nUPI: yourname@upi',
-                                        gstRate: 18,
-                                        advanceRequested: 50,
-                                        showGst: true,
-                                        showPaymentDetails: true,
-                                        showSeal: false,
-                                        showSignatures: false,
-                                        signatureType: 'handwritten',
-                                        providerSignature: '',
-                                        clientSignature: '',
-                                        senderName: 'Authorized Signatory',
-                                        senderDesignation: 'Director of Operations',
-                                        status: 'Draft',
-                                        hiddenFields: [],
-                                        selectedLogo: 'entertainment',
-                                        customPages: [],
-                                        totalOverride: null,
-                                        totalSourceColumn: 'price',
-                                        hideTotalColumn: false,
-                                        strategyTitle: 'EXECUTIVE SUMMARY',
-                                        strategySub: 'STRATEGIC OUTLINE',
-                                        scopeTitle: 'SCOPE OF WORK',
-                                        scopeSub: 'RESOURCE DELIVERABLES',
-                                        proposalTitle: 'DELIVERABLES',
-                                        proposalSub: 'PROJECT INVENTORY',
-                                        inventoryTitle: 'RESOURCE INVENTORY',
-                                        inventorySub: 'COMMERCIALS BREAKDOWN',
-                                        commercialsTitle: 'COMMERCIAL TERMS',
-                                        commercialsSub: 'SETTLEMENT & SIGN-OFF'
-                                    });
-                                    setSingleItems([
-                                        { id: 1, description: 'Project Phase 01: Initial Strategic Planning', qty: 1, unit: 'Phase', price: 0 }
-                                    ]);
                                     setMessages([
                                         {
                                             id: 'init-msg',
                                             sender: 'ai',
-                                            text: "Welcome to Newbi AI Proposal Studio. Describe the event or campaign requirements in the prompt box below, and I will draft a comprehensive proposal. Once generated, continue chatting to refine any details!"
+                                            text: "Welcome to Newbi AI Proposal Studio. Describe the event or campaign requirements below, and I will draft a comprehensive proposal. Continue chatting to refine any details!"
                                         }
                                     ]);
                                     setPromptText('');
                                     setRefinementContext(null);
-                                    addToast('Reset to fresh draft state', 'info');
+                                    addToast('Chat reset to initial state', 'info');
                                 }}
-                                className="px-3 py-1.5 bg-red-500/[0.03] hover:bg-red-500/[0.08] border border-red-500/10 hover:border-red-500/30 text-red-400 hover:text-red-300 rounded-xl text-[9px] font-bold uppercase tracking-widest transition-all active:scale-95 flex items-center gap-1.5 shadow-sm"
+                                className="p-1.5 text-zinc-500 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-all"
+                                title="Reset conversation"
                             >
-                                <RefreshCw size={10} />
-                                <span>Reset</span>
+                                <RotateCcw size={13} />
                             </button>
                         )}
                         {isFloating && (
                             <button
                                 type="button"
                                 onClick={() => setIsFloatingChatOpen(false)}
-                                className="p-2 bg-white/[0.02] hover:bg-white/[0.06] border border-white/10 rounded-xl text-zinc-400 hover:text-white transition-all active:scale-95 shadow-sm"
+                                className="p-1.5 text-zinc-500 hover:text-white hover:bg-white/10 rounded-xl transition-all"
+                                title="Close chat"
                             >
-                                <X size={14} />
+                                <X size={15} />
                             </button>
                         )}
                     </div>
@@ -1775,96 +2184,41 @@ const ProposalGenerator = () => {
                 {/* Message Stream */}
                 <div 
                     ref={isFloating ? floatingChatContainerRef : chatContainerRef} 
-                    className={cn(
-                        "space-y-4 mb-4 relative z-10 flex flex-col w-full",
-                        isFloating ? "flex-grow overflow-y-auto min-h-0 pr-2 scrollbar-hide" : "h-auto"
-                    )}
+                    className="flex-1 overflow-y-auto min-h-0 pr-1 space-y-3 scrollbar-hide py-1 relative z-10"
                 >
-                    {/* Welcome card if only initial message */}
+                    {/* Compact Welcome Screen when only 1 message */}
                     {messages.length === 1 && (
-                        <div className={cn(
-                            "my-auto py-4 flex flex-col items-center justify-center text-center mx-auto animate-fade-in",
-                            isFloating ? "max-w-full space-y-4 px-2" : "max-w-2xl space-y-6"
-                        )}>
-                            <div className="relative">
-                                <div className="absolute -inset-4 bg-gradient-to-r from-neon-green via-neon-blue to-purple-500 rounded-full blur-xl opacity-20 animate-pulse" />
-                                <div className="relative w-12 h-12 rounded-full bg-zinc-950 border border-white/10 flex items-center justify-center shadow-[0_0_30px_rgba(57,255,20,0.15)]">
-                                    <Sparkles size={20} className="text-neon-green animate-pulse" />
-                                </div>
+                        <div className="h-full flex flex-col items-center justify-center text-center px-3 py-4 space-y-3.5 my-auto animate-fade-in">
+                            <div className="w-10 h-10 rounded-2xl bg-neon-green/10 border border-neon-green/20 flex items-center justify-center shadow-[0_0_20px_rgba(57,255,20,0.1)]">
+                                <Sparkles size={18} className="text-neon-green" />
                             </div>
-                            <div className="space-y-2 max-w-md">
-                                <h2 className="text-lg font-black uppercase tracking-tight text-white leading-none">
-                                    AI Document <span className="bg-gradient-to-r from-neon-green to-emerald-400 bg-clip-text text-transparent">Orchestrator</span>
-                                </h2>
-                                <p className="text-[10px] text-zinc-400 leading-relaxed font-medium">
-                                    Input requirements below. The generator constructs a fully formatted proposal including scope of work, deliverables, and financials.
+                            <div className="space-y-1 max-w-[280px]">
+                                <h3 className="text-xs font-bold text-white tracking-wide">
+                                    How can I help with your proposal?
+                                </h3>
+                                <p className="text-[10px] text-zinc-400 leading-relaxed">
+                                    Describe what you want to generate, modify, or add to this quotation.
                                 </p>
                             </div>
 
-                            {/* Suggestions Grid */}
-                            {!isFloating && (
-                                <div className="w-full space-y-4 pt-4 border-t border-white/5">
-                                    <div className="flex items-center justify-between px-1">
-                                        <span className="text-[9px] font-black uppercase text-zinc-500 tracking-[0.2em] flex items-center gap-2">
-                                            <Sparkles size={10} className="text-neon-green" /> Suggested Blueprints
-                                        </span>
-                                        <button 
-                                            type="button"
-                                            onClick={() => setSuggestionCategory(c => (c + 1) % 2)}
-                                            className="flex items-center gap-1.5 px-2.5 py-1 bg-white/5 hover:bg-white/10 border border-white/5 hover:border-white/10 rounded-lg text-[8px] font-black uppercase tracking-widest text-zinc-400 hover:text-white transition-all active:scale-95"
-                                        >
-                                            <RefreshCw size={8} className="animate-spin-slow" /> Next Blueprints
-                                        </button>
-                                    </div>
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                                        {suggestions.map((s, idx) => {
-                                            let Icon = Sparkles;
-                                            let heading = "Custom Setup";
-                                            if (s.toLowerCase().includes("music") || s.toLowerCase().includes("festival")) {
-                                                Icon = Music;
-                                                heading = "Music Festival";
-                                            } else if (s.toLowerCase().includes("comedy") || s.toLowerCase().includes("talent")) {
-                                                Icon = Smile;
-                                                heading = "Comedy Tour";
-                                            } else if (s.toLowerCase().includes("marathon") || s.toLowerCase().includes("run")) {
-                                                Icon = Trophy;
-                                                heading = "Corporate Run";
-                                            } else if (s.toLowerCase().includes("gala") || s.toLowerCase().includes("anniversary")) {
-                                                Icon = Award;
-                                                heading = "Gala Dinner";
-                                            } else if (s.toLowerCase().includes("marketing") || s.toLowerCase().includes("social")) {
-                                                Icon = Megaphone;
-                                                heading = "Media Coverage";
-                                            } else if (s.toLowerCase().includes("tedx") || s.toLowerCase().includes("technical")) {
-                                                Icon = Cpu;
-                                                heading = "Technical Stage";
-                                            }
-                                            return (
-                                                <button
-                                                    type="button"
-                                                    key={idx}
-                                                    onClick={() => setPromptText(s)}
-                                                    className="text-left p-4 bg-zinc-900/30 hover:bg-zinc-900/60 border border-white/5 hover:border-neon-green/20 rounded-2xl transition-all duration-300 flex flex-col justify-between gap-4 h-auto min-h-[145px] pb-4 group relative overflow-hidden shadow-sm"
-                                                >
-                                                    <div className="absolute top-0 right-0 w-16 h-16 bg-neon-green/5 rounded-full blur-xl opacity-0 group-hover:opacity-100 transition-opacity" />
-                                                    <div className="flex items-center justify-between w-full relative z-10">
-                                                        <div className="p-2 bg-white/5 group-hover:bg-neon-green/10 rounded-xl transition-colors">
-                                                            <Icon size={14} className="text-zinc-400 group-hover:text-neon-green transition-colors" />
-                                                        </div>
-                                                        <span className="text-[9px] font-black text-neon-green opacity-0 group-hover:opacity-100 translate-x-2 group-hover:translate-x-0 transition-all">→</span>
-                                                    </div>
-                                                    <div className="space-y-1 relative z-10 w-full">
-                                                        <span className="text-[8px] font-black uppercase tracking-widest text-zinc-500 group-hover:text-zinc-400">{heading}</span>
-                                                        <p className="text-[10px] font-bold text-zinc-400 group-hover:text-white transition-colors line-clamp-2 leading-relaxed">
-                                                            {s}
-                                                        </p>
-                                                    </div>
-                                                </button>
-                                            );
-                                        })}
-                                    </div>
-                                </div>
-                            )}
+                            {/* Quick Suggestion Chips */}
+                            <div className="flex flex-wrap justify-center gap-1.5 pt-1 max-w-[320px]">
+                                {[
+                                    'Music Festival Proposal',
+                                    'Add AV & Staging Items',
+                                    'Increase Budget by 20%',
+                                    'Add 50% Advance & Terms'
+                                ].map((s) => (
+                                    <button
+                                        key={s}
+                                        type="button"
+                                        onClick={() => setPromptText(s)}
+                                        className="px-2.5 py-1 rounded-xl bg-white/[0.03] hover:bg-neon-green/10 border border-white/5 hover:border-neon-green/30 text-[9px] font-medium text-zinc-400 hover:text-neon-green transition-all text-left"
+                                    >
+                                        ✨ {s}
+                                    </button>
+                                ))}
+                            </div>
                         </div>
                     )}
 
@@ -1873,39 +2227,41 @@ const ProposalGenerator = () => {
                         <div
                             key={m.id}
                             className={cn(
-                                "max-w-[85%] rounded-[2rem] p-4 text-xs leading-relaxed transition-all shadow-md relative overflow-hidden group",
+                                "max-w-[88%] rounded-2xl p-3 text-xs leading-relaxed transition-all shadow-sm relative overflow-hidden",
                                 m.sender === 'user'
-                                    ? "bg-zinc-900 text-zinc-100 self-end rounded-tr-none border border-white/5"
-                                    : "bg-white/[0.02] border border-white/[0.04] text-zinc-300 self-start rounded-tl-none"
+                                    ? "bg-zinc-800/90 text-zinc-100 self-end rounded-tr-sm border border-white/10 ml-auto"
+                                    : "bg-white/[0.03] border border-white/[0.06] text-zinc-200 self-start rounded-tl-sm mr-auto"
                             )}
                         >
-                            <div className="flex items-center gap-2 mb-1.5">
+                            <div className="flex items-center gap-1.5 mb-1 opacity-60">
                                 <span className={cn(
                                     "text-[8px] font-black uppercase tracking-wider",
-                                    m.sender === 'user' ? "text-gray-400" : "text-neon-green"
+                                    m.sender === 'user' ? "text-zinc-400" : "text-neon-green"
                                 )}>
-                                    {m.sender === 'user' ? 'You' : (activeModel || 'Gemini 3.5 Flash')}
+                                    {m.sender === 'user' ? 'You' : (activeModel || 'AI')}
                                 </span>
                             </div>
-                            <div className="font-medium leading-relaxed">{renderChatMessage(m.text)}</div>
+                            <div className="font-medium text-[11px] leading-relaxed break-words">
+                                {renderChatMessage(m.text)}
+                            </div>
                         </div>
                     ))}
 
-                    {/* Generating Bubble */}
+                    {/* Generating Indicator */}
                     {isGenerating && (
-                        <div className="bg-white/[0.02] border border-white/[0.04] text-zinc-300 self-start rounded-[2rem] rounded-tl-none p-4 text-xs w-[260px] sm:w-[280px] flex flex-col gap-2.5 shadow-md">
+                        <div className="bg-white/[0.03] border border-white/[0.06] text-zinc-300 self-start rounded-2xl rounded-tl-sm p-3 text-xs w-[240px] flex flex-col gap-2 shadow-sm mr-auto">
                             <div className="flex items-center gap-2">
-                                <Sparkles size={14} className="text-neon-green animate-spin shrink-0" />
-                                <span className="font-bold uppercase tracking-wider text-[9px] text-neon-green flex-1 truncate">
-                                    {STAGE_MESSAGES[generationStage]?.text || "Synthesizing document..."}
+                                <Sparkles size={12} className="text-neon-green animate-spin shrink-0" />
+                                <span className="font-bold uppercase tracking-wider text-[8px] text-neon-green flex-1 truncate">
+                                    {STAGE_MESSAGES[generationStage]?.text || "Generating..."}
                                 </span>
                                 <span className="text-[8px] font-mono text-zinc-500 font-bold shrink-0">
                                     {generationTime}s
                                 </span>
                             </div>
-                            <div className="w-full h-1 bg-zinc-950 rounded-full overflow-hidden">
+                            <div className="w-full h-1 bg-zinc-900 rounded-full overflow-hidden">
                                 <div 
-                                    className="h-full bg-neon-green transition-all duration-500" 
+                                    className="h-full bg-neon-green transition-all duration-500 shadow-[0_0_8px_#39FF14]" 
                                     style={{ width: `${generationProgress}%` }}
                                 />
                             </div>
@@ -1914,34 +2270,34 @@ const ProposalGenerator = () => {
                     <div ref={chatEndRef} />
                 </div>
 
-                {/* Prompt container - Command Console Redesign */}
-                <div className={cn("pt-2 bg-transparent", isFloating ? "mt-auto shrink-0" : "mt-6")}>
-                    <div className="bg-zinc-950 border border-white/5 rounded-2xl p-2.5 flex flex-col gap-2 relative shadow-[0_10px_30px_rgba(0,0,0,0.5)] focus-within:border-neon-green/30 focus-within:shadow-[0_0_20px_rgba(57,255,20,0.05)] transition-all">
-                        {/* Quoted Refinement Context */}
+                {/* Clean Prompt Input Bar */}
+                <div className="pt-2 shrink-0 relative z-10">
+                    <div className="bg-zinc-900/90 border border-white/10 focus-within:border-neon-green/40 rounded-2xl p-2 flex flex-col gap-1.5 shadow-lg transition-all">
+                        {/* Refinement Quote Banner */}
                         {refinementContext && (
-                            <div className="px-3 py-2 bg-neon-green/5 border border-neon-green/20 rounded-xl flex items-center justify-between gap-3 border-l-4 border-l-neon-green shadow-inner animate-fade-in">
+                            <div className="px-2.5 py-1.5 bg-neon-green/10 border border-neon-green/20 rounded-xl flex items-center justify-between gap-2 animate-fade-in">
                                 <div className="min-w-0">
-                                    <span className="text-[7px] font-black uppercase tracking-widest text-neon-green block mb-0.5">Refining: {refinementContext.fieldLabel}</span>
-                                    <p className="text-[9px] text-zinc-400 line-clamp-1 italic">
-                                        "{refinementContext.currentValue || 'No current content...'}"
-                                    </p>
+                                    <span className="text-[8px] font-bold text-neon-green block truncate">
+                                        Refining: {refinementContext.fieldLabel}
+                                    </span>
                                 </div>
                                 <button 
                                     type="button" 
                                     onClick={() => setRefinementContext(null)}
-                                    className="p-1 hover:bg-white/5 rounded-lg text-zinc-500 hover:text-white transition-all shrink-0"
+                                    className="text-zinc-500 hover:text-white p-0.5 rounded"
                                 >
                                     <X size={10} />
                                 </button>
                             </div>
                         )}
 
+                        {/* Textarea + Send Button Row */}
                         <div className="flex items-end gap-2">
                             <textarea
                                 value={promptText}
                                 onChange={e => setPromptText(e.target.value)}
-                                placeholder={refinementContext ? `Instruct AI to refine "${refinementContext.fieldLabel}"...` : "Describe the proposal you want to generate or modify..."}
-                                className="flex-grow bg-transparent border-none text-[12px] font-medium text-white placeholder:text-zinc-600 outline-none min-h-[36px] max-h-[120px] py-1 px-1.5 resize-none leading-relaxed"
+                                placeholder={refinementContext ? `Instructions for "${refinementContext.fieldLabel}"...` : (isBulkMode ? "Paste requirements for bulk generation..." : "Type instructions or ask to modify anything...")}
+                                className="flex-grow bg-transparent border-none text-xs font-medium text-white placeholder:text-zinc-500 outline-none min-h-[36px] max-h-[90px] py-1 px-1 resize-none leading-relaxed scrollbar-hide"
                                 rows={1}
                                 disabled={isGenerating}
                                 onKeyDown={e => {
@@ -1955,57 +2311,11 @@ const ProposalGenerator = () => {
                                 type="button"
                                 onClick={handleStudioSubmit}
                                 disabled={!promptText.trim() || isGenerating}
-                                className="w-9 h-9 bg-neon-green text-black rounded-xl hover:scale-105 active:scale-95 transition-all shrink-0 disabled:opacity-20 disabled:scale-100 flex items-center justify-center shadow-[0_0_10px_rgba(57,255,20,0.3)]"
+                                className="w-8 h-8 bg-neon-green text-black rounded-xl hover:scale-105 active:scale-95 transition-all shrink-0 disabled:opacity-20 disabled:scale-100 flex items-center justify-center shadow-[0_0_12px_rgba(57,255,20,0.25)]"
+                                title="Send"
                             >
                                 {isGenerating ? <RefreshCw className="animate-spin" size={12} /> : <Send size={12} />}
                             </button>
-                        </div>
-
-                        {/* Control Bar inside Prompt Console */}
-                        <div className="flex items-center justify-between border-t border-white/5 pt-2 px-1 text-[8px] text-zinc-500 font-bold">
-                            <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                                <div className="flex items-center gap-1">
-                                    <span>Tone:</span>
-                                    <div className="flex bg-black/40 rounded p-0.5 border border-white/5">
-                                        {['balanced', 'creative', 'formal'].map(t => (
-                                            <button
-                                                type="button"
-                                                key={t}
-                                                onClick={() => setAiTone(t)}
-                                                className={cn(
-                                                    "px-1.5 py-0.5 rounded text-[7px] uppercase tracking-wider transition-all",
-                                                    aiTone === t ? "bg-neon-green/10 text-neon-green border border-neon-green/20" : "border border-transparent hover:text-zinc-300"
-                                                )}
-                                            >
-                                                {t}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                <div className="flex items-center gap-1">
-                                    <span>Length:</span>
-                                    <div className="flex bg-black/40 rounded p-0.5 border border-white/5">
-                                        {['concise', 'balanced', 'detailed'].map(l => (
-                                            <button
-                                                type="button"
-                                                key={l}
-                                                onClick={() => setAiLength(l)}
-                                                className={cn(
-                                                    "px-1.5 py-0.5 rounded text-[7px] uppercase tracking-wider transition-all",
-                                                    aiLength === l ? "bg-neon-green/10 text-neon-green border border-neon-green/20" : "border border-transparent hover:text-zinc-300"
-                                                )}
-                                            >
-                                                {l}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="hidden sm:flex items-center gap-1 text-[7px] text-zinc-600 font-mono">
-                                <span>Approx. {promptText.length ? Math.round(promptText.length / 4) : 0} tokens</span>
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -2179,8 +2489,79 @@ const ProposalGenerator = () => {
                         <AnimatePresence mode="wait">
                             <motion.div key={activeTab} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.2 }} className={cn(activeTab === 'ai' ? "w-full" : "space-y-16")}>
                                 {activeTab === 'ai' && (
-                                    <div className="w-full bg-zinc-950/20 border border-white/5 rounded-[2.5rem] p-6 relative flex flex-col">
-                                        {renderChatbot(false)}
+                                    <div className="w-full min-h-[60vh] flex flex-col items-center justify-center">
+                                        <div className="w-full max-w-2xl space-y-8">
+                                            {/* Welcome Hero */}
+                                            <div className="text-center space-y-3">
+                                                <div className="w-16 h-16 bg-neon-green/10 rounded-3xl flex items-center justify-center mx-auto border border-neon-green/20 shadow-[0_0_30px_rgba(57,255,20,0.1)]">
+                                                    <Sparkles className="w-8 h-8 text-neon-green animate-pulse" />
+                                                </div>
+                                                <h2 className="text-2xl md:text-3xl font-extrabold tracking-tight text-white">AI Proposal Studio<span className="text-neon-green">.</span></h2>
+                                                <p className="text-sm text-gray-500 font-medium max-w-md mx-auto leading-relaxed">
+                                                    Describe what you need and our AI will craft a complete, professional proposal in seconds. You can refine it through the chat.
+                                                </p>
+                                                {isBulkMode && (
+                                                    <div className="inline-flex items-center gap-2 px-4 py-2 bg-amber-500/10 border border-amber-500/20 rounded-full">
+                                                        <Zap size={14} className="text-amber-400" />
+                                                        <span className="text-[10px] font-black uppercase tracking-widest text-amber-400">Bulk Mode Active</span>
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            {/* Quick Prompt Card */}
+                                            <div className="bg-zinc-900/60 border border-white/5 rounded-[2rem] p-6 md:p-8 space-y-4 shadow-2xl">
+                                                <textarea
+                                                    value={promptText}
+                                                    onChange={e => setPromptText(e.target.value)}
+                                                    onKeyDown={e => {
+                                                        if (e.key === 'Enter' && !e.shiftKey) {
+                                                            e.preventDefault();
+                                                            handleStudioSubmit();
+                                                        }
+                                                    }}
+                                                    className="w-full bg-black/40 border border-white/10 rounded-2xl p-5 text-sm text-white placeholder:text-gray-600 font-medium outline-none focus:border-neon-green/30 transition-all resize-none min-h-[120px] scrollbar-hide"
+                                                    placeholder={isBulkMode ? "Paste multiple proposals separated by --- or double line breaks..." : "e.g. Create a proposal for a 3-day music festival in Mumbai for XYZ Corp..."}
+                                                />
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center gap-3 text-[8px] font-bold text-zinc-500 uppercase tracking-wider">
+                                                        <span>Tone: {aiTone}</span>
+                                                        <span>·</span>
+                                                        <span>Length: {aiLength}</span>
+                                                        <span>·</span>
+                                                        <span>~{promptText.length ? Math.round(promptText.length / 4) : 0} tokens</span>
+                                                    </div>
+                                                    <button
+                                                        type="button"
+                                                        onClick={handleStudioSubmit}
+                                                        disabled={!promptText.trim() || isGenerating}
+                                                        className="px-6 py-3 bg-neon-green text-black font-black uppercase text-[10px] tracking-widest rounded-xl hover:scale-105 active:scale-95 transition-all disabled:opacity-20 disabled:scale-100 shadow-[0_0_20px_rgba(57,255,20,0.3)] flex items-center gap-2"
+                                                    >
+                                                        {isGenerating ? <RefreshCw className="animate-spin" size={14} /> : <Send size={14} />}
+                                                        {isGenerating ? 'Generating...' : 'Generate'}
+                                                    </button>
+                                                </div>
+                                            </div>
+
+                                            {/* Quick Suggestion Chips */}
+                                            <div className="flex flex-wrap justify-center gap-2">
+                                                {['Music Festival Proposal', 'Comedy Tour Budget', 'Corporate Event Plan', 'Marketing Campaign'].map(s => (
+                                                    <button
+                                                        key={s}
+                                                        type="button"
+                                                        onClick={() => setPromptText(`Create a detailed proposal for a ${s.toLowerCase()} for a premium client in India.`)}
+                                                        className="px-4 py-2 bg-white/5 border border-white/5 rounded-full text-[9px] font-bold uppercase tracking-wider text-gray-400 hover:text-neon-green hover:border-neon-green/20 hover:bg-neon-green/5 transition-all"
+                                                    >
+                                                        <Sparkles size={10} className="inline mr-1.5 opacity-50" />{s}
+                                                    </button>
+                                                ))}
+                                            </div>
+
+                                            {/* Open Chat Hint */}
+                                            <p className="text-center text-[10px] text-gray-600 font-bold uppercase tracking-widest">
+                                                <MessageCircle size={12} className="inline mr-1 opacity-40" />
+                                                Use the chat bubble at bottom-right to refine and iterate
+                                            </p>
+                                        </div>
                                     </div>
                                 )}
                                 {activeTab === '1' && (
@@ -2210,7 +2591,7 @@ const ProposalGenerator = () => {
                                                 </div>
                                                 <div className="relative group/refine w-full">
                                                     <input value={formData.clientName} onChange={e => setFormData({...formData, clientName: e.target.value})} className="w-full bg-zinc-900 border border-white/10 h-16 pl-6 pr-12 rounded-2xl font-bold text-sm outline-none focus:border-neon-green/40 transition-all" placeholder="Organization Name" />
-                                                    <button type="button" onClick={() => handleRefineClick('clientName', 'Client Entity', formData.clientName)} className="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-zinc-950 border border-white/10 text-neon-green hover:text-white rounded-xl hover:scale-105 z-10" title="Refine with AI"><Sparkles size={14} className="animate-pulse" /></button>
+                                                    <button type="button" onClick={(e) => handleRefineClick('clientName', 'Client Entity', formData.clientName, e)} className="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-zinc-950 border border-white/10 text-neon-green hover:text-white rounded-xl hover:scale-105 z-10" title="Refine with AI"><Sparkles size={14} className="animate-pulse" /></button>
                                                 </div>
                                             </div>
                                             <div className="space-y-4">
@@ -2219,7 +2600,7 @@ const ProposalGenerator = () => {
                                                 </div>
                                                 <div className="relative group/refine w-full">
                                                     <input value={formData.campaignName} onChange={e => setFormData({...formData, campaignName: e.target.value})} className="w-full bg-zinc-900 border border-white/10 h-16 pl-6 pr-12 rounded-2xl font-bold text-sm outline-none focus:border-neon-green/40 transition-all" placeholder="Project or Event Title" />
-                                                    <button type="button" onClick={() => handleRefineClick('campaignName', 'Project Name', formData.campaignName)} className="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-zinc-950 border border-white/10 text-neon-green hover:text-white rounded-xl hover:scale-105 z-10" title="Refine with AI"><Sparkles size={14} className="animate-pulse" /></button>
+                                                    <button type="button" onClick={(e) => handleRefineClick('campaignName', 'Project Name', formData.campaignName, e)} className="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-zinc-950 border border-white/10 text-neon-green hover:text-white rounded-xl hover:scale-105 z-10" title="Refine with AI"><Sparkles size={14} className="animate-pulse" /></button>
                                                 </div>
                                             </div>
                                         </div>
@@ -2231,14 +2612,14 @@ const ProposalGenerator = () => {
                                                 </div>
                                                 <div className="relative group/refine w-full">
                                                     <input value={formData.clientAddress} onChange={e => setFormData({...formData, clientAddress: e.target.value})} className={cn("w-full bg-zinc-900 border border-white/10 h-16 pl-6 pr-12 rounded-2xl font-bold text-sm outline-none focus:border-neon-green/40 transition-all", isHidden('clientAddress') && "opacity-30")} placeholder="Business Location" />
-                                                    <button type="button" onClick={() => handleRefineClick('clientAddress', 'Client Address', formData.clientAddress)} className="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-zinc-950 border border-white/10 text-neon-green hover:text-white rounded-xl hover:scale-105 z-10" title="Refine with AI"><Sparkles size={14} className="animate-pulse" /></button>
+                                                    <button type="button" onClick={(e) => handleRefineClick('clientAddress', 'Client Address', formData.clientAddress, e)} className="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-zinc-950 border border-white/10 text-neon-green hover:text-white rounded-xl hover:scale-105 z-10" title="Refine with AI"><Sparkles size={14} className="animate-pulse" /></button>
                                                 </div>
                                             </div>
                                             <div className="space-y-4">
                                                 <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest px-2">Timeline / Duration</label>
                                                 <div className="relative group/refine w-full">
                                                     <input value={formData.campaignDuration} onChange={e => setFormData({...formData, campaignDuration: e.target.value})} className="w-full bg-zinc-900 border border-white/10 h-16 pl-6 pr-12 rounded-2xl font-bold text-sm outline-none focus:border-neon-green/40 transition-all" placeholder="e.g. 15th - 20th Oct or 3 Months" />
-                                                    <button type="button" onClick={() => handleRefineClick('campaignDuration', 'Timeline / Duration', formData.campaignDuration)} className="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-zinc-950 border border-white/10 text-neon-green hover:text-white rounded-xl hover:scale-105 z-10" title="Refine with AI"><Sparkles size={14} className="animate-pulse" /></button>
+                                                    <button type="button" onClick={(e) => handleRefineClick('campaignDuration', 'Timeline / Duration', formData.campaignDuration, e)} className="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-zinc-950 border border-white/10 text-neon-green hover:text-white rounded-xl hover:scale-105 z-10" title="Refine with AI"><Sparkles size={14} className="animate-pulse" /></button>
                                                 </div>
                                             </div>
                                         </div>
@@ -2253,7 +2634,7 @@ const ProposalGenerator = () => {
                                                         accentColor="neon-green"
                                                         className={cn(isHidden('coverDescription') && 'opacity-30')}
                                                     />
-                                                    <button type="button" onClick={() => handleRefineClick('coverDescription', 'Cover Memorandum', formData.coverDescription)} className="absolute right-4 top-12 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-zinc-950 border border-white/10 text-neon-green hover:text-white rounded-xl hover:scale-105 z-[70]" title="Refine with AI"><Sparkles size={14} className="animate-pulse" /></button>
+                                                    <button type="button" onClick={(e) => handleRefineClick('coverDescription', 'Cover Memorandum', formData.coverDescription, e)} className="absolute right-4 top-12 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-zinc-950 border border-white/10 text-neon-green hover:text-white rounded-xl hover:scale-105 z-[70]" title="Refine with AI"><Sparkles size={14} className="animate-pulse" /></button>
                                                 </div>
                                             </div>
                                     </div>
@@ -2275,7 +2656,7 @@ const ProposalGenerator = () => {
                                                      accentColor="neon-green"
                                                      className={cn(isHidden('overview') && 'opacity-30')}
                                                  />
-                                                 <button type="button" onClick={() => handleRefineClick('overview', 'Executive Summary', formData.overview)} className="absolute right-4 top-12 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-zinc-950 border border-white/10 text-neon-green hover:text-white rounded-xl hover:scale-105 z-[70]" title="Refine with AI"><Sparkles size={14} className="animate-pulse" /></button>
+                                                 <button type="button" onClick={(e) => handleRefineClick('overview', 'Executive Summary', formData.overview, e)} className="absolute right-4 top-12 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-zinc-950 border border-white/10 text-neon-green hover:text-white rounded-xl hover:scale-105 z-[70]" title="Refine with AI"><Sparkles size={14} className="animate-pulse" /></button>
                                              </div>
                                          </div>
                                          <div className="space-y-4 relative group/editor group/refine">
@@ -2289,7 +2670,7 @@ const ProposalGenerator = () => {
                                                      accentColor="neon-green"
                                                      className={cn(isHidden('primaryGoal') && 'opacity-30')}
                                                  />
-                                                 <button type="button" onClick={() => handleRefineClick('primaryGoal', 'Primary Objective', formData.primaryGoal)} className="absolute right-4 top-12 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-zinc-950 border border-white/10 text-neon-green hover:text-white rounded-xl hover:scale-105 z-[70]" title="Refine with AI"><Sparkles size={14} className="animate-pulse" /></button>
+                                                 <button type="button" onClick={(e) => handleRefineClick('primaryGoal', 'Primary Objective', formData.primaryGoal, e)} className="absolute right-4 top-12 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-zinc-950 border border-white/10 text-neon-green hover:text-white rounded-xl hover:scale-105 z-[70]" title="Refine with AI"><Sparkles size={14} className="animate-pulse" /></button>
                                              </div>
                                          </div>
                                      </div>
@@ -2311,7 +2692,7 @@ const ProposalGenerator = () => {
                                                      accentColor="neon-green"
                                                      className={cn(isHidden('scopeOfWork') && 'opacity-30')}
                                                  />
-                                                 <button type="button" onClick={() => handleRefineClick('scopeOfWork', 'Scope of Work', formData.scopeOfWork)} className="absolute right-4 top-12 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-zinc-950 border border-white/10 text-neon-green hover:text-white rounded-xl hover:scale-105 z-[70]" title="Refine with AI"><Sparkles size={14} className="animate-pulse" /></button>
+                                                 <button type="button" onClick={(e) => handleRefineClick('scopeOfWork', 'Scope of Work', formData.scopeOfWork, e)} className="absolute right-4 top-12 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-zinc-950 border border-white/10 text-neon-green hover:text-white rounded-xl hover:scale-105 z-[70]" title="Refine with AI"><Sparkles size={14} className="animate-pulse" /></button>
                                              </div>
                                          </div>
                                      </div>
@@ -2338,7 +2719,7 @@ const ProposalGenerator = () => {
                                                         <div className="flex-1 space-y-3">
                                                             <div className="relative group/refine w-full">
                                                                 <input value={d.item} onChange={e => { const updated = [...formData.deliverables]; updated[idx] = {...d, item: e.target.value}; setFormData({...formData, deliverables: updated}); }} className="w-full bg-transparent border-b border-white/10 pb-2 pr-8 text-sm font-bold outline-none focus:border-neon-green/40 transition-all text-white placeholder:text-gray-600" placeholder="Deliverable description..." />
-                                                                <button type="button" onClick={() => handleRefineClick(`deliverables[${idx}].item`, `Deliverable ${idx + 1}`, d.item)} className="absolute right-2 bottom-2 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-1 text-neon-green hover:text-white rounded-lg hover:scale-105 z-10" title="Refine with AI"><Sparkles size={11} className="animate-pulse" /></button>
+                                                                <button type="button" onClick={(e) => handleRefineClick(`deliverables[${idx}].item`, `Deliverable ${idx + 1}`, d.item, e)} className="absolute right-2 bottom-2 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-1 text-neon-green hover:text-white rounded-lg hover:scale-105 z-10" title="Refine with AI"><Sparkles size={11} className="animate-pulse" /></button>
                                                             </div>
                                                             <div className="flex gap-4">
                                                                 <input value={d.qty} onChange={e => { const updated = [...formData.deliverables]; updated[idx] = {...d, qty: e.target.value}; setFormData({...formData, deliverables: updated}); }} className="w-32 bg-black/40 border border-white/10 h-10 px-4 rounded-lg text-[10px] font-bold outline-none focus:border-neon-green/40 text-gray-300 placeholder:text-gray-600" placeholder="Qty / Unit" />
@@ -2366,7 +2747,7 @@ const ProposalGenerator = () => {
                                                         <span className="text-[10px] font-black text-gray-600 w-6 shrink-0">{String(idx + 1).padStart(2, '0')}</span>
                                                         <div className="relative group/refine flex-1">
                                                             <input value={r.description} onChange={e => { const updated = [...formData.clientRequirements]; updated[idx] = {...r, description: e.target.value}; setFormData({...formData, clientRequirements: updated}); }} className="w-full bg-transparent border-none pr-8 text-sm font-bold outline-none text-white placeholder:text-gray-600" placeholder="What the client needs to provide..." />
-                                                            <button type="button" onClick={() => handleRefineClick(`clientRequirements[${idx}].description`, `Client Requirement ${idx + 1}`, r.description)} className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-1 text-neon-green hover:text-white rounded-lg hover:scale-105 z-10" title="Refine with AI"><Sparkles size={11} className="animate-pulse" /></button>
+                                                            <button type="button" onClick={(e) => handleRefineClick(`clientRequirements[${idx}].description`, `Client Requirement ${idx + 1}`, r.description, e)} className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-1 text-neon-green hover:text-white rounded-lg hover:scale-105 z-10" title="Refine with AI"><Sparkles size={11} className="animate-pulse" /></button>
                                                         </div>
                                                         <button 
                                                             disabled={isHidden('clientRequirements')}
@@ -2560,7 +2941,7 @@ const ProposalGenerator = () => {
                                                                             className="w-full bg-transparent border-none p-0 pr-8 text-sm font-bold outline-none resize-none scrollbar-hide text-white placeholder:text-gray-600" 
                                                                             placeholder={`${descCol.label}...`} 
                                                                         />
-                                                                        <button type="button" disabled={isHidden('inventory')} onClick={() => handleRefineClick(`items[${idx}].description`, `${descCol.label} ${idx + 1}`, item.description)} className="absolute right-2 top-[22px] opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-1 text-neon-green hover:text-white rounded-lg hover:scale-105 z-10 disabled:opacity-0" title="Refine with AI"><Sparkles size={11} className="animate-pulse" /></button>
+                                                                        <button type="button" disabled={isHidden('inventory')} onClick={(e) => handleRefineClick(`items[${idx}].description`, `${descCol.label} ${idx + 1}`, item.description, e)} className="absolute right-2 top-[22px] opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-1 text-neon-green hover:text-white rounded-lg hover:scale-105 z-10 disabled:opacity-0" title="Refine with AI"><Sparkles size={11} className="animate-pulse" /></button>
                                                                     </div>
 
                                                                     <div className="flex flex-wrap items-center gap-4 md:gap-6 w-full md:w-auto pt-2 md:pt-0 border-t md:border-t-0 border-white/[0.03]">
@@ -3110,7 +3491,7 @@ const ProposalGenerator = () => {
                                                                   accentColor="neon-green"
                                                                   className={cn(isHidden('terms') && 'opacity-30')}
                                                               />
-                                                              <button type="button" disabled={isHidden('terms')} onClick={() => handleRefineClick('terms', 'Settlement Terms', formData.terms)} className="absolute right-4 top-12 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-zinc-950 border border-white/10 text-neon-green hover:text-white rounded-xl hover:scale-105 z-[70] disabled:opacity-0" title="Refine with AI"><Sparkles size={14} className="animate-pulse" /></button>
+                                                              <button type="button" disabled={isHidden('terms')} onClick={(e) => handleRefineClick('terms', 'Settlement Terms', formData.terms, e)} className="absolute right-4 top-12 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-zinc-950 border border-white/10 text-neon-green hover:text-white rounded-xl hover:scale-105 z-[70] disabled:opacity-0" title="Refine with AI"><Sparkles size={14} className="animate-pulse" /></button>
                                                           </div>
                                                       </div>
                                                       
@@ -3344,6 +3725,15 @@ const ProposalGenerator = () => {
                                             >
                                                 <Plus size={14} /> Add Blank Page
                                             </button>
+                                            {formData.customPages && formData.customPages.length > 0 && (
+                                                <button 
+                                                    disabled={isHidden('customPages')}
+                                                    onClick={duplicateAllCustomPages}
+                                                    className="flex items-center gap-2 px-4 py-2.5 bg-white/5 text-white border border-white/10 rounded-xl font-black uppercase text-[9px] tracking-widest hover:bg-white/10 transition-all disabled:opacity-30"
+                                                >
+                                                    <Copy size={14} /> Duplicate All Pages
+                                                </button>
+                                            )}
                                         </div>
 
                                         <div className={cn("space-y-8 transition-opacity", isHidden('customPages') && "opacity-30")}>
@@ -3381,7 +3771,6 @@ const ProposalGenerator = () => {
                                                                         <ChevronDown size={16} />
                                                                     </button>
 
-                                                                    {/* Delete */}
                                                                     <button 
                                                                         disabled={isHidden('customPages')}
                                                                         onClick={() => {
@@ -3392,6 +3781,16 @@ const ProposalGenerator = () => {
                                                                         title="Delete Page"
                                                                     >
                                                                         <Trash2 size={16} />
+                                                                    </button>
+
+                                                                    {/* Duplicate */}
+                                                                    <button 
+                                                                        disabled={isHidden('customPages')}
+                                                                        onClick={() => duplicateCustomPage(idx)}
+                                                                        className="p-2.5 text-gray-500 hover:text-neon-green hover:bg-neon-green/10 transition-all rounded-xl"
+                                                                        title="Duplicate Page"
+                                                                    >
+                                                                        <Copy size={16} />
                                                                     </button>
                                                                 </div>
                                                             </div>
@@ -3468,7 +3867,7 @@ const ProposalGenerator = () => {
                                                                         <button 
                                                                             type="button" 
                                                                             disabled={isHidden('customPages')} 
-                                                                            onClick={() => handleRefineClick(`customPages[${idx}].content`, `Custom Page ${idx + 1} Content`, cp.content)} 
+                                                                            onClick={(e) => handleRefineClick(`customPages[${idx}].content`, `Custom Page ${idx + 1} Content`, cp.content, e)} 
                                                                             className="p-2 bg-zinc-950 border border-white/10 text-neon-green hover:text-white rounded-xl hover:scale-105 shadow-lg disabled:opacity-0" 
                                                                             title="Refine with AI"
                                                                         >
@@ -4696,25 +5095,64 @@ const ProposalGenerator = () => {
                 initialName="Authorized Signatory"
             />
 
-            {/* Floating Action Button for AI Chat */}
-            {activeTab !== 'ai' && (
-                <div className="fixed bottom-24 right-6 lg:bottom-8 lg:right-8 z-[120]">
-                    <button
-                        type="button"
-                        onClick={() => setIsFloatingChatOpen(!isFloatingChatOpen)}
-                        className="w-14 h-14 bg-neon-green/10 text-neon-green hover:bg-neon-green/20 border border-neon-green/20 hover:border-neon-green/40 shadow-[0_0_20px_rgba(57,255,20,0.15)] hover:shadow-[0_0_30px_rgba(57,255,20,0.3)] rounded-full flex items-center justify-center cursor-pointer transition-all duration-300 hover:scale-105 active:scale-95"
-                    >
-                        <Sparkles className="w-6 h-6 animate-pulse" />
-                    </button>
-                </div>
-            )}
+            {/* Floating Action Button for AI Chat (Available across all tabs) */}
+            <div className="fixed bottom-24 right-4 sm:right-6 lg:bottom-8 lg:right-8 z-[120]">
+                <button
+                    type="button"
+                    onClick={() => {
+                        setIsFloatingChatOpen(!isFloatingChatOpen);
+                        setUnreadChatCount(0);
+                    }}
+                    className={cn(
+                        "w-14 h-14 rounded-full flex items-center justify-center cursor-pointer transition-all duration-300 active:scale-95 relative",
+                        isFloatingChatOpen
+                            ? "bg-zinc-900 border border-neon-green/50 text-neon-green shadow-[0_0_25px_rgba(57,255,20,0.3)]"
+                            : "bg-neon-green/10 text-neon-green hover:bg-neon-green/20 border border-neon-green/30 hover:border-neon-green/60 shadow-[0_0_20px_rgba(57,255,20,0.2)] hover:shadow-[0_0_30px_rgba(57,255,20,0.4)] hover:scale-105"
+                    )}
+                    title="Open AI Proposal Assistant"
+                >
+                    {isFloatingChatOpen ? (
+                        <X className="w-5 h-5" />
+                    ) : (
+                        <>
+                            <MessageCircle className="w-6 h-6" />
+                            {unreadChatCount > 0 && (
+                                <span className="absolute -top-1 -right-1 bg-neon-green text-black font-black text-[9px] w-5 h-5 rounded-full flex items-center justify-center shadow-[0_0_10px_rgba(57,255,20,0.8)] animate-bounce">
+                                    {unreadChatCount}
+                                </span>
+                            )}
+                        </>
+                    )}
+                </button>
+            </div>
 
-            {/* Floating AI Chat Pop-up Overlay */}
-            {activeTab !== 'ai' && isFloatingChatOpen && (
-                <div className="fixed bottom-40 right-6 lg:bottom-24 lg:right-8 w-[92vw] sm:w-[420px] md:w-[460px] h-[550px] md:h-[600px] bg-zinc-950/90 backdrop-blur-2xl border border-white/10 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.6)] overflow-hidden flex flex-col p-4 z-[120] animate-fade-in">
+            {/* Floating AI Chat Pop-up Overlay (Resizable & Persistent) */}
+            {isFloatingChatOpen && (
+                <div 
+                    className="fixed bottom-40 right-4 sm:right-6 lg:bottom-24 lg:right-8 bg-zinc-950/95 backdrop-blur-2xl border border-neon-green/20 rounded-[2.5rem] shadow-[0_20px_60px_rgba(0,0,0,0.85),0_0_30px_rgba(57,255,20,0.1)] overflow-hidden flex flex-col p-4 z-[120] animate-fade-in"
+                    style={{
+                        width: `${Math.min(chatPopupSize.width, window.innerWidth - 32)}px`,
+                        height: `${Math.min(chatPopupSize.height, window.innerHeight - 100)}px`,
+                        maxWidth: '96vw',
+                        maxHeight: '85vh'
+                    }}
+                >
+                    {/* Top-Left Corner Resize Handle */}
+                    <div 
+                        onMouseDown={handleStartResize}
+                        onTouchStart={handleTouchStartResize}
+                        className="absolute top-0 left-0 w-8 h-8 cursor-nwse-resize z-50 flex items-start justify-start p-2 opacity-40 hover:opacity-100 transition-opacity"
+                        title="Drag to resize chat window"
+                    >
+                        <div className="w-3.5 h-3.5 border-t-2 border-l-2 border-neon-green/70 rounded-tl-sm" />
+                    </div>
+
                     {renderChatbot(true)}
                 </div>
             )}
+
+            {/* Inline AI Field Refinement Popup */}
+            {renderInlineRefinePopup()}
         </div>
     );
 };
