@@ -42,6 +42,12 @@ import { cn } from '../lib/utils';
 import SignatureModal from '../components/ui/SignatureModal';
 import NotificationBell from '../components/NotificationBell';
 
+const isHtmlEmpty = (html) => {
+    if (!html) return true;
+    const clean = String(html).replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim();
+    return clean.length === 0;
+};
+
 const estimateBlockHeight = (rawText) => {
     if (!rawText) return 0;
     const isHtml = rawText.includes('<') && rawText.includes('>');
@@ -844,7 +850,7 @@ const Proposal = () => {
 
         if (!isHidden('strategy') && (!isHidden('overview') || !isHidden('primaryGoal'))) {
             const overviewHtml = !isHidden('overview') ? (displayProposal.overview || '') : '';
-            const primaryGoalHtml = !isHidden('primaryGoal') ? (displayProposal.primaryGoal || '') : '';
+            const primaryGoalHtml = (!isHidden('primaryGoal') && !isHtmlEmpty(displayProposal.primaryGoal)) ? (displayProposal.primaryGoal || '') : '';
             
             const overviewPages = splitTextIntoPages(overviewHtml, 800);
             const lastOverviewPage = overviewPages[overviewPages.length - 1] || '';
@@ -1104,7 +1110,7 @@ const Proposal = () => {
                                             </p>
                                         </div>
                                         {page.overviewText && <div className="text-lg font-medium leading-[1.7] text-gray-700">{renderContent(page.overviewText)}</div>}
-                                        {page.primaryGoalText && (
+                                        {page.primaryGoalText && !isHtmlEmpty(page.primaryGoalText) && (
                                             <div className="pt-12">
                                                 <div className="p-12 border-2 border-black rounded-[2.5rem] space-y-6">
                                                     <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest">Primary Objective</p>
@@ -1686,7 +1692,7 @@ const Proposal = () => {
                                         </p>
                                     </div>
                                     {page.overviewText && <div className="text-lg font-medium leading-[1.7] text-gray-700">{renderContent(page.overviewText)}</div>}
-                                    {page.primaryGoalText && (
+                                    {page.primaryGoalText && !isHtmlEmpty(page.primaryGoalText) && (
                                         <div className="pt-12">
                                             <div className="p-12 border-2 border-black rounded-[2.5rem] space-y-6">
                                                 <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest">Primary Objective</p>

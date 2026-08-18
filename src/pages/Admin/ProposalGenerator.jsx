@@ -119,6 +119,12 @@ import DocumentSeal from '../../components/ui/DocumentSeal';
         });
     };
 
+const isHtmlEmpty = (html) => {
+    if (!html) return true;
+    const clean = String(html).replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim();
+    return clean.length === 0;
+};
+
 const estimateBlockHeight = (rawText) => {
     if (!rawText) return 0;
     const isHtml = rawText.includes('<') && rawText.includes('>');
@@ -1303,7 +1309,7 @@ const ProposalGenerator = () => {
 
         if (!isHidden('strategy') && (!isHidden('overview') || !isHidden('primaryGoal'))) {
             const overviewHtml = !isHidden('overview') ? (formData.overview || '') : '';
-            const primaryGoalHtml = !isHidden('primaryGoal') ? (formData.primaryGoal || '') : '';
+            const primaryGoalHtml = (!isHidden('primaryGoal') && !isHtmlEmpty(formData.primaryGoal)) ? (formData.primaryGoal || '') : '';
             
             const overviewPages = splitTextIntoPages(overviewHtml, 800);
             const lastOverviewPage = overviewPages[overviewPages.length - 1] || '';
@@ -2624,9 +2630,28 @@ const ProposalGenerator = () => {
                                             </div>
                                         </div>
                                             <div className="space-y-4 relative group/editor group/refine">
+                                                <div className="flex justify-between items-center px-2">
+                                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Cover Memorandum</label>
+                                                    <div className="flex items-center gap-2">
+                                                        <VisibilityToggle field="coverDescription" />
+                                                        <button 
+                                                            type="button" 
+                                                            onClick={() => {
+                                                                setFormData(prev => {
+                                                                    const hidden = prev.hiddenFields || [];
+                                                                    const newHidden = hidden.includes('coverDescription') ? hidden : [...hidden, 'coverDescription'];
+                                                                    return { ...prev, coverDescription: '', hiddenFields: newHidden };
+                                                                });
+                                                            }}
+                                                            className="px-2.5 py-1 text-[9px] font-black uppercase tracking-wider text-red-400 hover:text-red-300 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 rounded-full transition-all flex items-center gap-1"
+                                                            title="Remove Cover Memorandum"
+                                                        >
+                                                            <Trash2 size={10} /> Remove
+                                                        </button>
+                                                    </div>
+                                                </div>
                                                 <div className="relative w-full">
                                                     <StudioRichEditor 
-                                                        label="Cover Memorandum"
                                                         value={formData.coverDescription} 
                                                         onChange={val => setFormData({...formData, coverDescription: val})} 
                                                         placeholder="Cover page description for this proposal..." 
@@ -2646,9 +2671,28 @@ const ProposalGenerator = () => {
                                              <Input label="Section Subtitle" value={formData.strategySub ?? 'STRATEGIC OUTLINE'} onChange={(e) => setFormData({ ...formData, strategySub: e.target.value })} placeholder="STRATEGIC OUTLINE" />
                                          </div>
                                          <div className="space-y-4 relative group/editor group/refine">
+                                             <div className="flex justify-between items-center px-2">
+                                                 <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Executive Summary</label>
+                                                 <div className="flex items-center gap-2">
+                                                     <VisibilityToggle field="overview" />
+                                                     <button 
+                                                         type="button" 
+                                                         onClick={() => {
+                                                             setFormData(prev => {
+                                                                 const hidden = prev.hiddenFields || [];
+                                                                 const newHidden = hidden.includes('overview') ? hidden : [...hidden, 'overview'];
+                                                                 return { ...prev, overview: '', hiddenFields: newHidden };
+                                                             });
+                                                         }}
+                                                         className="px-2.5 py-1 text-[9px] font-black uppercase tracking-wider text-red-400 hover:text-red-300 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 rounded-full transition-all flex items-center gap-1"
+                                                         title="Remove Executive Summary"
+                                                     >
+                                                         <Trash2 size={10} /> Remove
+                                                     </button>
+                                                 </div>
+                                             </div>
                                              <div className="relative w-full">
                                                  <MultiPageRichEditor 
-                                                     label="Executive Summary"
                                                      value={formData.overview} 
                                                      onChange={val => setFormData({...formData, overview: val})} 
                                                      placeholder="Strategic vision..." 
@@ -2660,12 +2704,31 @@ const ProposalGenerator = () => {
                                              </div>
                                          </div>
                                          <div className="space-y-4 relative group/editor group/refine">
+                                             <div className="flex justify-between items-center px-2">
+                                                 <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Primary Objective / Project Objectives</label>
+                                                 <div className="flex items-center gap-2">
+                                                     <VisibilityToggle field="primaryGoal" />
+                                                     <button 
+                                                         type="button" 
+                                                         onClick={() => {
+                                                             setFormData(prev => {
+                                                                 const hidden = prev.hiddenFields || [];
+                                                                 const newHidden = hidden.includes('primaryGoal') ? hidden : [...hidden, 'primaryGoal'];
+                                                                 return { ...prev, primaryGoal: '', hiddenFields: newHidden };
+                                                             });
+                                                         }} 
+                                                         className="px-2.5 py-1 text-[9px] font-black uppercase tracking-wider text-red-400 hover:text-red-300 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 rounded-full transition-all flex items-center gap-1.5"
+                                                         title="Remove Project Objectives"
+                                                     >
+                                                         <Trash2 size={10} /> Remove
+                                                     </button>
+                                                 </div>
+                                             </div>
                                              <div className="relative w-full">
                                                  <StudioRichEditor 
-                                                     label="Primary Objective"
                                                      value={formData.primaryGoal} 
                                                      onChange={val => setFormData({...formData, primaryGoal: val})} 
-                                                     placeholder="Project Goal..." 
+                                                     placeholder="Project Goal / Objectives..." 
                                                      minHeight="120px"
                                                      accentColor="neon-green"
                                                      className={cn(isHidden('primaryGoal') && 'opacity-30')}
@@ -4293,7 +4356,7 @@ const ProposalGenerator = () => {
                                                         {renderContent(paginatedPages[currentPreviewPage]?.overviewText)}
                                                     </div>
                                                 )}
-                                                {paginatedPages[currentPreviewPage]?.primaryGoalText && (
+                                                {paginatedPages[currentPreviewPage]?.primaryGoalText && !isHtmlEmpty(paginatedPages[currentPreviewPage]?.primaryGoalText) && (
                                                     <div className="pt-12">
                                                         <div className="p-12 border-2 border-black rounded-[2.5rem] space-y-6">
                                                             <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest">Primary Objective</p>
@@ -4717,7 +4780,7 @@ const ProposalGenerator = () => {
                                             {renderContent(page.overviewText)}
                                         </div>
                                     )}
-                                    {page.primaryGoalText && (
+                                    {page.primaryGoalText && !isHtmlEmpty(page.primaryGoalText) && (
                                         <div className="pt-12">
                                             <div className="p-12 border-2 border-black rounded-[2.5rem] space-y-6">
                                                 <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest">Primary Objective</p>
