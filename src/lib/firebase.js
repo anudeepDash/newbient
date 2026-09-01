@@ -2,9 +2,8 @@ import { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 import { getAuth, GoogleAuthProvider } from "firebase/auth";
-import { getMessaging } from "firebase/messaging";
+import { getMessaging, isSupported } from "firebase/messaging";
 
-// Validated Config from User
 // Validated Config from Environment
 const firebaseConfig = {
     apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -16,7 +15,7 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase
-let app;
+let app = null;
 try {
     app = initializeApp(firebaseConfig);
 } catch (error) {
@@ -29,6 +28,42 @@ const storage = app ? getStorage(app) : null;
 const auth = app ? getAuth(app) : null;
 
 const googleProvider = new GoogleAuthProvider();
-const messaging = typeof window !== 'undefined' ? getMessaging(app) : null;
 
-export { db, storage, auth, googleProvider, messaging };
+// Safely obtain messaging instance without crashing on Safari/WebKit/Private Browsing
+let messaging = null;
+
+if (typeof window !== 'undefined' && app) {
+    try {
+        isSupported().then(supported => {
+            if (supported && app) {
+                try {
+                    messaging = getMessaging(app);
+                } catch (e) {
+                    console.warn("[Firebase] Messaging get error:", e);
+                }
+            }
+        }).catch(err => {
+            console.warn("[Firebase] Messaging not supported on this browser:", err);
+        });
+    } catch (e) {
+        console.warn("[Firebase] Messaging initialization error:", e);
+    }
+}
+
+export const getMessagingSafe = async () => {
+    if (typeof window === 'undefined' || !app) return null;
+    try {
+        const supported = await isSupported().catch(() => false);
+        if (!supported) return null;
+        if (!messaging) {
+            messaging = getMessaging(app);
+        }
+        return messaging;
+    } catch (e) {
+        console.warn("[Firebase] Messaging unavailable:", e);
+        return null;
+    }
+};
+
+export { app, db, storage, auth, googleProvider, messaging };
+

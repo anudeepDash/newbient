@@ -1,10 +1,10 @@
-import { initializeApp } from "firebase/app";
+import { initializeApp, getApps, getApp } from "firebase/app";
 import { getFirestore, doc, getDoc, collection, query, where, getDocs } from "firebase/firestore";
 import fs from 'fs';
 import path from 'path';
 
 const firebaseConfig = {
-    apiKey: process.env.VITE_FIREBASE_API_KEY,
+    apiKey: process.env.VITE_FIREBASE_API_KEY || process.env.FIREBASE_API_KEY,
     authDomain: process.env.VITE_FIREBASE_AUTH_DOMAIN || "newbi-ent-v2.firebaseapp.com",
     projectId: process.env.VITE_FIREBASE_PROJECT_ID || "newbi-ent-v2",
     storageBucket: process.env.VITE_FIREBASE_STORAGE_BUCKET || "newbi-ent-v2.firebasestorage.app",
@@ -12,8 +12,35 @@ const firebaseConfig = {
     appId: process.env.VITE_FIREBASE_APP_ID || "1:860370467784:web:d7b4dfc66336f6da50defd"
 };
 
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+let db = null;
+try {
+    const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
+    db = getFirestore(app);
+} catch (e) {
+    console.warn('[OG] Firebase init warning:', e.message);
+}
+
+function getBaseHtml() {
+    const candidatePaths = [
+        path.join(process.cwd(), 'dist', 'index.html'),
+        path.join(__dirname, '..', 'dist', 'index.html'),
+        path.join(__dirname, 'dist', 'index.html'),
+        path.join(process.cwd(), 'index.html')
+    ];
+
+    for (const p of candidatePaths) {
+        try {
+            if (fs.existsSync(p)) {
+                const content = fs.readFileSync(p, 'utf8');
+                if (content && content.length > 50) {
+                    return { html: content, path: p };
+                }
+            }
+        } catch (e) {}
+    }
+
+    return { html: '', path: '' };
+}
 
 export default async function handler(req, res) {
     const allowedOrigins = ['https://www.newbi.live', 'https://newbi.live', 'https://newbi-ent.vercel.app', 'http://localhost:5173'];
@@ -41,7 +68,7 @@ export default async function handler(req, res) {
         blogSlug,
         page
     } = req.query;
-    const baseUrl = 'https://newbi.live'; // Assuming default domain
+    const baseUrl = 'https://newbi.live';
 
     let meta = {
         title: "Newbi Entertainment & Marketing",
@@ -51,7 +78,10 @@ export default async function handler(req, res) {
         type: 'website'
     };
 
-    try {
+    // Metadata fetch with 2500ms safety timeout to avoid blocking page loads
+    const fetchMetadata = async () => {
+        if (!db) return;
+
         if (eventId) {
             const snap = await getDoc(doc(db, 'upcoming_events', eventId));
             if (snap.exists()) {
@@ -137,19 +167,9 @@ export default async function handler(req, res) {
                 meta.url = `${baseUrl}/concertzone/${data.category || 'music'}/${blogSlug}`;
             }
         } else if (page) {
-            if (page === 'contact') {
-                meta.title = "Contact Us | Newbi Ent.";
-                meta.description = "Get in touch with Newbi Entertainment & Marketing.";
-                meta.image = `${baseUrl}/og-image.png`;
-                meta.url = `${baseUrl}/contact`;
-            } else if (page === 'concertzone') {
-                meta.title = "Concert Zone | Newbi Ent.";
-                meta.description = "Latest music, live events, artists, guides, and concert news from Newbi.";
-                meta.image = `${baseUrl}/og-image.png`;
-                meta.url = `${baseUrl}/concertzone`;
-            } else if (page === 'creator') {
+            if (page === 'creator' || page === 'creator-landing') {
                 meta.title = "Creator Elite Network | Newbi Ent.";
-                meta.description = "Apply for professional backing and gain access to premium brand campaigns.";
+                meta.description = "Explore open campaigns in your city, submit deliverables directly, and track statuses from your creator dashboard.";
                 meta.image = `${baseUrl}/og-image.png`;
                 meta.url = `${baseUrl}/creator`;
             } else if (page === 'creator-join') {
@@ -157,35 +177,29 @@ export default async function handler(req, res) {
                 meta.description = "Register to join Newbi's Elite Creator Network.";
                 meta.image = `${baseUrl}/og-image.png`;
                 meta.url = `${baseUrl}/creator/join`;
-            } else if (page === 'creator-dashboard') {
-                meta.title = "Creator Dashboard | Newbi Ent.";
-                meta.description = "Manage your creator profile and track campaigns.";
-                meta.image = `${baseUrl}/og-image.png`;
-                meta.url = `${baseUrl}/creator-dashboard`;
             }
         }
-    } catch (error) {
-        const correlationId = Math.random().toString(36).substring(2, 15);
-        console.error(`[OG] Error fetching dynamic OG data [Correlation ID: ${correlationId}]:`, error);
-    }
+    };
 
-    // Load the index.html from the filesystem
-    // In Vercel production, we read the compiled dist/index.html which contains correct production asset links.
-    // In local development, we fallback to the root index.html.
-    let indexPath = path.join(process.cwd(), 'dist', 'index.html');
-    if (!fs.existsSync(indexPath)) {
-        indexPath = path.join(process.cwd(), 'index.html');
-    }
-    let html = '';
-    
     try {
-        html = fs.readFileSync(indexPath, 'utf8');
-    } catch (err) {
-        // Fallback skeleton if file can't be read
-        html = `<!DOCTYPE html><html><head><title>${meta.title}</title></head><body><div id="root"></div></body></html>`;
+        await Promise.race([
+            fetchMetadata(),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('OG Fetch Timeout')), 2500))
+        ]);
+    } catch (error) {
+        console.warn('[OG] Metadata fetch note:', error.message);
     }
 
-    // Inject Meta Tags into Head
+    // Load base HTML from distribution
+    const { html: loadedHtml, path: loadedPath } = getBaseHtml();
+    let html = loadedHtml;
+
+    if (!html) {
+        // Safe minimal HTML that redirects to client app
+        html = `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>${meta.title}</title><meta http-equiv="refresh" content="0; url=/" /></head><body><div id="root"></div></body></html>`;
+    }
+
+    // Inject dynamic Meta Tags into Head
     const metaTags = `
         <title>${meta.title}</title>
         <meta name="description" content="${meta.description}" />
@@ -202,7 +216,7 @@ export default async function handler(req, res) {
         <link rel="shortcut icon" type="image/png" href="${baseUrl}/favicon.png" />
     `;
 
-    // Strip original title, icon, and open graph tags to avoid duplicates
+    // Strip static title and duplicate meta tags to avoid conflicting tags
     html = html.replace(/<title>.*?<\/title>/gi, '');
     html = html.replace(/<meta property="og:.*?".*?>/gi, '');
     html = html.replace(/<meta name="twitter:.*?".*?>/gi, '');
@@ -211,7 +225,8 @@ export default async function handler(req, res) {
     
     html = html.replace('</head>', `${metaTags}\n</head>`);
 
-    res.setHeader('Content-Type', 'text/html');
-    res.setHeader('Cache-Control', 's-maxage=60, stale-while-revalidate=300'); // Cache for performance
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.setHeader('Cache-Control', 's-maxage=60, stale-while-revalidate=300');
     res.status(200).send(html);
 }
+

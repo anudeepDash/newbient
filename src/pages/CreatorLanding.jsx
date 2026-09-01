@@ -114,7 +114,8 @@ const CreatorLanding = () => {
     ];
 
     return (
-        <div className="min-h-screen bg-dark text-white selection:bg-neon-green selection:text-black font-['Outfit'] overflow-x-clip relative pb-32">
+        <div className="min-h-screen bg-dark text-white selection:bg-neon-green selection:text-black font-['Outfit'] overflow-x-hidden relative pb-32">
+
             <style dangerouslySetInnerHTML={{ __html: `
                 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap');
                 .scrollbar-hide::-webkit-scrollbar { display: none; }

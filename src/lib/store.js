@@ -4,11 +4,12 @@ import { collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, order
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { sendBookingConfirmation, sendCreatorWelcomeEmail, sendNewCampaignNotificationEmail, sendCreatorApprovedEmail } from './email';
 import { normalizePhoneNumber } from './utils';
+import { safeLocalStorage } from './storage';
 
 const AUTH_CACHE_KEY = 'nb_auth_session';
 const getCachedSession = () => {
     try {
-        const session = localStorage.getItem(AUTH_CACHE_KEY);
+        const session = safeLocalStorage.getItem(AUTH_CACHE_KEY);
         if (!session) return null;
         const parsed = JSON.parse(session);
         // Expire cache after 7 days
@@ -21,7 +22,7 @@ const getCachedSession = () => {
 
 const getSessionTimestamp = () => {
     try {
-        const session = localStorage.getItem(AUTH_CACHE_KEY);
+        const session = safeLocalStorage.getItem(AUTH_CACHE_KEY);
         if (!session) return Date.now();
         const parsed = JSON.parse(session);
         return parsed?.timestamp || Date.now();
@@ -29,6 +30,7 @@ const getSessionTimestamp = () => {
         return Date.now();
     }
 };
+
 
 const uploadBase64ToStorage = async (base64String, path) => {
     if (!base64String || typeof base64String !== 'string' || !base64String.startsWith('data:') || !base64String.includes(';base64,')) {
@@ -441,7 +443,7 @@ export const useStore = create((set, get) => ({
     subscribeToEmailTemplates: () => get().subscribeToKey('emailTemplates', 'email_templates', (data) => {
         let localTemplates = [];
         try {
-            const stored = localStorage.getItem('nb_local_email_templates');
+            const stored = safeLocalStorage.getItem('nb_local_email_templates');
             if (stored) localTemplates = JSON.parse(stored);
         } catch (e) {}
 
@@ -453,6 +455,7 @@ export const useStore = create((set, get) => ({
             return timeB - timeA;
         });
     }),
+
     subscribeToAnnouncements: () => get().subscribeToKey('announcements', 'announcements', (data) => data.sort((a, b) => {
         if (a.isPinned !== b.isPinned) return b.isPinned ? -1 : 1;
         return (a.order || 0) - (b.order || 0);
@@ -2495,7 +2498,7 @@ export const useStore = create((set, get) => ({
 
     checkUserRole: async (firebaseUser) => {
         if (!firebaseUser) {
-            localStorage.removeItem(AUTH_CACHE_KEY);
+            safeLocalStorage.removeItem(AUTH_CACHE_KEY);
             set({ user: null, authInitialized: true });
             return;
         }
@@ -2585,7 +2588,7 @@ export const useStore = create((set, get) => ({
         };
 
         // Cache the session for instant retrieval on refresh, strictly excluding PII (email, phoneNumber)
-        localStorage.setItem(AUTH_CACHE_KEY, JSON.stringify({
+        safeLocalStorage.setItem(AUTH_CACHE_KEY, JSON.stringify({
             user: {
                 uid: finalUser.uid,
                 role: finalUser.role,
@@ -2736,8 +2739,9 @@ export const useStore = create((set, get) => ({
         const { getAuth } = await import('firebase/auth');
         const auth = getAuth();
         await auth.signOut();
-        localStorage.removeItem(AUTH_CACHE_KEY);
+        safeLocalStorage.removeItem(AUTH_CACHE_KEY);
         set({ user: null, userListenerUnsubscribe: null });
+
     },
 
     deleteAccount: async () => {
@@ -3121,12 +3125,12 @@ export const useStore = create((set, get) => ({
 
         const getLocalTemplates = () => {
             try {
-                const stored = localStorage.getItem('nb_local_email_templates');
+                const stored = safeLocalStorage.getItem('nb_local_email_templates');
                 return stored ? JSON.parse(stored) : [];
             } catch (e) { return []; }
         };
         const saveLocalTemplates = (list) => {
-            try { localStorage.setItem('nb_local_email_templates', JSON.stringify(list)); } catch (e) {}
+            try { safeLocalStorage.setItem('nb_local_email_templates', JSON.stringify(list)); } catch (e) {}
         };
 
         try {
@@ -3186,13 +3190,14 @@ export const useStore = create((set, get) => ({
         try {
             const getLocalTemplates = () => {
                 try {
-                    const stored = localStorage.getItem('nb_local_email_templates');
+                    const stored = safeLocalStorage.getItem('nb_local_email_templates');
                     return stored ? JSON.parse(stored) : [];
                 } catch (e) { return []; }
             };
             const saveLocalTemplates = (list) => {
-                try { localStorage.setItem('nb_local_email_templates', JSON.stringify(list)); } catch (e) {}
+                try { safeLocalStorage.setItem('nb_local_email_templates', JSON.stringify(list)); } catch (e) {}
             };
+
 
             const filtered = getLocalTemplates().filter(t => t.id !== id);
             saveLocalTemplates(filtered);

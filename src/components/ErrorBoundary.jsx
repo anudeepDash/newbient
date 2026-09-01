@@ -1,4 +1,5 @@
 import React from 'react';
+import { safeSessionStorage } from '../lib/storage';
 
 class ErrorBoundary extends React.Component {
     constructor(props) {
@@ -21,17 +22,22 @@ class ErrorBoundary extends React.Component {
             errorMessage.includes('Importing a module script failed');
 
         if (isDynamicImportError) {
-            const lastReload = sessionStorage.getItem('last-chunk-reload');
-            const now = Date.now();
-            
-            // Only reload if we haven't reloaded in the last 5 seconds to avoid infinite loops
-            if (!lastReload || now - parseInt(lastReload) > 5000) {
-                sessionStorage.setItem('last-chunk-reload', now.toString());
-                console.warn('Detected dynamic import error in ErrorBoundary, reloading page...');
-                window.location.reload();
+            try {
+                const lastReload = safeSessionStorage.getItem('last-chunk-reload');
+                const now = Date.now();
+                
+                // Only reload if we haven't reloaded in the last 5 seconds to avoid infinite loops
+                if (!lastReload || now - parseInt(lastReload) > 5000) {
+                    safeSessionStorage.setItem('last-chunk-reload', now.toString());
+                    console.warn('Detected dynamic import error in ErrorBoundary, reloading page...');
+                    window.location.reload();
+                }
+            } catch (e) {
+                console.warn('Error in ErrorBoundary chunk reload handler:', e);
             }
         }
     }
+
 
     render() {
         if (this.state.hasError) {
