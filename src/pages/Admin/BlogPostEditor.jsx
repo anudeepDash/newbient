@@ -216,7 +216,8 @@ const BlogPostEditor = () => {
     const currentTab = tabs.find(t => t.id === activeTab);
 
     return (
-        <div className="min-h-screen bg-[#0B0F17] text-white selection:bg-neon-blue selection:text-black font-['Outfit'] overflow-x-clip flex flex-col admin-hub-content-container">
+        <div className="min-h-screen bg-[#0B0F17] text-white selection:bg-neon-blue selection:text-black font-['Outfit'] overflow-x-hidden flex flex-col admin-hub-content-container">
+
             <style dangerouslySetInnerHTML={{ __html: `
                 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap');
                 .scrollbar-hide::-webkit-scrollbar { display: none; }

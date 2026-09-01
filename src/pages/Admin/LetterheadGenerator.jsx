@@ -107,7 +107,8 @@ const LetterheadGenerator = () => {
     }, []);
 
     return (
-        <div className="min-h-screen bg-[#0B0F17] text-white selection:bg-neon-green selection:text-black font-['Outfit'] overflow-x-clip flex flex-col no-print admin-hub-content-container">
+        <div className="min-h-screen bg-[#0B0F17] text-white selection:bg-neon-green selection:text-black font-['Outfit'] overflow-x-hidden flex flex-col no-print admin-hub-content-container">
+
             <style dangerouslySetInnerHTML={{ __html: `
                 @media print {
                     body * {

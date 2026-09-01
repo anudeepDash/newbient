@@ -335,7 +335,8 @@ const CampusConnect = () => {
     ];
 
     return (
-        <div className="min-h-screen bg-[#030712] text-white selection:bg-neon-purple selection:text-black font-['Outfit'] overflow-x-clip relative">
+        <div className="min-h-screen bg-[#030712] text-white selection:bg-neon-purple selection:text-black font-['Outfit'] overflow-x-hidden relative">
+
             <style dangerouslySetInnerHTML={{ __html: `
                 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&family=Space+Grotesk:wght@300..700&display=swap');
                 .font-space { font-family: 'Space Grotesk', sans-serif; }

@@ -5,30 +5,13 @@ import { useStoreSubscription } from '../hooks/useStoreSubscription';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { motion, AnimatePresence } from 'framer-motion';
-import Instagram from 'lucide-react/dist/esm/icons/instagram';
-import MapPin from 'lucide-react/dist/esm/icons/map-pin';
-import Users from 'lucide-react/dist/esm/icons/users';
-import Zap from 'lucide-react/dist/esm/icons/zap';
-import ArrowRight from 'lucide-react/dist/esm/icons/arrow-right';
-import ShieldCheck from 'lucide-react/dist/esm/icons/shield-check';
-import Trophy from 'lucide-react/dist/esm/icons/trophy';
-import Target from 'lucide-react/dist/esm/icons/target';
-import Ban from 'lucide-react/dist/esm/icons/ban';
-import Camera from 'lucide-react/dist/esm/icons/camera';
-import Video from 'lucide-react/dist/esm/icons/video';
-import Eye from 'lucide-react/dist/esm/icons/eye';
-import Star from 'lucide-react/dist/esm/icons/star';
-import Globe from 'lucide-react/dist/esm/icons/globe';
-import Youtube from 'lucide-react/dist/esm/icons/youtube';
-import Twitter from 'lucide-react/dist/esm/icons/twitter';
-import Calendar from 'lucide-react/dist/esm/icons/calendar';
-import CheckCircle2 from 'lucide-react/dist/esm/icons/check-circle-2';
-import Clock from 'lucide-react/dist/esm/icons/clock';
-import MessageCircle from 'lucide-react/dist/esm/icons/message-circle';
-import ChevronLeft from 'lucide-react/dist/esm/icons/chevron-left';
-import ExternalLink from 'lucide-react/dist/esm/icons/external-link';
-import FileText from 'lucide-react/dist/esm/icons/file-text';
-import Check from 'lucide-react/dist/esm/icons/check';
+import { 
+    Instagram, MapPin, Users, Zap, ArrowRight, ShieldCheck, Trophy, 
+    Target, Ban, Camera, Video, Eye, Star, Globe, Youtube, Twitter, 
+    Calendar, CheckCircle2, Clock, MessageCircle, ChevronLeft, 
+    ExternalLink, FileText, Check 
+} from 'lucide-react';
+
 import { cn, normalizePhoneNumber } from '../lib/utils';
 import { PREDEFINED_CITIES } from '../lib/constants';
 import StudioSelect from '../components/ui/StudioSelect';

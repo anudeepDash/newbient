@@ -88,6 +88,8 @@ import FinanceGuard from './components/FinanceGuard';
 import MaintenanceGuard from './components/MaintenanceGuard';
 import NewbiToast from './components/ui/NewbiToast';
 
+import { safeLocalStorage } from './lib/storage';
+
 function AppContent() {
   const { user, subscribeToData, subscribeToNotifications, checkUserRole, loading, authInitialized } = useStore();
   const location = useLocation();
@@ -100,21 +102,26 @@ function AppContent() {
   };
 
   const currentColor = getColorByPath(location.pathname);
-  const isAdmin = ['developer', 'super_admin', 'editor', 'admin', 'founder', 'content_admin', 'gate_manager', 'scanner', 'blog_writer'].includes(user?.role) || localStorage.getItem('adminAuth') === 'true';
+  const isAdmin = ['developer', 'super_admin', 'editor', 'admin', 'founder', 'content_admin', 'gate_manager', 'scanner', 'blog_writer'].includes(user?.role) || safeLocalStorage.getItem('adminAuth') === 'true';
 
   useEffect(() => {
-    const unsubscribeData = subscribeToData(isAdmin);
-    const unsubscribeNotifications = subscribeToNotifications(user?.uid);
+    const unsubscribeData = subscribeToData ? subscribeToData(isAdmin) : null;
+    const unsubscribeNotifications = subscribeToNotifications ? subscribeToNotifications(user?.uid) : null;
     initForegroundMessaging();
     
-    const unsubAuth = onAuthStateChanged(auth, (user) => {
-      const { checkUserRole } = useStore.getState();
-      checkUserRole(user).then(() => {
-          if (user) {
+    let unsubAuth = null;
+    if (auth) {
+      unsubAuth = onAuthStateChanged(auth, (user) => {
+        const { checkUserRole } = useStore.getState();
+        if (checkUserRole) {
+          checkUserRole(user).then(() => {
+            if (user) {
               requestNotificationPermission();
-          }
-      });
-    });
+            }
+          }).catch(err => console.warn("Auth state check warning:", err));
+        }
+      }, (err) => console.warn("Auth state listener warning:", err));
+    }
 
     return () => {
       if (unsubscribeData) unsubscribeData();
@@ -122,6 +129,7 @@ function AppContent() {
       if (unsubAuth) unsubAuth();
     };
   }, [subscribeToData, subscribeToNotifications, isAdmin, user?.uid]);
+
 
   return (
     <>

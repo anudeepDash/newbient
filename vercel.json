@@ -1,7 +1,7 @@
 {
     "functions": {
         "api/og.js": {
-            "includeFiles": "dist/index.html"
+            "includeFiles": "dist/**"
         }
     },
     "redirects": [
@@ -88,32 +88,8 @@
             "destination": "/api/og?agreementId=:id"
         },
         {
-            "source": "/contact",
-            "destination": "/api/og?page=contact"
-        },
-        {
-            "source": "/concertzone",
-            "destination": "/api/og?page=concertzone"
-        },
-        {
-            "source": "/concertzone/:category",
-            "destination": "/api/og?page=concertzone&category=:category"
-        },
-        {
             "source": "/concertzone/:category/:slug",
             "destination": "/api/og?blogSlug=:slug"
-        },
-        {
-            "source": "/creator",
-            "destination": "/api/og?page=creator"
-        },
-        {
-            "source": "/creator/join",
-            "destination": "/api/og?page=creator-join"
-        },
-        {
-            "source": "/creator-dashboard",
-            "destination": "/api/og?page=creator-dashboard"
         },
         {
             "source": "/community-join",
@@ -145,4 +121,5 @@
             "destination": "/index.html"
         }
     ]
+
 }
