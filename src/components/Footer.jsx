@@ -63,7 +63,7 @@ const Footer = () => {
                             <div className={`flex-col gap-6 text-xs font-black text-white uppercase tracking-[0.2em] ${navOpen ? 'flex' : 'hidden lg:flex'} pb-4 lg:pb-0`}>
                                 <Link to="/" className="hover:text-neon-green transition-colors flex items-center lg:justify-end min-h-[44px] lg:min-h-0">HOME</Link>
                                 <Link to="/community" className="hover:text-neon-green transition-colors flex items-center lg:justify-end min-h-[44px] lg:min-h-0">COMMUNITY</Link>
-                                <Link to="/artistant" className="hover:text-neon-pink transition-colors flex items-center lg:justify-end min-h-[44px] lg:min-h-0">ARTISTANT</Link>
+                                <a href="https://artistant.in" className="hover:text-neon-pink transition-colors flex items-center lg:justify-end min-h-[44px] lg:min-h-0">ARTISTANT</a>
                                 <Link to="/creator" className="hover:text-neon-green transition-colors flex items-center lg:justify-end min-h-[44px] lg:min-h-0">CREATORS</Link>
                                 <Link to="/concertzone" className="hover:text-neon-green transition-colors flex items-center lg:justify-end min-h-[44px] lg:min-h-0">CONCERT ZONE</Link>
                             </div>
