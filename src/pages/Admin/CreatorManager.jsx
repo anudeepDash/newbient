@@ -91,7 +91,7 @@ const getPageNumbers = (currentPage, totalPages) => {
     return pages;
 };
 
-const CreatorManager = ({ showLeaderboardOnly = false }) => {
+const CreatorManager = ({ showLeaderboardOnly = false, isEmbedded = false }) => {
     useStoreSubscription(['creators', 'campaigns']);
     const { creators, campaigns, updateCreator, deleteCreator } = useStore();
     const navigate = useNavigate();
@@ -367,6 +367,34 @@ const CreatorManager = ({ showLeaderboardOnly = false }) => {
         document.body.removeChild(link);
     };
 
+    const resetAllFilters = () => {
+        setSearchTerm('');
+        setFilterCity('All');
+        setFilterStatus('All');
+        setFilterNiche('All');
+        setFilterPlatform('All');
+        setMinFollowers('');
+        setMaxFollowers('');
+    };
+
+    const hasActiveFilters = Boolean(
+        searchTerm ||
+        filterCity !== 'All' ||
+        filterStatus !== 'All' ||
+        filterNiche !== 'All' ||
+        filterPlatform !== 'All' ||
+        minFollowers ||
+        maxFollowers
+    );
+
+    const scrollContainer = (id, direction) => {
+        const el = document.getElementById(id);
+        if (el) {
+            const amount = direction === 'left' ? -350 : 350;
+            el.scrollBy({ left: amount, behavior: 'smooth' });
+        }
+    };
+
     const renderContent = () => {
         if (isLeaderboardRoute) {
             return (
@@ -377,39 +405,114 @@ const CreatorManager = ({ showLeaderboardOnly = false }) => {
             );
         }
         return (
-            <div className="relative z-10 max-w-[1700px] mx-auto pb-20">
+            <div className={cn("relative z-10 max-w-[1700px] mx-auto pb-20", isEmbedded ? "px-4 md:px-12 pt-6" : "")}>
             <div>
                 {/* Control Panel */}
-                <div className="relative z-50 bg-[#0A0A0A]/80 backdrop-blur-3xl border border-white/10 rounded-[1.5rem] md:rounded-[2rem] p-1.5 md:p-2.5 md:pr-6 mb-8 md:mb-16 shadow-[0_30px_100px_rgba(0,0,0,0.8)] flex flex-col md:flex-row md:flex-wrap md:items-center gap-2 md:gap-3">
+                <div className="relative z-50 bg-[#0A0A0A]/90 backdrop-blur-3xl border border-white/10 rounded-[1.5rem] md:rounded-[2rem] p-3 md:p-5 mb-8 md:mb-12 shadow-[0_30px_100px_rgba(0,0,0,0.8)] space-y-3 md:space-y-4">
                     
-                    {/* Search Engine */}
-                    <div className="relative flex-1 min-w-[280px] group">
-                        <div className="absolute inset-0 bg-gradient-to-r from-neon-pink/10 to-transparent opacity-0 group-focus-within:opacity-100 transition-opacity rounded-full pointer-events-none" />
-                        <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-neon-pink transition-colors" size={16} />
-                        <input
-                            type="text"
-                            placeholder="SEARCH CREATORS..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full h-14 pl-14 pr-6 bg-black/60 border border-white/10 group-hover:border-white/20 focus:border-neon-pink/60 rounded-full text-[10px] font-black uppercase tracking-[0.2em] outline-none transition-all placeholder:text-gray-700 text-white min-w-0"
-                        />
+                    {/* Row 1: Search Engine & Action Bar */}
+                    <div className="flex flex-col lg:flex-row items-stretch lg:items-center gap-3">
+                        {/* Search Input */}
+                        <div className="relative flex-1 min-w-0 group">
+                            <div className="absolute inset-0 bg-gradient-to-r from-neon-pink/10 to-transparent opacity-0 group-focus-within:opacity-100 transition-opacity rounded-full pointer-events-none" />
+                            <Search className="absolute left-5 md:left-6 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-neon-pink transition-colors" size={16} />
+                            <input
+                                type="text"
+                                placeholder="SEARCH CREATORS..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="w-full h-12 md:h-14 pl-12 md:pl-14 pr-10 bg-black/60 border border-white/10 group-hover:border-white/20 focus:border-neon-pink/60 rounded-xl md:rounded-full text-[10px] font-black uppercase tracking-[0.2em] outline-none transition-all placeholder:text-gray-700 text-white min-w-0 shadow-inner"
+                            />
+                            {searchTerm && (
+                                <button
+                                    onClick={() => setSearchTerm('')}
+                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white transition-colors"
+                                >
+                                    <X size={14} />
+                                </button>
+                            )}
+                        </div>
+
+                        {/* Action Controls Cluster */}
+                        <div className="flex items-center flex-wrap sm:flex-nowrap gap-2 shrink-0">
+                            {/* View Switcher */}
+                            <div className="flex bg-black/60 p-1 rounded-xl md:rounded-full border border-white/10 shrink-0 h-12 md:h-14 items-center">
+                                <button 
+                                    onClick={() => setViewMode('grid')} 
+                                    title="Grid View"
+                                    className={cn(
+                                        "w-9 h-9 md:w-11 md:h-11 rounded-lg md:rounded-full flex items-center justify-center transition-all", 
+                                        viewMode === 'grid' ? "bg-white text-black shadow-xl" : "text-gray-500 hover:text-white"
+                                    )}
+                                >
+                                    <LayoutGrid size={15} />
+                                </button>
+                                <button 
+                                    onClick={() => setViewMode('list')} 
+                                    title="List View"
+                                    className={cn(
+                                        "w-9 h-9 md:w-11 md:h-11 rounded-lg md:rounded-full flex items-center justify-center transition-all", 
+                                        viewMode === 'list' ? "bg-white text-black shadow-xl" : "text-gray-500 hover:text-white"
+                                    )}
+                                >
+                                    <FileSpreadsheet size={15} />
+                                </button>
+                            </div>
+
+                            {/* Export CSV */}
+                            <button 
+                                onClick={exportToCSV}
+                                className="group relative h-12 md:h-14 px-4 md:px-6 bg-white/5 border border-white/10 hover:border-white/20 text-white rounded-xl md:rounded-full font-black uppercase tracking-[0.15em] text-[9px] md:text-[10px] overflow-hidden hover:scale-[1.02] active:scale-95 transition-all shadow-lg flex items-center justify-center gap-2 shrink-0"
+                            >
+                                <div className="absolute inset-0 bg-gradient-to-r from-neon-pink via-purple-500 to-neon-blue opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                                <div className="relative z-10 flex items-center gap-2 group-hover:text-black transition-colors duration-500">
+                                    <Download size={15} />
+                                    <span>EXPORT CSV</span>
+                                </div>
+                            </button>
+
+                            {/* Import Sheet */}
+                            <label className="group relative h-12 md:h-14 px-4 md:px-6 bg-zinc-900 border border-white/10 hover:border-white/20 text-white rounded-xl md:rounded-full font-black uppercase tracking-[0.15em] text-[9px] md:text-[10px] hover:scale-[1.02] active:scale-95 transition-all cursor-pointer flex items-center justify-center gap-2 shrink-0">
+                                <Upload size={15} className="text-neon-pink" />
+                                <span>IMPORT SHEET</span>
+                                <input type="file" accept=".csv" onChange={handleImportCSV} className="hidden" />
+                            </label>
+
+                            {/* Add Creator Button - High Contrast Primary Action */}
+                            <button 
+                                onClick={() => setIsAddModalOpen(true)}
+                                className="group relative h-12 md:h-14 px-5 md:px-7 bg-white text-black hover:bg-neon-pink hover:text-black rounded-xl md:rounded-full font-black uppercase tracking-[0.15em] text-[9px] md:text-[10px] hover:scale-[1.02] active:scale-95 transition-all shadow-[0_10px_30px_rgba(255,255,255,0.15)] flex items-center justify-center gap-2 shrink-0"
+                            >
+                                <Plus size={16} className="text-black font-black" />
+                                <span>ADD CREATOR</span>
+                            </button>
+                        </div>
                     </div>
 
-                    {/* Filter Cluster */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:flex lg:flex-wrap items-center gap-2.5 shrink-0 w-full lg:w-auto pr-0 md:pr-2">
+                    {/* Row 2: Filter Toolbar */}
+                    <div className="pt-2 md:pt-3 border-t border-white/5 flex flex-col md:flex-row md:flex-wrap lg:flex-nowrap items-stretch md:items-center gap-2 md:gap-2.5">
+                        
+                        {/* Filter Indicator Label */}
+                        <div className="hidden xl:flex items-center gap-1.5 px-2 text-[9px] font-black uppercase tracking-widest text-gray-500 shrink-0 select-none">
+                            <Filter size={12} className="text-neon-pink" />
+                            <span>FILTERS:</span>
+                        </div>
+
                         {/* Custom Followers Range Popover Selector */}
-                        <div className="relative w-full lg:w-[160px]" ref={followersRef}>
+                        <div className="relative flex-1 min-w-[130px] sm:min-w-[140px]" ref={followersRef}>
                             <div 
                                 onClick={() => setIsFollowersOpen(!isFollowersOpen)}
                                 className={cn(
-                                    "flex items-center justify-between h-12 md:h-14 bg-black/60 border border-white/10 rounded-xl md:rounded-full px-4 cursor-pointer hover:border-white/20 transition-all group shadow-inner select-none",
-                                    isFollowersOpen && "border-white/20"
+                                    "flex items-center justify-between h-11 md:h-12 bg-black/60 border border-white/10 rounded-xl md:rounded-full px-4 cursor-pointer hover:border-white/20 transition-all group shadow-inner select-none",
+                                    isFollowersOpen && "border-neon-pink/40"
                                 )}
                             >
                                 <span className={cn(
-                                    "text-[10px] font-black uppercase tracking-[0.12em] truncate leading-none",
-                                    (!minFollowers && !maxFollowers) ? "text-white/30" : "text-white italic"
-                                )}>
+                                    "text-[9px] md:text-[10px] font-black uppercase tracking-[0.12em] truncate leading-none",
+                                    (!minFollowers && !maxFollowers) ? "text-white/40" : "text-white italic"
+                                )}
+                                title={getFollowersLabel()}
+                                >
                                     {getFollowersLabel()}
                                 </span>
                                 <ChevronDown 
@@ -511,31 +614,31 @@ const CreatorManager = ({ showLeaderboardOnly = false }) => {
                         </div>
 
                         {/* Niche Filter */}
-                        <div className="w-full lg:w-[150px]">
+                        <div className="flex-1 min-w-[130px] sm:min-w-[140px]">
                             <StudioSelect 
                                 value={filterNiche} 
                                 options={['All', ...NICHES].map(n => ({ value: n, label: n === 'All' ? 'NICHE' : n.toUpperCase() }))} 
                                 onChange={setFilterNiche} 
-                                className="w-full min-w-0 h-12 md:h-14 rounded-xl md:rounded-full border-white/10 bg-black/60" 
+                                className="w-full min-w-0 h-11 md:h-12 rounded-xl md:rounded-full border-white/10 bg-black/60 text-[9px] md:text-[10px]" 
                                 accentColor="neon-pink" 
                                 classNamePrefix="studio-select"
                             />
                         </div>
 
                         {/* Location Filter */}
-                        <div className="w-full lg:w-[150px]">
+                        <div className="flex-1 min-w-[130px] sm:min-w-[140px]">
                             <StudioSelect 
                                 value={filterCity} 
                                 options={cities.map(c => ({ value: c, label: c === 'All' ? 'LOCATION' : c.toUpperCase() }))} 
                                 onChange={setFilterCity} 
-                                className="w-full min-w-0 h-12 md:h-14 rounded-xl md:rounded-full border-white/10 bg-black/60" 
+                                className="w-full min-w-0 h-11 md:h-12 rounded-xl md:rounded-full border-white/10 bg-black/60 text-[9px] md:text-[10px]" 
                                 accentColor="neon-blue" 
                                 classNamePrefix="studio-select"
                             />
                         </div>
 
                         {/* Status Filter */}
-                        <div className="w-full lg:w-[150px]">
+                        <div className="flex-1 min-w-[120px] sm:min-w-[130px]">
                             <StudioSelect 
                                 value={filterStatus} 
                                 options={[
@@ -545,14 +648,14 @@ const CreatorManager = ({ showLeaderboardOnly = false }) => {
                                     { value: 'rejected', label: 'REJECTED' }
                                 ]} 
                                 onChange={setFilterStatus} 
-                                className="w-full min-w-0 h-12 md:h-14 rounded-xl md:rounded-full border-white/10 bg-black/60" 
+                                className="w-full min-w-0 h-11 md:h-12 rounded-xl md:rounded-full border-white/10 bg-black/60 text-[9px] md:text-[10px]" 
                                 accentColor="neon-green" 
                                 classNamePrefix="studio-select"
                             />
                         </div>
 
                         {/* Platform Filter */}
-                        <div className="w-full lg:w-[150px]">
+                        <div className="flex-1 min-w-[120px] sm:min-w-[130px]">
                             <StudioSelect 
                                 value={filterPlatform} 
                                 options={[
@@ -562,59 +665,29 @@ const CreatorManager = ({ showLeaderboardOnly = false }) => {
                                     { value: 'youtube', label: 'YOUTUBE' }
                                 ]} 
                                 onChange={setFilterPlatform} 
-                                className="w-full min-w-0 h-12 md:h-14 rounded-xl md:rounded-full border-white/10 bg-black/60" 
+                                className="w-full min-w-0 h-11 md:h-12 rounded-xl md:rounded-full border-white/10 bg-black/60 text-[9px] md:text-[10px]" 
                                 accentColor="neon-blue" 
                                 classNamePrefix="studio-select"
                             />
                         </div>
 
-                        <div className="w-px h-8 bg-white/5 mx-1 hidden lg:block" />
+                        {/* Reset Filters Quick Button */}
+                        {hasActiveFilters && (
+                            <button
+                                onClick={resetAllFilters}
+                                className="h-11 md:h-12 px-4 rounded-xl md:rounded-full bg-neon-pink/10 border border-neon-pink/30 hover:bg-neon-pink/20 text-neon-pink text-[9px] font-black uppercase tracking-widest flex items-center justify-center gap-1.5 transition-all shrink-0 active:scale-95"
+                                title="Reset all filters"
+                            >
+                                <X size={12} />
+                                <span>RESET</span>
+                            </button>
+                        )}
 
-                        <div className="hidden md:flex bg-black/60 p-1 rounded-full border border-white/10 shrink-0 h-14 items-center">
-                            <button 
-                                onClick={() => setViewMode('grid')} 
-                                className={cn(
-                                    "w-11 h-11 rounded-full flex items-center justify-center transition-all", 
-                                    viewMode === 'grid' ? "bg-white text-black shadow-xl" : "text-gray-500 hover:text-white"
-                                )}
-                            >
-                                <LayoutGrid size={16} />
-                            </button>
-                            <button 
-                                onClick={() => setViewMode('list')} 
-                                className={cn(
-                                    "w-11 h-11 rounded-full flex items-center justify-center transition-all", 
-                                    viewMode === 'list' ? "bg-white text-black shadow-xl" : "text-gray-500 hover:text-white"
-                                )}
-                            >
-                                <FileSpreadsheet size={16} />
-                            </button>
+                        {/* Creators Count Badge */}
+                        <div className="hidden lg:flex items-center gap-2 text-[9px] font-black text-gray-500 uppercase tracking-widest ml-auto shrink-0 pl-2 select-none">
+                            <span className="w-1.5 h-1.5 rounded-full bg-neon-pink animate-pulse" />
+                            <span>{filteredCreators.length} / {creators.length} Creators</span>
                         </div>
-
-                        <button 
-                            onClick={exportToCSV}
-                            className="group relative h-12 md:h-14 px-4 md:px-8 bg-white/5 border border-white/10 hover:border-white/20 text-white rounded-xl md:rounded-full font-black uppercase tracking-[0.2em] text-[9px] md:text-[10px] overflow-hidden hover:scale-[1.02] active:scale-95 transition-all shadow-lg flex items-center justify-center gap-3 w-full lg:w-auto shrink-0"
-                        >
-                            <div className="absolute inset-0 bg-gradient-to-r from-neon-pink via-purple-500 to-neon-blue opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                            <div className="relative z-10 flex items-center gap-3 group-hover:text-black transition-colors duration-500">
-                                <Download size={16} />
-                                EXPORT CSV
-                            </div>
-                        </button>
-
-                        <label className="group relative h-12 md:h-14 px-4 md:px-8 bg-zinc-900 border border-white/10 hover:border-white/20 text-white rounded-xl md:rounded-full font-black uppercase tracking-[0.2em] text-[9px] md:text-[10px] hover:scale-[1.02] active:scale-95 transition-all cursor-pointer flex items-center justify-center gap-3 w-full lg:w-auto shrink-0">
-                            <Upload size={16} className="text-neon-pink" />
-                            IMPORT SHEET
-                            <input type="file" accept=".csv" onChange={handleImportCSV} className="hidden" />
-                        </label>
-
-                        <button 
-                            onClick={() => setIsAddModalOpen(true)}
-                            className="group relative h-12 md:h-14 px-4 md:px-8 bg-zinc-900 border border-white/10 hover:border-white/20 text-white rounded-xl md:rounded-full font-black uppercase tracking-[0.2em] text-[9px] md:text-[10px] hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3 w-full lg:w-auto shrink-0"
-                        >
-                            <Plus size={16} className="text-neon-blue" />
-                            ADD CREATOR
-                        </button>
                     </div>
                 </div>
 
@@ -776,7 +849,9 @@ const CreatorManager = ({ showLeaderboardOnly = false }) => {
         );
     };
 
-    return (
+    const content = isEmbedded ? (
+        renderContent()
+    ) : (
         <AdminCommunityHubLayout
             studioHeader={{
                 title: 'CREATOR',
@@ -801,6 +876,12 @@ const CreatorManager = ({ showLeaderboardOnly = false }) => {
             }
         >
             {renderContent()}
+        </AdminCommunityHubLayout>
+    );
+
+    return (
+        <>
+            {content}
             <AnimatePresence>
                 {selectedCreator && (
                     <CreatorDetailModal 
@@ -876,7 +957,7 @@ const CreatorManager = ({ showLeaderboardOnly = false }) => {
                 </AnimatePresence>,
                 document.body
             )}
-        </AdminCommunityHubLayout>
+        </>
     );
 };
 

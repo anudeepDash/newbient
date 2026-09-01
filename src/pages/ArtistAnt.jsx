@@ -154,6 +154,12 @@ const ArtistAnt = () => {
     });
 
     useEffect(() => {
+        if (typeof window !== 'undefined' && !window.location.hostname.includes('artistant') && !window.location.hostname.includes('localhost') && !window.location.hostname.includes('127.0.0.1')) {
+            window.location.replace('https://artistant.in');
+        }
+    }, []);
+
+    useEffect(() => {
         if (user && artists) {
             const existingProfile = artists.find(a => a.uid === user.uid);
             if (existingProfile) {

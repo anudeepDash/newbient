@@ -17,7 +17,7 @@ const Navbar = () => {
 
     const allLinks = [
         { name: 'HOME', path: '/', icon: Home },
-        { name: 'ARTISTANT', path: '/artistant', icon: Mic2 },
+        { name: 'ARTISTANT', path: 'https://artistant.in', isExternal: true, icon: Mic2 },
         { name: 'COMMUNITY', path: '/community', featureId: 'community', icon: Users },
 
         { name: 'CREATOR', path: '/creator', matchPaths: ['/creator-dashboard', '/creator'], featureId: 'influencer', icon: Zap },
@@ -29,7 +29,7 @@ const Navbar = () => {
 
     const mobilePrimaryLinks = [
         { name: 'HOME', path: '/', icon: Home },
-        { name: 'ARTISTANT', path: '/artistant', icon: Mic2 },
+        { name: 'ARTISTANT', path: 'https://artistant.in', isExternal: true, icon: Mic2 },
 
         { name: 'CREATOR', path: '/creator', matchPaths: ['/creator-dashboard', '/creator'], featureId: 'influencer', icon: Zap },
         { name: 'MORE', action: () => setIsOpen(true), icon: Menu },
@@ -112,6 +112,25 @@ const Navbar = () => {
                             const isActive = link.matchPaths ? link.matchPaths.includes(location.pathname) : location.pathname === link.path;
                             const isClickable = !isUnderMaintenance || user?.role === 'developer';
                             
+                            if (link.isExternal) {
+                                return (
+                                    <a
+                                        key={link.name}
+                                        href={isClickable ? link.path : '#'}
+                                        className={cn(
+                                            'px-4 py-2.5 text-[10px] font-black uppercase tracking-widest transition-all rounded-full relative group flex items-center gap-2',
+                                            'text-zinc-400 hover:text-white',
+                                            isUnderMaintenance && !isClickable && 'opacity-60 cursor-not-allowed grayscale'
+                                        )}
+                                    >
+                                        <span className="relative z-10">{link.name}</span>
+                                        {isUnderMaintenance && (
+                                            <div className="w-1.5 h-1.5 rounded-full bg-red-500 relative z-10" title="Under Maintenance" />
+                                        )}
+                                    </a>
+                                );
+                            }
+
                             return (
                                 <Link
                                     key={link.name}
@@ -258,6 +277,21 @@ const Navbar = () => {
                                 );
                             }
 
+                            if (link.isExternal) {
+                                return (
+                                    <a
+                                        key={link.name}
+                                        href={isClickable ? link.path : '#'}
+                                        className={cn(
+                                            "flex flex-col items-center justify-center flex-1 py-1 relative",
+                                            isUnderMaintenance && !isClickable && "opacity-50 grayscale cursor-not-allowed"
+                                        )}
+                                    >
+                                        {content}
+                                    </a>
+                                );
+                            }
+
                             return (
                                 <Link
                                     key={link.name}
@@ -356,6 +390,35 @@ const Navbar = () => {
                                                 const isUnderMaintenance = link.featureId && (maintenanceState.global || maintenanceState.pages?.[link.featureId]);
                                                 const isClickable = !isUnderMaintenance || user?.role === 'developer';
                                                 
+                                                if (link.isExternal) {
+                                                    return (
+                                                        <a
+                                                            key={link.name}
+                                                            href={isClickable ? link.path : '#'}
+                                                            onClick={() => isClickable && setIsOpen(false)}
+                                                            className={cn(
+                                                                "flex items-center justify-between p-4 transition-all hover:bg-white/5",
+                                                                idx !== allLinks.length - 1 && "border-b border-white/5",
+                                                                isUnderMaintenance && !isClickable && "opacity-40 grayscale cursor-not-allowed"
+                                                            )}
+                                                        >
+                                                            <div className="flex items-center gap-4">
+                                                                <div className={cn(
+                                                                    "w-10 h-10 rounded-xl flex items-center justify-center transition-all bg-white/5 text-zinc-400"
+                                                                )}>
+                                                                    <Icon size={20} />
+                                                                </div>
+                                                                <span className="text-sm font-bold text-zinc-200">{link.name}</span>
+                                                            </div>
+                                                            {isUnderMaintenance ? (
+                                                                <span className="text-[9px] font-bold uppercase text-red-500 tracking-widest bg-red-500/10 px-2 py-1 rounded-md">Offline</span>
+                                                            ) : (
+                                                                <ChevronRight size={18} className="text-zinc-600" />
+                                                            )}
+                                                        </a>
+                                                    );
+                                                }
+
                                                 return (
                                                     <Link
                                                         key={link.name}

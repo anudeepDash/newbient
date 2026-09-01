@@ -6,6 +6,18 @@
     },
     "redirects": [
         {
+            "source": "/artistant",
+            "has": [{ "type": "host", "value": "newbi.live" }],
+            "destination": "https://artistant.in",
+            "permanent": false
+        },
+        {
+            "source": "/artistant",
+            "has": [{ "type": "host", "value": "www.newbi.live" }],
+            "destination": "https://artistant.in",
+            "permanent": false
+        },
+        {
             "source": "/admin",
             "has": [{ "type": "host", "value": "artistant.in" }],
             "destination": "/",

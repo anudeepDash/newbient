@@ -490,7 +490,7 @@ const ProfilePanel = ({ isOpen, onClose }) => {
                                                     <p className="text-xl md:text-2xl font-black text-white italic">{isCreator ? 'ACTIVE' : 'NONE'}</p>
                                                     <p className="text-[9px] md:text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-1">Creator Status</p>
                                                 </div>
-                                                <div className="p-4 md:p-6 rounded-[1.5rem] bg-gradient-to-br from-white/5 to-transparent border border-white/10 group hover:border-[#FF6B6B]/30 transition-all cursor-pointer col-span-2 sm:col-span-1" onClick={() => { navigate('/artistant'); onClose(); }}>
+                                                <div className="p-4 md:p-6 rounded-[1.5rem] bg-gradient-to-br from-white/5 to-transparent border border-white/10 group hover:border-[#FF6B6B]/30 transition-all cursor-pointer col-span-2 sm:col-span-1" onClick={() => { window.location.href = 'https://artistant.in'; onClose(); }}>
                                                     <div className="flex items-center justify-between mb-3 md:mb-4">
                                                         <div className="w-8 h-8 md:w-10 md:h-10 rounded-xl md:rounded-2xl bg-[#FF6B6B]/10 flex items-center justify-center text-[#FF6B6B]">
                                                             <Mic size={16} className="md:w-5 md:h-5" />
@@ -525,7 +525,7 @@ const ProfilePanel = ({ isOpen, onClose }) => {
 
                                             {isArtist && (
                                                 <button 
-                                                    onClick={() => { navigate('/artistant'); onClose(); }}
+                                                    onClick={() => { window.location.href = 'https://artistant.in'; onClose(); }}
                                                     className="w-full flex items-center justify-between p-6 rounded-[2rem] bg-[#FF6B6B]/5 border border-[#FF6B6B]/10 hover:bg-[#FF6B6B]/10 hover:border-[#FF6B6B] transition-all group"
                                                 >
                                                     <div className="flex items-center gap-4">
