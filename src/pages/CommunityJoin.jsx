@@ -558,7 +558,7 @@ const CommunityJoin = () => {
                         initial={{ opacity: 0, y: 50 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95 }}
-                        className="fixed bottom-12 left-1/2 -translate-x-1/2 z-[100] px-8 py-4 bg-slate-950/80 border border-white/5 rounded-2xl shadow-2xl flex items-center gap-4 backdrop-blur-3xl"
+                        className="fixed bottom-12 inset-x-0 mx-auto w-fit z-[100] px-8 py-4 bg-slate-950/80 border border-white/5 rounded-2xl shadow-2xl flex items-center gap-4 backdrop-blur-3xl"
                     >
                         <div className="w-2 h-2 rounded-full bg-neon-green" />
                         <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-white">Access Link Copied</span>

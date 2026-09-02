@@ -586,7 +586,10 @@ const Dashboard = () => {
             </div>
 
             {/* Mobile Persistent Floating Control Bar */}
-            <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] w-[90%] max-w-[420px] h-16 bg-[#050505]/80 backdrop-blur-2xl border border-white/10 rounded-full flex items-center justify-between p-2 shadow-2xl md:hidden">
+            <div 
+                className="fixed bottom-6 inset-x-0 mx-auto z-[100] w-[90%] max-w-[420px] h-16 bg-[#050505]/80 backdrop-blur-2xl border border-white/10 rounded-full flex items-center justify-between p-2 shadow-2xl md:hidden"
+                style={{ bottom: 'max(1.5rem, calc(0.75rem + env(safe-area-inset-bottom, 0px)))' }}
+            >
                 <Link
                     to="/admin"
                     className="w-12 h-12 rounded-full bg-white/5 border border-white/5 hover:bg-white/10 flex items-center justify-center text-gray-400 hover:text-white transition-all active:scale-90"
