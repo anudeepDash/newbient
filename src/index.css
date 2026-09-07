@@ -9,10 +9,42 @@
     --safe-area-inset-top: env(safe-area-inset-top, 0px);
     --safe-area-inset-bottom: env(safe-area-inset-bottom, 0px);
     --mobile-spacing: 1rem;
+
+    /* Theme colors — Light mode defaults */
+    --bg-primary: #F8F9FA;
+    --bg-secondary: #FFFFFF;
+    --bg-glass: rgba(255, 255, 255, 0.70);
+    --bg-glass-heavy: rgba(255, 255, 255, 0.85);
+    --text-primary: #111827;
+    --text-secondary: #6B7280;
+    --text-muted: #9CA3AF;
+    --border-primary: rgba(0, 0, 0, 0.08);
+    --border-secondary: rgba(0, 0, 0, 0.05);
+    --scrollbar-track: rgba(0, 0, 0, 0.02);
+    --scrollbar-thumb: #D1D5DB;
+    --scrollbar-thumb-hover: #9CA3AF;
+  }
+
+  .dark {
+    --bg-primary: #000000;
+    --bg-secondary: #0B0F17;
+    --bg-glass: rgba(9, 9, 11, 0.35);
+    --bg-glass-heavy: rgba(9, 9, 11, 0.60);
+    --text-primary: #FFFFFF;
+    --text-secondary: #9CA3AF;
+    --text-muted: #6B7280;
+    --border-primary: rgba(255, 255, 255, 0.08);
+    --border-secondary: rgba(255, 255, 255, 0.05);
+    --scrollbar-track: rgba(255, 255, 255, 0.01);
+    --scrollbar-thumb: #333333;
+    --scrollbar-thumb-hover: #555555;
   }
 
   body {
-    @apply bg-black text-white font-sans overflow-x-hidden;
+    @apply font-sans overflow-x-hidden;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    transition: background-color 0.3s ease, color 0.3s ease;
   }
 
   @media (max-width: 768px) {
@@ -68,7 +100,9 @@
   }
 
   .glass-card {
-    @apply bg-zinc-950/35 backdrop-blur-3xl border border-white/5 rounded-3xl;
+    @apply backdrop-blur-3xl rounded-3xl;
+    background: var(--bg-glass);
+    border: 1px solid var(--border-primary);
   }
   @media (max-width: 768px) {
     .glass-card {
@@ -232,16 +266,16 @@
 }
 
 ::-webkit-scrollbar-track {
-  background: #0B0F17;
+  background: var(--scrollbar-track);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #333;
+  background: var(--scrollbar-thumb);
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #555;
+  background: var(--scrollbar-thumb-hover);
 }
 
 @media print {
@@ -435,17 +469,25 @@
 }
 
 ::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.01);
+  background: var(--scrollbar-track);
   border-radius: 10px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, #2eff90, #2ebfff);
+  background: var(--scrollbar-thumb);
   border-radius: 10px;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #2eff90, #2ebfff);
   box-shadow: 0 0 8px rgba(46, 255, 144, 0.3);
 }
 
 ::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
   background: linear-gradient(180deg, #2eff90, #ffffff);
   box-shadow: 0 0 12px rgba(46, 255, 144, 0.6);
 }
@@ -464,14 +506,14 @@
 }
 
 /* Date & Time Picker Resets */
-input[type="date"]::-webkit-calendar-picker-indicator,
-input[type="time"]::-webkit-calendar-picker-indicator {
+.dark input[type="date"]::-webkit-calendar-picker-indicator,
+.dark input[type="time"]::-webkit-calendar-picker-indicator {
   filter: invert(1);
   opacity: 0.6;
   cursor: pointer;
 }
 
-input[type="time"]::-webkit-calendar-picker-indicator:hover {
+.dark input[type="time"]::-webkit-calendar-picker-indicator:hover {
   opacity: 1;
 }
 
@@ -866,9 +908,9 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover {
 
 /* Glassmorphism custom styling helpers */
 .glass-panel {
-  background: rgba(10, 10, 10, 0.4) !important;
+  background: var(--bg-glass) !important;
   backdrop-filter: blur(24px) !important;
-  border: 1px solid rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid var(--border-primary) !important;
   border-radius: 2rem !important;
 }
 

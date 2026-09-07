@@ -168,13 +168,13 @@ export default async function handler(req, res) {
             }
         } else if (page) {
             if (page === 'creator' || page === 'creator-landing') {
-                meta.title = "Creator Elite Network | Newbi Ent.";
-                meta.description = "Explore open campaigns in your city, submit deliverables directly, and track statuses from your creator dashboard.";
+                meta.title = "Newbi Creator Network • Brand Campaigns & Live Gigs";
+                meta.description = "Discover verified brand collaborations and experiential gigs in Bengaluru, Mumbai, Delhi-NCR, and across India. 100% free to join.";
                 meta.image = `${baseUrl}/og-image.png`;
                 meta.url = `${baseUrl}/creator`;
             } else if (page === 'creator-join') {
-                meta.title = "Join Creator Network | Newbi Ent.";
-                meta.description = "Register to join Newbi's Elite Creator Network.";
+                meta.title = "Apply to Newbi Creator Network • 45-Second Onboarding";
+                meta.description = "Connect with top brands and live events in your city. Fast creator onboarding with zero agency fees.";
                 meta.image = `${baseUrl}/og-image.png`;
                 meta.url = `${baseUrl}/creator/join`;
             }

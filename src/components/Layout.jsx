@@ -5,11 +5,13 @@ import Footer from './Footer';
 import NotificationToast from './NotificationToast';
 import { useStore } from '../lib/store';
 import { cn } from '../lib/utils';
+import { useTheme } from '../hooks/useTheme';
 
 const Layout = () => {
     const { maintenanceState, user } = useStore();
     const location = useLocation();
     const isBypassing = maintenanceState.global && user?.role === 'developer';
+    const { isDark } = useTheme();
     
     // Identify document editors and viewers to hide global navigation
     const isSpecialPage = 
@@ -35,7 +37,7 @@ const Layout = () => {
 
     return (
         <div className={cn(
-            "flex flex-col bg-black text-white selection:bg-neon-pink selection:text-white w-full max-w-[100vw] overflow-x-hidden",
+            "flex flex-col bg-[#F8F9FA] dark:bg-black text-gray-900 dark:text-white selection:bg-neon-pink selection:text-white w-full max-w-[100vw] overflow-x-hidden",
             isHeightLockedPage ? "h-screen overflow-hidden" : "min-h-screen"
         )}>
             {!isSpecialPage && <Navbar />}
@@ -50,7 +52,7 @@ const Layout = () => {
             {!isSpecialPage && <Footer />}
 
             {/* Background Glow Effects - Enhanced */}
-            <div className="fixed top-0 left-0 w-full h-full overflow-hidden -z-10 pointer-events-none">
+            <div className={cn("fixed top-0 left-0 w-full h-full overflow-hidden -z-10 pointer-events-none transition-opacity duration-500", isDark ? "opacity-100" : "opacity-0")}>
                 <div className="absolute top-[-10%] left-[-10%] w-[30%] h-[30%] md:w-[40%] md:h-[40%] bg-neon-blue/10 rounded-full blur-[60px] md:blur-[120px] animate-pulse" />
                 <div className="absolute bottom-[-10%] right-[-10%] w-[30%] h-[30%] md:w-[40%] md:h-[40%] bg-neon-pink/10 rounded-full blur-[60px] md:blur-[120px] animate-pulse" style={{ animationDelay: '1s' }} />
                 <div className="absolute top-[40%] left-[50%] translate-x-[-50%] w-[20%] h-[20%] md:w-[30%] md:h-[30%] bg-neon-green/5 rounded-full blur-[50px] md:blur-[100px] animate-pulse" style={{ animationDelay: '2s' }} />
