@@ -14,14 +14,14 @@ const Footer = () => {
     };
 
     return (
-        <footer className="bg-black pt-24 pb-32 lg:pb-12 px-6 md:px-12 relative overflow-hidden">
+        <footer className="bg-gray-50 dark:bg-black pt-24 pb-32 lg:pb-12 px-6 md:px-12 relative overflow-hidden">
             {/* Background Texture & Light Effects */}
             <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'url("https://www.transparenttextures.com/patterns/carbon-fibre.png")' }} />
-            <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+            <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-black/10 dark:via-white/10 to-transparent" />
             
             {/* Subtle Ambient Glows */}
-            <div className="absolute -top-24 -left-24 w-96 h-96 bg-neon-blue/5 rounded-full blur-[120px] pointer-events-none" />
-            <div className="absolute -bottom-24 -right-24 w-96 h-96 bg-white/5 rounded-full blur-[120px] pointer-events-none" />
+            <div className="absolute -top-24 -left-24 w-96 h-96 bg-neon-blue/3 dark:bg-neon-blue/5 rounded-full blur-[120px] pointer-events-none" />
+            <div className="absolute -bottom-24 -right-24 w-96 h-96 bg-gray-300/10 dark:bg-white/5 rounded-full blur-[120px] pointer-events-none" />
 
             <div className="max-w-[1500px] mx-auto relative z-10">
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 lg:gap-24 mb-20">
@@ -33,34 +33,34 @@ const Footer = () => {
                             viewport={{ once: true }}
                             className="flex flex-col"
                         >
-                            <span className="text-5xl md:text-7xl font-black font-heading italic tracking-tighter text-white select-none">
+                            <span className="text-5xl md:text-7xl font-black font-heading italic tracking-tighter text-gray-900 dark:text-white select-none">
                                 NEWBI ENT.
                             </span>
                             <div className="mt-8 space-y-2">
-                                <p className="text-gray-400 text-base md:text-xl font-medium leading-relaxed tracking-tight max-w-md">
+                                <p className="text-gray-500 dark:text-gray-400 text-base md:text-xl font-medium leading-relaxed tracking-tight max-w-md">
                                     Creating energetic experiences that resonate with the pulse of the youth.
                                 </p>
                             </div>
                         </motion.div>
 
                         <div className="flex flex-col sm:flex-row gap-4 sm:items-center lg:gap-6">
-                            <a href="https://www.instagram.com/newbi.live" target="_blank" rel="noopener noreferrer" className="flex items-center h-12 sm:h-auto text-gray-500 hover:text-white transition-all text-[10px] font-black uppercase tracking-[0.3em]">INSTAGRAM</a>
-                            <a href="https://linkedin.com/company/newbi-ent" target="_blank" rel="noopener noreferrer" className="flex items-center h-12 sm:h-auto text-gray-500 hover:text-white transition-all text-[10px] font-black uppercase tracking-[0.3em]">LINKEDIN</a>
-                            <a href="mailto:partnership@newbi.live" className="flex items-center h-12 sm:h-auto text-gray-500 hover:text-white transition-all text-[10px] font-black uppercase tracking-[0.3em]">EMAIL</a>
+                            <a href="https://www.instagram.com/newbi.live" target="_blank" rel="noopener noreferrer" className="flex items-center h-12 sm:h-auto text-gray-400 dark:text-gray-500 hover:text-gray-900 dark:hover:text-white transition-all text-[10px] font-black uppercase tracking-[0.3em]">INSTAGRAM</a>
+                            <a href="https://linkedin.com/company/newbi-ent" target="_blank" rel="noopener noreferrer" className="flex items-center h-12 sm:h-auto text-gray-400 dark:text-gray-500 hover:text-gray-900 dark:hover:text-white transition-all text-[10px] font-black uppercase tracking-[0.3em]">LINKEDIN</a>
+                            <a href="mailto:partnership@newbi.live" className="flex items-center h-12 sm:h-auto text-gray-400 dark:text-gray-500 hover:text-gray-900 dark:hover:text-white transition-all text-[10px] font-black uppercase tracking-[0.3em]">EMAIL</a>
                         </div>
                     </div>
 
                     {/* Navigation Columns */}
                     <div className="lg:col-span-6 grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-12 lg:justify-end relative">
-                        <div className="space-y-4 lg:space-y-8 lg:text-right border-b border-white/5 lg:border-none pb-4 lg:pb-0">
+                        <div className="space-y-4 lg:space-y-8 lg:text-right border-b border-gray-200 dark:border-white/5 lg:border-none pb-4 lg:pb-0">
                             <button 
                                 onClick={() => setNavOpen(!navOpen)}
                                 className="w-full flex items-center justify-between lg:block lg:pointer-events-none text-left lg:text-right py-2 lg:py-0 group"
                             >
-                                <h4 className="text-[10px] font-black uppercase tracking-[0.4em] text-white/40">Navigation</h4>
-                                <ChevronDown size={16} className={`text-white/40 lg:hidden transition-transform duration-300 ${navOpen ? 'rotate-180' : ''}`} />
+                                <h4 className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-400 dark:text-white/40">Navigation</h4>
+                                <ChevronDown size={16} className={`text-gray-400 dark:text-white/40 lg:hidden transition-transform duration-300 ${navOpen ? 'rotate-180' : ''}`} />
                             </button>
-                            <div className={`flex-col gap-6 text-xs font-black text-white uppercase tracking-[0.2em] ${navOpen ? 'flex' : 'hidden lg:flex'} pb-4 lg:pb-0`}>
+                            <div className={`flex-col gap-6 text-xs font-black text-gray-900 dark:text-white uppercase tracking-[0.2em] ${navOpen ? 'flex' : 'hidden lg:flex'} pb-4 lg:pb-0`}>
                                 <Link to="/" className="hover:text-neon-green transition-colors flex items-center lg:justify-end min-h-[44px] lg:min-h-0">HOME</Link>
                                 <Link to="/community" className="hover:text-neon-green transition-colors flex items-center lg:justify-end min-h-[44px] lg:min-h-0">COMMUNITY</Link>
                                 <a href="https://artistant.in" className="hover:text-neon-pink transition-colors flex items-center lg:justify-end min-h-[44px] lg:min-h-0">ARTISTANT</a>
@@ -69,15 +69,15 @@ const Footer = () => {
                             </div>
                         </div>
 
-                        <div className="space-y-4 lg:space-y-8 lg:text-right border-b border-white/5 lg:border-none pb-4 lg:pb-0">
+                        <div className="space-y-4 lg:space-y-8 lg:text-right border-b border-gray-200 dark:border-white/5 lg:border-none pb-4 lg:pb-0">
                             <button 
                                 onClick={() => setPortalOpen(!portalOpen)}
                                 className="w-full flex items-center justify-between lg:block lg:pointer-events-none text-left lg:text-right py-2 lg:py-0 group"
                             >
-                                <h4 className="text-[10px] font-black uppercase tracking-[0.4em] text-white/40">Portal</h4>
-                                <ChevronDown size={16} className={`text-white/40 lg:hidden transition-transform duration-300 ${portalOpen ? 'rotate-180' : ''}`} />
+                                <h4 className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-400 dark:text-white/40">Portal</h4>
+                                <ChevronDown size={16} className={`text-gray-400 dark:text-white/40 lg:hidden transition-transform duration-300 ${portalOpen ? 'rotate-180' : ''}`} />
                             </button>
-                            <div className={`flex-col gap-6 text-xs font-black text-white uppercase tracking-[0.2em] ${portalOpen ? 'flex' : 'hidden lg:flex'} pb-4 lg:pb-0`}>
+                            <div className={`flex-col gap-6 text-xs font-black text-gray-900 dark:text-white uppercase tracking-[0.2em] ${portalOpen ? 'flex' : 'hidden lg:flex'} pb-4 lg:pb-0`}>
                                 <Link to="/contact" className="hover:text-neon-blue transition-colors flex items-center lg:justify-end min-h-[44px] lg:min-h-0">CONTACT</Link>
                                 <Link to="/admin" className="hover:text-neon-blue transition-colors flex items-center lg:justify-end min-h-[44px] lg:min-h-0">ADMIN</Link>
                             </div>
@@ -85,7 +85,7 @@ const Footer = () => {
                             <div className="pt-10 flex lg:justify-end">
                                 <button 
                                     onClick={scrollToTop}
-                                    className="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-white hover:bg-white hover:text-black hover:scale-110 transition-all duration-500 group shadow-xl"
+                                    className="w-14 h-14 rounded-2xl bg-gray-200/50 dark:bg-white/5 border border-gray-300 dark:border-white/10 flex items-center justify-center text-gray-700 dark:text-white hover:bg-gray-900 hover:text-white dark:hover:bg-white dark:hover:text-black hover:scale-110 transition-all duration-500 group shadow-xl"
                                     title="Back to Top"
                                 >
                                     <ArrowUp size={20} className="group-hover:-translate-y-1 transition-transform" />
@@ -96,21 +96,21 @@ const Footer = () => {
                 </div>
 
                 {/* Bottom Bar */}
-                <div className="pt-12 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-6">
+                <div className="pt-12 border-t border-gray-200 dark:border-white/5 flex flex-col md:flex-row justify-between items-center gap-6">
                     <div className="flex flex-col md:flex-row items-center gap-6 md:gap-12">
-                        <div className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-700">
+                        <div className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-400 dark:text-gray-700">
                             &copy; {new Date().getFullYear()} NEWBI ENTERTAINMENT & MARKETING LLP. ALL RIGHTS RESERVED.
                         </div>
                         
                         <div className="flex items-center gap-6">
-                            <Link to="/terms" className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-500 hover:text-white transition-colors">TERMS</Link>
-                            <Link to="/privacy" className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-500 hover:text-white transition-colors">PRIVACY</Link>
+                            <Link to="/terms" className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-400 dark:text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors">TERMS</Link>
+                            <Link to="/privacy" className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-400 dark:text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors">PRIVACY</Link>
                         </div>
                     </div>
                     
-                    <div className="flex items-center gap-8 text-[10px] font-black uppercase tracking-[0.3em] text-gray-800">
+                    <div className="flex items-center gap-8 text-[10px] font-black uppercase tracking-[0.3em] text-gray-400 dark:text-gray-800">
                         <div className="flex items-center gap-2">
-                            <div className="w-1.5 h-1.5 rounded-full bg-white/10" />
+                            <div className="w-1.5 h-1.5 rounded-full bg-gray-300 dark:bg-white/10" />
                             <span>With ❤️Newbi.Live</span>
                         </div>
                     </div>

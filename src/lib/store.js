@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { db, storage } from './firebase';
 import { collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, getDocs, where, setDoc, getDoc, increment, arrayUnion, collectionGroup, serverTimestamp, limit } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { sendBookingConfirmation, sendCreatorWelcomeEmail, sendNewCampaignNotificationEmail, sendCreatorApprovedEmail } from './email';
+import { sendBookingConfirmation, sendCreatorWelcomeEmail, sendNewCampaignNotificationEmail, sendCreatorApprovedEmail, sendWhatsAppVerification } from './email';
 import { normalizePhoneNumber } from './utils';
 import { safeLocalStorage } from './storage';
 
@@ -1796,23 +1796,53 @@ export const useStore = create((set, get) => ({
 
     // Creators / Influencers
     addCreator: async (creator, sendWelcome = true) => {
-        const { creators } = get();
+        const { creators, user } = get();
+        const targetUid = creator.uid || user?.uid || doc(collection(db, 'creators')).id;
         const normPhone = normalizePhoneNumber(creator.phone);
+        const normEmail = creator.email?.trim().toLowerCase();
+        const cleanInsta = creator.instagram?.trim().replace(/^@/, '').toLowerCase();
+
+        // 1. Phone number deduplication
         if (normPhone) {
-            const existing = creators.find(c => c.uid !== creator.uid && normalizePhoneNumber(c.phone) === normPhone);
-            if (existing) {
-                throw new Error(`The mobile number ${creator.phone} is already linked to another Creator account (${existing.email || existing.displayName || 'Existing Account'}). Multiple creator accounts for the same mobile number are not allowed.`);
+            const existingPhone = creators.find(c => c.uid !== targetUid && normalizePhoneNumber(c.phone) === normPhone);
+            if (existingPhone) {
+                throw new Error(`The mobile number ${creator.phone} is already linked to another Creator profile (${existingPhone.displayName || existingPhone.name || 'Existing Account'}). Multiple creator accounts for the same phone number are not allowed.`);
             }
         }
 
-        const creatorId = (creator.creatorId || creator.uid.slice(0, 8)).toUpperCase();
+        // 2. Email deduplication
+        if (normEmail) {
+            const existingEmail = creators.find(c => c.uid !== targetUid && c.email && c.email.trim().toLowerCase() === normEmail);
+            if (existingEmail) {
+                throw new Error(`The email address ${creator.email} is already registered to an existing Creator profile. Please sign in to access your dashboard.`);
+            }
+        }
+
+        // 3. Instagram handle deduplication
+        if (cleanInsta) {
+            const existingInsta = creators.find(c => c.uid !== targetUid && c.instagram && c.instagram.trim().replace(/^@/, '').toLowerCase() === cleanInsta);
+            if (existingInsta) {
+                throw new Error(`The Instagram handle @${cleanInsta} is already linked to an existing Creator profile.`);
+            }
+        }
+
+        const verificationToken = creator.verificationToken || `vt_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
+        const creatorId = (creator.creatorId || targetUid.slice(0, 8)).toUpperCase();
+        
+        // Auto-verify email if user is signed in with Google
+        const isEmailVerified = creator.isEmailVerified || (user?.emailVerified && user?.email?.toLowerCase() === normEmail) || false;
+
         const finalCreator = {
             ...creator,
+            uid: targetUid,
             creatorId,
+            verificationToken,
+            isPhoneVerified: creator.isPhoneVerified ?? false,
+            isEmailVerified,
             createdAt: new Date().toISOString()
         };
 
-        await setDoc(doc(db, 'creators', creator.uid), finalCreator);
+        await setDoc(doc(db, 'creators', targetUid), finalCreator);
 
         if (creator.referredBy) {
             const referredBy = creator.referredBy.trim();
@@ -1840,10 +1870,21 @@ export const useStore = create((set, get) => ({
             }
         }
 
+        const verificationUrl = typeof window !== 'undefined' 
+            ? `${window.location.origin}/verify-creator?id=${targetUid}&token=${verificationToken}`
+            : `https://newbi.live/verify-creator?id=${targetUid}&token=${verificationToken}`;
+
+        if (creator.phone) {
+            sendWhatsAppVerification(creator.phone, creator.displayName || creator.name || 'Creator', verificationUrl)
+                .catch(err => console.error("Error sending WhatsApp verification:", err));
+        }
+
         if (sendWelcome && creator.email) {
-            sendCreatorWelcomeEmail(creator.email, creator.displayName || creator.name || 'Creator')
+            sendCreatorWelcomeEmail(creator.email, creator.displayName || creator.name || 'Creator', verificationToken, targetUid)
                 .catch(err => console.error("Error sending welcome email to creator:", err));
         }
+
+        return { id: targetUid, creatorId, verificationToken };
     },
 
 

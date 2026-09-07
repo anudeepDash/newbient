@@ -1848,13 +1848,16 @@ export const generateReceiptEmailHTML = (data) => {
 /**
  * Sends a welcome confirmation email to creators upon registration.
  */
-export const sendCreatorWelcomeEmail = async (toEmail, creatorName) => {
+export const sendCreatorWelcomeEmail = async (toEmail, creatorName, verificationToken = '', creatorId = '') => {
     try {
-        const html = generateCreatorWelcomeHTML(creatorName);
+        const verificationUrl = verificationToken && creatorId 
+            ? `${getBaseUrl()}/verify-creator?id=${creatorId}&token=${verificationToken}` 
+            : '';
+        const html = generateCreatorWelcomeHTML(creatorName, verificationUrl);
         const result = await apiFetch('/api/mail', {
             to: toEmail,
-            subject: `Welcome to Newbi Creators! 🚀`,
-            fromName: 'Newbii Creators',
+            subject: `Welcome to Newbi Creators! Confirm your profile 🚀`,
+            fromName: 'Newbi Creators',
             fromEmail: 'creators@newbi.live',
             html
         });
@@ -1868,7 +1871,7 @@ export const sendCreatorWelcomeEmail = async (toEmail, creatorName) => {
 /**
  * Generates the HTML for the creator welcome email.
  */
-export const generateCreatorWelcomeHTML = (creatorName) => {
+export const generateCreatorWelcomeHTML = (creatorName, verificationUrl = '') => {
     const baseUrl = getBaseUrl();
     return `
         <!DOCTYPE html>
@@ -1942,13 +1945,21 @@ export const generateCreatorWelcomeHTML = (creatorName) => {
                     <p class="body-text">Hi <strong>${creatorName}</strong>,</p>
                     <p class="body-text">Your profile has been successfully submitted and is currently being reviewed by our partnerships team. We're excited to have you on board as we connect elite creators with top-tier brands.</p>
                     
+                    ${verificationUrl ? `
+                    <div style="background: rgba(57, 255, 20, 0.08); border: 1px solid rgba(57, 255, 20, 0.3); border-radius: 16px; padding: 24px; margin: 24px 0; text-align: center;">
+                        <h3 style="color: #39FF14; font-size: 16px; font-weight: 800; margin: 0 0 8px 0; text-transform: uppercase;">1-Click Profile & Phone Activation</h3>
+                        <p style="color: #cccccc; font-size: 14px; margin: 0 0 20px 0;">Tap below to automatically verify your contact number & activate priority matching for brand deals.</p>
+                        <a href="${verificationUrl}" style="display: inline-block; padding: 14px 30px; background: #ffffff; color: #000000 !important; text-decoration: none; font-weight: 900; font-size: 13px; border-radius: 12px; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 4px 14px rgba(255,255,255,0.2);">Activate Profile in 1 Click →</a>
+                    </div>
+                    ` : ''}
+                    
                     <div class="studio-card">
                         <h3>Creator Studio Workspace</h3>
-                        <p>In the meantime, you can explore your dashboard, link your social channels, verify your contact information, and get ready to join upcoming campaigns.</p>
+                        <p>In the meantime, you can explore your dashboard, link your social channels, track your deliverables, and get ready to join upcoming campaigns.</p>
                     </div>
 
-                    <div style="text-align: center; margin: 40px 0;">
-                        <a href="https://newbi.live/creator-dashboard" class="cta-button">Go to Creator Dashboard</a>
+                    <div style="text-align: center; margin: 30px 0;">
+                        <a href="${baseUrl}/creator-dashboard" class="cta-button">Go to Creator Dashboard</a>
                     </div>
                 </div>
                 <div class="footer">
@@ -2396,6 +2407,28 @@ export const sendCreatorDirectEmail = async (toEmail, subject, messageBody, crea
     } catch (error) {
         console.error('Failed to send direct email to creator:', error);
         return { success: false, error };
+    }
+};
+
+/**
+ * Sends a 1-click magic verification link to the creator's WhatsApp via Meta Cloud API.
+ */
+export const sendWhatsAppVerification = async (phone, creatorName, verificationUrl) => {
+    try {
+        const response = await fetch('/api/whatsapp-verify', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                phone,
+                creatorName,
+                verificationUrl
+            })
+        });
+        const data = await response.json();
+        return data;
+    } catch (err) {
+        console.error("Failed to send WhatsApp verification:", err);
+        return { success: false, error: err.message };
     }
 };
 

@@ -1048,8 +1048,21 @@ const CreatorDashboard = () => {
 
     useEffect(() => {
         if (authInitialized && !loading && user) {
-            const existingProfile = creators.find(c => c.uid === user.uid);
+            const userPhoneNorm = user.phoneNumber ? normalizePhoneNumber(user.phoneNumber) : null;
+            const userEmailNorm = user.email ? user.email.toLowerCase() : null;
+
+            const existingProfile = creators.find(c => 
+                c.uid === user.uid || 
+                (userEmailNorm && c.email && c.email.toLowerCase() === userEmailNorm) ||
+                (userPhoneNorm && normalizePhoneNumber(c.phone) === userPhoneNorm)
+            );
+
             if (existingProfile) {
+                // If profile was linked to a generated ID, update doc uid to match user.uid
+                if (existingProfile.uid !== user.uid) {
+                    useStore.getState().updateCreator(existingProfile.uid, { uid: user.uid })
+                        .catch(err => console.error("Error linking creator uid:", err));
+                }
                 setProfile(existingProfile);
                 if (!existingProfile.creatorId) {
                     const generatedId = existingProfile.uid.slice(0, 8).toUpperCase();
@@ -1100,6 +1113,36 @@ const CreatorDashboard = () => {
             </div>
 
             <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-12">
+                {/* Unverified Phone Warning Banner for Existing Creators */}
+                {!profile.isPhoneVerified && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="mb-8 p-4 bg-amber-500/10 border border-amber-500/30 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-lg"
+                    >
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0">
+                                <Phone size={20} />
+                            </div>
+                            <div>
+                                <h4 className="text-xs font-bold text-white flex items-center gap-2">
+                                    <span>Verify Your WhatsApp / Contact Number</span>
+                                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 font-extrabold uppercase tracking-wider">Action Needed</span>
+                                </h4>
+                                <p className="text-[11px] text-zinc-400">
+                                    Your phone number ({profile.phone || 'Not set'}) is not verified yet. Verify it to unlock direct campaign briefs and fast payouts.
+                                </p>
+                            </div>
+                        </div>
+                        <button
+                            onClick={() => navigate('/creator-dashboard/settings')}
+                            className="px-4 py-2 bg-amber-400 hover:bg-amber-300 text-zinc-950 font-bold text-xs rounded-xl transition-all shrink-0"
+                        >
+                            Verify Phone in Settings →
+                        </button>
+                    </motion.div>
+                )}
+
                 {/* STUDIO NAVIGATION TABS */}
                 {/* STUDIO NAVIGATION TABS */}
                 <div className="flex justify-center mb-16 overflow-x-auto scrollbar-hide py-4 px-2">

@@ -10,75 +10,80 @@ import Layout from './components/Layout';
 import GlobalLoader from './components/ui/GlobalLoader';
 
 import Home from './pages/Home';
-import ConcertZone from './pages/ConcertZone';
-import Contact from './pages/Contact';
-import Invoice from './pages/Invoice';
-import Dashboard from './pages/Admin/Dashboard';
-import CampusActivationBuilder from './pages/Admin/CampusActivationBuilder';
-import CampusActivationPage from './pages/CampusActivationPage';
-import InvoiceGenerator from './pages/Admin/InvoiceGenerator';
-import InvoiceManagement from './pages/Admin/InvoiceManagement';
-import FinanceDashboard from './pages/Admin/FinanceDashboard';
-import SpendsManagement from './pages/Admin/SpendsManagement';
-import OtherIncomeManagement from './pages/Admin/OtherIncomeManagement';
-import PayeeRegistry from './pages/Admin/PayeeRegistry';
-import AnnouncementsManager from './pages/Admin/AnnouncementsManager';
-import ConcertManager from './pages/Admin/ConcertManager';
-import MessageManager from './pages/Admin/MessageManager';
-import ArtistManager from './pages/Admin/ArtistManager';
-import ClientRequestManager from './pages/Admin/ClientRequestManager';
-import ProposalManagement from './pages/Admin/ProposalManagement';
-import AIStudio from './pages/Admin/AIStudio';
-import ProposalGenerator from './pages/Admin/ProposalGenerator';
-import DocumentPDFGenerator from './pages/Admin/DocumentPDFGenerator';
-import DocumentPDFManagement from './pages/Admin/DocumentPDFManagement';
-import AgreementGenerator from './pages/Admin/AgreementGenerator';
-import Proposal from './pages/Proposal';
-import Agreement from './pages/Agreement';
-import FormManager from './pages/Admin/FormManager';
-import FormBuilder from './pages/Admin/FormBuilder';
-import AdminManager from './pages/Admin/AdminManager';
-import ActiveUsers from './pages/Admin/ActiveUsers';
-import FormViewer from './pages/FormViewer';
-import CommunityJoin from './pages/CommunityJoin';
-import CreatorJoin from './pages/CreatorJoin';
-import CreatorDashboard from './pages/CreatorDashboard';
-import VolunteerGigManager from './pages/Admin/VolunteerGigManager';
-import CreatorManager from './pages/Admin/CreatorManager';
-import CampaignManager from './pages/Admin/CampaignManager';
-import UpcomingEventsManager from './pages/Admin/UpcomingEventsManager';
-import Maintenance from './pages/Admin/Maintenance';
-import GiveawayManager from './pages/Admin/GiveawayManager';
-import GiveawayParticipants from './pages/Admin/GiveawayParticipants';
-import DevSettings from './pages/Admin/DevSettings';
-import MailingManager from './pages/Admin/MailingManager';
-import GiveawayPage from './pages/GiveawayPage';
-import ActionHandler from './pages/Auth/ActionHandler';
-import ConcertZoneBlog from './pages/ConcertZoneBlog';
-import BlogPostDetail from './pages/BlogPostDetail';
-import BlogManager from './pages/Admin/BlogManager';
-import ConcertZoneStudio from './pages/Admin/ConcertZoneStudio';
-import BlogPostEditor from './pages/Admin/BlogPostEditor';
-import CampaignPublicView from './pages/CampaignPublicView';
-import ArtistAnt from './pages/ArtistAnt';
-import ArtistantHub from './pages/Admin/ArtistantHub';
-import AgreementManagement from './pages/Admin/AgreementManagement';
-import Terms from './pages/Terms';
-import Privacy from './pages/Privacy';
-import EventScanner from './pages/Admin/EventScanner';
-import TicketingManagement from './pages/Admin/TicketingManagement';
-import GuestlistManager from './pages/Admin/GuestlistManager';
-import CreatorHub from './pages/Admin/CreatorHub';
 import CreatorLanding from './pages/CreatorLanding';
-import LiveCampaigns from './pages/LiveCampaigns';
-import DigitalTicket from './pages/DigitalTicket';
-import NewsletterStudio from './pages/Admin/NewsletterStudio';
-import PayeeRegistration from './pages/PayeeRegistration';
-import VerifyPayout from './pages/VerifyPayout';
-import DocumentHub from './pages/Admin/DocumentHub';
-import DocumentViewer from './pages/DocumentViewer';
-import CampusConnect from './pages/CampusConnect';
-import CampusManager from './pages/Admin/CampusManager';
+import CreatorJoin from './pages/CreatorJoin';
+import Contact from './pages/Contact';
+
+// Lazy-loaded Public Pages
+const ConcertZone = lazy(() => import('./pages/ConcertZone'));
+const Invoice = lazy(() => import('./pages/Invoice'));
+const CampusActivationPage = lazy(() => import('./pages/CampusActivationPage'));
+const Proposal = lazy(() => import('./pages/Proposal'));
+const Agreement = lazy(() => import('./pages/Agreement'));
+const FormViewer = lazy(() => import('./pages/FormViewer'));
+const CommunityJoin = lazy(() => import('./pages/CommunityJoin'));
+const CreatorDashboard = lazy(() => import('./pages/CreatorDashboard'));
+const GiveawayPage = lazy(() => import('./pages/GiveawayPage'));
+const ActionHandler = lazy(() => import('./pages/Auth/ActionHandler'));
+const ConcertZoneBlog = lazy(() => import('./pages/ConcertZoneBlog'));
+const BlogPostDetail = lazy(() => import('./pages/BlogPostDetail'));
+const CampaignPublicView = lazy(() => import('./pages/CampaignPublicView'));
+const ArtistAnt = lazy(() => import('./pages/ArtistAnt'));
+const Terms = lazy(() => import('./pages/Terms'));
+const Privacy = lazy(() => import('./pages/Privacy'));
+const LiveCampaigns = lazy(() => import('./pages/LiveCampaigns'));
+const DigitalTicket = lazy(() => import('./pages/DigitalTicket'));
+const PayeeRegistration = lazy(() => import('./pages/PayeeRegistration'));
+const VerifyPayout = lazy(() => import('./pages/VerifyPayout'));
+const VerifyCreator = lazy(() => import('./pages/VerifyCreator'));
+const DocumentViewer = lazy(() => import('./pages/DocumentViewer'));
+const CampusConnect = lazy(() => import('./pages/CampusConnect'));
+
+// Lazy-loaded Admin Pages & Heavy Tools
+const Dashboard = lazy(() => import('./pages/Admin/Dashboard'));
+const CampusActivationBuilder = lazy(() => import('./pages/Admin/CampusActivationBuilder'));
+const InvoiceGenerator = lazy(() => import('./pages/Admin/InvoiceGenerator'));
+const InvoiceManagement = lazy(() => import('./pages/Admin/InvoiceManagement'));
+const FinanceDashboard = lazy(() => import('./pages/Admin/FinanceDashboard'));
+const SpendsManagement = lazy(() => import('./pages/Admin/SpendsManagement'));
+const OtherIncomeManagement = lazy(() => import('./pages/Admin/OtherIncomeManagement'));
+const PayeeRegistry = lazy(() => import('./pages/Admin/PayeeRegistry'));
+const AnnouncementsManager = lazy(() => import('./pages/Admin/AnnouncementsManager'));
+const ConcertManager = lazy(() => import('./pages/Admin/ConcertManager'));
+const MessageManager = lazy(() => import('./pages/Admin/MessageManager'));
+const ArtistManager = lazy(() => import('./pages/Admin/ArtistManager'));
+const ClientRequestManager = lazy(() => import('./pages/Admin/ClientRequestManager'));
+const ProposalManagement = lazy(() => import('./pages/Admin/ProposalManagement'));
+const AIStudio = lazy(() => import('./pages/Admin/AIStudio'));
+const ProposalGenerator = lazy(() => import('./pages/Admin/ProposalGenerator'));
+const DocumentPDFGenerator = lazy(() => import('./pages/Admin/DocumentPDFGenerator'));
+const DocumentPDFManagement = lazy(() => import('./pages/Admin/DocumentPDFManagement'));
+const AgreementGenerator = lazy(() => import('./pages/Admin/AgreementGenerator'));
+const FormManager = lazy(() => import('./pages/Admin/FormManager'));
+const FormBuilder = lazy(() => import('./pages/Admin/FormBuilder'));
+const AdminManager = lazy(() => import('./pages/Admin/AdminManager'));
+const ActiveUsers = lazy(() => import('./pages/Admin/ActiveUsers'));
+const VolunteerGigManager = lazy(() => import('./pages/Admin/VolunteerGigManager'));
+const CreatorManager = lazy(() => import('./pages/Admin/CreatorManager'));
+const CampaignManager = lazy(() => import('./pages/Admin/CampaignManager'));
+const UpcomingEventsManager = lazy(() => import('./pages/Admin/UpcomingEventsManager'));
+const Maintenance = lazy(() => import('./pages/Admin/Maintenance'));
+const GiveawayManager = lazy(() => import('./pages/Admin/GiveawayManager'));
+const GiveawayParticipants = lazy(() => import('./pages/Admin/GiveawayParticipants'));
+const DevSettings = lazy(() => import('./pages/Admin/DevSettings'));
+const MailingManager = lazy(() => import('./pages/Admin/MailingManager'));
+const BlogManager = lazy(() => import('./pages/Admin/BlogManager'));
+const ConcertZoneStudio = lazy(() => import('./pages/Admin/ConcertZoneStudio'));
+const BlogPostEditor = lazy(() => import('./pages/Admin/BlogPostEditor'));
+const ArtistantHub = lazy(() => import('./pages/Admin/ArtistantHub'));
+const AgreementManagement = lazy(() => import('./pages/Admin/AgreementManagement'));
+const EventScanner = lazy(() => import('./pages/Admin/EventScanner'));
+const TicketingManagement = lazy(() => import('./pages/Admin/TicketingManagement'));
+const GuestlistManager = lazy(() => import('./pages/Admin/GuestlistManager'));
+const CreatorHub = lazy(() => import('./pages/Admin/CreatorHub'));
+const NewsletterStudio = lazy(() => import('./pages/Admin/NewsletterStudio'));
+const DocumentHub = lazy(() => import('./pages/Admin/DocumentHub'));
+const CampusManager = lazy(() => import('./pages/Admin/CampusManager'));
 
 
 // Guards & Components
@@ -136,7 +141,7 @@ function AppContent() {
       <ScrollToTop />
       
       <AnimatePresence mode="wait">
-        {loading && <GlobalLoader key="global-loader" color={currentColor} />}
+        {loading && location.pathname.startsWith('/admin') && <GlobalLoader key="global-loader" color={currentColor} />}
       </AnimatePresence>
 
       <Suspense fallback={<GlobalLoader color={currentColor} />}>
@@ -166,6 +171,7 @@ function AppContent() {
             <Route path="privacy" element={<Privacy />} />
             <Route path="register-payment" element={<PayeeRegistration />} />
             <Route path="verify-payout" element={<VerifyPayout />} />
+            <Route path="verify-creator" element={<VerifyCreator />} />
 
             <Route path="admin" element={<AdminGuard><Dashboard /></AdminGuard>} />
             <Route path="admin/manage-admins" element={<AdminGuard><MaintenanceGuard featureId="admins"><AdminManager /></MaintenanceGuard></AdminGuard>} />

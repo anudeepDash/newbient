@@ -382,13 +382,16 @@ const CreatorLanding = () => {
                                 </>
                             ) : (
                                 <>
-                                    <Button 
-                                        onClick={() => navigate('/creator/join')}
-                                        className="h-14 sm:h-16 md:h-20 px-6 sm:px-10 md:px-12 rounded-2xl bg-white text-black font-black uppercase tracking-[0.2em] text-xs md:text-sm shadow-lg hover:bg-neon-green hover:text-black hover:shadow-xl transition-all group flex items-center justify-center gap-3"
-                                    >
-                                        <span>Join as a Creator</span> 
-                                        <ArrowRight size={20} className="group-hover:translate-x-2 transition-transform" />
-                                    </Button>
+                                    <div className="flex flex-col gap-2">
+                                        <Button 
+                                            onClick={() => navigate('/creator/join')}
+                                            className="h-14 sm:h-16 md:h-20 px-6 sm:px-10 md:px-12 rounded-2xl bg-white text-black font-black uppercase tracking-[0.2em] text-xs md:text-sm shadow-lg hover:bg-neon-green hover:text-black hover:shadow-xl transition-all group flex items-center justify-center gap-3"
+                                        >
+                                            <span>Join as a Creator</span> 
+                                            <ArrowRight size={20} className="group-hover:translate-x-2 transition-transform" />
+                                        </Button>
+                                        <span className="text-[11px] font-medium text-zinc-400 text-center sm:text-left">⚡ 45-second application • No pre-login required</span>
+                                    </div>
                                     <Button 
                                         onClick={() => navigate('/contact')}
                                         className="h-14 sm:h-16 md:h-20 px-6 sm:px-10 md:px-12 rounded-2xl bg-white/5 border border-white/10 text-white font-black uppercase tracking-[0.2em] text-xs md:text-sm hover:bg-white/10 hover:border-white/20 transition-all backdrop-blur-xl shadow-2xl flex items-center justify-center gap-3"
@@ -398,6 +401,22 @@ const CreatorLanding = () => {
                                     </Button>
                                 </>
                             )}
+                        </div>
+
+                        {/* Trust markers */}
+                        <div className="pt-6 border-t border-white/10 grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs text-zinc-400">
+                            <div className="flex items-center gap-2">
+                                <CheckCircle2 size={14} className="text-neon-green shrink-0" />
+                                <span>Verified Brand Deals</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <CheckCircle2 size={14} className="text-neon-green shrink-0" />
+                                <span>Bengaluru, Mumbai & NCR</span>
+                            </div>
+                            <div className="flex items-center gap-2 col-span-2 sm:col-span-1">
+                                <ShieldCheck size={14} className="text-neon-green shrink-0" />
+                                <span>Zero password access</span>
+                            </div>
                         </div>
                     </motion.div>
 
