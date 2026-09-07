@@ -17,7 +17,6 @@ import Contact from './pages/Contact';
 // Lazy-loaded Public Pages
 const ConcertZone = lazy(() => import('./pages/ConcertZone'));
 const Invoice = lazy(() => import('./pages/Invoice'));
-const CampusActivationPage = lazy(() => import('./pages/CampusActivationPage'));
 const Proposal = lazy(() => import('./pages/Proposal'));
 const Agreement = lazy(() => import('./pages/Agreement'));
 const FormViewer = lazy(() => import('./pages/FormViewer'));
@@ -37,11 +36,9 @@ const PayeeRegistration = lazy(() => import('./pages/PayeeRegistration'));
 const VerifyPayout = lazy(() => import('./pages/VerifyPayout'));
 const VerifyCreator = lazy(() => import('./pages/VerifyCreator'));
 const DocumentViewer = lazy(() => import('./pages/DocumentViewer'));
-const CampusConnect = lazy(() => import('./pages/CampusConnect'));
 
 // Lazy-loaded Admin Pages & Heavy Tools
 const Dashboard = lazy(() => import('./pages/Admin/Dashboard'));
-const CampusActivationBuilder = lazy(() => import('./pages/Admin/CampusActivationBuilder'));
 const InvoiceGenerator = lazy(() => import('./pages/Admin/InvoiceGenerator'));
 const InvoiceManagement = lazy(() => import('./pages/Admin/InvoiceManagement'));
 const FinanceDashboard = lazy(() => import('./pages/Admin/FinanceDashboard'));
@@ -83,7 +80,6 @@ const GuestlistManager = lazy(() => import('./pages/Admin/GuestlistManager'));
 const CreatorHub = lazy(() => import('./pages/Admin/CreatorHub'));
 const NewsletterStudio = lazy(() => import('./pages/Admin/NewsletterStudio'));
 const DocumentHub = lazy(() => import('./pages/Admin/DocumentHub'));
-const CampusManager = lazy(() => import('./pages/Admin/CampusManager'));
 
 
 // Guards & Components
@@ -208,9 +204,6 @@ function AppContent() {
             <Route path="admin/volunteer-gigs" element={<AdminGuard><MaintenanceGuard featureId="community"><VolunteerGigManager /></MaintenanceGuard></AdminGuard>} />
             <Route path="admin/guestlists" element={<AdminGuard><MaintenanceGuard featureId="guestlists"><GuestlistManager /></MaintenanceGuard></AdminGuard>} />
             <Route path="admin/upcoming-events" element={<AdminGuard><MaintenanceGuard featureId="upcoming_events"><UpcomingEventsManager /></MaintenanceGuard></AdminGuard>} />
-            <Route path="admin/campus" element={<AdminGuard><MaintenanceGuard featureId="campus"><CampusManager /></MaintenanceGuard></AdminGuard>} />
-            <Route path="admin/campus/activation/new" element={<AdminGuard><MaintenanceGuard featureId="campus"><CampusActivationBuilder /></MaintenanceGuard></AdminGuard>} />
-            <Route path="admin/campus/activation/edit/:id" element={<AdminGuard><MaintenanceGuard featureId="campus"><CampusActivationBuilder /></MaintenanceGuard></AdminGuard>} />
             <Route path="admin/creators" element={<AdminGuard><MaintenanceGuard featureId="influencer"><CreatorManager /></MaintenanceGuard></AdminGuard>} />
             <Route path="admin/creators/leaderboard" element={<AdminGuard><MaintenanceGuard featureId="influencer"><CreatorManager showLeaderboardOnly={true} /></MaintenanceGuard></AdminGuard>} />
             <Route path="admin/creators/:id" element={<AdminGuard><MaintenanceGuard featureId="influencer"><CreatorManager /></MaintenanceGuard></AdminGuard>} />
@@ -228,6 +221,9 @@ function AppContent() {
             <Route path="admin/scanner" element={<AdminGuard><MaintenanceGuard featureId="ticketing"><EventScanner /></MaintenanceGuard></AdminGuard>} />
             <Route path="admin/ticketing" element={<AdminGuard><MaintenanceGuard featureId="ticketing"><TicketingManagement /></MaintenanceGuard></AdminGuard>} />
             <Route path="admin/documents" element={<AdminGuard><DocumentHub /></AdminGuard>} />
+            <Route path="admin/system-command" element={<AdminGuard><DevSettings /></AdminGuard>} />
+            <Route path="admin/settings" element={<AdminGuard><DevSettings /></AdminGuard>} />
+            <Route path="admin/dev-settings" element={<AdminGuard><DevSettings /></AdminGuard>} />
 
             <Route path="campaign/:id" element={<CampaignPublicView />} />
             <Route path="doc/:id" element={<DocumentViewer />} />

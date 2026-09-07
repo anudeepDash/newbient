@@ -216,7 +216,7 @@ const BlogPostEditor = () => {
     const currentTab = tabs.find(t => t.id === activeTab);
 
     return (
-        <div className="min-h-screen bg-[#0B0F17] text-white selection:bg-neon-blue selection:text-black font-['Outfit'] overflow-x-hidden flex flex-col admin-hub-content-container">
+        <div className="min-h-screen bg-gray-50 dark:bg-[#0B0F17] text-gray-900 dark:text-white selection:bg-neon-blue selection:text-black font-['Outfit'] overflow-x-hidden flex flex-col admin-hub-content-container">
 
             <style dangerouslySetInnerHTML={{ __html: `
                 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap');
@@ -225,11 +225,11 @@ const BlogPostEditor = () => {
             `}} />
 
             {/* Top Bar */}
-            <header className="h-16 md:h-20 border-b border-white/5 bg-black/50 backdrop-blur-3xl flex items-center justify-between px-4 md:px-8 shrink-0 relative z-[100]">
+            <header className="h-16 md:h-20 border-b border-black/10 dark:border-white/5 bg-white dark:bg-black/50 backdrop-blur-3xl flex items-center justify-between px-4 md:px-8 shrink-0 relative z-[100]">
                 <div className="flex items-center gap-4">
-                    <button onClick={() => navigate('/admin/blog')} className="p-2.5 bg-white/5 rounded-2xl hover:bg-white/10 border border-white/5 transition-all"><ChevronLeft size={18} /></button>
+                    <button onClick={() => navigate('/admin/blog')} className="p-2.5 bg-black/5 dark:bg-white/5 rounded-2xl hover:bg-black/10 dark:hover:bg-white/10 border border-black/10 dark:border-white/5 transition-all"><ChevronLeft size={18} /></button>
                     <div className="flex flex-col">
-                        <h1 className="text-sm md:text-xl font-extrabold tracking-tight text-white leading-none">Content <span className="text-neon-blue">Architect.</span></h1>
+                        <h1 className="text-sm md:text-xl font-extrabold tracking-tight text-gray-900 dark:text-white leading-none">Content <span className="text-neon-blue">Architect.</span></h1>
                         <p className="text-[7px] md:text-[9px] font-bold text-gray-500 uppercase tracking-widest mt-1">Editorial Engine</p>
                     </div>
                 </div>
@@ -251,7 +251,7 @@ const BlogPostEditor = () => {
 
             <main className="flex-1 flex overflow-hidden">
                 {/* Sidebar Navigation */}
-                <aside className="hidden lg:flex w-64 border-r border-white/5 bg-zinc-900/20 flex-col p-6 gap-6 overflow-y-auto scrollbar-hide">
+                <aside className="hidden lg:flex w-64 border-r border-black/10 dark:border-white/5 bg-gray-100 dark:bg-zinc-900/20 flex-col p-6 gap-6 overflow-y-auto scrollbar-hide">
                     <div className="space-y-2">
                         <p className="text-[9px] font-black text-gray-600 uppercase tracking-widest px-4 mb-4">Workspace</p>
                         {tabs.map(tab => (
@@ -260,10 +260,10 @@ const BlogPostEditor = () => {
                                 onClick={() => setActiveTab(tab.id)} 
                                 className={cn(
                                     "w-full p-4 rounded-2xl flex items-center gap-4 transition-all text-left group",
-                                    activeTab === tab.id ? "bg-white text-black shadow-xl" : "hover:bg-white/5 text-gray-500 hover:text-white"
+                                    activeTab === tab.id ? "bg-white text-black shadow-xl" : "hover:bg-black/5 dark:hover:bg-white/5 text-gray-500 hover:text-gray-900 dark:hover:text-white"
                                 )}
                             >
-                                <div className={cn("p-2.5 rounded-xl transition-all", activeTab === tab.id ? "bg-black/20" : "bg-white/5 group-hover:bg-white/10")}>
+                                <div className={cn("p-2.5 rounded-xl transition-all", activeTab === tab.id ? "bg-white dark:bg-black/20" : "bg-black/5 dark:bg-white/5 group-hover:bg-black/10 dark:group-hover:bg-white/10")}>
                                     <tab.icon size={18} />
                                 </div>
                                 <div>
@@ -274,19 +274,19 @@ const BlogPostEditor = () => {
                         ))}
                     </div>
 
-                    <div className="mt-auto pt-6 border-t border-white/5">
-                        <div className="p-4 bg-white/5 rounded-2xl border border-white/5">
+                    <div className="mt-auto pt-6 border-t border-black/10 dark:border-white/5">
+                        <div className="p-4 bg-black/5 dark:bg-white/5 rounded-2xl border border-black/10 dark:border-white/5">
                             <div className="flex items-center gap-3 mb-2">
                                 <div className="w-1.5 h-1.5 rounded-full bg-neon-green" />
                                 <span className="text-[8px] font-black uppercase tracking-widest text-gray-500">Live Status</span>
                             </div>
-                            <p className="text-[10px] font-black uppercase text-white">{formData.status}</p>
+                            <p className="text-[10px] font-black uppercase text-gray-900 dark:text-white">{formData.status}</p>
                         </div>
                     </div>
                 </aside>
 
                 {/* Editor Area */}
-                <div className="flex-1 overflow-y-auto px-4 md:px-12 py-10 md:py-16 scrollbar-hide bg-[#050505]">
+                <div className="flex-1 overflow-y-auto px-4 md:px-12 py-10 md:py-16 scrollbar-hide bg-white dark:bg-[#050505]">
                     <div className="max-w-[800px] mx-auto space-y-12">
                         {/* Section Header */}
                         <div className="space-y-4">
@@ -296,7 +296,7 @@ const BlogPostEditor = () => {
                                     Phase {tabs.findIndex(t => t.id === activeTab) + 1} of {tabs.length}
                                 </p>
                             </div>
-                            <h2 className="text-3xl md:text-5xl font-extrabold tracking-tight text-white leading-none">
+                            <h2 className="text-3xl md:text-5xl font-extrabold tracking-tight text-gray-900 dark:text-white leading-none">
                                 {currentTab?.label}<span className="text-neon-blue">.</span>
                             </h2>
                         </div>
@@ -323,7 +323,7 @@ const BlogPostEditor = () => {
                                                 value={formData.title} 
                                                 onChange={handleTitleChange}
                                                 placeholder="STORY HEADLINE..."
-                                                className="w-full bg-zinc-900 border border-white/10 p-6 md:p-8 rounded-[2rem] text-xl md:text-3xl font-extrabold tracking-tight leading-none outline-none focus:border-neon-blue/40 transition-all min-h-[140px]"
+                                                className="w-full bg-gray-100 dark:bg-zinc-900 border border-black/10 dark:border-white/10 p-6 md:p-8 rounded-[2rem] text-xl md:text-3xl font-extrabold tracking-tight leading-none outline-none focus:border-neon-blue/40 transition-all min-h-[140px]"
                                             />
                                         </div>
 
@@ -333,7 +333,7 @@ const BlogPostEditor = () => {
                                                 <select 
                                                     value={formData.category} 
                                                     onChange={e => setFormData({ ...formData, category: e.target.value })}
-                                                    className="w-full bg-zinc-900 border border-white/10 p-6 rounded-2xl text-sm font-black uppercase tracking-widest outline-none focus:border-neon-blue/40 transition-all appearance-none"
+                                                    className="w-full bg-gray-100 dark:bg-zinc-900 border border-black/10 dark:border-white/10 p-6 rounded-2xl text-sm font-black uppercase tracking-widest outline-none focus:border-neon-blue/40 transition-all appearance-none"
                                                 >
                                                     {Object.keys(categoryColors).map(cat => (
                                                         <option key={cat} value={cat}>{cat}</option>
@@ -347,14 +347,14 @@ const BlogPostEditor = () => {
                                                     value={formData.author} 
                                                     onChange={e => setFormData({ ...formData, author: e.target.value })}
                                                     placeholder="AUTHOR NAME..."
-                                                    className="w-full bg-zinc-900 border border-white/10 p-6 rounded-2xl text-sm font-black uppercase tracking-widest outline-none focus:border-neon-blue/40 transition-all"
+                                                    className="w-full bg-gray-100 dark:bg-zinc-900 border border-black/10 dark:border-white/10 p-6 rounded-2xl text-sm font-black uppercase tracking-widest outline-none focus:border-neon-blue/40 transition-all"
                                                 />
                                             </div>
                                         </div>
 
                                         <div className="space-y-4">
                                             <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest px-2">Theme Accent</label>
-                                            <div className="flex flex-wrap gap-4 p-6 bg-white/5 border border-white/10 rounded-3xl">
+                                            <div className="flex flex-wrap gap-4 p-6 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-3xl">
                                                 {Object.values(categoryColors).concat(['#FFFFFF', '#00FF66', '#FFD700']).map(color => (
                                                     <button 
                                                         key={color}
@@ -366,7 +366,7 @@ const BlogPostEditor = () => {
                                                         style={{ backgroundColor: color }}
                                                     />
                                                 ))}
-                                                <div className="w-[1px] h-12 bg-white/10 mx-2" />
+                                                <div className="w-[1px] h-12 bg-black/10 dark:bg-white/10 mx-2" />
                                                 <input 
                                                     type="color" 
                                                     value={formData.accentColor} 
@@ -384,12 +384,12 @@ const BlogPostEditor = () => {
                                             <div className="flex items-center gap-6">
                                                 <div className="flex flex-col">
                                                     <span className="text-[8px] font-black text-gray-600 uppercase tracking-widest">Word Count</span>
-                                                    <span className="text-xs font-bold text-white">{(formData.content?.replace(/<[^>]*>/g, '').split(/\s+/).filter(Boolean).length || 0)} WORDS</span>
+                                                    <span className="text-xs font-bold text-gray-900 dark:text-white">{(formData.content?.replace(/<[^>]*>/g, '').split(/\s+/).filter(Boolean).length || 0)} WORDS</span>
                                                 </div>
-                                                <div className="w-px h-6 bg-white/10" />
+                                                <div className="w-px h-6 bg-black/10 dark:bg-white/10" />
                                                 <div className="flex flex-col">
                                                     <span className="text-[8px] font-black text-gray-600 uppercase tracking-widest">Est. Reading</span>
-                                                    <span className="text-xs font-bold text-white">{Math.ceil((formData.content?.split(' ').length || 0) / 200) || 1} MIN</span>
+                                                    <span className="text-xs font-bold text-gray-900 dark:text-white">{Math.ceil((formData.content?.split(' ').length || 0) / 200) || 1} MIN</span>
                                                 </div>
                                             </div>
                                         </div>
@@ -409,7 +409,7 @@ const BlogPostEditor = () => {
                                         <div className="space-y-4">
                                             <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest px-2">Cover Narrative</label>
                                             <div 
-                                                className="group relative aspect-video rounded-[3rem] overflow-hidden bg-zinc-900 border border-white/5 hover:border-white/20 transition-all flex flex-col items-center justify-center text-gray-600 gap-4 outline-none focus-within:border-neon-blue/40"
+                                                className="group relative aspect-video rounded-[3rem] overflow-hidden bg-gray-100 dark:bg-zinc-900 border border-black/10 dark:border-white/5 hover:border-black/20 dark:hover:border-white/20 transition-all flex flex-col items-center justify-center text-gray-600 gap-4 outline-none focus-within:border-blue-500 dark:focus-within:border-neon-blue/40"
                                                 onPaste={(e) => handlePasteImage(e, 'cover')}
                                                 tabIndex={0}
                                             >
@@ -427,14 +427,14 @@ const BlogPostEditor = () => {
                                                         />
                                                         {/* Framing Guide Overlay */}
                                                         <div className="absolute inset-0 border-2 border-neon-blue/30 pointer-events-none flex flex-col items-center justify-center">
-                                                            <div className="w-[80%] h-[40%] border border-white/20 rounded-2xl flex items-center justify-center">
-                                                                <span className="text-[8px] font-black text-white/20 uppercase tracking-[0.4em]">Primary Hero Safe Zone</span>
+                                                            <div className="w-[80%] h-[40%] border border-black/20 dark:border-white/20 rounded-2xl flex items-center justify-center">
+                                                                <span className="text-[8px] font-black text-gray-900 dark:text-white/20 uppercase tracking-[0.4em]">Primary Hero Safe Zone</span>
                                                             </div>
                                                         </div>
                                                     </>
                                                 ) : (
                                                     <>
-                                                        <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center"><Image size={24} /></div>
+                                                        <div className="w-16 h-16 rounded-full bg-black/5 dark:bg-white/5 flex items-center justify-center"><Image size={24} /></div>
                                                         <p className="text-[10px] font-black uppercase tracking-widest">Upload Master Visual</p>
                                                     </>
                                                 )}
@@ -462,7 +462,7 @@ const BlogPostEditor = () => {
                                                     }}
                                                 />
                                                 {isUploading && (
-                                                    <div className="absolute inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-20">
+                                                    <div className="absolute inset-0 bg-white dark:bg-black/80 backdrop-blur-sm flex items-center justify-center z-20">
                                                         <Loader2 className="animate-spin text-neon-blue" size={32} />
                                                     </div>
                                                 )}
@@ -470,10 +470,10 @@ const BlogPostEditor = () => {
                                         </div>
 
                                         {formData.coverImage && (
-                                            <div className="p-8 bg-white/5 border border-white/10 rounded-[2.5rem] space-y-8">
+                                            <div className="p-8 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-[2.5rem] space-y-8">
                                                 <div className="flex items-center gap-3 mb-6">
                                                     <Settings size={16} className="text-neon-blue" />
-                                                    <h3 className="text-sm font-black uppercase tracking-widest text-white">Media Framing</h3>
+                                                    <h3 className="text-sm font-black uppercase tracking-widest text-gray-900 dark:text-white">Media Framing</h3>
                                                 </div>
                                                 
                                                 <div className="space-y-4">
@@ -493,7 +493,7 @@ const BlogPostEditor = () => {
                                                     <div className="space-y-4">
                                                         <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-gray-500">
                                                             <span>Pan X (Horizontal)</span>
-                                                            <span className="text-white">{formData.coverImagePosX || 50}%</span>
+                                                            <span className="text-gray-900 dark:text-white">{formData.coverImagePosX || 50}%</span>
                                                         </div>
                                                         <input 
                                                             type="range" min="0" max="100" step="1" 
@@ -505,7 +505,7 @@ const BlogPostEditor = () => {
                                                     <div className="space-y-4">
                                                         <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-gray-500">
                                                             <span>Pan Y (Vertical)</span>
-                                                            <span className="text-white">{formData.coverImagePosY || 50}%</span>
+                                                            <span className="text-gray-900 dark:text-white">{formData.coverImagePosY || 50}%</span>
                                                         </div>
                                                         <input 
                                                             type="range" min="0" max="100" step="1" 
@@ -515,10 +515,10 @@ const BlogPostEditor = () => {
                                                         />
                                                     </div>
                                                 </div>
-                                                <div className="pt-4 border-t border-white/5 flex justify-end">
+                                                <div className="pt-4 border-t border-black/10 dark:border-white/5 flex justify-end">
                                                     <button 
                                                         onClick={() => setFormData({ ...formData, coverImageScale: 1, coverImagePosX: 50, coverImagePosY: 50 })}
-                                                        className="text-[10px] font-black text-gray-500 hover:text-white uppercase tracking-widest transition-colors"
+                                                        className="text-[10px] font-black text-gray-500 hover:text-gray-900 dark:hover:text-white uppercase tracking-widest transition-colors"
                                                     >
                                                         Reset Framing
                                                     </button>
@@ -533,17 +533,17 @@ const BlogPostEditor = () => {
                                         {/* SEO Search Mockup */}
                                         <div className="space-y-4">
                                             <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest px-2">Search Pulse Preview</label>
-                                            <div className="bg-white/5 border border-white/10 rounded-[2.5rem] p-10 space-y-4">
+                                            <div className="bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-[2.5rem] p-10 space-y-4">
                                                 <div className="flex items-center gap-3">
-                                                    <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-neon-blue font-black text-[10px]">N</div>
+                                                    <div className="w-8 h-8 rounded-full bg-black/10 dark:bg-white/10 flex items-center justify-center text-neon-blue font-black text-[10px]">N</div>
                                                     <div className="flex flex-col">
-                                                        <span className="text-[10px] text-gray-300 font-medium">Newbi Entertainment</span>
+                                                        <span className="text-[10px] text-gray-700 dark:text-gray-300 font-medium">Newbi Entertainment</span>
                                                         <span className="text-[8px] text-gray-500 truncate max-w-[200px]">https://newbi.live/concertzone/{formData.category?.toLowerCase()}/{formData.slug}</span>
                                                     </div>
                                                 </div>
                                                 <div className="space-y-2">
                                                     <h3 className="text-xl md:text-2xl font-medium text-neon-blue hover:underline cursor-pointer truncate">{formData.title || 'Untitled Masterpiece'}</h3>
-                                                    <p className="text-sm text-gray-400 leading-relaxed line-clamp-2">
+                                                    <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed line-clamp-2">
                                                         {formData.shortDescription || 'Craft a compelling meta description in the field below to attract your audience from the digital void...'}
                                                     </p>
                                                 </div>
@@ -561,7 +561,7 @@ const BlogPostEditor = () => {
                                                 value={formData.shortDescription} 
                                                 onChange={e => setFormData({ ...formData, shortDescription: e.target.value })}
                                                 placeholder="Brief overview for the algorithm..."
-                                                className="w-full bg-zinc-900 border border-white/10 p-6 rounded-3xl text-sm font-medium leading-relaxed outline-none focus:border-neon-blue/40 transition-all min-h-[120px] resize-none"
+                                                className="w-full bg-gray-100 dark:bg-zinc-900 border border-black/10 dark:border-white/10 p-6 rounded-3xl text-sm font-medium leading-relaxed outline-none focus:border-neon-blue/40 transition-all min-h-[120px] resize-none"
                                             />
                                         </div>
 
@@ -571,7 +571,7 @@ const BlogPostEditor = () => {
                                                 <select 
                                                     value={formData.category} 
                                                     onChange={e => setFormData({ ...formData, category: e.target.value })}
-                                                    className="w-full h-16 bg-zinc-900 border border-white/10 px-6 rounded-2xl text-[10px] font-black uppercase tracking-widest outline-none appearance-none cursor-pointer focus:border-neon-blue/40"
+                                                    className="w-full h-16 bg-gray-100 dark:bg-zinc-900 border border-black/10 dark:border-white/10 px-6 rounded-2xl text-[10px] font-black uppercase tracking-widest outline-none appearance-none cursor-pointer focus:border-neon-blue/40"
                                                 >
                                                     {['Live Events', 'Artists', 'Guides', 'Buzz'].map(c => <option key={c} value={c}>{c}</option>)}
                                                 </select>
@@ -582,7 +582,7 @@ const BlogPostEditor = () => {
                                                     value={formData.tags} 
                                                     onChange={e => setFormData({ ...formData, tags: e.target.value })}
                                                     placeholder="VIBE, ENERGY, CULTURE..."
-                                                    className="w-full h-16 bg-zinc-900 border border-white/10 px-6 rounded-2xl text-xs font-bold outline-none focus:border-neon-blue/40"
+                                                    className="w-full h-16 bg-gray-100 dark:bg-zinc-900 border border-black/10 dark:border-white/10 px-6 rounded-2xl text-xs font-bold outline-none focus:border-neon-blue/40"
                                                 />
                                             </div>
                                         </div>
@@ -595,7 +595,7 @@ const BlogPostEditor = () => {
                                         <div className="p-8 bg-neon-blue/5 border border-neon-blue/10 rounded-[3rem] space-y-8">
                                             <div className="flex items-center gap-3">
                                                 <Zap size={20} className="text-neon-blue" />
-                                                <h3 className="text-sm font-black uppercase tracking-widest text-white">Ticketing Integration</h3>
+                                                <h3 className="text-sm font-black uppercase tracking-widest text-gray-900 dark:text-white">Ticketing Integration</h3>
                                             </div>
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                                 <div className="space-y-4">
@@ -604,7 +604,7 @@ const BlogPostEditor = () => {
                                                         value={formData.ticketingButtonText} 
                                                         onChange={e => setFormData({ ...formData, ticketingButtonText: e.target.value })}
                                                         placeholder="GET TICKETS"
-                                                        className="w-full h-16 bg-zinc-950 border border-white/10 px-6 rounded-2xl text-[10px] font-black uppercase tracking-widest outline-none focus:border-neon-blue/40"
+                                                        className="w-full h-16 bg-gray-100 dark:bg-zinc-950 border border-black/10 dark:border-white/10 px-6 rounded-2xl text-[10px] font-black uppercase tracking-widest outline-none focus:border-neon-blue/40"
                                                     />
                                                 </div>
                                                 <div className="space-y-4">
@@ -613,17 +613,17 @@ const BlogPostEditor = () => {
                                                         value={formData.ticketingLink} 
                                                         onChange={e => setFormData({ ...formData, ticketingLink: e.target.value })}
                                                         placeholder="https://..."
-                                                        className="w-full h-16 bg-zinc-950 border border-white/10 px-6 rounded-2xl text-xs font-bold outline-none focus:border-neon-blue/40"
+                                                        className="w-full h-16 bg-gray-100 dark:bg-zinc-950 border border-black/10 dark:border-white/10 px-6 rounded-2xl text-xs font-bold outline-none focus:border-neon-blue/40"
                                                     />
                                                 </div>
                                             </div>
                                         </div>
 
                                         {/* Sponsor Section */}
-                                        <div className="p-8 bg-white/[0.02] border border-white/5 rounded-[3rem] space-y-8">
+                                        <div className="p-8 bg-white/[0.02] border border-black/10 dark:border-white/5 rounded-[3rem] space-y-8">
                                             <div className="flex items-center gap-3">
                                                 <Sparkles size={20} className="text-neon-pink" />
-                                                <h3 className="text-sm font-black uppercase tracking-widest text-white">Direct Sponsorship</h3>
+                                                <h3 className="text-sm font-black uppercase tracking-widest text-gray-900 dark:text-white">Direct Sponsorship</h3>
                                             </div>
                                             <div className="space-y-8">
                                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -633,7 +633,7 @@ const BlogPostEditor = () => {
                                                             value={formData.sponsorName} 
                                                             onChange={e => setFormData({ ...formData, sponsorName: e.target.value })}
                                                             placeholder="BRAND NAME"
-                                                            className="w-full h-16 bg-zinc-950 border border-white/10 px-6 rounded-2xl text-[10px] font-black uppercase tracking-widest outline-none"
+                                                            className="w-full h-16 bg-gray-100 dark:bg-zinc-950 border border-black/10 dark:border-white/10 px-6 rounded-2xl text-[10px] font-black uppercase tracking-widest outline-none"
                                                         />
                                                     </div>
                                                     <div className="space-y-4">
@@ -642,7 +642,7 @@ const BlogPostEditor = () => {
                                                             value={formData.sponsorLink} 
                                                             onChange={e => setFormData({ ...formData, sponsorLink: e.target.value })}
                                                             placeholder="https://brand.com"
-                                                            className="w-full h-16 bg-zinc-950 border border-white/10 px-6 rounded-2xl text-xs font-bold outline-none"
+                                                            className="w-full h-16 bg-gray-100 dark:bg-zinc-950 border border-black/10 dark:border-white/10 px-6 rounded-2xl text-xs font-bold outline-none"
                                                         />
                                                     </div>
                                                 </div>
@@ -650,7 +650,7 @@ const BlogPostEditor = () => {
                                                 <div className="space-y-4">
                                                     <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Brand Asset (Logo)</label>
                                                     <div 
-                                                        className="group relative h-24 bg-zinc-950 border border-dashed border-white/10 rounded-2xl flex items-center justify-center text-gray-700 hover:border-neon-pink/40 transition-all cursor-pointer outline-none"
+                                                        className="group relative h-24 bg-gray-100 dark:bg-zinc-950 border border-dashed border-black/10 dark:border-white/10 rounded-2xl flex items-center justify-center text-gray-700 hover:border-neon-pink/40 transition-all cursor-pointer outline-none"
                                                         onPaste={(e) => handlePasteImage(e, 'sponsor')}
                                                         tabIndex={0}
                                                     >
@@ -693,8 +693,8 @@ const BlogPostEditor = () => {
                                                 className={cn(
                                                     "w-full p-8 rounded-[2.5rem] border transition-all flex items-center justify-between text-left group",
                                                     formData[control.key] === control.activeValue 
-                                                        ? "bg-neon-blue/10 border-neon-blue/20 text-white" 
-                                                        : "bg-white/[0.02] border-white/5 text-gray-500 hover:bg-white/[0.04]"
+                                                        ? "bg-neon-blue/10 border-neon-blue/20 text-gray-900 dark:text-white" 
+                                                        : "bg-white/[0.02] border-black/10 dark:border-white/5 text-gray-500 hover:bg-white/[0.04]"
                                                 )}
                                             >
                                                 <div className="space-y-1">
@@ -720,7 +720,7 @@ const BlogPostEditor = () => {
                 </div>
 
                 {/* Right Preview Pane (Scaled Down) */}
-                <aside className="hidden xl:flex w-[500px] border-l border-white/5 bg-black flex-col p-8 overflow-hidden">
+                <aside className="hidden xl:flex w-[500px] border-l border-black/10 dark:border-white/5 bg-white dark:bg-black flex-col p-8 overflow-hidden">
                     <div className="flex items-center justify-between mb-8 shrink-0">
                         <div className="flex items-center gap-3">
                             <div className="w-1.5 h-1.5 rounded-full bg-neon-green animate-pulse shadow-[0_0_8px_rgba(0,255,0,0.5)]" />
@@ -732,7 +732,7 @@ const BlogPostEditor = () => {
                         </div>
                     </div>
 
-                    <div ref={previewContainerRef} className="flex-1 overflow-y-auto scrollbar-hide flex flex-col items-center bg-[#060606] rounded-[2rem] border border-white/5 relative">
+                    <div ref={previewContainerRef} className="flex-1 overflow-y-auto scrollbar-hide flex flex-col items-center bg-[#060606] rounded-[2rem] border border-black/10 dark:border-white/5 relative">
                         <div 
                             style={{ transform: `scale(${previewScale})`, transformOrigin: 'top center' }} 
                             className="w-[1000px] min-h-full bg-[#060606] shadow-2xl overflow-hidden flex flex-col"
@@ -752,10 +752,10 @@ const BlogPostEditor = () => {
                                             alt="" 
                                         />
                                     ) : (
-                                        <div className="w-full h-full bg-zinc-900 flex items-center justify-center text-gray-800 text-6xl font-black uppercase tracking-tighter">No Media</div>
+                                        <div className="w-full h-full bg-gray-100 dark:bg-zinc-900 flex items-center justify-center text-gray-800 text-6xl font-black uppercase tracking-tighter">No Media</div>
                                     )}
                                     <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
-                                    <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]" />
+                                    <div className="absolute inset-0 bg-white dark:bg-black/40 backdrop-blur-[2px]" />
                                 </div>
 
                                 <div className="relative z-10 px-20 pb-20 w-full">
@@ -767,31 +767,31 @@ const BlogPostEditor = () => {
                                             >
                                                 {formData.category}
                                             </span>
-                                            <div className="h-px w-20 bg-white/20" />
-                                            <span className="text-[11px] font-black uppercase tracking-[0.4em] text-white/40">Preview Mode</span>
+                                            <div className="h-px w-20 bg-black/20 dark:bg-white/20" />
+                                            <span className="text-[11px] font-black uppercase tracking-[0.4em] text-gray-900 dark:text-white/40">Preview Mode</span>
                                         </div>
                                         <h1 className="text-7xl font-black font-heading uppercase leading-[1.1] tracking-tight mb-12 italic pr-12">
                                             {(formData.title || 'UNTITLED MASTERPIECE').split(' ').map((word, i) => (
                                                 <span key={i} 
-                                                    className={i % 2 === 1 ? "text-transparent bg-clip-text not-italic" : "text-white"}
+                                                    className={i % 2 === 1 ? "text-transparent bg-clip-text not-italic" : "text-gray-900 dark:text-white"}
                                                     style={i % 2 === 1 ? { backgroundImage: `linear-gradient(to right, ${accentColor}, white, ${accentColor})` } : {}}
                                                 >
                                                     {word}{' '}
                                                 </span>
                                             ))}
                                         </h1>
-                                        <div className="flex items-center gap-12 text-[13px] font-black uppercase tracking-[0.4em] text-white/50">
+                                        <div className="flex items-center gap-12 text-[13px] font-black uppercase tracking-[0.4em] text-gray-900 dark:text-white/50">
                                             <div className="flex items-center gap-4">
-                                                <div className="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center overflow-hidden"><User size={24} className="text-gray-500" /></div>
+                                                <div className="w-14 h-14 rounded-2xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 flex items-center justify-center overflow-hidden"><User size={24} className="text-gray-500" /></div>
                                                 <div className="flex flex-col">
                                                     <span className="text-[10px] text-gray-600 mb-1 tracking-widest">AUTHOR</span>
-                                                    <span className="text-white text-sm">{formData.author}</span>
+                                                    <span className="text-gray-900 dark:text-white text-sm">{formData.author}</span>
                                                 </div>
                                             </div>
-                                            <div className="w-[1px] h-10 bg-white/10" />
+                                            <div className="w-[1px] h-10 bg-black/10 dark:bg-white/10" />
                                             <div className="flex flex-col">
                                                 <span className="text-[10px] text-gray-600 mb-1 tracking-widest">PUBLISHED</span>
-                                                <span className="text-white text-sm">{new Date(formData.publishDate).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}</span>
+                                                <span className="text-gray-900 dark:text-white text-sm">{new Date(formData.publishDate).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}</span>
                                             </div>
                                         </div>
                                     </div>
@@ -814,11 +814,11 @@ const BlogPostEditor = () => {
                 {showPreviewMobile && (
                     <motion.div 
                         initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-[200] bg-black lg:hidden overflow-y-auto"
+                        className="fixed inset-0 z-[200] bg-white dark:bg-black lg:hidden overflow-y-auto"
                     >
-                        <div className="p-4 border-b border-white/10 flex items-center justify-between sticky top-0 bg-black/80 backdrop-blur-xl z-10">
+                        <div className="p-4 border-b border-black/10 dark:border-white/10 flex items-center justify-between sticky top-0 bg-white dark:bg-black/80 backdrop-blur-xl z-10">
                             <span className="text-[10px] font-black uppercase tracking-[0.4em] text-neon-blue">Reality Preview</span>
-                            <button onClick={() => setShowPreviewMobile(false)} className="p-2 bg-white/5 rounded-xl"><X size={18} /></button>
+                            <button onClick={() => setShowPreviewMobile(false)} className="p-2 bg-black/5 dark:bg-white/5 rounded-xl"><X size={18} /></button>
                         </div>
                         <div className="p-6 space-y-8 pb-32">
                             <div className="space-y-4">
@@ -830,8 +830,8 @@ const BlogPostEditor = () => {
                                     <span>{Math.ceil((formData.content?.split(' ').length || 0) / 200)} MIN</span>
                                 </div>
                             </div>
-                            {formData.coverImage && <img src={formData.coverImage} className="w-full rounded-3xl border border-white/10" alt="Cover" />}
-                            <div className="prose prose-invert text-gray-400" dangerouslySetInnerHTML={{ __html: formData.content }} />
+                            {formData.coverImage && <img src={formData.coverImage} className="w-full rounded-3xl border border-black/10 dark:border-white/10" alt="Cover" />}
+                            <div className="prose prose-invert text-gray-600 dark:text-gray-400" dangerouslySetInnerHTML={{ __html: formData.content }} />
                         </div>
                     </motion.div>
                 )}

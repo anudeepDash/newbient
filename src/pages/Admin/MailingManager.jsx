@@ -293,8 +293,8 @@ const MailingManager = () => {
                 accentClass: "text-neon-pink"
             }}
             action={(
-                <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 bg-zinc-900/60 backdrop-blur-3xl border border-white/10 p-4 md:p-5 rounded-[2rem] md:rounded-[2.5rem] w-full md:w-auto shadow-2xl">
-                    <div className="flex bg-black/60 p-1.5 rounded-2xl border border-white/5 overflow-x-auto no-scrollbar max-w-full">
+                <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 bg-gray-100 dark:bg-zinc-900/60 backdrop-blur-3xl border border-black/10 dark:border-white/10 p-4 md:p-5 rounded-[2rem] md:rounded-[2.5rem] w-full md:w-auto shadow-2xl">
+                    <div className="flex bg-white dark:bg-black/60 p-1.5 rounded-2xl border border-black/10 dark:border-white/5 overflow-x-auto no-scrollbar max-w-full">
                         {[
                             { id: 'subscribers', label: 'Subscribers' },
                             { id: 'registered', label: 'Users' },
@@ -312,7 +312,7 @@ const MailingManager = () => {
                                     "px-4 md:px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all whitespace-nowrap shrink-0 flex items-center gap-2",
                                     recipientType === type.id 
                                         ? "bg-white text-black shadow-lg shadow-white/10 scale-[1.02]" 
-                                        : "text-gray-400 hover:text-white hover:bg-white/5"
+                                        : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5"
                                 )}
                             >
                                 {type.id === 'individuals' && <UserPlus size={12} />}
@@ -320,14 +320,14 @@ const MailingManager = () => {
                             </button>
                         ))}
                     </div>
-                    <div className="hidden sm:block w-px h-8 bg-white/10 shrink-0" />
+                    <div className="hidden sm:block w-px h-8 bg-black/10 dark:bg-white/10 shrink-0" />
                     <div className="hidden sm:flex items-center gap-3 shrink-0 pr-2">
                         <div className="w-10 h-10 rounded-xl bg-neon-pink/10 border border-neon-pink/20 flex items-center justify-center text-neon-pink">
                             <Users size={18} />
                         </div>
                         <div>
-                            <h3 className="text-lg font-black font-heading text-white leading-none">{recipients.length}</h3>
-                            <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest mt-1">Target Recipients</p>
+                            <h3 className="text-lg font-black font-heading text-gray-900 dark:text-white leading-none">{recipients.length}</h3>
+                            <p className="text-[8px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest mt-1">Target Recipients</p>
                         </div>
                     </div>
                 </div>
@@ -340,20 +340,20 @@ const MailingManager = () => {
                     <div className="lg:col-span-7 space-y-6">
                         
                         {/* Preset Templates Header Bar */}
-                        <div className="bg-zinc-900/60 backdrop-blur-2xl border border-white/10 rounded-3xl p-5 shadow-xl space-y-4">
+                        <div className="bg-gray-100 dark:bg-zinc-900/60 backdrop-blur-2xl border border-black/10 dark:border-white/10 rounded-3xl p-5 shadow-xl space-y-4">
                             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                                 <div className="flex items-center gap-3">
                                     <div className="p-2.5 rounded-2xl bg-neon-pink/10 border border-neon-pink/20 text-neon-pink">
                                         <FolderOpen size={18} />
                                     </div>
                                     <div>
-                                        <h4 className="text-xs font-black uppercase tracking-widest text-white flex items-center gap-2">
+                                        <h4 className="text-xs font-black uppercase tracking-widest text-gray-900 dark:text-white flex items-center gap-2">
                                             Saved Templates 
-                                            <span className="px-2 py-0.5 rounded-full bg-white/10 text-[9px] text-gray-300">
+                                            <span className="px-2 py-0.5 rounded-full bg-black/10 dark:bg-white/10 text-[9px] text-gray-700 dark:text-gray-300">
                                                 {emailTemplates?.length || 0}
                                             </span>
                                         </h4>
-                                        <p className="text-[10px] text-gray-400">Load a saved layout or store your current mail draft</p>
+                                        <p className="text-[10px] text-gray-600 dark:text-gray-400">Load a saved layout or store your current mail draft</p>
                                     </div>
                                 </div>
 
@@ -362,7 +362,7 @@ const MailingManager = () => {
                                     <Button
                                         type="button"
                                         onClick={handleNewDraft}
-                                        className="h-11 px-3 bg-white/5 hover:bg-white/10 text-gray-300 border border-white/10 rounded-2xl transition-all flex items-center justify-center shrink-0 text-[10px] font-black uppercase tracking-wider"
+                                        className="h-11 px-3 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-gray-700 dark:text-gray-300 border border-black/10 dark:border-white/10 rounded-2xl transition-all flex items-center justify-center shrink-0 text-[10px] font-black uppercase tracking-wider"
                                         title="Start a new blank draft"
                                     >
                                         <Plus size={14} className="mr-1" /> New Draft
@@ -372,7 +372,7 @@ const MailingManager = () => {
                                         <select
                                             value={selectedTemplateId}
                                             onChange={(e) => handleLoadTemplate(e.target.value)}
-                                            className="w-full h-11 pl-4 pr-10 bg-black/80 border border-white/15 rounded-2xl text-[10px] font-black uppercase tracking-widest text-white focus:outline-none focus:border-neon-pink transition-all appearance-none cursor-pointer truncate"
+                                            className="w-full h-11 pl-4 pr-10 bg-white dark:bg-black/80 border border-white/15 rounded-2xl text-[10px] font-black uppercase tracking-widest text-gray-900 dark:text-white focus:outline-none focus:border-neon-pink transition-all appearance-none cursor-pointer truncate"
                                             style={{
                                                 backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23ff4f8b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e")`,
                                                 backgroundRepeat: 'no-repeat',
@@ -380,11 +380,11 @@ const MailingManager = () => {
                                                 backgroundSize: '14px'
                                             }}
                                         >
-                                            <option value="" className="bg-zinc-950 text-gray-400">
+                                            <option value="" className="bg-gray-100 dark:bg-zinc-950 text-gray-600 dark:text-gray-400">
                                                 {emailTemplates?.length > 0 ? '-- Select Saved Template --' : 'No Saved Templates'}
                                             </option>
                                             {emailTemplates?.map(t => (
-                                                <option key={t.id} value={t.id} className="bg-zinc-950 text-white">
+                                                <option key={t.id} value={t.id} className="bg-gray-100 dark:bg-zinc-950 text-gray-900 dark:text-white">
                                                     {t.subject ? `[${t.category || 'OFFICIAL'}] ${t.subject}` : 'Untitled Template'}
                                                 </option>
                                             ))}
@@ -409,7 +409,7 @@ const MailingManager = () => {
                                 <motion.div 
                                     initial={{ opacity: 0, height: 0 }}
                                     animate={{ opacity: 1, height: 'auto' }}
-                                    className="flex items-center justify-between p-3 rounded-2xl bg-neon-pink/10 border border-neon-pink/20 text-white text-[10px]"
+                                    className="flex items-center justify-between p-3 rounded-2xl bg-neon-pink/10 border border-neon-pink/20 text-gray-900 dark:text-white text-[10px]"
                                 >
                                     <div className="flex items-center gap-2 font-bold truncate">
                                         <Check size={14} className="text-neon-pink shrink-0" />
@@ -418,7 +418,7 @@ const MailingManager = () => {
                                     <button 
                                         type="button"
                                         onClick={() => setSelectedTemplateId('')}
-                                        className="text-gray-400 hover:text-white font-black uppercase text-[9px] pl-2 shrink-0"
+                                        className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white font-black uppercase text-[9px] pl-2 shrink-0"
                                     >
                                         Dismiss
                                     </button>
@@ -427,26 +427,26 @@ const MailingManager = () => {
                         </div>
 
                         {/* Main Editor Card */}
-                        <Card className="p-6 md:p-8 bg-zinc-900/50 backdrop-blur-3xl border-white/10 rounded-[2.5rem] shadow-2xl relative overflow-hidden space-y-8">
+                        <Card className="p-6 md:p-8 bg-gray-100 dark:bg-zinc-900/50 backdrop-blur-3xl border-black/10 dark:border-white/10 rounded-[2.5rem] shadow-2xl relative overflow-hidden space-y-8">
                             <form onSubmit={handleSendEmails} className="space-y-8 relative z-10">
                                 
                                 {/* Section 1: Audience & Sender Setup */}
-                                <div className="space-y-6 pb-6 border-b border-white/5">
-                                    <div className="flex items-center gap-2 text-gray-400">
+                                <div className="space-y-6 pb-6 border-b border-black/10 dark:border-white/5">
+                                    <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
                                         <Shield size={14} className="text-neon-pink" />
                                         <span className="text-[10px] font-black uppercase tracking-[0.2em]">1. Transmission & Category Settings</span>
                                     </div>
 
                                     {/* Sender Alias */}
                                     <div className="space-y-3">
-                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">Sender Alias</label>
+                                        <label className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest pl-1">Sender Alias</label>
                                         <select
                                             value={selectedAlias.key}
                                             onChange={(e) => {
                                                 const alias = ALIASES.find(a => a.key === e.target.value);
                                                 setSelectedAlias(alias);
                                             }}
-                                            className="w-full h-13 px-4 bg-black/60 border border-white/10 rounded-2xl text-[11px] font-black uppercase tracking-widest focus:border-white/30 focus:outline-none text-white transition-all appearance-none cursor-pointer"
+                                            className="w-full h-13 px-4 bg-white dark:bg-black/60 border border-black/10 dark:border-white/10 rounded-2xl text-[11px] font-black uppercase tracking-widest focus:border-white/30 focus:outline-none text-gray-900 dark:text-white transition-all appearance-none cursor-pointer"
                                             style={{
                                                 backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e")`,
                                                 backgroundRepeat: 'no-repeat',
@@ -455,7 +455,7 @@ const MailingManager = () => {
                                             }}
                                         >
                                             {ALIASES.map(a => (
-                                                <option key={a.key} value={a.key} className="bg-zinc-950 text-white">
+                                                <option key={a.key} value={a.key} className="bg-gray-100 dark:bg-zinc-950 text-gray-900 dark:text-white">
                                                     {a.key === 'custom' ? 'Custom Alias...' : `${a.name} <${a.email}>`}
                                                 </option>
                                             ))}
@@ -471,22 +471,22 @@ const MailingManager = () => {
                                                 className="grid grid-cols-1 sm:grid-cols-2 gap-4 overflow-hidden pt-2"
                                             >
                                                 <div className="space-y-2">
-                                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">Custom Name</label>
+                                                    <label className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest pl-1">Custom Name</label>
                                                     <Input 
                                                         value={customName}
                                                         onChange={(e) => setCustomName(e.target.value)}
                                                         placeholder="e.g. Newbi Events"
-                                                        className="h-12 bg-black/60 border-white/10 rounded-2xl text-[11px] font-bold tracking-wider focus:border-white/30"
+                                                        className="h-12 bg-white dark:bg-black/60 border-black/10 dark:border-white/10 rounded-2xl text-[11px] font-bold tracking-wider focus:border-white/30"
                                                         required={selectedAlias.key === 'custom'}
                                                     />
                                                 </div>
                                                 <div className="space-y-2">
-                                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">Custom Email</label>
+                                                    <label className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest pl-1">Custom Email</label>
                                                     <Input 
                                                         value={customEmail}
                                                         onChange={(e) => setCustomEmail(e.target.value)}
                                                         placeholder="e.g. events@newbi.live"
-                                                        className="h-12 bg-black/60 border-white/10 rounded-2xl text-[11px] font-bold tracking-wider focus:border-white/30"
+                                                        className="h-12 bg-white dark:bg-black/60 border-black/10 dark:border-white/10 rounded-2xl text-[11px] font-bold tracking-wider focus:border-white/30"
                                                         required={selectedAlias.key === 'custom'}
                                                     />
                                                 </div>
@@ -497,7 +497,7 @@ const MailingManager = () => {
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-2">
                                         {/* Communication Category */}
                                         <div className="space-y-3">
-                                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1 flex items-center justify-between">
+                                            <label className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest pl-1 flex items-center justify-between">
                                                 <span>Communication Type</span>
                                                 {mailData.category === 'CUSTOM' && <span className="text-neon-pink">Custom Active</span>}
                                             </label>
@@ -511,7 +511,7 @@ const MailingManager = () => {
                                                             "px-3.5 py-2.5 rounded-xl border transition-all text-[9px] font-black uppercase tracking-wider shrink-0",
                                                             mailData.category === cat 
                                                                 ? "bg-white text-black border-white shadow-lg shadow-white/10" 
-                                                                : "bg-black/50 text-gray-400 border-white/5 hover:border-white/10 hover:text-white"
+                                                                : "bg-white dark:bg-black/50 text-gray-600 dark:text-gray-400 border-black/10 dark:border-white/5 hover:border-black/10 dark:hover:border-white/10 hover:text-gray-900 dark:hover:text-white"
                                                         )}
                                                     >
                                                         {cat}
@@ -528,7 +528,7 @@ const MailingManager = () => {
                                                         value={mailData.customCategory}
                                                         onChange={(e) => setMailData({...mailData, customCategory: e.target.value.toUpperCase()})}
                                                         placeholder="TYPE CUSTOM CATEGORY (e.g. EXCLUSIVE)..."
-                                                        className="h-12 bg-black/60 border-neon-pink/30 rounded-2xl text-[10px] font-black tracking-widest text-white uppercase focus:border-neon-pink"
+                                                        className="h-12 bg-white dark:bg-black/60 border-neon-pink/30 rounded-2xl text-[10px] font-black tracking-widest text-gray-900 dark:text-white uppercase focus:border-neon-pink"
                                                     />
                                                 </motion.div>
                                             )}
@@ -536,14 +536,14 @@ const MailingManager = () => {
 
                                         {/* Theme Selector */}
                                         <div className="space-y-3">
-                                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">Visual Theme</label>
-                                            <div className="flex gap-2 h-12 bg-black/60 p-1.5 rounded-2xl border border-white/10">
+                                            <label className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest pl-1">Visual Theme</label>
+                                            <div className="flex gap-2 h-12 bg-white dark:bg-black/60 p-1.5 rounded-2xl border border-black/10 dark:border-white/10">
                                                 <button
                                                     type="button"
                                                     onClick={() => setMailData({...mailData, theme: 'light'})}
                                                     className={cn(
                                                         "flex-1 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all",
-                                                        mailData.theme === 'light' ? "bg-white text-black shadow-md" : "text-gray-400 hover:text-white"
+                                                        mailData.theme === 'light' ? "bg-white text-black shadow-md" : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
                                                     )}
                                                 >
                                                     Light Mode
@@ -553,7 +553,7 @@ const MailingManager = () => {
                                                     onClick={() => setMailData({...mailData, theme: 'dark'})}
                                                     className={cn(
                                                         "flex-1 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all",
-                                                        mailData.theme === 'dark' ? "bg-zinc-800 text-white shadow-md" : "text-gray-400 hover:text-white"
+                                                        mailData.theme === 'dark' ? "bg-zinc-800 text-gray-900 dark:text-white shadow-md" : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
                                                     )}
                                                 >
                                                     Dark Mode
@@ -568,18 +568,18 @@ const MailingManager = () => {
                                     <motion.div 
                                         initial={{ opacity: 0, y: -10 }}
                                         animate={{ opacity: 1, y: 0 }}
-                                        className="space-y-4 p-5 bg-black/40 border border-white/10 rounded-3xl"
+                                        className="space-y-4 p-5 bg-white dark:bg-black/40 border border-black/10 dark:border-white/10 rounded-3xl"
                                     >
                                         <div className="flex items-center justify-between">
                                             <label className="text-[10px] font-black text-neon-pink uppercase tracking-widest flex items-center gap-2">
                                                 <UserPlus size={14} /> Individual Recipient Manager
                                             </label>
-                                            <span className="text-[10px] text-gray-400 font-bold">{selectedIndividuals.length} Selected</span>
+                                            <span className="text-[10px] text-gray-600 dark:text-gray-400 font-bold">{selectedIndividuals.length} Selected</span>
                                         </div>
 
                                         <div className="flex gap-2">
                                             <div className="relative flex-1">
-                                                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+                                                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600 dark:text-gray-400 w-4 h-4" />
                                                 <Input 
                                                     value={searchQuery}
                                                     onChange={(e) => setSearchQuery(e.target.value)}
@@ -590,7 +590,7 @@ const MailingManager = () => {
                                                         }
                                                     }}
                                                     placeholder="Search registered user or type new email..."
-                                                    className="w-full h-12 pl-12 bg-black/60 border-white/10 rounded-2xl text-[11px] font-bold tracking-wider focus:border-white/30 text-white"
+                                                    className="w-full h-12 pl-12 bg-white dark:bg-black/60 border-black/10 dark:border-white/10 rounded-2xl text-[11px] font-bold tracking-wider focus:border-white/30 text-gray-900 dark:text-white"
                                                 />
                                             </div>
                                             {searchQuery.includes('@') && (
@@ -606,7 +606,7 @@ const MailingManager = () => {
 
                                         {/* Registered Users Search Autocomplete Dropdown */}
                                         {searchQuery.length > 0 && (
-                                            <div className="max-h-48 overflow-y-auto bg-zinc-950/90 border border-white/15 rounded-2xl p-2 space-y-1 no-scrollbar shadow-2xl">
+                                            <div className="max-h-48 overflow-y-auto bg-gray-100 dark:bg-zinc-950/90 border border-white/15 rounded-2xl p-2 space-y-1 no-scrollbar shadow-2xl">
                                                 {/* If search looks like an email and not added yet, show Add Custom Email option top */}
                                                 {searchQuery.includes('@') && !selectedIndividuals.some(s => s.email?.toLowerCase() === searchQuery.trim().toLowerCase()) && (
                                                     <button
@@ -616,7 +616,7 @@ const MailingManager = () => {
                                                     >
                                                         <div className="flex items-center gap-2">
                                                             <Plus size={14} className="text-neon-pink" />
-                                                            <span className="text-xs font-bold text-white">Add custom email: <span className="text-neon-pink">{searchQuery.trim()}</span></span>
+                                                            <span className="text-xs font-bold text-gray-900 dark:text-white">Add custom email: <span className="text-neon-pink">{searchQuery.trim()}</span></span>
                                                         </div>
                                                         <span className="text-[9px] font-black uppercase tracking-widest text-neon-pink">Add +</span>
                                                     </button>
@@ -634,11 +634,11 @@ const MailingManager = () => {
                                                             setSelectedIndividuals([...selectedIndividuals, user]);
                                                             setSearchQuery('');
                                                         }}
-                                                        className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-white/10 transition-colors text-left"
+                                                        className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-black/10 dark:hover:bg-white/10 transition-colors text-left"
                                                     >
                                                         <div>
-                                                            <div className="text-white text-xs font-bold">{user.name || 'Registered User'}</div>
-                                                            <div className="text-gray-400 text-[11px]">{user.email}</div>
+                                                            <div className="text-gray-900 dark:text-white text-xs font-bold">{user.name || 'Registered User'}</div>
+                                                            <div className="text-gray-600 dark:text-gray-400 text-[11px]">{user.email}</div>
                                                         </div>
                                                         <div className="text-[9px] font-black uppercase tracking-widest text-neon-pink">Add +</div>
                                                     </button>
@@ -660,15 +660,15 @@ const MailingManager = () => {
                                         {selectedIndividuals.length > 0 && (
                                             <div className="flex flex-wrap gap-2 pt-1 max-h-36 overflow-y-auto no-scrollbar">
                                                 {selectedIndividuals.map(user => (
-                                                    <div key={user.email} className="flex items-center gap-2 bg-white/10 hover:bg-white/15 px-3 py-1.5 rounded-xl border border-white/10 transition-all">
-                                                        <div className="text-[11px] font-bold text-white flex items-center gap-1.5">
+                                                    <div key={user.email} className="flex items-center gap-2 bg-black/10 dark:bg-white/10 hover:bg-white/15 px-3 py-1.5 rounded-xl border border-black/10 dark:border-white/10 transition-all">
+                                                        <div className="text-[11px] font-bold text-gray-900 dark:text-white flex items-center gap-1.5">
                                                             {user.isCustom && <span className="w-1.5 h-1.5 rounded-full bg-neon-pink" />}
                                                             {user.name && user.name !== user.email ? `${user.name} (${user.email})` : user.email}
                                                         </div>
                                                         <button 
                                                             type="button" 
                                                             onClick={() => setSelectedIndividuals(selectedIndividuals.filter(u => u.email !== user.email))}
-                                                            className="text-gray-400 hover:text-white p-0.5 rounded-md hover:bg-white/10"
+                                                            className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white p-0.5 rounded-md hover:bg-black/10 dark:hover:bg-white/10"
                                                         >
                                                             <X size={12} />
                                                         </button>
@@ -688,7 +688,7 @@ const MailingManager = () => {
 
                                 {/* Section 3: Email Content */}
                                 <div className="space-y-6">
-                                    <div className="flex items-center gap-2 text-gray-400">
+                                    <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
                                         <FileText size={14} className="text-neon-pink" />
                                         <span className="text-[10px] font-black uppercase tracking-[0.2em]">2. Email Content & Design</span>
                                     </div>
@@ -696,7 +696,7 @@ const MailingManager = () => {
                                     {/* Subject Line */}
                                     <div className="space-y-2">
                                         <div className="flex flex-wrap items-center justify-between gap-2">
-                                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">Subject Line</label>
+                                            <label className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest pl-1">Subject Line</label>
                                             <div className="flex flex-wrap items-center gap-1.5">
                                                 <span className="text-[9px] font-black uppercase tracking-widest text-gray-500 flex items-center gap-1">
                                                     <Tag size={10} className="text-neon-pink" /> Insert Tag:
@@ -723,19 +723,19 @@ const MailingManager = () => {
                                             value={mailData.subject}
                                             onChange={(e) => setMailData({...mailData, subject: e.target.value})}
                                             placeholder="OFFICIAL COMMUNICATION..."
-                                            className="h-14 bg-black/60 border-white/10 rounded-2xl text-[11px] font-bold tracking-wider uppercase focus:border-white/30"
+                                            className="h-14 bg-white dark:bg-black/60 border-black/10 dark:border-white/10 rounded-2xl text-[11px] font-bold tracking-wider uppercase focus:border-white/30"
                                             required
                                         />
                                     </div>
 
                                     {/* Primary Header */}
                                     <div className="space-y-2">
-                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">Primary Banner Header</label>
+                                        <label className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest pl-1">Primary Banner Header</label>
                                         <Input 
                                             value={mailData.headerText}
                                             onChange={(e) => setMailData({...mailData, headerText: e.target.value})}
                                             placeholder="NEWBI ANNOUNCEMENT"
-                                            className="h-14 bg-black/60 border-white/10 rounded-2xl text-[11px] font-bold tracking-wider uppercase focus:border-white/30"
+                                            className="h-14 bg-white dark:bg-black/60 border-black/10 dark:border-white/10 rounded-2xl text-[11px] font-bold tracking-wider uppercase focus:border-white/30"
                                             required
                                         />
                                     </div>
@@ -756,21 +756,21 @@ const MailingManager = () => {
                                     {/* CTA Button Inputs */}
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                         <div className="space-y-2">
-                                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">Call-to-Action Button Text (Optional)</label>
+                                            <label className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest pl-1">Call-to-Action Button Text (Optional)</label>
                                             <Input 
                                                 value={mailData.ctaText}
                                                 onChange={(e) => setMailData({...mailData, ctaText: e.target.value})}
                                                 placeholder="e.g. VIEW DETAILS"
-                                                className="h-12 bg-black/60 border-white/10 rounded-2xl text-[11px] font-bold tracking-wider uppercase"
+                                                className="h-12 bg-white dark:bg-black/60 border-black/10 dark:border-white/10 rounded-2xl text-[11px] font-bold tracking-wider uppercase"
                                             />
                                         </div>
                                         <div className="space-y-2">
-                                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">Action URL</label>
+                                            <label className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest pl-1">Action URL</label>
                                             <Input 
                                                 value={mailData.ctaUrl}
                                                 onChange={(e) => setMailData({...mailData, ctaUrl: e.target.value})}
                                                 placeholder="https://newbi.live"
-                                                className="h-12 bg-black/60 border-white/10 rounded-2xl text-[11px] font-bold tracking-wider"
+                                                className="h-12 bg-white dark:bg-black/60 border-black/10 dark:border-white/10 rounded-2xl text-[11px] font-bold tracking-wider"
                                             />
                                         </div>
                                     </div>
@@ -785,7 +785,7 @@ const MailingManager = () => {
                                             "p-4 rounded-2xl border text-[10px] font-black uppercase tracking-widest flex items-center gap-3 shadow-lg",
                                             status.type === 'success' ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400" : 
                                             status.type === 'error' ? "bg-red-500/10 border-red-500/30 text-red-400" :
-                                            "bg-white/5 border-white/10 text-gray-300"
+                                            "bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-gray-700 dark:text-gray-300"
                                         )}
                                     >
                                         <Zap size={14} className="shrink-0" /> {status.text}
@@ -793,7 +793,7 @@ const MailingManager = () => {
                                 )}
 
                                 {/* Action Buttons Footer Bar */}
-                                <div className="pt-4 border-t border-white/5 space-y-4">
+                                <div className="pt-4 border-t border-black/10 dark:border-white/5 space-y-4">
                                     <div className="flex flex-col sm:flex-row items-stretch gap-4">
                                         <Button 
                                             type="submit" 
@@ -818,7 +818,7 @@ const MailingManager = () => {
                                                     type="button"
                                                     onClick={() => handleSaveTemplate(false)}
                                                     disabled={savingTemplate || !mailData.subject}
-                                                    className="h-16 px-6 bg-zinc-800 hover:bg-zinc-700 text-white font-black text-xs uppercase tracking-widest border border-white/10 rounded-2xl transition-all flex items-center justify-center gap-2.5 disabled:opacity-50 shrink-0"
+                                                    className="h-16 px-6 bg-zinc-800 hover:bg-zinc-700 text-gray-900 dark:text-white font-black text-xs uppercase tracking-widest border border-black/10 dark:border-white/10 rounded-2xl transition-all flex items-center justify-center gap-2.5 disabled:opacity-50 shrink-0"
                                                 >
                                                     {savingTemplate ? <LoadingSpinner size="xs" color="white" /> : <Save size={16} />}
                                                     <span>Update Template</span>
@@ -827,7 +827,7 @@ const MailingManager = () => {
                                                     type="button"
                                                     onClick={() => handleSaveTemplate(true)}
                                                     disabled={savingTemplate || !mailData.subject}
-                                                    className="h-16 px-6 bg-zinc-900/60 hover:bg-zinc-800 text-gray-300 font-black text-xs uppercase tracking-widest border border-white/5 rounded-2xl transition-all flex items-center justify-center gap-2.5 disabled:opacity-50 shrink-0"
+                                                    className="h-16 px-6 bg-gray-100 dark:bg-zinc-900/60 hover:bg-zinc-800 text-gray-700 dark:text-gray-300 font-black text-xs uppercase tracking-widest border border-black/10 dark:border-white/5 rounded-2xl transition-all flex items-center justify-center gap-2.5 disabled:opacity-50 shrink-0"
                                                 >
                                                     {savingTemplate ? <LoadingSpinner size="xs" color="white" /> : <Plus size={16} />}
                                                     <span>Save as New</span>
@@ -838,7 +838,7 @@ const MailingManager = () => {
                                                 type="button"
                                                 onClick={() => handleSaveTemplate(false)}
                                                 disabled={savingTemplate || !mailData.subject}
-                                                className="h-16 px-6 bg-zinc-800 hover:bg-zinc-700 text-white font-black text-xs uppercase tracking-widest border border-white/10 rounded-2xl transition-all flex items-center justify-center gap-2.5 disabled:opacity-50 shrink-0"
+                                                className="h-16 px-6 bg-zinc-800 hover:bg-zinc-700 text-gray-900 dark:text-white font-black text-xs uppercase tracking-widest border border-black/10 dark:border-white/10 rounded-2xl transition-all flex items-center justify-center gap-2.5 disabled:opacity-50 shrink-0"
                                             >
                                                 {savingTemplate ? <LoadingSpinner size="xs" color="white" /> : <Save size={16} />}
                                                 <span>Save Template</span>
@@ -847,7 +847,7 @@ const MailingManager = () => {
                                     </div>
 
                                     <p className="text-center text-[9px] font-bold text-gray-500 uppercase tracking-widest">
-                                        Sender: <span className="text-white">{selectedAlias.key === 'custom' ? `${customName || 'Custom'} <${customEmail || 'No email'}>` : `${selectedAlias.name} <${selectedAlias.email}>`}</span>
+                                        Sender: <span className="text-gray-900 dark:text-white">{selectedAlias.key === 'custom' ? `${customName || 'Custom'} <${customEmail || 'No email'}>` : `${selectedAlias.name} <${selectedAlias.email}>`}</span>
                                     </p>
                                 </div>
                             </form>
@@ -860,20 +860,20 @@ const MailingManager = () => {
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-2">
                                     <Sparkles size={14} className="text-neon-pink" />
-                                    <h3 className="text-xs font-black uppercase tracking-[0.3em] text-white">Live Email Preview</h3>
+                                    <h3 className="text-xs font-black uppercase tracking-[0.3em] text-gray-900 dark:text-white">Live Email Preview</h3>
                                 </div>
                                 
-                                <div className="flex bg-black/60 p-1 rounded-xl border border-white/10">
+                                <div className="flex bg-white dark:bg-black/60 p-1 rounded-xl border border-black/10 dark:border-white/10">
                                     <button 
                                         onClick={() => setViewMode('desktop')}
-                                        className={cn("p-2 rounded-lg transition-all", viewMode === 'desktop' ? "bg-white text-black shadow-md" : "text-gray-400 hover:text-white")}
+                                        className={cn("p-2 rounded-lg transition-all", viewMode === 'desktop' ? "bg-white text-black shadow-md" : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white")}
                                         title="Desktop View"
                                     >
                                         <Monitor size={14} />
                                     </button>
                                     <button 
                                         onClick={() => setViewMode('mobile')}
-                                        className={cn("p-2 rounded-lg transition-all", viewMode === 'mobile' ? "bg-white text-black shadow-md" : "text-gray-400 hover:text-white")}
+                                        className={cn("p-2 rounded-lg transition-all", viewMode === 'mobile' ? "bg-white text-black shadow-md" : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white")}
                                         title="Mobile View"
                                     >
                                         <Smartphone size={14} />
@@ -881,24 +881,24 @@ const MailingManager = () => {
                                 </div>
                             </div>
                             <p className="text-[9px] font-mono text-neon-pink/80 tracking-wider">
-                                Previewing for: <span className="text-white font-bold">{sampleRecipient.name} ({sampleRecipient.email})</span>
+                                Previewing for: <span className="text-gray-900 dark:text-white font-bold">{sampleRecipient.name} ({sampleRecipient.email})</span>
                             </p>
                         </div>
 
                         {/* Outer Device Frame */}
                         <div className={cn(
-                            "mx-auto transition-all duration-300 rounded-[2.5rem] overflow-hidden border border-white/15 shadow-2xl bg-zinc-950 p-2",
+                            "mx-auto transition-all duration-300 rounded-[2.5rem] overflow-hidden border border-white/15 shadow-2xl bg-gray-100 dark:bg-zinc-950 p-2",
                             viewMode === 'mobile' ? "max-w-[360px]" : "w-full"
                         )}>
-                            <div className="bg-black/90 rounded-[2rem] overflow-hidden border border-white/5">
+                            <div className="bg-white dark:bg-black/90 rounded-[2rem] overflow-hidden border border-black/10 dark:border-white/5">
                                 {/* Simulated email window bar */}
-                                <div className="h-9 bg-zinc-900/80 px-4 flex items-center justify-between border-b border-white/5">
+                                <div className="h-9 bg-gray-100 dark:bg-zinc-900/80 px-4 flex items-center justify-between border-b border-black/10 dark:border-white/5">
                                     <div className="flex items-center gap-1.5">
                                         <span className="w-2.5 h-2.5 rounded-full bg-red-500/80" />
                                         <span className="w-2.5 h-2.5 rounded-full bg-yellow-500/80" />
                                         <span className="w-2.5 h-2.5 rounded-full bg-green-500/80" />
                                     </div>
-                                    <span className="text-[9px] font-mono text-gray-300 truncate max-w-[200px]">
+                                    <span className="text-[9px] font-mono text-gray-700 dark:text-gray-300 truncate max-w-[200px]">
                                         {(mailData.subject || 'Subject Preview')
                                             .replace(/\{\{?\s*name\s*\}?\}/gi, sampleRecipient.name)
                                             .replace(/\{\{?\s*first_name\s*\}?\}/gi, sampleRecipient.firstName)

@@ -16,10 +16,10 @@ const FormViewer = ({ formIdOverride }) => {
 
     if (!form) {
         return (
-            <div className="min-h-screen flex items-center justify-center text-white">
+            <div className="min-h-screen flex items-center justify-center text-gray-900 dark:text-white">
                 <div className="text-center">
                     <h2 className="text-2xl font-bold mb-4 uppercase">FORM NOT FOUND</h2>
-                    <p className="text-gray-400">The form you are looking for does not exist or has been removed.</p>
+                    <p className="text-gray-600 dark:text-gray-400">The form you are looking for does not exist or has been removed.</p>
                 </div>
             </div>
         );
@@ -29,17 +29,17 @@ const FormViewer = ({ formIdOverride }) => {
         <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8">
             <div className="max-w-4xl mx-auto">
                 <Card className="p-4 md:p-8">
-                    <h1 className="text-3xl font-black font-heading text-white mb-2 uppercase tracking-tight">{form.title}</h1>
-                    <p className="text-gray-400 mb-8">{form.description}</p>
+                    <h1 className="text-3xl font-black font-heading text-gray-900 dark:text-white mb-2 uppercase tracking-tight">{form.title}</h1>
+                    <p className="text-gray-600 dark:text-gray-400 mb-8">{form.description}</p>
 
-                    <div className="w-full relative bg-white/5 rounded-lg overflow-hidden min-h-[400px] flex items-center justify-center">
+                    <div className="w-full relative bg-black/5 dark:bg-white/5 rounded-lg overflow-hidden min-h-[400px] flex items-center justify-center">
                         {!form.formUrl ? (
                             <div className="p-8 text-center text-red-400">
                                 Invalid or missing Google Form URL.
                             </div>
                         ) : form.requiresExternal ? (
                             <div className="text-center p-8">
-                                <p className="text-gray-300 mb-6">This form requires Google Sign-in or File Uploads, so it must be opened in a new tab.</p>
+                                <p className="text-gray-700 dark:text-gray-300 mb-6">This form requires Google Sign-in or File Uploads, so it must be opened in a new tab.</p>
                                 <a
                                     href={form.formUrl}
                                     target="_blank"

@@ -11,7 +11,7 @@ const PastClients = () => {
     const duplicatedClients = [...clients, ...clients, ...clients];
 
     return (
-        <section className="py-10 md:py-16 bg-dark relative overflow-hidden border-t border-white/5">
+        <section className="py-10 md:py-16 bg-gray-50 dark:bg-dark transition-colors duration-300 relative overflow-hidden border-t border-black/10 dark:border-white/5">
             <div className="max-w-7xl mx-auto px-4 mb-10 md:mb-12">
                 <div className="flex flex-col md:flex-row md:items-end justify-between gap-8">
                     <div>
@@ -20,16 +20,16 @@ const PastClients = () => {
                             initial={{ opacity: 0, y: 20 }}
                             whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: true }}
-                            className="font-heading text-4xl md:text-5xl font-black text-white tracking-tight"
+                            className="font-heading text-4xl md:text-5xl font-black text-gray-900 dark:text-white tracking-tight"
                         >
-                            Global <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-neon-green">Partners</span>
+                            Global <span className="text-transparent bg-clip-text bg-gradient-to-r from-black to-neon-green dark:from-white dark:to-neon-green">Partners</span>
                         </motion.h2>
                     </div>
                     <motion.p
                         initial={{ opacity: 0 }}
                         whileInView={{ opacity: 1 }}
                         viewport={{ once: true }}
-                        className="text-gray-500 font-bold max-w-sm text-xs uppercase tracking-widest leading-relaxed"
+                        className="text-gray-500 dark:text-gray-400 font-bold max-w-sm text-xs uppercase tracking-widest leading-relaxed"
                     >
                         Collaborating with the world's most disruptive brands to define youth culture.
                     </motion.p>
@@ -38,8 +38,8 @@ const PastClients = () => {
 
             {/* Premium Infinite Marquee */}
             <div className="relative w-full overflow-hidden flex items-center h-40">
-                <div className="absolute left-0 top-0 w-32 md:w-96 h-full bg-gradient-to-r from-dark to-transparent z-10 pointer-events-none"></div>
-                <div className="absolute right-0 top-0 w-32 md:w-96 h-full bg-gradient-to-l from-dark to-transparent z-10 pointer-events-none"></div>
+                <div className="absolute left-0 top-0 w-32 md:w-96 h-full bg-gradient-to-r from-gray-50 dark:from-dark to-transparent z-10 pointer-events-none"></div>
+                <div className="absolute right-0 top-0 w-32 md:w-96 h-full bg-gradient-to-l from-gray-50 dark:from-dark to-transparent z-10 pointer-events-none"></div>
 
                 <div className="flex animate-marquee whitespace-nowrap gap-12 md:gap-24 items-center">
                     {duplicatedClients.map((client, index) => (
@@ -47,7 +47,7 @@ const PastClients = () => {
                             key={index}
                             className="flex-shrink-0 flex items-center justify-center grayscale opacity-20 hover:grayscale-0 hover:opacity-100 transition-all duration-700 cursor-default group"
                         >
-                            <span className="text-3xl md:text-6xl font-black font-heading tracking-tighter text-white group-hover:scale-110 transition-transform duration-500">
+                            <span className="text-3xl md:text-6xl font-black font-heading tracking-tighter text-gray-900 dark:text-white group-hover:scale-110 transition-transform duration-500">
                                 {client}
                             </span>
                         </div>

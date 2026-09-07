@@ -276,10 +276,10 @@ const StudioRichEditor = ({
         let tableHtml = `<table class="w-full text-left border-collapse border border-black my-6">`;
         
         // Header Row
-        tableHtml += `<thead><tr class="bg-black text-[9px] font-black uppercase text-white tracking-[0.3em]">`;
+        tableHtml += `<thead><tr class="bg-white dark:bg-black text-[9px] font-black uppercase text-gray-900 dark:text-white tracking-[0.3em]">`;
         for (let c = 1; c <= colCount; c++) {
             const isLastCol = c === colCount;
-            tableHtml += `<th class="p-4 ${isLastCol ? '' : 'border-r border-white/20'}">Header ${c}</th>`;
+            tableHtml += `<th class="p-4 ${isLastCol ? '' : 'border-r border-black/20 dark:border-white/20'}">Header ${c}</th>`;
         }
         tableHtml += `</tr></thead>`;
         
@@ -448,7 +448,7 @@ const StudioRichEditor = ({
                 "p-2 rounded-lg transition-all duration-200 flex items-center justify-center border border-transparent",
                 active 
                     ? activeBtnClass
-                    : "text-gray-500 hover:text-white hover:bg-white/5",
+                    : "text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5",
                 disabled && "opacity-20 cursor-not-allowed"
             )}
             title={title}
@@ -466,24 +466,24 @@ const StudioRichEditor = ({
             )}
             
             <div className={cn(
-                "relative bg-black/40 border transition-all duration-500 rounded-[2rem]",
-                isFocused ? focusBorderClass : "border-white/5"
+                "relative bg-white dark:bg-black/40 border transition-all duration-500 rounded-[2rem]",
+                isFocused ? focusBorderClass : "border-black/10 dark:border-white/5"
             )}>
                 {/* Toolbar */}
                 <div className={cn(
-                    "flex items-center flex-wrap gap-2.5 p-2.5 border-b border-white/5 bg-zinc-900/40 backdrop-blur-xl rounded-t-[2rem] justify-between",
+                    "flex items-center flex-wrap gap-2.5 p-2.5 border-b border-black/10 dark:border-white/5 bg-gray-100 dark:bg-zinc-900/40 backdrop-blur-xl rounded-t-[2rem] justify-between",
                     (showTableSelector || showStyleDropdown) ? "relative z-30" : "relative z-10"
                 )}>
                     <div className="flex items-center flex-wrap gap-2.5">
                         {/* History Group */}
-                        <div className="flex items-center bg-zinc-950/40 border border-white/5 rounded-xl p-0.5">
+                        <div className="flex items-center bg-gray-100 dark:bg-zinc-950/40 border border-black/10 dark:border-white/5 rounded-xl p-0.5">
                             <ToolbarButton icon={Undo2} onClick={undo} disabled={!canUndo} title="Undo (Ctrl+Z)" />
-                            <div className="w-[1px] h-4 bg-white/5" />
+                            <div className="w-[1px] h-4 bg-black/5 dark:bg-white/5" />
                             <ToolbarButton icon={Redo2} onClick={redo} disabled={!canRedo} title="Redo (Ctrl+Y)" />
                         </div>
 
                         {/* Divider */}
-                        <div className="w-[1px] h-5 bg-gradient-to-b from-transparent via-white/10 to-transparent self-center hidden sm:block" />
+                        <div className="w-[1px] h-5 bg-gradient-to-b from-transparent via-gray-900 dark:via-white/10 to-transparent self-center hidden sm:block" />
 
                         {/* Custom Style Dropdown */}
                         <div className="relative style-dropdown-container">
@@ -492,7 +492,7 @@ const StudioRichEditor = ({
                                 onMouseDown={(e) => e.preventDefault()}
                                 onClick={() => setShowStyleDropdown(!showStyleDropdown)}
                                 className={cn(
-                                    "flex items-center gap-2 px-3 py-1.5 rounded-xl border border-white/10 bg-zinc-900/50 hover:bg-zinc-800/50 text-gray-300 hover:text-white transition-all text-[11px] font-bold min-w-[125px] justify-between",
+                                    "flex items-center gap-2 px-3 py-1.5 rounded-xl border border-black/10 dark:border-white/10 bg-gray-100 dark:bg-zinc-900/50 hover:bg-zinc-800/50 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-all text-[11px] font-bold min-w-[125px] justify-between",
                                     showStyleDropdown && activeBorderClass
                                 )}
                             >
@@ -512,7 +512,7 @@ const StudioRichEditor = ({
                             </button>
                             
                             {showStyleDropdown && (
-                                <div className="absolute top-full left-0 mt-1.5 w-44 bg-zinc-950/95 border border-white/10 rounded-2xl p-1.5 shadow-2xl backdrop-blur-xl z-50 animate-in fade-in slide-in-from-top-1 duration-150">
+                                <div className="absolute top-full left-0 mt-1.5 w-44 bg-gray-100 dark:bg-zinc-950/95 border border-black/10 dark:border-white/10 rounded-2xl p-1.5 shadow-2xl backdrop-blur-xl z-50 animate-in fade-in slide-in-from-top-1 duration-150">
                                     <button
                                         type="button"
                                         onMouseDown={(e) => e.preventDefault()}
@@ -525,7 +525,7 @@ const StudioRichEditor = ({
                                             "w-full text-left px-3 py-2 rounded-xl text-[11px] transition-all flex items-center gap-2 font-bold border border-transparent",
                                             activeFormats.blockType === 'p' 
                                                 ? activeBtnClass
-                                                : "text-gray-400 hover:text-white hover:bg-white/5"
+                                                : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5"
                                         )}
                                     >
                                         <Type size={14} />
@@ -542,7 +542,7 @@ const StudioRichEditor = ({
                                             "w-full text-left px-3 py-2 rounded-xl text-[11px] transition-all flex items-center gap-2 font-bold border border-transparent",
                                             activeFormats.blockType === 'h1' 
                                                 ? activeBtnClass
-                                                : "text-gray-400 hover:text-white hover:bg-white/5"
+                                                : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5"
                                         )}
                                     >
                                         <Heading1 size={14} />
@@ -559,7 +559,7 @@ const StudioRichEditor = ({
                                             "w-full text-left px-3 py-2 rounded-xl text-[11px] transition-all flex items-center gap-2 font-bold border border-transparent",
                                             activeFormats.blockType === 'h2' 
                                                 ? activeBtnClass
-                                                : "text-gray-400 hover:text-white hover:bg-white/5"
+                                                : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5"
                                         )}
                                     >
                                         <Heading2 size={14} />
@@ -570,44 +570,44 @@ const StudioRichEditor = ({
                         </div>
 
                         {/* Formatting Group */}
-                        <div className="flex items-center bg-zinc-950/40 border border-white/5 rounded-xl p-0.5">
+                        <div className="flex items-center bg-gray-100 dark:bg-zinc-950/40 border border-black/10 dark:border-white/5 rounded-xl p-0.5">
                             <ToolbarButton icon={Bold} onClick={() => execCommand('bold')} active={activeFormats.bold} title="Bold" />
-                            <div className="w-[1px] h-4 bg-white/5" />
+                            <div className="w-[1px] h-4 bg-black/5 dark:bg-white/5" />
                             <ToolbarButton icon={Italic} onClick={() => execCommand('italic')} active={activeFormats.italic} title="Italic" />
                         </div>
 
                         {/* Divider */}
-                        <div className="w-[1px] h-5 bg-gradient-to-b from-transparent via-white/10 to-transparent self-center hidden sm:block" />
+                        <div className="w-[1px] h-5 bg-gradient-to-b from-transparent via-gray-900 dark:via-white/10 to-transparent self-center hidden sm:block" />
 
                         {/* Lists Group */}
-                        <div className="flex items-center bg-zinc-950/40 border border-white/5 rounded-xl p-0.5">
+                        <div className="flex items-center bg-gray-100 dark:bg-zinc-950/40 border border-black/10 dark:border-white/5 rounded-xl p-0.5">
                             <ToolbarButton icon={List} onClick={() => execCommand('insertUnorderedList')} active={activeFormats.list} title="Bullet List" />
-                            <div className="w-[1px] h-4 bg-white/5" />
+                            <div className="w-[1px] h-4 bg-black/5 dark:bg-white/5" />
                             <ToolbarButton icon={ListOrdered} onClick={() => execCommand('insertOrderedList')} active={activeFormats.orderedList} title="Numbered List" />
                         </div>
 
                         {/* Divider */}
-                        <div className="w-[1px] h-5 bg-gradient-to-b from-transparent via-white/10 to-transparent self-center hidden sm:block" />
+                        <div className="w-[1px] h-5 bg-gradient-to-b from-transparent via-gray-900 dark:via-white/10 to-transparent self-center hidden sm:block" />
 
                         {/* Alignment Group */}
-                        <div className="flex items-center bg-zinc-950/40 border border-white/5 rounded-xl p-0.5">
+                        <div className="flex items-center bg-gray-100 dark:bg-zinc-950/40 border border-black/10 dark:border-white/5 rounded-xl p-0.5">
                             <ToolbarButton icon={AlignLeft} onClick={() => execCommand('justifyLeft')} active={activeFormats.alignLeft} title="Align Left" />
-                            <div className="w-[1px] h-4 bg-white/5" />
+                            <div className="w-[1px] h-4 bg-black/5 dark:bg-white/5" />
                             <ToolbarButton icon={AlignCenter} onClick={() => execCommand('justifyCenter')} active={activeFormats.alignCenter} title="Align Center" />
-                            <div className="w-[1px] h-4 bg-white/5" />
+                            <div className="w-[1px] h-4 bg-black/5 dark:bg-white/5" />
                             <ToolbarButton icon={AlignRight} onClick={() => execCommand('justifyRight')} active={activeFormats.alignRight} title="Align Right" />
                         </div>
 
                         {/* Divider */}
-                        <div className="w-[1px] h-5 bg-gradient-to-b from-transparent via-white/10 to-transparent self-center hidden sm:block" />
+                        <div className="w-[1px] h-5 bg-gradient-to-b from-transparent via-gray-900 dark:via-white/10 to-transparent self-center hidden sm:block" />
 
                         {/* Inserts Group */}
-                        <div className="flex items-center bg-zinc-950/40 border border-white/5 rounded-xl p-0.5 table-selector-container">
+                        <div className="flex items-center bg-gray-100 dark:bg-zinc-950/40 border border-black/10 dark:border-white/5 rounded-xl p-0.5 table-selector-container">
                             <ToolbarButton icon={LinkIcon} onClick={() => {
                                 const url = prompt("Enter link URL:");
                                 if (url) execCommand('createLink', url);
                             }} title="Insert Link" />
-                            <div className="w-[1px] h-4 bg-white/5" />
+                            <div className="w-[1px] h-4 bg-black/5 dark:bg-white/5" />
                             <ToolbarButton 
                                 icon={ImageIcon} 
                                 onClick={() => {
@@ -618,7 +618,7 @@ const StudioRichEditor = ({
                                 }} 
                                 title="Add Image (Upload)" 
                             />
-                            <div className="w-[1px] h-4 bg-white/5" />
+                            <div className="w-[1px] h-4 bg-black/5 dark:bg-white/5" />
                             
                             <div className="relative flex items-center justify-center">
                                 <ToolbarButton 
@@ -630,7 +630,7 @@ const StudioRichEditor = ({
                                 {showTableSelector && (
                                     <div 
                                         onMouseDown={(e) => e.preventDefault()}
-                                        className="absolute top-full mt-2.5 right-0 bg-zinc-950 border border-white/10 rounded-2xl p-4 shadow-2xl z-[90] space-y-2 animate-in fade-in slide-in-from-top-1 duration-150"
+                                        className="absolute top-full mt-2.5 right-0 bg-gray-100 dark:bg-zinc-950 border border-black/10 dark:border-white/10 rounded-2xl p-4 shadow-2xl z-[90] space-y-2 animate-in fade-in slide-in-from-top-1 duration-150"
                                         onMouseLeave={() => setHoveredGrid({ rows: 0, cols: 0 })}
                                     >
                                         <div className="text-[9px] font-black uppercase tracking-wider text-neon-green text-center">
@@ -656,7 +656,7 @@ const StudioRichEditor = ({
                                                                     "w-5 h-5 rounded transition-all border",
                                                                     isHighlighted 
                                                                         ? "bg-neon-green/30 border-neon-green shadow-[0_0_5px_rgba(57,255,20,0.3)]" 
-                                                                        : "bg-white/5 border-white/10 hover:border-white/20"
+                                                                        : "bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 hover:border-black/20 dark:hover:border-white/20"
                                                                 )}
                                                             />
                                                         );
@@ -672,10 +672,10 @@ const StudioRichEditor = ({
                         {/* Merge Tags Group */}
                         {tags && tags.length > 0 && (
                             <>
-                                <div className="w-[1px] h-5 bg-gradient-to-b from-transparent via-white/10 to-transparent self-center hidden sm:block" />
-                                <div className="flex items-center gap-1.5 bg-zinc-950/40 border border-white/5 rounded-xl px-2 py-1">
+                                <div className="w-[1px] h-5 bg-gradient-to-b from-transparent via-gray-900 dark:via-white/10 to-transparent self-center hidden sm:block" />
+                                <div className="flex items-center gap-1.5 bg-gray-100 dark:bg-zinc-950/40 border border-black/10 dark:border-white/5 rounded-xl px-2 py-1">
                                     <Tag size={12} className="text-neon-green" />
-                                    <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wider hidden lg:inline">Tags:</span>
+                                    <span className="text-[9px] font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider hidden lg:inline">Tags:</span>
                                     <div className="flex items-center gap-1">
                                         {tags.map((tag) => (
                                             <button
@@ -864,7 +864,7 @@ const StudioRichEditor = ({
                             }
                         }}
                         className={cn(
-                            "w-full p-6 text-[11px] font-medium text-white/90 focus:outline-none leading-relaxed article-content prose prose-invert prose-sm max-w-none break-words article-content-force-white rounded-b-[2rem]",
+                            "w-full p-6 text-[11px] font-medium text-gray-900 dark:text-white/90 focus:outline-none leading-relaxed article-content prose prose-invert prose-sm max-w-none break-words article-content-force-white rounded-b-[2rem]",
                             "min-h-[150px]",
                             isUploading && "opacity-50 pointer-events-none"
                         )}
@@ -881,7 +881,7 @@ const StudioRichEditor = ({
                     {/* Image Toolbar Popover */}
                     {selectedImage && (
                         <div 
-                            className="image-tooltip-popover absolute bg-zinc-950 border border-white/10 rounded-2xl p-2 shadow-2xl z-[80] flex items-center gap-2 backdrop-blur-md transition-all duration-200"
+                            className="image-tooltip-popover absolute bg-gray-100 dark:bg-zinc-950 border border-black/10 dark:border-white/10 rounded-2xl p-2 shadow-2xl z-[80] flex items-center gap-2 backdrop-blur-md transition-all duration-200"
                             style={{
                                 top: `${imageTooltipPos.top}px`,
                                 left: `${imageTooltipPos.left}px`,
@@ -889,7 +889,7 @@ const StudioRichEditor = ({
                             }}
                             onMouseDown={(e) => e.preventDefault()} // Prevent losing focus
                         >
-                            <div className="flex items-center gap-1 border-r border-white/10 pr-2">
+                            <div className="flex items-center gap-1 border-r border-black/10 dark:border-white/10 pr-2">
                                 <span className="text-[9px] font-black text-gray-500 uppercase tracking-wider px-1">Size</span>
                                 {['25%', '50%', '75%', '100%'].map((w) => (
                                     <button
@@ -900,7 +900,7 @@ const StudioRichEditor = ({
                                             "px-2 py-1 rounded text-[10px] font-bold transition-all",
                                             selectedImage.style.width === w 
                                                 ? "bg-neon-green/20 text-neon-green" 
-                                                : "text-gray-400 hover:text-white hover:bg-white/5"
+                                                : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5"
                                         )}
                                     >
                                         {w}
@@ -908,7 +908,7 @@ const StudioRichEditor = ({
                                 ))}
                             </div>
                             
-                            <div className="flex items-center gap-1 border-r border-white/10 pr-2">
+                            <div className="flex items-center gap-1 border-r border-black/10 dark:border-white/10 pr-2">
                                 <span className="text-[9px] font-black text-gray-500 uppercase tracking-wider px-1">Align</span>
                                 {[
                                     { id: 'left', label: 'Left' },
@@ -919,7 +919,7 @@ const StudioRichEditor = ({
                                         key={a.id}
                                         type="button"
                                         onClick={() => alignImage(a.id)}
-                                        className="px-2 py-1 rounded text-[10px] font-bold text-gray-400 hover:text-white hover:bg-white/5"
+                                        className="px-2 py-1 rounded text-[10px] font-bold text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5"
                                     >
                                         {a.label}
                                     </button>
@@ -939,12 +939,12 @@ const StudioRichEditor = ({
 
                 {/* Uploading Overlay */}
                 {isUploading && (
-                    <div className="absolute inset-0 bg-black/40 backdrop-blur-sm z-30 flex flex-col items-center justify-center gap-3 rounded-[2rem]">
+                    <div className="absolute inset-0 bg-white dark:bg-black/40 backdrop-blur-sm z-30 flex flex-col items-center justify-center gap-3 rounded-[2rem]">
                         <div className="relative">
                             <div className={cn("absolute inset-0 blur-xl opacity-50 rounded-full", uploadBgClass)} />
                             <Loader2 className={cn("animate-spin relative z-10", loaderTextClass)} size={32} />
                         </div>
-                        <span className="text-[10px] font-black uppercase tracking-[0.3em] text-white animate-pulse">Processing Media...</span>
+                        <span className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-900 dark:text-white animate-pulse">Processing Media...</span>
                     </div>
                 )}
 
@@ -999,8 +999,8 @@ export const MultiPageRichEditor = ({
     return (
         <div className="space-y-6">
             {pages.map((pageContent, idx) => (
-                <div key={idx} className="relative bg-zinc-950/20 border border-white/5 rounded-[2rem] p-6 space-y-4">
-                    <div className="flex items-center justify-between border-b border-white/5 pb-3">
+                <div key={idx} className="relative bg-gray-100 dark:bg-zinc-950/20 border border-black/10 dark:border-white/5 rounded-[2rem] p-6 space-y-4">
+                    <div className="flex items-center justify-between border-b border-black/10 dark:border-white/5 pb-3">
                         <span className="text-[10px] font-black text-neon-green/60 uppercase tracking-widest bg-neon-green/5 border border-neon-green/10 px-3 py-1 rounded-full">
                             {label} — Page {idx + 1}
                         </span>
@@ -1027,7 +1027,7 @@ export const MultiPageRichEditor = ({
             <button
                 type="button"
                 onClick={addPage}
-                className="w-full py-4 border border-dashed border-white/10 hover:border-neon-green/30 hover:bg-neon-green/5 rounded-2xl text-[10px] font-black uppercase tracking-widest text-zinc-400 hover:text-neon-green transition-all flex items-center justify-center gap-2"
+                className="w-full py-4 border border-dashed border-black/10 dark:border-white/10 hover:border-neon-green/30 hover:bg-neon-green/5 rounded-2xl text-[10px] font-black uppercase tracking-widest text-zinc-400 hover:text-neon-green transition-all flex items-center justify-center gap-2"
             >
                 <span>+ Add Page Break (Create New Page)</span>
             </button>

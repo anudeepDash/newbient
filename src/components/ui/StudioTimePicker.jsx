@@ -67,11 +67,11 @@ const StudioTimePicker = ({ value, onChange, placeholder = "SET TIME", className
         <div className={cn("relative", className)} ref={containerRef}>
             <div 
                 onClick={() => setIsOpen(!isOpen)}
-                className="flex items-center justify-between h-full bg-black/40 border border-white/5 rounded-xl px-6 cursor-pointer hover:border-white/20 transition-all group"
+                className="flex items-center justify-between h-full bg-white dark:bg-black/40 border border-black/10 dark:border-white/5 rounded-xl px-6 cursor-pointer hover:border-black/20 dark:hover:border-white/20 transition-all group"
             >
                 <div className="flex items-center gap-4">
-                    <Clock size={16} className={cn("transition-colors", isOpen ? "text-neon-pink" : "text-white/20 group-hover:text-white/40")} />
-                    <span className={cn("text-[11px] font-black uppercase tracking-widest", !value ? "text-white/20" : "text-white italic")}>
+                    <Clock size={16} className={cn("transition-colors", isOpen ? "text-neon-pink" : "text-gray-900 dark:text-white/20 group-hover:text-gray-900 dark:group-hover:text-white/40")} />
+                    <span className={cn("text-[11px] font-black uppercase tracking-widest", !value ? "text-gray-900 dark:text-white/20" : "text-gray-900 dark:text-white italic")}>
                         {value ? `${hours}:${minutes}` : placeholder}
                     </span>
                 </div>
@@ -83,16 +83,16 @@ const StudioTimePicker = ({ value, onChange, placeholder = "SET TIME", className
                         initial={{ opacity: 0, y: 10, scale: 0.95 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                        className="absolute z-[100] top-full mt-3 left-0 w-[200px] bg-black/95 backdrop-blur-[64px] border border-white/10 rounded-[2rem] shadow-[0_30px_60px_rgba(0,0,0,0.8)] p-6"
+                        className="absolute z-[100] top-full mt-3 left-0 w-[200px] bg-white dark:bg-black/95 backdrop-blur-[64px] border border-black/10 dark:border-white/10 rounded-[2rem] shadow-[0_30px_60px_rgba(0,0,0,0.8)] p-6"
                     >
                         <div className="flex items-center justify-around">
                             {/* Hours */}
                             <div className="flex flex-col items-center gap-2">
-                                <button type="button" onClick={() => adjustValue('hours', 1)} className="p-2 hover:bg-white/5 rounded-lg text-gray-500 hover:text-neon-pink transition-all">
+                                <button type="button" onClick={() => adjustValue('hours', 1)} className="p-2 hover:bg-black/5 dark:hover:bg-white/5 rounded-lg text-gray-500 hover:text-neon-pink transition-all">
                                     <ChevronUp size={20} />
                                 </button>
-                                <span className="text-3xl font-black italic tracking-tighter text-white font-heading">{hours}</span>
-                                <button type="button" onClick={() => adjustValue('hours', -1)} className="p-2 hover:bg-white/5 rounded-lg text-gray-500 hover:text-neon-pink transition-all">
+                                <span className="text-3xl font-black italic tracking-tighter text-gray-900 dark:text-white font-heading">{hours}</span>
+                                <button type="button" onClick={() => adjustValue('hours', -1)} className="p-2 hover:bg-black/5 dark:hover:bg-white/5 rounded-lg text-gray-500 hover:text-neon-pink transition-all">
                                     <ChevronDown size={20} />
                                 </button>
                                 <span className="text-[8px] font-black uppercase tracking-widest text-gray-600">HOURS</span>
@@ -102,22 +102,22 @@ const StudioTimePicker = ({ value, onChange, placeholder = "SET TIME", className
 
                             {/* Minutes */}
                             <div className="flex flex-col items-center gap-2">
-                                <button type="button" onClick={() => adjustValue('minutes', 5)} className="p-2 hover:bg-white/5 rounded-lg text-gray-500 hover:text-neon-pink transition-all">
+                                <button type="button" onClick={() => adjustValue('minutes', 5)} className="p-2 hover:bg-black/5 dark:hover:bg-white/5 rounded-lg text-gray-500 hover:text-neon-pink transition-all">
                                     <ChevronUp size={20} />
                                 </button>
-                                <span className="text-3xl font-black italic tracking-tighter text-white font-heading">{minutes}</span>
-                                <button type="button" onClick={() => adjustValue('minutes', -5)} className="p-2 hover:bg-white/5 rounded-lg text-gray-500 hover:text-neon-pink transition-all">
+                                <span className="text-3xl font-black italic tracking-tighter text-gray-900 dark:text-white font-heading">{minutes}</span>
+                                <button type="button" onClick={() => adjustValue('minutes', -5)} className="p-2 hover:bg-black/5 dark:hover:bg-white/5 rounded-lg text-gray-500 hover:text-neon-pink transition-all">
                                     <ChevronDown size={20} />
                                 </button>
                                 <span className="text-[8px] font-black uppercase tracking-widest text-gray-600">MINS</span>
                             </div>
                         </div>
 
-                        <div className="mt-6 pt-6 border-t border-white/5 flex justify-center">
+                        <div className="mt-6 pt-6 border-t border-black/10 dark:border-white/5 flex justify-center">
                             <button 
                                 type="button"
                                 onClick={() => setIsOpen(false)}
-                                className="h-10 px-6 bg-white/5 hover:bg-white/10 text-[9px] font-black uppercase tracking-widest text-white rounded-xl transition-all"
+                                className="h-10 px-6 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-[9px] font-black uppercase tracking-widest text-gray-900 dark:text-white rounded-xl transition-all"
                             >
                                 Set Time
                             </button>

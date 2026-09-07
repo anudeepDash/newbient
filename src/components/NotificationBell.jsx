@@ -36,11 +36,11 @@ const NotificationBell = () => {
             case 'ticket': return <Ticket className="text-neon-pink" size={18} />;
             case 'message': return <MessageSquare className="text-neon-green" size={18} />;
             case 'giveaway': return <Gift className="text-neon-yellow" size={18} />;
-            case 'blog': return <FileText className="text-white" size={18} />;
+            case 'blog': return <FileText className="text-gray-900 dark:text-white" size={18} />;
             case 'campaign': return <Zap className="text-neon-purple" size={18} />;
             case 'gig': return <Users className="text-neon-cyan" size={18} />;
             case 'volunteer': return <Heart className="text-red-500" size={18} />;
-            default: return <Bell className="text-gray-400" size={18} />;
+            default: return <Bell className="text-gray-600 dark:text-gray-400" size={18} />;
         }
     };
 
@@ -62,12 +62,12 @@ const NotificationBell = () => {
         <div className="relative mr-4 md:mr-0 z-[150]" ref={dropdownRef}>
             <button
                 onClick={() => setIsOpen(!isOpen)}
-                className="relative p-2 text-gray-300 hover:text-white transition-colors outline-none focus:outline-none"
+                className="relative p-2 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors outline-none focus:outline-none"
                 aria-label="Notifications"
             >
                 <Bell size={24} />
                 {hasNotifications && (
-                    <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center bg-neon-pink rounded-full border-2 border-dark text-[10px] font-black text-white">
+                    <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center bg-neon-pink rounded-full border-2 border-dark text-[10px] font-black text-gray-900 dark:text-white">
                         {unreadNotificationsCount > 9 ? '9+' : unreadNotificationsCount}
                     </span>
                 )}
@@ -83,13 +83,13 @@ const NotificationBell = () => {
                         className={cn(
                             "flex flex-col overflow-hidden max-h-[80vh]",
                             "absolute right-[-10px] md:right-0 top-full mt-4 w-[90vw] md:w-[420px] rounded-3xl",
-                            "bg-[#0a0a0a]/95 backdrop-blur-3xl shadow-[0_30px_60px_rgba(0,0,0,0.8)] border border-white/10"
+                            "bg-white/95 dark:bg-[#0a0a0a]/95 backdrop-blur-3xl shadow-[0_30px_60px_rgba(0,0,0,0.8)] border border-black/10 dark:border-white/10"
                         )}
                     >
                         {/* Header */}
-                        <div className="px-6 py-5 border-b border-white/5 flex justify-between items-center bg-white/[0.02] shrink-0">
+                        <div className="px-6 py-5 border-b border-black/10 dark:border-white/5 flex justify-between items-center bg-white/[0.02] shrink-0">
                             <div className="flex flex-col">
-                                <h3 className="font-black text-[15px] text-white flex items-center gap-2">
+                                <h3 className="font-black text-[15px] text-gray-900 dark:text-white flex items-center gap-2">
                                     Notifications
                                     {hasNotifications && (
                                         <span className="bg-neon-pink/20 text-neon-pink text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full">
@@ -102,7 +102,7 @@ const NotificationBell = () => {
                                 {notifications.length > 0 && hasNotifications && (
                                     <button 
                                         onClick={() => markAllNotificationsRead()}
-                                        className="text-[10px] font-bold uppercase tracking-widest text-gray-400 hover:text-white transition-colors flex items-center gap-1.5"
+                                        className="text-[10px] font-bold uppercase tracking-widest text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors flex items-center gap-1.5"
                                         title="Mark all as read"
                                     >
                                         <CheckCheck size={14} />
@@ -111,7 +111,7 @@ const NotificationBell = () => {
                                 )}
                                 <button 
                                     onClick={() => setIsOpen(false)} 
-                                    className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-white/60 hover:text-white hover:bg-white/10 transition-all ml-2"
+                                    className="w-8 h-8 rounded-full bg-black/5 dark:bg-white/5 flex items-center justify-center text-gray-900 dark:text-white/60 hover:text-gray-900 dark:hover:text-white hover:bg-black/10 dark:hover:bg-white/10 transition-all ml-2"
                                 >
                                     <X size={16} />
                                 </button>
@@ -122,10 +122,10 @@ const NotificationBell = () => {
                         <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar relative">
                             {notifications.length === 0 ? (
                                 <div className="flex flex-col items-center justify-center text-center p-12">
-                                    <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mb-6">
+                                    <div className="w-16 h-16 rounded-full bg-black/5 dark:bg-white/5 flex items-center justify-center mb-6">
                                         <Bell size={28} className="text-gray-600" />
                                     </div>
-                                    <h4 className="text-white font-bold mb-2">You're all caught up!</h4>
+                                    <h4 className="text-gray-900 dark:text-white font-bold mb-2">You're all caught up!</h4>
                                     <p className="text-sm text-gray-500">No new notifications right now.</p>
                                 </div>
                             ) : (
@@ -151,8 +151,8 @@ const NotificationBell = () => {
                                                                 className={cn(
                                                                     "group relative p-4 rounded-2xl transition-all cursor-pointer overflow-hidden",
                                                                     item.isRead 
-                                                                        ? "bg-transparent hover:bg-white/[0.02]" 
-                                                                        : "bg-white/[0.04] hover:bg-white/[0.06] border border-white/[0.05]"
+                                                                        ? "bg-transparent hover:bg-black/[0.03] dark:hover:bg-white/[0.02]" 
+                                                                        : "bg-black/[0.03] dark:bg-white/[0.04] hover:bg-black/[0.06] dark:hover:bg-white/[0.06] border border-black/5 dark:border-white/[0.05]"
                                                                 )}
                                                                 onClick={() => {
                                                                     markNotificationRead(item.id);
@@ -171,7 +171,7 @@ const NotificationBell = () => {
                                                                     <div className="shrink-0 pt-0.5">
                                                                         <div className={cn(
                                                                             "w-10 h-10 rounded-full flex items-center justify-center transition-transform group-hover:scale-110",
-                                                                            item.isRead ? "bg-white/5" : "bg-white/10"
+                                                                            item.isRead ? "bg-black/5 dark:bg-white/5" : "bg-black/10 dark:bg-white/10"
                                                                         )}>
                                                                             {item.image ? (
                                                                                 <img src={item.image} alt="" className="w-full h-full rounded-full object-cover" />
@@ -186,7 +186,7 @@ const NotificationBell = () => {
                                                                         <div className="flex items-center gap-2 mb-1">
                                                                             <h4 className={cn(
                                                                                 "text-sm font-semibold truncate transition-colors",
-                                                                                item.isRead ? "text-gray-300" : "text-white"
+                                                                                item.isRead ? "text-gray-700 dark:text-gray-300" : "text-gray-900 dark:text-white"
                                                                             )}>
                                                                                 {item.title}
                                                                             </h4>
@@ -196,7 +196,7 @@ const NotificationBell = () => {
                                                                         </div>
                                                                         <p className={cn(
                                                                             "text-xs leading-relaxed line-clamp-2 mb-2",
-                                                                            item.isRead ? "text-gray-500" : "text-gray-400"
+                                                                            item.isRead ? "text-gray-500" : "text-gray-600 dark:text-gray-400"
                                                                         )}>
                                                                             {item.content}
                                                                         </p>

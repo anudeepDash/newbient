@@ -228,7 +228,7 @@ const Invoice = () => {
 
     if (loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center text-white">
+            <div className="min-h-screen flex items-center justify-center text-gray-900 dark:text-white">
                 <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-neon-blue"></div>
             </div>
         );
@@ -614,17 +614,17 @@ const Invoice = () => {
 
             {/* FIXED HEADER NAVIGATION */}
             {!isExporting && (
-                <header data-html2canvas-ignore="true" className="fixed-header-nav fixed top-0 left-0 right-0 z-[100] bg-black/60 backdrop-blur-2xl border-b border-white/10 print:hidden px-4 md:px-8 h-20 md:h-24 flex items-center">
+                <header data-html2canvas-ignore="true" className="fixed-header-nav fixed top-0 left-0 right-0 z-[100] bg-white dark:bg-black/60 backdrop-blur-2xl border-b border-black/10 dark:border-white/10 print:hidden px-4 md:px-8 h-20 md:h-24 flex items-center">
                     <div className="max-w-[1400px] mx-auto w-full flex items-center justify-between gap-4">
                         {/* Left: Back Navigation & Logo */}
                         <div className="flex items-center gap-4">
-                            <Link to={isAdmin ? "/admin/invoices" : "/"} className="group flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.3em] text-gray-500 hover:text-white transition-all">
+                            <Link to={isAdmin ? "/admin/invoices" : "/"} className="group flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.3em] text-gray-500 hover:text-gray-900 dark:hover:text-white transition-all">
                                 <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" /> 
                                 <span className="hidden sm:inline">{isAdmin ? 'ADMIN VAULT' : 'BACK TO HOME'}</span>
                             </Link>
-                            <div className="h-8 w-[1px] bg-white/10" />
+                            <div className="h-8 w-[1px] bg-black/10 dark:bg-white/10" />
                             <img src="/logo_document.png" alt="Logo" className="h-8 md:h-10 object-contain hidden xs:block" crossOrigin="anonymous" />
-                            <div className="h-8 w-[1px] bg-white/10 hidden xs:block" />
+                            <div className="h-8 w-[1px] bg-black/10 dark:bg-white/10 hidden xs:block" />
                             <div className="flex flex-col text-left max-w-[100px] xs:max-w-[180px] sm:max-w-none">
                                 <span className="text-[9px] sm:text-[10px] font-black text-neon-blue uppercase tracking-widest leading-none mb-1 truncate">
                                     {displayInvoice.clientName ? `${displayInvoice.clientName} (${displayInvoice.invoiceNumber || displayInvoice.id})` : (displayInvoice.invoiceNumber || 'NEWBI-INV')}
@@ -649,16 +649,16 @@ const Invoice = () => {
                         {/* Right: Actions */}
                         <div className="flex items-center gap-2">
                             {isAdmin && (
-                                <div className="hidden lg:flex items-center bg-white/[0.03] backdrop-blur-2xl rounded-full border border-white/10 px-4 h-12 gap-3 mr-2 shadow-xl relative overflow-hidden group">
+                                <div className="hidden lg:flex items-center bg-white/[0.03] backdrop-blur-2xl rounded-full border border-black/10 dark:border-white/10 px-4 h-12 gap-3 mr-2 shadow-xl relative overflow-hidden group">
                                     <div className="absolute inset-0 bg-gradient-to-r from-neon-blue/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                                     
-                                    <Link to="/admin" className="p-1.5 rounded-full hover:bg-white/10 text-gray-400 hover:text-white transition-all relative z-10" title="Admin Dashboard">
+                                    <Link to="/admin" className="p-1.5 rounded-full hover:bg-black/10 dark:hover:bg-white/10 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all relative z-10" title="Admin Dashboard">
                                         <LayoutGrid size={14} />
                                     </Link>
 
-                                    <div className="h-4 w-px bg-white/10 relative z-10" />
+                                    <div className="h-4 w-px bg-black/10 dark:bg-white/10 relative z-10" />
 
-                                    <Link to="/admin/system-command" className="p-1.5 rounded-full hover:bg-white/10 text-gray-400 hover:text-white transition-all relative z-10" title="Site Settings">
+                                    <Link to="/admin/system-command" className="p-1.5 rounded-full hover:bg-black/10 dark:hover:bg-white/10 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all relative z-10" title="Site Settings">
                                         <Settings size={14} />
                                     </Link>
                                     
@@ -666,7 +666,7 @@ const Invoice = () => {
                                         <NotificationBell />
                                     </div>
                                     
-                                    <div className="h-4 w-px bg-white/10 relative z-10" />
+                                    <div className="h-4 w-px bg-black/10 dark:bg-white/10 relative z-10" />
                                     
                                     <div className="flex items-center gap-2 pr-1 relative z-10">
                                         <div className="w-7 h-7 rounded-full bg-neon-blue/10 border border-neon-blue/20 flex items-center justify-center shrink-0">
@@ -675,7 +675,7 @@ const Invoice = () => {
                                             </span>
                                         </div>
                                         <div className="text-left flex flex-col justify-center">
-                                            <span className="text-[10px] font-bold text-white leading-none capitalize tracking-tight">
+                                            <span className="text-[10px] font-bold text-gray-900 dark:text-white leading-none capitalize tracking-tight">
                                                 {user?.displayName?.split(' ')[0] || 'Admin'}
                                             </span>
                                             <span className="text-[7px] text-neon-blue uppercase tracking-[0.2em] font-black mt-0.5">
@@ -686,7 +686,7 @@ const Invoice = () => {
 
                                     <button
                                         onClick={() => useStore.getState().logout()}
-                                        className="p-1.5 rounded-full hover:bg-red-500/10 text-gray-400 hover:text-red-500 transition-all relative z-10"
+                                        className="p-1.5 rounded-full hover:bg-red-500/10 text-gray-600 dark:text-gray-400 hover:text-red-500 transition-all relative z-10"
                                     >
                                         <LogOut size={14} />
                                     </button>
@@ -696,12 +696,12 @@ const Invoice = () => {
                             <div className="flex items-center gap-1 md:gap-2 mr-1">
                                 {isAdmin ? (
                                     <>
-                                        <button onClick={handleShareWhatsApp} className="p-2 md:p-3 text-gray-500 hover:text-white hover:bg-white/5 rounded-2xl transition-all hidden md:flex"><MessageCircle size={18} /></button>
-                                        <button onClick={handleShareEmail} className="p-2 md:p-3 text-gray-500 hover:text-white hover:bg-white/5 rounded-2xl transition-all hidden md:flex"><Mail size={18} /></button>
+                                        <button onClick={handleShareWhatsApp} className="p-2 md:p-3 text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 rounded-2xl transition-all hidden md:flex"><MessageCircle size={18} /></button>
+                                        <button onClick={handleShareEmail} className="p-2 md:p-3 text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 rounded-2xl transition-all hidden md:flex"><Mail size={18} /></button>
                                         {displayInvoice.status !== 'Paid' && (
                                             <button 
                                                 onClick={handleMarkPaid} 
-                                                className="px-3 md:px-5 py-2 md:py-2.5 text-[8px] md:text-[10px] font-black uppercase tracking-[0.2em] bg-neon-blue text-white hover:bg-neon-blue/90 rounded-xl transition-all shadow-[0_10px_20px_rgba(56,182,255,0.2)] border border-neon-blue"
+                                                className="px-3 md:px-5 py-2 md:py-2.5 text-[8px] md:text-[10px] font-black uppercase tracking-[0.2em] bg-neon-blue text-black hover:bg-neon-blue/90 rounded-xl transition-all shadow-[0_10px_20px_rgba(56,182,255,0.2)] border border-neon-blue"
                                             >
                                                 Mark as Paid
                                             </button>
@@ -726,7 +726,7 @@ const Invoice = () => {
                                     </>
                                 )}
                             </div>
-                            <button onClick={handlePrint} className="p-2 md:p-3 text-gray-500 hover:text-white hover:bg-white/5 rounded-2xl transition-all" title="Print"><Printer size={18} /></button>
+                            <button onClick={handlePrint} className="p-2 md:p-3 text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 rounded-2xl transition-all" title="Print"><Printer size={18} /></button>
                             <Button 
                                 variant="primary" 
                                 onClick={handleDownloadPDF} 
@@ -750,15 +750,15 @@ const Invoice = () => {
                 {isQuickUpload ? (
                     <div className="w-full max-w-5xl flex flex-col gap-4">
                         {/* Mobile Fallback UI / Mobile Preview */}
-                        <div className="md:hidden w-full p-8 rounded-3xl border border-white/10 bg-zinc-900/40 backdrop-blur-3xl shadow-2xl flex flex-col items-center justify-center text-center gap-6">
+                        <div className="md:hidden w-full p-8 rounded-3xl border border-black/10 dark:border-white/10 bg-gray-100 dark:bg-zinc-900/40 backdrop-blur-3xl shadow-2xl flex flex-col items-center justify-center text-center gap-6">
                             <div className="w-16 h-16 rounded-full bg-neon-blue/10 border border-neon-blue/20 flex items-center justify-center text-neon-blue animate-pulse">
                                 <FileText size={32} />
                             </div>
                             <div>
-                                <h3 className="text-xl font-bold text-white mb-2">
+                                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
                                     {displayInvoice.clientName ? `${displayInvoice.clientName} - ${displayInvoice.invoiceNumber || displayInvoice.id}` : 'Invoice PDF Document'}
                                 </h3>
-                                <p className="text-sm text-gray-400 max-w-xs">
+                                <p className="text-sm text-gray-600 dark:text-gray-400 max-w-xs">
                                     {isQuickUpload ? 'This invoice was quick-uploaded. You can view or download it directly.' : 'Official generated invoice document.'}
                                 </p>
                             </div>
@@ -773,7 +773,7 @@ const Invoice = () => {
                                 </a>
                                 <button
                                     onClick={handleDownloadPDF}
-                                    className="w-full px-6 py-3 bg-white/5 hover:bg-white/10 text-white font-black uppercase text-xs tracking-widest rounded-2xl text-center border border-white/10 transition-all"
+                                    className="w-full px-6 py-3 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-gray-900 dark:text-white font-black uppercase text-xs tracking-widest rounded-2xl text-center border border-black/10 dark:border-white/10 transition-all"
                                 >
                                     Download PDF
                                 </button>
@@ -781,7 +781,7 @@ const Invoice = () => {
                         </div>
 
                         {/* Desktop IFrame */}
-                        <div className="hidden md:block w-full h-[85vh] rounded-3xl overflow-hidden border border-white/10 bg-zinc-900/40 backdrop-blur-3xl shadow-2xl">
+                        <div className="hidden md:block w-full h-[85vh] rounded-3xl overflow-hidden border border-black/10 dark:border-white/10 bg-gray-100 dark:bg-zinc-900/40 backdrop-blur-3xl shadow-2xl">
                             {pdfBlobUrl ? (
                                 <iframe
                                     src={pdfBlobUrl}
@@ -789,7 +789,7 @@ const Invoice = () => {
                                     className="w-full h-full border-none"
                                 />
                             ) : (
-                                <div className="w-full h-full flex items-center justify-center text-white/50">
+                                <div className="w-full h-full flex items-center justify-center text-gray-900 dark:text-white/50">
                                     Loading PDF document...
                                 </div>
                             )}
@@ -797,8 +797,8 @@ const Invoice = () => {
                     </div>
                 ) : (
                     <div className="w-full flex flex-col items-center overflow-x-auto custom-scrollbar pb-12">
-                        <div className="relative group bg-zinc-900/40 backdrop-blur-3xl p-4 md:p-12 rounded-[3.5rem] border border-white/5 shadow-[0_30px_60px_rgba(0,0,0,0.5)] flex flex-col items-center">
-                            <div className="absolute top-8 right-12 z-20 bg-black/50 backdrop-blur-md px-3 py-1 rounded-full border border-white/10 text-[8px] font-black uppercase tracking-widest text-[#39FF14]">Digital Archive</div>
+                        <div className="relative group bg-gray-100 dark:bg-zinc-900/40 backdrop-blur-3xl p-4 md:p-12 rounded-[3.5rem] border border-black/10 dark:border-white/5 shadow-[0_30px_60px_rgba(0,0,0,0.5)] flex flex-col items-center">
+                            <div className="absolute top-8 right-12 z-20 bg-white dark:bg-black/50 backdrop-blur-md px-3 py-1 rounded-full border border-black/10 dark:border-white/10 text-[8px] font-black uppercase tracking-widest text-[#39FF14]">Digital Archive</div>
                             
                             <div className="flex flex-col items-center" style={{ gap: `${48 * scale}px` }}>
                                  {paginatedPages.map((pageItems, pageIdx) => {
@@ -819,14 +819,14 @@ const Invoice = () => {
                                                             <img src={currentBrand.path} alt="Company Logo" className="h-20 object-contain" crossOrigin="anonymous" />
                                                         </div>
                                                         <div className="text-right">
-                                                            <h2 className="text-4xl font-black text-gray-400 tracking-tighter uppercase mb-0">#{displayInvoice.invoiceNumber}</h2>
-                                                            <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest leading-none mt-1">INVOICE ID</p>
+                                                            <h2 className="text-4xl font-black text-gray-600 dark:text-gray-400 tracking-tighter uppercase mb-0">#{displayInvoice.invoiceNumber}</h2>
+                                                            <p className="text-[9px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest leading-none mt-1">INVOICE ID</p>
                                                         </div>
                                                     </div>
                                                 ) : (
                                                     <div className="flex justify-between items-center mb-6 border-b border-gray-300 pb-4">
                                                         <img src="/logo_document.png" alt="Newbi Logo" className="w-[100px] object-contain opacity-50" crossOrigin="anonymous" />
-                                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Invoice #{displayInvoice.invoiceNumber} — Page {pageIdx + 1}</p>
+                                                        <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest">Invoice #{displayInvoice.invoiceNumber} — Page {pageIdx + 1}</p>
                                                     </div>
                                                 )}
 
@@ -865,7 +865,7 @@ const Invoice = () => {
 
                                                 {/* Items Table */}
                                                 {pageItems.length > 0 && (
-                                                    <div className={cn("mb-4 overflow-hidden rounded-2xl border border-gray-200 shadow-sm bg-white/20", !isFirstPage && "mt-4")}>
+                                                    <div className={cn("mb-4 overflow-hidden rounded-2xl border border-gray-200 shadow-sm bg-black/20 dark:bg-white/20", !isFirstPage && "mt-4")}>
                                                         <table className="w-full">
                                                             <thead>
                                                                 <tr className="text-black" style={{ backgroundColor: `${brandColor}66` }}>
@@ -880,7 +880,7 @@ const Invoice = () => {
                                                             </thead>
                                                             <tbody className="divide-y divide-gray-200">
                                                                 {pageItems.map((item, idx) => (
-                                                                    <tr key={idx} className="bg-white/10">
+                                                                    <tr key={idx} className="bg-black/10 dark:bg-white/10">
                                                                         <td className="py-2 px-6 text-[11px] font-bold uppercase border-r border-dashed border-gray-200 leading-relaxed font-heading italic">{item.description || "SERVICE"}</td>
                                                                         {(displayInvoice.customColumns || []).map(col => (
                                                                             <td key={col.id} className="py-2 px-4 text-center text-[10px] font-semibold border-r border-dashed border-gray-200 leading-relaxed">{item.customValues?.[col.id] || "-"}</td>
@@ -928,12 +928,12 @@ const Invoice = () => {
                                                         <div className="flex-1 flex flex-col items-end space-y-2">
                                                             {/* Totals Section */}
                                                             <div className="w-full space-y-1.5">
-                                                                <div className="flex justify-between py-2 border-b border-dashed border-gray-300 text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                                                                <div className="flex justify-between py-2 border-b border-dashed border-gray-300 text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest">
                                                                     <span>SUBTOTAL</span>
                                                                     <span className="text-black text-[11px] font-bold italic">₹{subtotal.toLocaleString()}</span>
                                                                 </div>
                                                                 {invoice?.showGst && (
-                                                                    <div className="flex justify-between py-2 border-b border-dashed border-gray-300 text-[10px] font-black text-gray-400 uppercase tracking-widest text-black">
+                                                                    <div className="flex justify-between py-2 border-b border-dashed border-gray-300 text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest text-black">
                                                                         <span>GST ({displayInvoice.gstPercentage}%)</span>
                                                                         <span className="text-black text-[11px] font-bold italic">₹{gstAmount.toLocaleString()}</span>
                                                                     </div>
@@ -944,7 +944,7 @@ const Invoice = () => {
                                                                 </div>
                                                                 {displayInvoice.showAdvance && advancePaid > 0 && (
                                                                     <>
-                                                                        <div className="flex justify-between py-2 border-b border-dashed border-gray-300 text-[10px] font-black text-gray-400 uppercase tracking-widest mt-1">
+                                                                        <div className="flex justify-between py-2 border-b border-dashed border-gray-300 text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest mt-1">
                                                                             <span>ADVANCE PAID</span>
                                                                             <span className="text-black text-[11px] font-bold italic">₹{advancePaid.toLocaleString()}</span>
                                                                         </div>
@@ -955,7 +955,7 @@ const Invoice = () => {
                                                                     </>
                                                                 )}
                                                                 {displayInvoice.paymentLink && (
-                                                                    <a href={displayInvoice.paymentLink} target="_blank" rel="noopener noreferrer" className="mt-2 flex items-center justify-center gap-2 w-full h-11 bg-black text-white rounded-xl font-black uppercase tracking-[0.2em] text-[9px] hover:scale-[1.02] active:scale-95 transition-all shadow-xl">
+                                                                    <a href={displayInvoice.paymentLink} target="_blank" rel="noopener noreferrer" className="mt-2 flex items-center justify-center gap-2 w-full h-11 bg-white dark:bg-black text-gray-900 dark:text-white rounded-xl font-black uppercase tracking-[0.2em] text-[9px] hover:scale-[1.02] active:scale-95 transition-all shadow-xl">
                                                                         <DollarSign size={14} className="text-neon-blue" />
                                                                         Pay Now Online
                                                                     </a>
@@ -972,11 +972,11 @@ const Invoice = () => {
                                                                             className="w-[70px] h-[70px] grayscale contrast-125 mx-auto"
                                                                             crossOrigin="anonymous"
                                                                         />
-                                                                        <p className="text-[6px] font-black text-center mt-1 text-gray-400 tracking-widest uppercase italic font-bold">Scan to pay</p>
+                                                                        <p className="text-[6px] font-black text-center mt-1 text-gray-600 dark:text-gray-400 tracking-widest uppercase italic font-bold">Scan to pay</p>
                                                                     </div>
                                                                     <a 
                                                                         href={`upi://pay?pa=${displayInvoice.upiId}&pn=NEWBI&am=${toBePaid}&cu=INR`} 
-                                                                        className="flex items-center justify-center gap-2 w-full h-8 bg-black text-white rounded-lg text-[8px] font-black uppercase tracking-widest"
+                                                                        className="flex items-center justify-center gap-2 w-full h-8 bg-white dark:bg-black text-gray-900 dark:text-white rounded-lg text-[8px] font-black uppercase tracking-widest"
                                                                         data-html2canvas-ignore="true"
                                                                     >
                                                                         Pay via UPI App

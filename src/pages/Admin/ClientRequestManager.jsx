@@ -164,19 +164,19 @@ const ClientRequestManager = ({ isEmbedded = false }) => {
 
             <div className={isEmbedded ? "px-6 md:px-12 pt-12" : ""}>
                 {/* Command Bar */}
-                <div className="relative z-50 bg-[#0A0A0A]/80 backdrop-blur-3xl border border-white/10 rounded-[2rem] p-2 md:p-2.5 mb-12 md:mb-16 shadow-[0_30px_100px_rgba(0,0,0,0.8)] flex flex-col md:flex-row md:items-center gap-3">
+                <div className="relative z-50 bg-[#0A0A0A]/80 backdrop-blur-3xl border border-black/10 dark:border-white/10 rounded-[2rem] p-2 md:p-2.5 mb-12 md:mb-16 shadow-[0_30px_100px_rgba(0,0,0,0.8)] flex flex-col md:flex-row md:items-center gap-3">
 
 
                     {/* Search Engine */}
                     <div className="relative flex-1 min-w-[300px] group">
                         <div className="absolute inset-0 bg-gradient-to-r from-neon-green/10 to-transparent opacity-0 group-focus-within:opacity-100 transition-opacity rounded-full pointer-events-none" />
-                        <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-neon-green transition-colors" size={16} />
+                        <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-600 dark:text-gray-400 group-focus-within:text-emerald-600 dark:group-focus-within:text-neon-green transition-colors" size={16} />
                         <input
                             type="text"
                             placeholder="SEARCH REQUESTS..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full h-14 pl-14 pr-6 bg-black/60 border border-white/10 group-hover:border-white/20 focus:border-neon-green/60 rounded-full text-[10px] font-black uppercase tracking-[0.2em] outline-none transition-all placeholder:text-gray-700 text-white min-w-0"
+                            className="w-full h-14 pl-14 pr-6 bg-white dark:bg-black/60 border border-black/10 dark:border-white/10 group-hover:border-black/20 dark:group-hover:border-white/20 focus:border-neon-green/60 rounded-full text-[10px] font-black uppercase tracking-[0.2em] outline-none transition-all placeholder:text-gray-700 text-gray-900 dark:text-white min-w-0"
 
                         />
                     </div>
@@ -193,18 +193,18 @@ const ClientRequestManager = ({ isEmbedded = false }) => {
                                         { value: 'rejected', label: 'REJECTED' }
                                     ]}
                                     onChange={setFilterStatus}
-                                    className="h-14 rounded-full border-white/10 bg-black/60"
+                                    className="h-14 rounded-full border-black/10 dark:border-white/10 bg-white dark:bg-black/60"
                                     accentColor="neon-green"
                                 />
                             </div>
 
-                            <div className="w-px h-8 bg-white/5 mx-1 hidden md:block" />
-                            <div className="hidden md:flex bg-black/60 p-1 rounded-full border border-white/10 shrink-0">
+                            <div className="w-px h-8 bg-black/5 dark:bg-white/5 mx-1 hidden md:block" />
+                            <div className="hidden md:flex bg-white dark:bg-black/60 p-1 rounded-full border border-black/10 dark:border-white/10 shrink-0">
                                 <button 
                                     onClick={() => setViewMode('grid')} 
                                     className={cn(
                                         "w-11 h-11 rounded-full flex items-center justify-center transition-all", 
-                                        viewMode === 'grid' ? "bg-white text-black shadow-xl" : "text-gray-500 hover:text-white"
+                                        viewMode === 'grid' ? "bg-white text-black shadow-xl" : "text-gray-500 hover:text-gray-900 dark:hover:text-white"
                                     )}
                                 >
                                     <LayoutGrid size={16} />
@@ -213,7 +213,7 @@ const ClientRequestManager = ({ isEmbedded = false }) => {
                                     onClick={() => setViewMode('list')} 
                                     className={cn(
                                         "w-11 h-11 rounded-full flex items-center justify-center transition-all", 
-                                        viewMode === 'list' ? "bg-white text-black shadow-xl" : "text-gray-500 hover:text-white"
+                                        viewMode === 'list' ? "bg-white text-black shadow-xl" : "text-gray-500 hover:text-gray-900 dark:hover:text-white"
                                     )}
                                 >
                                     <LayoutDashboard size={16} />
@@ -234,9 +234,9 @@ const ClientRequestManager = ({ isEmbedded = false }) => {
                         {clientRequests.length === 0 ? (
                             <motion.div 
                                 initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                                className="py-40 text-center bg-[#050505]/40 rounded-[4rem] border border-white/5 flex flex-col items-center gap-8 shadow-inner"
+                                className="py-40 text-center bg-[#050505]/40 rounded-[4rem] border border-black/10 dark:border-white/5 flex flex-col items-center gap-8 shadow-inner"
                             >
-                                <div className="w-32 h-32 bg-white/5 rounded-full flex items-center justify-center border border-white/10 animate-pulse">
+                                <div className="w-32 h-32 bg-black/5 dark:bg-white/5 rounded-full flex items-center justify-center border border-black/10 dark:border-white/10 animate-pulse">
                                     <MessageSquare size={48} className="text-gray-700" />
                                 </div>
                                 <div className="space-y-2">
@@ -266,7 +266,7 @@ const ClientRequestManager = ({ isEmbedded = false }) => {
                                         : "flex flex-col gap-3"
                                 )}>
                                     {viewMode === 'list' && (
-                                        <div className="flex items-center gap-6 px-10 py-6 text-[10px] font-black text-gray-600 uppercase tracking-[0.4em] border-b border-white/5">
+                                        <div className="flex items-center gap-6 px-10 py-6 text-[10px] font-black text-gray-600 uppercase tracking-[0.4em] border-b border-black/10 dark:border-white/5">
                                             <div className="flex-1 pl-14">Client Inquirer</div>
                                             <div className="w-48 hidden md:block">Engagement</div>
                                             <div className="w-40 hidden lg:block text-right pr-10">Budget</div>
@@ -304,7 +304,7 @@ const ClientRequestManager = ({ isEmbedded = false }) => {
                                         <button 
                                             disabled={currentPage === 1}
                                             onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                                            className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white disabled:opacity-20 hover:bg-white hover:text-black transition-all"
+                                            className="w-12 h-12 rounded-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 flex items-center justify-center text-gray-900 dark:text-white disabled:opacity-20 hover:bg-white hover:text-black transition-all"
                                         >
                                             <ChevronLeft size={20} />
                                         </button>
@@ -328,7 +328,7 @@ const ClientRequestManager = ({ isEmbedded = false }) => {
                                                             "w-12 h-12 rounded-full font-black text-xs transition-all border flex items-center justify-center",
                                                             currentPage === page 
                                                                 ? "bg-white text-black border-white shadow-[0_0_20px_rgba(255,255,255,0.3)]" 
-                                                                : "bg-white/5 text-gray-500 border-white/10 hover:border-white/30"
+                                                                : "bg-black/5 dark:bg-white/5 text-gray-500 border-black/10 dark:border-white/10 hover:border-white/30"
                                                         )}
                                                     >
                                                         {page}
@@ -339,7 +339,7 @@ const ClientRequestManager = ({ isEmbedded = false }) => {
                                         <button 
                                             disabled={currentPage === totalPages}
                                             onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                                            className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white disabled:opacity-20 hover:bg-white hover:text-black transition-all"
+                                            className="w-12 h-12 rounded-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 flex items-center justify-center text-gray-900 dark:text-white disabled:opacity-20 hover:bg-white hover:text-black transition-all"
                                         >
                                             <ChevronRight size={20} />
                                         </button>
@@ -453,7 +453,7 @@ const StatCard = ({ icon, label, value, color, description, compact = false }) =
             
             <div className={cn("relative z-10 flex h-full", compact ? "flex-row items-center gap-4" : "flex-col justify-between gap-8")}>
                 <div className={cn(
-                    "rounded-2xl flex items-center justify-center shadow-inner border border-white/5 shrink-0", 
+                    "rounded-2xl flex items-center justify-center shadow-inner border border-black/10 dark:border-white/5 shrink-0", 
                     compact ? "w-10 h-10 md:w-12 md:h-12" : "w-16 h-16",
                     theme.bg, theme.text
                 )}>
@@ -465,7 +465,7 @@ const StatCard = ({ icon, label, value, color, description, compact = false }) =
                         {label}
                     </p>
                     <div className="flex items-baseline justify-between gap-3">
-                        <h4 className={cn("font-black uppercase italic tracking-tighter text-white", compact ? "text-lg md:text-xl" : "text-4xl md:text-5xl leading-none")}>
+                        <h4 className={cn("font-black uppercase italic tracking-tighter text-gray-900 dark:text-white", compact ? "text-lg md:text-xl" : "text-4xl md:text-5xl leading-none")}>
                             {value}
                         </h4>
                     </div>
@@ -480,13 +480,13 @@ const StatCard = ({ icon, label, value, color, description, compact = false }) =
 const RequestBadgeCard = ({ request, onSelect }) => (
     <div 
         onClick={onSelect}
-        className="group relative bg-[#0A0A0A] border border-white/5 hover:border-neon-green/40 rounded-[2rem] sm:rounded-[3.5rem] p-6 sm:p-10 cursor-pointer overflow-hidden transition-all duration-700 hover:-translate-y-2 hover:shadow-[0_40px_100px_rgba(0,0,0,0.9)] flex flex-col h-auto sm:min-h-[500px]"
+        className="group relative bg-[#0A0A0A] border border-black/10 dark:border-white/5 hover:border-neon-green/40 rounded-[2rem] sm:rounded-[3.5rem] p-6 sm:p-10 cursor-pointer overflow-hidden transition-all duration-700 hover:-translate-y-2 hover:shadow-[0_40px_100px_rgba(0,0,0,0.9)] flex flex-col h-auto sm:min-h-[500px]"
     >
 
         <div className="absolute inset-0 bg-gradient-to-br from-neon-green/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
         
         <div className="flex justify-between items-start mb-8 relative z-10">
-            <div className="w-16 h-16 bg-black border border-white/10 rounded-[1.5rem] flex items-center justify-center text-neon-green shadow-2xl group-hover:border-neon-green/40 transition-all duration-500 group-hover:scale-110">
+            <div className="w-16 h-16 bg-white dark:bg-black border border-black/10 dark:border-white/10 rounded-[1.5rem] flex items-center justify-center text-neon-green shadow-2xl group-hover:border-neon-green/40 transition-all duration-500 group-hover:scale-110">
                 <Briefcase size={28} />
             </div>
             <StatusPill status={request.status} />
@@ -494,7 +494,7 @@ const RequestBadgeCard = ({ request, onSelect }) => (
 
         <div className="space-y-4 sm:space-y-6 flex-1 relative z-10">
             <div className="space-y-2">
-                <h3 className="text-2xl sm:text-3xl font-black uppercase italic tracking-tighter text-white group-hover:text-neon-green transition-colors duration-500 leading-tight">
+                <h3 className="text-2xl sm:text-3xl font-black uppercase italic tracking-tighter text-gray-900 dark:text-white group-hover:text-neon-green transition-colors duration-500 leading-tight">
                     {request.name}
                 </h3>
 
@@ -507,11 +507,11 @@ const RequestBadgeCard = ({ request, onSelect }) => (
             </div>
             
             <div className="flex flex-wrap gap-4 sm:gap-6 items-center">
-                <div className="flex items-center gap-2 text-gray-400 text-[9px] sm:text-[10px] font-black uppercase tracking-[0.2em]">
+                <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400 text-[9px] sm:text-[10px] font-black uppercase tracking-[0.2em]">
                     <MapPin size={12} className="text-neon-pink" />
                     {request.city}
                 </div>
-                <div className="w-1.5 h-1.5 rounded-full bg-white/10" />
+                <div className="w-1.5 h-1.5 rounded-full bg-black/10 dark:bg-white/10" />
                 <div className="text-[9px] sm:text-[10px] font-black text-neon-green uppercase tracking-[0.2em] px-4 py-2 bg-neon-green/5 border border-neon-green/10 rounded-full">
                     {request.category}
                 </div>
@@ -520,18 +520,18 @@ const RequestBadgeCard = ({ request, onSelect }) => (
 
             <div className="relative">
                 <div className="absolute -left-4 top-0 bottom-0 w-1 bg-neon-green/20 rounded-full" />
-                <p className="text-gray-400 text-sm italic leading-relaxed pl-4 line-clamp-3">
+                <p className="text-gray-600 dark:text-gray-400 text-sm italic leading-relaxed pl-4 line-clamp-3">
                     "{request.requirement}"
                 </p>
             </div>
         </div>
 
-        <div className="pt-10 mt-10 border-t border-white/5 flex justify-between items-center relative z-10">
+        <div className="pt-10 mt-10 border-t border-black/10 dark:border-white/5 flex justify-between items-center relative z-10">
             <div className="space-y-1">
                 <p className="text-[8px] font-black text-gray-600 uppercase tracking-[0.3em]">FILED ON</p>
-                <p className="text-[11px] font-black text-white tracking-widest">{new Date(request.createdAt).toLocaleDateString()}</p>
+                <p className="text-[11px] font-black text-gray-900 dark:text-white tracking-widest">{new Date(request.createdAt).toLocaleDateString()}</p>
             </div>
-            <div className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center group-hover:bg-neon-green group-hover:text-black transition-all group-hover:scale-110">
+            <div className="w-12 h-12 rounded-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 flex items-center justify-center group-hover:bg-neon-green group-hover:text-black transition-all group-hover:scale-110">
                 <ChevronRight size={20} />
             </div>
         </div>
@@ -566,10 +566,10 @@ const StatusPill = ({ status }) => {
 
 const RequestDetailModal = ({ request, onClose, onUpdateStatus, onDelete }) => {
     return createPortal(
-        <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 md:p-10 bg-black/40 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 md:p-10 bg-white dark:bg-black/40 backdrop-blur-sm">
             <motion.div 
                 initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} 
-                className="absolute inset-0 bg-black/95 backdrop-blur-xl" 
+                className="absolute inset-0 bg-white dark:bg-black/95 backdrop-blur-xl" 
                 onClick={onClose} 
             />
             <motion.div
@@ -577,7 +577,7 @@ const RequestDetailModal = ({ request, onClose, onUpdateStatus, onDelete }) => {
                 animate={{ scale: 1, opacity: 1, y: 0 }} 
                 exit={{ scale: 0.9, opacity: 0, y: 100 }}
                 transition={{ type: "spring", damping: 30, stiffness: 200 }}
-                className="relative bg-[#050505] border border-white/10 rounded-[2.5rem] sm:rounded-[4rem] w-full max-w-4xl max-h-[95vh] sm:max-h-[90vh] flex flex-col overflow-hidden shadow-[0_0_150px_rgba(0,0,0,1)] z-10"
+                className="relative bg-[#050505] border border-black/10 dark:border-white/10 rounded-[2.5rem] sm:rounded-[4rem] w-full max-w-4xl max-h-[95vh] sm:max-h-[90vh] flex flex-col overflow-hidden shadow-[0_0_150px_rgba(0,0,0,1)] z-10"
 
             >
 
@@ -585,7 +585,7 @@ const RequestDetailModal = ({ request, onClose, onUpdateStatus, onDelete }) => {
             
             <button 
                 onClick={onClose} 
-                className="absolute top-6 right-6 sm:top-10 sm:right-10 w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white hover:text-black transition-all group z-50 hover:scale-110 active:scale-95"
+                className="absolute top-6 right-6 sm:top-10 sm:right-10 w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 flex items-center justify-center hover:bg-white hover:text-black transition-all group z-50 hover:scale-110 active:scale-95"
             >
                 <X size={20} className="sm:size-[28px] group-hover:rotate-90 transition-transform duration-500" />
             </button>
@@ -601,13 +601,13 @@ const RequestDetailModal = ({ request, onClose, onUpdateStatus, onDelete }) => {
                                     {request.category}
                                 </div>
                             </div>
-                            <h2 className="text-4xl sm:text-5xl md:text-7xl font-black font-heading tracking-tighter uppercase italic leading-[0.85] text-white">
+                            <h2 className="text-4xl sm:text-5xl md:text-7xl font-black font-heading tracking-tighter uppercase italic leading-[0.85] text-gray-900 dark:text-white">
                                 {request.name}
                             </h2>
                             {request.org && <p className="text-lg sm:text-xl font-black text-neon-blue uppercase tracking-[0.5em]">{request.org}</p>}
                         </div>
                         
-                        <div className="shrink-0 w-full lg:w-auto p-6 sm:p-8 bg-white/[0.03] border border-white/5 rounded-[2rem] sm:rounded-[2.5rem] space-y-4 sm:space-y-6 lg:min-w-[280px]">
+                        <div className="shrink-0 w-full lg:w-auto p-6 sm:p-8 bg-white/[0.03] border border-black/10 dark:border-white/5 rounded-[2rem] sm:rounded-[2.5rem] space-y-4 sm:space-y-6 lg:min-w-[280px]">
                             <DetailItem label="Official Email" value={request.email} icon={<Mail size={16} />} color="blue" />
                             <DetailItem label="Mobile Number" value={request.phone || 'N/A'} icon={<Phone size={16} />} color="purple" />
                             <DetailItem label="Mission Location" value={request.city} icon={<MapPin size={16} />} color="pink" />
@@ -624,8 +624,8 @@ const RequestDetailModal = ({ request, onClose, onUpdateStatus, onDelete }) => {
                         </div>
                         <div className="relative group">
                             <div className="absolute -inset-1 bg-gradient-to-br from-neon-green/20 to-neon-blue/20 rounded-[2.5rem] blur opacity-20 transition-opacity" />
-                            <div className="relative bg-[#0A0A0A] p-12 rounded-[2.5rem] border border-white/5 shadow-inner">
-                                <p className="text-gray-300 leading-relaxed italic text-2xl font-medium">"{request.requirement}"</p>
+                            <div className="relative bg-[#0A0A0A] p-12 rounded-[2.5rem] border border-black/10 dark:border-white/5 shadow-inner">
+                                <p className="text-gray-700 dark:text-gray-300 leading-relaxed italic text-2xl font-medium">"{request.requirement}"</p>
                             </div>
                         </div>
                     </section>
@@ -636,7 +636,7 @@ const RequestDetailModal = ({ request, onClose, onUpdateStatus, onDelete }) => {
                             <select 
                                 value={request.status || 'pending'}
                                 onChange={(e) => onUpdateStatus(request.id, e.target.value)}
-                                className="w-full h-20 px-8 bg-[#0A0A0A] border border-white/10 rounded-[2rem] text-[12px] font-black uppercase tracking-[0.3em] outline-none text-white focus:border-neon-green/50 transition-all cursor-pointer shadow-2xl appearance-none"
+                                className="w-full h-20 px-8 bg-[#0A0A0A] border border-black/10 dark:border-white/10 rounded-[2rem] text-[12px] font-black uppercase tracking-[0.3em] outline-none text-gray-900 dark:text-white focus:border-neon-green/50 transition-all cursor-pointer shadow-2xl appearance-none"
                             >
                                 <option value="pending">PENDING ANALYSIS</option>
                                 <option value="processing">ACTIVE PROCESSING</option>
@@ -648,7 +648,7 @@ const RequestDetailModal = ({ request, onClose, onUpdateStatus, onDelete }) => {
 
                         <button 
                             onClick={() => onDelete(request.id)}
-                            className="h-20 w-20 bg-red-600/10 border border-red-600/20 text-red-500 rounded-[2rem] flex items-center justify-center hover:bg-red-600 hover:text-white transition-all hover:scale-110 active:scale-90 shadow-xl self-end"
+                            className="h-20 w-20 bg-red-600/10 border border-red-600/20 text-red-500 rounded-[2rem] flex items-center justify-center hover:bg-red-600 hover:text-gray-900 dark:hover:text-white transition-all hover:scale-110 active:scale-90 shadow-xl self-end"
                         >
                             <Trash2 size={24} />
                         </button>
@@ -671,14 +671,14 @@ const RequestListItem = ({ request, idx, onSelect }) => {
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: idx * 0.03 }}
             onClick={onSelect}
-            className="group flex items-center px-6 md:px-10 py-5 bg-[#0A0A0A]/40 border border-white/5 rounded-2xl md:rounded-[1.5rem] hover:bg-white/5 hover:border-white/10 transition-all cursor-pointer"
+            className="group flex items-center px-6 md:px-10 py-5 bg-[#0A0A0A]/40 border border-black/10 dark:border-white/5 rounded-2xl md:rounded-[1.5rem] hover:bg-black/5 dark:hover:bg-white/5 hover:border-black/10 dark:hover:border-white/10 transition-all cursor-pointer"
         >
             <div className="flex-1 flex items-center gap-4">
-                <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-neon-green font-black italic">
+                <div className="w-10 h-10 rounded-xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 flex items-center justify-center text-neon-green font-black italic">
                     {request.name?.charAt(0)}
                 </div>
                 <div>
-                    <h4 className="text-[13px] md:text-sm font-black uppercase tracking-widest text-white group-hover:text-neon-green transition-colors">{request.name}</h4>
+                    <h4 className="text-[13px] md:text-sm font-black uppercase tracking-widest text-gray-900 dark:text-white group-hover:text-neon-green transition-colors">{request.name}</h4>
                     <p className="text-[9px] md:text-[10px] font-black text-gray-500 uppercase tracking-widest">{request.org || 'INDIVIDUAL'}</p>
                 </div>
             </div>
@@ -696,11 +696,11 @@ const RequestListItem = ({ request, idx, onSelect }) => {
             </div>
 
             <div className="w-40 hidden lg:flex flex-col items-end pr-10">
-                <span className="text-[12px] font-black text-white">{request.budget ? `₹${request.budget}` : 'TBD'}</span>
+                <span className="text-[12px] font-black text-gray-900 dark:text-white">{request.budget ? `₹${request.budget}` : 'TBD'}</span>
                 <span className="text-[8px] font-black text-gray-600 uppercase tracking-widest">{request.category}</span>
             </div>
 
-            <div className="w-10 h-10 rounded-full flex items-center justify-center text-gray-700 group-hover:text-white transition-colors">
+            <div className="w-10 h-10 rounded-full flex items-center justify-center text-gray-700 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">
                 <ChevronRight size={18} />
             </div>
         </motion.div>
@@ -719,10 +719,10 @@ const DetailItem = ({ label, value, icon, color }) => {
 
     return (
         <div className="space-y-1.5 group">
-            <p className="text-[8px] font-black text-gray-600 uppercase tracking-[0.5em] flex items-center gap-2 group-hover:text-gray-400 transition-colors">
+            <p className="text-[8px] font-black text-gray-600 uppercase tracking-[0.5em] flex items-center gap-2 group-hover:text-gray-600 dark:group-hover:text-gray-400 transition-colors">
                 {React.cloneElement(icon, { size: 12, className: iconColors[color] })} {label}
             </p>
-            <p className="text-sm font-black text-white truncate tracking-wider">{value}</p>
+            <p className="text-sm font-black text-gray-900 dark:text-white truncate tracking-wider">{value}</p>
         </div>
     );
 };

@@ -44,8 +44,8 @@ import { Input } from '../../components/ui/Input';
 
 const SystemControlCenter = () => {
     const { 
-        user, maintenanceState, toggleMaintenanceFeature, toggleGlobalMaintenance,
-        siteDetails, updateSiteDetails, siteSettings, updateGeneralSettings, addToast
+        user, maintenanceState = {}, toggleMaintenanceFeature, toggleGlobalMaintenance,
+        siteDetails = {}, updateSiteDetails, siteSettings = {}, updateGeneralSettings, addToast
     } = useStore();
     
     const [formData, setFormData] = useState({ ...siteDetails });
@@ -56,15 +56,15 @@ const SystemControlCenter = () => {
         if (siteDetails) setFormData({ ...siteDetails });
     }, [siteDetails]);
 
-    const isAdmin = user?.role === 'developer';
+    const isAdmin = user && ['developer', 'super_admin', 'founder'].includes(user.role);
 
     if (!isAdmin) {
         return (
-            <div className="min-h-screen bg-[#020202] flex items-center justify-center text-white p-4">
+            <div className="min-h-screen bg-gray-50 dark:bg-[#020202] flex items-center justify-center text-gray-900 dark:text-white p-4">
                 <Card className="max-w-md w-full p-8 border-red-500/30 bg-red-500/5 text-center">
                     <Shield size={48} className="mx-auto mb-4 text-red-500" />
                     <h1 className="text-2xl font-black font-heading tracking-tighter uppercase italic mb-2">ACCESS DENIED</h1>
-                    <p className="text-gray-400 text-xs uppercase tracking-widest leading-relaxed">
+                    <p className="text-gray-600 dark:text-gray-400 text-xs uppercase tracking-widest leading-relaxed">
                         System handshake failed. Required clearance missing.
                     </p>
                     <Link to="/admin">
@@ -158,7 +158,7 @@ const SystemControlCenter = () => {
             hideTabs={true}
             action={
                 <div className="flex items-center gap-4 text-[10px] font-black uppercase tracking-widest text-gray-500">
-                    <div className="flex items-center gap-2 bg-white/5 px-3 py-1.5 rounded-full border border-white/10">
+                    <div className="flex items-center gap-2 bg-black/5 dark:bg-white/5 px-3 py-1.5 rounded-full border border-black/10 dark:border-white/10">
                         <div className={`w-1.5 h-1.5 rounded-full ${isLocal ? 'bg-yellow-500' : 'bg-neon-green'}`} />
                         {isLocal ? 'Development' : 'Production'}
                     </div>
@@ -167,10 +167,10 @@ const SystemControlCenter = () => {
         >
 
                 {/* Compact Kill Switch */}
-                <Card className={`mb-12 overflow-hidden border-2 transition-all duration-500 ${maintenanceState.global ? 'border-red-500 bg-red-500/5' : 'border-white/10 bg-white/5'}`}>
+                <Card className={`mb-12 overflow-hidden border-2 transition-all duration-500 ${maintenanceState.global ? 'border-red-500 bg-red-500/5' : 'border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5'}`}>
                     <div className="flex flex-col md:flex-row items-center justify-between p-6 gap-6">
                         <div className="flex items-center gap-4">
-                            <div className={`p-3 rounded-xl ${maintenanceState.global ? 'bg-red-500 text-white' : 'bg-white/10 text-gray-400'}`}>
+                            <div className={`p-3 rounded-xl ${maintenanceState.global ? 'bg-red-500 text-gray-900 dark:text-white' : 'bg-black/10 dark:bg-white/10 text-gray-600 dark:text-gray-400'}`}>
                                 <Globe size={24} />
                             </div>
                             <div>
@@ -181,7 +181,7 @@ const SystemControlCenter = () => {
                         
                         <Button
                             onClick={toggleGlobalMaintenance}
-                            className={`h-12 px-8 text-xs font-black italic tracking-widest rounded-xl transition-all duration-300 ${maintenanceState.global ? 'bg-red-500 text-white' : 'bg-white/10 text-white hover:bg-white/20'}`}
+                            className={`h-12 px-8 text-xs font-black italic tracking-widest rounded-xl transition-all duration-300 ${maintenanceState.global ? 'bg-red-500 text-gray-900 dark:text-white' : 'bg-black/10 dark:bg-white/10 text-gray-900 dark:text-white hover:bg-black/20 dark:hover:bg-white/20'}`}
                         >
                             {maintenanceState.global ? 'TERMINATE MAINTENANCE' : 'ACTIVATE LOCKDOWN'}
                         </Button>
@@ -194,8 +194,8 @@ const SystemControlCenter = () => {
                     {categories.map((cat, idx) => (
                         <div key={cat.key}>
                             <div className="flex items-center gap-3 mb-6">
-                                <h3 className="text-sm font-black text-gray-400 uppercase tracking-[0.3em]">{cat.title}</h3>
-                                <div className="flex-1 h-px bg-white/5" />
+                                <h3 className="text-sm font-black text-gray-600 dark:text-gray-400 uppercase tracking-[0.3em]">{cat.title}</h3>
+                                <div className="flex-1 h-px bg-black/5 dark:bg-white/5" />
                                 <span className="text-[10px] font-mono text-gray-700 uppercase italic">{cat.subtitle}</span>
                             </div>
 
@@ -211,18 +211,18 @@ const SystemControlCenter = () => {
                                         >
                                             <Card
                                                 onClick={() => toggleMaintenanceFeature(cat.key, item.id)}
-                                                className={`group relative cursor-pointer transition-all duration-300 overflow-hidden border-white/5 hover:border-white/10 ${isOffline ? 'bg-red-500/10 border-red-500/30' : 'bg-white/5 hover:bg-white/[0.08]'}`}
+                                                className={`group relative cursor-pointer transition-all duration-300 overflow-hidden border-black/10 dark:border-white/5 hover:border-black/10 dark:hover:border-white/10 ${isOffline ? 'bg-red-500/10 border-red-500/30' : 'bg-black/5 dark:bg-white/5 hover:bg-white/[0.08]'}`}
                                             >
                                                 <div className="p-4 flex flex-col gap-3">
                                                     <div className="flex items-center justify-between">
-                                                        <div className={`p-2 rounded-lg transition-all duration-300 ${isOffline ? 'bg-red-500 text-white' : 'bg-white/5 text-gray-400 group-hover:text-neon-blue group-hover:bg-neon-blue/10'}`}>
+                                                        <div className={`p-2 rounded-lg transition-all duration-300 ${isOffline ? 'bg-red-500 text-gray-900 dark:text-white' : 'bg-black/5 dark:bg-white/5 text-gray-600 dark:text-gray-400 group-hover:text-neon-blue group-hover:bg-neon-blue/10'}`}>
                                                             <item.icon size={16} />
                                                         </div>
                                                         <div className={`w-1.5 h-1.5 rounded-full ${isOffline ? 'bg-red-500' : 'bg-neon-green/30 group-hover:bg-neon-green shadow-none group-hover:shadow-[0_0_8px_rgba(52,211,153,0.5)] transition-all'}`} />
                                                     </div>
 
                                                     <div className="space-y-1">
-                                                        <h4 className={`text-[10px] font-black uppercase italic tracking-widest truncate transition-colors ${isOffline ? 'text-red-400' : 'text-gray-300 group-hover:text-white'}`}>
+                                                        <h4 className={`text-[10px] font-black uppercase italic tracking-widest truncate transition-colors ${isOffline ? 'text-red-400' : 'text-gray-700 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-white'}`}>
                                                             {item.label}
                                                         </h4>
                                                         <p className="text-[8px] font-mono text-gray-700 uppercase leading-none">{item.id}</p>
@@ -256,7 +256,7 @@ const SystemControlCenter = () => {
                                     className="overflow-hidden"
                                 >
                                     <form onSubmit={handleSaveConfig} className="space-y-8 pb-12">
-                                        <Card className="p-8 bg-white/[0.02] border-white/5 rounded-3xl">
+                                        <Card className="p-8 bg-white/[0.02] border-black/10 dark:border-white/5 rounded-3xl">
                                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
                                                 {/* Brand Identity */}
                                                 <div className="space-y-6">
@@ -272,7 +272,7 @@ const SystemControlCenter = () => {
                                                                 name="description"
                                                                 value={formData.description || ''}
                                                                 onChange={handleChange}
-                                                                className="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-[11px] font-medium h-24 focus:border-neon-blue/30 outline-none transition-all text-gray-300"
+                                                                className="w-full bg-white dark:bg-black/40 border border-black/10 dark:border-white/5 rounded-xl p-4 text-[11px] font-medium h-24 focus:border-neon-blue/30 outline-none transition-all text-gray-700 dark:text-gray-300"
                                                                 placeholder="SEO Meta data..."
                                                             />
                                                         </div>
@@ -316,7 +316,7 @@ const SystemControlCenter = () => {
                                                 </div>
                                             </div>
 
-                                            <div className="mt-12 pt-8 border-t border-white/5 flex justify-end">
+                                            <div className="mt-12 pt-8 border-t border-black/10 dark:border-white/5 flex justify-end">
                                                 <Button type="submit" className="h-12 px-10 bg-neon-blue text-black font-black uppercase tracking-widest text-[10px] italic rounded-xl hover:scale-105 transition-all">
                                                     <Save size={14} className="mr-2" /> Push System Update
                                                 </Button>
@@ -331,7 +331,7 @@ const SystemControlCenter = () => {
 
                 {/* Compact Diagnostics & Error Codes */}
                 <div className="mt-20 grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    <div className="lg:col-span-2 p-8 bg-white/[0.02] border border-white/5 rounded-3xl">
+                    <div className="lg:col-span-2 p-8 bg-white/[0.02] border border-black/10 dark:border-white/5 rounded-3xl">
                         <div className="flex items-center gap-3 mb-6">
                             <Shield size={16} className="text-neon-blue" />
                             <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-500">Error Code Registry</h4>
@@ -339,14 +339,14 @@ const SystemControlCenter = () => {
                         
                         <div className="overflow-x-auto">
                             <table className="w-full text-left text-[10px] font-mono">
-                                <thead className="text-gray-600 border-b border-white/5">
+                                <thead className="text-gray-600 border-b border-black/10 dark:border-white/5">
                                     <tr>
                                         <th className="pb-3 pr-4 font-black uppercase italic">Code</th>
                                         <th className="pb-3 pr-4 font-black uppercase italic">Module</th>
                                         <th className="pb-3 font-black uppercase italic">Scenario</th>
                                     </tr>
                                 </thead>
-                                <tbody className="text-gray-400">
+                                <tbody className="text-gray-600 dark:text-gray-400">
                                     <ErrorRow code="TKT-VAL-*" module="Ticketing" scenario="User input validation (Phone, Name, Selection)" />
                                     <ErrorRow code="TKT-OTP-01" module="Ticketing" scenario="FCM/Auth Handshake - Code Send failure" />
                                     <ErrorRow code="TKT-OTP-02" module="Ticketing" scenario="Incorrect OTP verification attempt" />
@@ -363,7 +363,7 @@ const SystemControlCenter = () => {
                         <p className="mt-6 text-[8px] text-gray-700 italic">Note: Error codes starting with TKT/PAY/EVT automatically trigger support contact info in UI toasts.</p>
                     </div>
 
-                    <div className="p-8 bg-white/[0.02] border border-white/5 rounded-3xl flex flex-col justify-between">
+                    <div className="p-8 bg-white/[0.02] border border-black/10 dark:border-white/5 rounded-3xl flex flex-col justify-between">
                         <div>
                             <div className="flex items-center gap-2 mb-6">
                                 <Cpu size={14} className="text-gray-600" />
@@ -373,7 +373,7 @@ const SystemControlCenter = () => {
                             <div className="space-y-6 font-mono text-[10px]">
                                 <div>
                                     <p className="text-gray-700 uppercase mb-1">Host Identity</p>
-                                    <p className="text-gray-400 truncate">{window.location.hostname}</p>
+                                    <p className="text-gray-600 dark:text-gray-400 truncate">{window.location.hostname}</p>
                                 </div>
                                 <div>
                                     <p className="text-gray-700 uppercase mb-1">Registry Vector</p>
@@ -381,7 +381,7 @@ const SystemControlCenter = () => {
                                 </div>
                                 <div>
                                     <p className="text-gray-700 uppercase mb-1">State Flux</p>
-                                    <div className="h-1 bg-white/5 rounded-full overflow-hidden mt-2">
+                                    <div className="h-1 bg-black/5 dark:bg-white/5 rounded-full overflow-hidden mt-2">
                                         <motion.div 
                                             animate={{ width: ['20%', '80%', '20%'] }}
                                             transition={{ duration: 10, repeat: Infinity }}
@@ -407,7 +407,7 @@ const ConfigInput = ({ label, name, icon: Icon, value, onChange }) => (
                 name={name}
                 value={value || ''}
                 onChange={onChange}
-                className="h-11 pl-11 bg-black/40 border-white/5 rounded-xl text-[11px] font-medium focus:border-neon-blue/30 transition-all text-gray-200"
+                className="h-11 pl-11 bg-white dark:bg-black/40 border-black/10 dark:border-white/5 rounded-xl text-[11px] font-medium focus:border-neon-blue/30 transition-all text-gray-200"
                 placeholder="..."
             />
         </div>
@@ -418,16 +418,16 @@ const FeaturePill = ({ label, active, onClick }) => (
     <button
         type="button"
         onClick={onClick}
-        className={`px-4 py-2 rounded-full border text-[9px] font-black uppercase tracking-widest transition-all ${active ? 'bg-neon-green/10 border-neon-green/30 text-neon-green' : 'bg-white/5 border-white/5 text-gray-500 hover:text-white'}`}
+        className={`px-4 py-2 rounded-full border text-[9px] font-black uppercase tracking-widest transition-all ${active ? 'bg-neon-green/10 border-neon-green/30 text-neon-green' : 'bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/5 text-gray-500 hover:text-gray-900 dark:hover:text-white'}`}
     >
         {label}: {active ? 'ACTIVE' : 'DISABLED'}
     </button>
 );
 
 const ErrorRow = ({ code, module, scenario }) => (
-    <tr className="border-b border-white/5 last:border-0">
+    <tr className="border-b border-black/10 dark:border-white/5 last:border-0">
         <td className="py-3 pr-4 text-neon-blue font-black tracking-tighter">{code}</td>
-        <td className="py-3 pr-4 text-gray-300 uppercase italic">{module}</td>
+        <td className="py-3 pr-4 text-gray-700 dark:text-gray-300 uppercase italic">{module}</td>
         <td className="py-3 text-gray-500 italic">{scenario}</td>
     </tr>
 );

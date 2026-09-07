@@ -50,7 +50,7 @@ const GuestlistCard = ({ gl, navigate, updateGuestlist, deleteGuestlist, handleE
     return (
         <Card 
             onMouseMove={handleMouseMove}
-            className="p-0 bg-zinc-950/40 backdrop-blur-2xl border border-white/5 rounded-[2.5rem] overflow-hidden group hover:border-neon-blue/30 transition-all duration-700 shadow-2xl flex flex-col h-[520px] relative"
+            className="p-0 bg-gray-100 dark:bg-zinc-950/40 backdrop-blur-2xl border border-black/10 dark:border-white/5 rounded-[2.5rem] overflow-hidden group hover:border-neon-blue/30 transition-all duration-700 shadow-2xl flex flex-col h-[520px] relative"
             style={{ 
                 background: `radial-gradient(circle at ${mousePos.x}% ${mousePos.y}%, ${gl.highlightColor || '#2ebfff'}10 0%, transparent 60%)`
             }}
@@ -69,7 +69,7 @@ const GuestlistCard = ({ gl, navigate, updateGuestlist, deleteGuestlist, handleE
                     />
                 ) : (
                     <div className="w-full h-full bg-gradient-to-br from-zinc-900 to-black flex items-center justify-center">
-                        <ListChecks size={48} className="text-white/10" />
+                        <ListChecks size={48} className="text-gray-900 dark:text-white/10" />
                     </div>
                 )}
                 <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/20 to-transparent" />
@@ -83,19 +83,19 @@ const GuestlistCard = ({ gl, navigate, updateGuestlist, deleteGuestlist, handleE
                         {gl.status || 'ACTIVE'}
                     </div>
                     {!gl.guestlistEnabled && (
-                        <div className="px-3 py-1 rounded-full border border-white/10 bg-white/5 text-gray-400 text-[8px] font-black uppercase tracking-widest flex items-center gap-1.5 backdrop-blur-3xl">
+                        <div className="px-3 py-1 rounded-full border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 text-gray-600 dark:text-gray-400 text-[8px] font-black uppercase tracking-widest flex items-center gap-1.5 backdrop-blur-3xl">
                             <LinkIcon size={10} /> EXTERNAL
                         </div>
                     )}
                 </div>
 
                 <div className="absolute bottom-6 left-8 right-8">
-                    <h3 className="text-3xl font-black italic uppercase tracking-tighter text-white truncate drop-shadow-2xl">{gl.title}</h3>
+                    <h3 className="text-3xl font-black italic uppercase tracking-tighter text-gray-900 dark:text-white truncate drop-shadow-2xl">{gl.title}</h3>
                     <div className="flex items-center gap-4 mt-2 opacity-60">
-                        <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
+                        <span className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
                             <Calendar size={12} className="text-neon-blue" /> {gl.date || 'TBD'}
                         </span>
-                        <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
+                        <span className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
                             <MapPin size={12} className="text-neon-blue" /> {gl.location || 'VENUE'}
                         </span>
                     </div>
@@ -106,21 +106,21 @@ const GuestlistCard = ({ gl, navigate, updateGuestlist, deleteGuestlist, handleE
             <div className="p-8 flex-grow flex flex-col justify-between">
                 <div className="space-y-6">
                     <div className="space-y-4">
-                        <div className="flex items-center gap-4 text-white/20">
+                        <div className="flex items-center gap-4 text-gray-900 dark:text-white/20">
                             <div className="w-10 h-[1px] bg-current" />
                             <span className="text-[9px] font-black uppercase tracking-[0.4em]">DESCRIPTION</span>
                         </div>
-                        <p className="text-[12px] font-medium text-gray-400 uppercase tracking-widest line-clamp-2 italic leading-relaxed">
+                        <p className="text-[12px] font-medium text-gray-600 dark:text-gray-400 uppercase tracking-widest line-clamp-2 italic leading-relaxed">
                             {gl.description || "No description provided."}
                         </p>
                     </div>
                     
-                    <div className="space-y-3 p-5 rounded-2xl bg-white/[0.02] border border-white/5">
+                    <div className="space-y-3 p-5 rounded-2xl bg-white/[0.02] border border-black/10 dark:border-white/5">
                         <div className="flex justify-between text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">
                             <span className="flex items-center gap-2"><Users size={12} className="text-neon-blue" /> CAPACITY</span>
-                            <span className="text-white">{gl.currentSpots || 0} / {gl.maxSpots || '∞'}</span>
+                            <span className="text-gray-900 dark:text-white">{gl.currentSpots || 0} / {gl.maxSpots || '∞'}</span>
                         </div>
-                        <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
+                        <div className="h-1.5 w-full bg-black/5 dark:bg-white/5 rounded-full overflow-hidden">
                             <div 
                                 className="h-full bg-neon-blue transition-all duration-1000 shadow-[0_0_15px_rgba(46,191,255,0.4)]" 
                                 style={{ width: `${Math.min(((gl.currentSpots || 0) / (gl.maxSpots || 100)) * 100, 100)}%` }} 
@@ -129,11 +129,11 @@ const GuestlistCard = ({ gl, navigate, updateGuestlist, deleteGuestlist, handleE
                     </div>
                 </div>
 
-                <div className="mt-8 pt-6 border-t border-white/5 space-y-4">
+                <div className="mt-8 pt-6 border-t border-black/10 dark:border-white/5 space-y-4">
                     <Button 
                         variant="outline" 
                         onClick={() => navigate(`/admin/ticketing?eventId=${gl.id}&tab=guestlist`)}
-                        className="w-full h-14 rounded-2xl border-white/5 bg-neon-blue/10 text-neon-blue hover:bg-white hover:text-black transition-all flex items-center justify-center gap-4 group/btn shadow-lg"
+                        className="w-full h-14 rounded-2xl border-black/10 dark:border-white/5 bg-neon-blue/10 text-neon-blue hover:bg-white hover:text-black transition-all flex items-center justify-center gap-4 group/btn shadow-lg"
                     >
                         <UserCheck size={26} className="group-hover/btn:scale-110 transition-transform" />
                         <span className="text-[11px] font-black uppercase tracking-[0.3em] italic">MANAGE ENTRIES</span>
@@ -147,8 +147,8 @@ const GuestlistCard = ({ gl, navigate, updateGuestlist, deleteGuestlist, handleE
                                 updateGuestlist(gl.id, { ...gl, status: newStatus });
                             }}
                             className={cn(
-                                "h-14 flex-1 rounded-2xl border-white/5 transition-all flex items-center justify-center",
-                                gl.status === 'Open' ? "bg-neon-green/10 text-neon-green hover:bg-neon-green hover:text-black shadow-[0_0_20px_rgba(57,255,20,0.1)]" : "bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white shadow-[0_0_20px_rgba(239,68,68,0.1)]"
+                                "h-14 flex-1 rounded-2xl border-black/10 dark:border-white/5 transition-all flex items-center justify-center",
+                                gl.status === 'Open' ? "bg-neon-green/10 text-neon-green hover:bg-neon-green hover:text-black shadow-[0_0_20px_rgba(57,255,20,0.1)]" : "bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-gray-900 dark:hover:text-white shadow-[0_0_20px_rgba(239,68,68,0.1)]"
                             )}
                             title={gl.status === 'Open' ? "Close Guestlist" : "Open Guestlist"}
                         >
@@ -158,7 +158,7 @@ const GuestlistCard = ({ gl, navigate, updateGuestlist, deleteGuestlist, handleE
                         <Button 
                             variant="outline" 
                             onClick={() => handleEdit(gl)} 
-                            className="h-14 flex-1 rounded-2xl border-white/5 bg-white/5 hover:bg-white hover:text-black transition-all flex items-center justify-center gap-3"
+                            className="h-14 flex-1 rounded-2xl border-black/10 dark:border-white/5 bg-black/5 dark:bg-white/5 hover:bg-white hover:text-black transition-all flex items-center justify-center gap-3"
                         >
                             <Edit size={22} />
                             <span className="text-[10px] font-black uppercase tracking-[0.2em]">EDIT</span>
@@ -167,7 +167,7 @@ const GuestlistCard = ({ gl, navigate, updateGuestlist, deleteGuestlist, handleE
                         <Button 
                             variant="outline" 
                             onClick={() => { if(confirm('Are you sure you want to permanently delete this guestlist?')) deleteGuestlist(gl.id); }}
-                            className="h-14 w-14 rounded-2xl bg-red-500 text-white border-none hover:bg-red-600 transition-all flex items-center justify-center shrink-0 shadow-xl"
+                            className="h-14 w-14 rounded-2xl bg-red-500 text-gray-900 dark:text-white border-none hover:bg-red-600 transition-all flex items-center justify-center shrink-0 shadow-xl"
                         >
                             <Trash2 size={26} />
                         </Button>
@@ -334,7 +334,7 @@ const GuestlistManager = () => {
                 <div className="flex flex-col lg:grid lg:grid-cols-2 gap-12 items-stretch mb-20 relative z-10">
                     {/* Editor Column */}
                     <div className="w-full">
-                        <Card className="p-8 md:p-12 bg-zinc-950/40 backdrop-blur-3xl border-white/5 rounded-[2.5rem] shadow-2xl relative overflow-hidden">
+                        <Card className="p-8 md:p-12 bg-gray-100 dark:bg-zinc-950/40 backdrop-blur-3xl border-black/10 dark:border-white/5 rounded-[2.5rem] shadow-2xl relative overflow-hidden">
                             {/* Ambient Background Glow */}
                             <div className="absolute -top-20 -right-20 w-64 h-64 bg-neon-blue/5 rounded-full blur-[100px] pointer-events-none" />
                             
@@ -342,7 +342,7 @@ const GuestlistManager = () => {
                                 <div className="space-y-3">
                                     <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em] pl-1">DESCRIPTION</label>
                                     <textarea 
-                                        className="w-full bg-black/60 border border-white/5 rounded-[1.5rem] p-8 text-white focus:outline-none focus:border-neon-blue/40 min-h-[150px] resize-none text-[13px] font-medium placeholder:text-gray-800 leading-relaxed italic shadow-inner" 
+                                        className="w-full bg-white dark:bg-black/60 border border-black/10 dark:border-white/5 rounded-[1.5rem] p-8 text-gray-900 dark:text-white focus:outline-none focus:border-neon-blue/40 min-h-[150px] resize-none text-[13px] font-medium placeholder:text-gray-800 leading-relaxed italic shadow-inner" 
                                         value={formData.description} 
                                         onChange={e => setFormData({ ...formData, description: e.target.value })} 
                                         placeholder="Rules of entry, age limits, dress code..." 
@@ -358,7 +358,7 @@ const GuestlistManager = () => {
                                                 onChange={e => setFormData({ ...formData, title: e.target.value })} 
                                                 required 
                                                 placeholder="e.g. SKYLINE SOIREE"
-                                                className="h-14 bg-black/60 border-white/5 rounded-2xl px-6 text-[11px] font-black uppercase tracking-widest focus:border-neon-blue/40" 
+                                                className="h-14 bg-white dark:bg-black/60 border-black/10 dark:border-white/5 rounded-2xl px-6 text-[11px] font-black uppercase tracking-widest focus:border-neon-blue/40" 
                                             />
                                         </div>
                                         <div className="space-y-3">
@@ -393,7 +393,7 @@ const GuestlistManager = () => {
                                                 onChange={e => setFormData({ ...formData, location: e.target.value })} 
                                                 required 
                                                 placeholder="e.g. ROOFTOP LOUNGE"
-                                                className="h-14 bg-black/60 border-white/5 rounded-2xl px-6 text-[11px] font-black uppercase tracking-widest focus:border-neon-blue/40" 
+                                                className="h-14 bg-white dark:bg-black/60 border-black/10 dark:border-white/5 rounded-2xl px-6 text-[11px] font-black uppercase tracking-widest focus:border-neon-blue/40" 
                                             />
                                         </div>
                                     </div>
@@ -401,15 +401,15 @@ const GuestlistManager = () => {
                                     {/* GUESTLIST PROTOCOL TOGGLE */}
                                     <div className={cn(
                                         "p-8 rounded-[2rem] border transition-all duration-500", 
-                                        formData.guestlistEnabled ? "bg-neon-blue/10 border-neon-blue/40 shadow-[0_0_40px_rgba(46,191,255,0.05)]" : "bg-black/40 border-white/5"
+                                        formData.guestlistEnabled ? "bg-neon-blue/10 border-neon-blue/40 shadow-[0_0_40px_rgba(46,191,255,0.05)]" : "bg-white dark:bg-black/40 border-black/10 dark:border-white/5"
                                     )}>
                                         <div className="flex items-center justify-between mb-8">
                                             <div className="flex items-center gap-6">
-                                                <div className={cn("w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-500 shadow-xl", formData.guestlistEnabled ? "bg-neon-blue text-black" : "bg-white/5 text-gray-600")}>
+                                                <div className={cn("w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-500 shadow-xl", formData.guestlistEnabled ? "bg-neon-blue text-black" : "bg-black/5 dark:bg-white/5 text-gray-600")}>
                                                     <ShieldCheck size={24} />
                                                 </div>
                                                 <div>
-                                                    <h4 className="text-white text-sm font-black uppercase tracking-widest italic leading-tight">ENTRY RULES</h4>
+                                                    <h4 className="text-gray-900 dark:text-white text-sm font-black uppercase tracking-widest italic leading-tight">ENTRY RULES</h4>
                                                     <p className="text-[10px] text-gray-600 mt-1 uppercase font-bold tracking-[0.1em]">
                                                         {formData.guestlistEnabled ? "INTERNAL REGISTRATION" : "EXTERNAL REDIRECTION"}
                                                     </p>
@@ -418,9 +418,9 @@ const GuestlistManager = () => {
                                             <button 
                                                 type="button" 
                                                 onClick={() => setFormData({ ...formData, guestlistEnabled: !formData.guestlistEnabled })} 
-                                                className={cn("w-14 h-8 rounded-full relative transition-all border-2", formData.guestlistEnabled ? "bg-neon-blue border-neon-blue" : "bg-black/60 border-white/10")}
+                                                className={cn("w-14 h-8 rounded-full relative transition-all border-2", formData.guestlistEnabled ? "bg-neon-blue border-neon-blue" : "bg-white dark:bg-black/60 border-black/10 dark:border-white/10")}
                                             >
-                                                <div className={cn("absolute top-1 w-5 h-5 rounded-full transition-all shadow-lg", formData.guestlistEnabled ? "right-1 bg-black" : "left-1 bg-gray-600")} />
+                                                <div className={cn("absolute top-1 w-5 h-5 rounded-full transition-all shadow-lg", formData.guestlistEnabled ? "right-1 bg-white dark:bg-black" : "left-1 bg-gray-600")} />
                                             </button>
                                         </div>
 
@@ -430,22 +430,22 @@ const GuestlistManager = () => {
                                                     <div className="space-y-3">
                                                         <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em] pl-1">CAPACITY</label>
                                                         <Input type="number" value={formData.maxSpots} onChange={e => setFormData({ ...formData, maxSpots: parseInt(e.target.value) })} required 
-                                                            className="h-14 bg-black/60 border-white/5 rounded-2xl px-6 text-[11px] font-black uppercase tracking-widest focus:border-neon-blue/40" />
+                                                            className="h-14 bg-white dark:bg-black/60 border-black/10 dark:border-white/5 rounded-2xl px-6 text-[11px] font-black uppercase tracking-widest focus:border-neon-blue/40" />
                                                     </div>
                                                     <div className="space-y-3">
                                                         <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em] pl-1">PER USER LIMIT</label>
                                                         <Input type="number" value={formData.perUserLimit} onChange={e => setFormData({ ...formData, perUserLimit: parseInt(e.target.value) })} required 
-                                                            className="h-14 bg-black/60 border-white/5 rounded-2xl px-6 text-[11px] font-black uppercase tracking-widest focus:border-neon-blue/40" />
+                                                            className="h-14 bg-white dark:bg-black/60 border-black/10 dark:border-white/5 rounded-2xl px-6 text-[11px] font-black uppercase tracking-widest focus:border-neon-blue/40" />
                                                     </div>
                                                 </div>
-                                                <div className="space-y-3 pt-4 border-t border-white/5">
+                                                <div className="space-y-3 pt-4 border-t border-black/10 dark:border-white/5">
                                                     <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em] pl-1">GUESTLIST SYSTEM</label>
-                                                    <div className="flex gap-4 p-1.5 bg-black/40 rounded-2xl border border-white/10">
+                                                    <div className="flex gap-4 p-1.5 bg-white dark:bg-black/40 rounded-2xl border border-black/10 dark:border-white/10">
                                                         {[
                                                             { id: 'qr', label: 'QR PASSES (AUTOMATED)', color: 'neon-blue' },
                                                             { id: 'rsvp', label: 'RSVP ONLY (NO QR CODE)', color: 'neon-blue' }
                                                         ].map(mode => (
-                                                            <button key={mode.id} type="button" onClick={() => setFormData({...formData, guestlistMode: mode.id})} className={cn("flex-1 h-12 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all", (formData.guestlistMode || 'qr') === mode.id ? "bg-neon-blue text-black" : "text-gray-500 hover:text-white")}>
+                                                            <button key={mode.id} type="button" onClick={() => setFormData({...formData, guestlistMode: mode.id})} className={cn("flex-1 h-12 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all", (formData.guestlistMode || 'qr') === mode.id ? "bg-neon-blue text-black" : "text-gray-500 hover:text-gray-900 dark:hover:text-white")}>
                                                                 {mode.label}
                                                             </button>
                                                         ))}
@@ -461,7 +461,7 @@ const GuestlistManager = () => {
                                                         value={formData.externalLink} 
                                                         onChange={e => setFormData({ ...formData, externalLink: e.target.value })} 
                                                         placeholder="https://tally.so/r/..." 
-                                                        className="h-14 pl-14 bg-black/60 border-white/5 rounded-2xl text-[11px] font-black uppercase tracking-widest focus:border-neon-blue/40" 
+                                                        className="h-14 pl-14 bg-white dark:bg-black/60 border-black/10 dark:border-white/5 rounded-2xl text-[11px] font-black uppercase tracking-widest focus:border-neon-blue/40" 
                                                     />
                                                 </div>
                                             </div>
@@ -469,7 +469,7 @@ const GuestlistManager = () => {
                                     </div>
 
                                             <textarea 
-                                             className="w-full bg-black/60 border border-white/5 rounded-[1.5rem] p-8 text-white focus:outline-none focus:border-neon-blue/40 min-h-[150px] resize-none text-[13px] font-medium placeholder:text-gray-800 leading-relaxed italic shadow-inner" 
+                                             className="w-full bg-white dark:bg-black/60 border border-black/10 dark:border-white/5 rounded-[1.5rem] p-8 text-gray-900 dark:text-white focus:outline-none focus:border-neon-blue/40 min-h-[150px] resize-none text-[13px] font-medium placeholder:text-gray-800 leading-relaxed italic shadow-inner" 
                                              value={formData.description} 
                                              onChange={e => setFormData({ ...formData, description: e.target.value })} 
                                              placeholder="Rules of entry, age limits, dress code..." 
@@ -477,27 +477,27 @@ const GuestlistManager = () => {
 
                                      <div className={cn(
                                          "p-8 rounded-[2rem] border flex items-center justify-between transition-all duration-500", 
-                                         formData.isPinned ? "bg-neon-blue/10 border-neon-blue/40 shadow-[0_0_40px_rgba(46,191,255,0.05)]" : "bg-black/40 border-white/5"
+                                         formData.isPinned ? "bg-neon-blue/10 border-neon-blue/40 shadow-[0_0_40px_rgba(46,191,255,0.05)]" : "bg-white dark:bg-black/40 border-black/10 dark:border-white/5"
                                      )}>
                                          <div className="flex items-center gap-8">
-                                             <div className={cn("w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-500 shadow-xl", formData.isPinned ? "bg-neon-blue text-black" : "bg-white/5 text-gray-600")}>
+                                             <div className={cn("w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-500 shadow-xl", formData.isPinned ? "bg-neon-blue text-black" : "bg-black/5 dark:bg-white/5 text-gray-600")}>
                                                  <Star size={24} className={cn(formData.isPinned && "fill-current")} />
                                              </div>
                                              <div>
-                                                 <h4 className="text-white text-sm font-black uppercase tracking-widest italic leading-tight">FEATURE AS SPOTLIGHT</h4>
+                                                 <h4 className="text-gray-900 dark:text-white text-sm font-black uppercase tracking-widest italic leading-tight">FEATURE AS SPOTLIGHT</h4>
                                                  <p className="text-[10px] text-gray-600 mt-1 uppercase font-bold tracking-[0.1em]">SHOW IN THE FEATURED SECTION AT TOP</p>
                                              </div>
                                          </div>
                                          <button 
                                              type="button" 
                                              onClick={() => setFormData({ ...formData, isPinned: !formData.isPinned })} 
-                                             className={cn("w-14 h-8 rounded-full relative transition-all border-2", formData.isPinned ? "bg-neon-blue border-neon-blue" : "bg-black/60 border-white/10")}
+                                             className={cn("w-14 h-8 rounded-full relative transition-all border-2", formData.isPinned ? "bg-neon-blue border-neon-blue" : "bg-white dark:bg-black/60 border-black/10 dark:border-white/10")}
                                          >
-                                             <div className={cn("absolute top-1 w-5 h-5 rounded-full transition-all shadow-lg", formData.isPinned ? "right-1 bg-black" : "left-1 bg-gray-600")} />
+                                             <div className={cn("absolute top-1 w-5 h-5 rounded-full transition-all shadow-lg", formData.isPinned ? "right-1 bg-white dark:bg-black" : "left-1 bg-gray-600")} />
                                          </button>
                                      </div>
 
-                                     <div className="space-y-8 pt-6 border-t border-white/5">
+                                     <div className="space-y-8 pt-6 border-t border-black/10 dark:border-white/5">
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                             <div className="space-y-3">
                                                 <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em] pl-1">IMAGE</label>
@@ -507,13 +507,13 @@ const GuestlistManager = () => {
                                                         onChange={e => setFormData({ ...formData, image: e.target.value })} 
                                                         onPaste={handlePaste}
                                                         placeholder="URL OR CTRL+V IMAGE" 
-                                                        className="flex-1 h-14 bg-black/60 border-white/5 rounded-2xl focus:border-neon-blue/40" 
+                                                        className="flex-1 h-14 bg-white dark:bg-black/60 border-black/10 dark:border-white/5 rounded-2xl focus:border-neon-blue/40" 
                                                     />
                                                     <div className="relative group w-14 h-14 shrink-0">
                                                         <input type="file" onChange={handleFileChange} className="absolute inset-0 opacity-0 cursor-pointer z-10" />
                                                         <div className={cn(
                                                             "h-full w-full rounded-2xl flex items-center justify-center border-2 border-dashed transition-all", 
-                                                            isUploading ? "border-neon-blue bg-neon-blue/10 text-neon-blue" : "border-white/10 bg-white/5 text-gray-500 hover:border-white/20"
+                                                            isUploading ? "border-neon-blue bg-neon-blue/10 text-neon-blue" : "border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 text-gray-500 hover:border-black/20 dark:hover:border-white/20"
                                                         )}>
                                                             {isUploading ? <Loader className="animate-spin" size={18} /> : <ImageIcon size={18} />}
                                                         </div>
@@ -522,7 +522,7 @@ const GuestlistManager = () => {
                                             </div>
                                             <div className="space-y-3">
                                                 <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em] pl-1">HIGHLIGHT COLOR</label>
-                                                <div className="flex items-center gap-4 h-14 bg-black/60 border border-white/5 rounded-2xl px-6">
+                                                <div className="flex items-center gap-4 h-14 bg-white dark:bg-black/60 border border-black/10 dark:border-white/5 rounded-2xl px-6">
                                                     {colorPresets.map(color => (
                                                         <button 
                                                             key={color.value} 
@@ -540,13 +540,13 @@ const GuestlistManager = () => {
                                         </div>
                                     </div>
 
-                                    <div className="p-8 rounded-[2rem] bg-black/40 border border-white/5 space-y-10">
+                                    <div className="p-8 rounded-[2rem] bg-white dark:bg-black/40 border border-black/10 dark:border-white/5 space-y-10">
                                         <div className="flex items-center justify-between">
                                             <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-neon-blue italic">IMAGE POSITION</h4>
                                             <button 
                                                 type="button" 
                                                 onClick={() => setFormData({ ...formData, imageTransform: { scale: 1.05, x: 0, y: 0 } })} 
-                                                className="text-[9px] font-black text-gray-600 hover:text-white uppercase tracking-widest transition-colors flex items-center gap-2"
+                                                className="text-[9px] font-black text-gray-600 hover:text-gray-900 dark:hover:text-white uppercase tracking-widest transition-colors flex items-center gap-2"
                                             >
                                                 <X size={12} /> RESET
                                             </button>
@@ -577,8 +577,8 @@ const GuestlistManager = () => {
                                     </div>
                                 </div>
 
-                                <div className="flex flex-col sm:flex-row justify-end gap-4 pt-12 mt-12 border-t border-white/5">
-                                    <Button type="button" variant="outline" onClick={resetForm} className="h-14 rounded-2xl px-10 text-[10px] font-black uppercase tracking-widest border-white/5 hover:bg-white/5">CANCEL</Button>
+                                <div className="flex flex-col sm:flex-row justify-end gap-4 pt-12 mt-12 border-t border-black/10 dark:border-white/5">
+                                    <Button type="button" variant="outline" onClick={resetForm} className="h-14 rounded-2xl px-10 text-[10px] font-black uppercase tracking-widest border-black/10 dark:border-white/5 hover:bg-black/5 dark:hover:bg-white/5">CANCEL</Button>
                                     <Button 
                                         onClick={handleSave} 
                                         disabled={saving}
@@ -594,9 +594,9 @@ const GuestlistManager = () => {
 
                     {/* Preview Column */}
                     <div className="lg:sticky lg:top-32 space-y-8 w-full">
-                        <div className="flex bg-zinc-950/60 border border-white/5 p-2 rounded-2xl w-fit backdrop-blur-3xl shadow-2xl">
-                            <button onClick={() => setPreviewType('card')} className={cn("px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all", previewType === 'card' ? "bg-neon-blue text-black shadow-lg" : "text-gray-500 hover:text-white")}>CARD VIEW</button>
-                            <button onClick={() => setPreviewType('embed')} className={cn("px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all", previewType === 'embed' ? "bg-neon-blue text-black shadow-lg" : "text-gray-500 hover:text-white")}>EMBED VIEW</button>
+                        <div className="flex bg-gray-100 dark:bg-zinc-950/60 border border-black/10 dark:border-white/5 p-2 rounded-2xl w-fit backdrop-blur-3xl shadow-2xl">
+                            <button onClick={() => setPreviewType('card')} className={cn("px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all", previewType === 'card' ? "bg-neon-blue text-black shadow-lg" : "text-gray-500 hover:text-gray-900 dark:hover:text-white")}>CARD VIEW</button>
+                            <button onClick={() => setPreviewType('embed')} className={cn("px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all", previewType === 'embed' ? "bg-neon-blue text-black shadow-lg" : "text-gray-500 hover:text-gray-900 dark:hover:text-white")}>EMBED VIEW</button>
                         </div>
                         <div className="pt-4">
                             <LivePreview type="gl" data={formData} hideDecorations={false} />
@@ -639,10 +639,10 @@ const GuestlistManager = () => {
                         ))
                     ) : (
                         <div className="col-span-full py-40 text-center">
-                            <div className="w-20 h-20 bg-white/5 rounded-[1.5rem] flex items-center justify-center mx-auto mb-8 border border-dashed border-white/10">
-                                <ListChecks size={32} className="text-white/20" />
+                            <div className="w-20 h-20 bg-black/5 dark:bg-white/5 rounded-[1.5rem] flex items-center justify-center mx-auto mb-8 border border-dashed border-black/10 dark:border-white/10">
+                                <ListChecks size={32} className="text-gray-900 dark:text-white/20" />
                             </div>
-                            <h3 className="text-xl font-black italic uppercase tracking-tighter text-white/40">No guestlists found.</h3>
+                            <h3 className="text-xl font-black italic uppercase tracking-tighter text-gray-900 dark:text-white/40">No guestlists found.</h3>
                             <p className="text-[10px] font-black text-gray-600 uppercase tracking-[0.3em] mt-2">CREATE ONE TO START.</p>
                         </div>
                     )}

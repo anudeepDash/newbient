@@ -74,7 +74,7 @@ const LiveCampaigns = () => {
     }, []);
 
     return (
-        <div className="min-h-screen bg-[#030303] text-white selection:bg-neon-blue selection:text-black overflow-hidden relative pb-40">
+        <div className="min-h-screen bg-gray-50 dark:bg-[#030303] text-gray-900 dark:text-white selection:bg-neon-blue selection:text-black overflow-hidden relative pb-40">
             {/* Ambient Cinematic Background */}
             <div className="fixed inset-0 z-0 pointer-events-none">
                 <div className="absolute top-[-10%] left-[20%] w-[50%] h-[50%] bg-neon-blue/10 rounded-full blur-[160px] animate-pulse" />
@@ -84,12 +84,12 @@ const LiveCampaigns = () => {
 
             <div className="relative z-10 max-w-[1700px] mx-auto px-4 sm:px-6 lg:px-12 pt-32 md:pt-40 space-y-16">
                 {/* DIRECTORY HEADER */}
-                <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 border-b border-white/5 pb-12">
+                <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 border-b border-black/10 dark:border-white/5 pb-12">
                     <div className="space-y-4 max-w-3xl">
-                        <h1 className="text-5xl sm:text-7xl font-black font-heading tracking-tighter uppercase italic text-white pr-4 leading-none">
-                            DISCOVER <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-blue via-neon-pink to-white">CAMPAIGNS.</span>
+                        <h1 className="text-5xl sm:text-7xl font-black font-heading tracking-tighter uppercase italic text-gray-900 dark:text-white pr-4 leading-none">
+                            DISCOVER <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-blue via-neon-pink to-black dark:to-white">CAMPAIGNS.</span>
                         </h1>
-                        <p className="text-gray-400 text-sm md:text-base font-bold uppercase tracking-widest leading-relaxed">
+                        <p className="text-gray-600 dark:text-gray-400 text-sm md:text-base font-bold uppercase tracking-widest leading-relaxed">
                             Browse active brand opportunities. Filter by platform, city, and follower requirements to apply for your next partnership.
                         </p>
                     </div>
@@ -97,13 +97,13 @@ const LiveCampaigns = () => {
                     <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 w-full sm:w-auto shrink-0">
                         <Button 
                             onClick={() => navigate('/creator')}
-                            className="h-14 sm:h-16 px-6 sm:px-8 rounded-2xl bg-white/5 border border-white/10 text-white font-black uppercase tracking-[0.2em] text-xs hover:bg-white hover:text-black transition-all backdrop-blur-xl shadow-2xl"
+                            className="h-14 sm:h-16 px-6 sm:px-8 rounded-2xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-gray-900 dark:text-white font-black uppercase tracking-[0.2em] text-xs hover:bg-black/10 dark:hover:bg-white/10 transition-all backdrop-blur-xl shadow-sm"
                         >
                             Creator Network Home
                         </Button>
                         <Button 
                             onClick={() => navigate('/creator/join')}
-                            className="h-14 sm:h-16 px-6 sm:px-8 rounded-2xl bg-white text-black font-black uppercase tracking-[0.2em] text-xs hover:bg-neon-blue hover:text-black transition-all shadow-[0_0_30px_rgba(255,255,255,0.2)]"
+                            className="h-14 sm:h-16 px-6 sm:px-8 rounded-2xl bg-black text-white hover:bg-neutral-800 dark:bg-white dark:text-black dark:hover:bg-neon-blue dark:hover:text-black font-black uppercase tracking-[0.2em] text-xs transition-all shadow-xl"
                         >
                             Register Profile <ArrowRight size={16} className="ml-2 inline" />
                         </Button>
@@ -111,16 +111,16 @@ const LiveCampaigns = () => {
                 </div>
 
                 {/* SEARCH & FILTER BENCH */}
-                <div className="bg-black/60 backdrop-blur-3xl border border-white/10 rounded-[1.5rem] sm:rounded-[2.5rem] p-5 sm:p-8 shadow-2xl space-y-8 relative z-30">
+                <div className="bg-white dark:bg-black/60 backdrop-blur-3xl border border-black/10 dark:border-white/10 rounded-[1.5rem] sm:rounded-[2.5rem] p-5 sm:p-8 shadow-2xl space-y-8 relative z-30">
                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
                         {/* Search Input */}
                         <div className="lg:col-span-6 relative">
-                            <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+                            <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-600 dark:text-gray-400" size={20} />
                             <Input 
                                 value={searchQuery}
                                 onChange={e => setSearchQuery(e.target.value)}
                                 placeholder="Search campaigns by brand, title, or keywords..."
-                                className="w-full h-16 pl-16 pr-6 bg-white/[0.03] border-white/10 rounded-2xl text-sm font-bold text-white placeholder:text-gray-600 focus:border-neon-blue transition-all"
+                                className="w-full h-16 pl-16 pr-6 bg-gray-100 dark:bg-white/[0.03] border-black/10 dark:border-white/10 rounded-2xl text-sm font-bold text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-600 focus:border-neon-blue transition-all"
                             />
                         </div>
 
@@ -138,7 +138,7 @@ const LiveCampaigns = () => {
                     </div>
 
                     {/* Platform Filter Tabs */}
-                    <div className="flex items-center gap-3 overflow-x-auto pb-2 scrollbar-hide pt-4 border-t border-white/5">
+                    <div className="flex items-center gap-3 overflow-x-auto pb-2 scrollbar-hide pt-4 border-t border-black/10 dark:border-white/5">
                         <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest flex items-center gap-1.5 mr-4 shrink-0">
                             <Filter size={14} /> Platform:
                         </span>
@@ -151,10 +151,10 @@ const LiveCampaigns = () => {
                                     onClick={() => setSelectedPlatform(key)}
                                     className={cn(
                                         "h-12 px-6 rounded-xl border flex items-center gap-2.5 text-xs font-black uppercase tracking-wider shrink-0 transition-all",
-                                        isActive ? "bg-neon-blue text-black border-neon-blue shadow-[0_0_20px_rgba(46,191,255,0.3)]" : "bg-white/[0.02] border-white/10 text-gray-400 hover:text-white hover:border-white/20 hover:bg-white/[0.05]"
+                                        isActive ? "bg-neon-blue text-black border-neon-blue shadow-[0_0_20px_rgba(46,191,255,0.3)]" : "bg-gray-100 dark:bg-white/[0.02] border-black/10 dark:border-white/10 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:border-black/20 dark:hover:border-white/20 hover:bg-gray-200/50 dark:hover:bg-white/[0.05]"
                                     )}
                                 >
-                                    <Icon size={16} className={isActive ? "text-black" : "text-gray-400"} />
+                                    <Icon size={16} className={isActive ? "text-black" : "text-gray-600 dark:text-gray-400"} />
                                     {plat.label}
                                 </button>
                             );
@@ -184,13 +184,13 @@ const LiveCampaigns = () => {
                                         animate={{ opacity: 1, scale: 1 }}
                                         exit={{ opacity: 0, scale: 0.95 }}
                                         transition={{ duration: 0.4 }}
-                                        className="group bg-zinc-950/45 backdrop-blur-3xl border border-white/[0.08] hover:border-neon-blue/30 rounded-[2.2rem] overflow-hidden flex flex-col justify-between transition-all duration-500 hover:-translate-y-2 shadow-[inset_0_1px_1px_rgba(255,255,255,0.1),0_10px_30px_rgba(0,0,0,0.5)] hover:shadow-[0_20px_50px_rgba(0,240,255,0.1)] relative"
+                                        className="group bg-gray-100 dark:bg-zinc-950/45 backdrop-blur-3xl border border-gray-200 dark:border-white/[0.08] hover:border-neon-blue/30 rounded-[2.2rem] overflow-hidden flex flex-col justify-between transition-all duration-500 hover:-translate-y-2 shadow-md dark:shadow-[inset_0_1px_1px_rgba(255,255,255,0.1),0_10px_30px_rgba(0,0,0,0.5)] hover:shadow-[0_20px_50px_rgba(0,240,255,0.1)] relative"
                                     >
-                                        <div className="aspect-video relative overflow-hidden bg-zinc-900 shrink-0">
-                                            <img src={camp.thumbnail || 'https://images.unsplash.com/photo-1539109136881-3be0616acf4b?auto=format&fit=crop&q=80&w=800'} alt={camp.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out opacity-80" />
+                                        <div className="aspect-video relative overflow-hidden bg-gray-100 dark:bg-zinc-900 shrink-0">
+                                             <img src={camp.thumbnail || 'https://images.unsplash.com/photo-1539109136881-3be0616acf4b?auto=format&fit=crop&q=80&w=800'} alt={camp.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out opacity-80" />
                                             <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/20 to-transparent pointer-events-none" />
                                             <div className="absolute top-6 left-6 right-6 flex items-center justify-between z-10 gap-2">
-                                                <span className="px-3.5 py-1.5 rounded-full bg-black/60 backdrop-blur-md border border-white/10 text-[9px] font-black uppercase tracking-widest text-neon-pink flex items-center gap-1.5 shadow-xl">
+                                                <span className="px-3.5 py-1.5 rounded-full bg-white dark:bg-black/60 backdrop-blur-md border border-black/10 dark:border-white/10 text-[9px] font-black uppercase tracking-widest text-neon-pink flex items-center gap-1.5 shadow-xl">
                                                     <MapPin size={12} /> {camp.targetCity || 'Universal'}
                                                 </span>
                                                 <div className="flex items-center gap-2">
@@ -204,7 +204,7 @@ const LiveCampaigns = () => {
                                                             {camp.status}
                                                         </span>
                                                     )}
-                                                    <div className="w-9 h-9 rounded-xl bg-black/60 backdrop-blur-md border border-white/10 flex items-center justify-center text-white shadow-xl">
+                                                    <div className="w-9 h-9 rounded-xl bg-white dark:bg-black/60 backdrop-blur-md border border-black/10 dark:border-white/10 flex items-center justify-center text-gray-900 dark:text-white shadow-xl">
                                                         <PlatIcon size={16} />
                                                     </div>
                                                 </div>
@@ -213,17 +213,17 @@ const LiveCampaigns = () => {
 
                                         <div className="p-6 sm:p-8 flex-1 flex flex-col justify-between space-y-6 sm:space-y-8 bg-gradient-to-b from-transparent to-zinc-950/40">
                                             <div className="space-y-4">
-                                                <h3 className="text-2xl font-black uppercase italic tracking-tight text-white group-hover:text-neon-blue transition-colors line-clamp-2 pr-2 leading-none">{camp.title}</h3>
-                                                <p className="text-gray-400 text-xs font-medium leading-relaxed line-clamp-2">{camp.description || 'Exclusive brand mission requiring verified creator fulfillment and professional engagement deliverables.'}</p>
+                                                <h3 className="text-2xl font-black uppercase italic tracking-tight text-gray-900 dark:text-white group-hover:text-neon-blue transition-colors line-clamp-2 pr-2 leading-none">{camp.title}</h3>
+                                                <p className="text-gray-600 dark:text-gray-400 text-xs font-medium leading-relaxed line-clamp-2">{camp.description || 'Exclusive brand mission requiring verified creator fulfillment and professional engagement deliverables.'}</p>
                                                 
-                                                <div className="flex flex-wrap items-center gap-3 pt-3 border-t border-white/5">
-                                                    <span className="px-3.5 py-1.5 rounded-xl bg-white/[0.03] border border-white/5 text-[9px] font-black uppercase tracking-widest text-gray-300 flex items-center gap-1.5">
+                                                <div className="flex flex-wrap items-center gap-3 pt-3 border-t border-black/10 dark:border-white/5">
+                                                    <span className="px-3.5 py-1.5 rounded-xl bg-gray-200/60 dark:bg-white/[0.03] border border-black/10 dark:border-white/5 text-[9px] font-black uppercase tracking-widest text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
                                                         <Users size={12} className="text-neon-blue" /> Min. {Number(camp.minInstagramFollowers || 0).toLocaleString()} Followers
                                                     </span>
                                                 </div>
                                             </div>
 
-                                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-6 border-t border-white/5 mt-auto shrink-0">
+                                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-6 border-t border-black/10 dark:border-white/5 mt-auto shrink-0">
                                                 <div>
                                                     <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-0.5">Reward Payout</p>
                                                     <p className="text-base font-black text-neon-green uppercase truncate max-w-[160px] italic">{camp.reward}</p>
@@ -234,7 +234,7 @@ const LiveCampaigns = () => {
                                                         "w-full sm:w-auto h-12 sm:h-14 px-6 sm:px-8 rounded-full font-black uppercase tracking-widest text-[10px] transition-all duration-300 shadow-xl flex items-center justify-center gap-2 border-none",
                                                         (!camp.status || camp.status.toLowerCase() === 'open')
                                                             ? "bg-white text-black group-hover:bg-neon-blue group-hover:text-black hover:scale-105"
-                                                            : "bg-white/5 text-gray-400 border border-white/10 hover:bg-white/10 hover:text-white"
+                                                            : "bg-black/5 dark:bg-white/5 text-gray-600 dark:text-gray-400 border border-black/10 dark:border-white/10 hover:bg-black/10 dark:hover:bg-white/10 hover:text-gray-900 dark:hover:text-white"
                                                     )}
                                                 >
                                                     {(!camp.status || camp.status.toLowerCase() === 'open') ? (
@@ -258,17 +258,17 @@ const LiveCampaigns = () => {
                     </div>
 
                     {filteredCampaigns.length === 0 && (
-                        <div className="py-32 text-center bg-black/40 backdrop-blur-2xl border border-white/10 rounded-[3rem] p-12 shadow-2xl max-w-3xl mx-auto space-y-6">
-                            <div className="w-24 h-24 rounded-[2.5rem] bg-white/5 border border-white/10 flex items-center justify-center mx-auto text-gray-600">
+                        <div className="py-32 text-center bg-white dark:bg-black/40 backdrop-blur-2xl border border-black/10 dark:border-white/10 rounded-[3rem] p-12 shadow-2xl max-w-3xl mx-auto space-y-6">
+                            <div className="w-24 h-24 rounded-[2.5rem] bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 flex items-center justify-center mx-auto text-gray-600">
                                 <Search size={40} />
                             </div>
-                            <h3 className="text-3xl font-black font-heading uppercase italic tracking-tighter text-white pr-4">No matching missions found.</h3>
-                            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest max-w-md mx-auto leading-relaxed">
+                            <h3 className="text-3xl font-black font-heading uppercase italic tracking-tighter text-gray-900 dark:text-white pr-4">No matching missions found.</h3>
+                            <p className="text-xs font-bold text-gray-600 dark:text-gray-400 uppercase tracking-widest max-w-md mx-auto leading-relaxed">
                                 Try adjusting your search keywords, selecting a different platform, or expanding your city filter to discover more brand gigs.
                             </p>
                             <Button 
                                 onClick={() => { setSearchQuery(''); setSelectedPlatform('all'); setSelectedCity('All'); }}
-                                className="h-16 px-10 rounded-2xl bg-white/10 border border-white/10 text-white font-black uppercase tracking-widest text-xs hover:bg-white hover:text-black transition-all mt-4"
+                                className="h-16 px-10 rounded-2xl bg-black/10 dark:bg-white/10 border border-black/10 dark:border-white/10 text-gray-900 dark:text-white font-black uppercase tracking-widest text-xs hover:bg-white hover:text-black transition-all mt-4"
                             >
                                 Reset All Filters
                             </Button>

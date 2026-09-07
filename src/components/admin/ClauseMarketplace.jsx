@@ -36,10 +36,10 @@ const ClauseMarketplace = ({ activeClauses, onToggleClause, onUpdateClause, onRe
     <div className="space-y-6">
       {/* Active Clauses */}
       <div className="space-y-3">
-        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2"><Shield size={12} /> Active Clauses ({activeClauses.length})</p>
+        <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest flex items-center gap-2"><Shield size={12} /> Active Clauses ({activeClauses.length})</p>
         {activeClauses.map((clause, idx) => (
           <motion.div key={clause.id} layout draggable onDragStart={e => handleDragStart(e, idx)} onDragOver={e => handleDragOver(e, idx)} onDrop={e => handleDrop(e, idx)}
-            className="bg-black/30 border border-white/5 rounded-2xl overflow-hidden hover:border-white/10 transition-all group">
+            className="bg-white dark:bg-black/30 border border-black/10 dark:border-white/5 rounded-2xl overflow-hidden hover:border-black/10 dark:hover:border-white/10 transition-all group">
             <div className="flex items-center gap-3 p-4 cursor-pointer" onClick={() => setExpanded(expanded === clause.id ? null : clause.id)}>
               <GripVertical size={14} className="text-gray-700 cursor-grab flex-shrink-0" />
               <div className="flex-1 min-w-0">
@@ -51,14 +51,14 @@ const ClauseMarketplace = ({ activeClauses, onToggleClause, onUpdateClause, onRe
                 <div className="flex gap-1">
                   {['low', 'medium', 'high'].map(level => (
                     <button key={level} onClick={e => { e.stopPropagation(); onUpdateClause(clause.id, { strictness: level, content: clause.levels[level] }); }}
-                      className={cn("px-2 py-0.5 rounded-md text-[7px] font-black uppercase border transition-all", clause.strictness === level ? STRICTNESS_COLORS[level] : 'border-transparent text-gray-700 hover:text-gray-400')}>
+                      className={cn("px-2 py-0.5 rounded-md text-[7px] font-black uppercase border transition-all", clause.strictness === level ? STRICTNESS_COLORS[level] : 'border-transparent text-gray-700 hover:text-gray-600 dark:hover:text-gray-400')}>
                       {level[0].toUpperCase()}
                     </button>
                   ))}
                 </div>
               )}
               <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
-                <button type="button" onClick={() => onRefineClick?.(`clauses[${clause.id}]`, clause.title, clause.content)} className="p-1.5 text-[#A855F7] hover:text-white rounded-lg hover:scale-105 opacity-0 group-hover:opacity-100 transition-all" title="Refine with AI"><Sparkles size={12} className="animate-pulse" /></button>
+                <button type="button" onClick={() => onRefineClick?.(`clauses[${clause.id}]`, clause.title, clause.content)} className="p-1.5 text-[#A855F7] hover:text-gray-900 dark:hover:text-white rounded-lg hover:scale-105 opacity-0 group-hover:opacity-100 transition-all" title="Refine with AI"><Sparkles size={12} className="animate-pulse" /></button>
                 <button onClick={e => { e.stopPropagation(); onRemoveClause(clause.id); }} className="p-1.5 text-gray-700 hover:text-red-500 transition-colors"><Trash2 size={12} /></button>
               </div>
               {expanded === clause.id ? <ChevronUp size={14} className="text-gray-600" /> : <ChevronDown size={14} className="text-gray-600" />}
@@ -71,7 +71,7 @@ const ClauseMarketplace = ({ activeClauses, onToggleClause, onUpdateClause, onRe
                       value={clause.content || ''} 
                       onChange={val => onUpdateClause(clause.id, { content: val })}
                       minHeight="100px"
-                      className="bg-black/20"
+                      className="bg-white dark:bg-black/20"
                     />
                   </div>
                 </motion.div>
@@ -88,7 +88,7 @@ const ClauseMarketplace = ({ activeClauses, onToggleClause, onUpdateClause, onRe
           <div className="grid grid-cols-2 gap-2">
             {libraryNotActive.map(lc => (
               <button key={lc.id} onClick={() => onToggleClause(lc.id, 'add')}
-                className="p-3 bg-white/[0.02] hover:bg-white/5 border border-white/5 rounded-xl text-left group transition-all">
+                className="p-3 bg-white/[0.02] hover:bg-black/5 dark:hover:bg-white/5 border border-black/10 dark:border-white/5 rounded-xl text-left group transition-all">
                 <p className="text-[9px] font-black uppercase tracking-widest group-hover:text-purple-500 transition-colors">{lc.title}</p>
                 <p className="text-[7px] text-gray-700 font-bold uppercase mt-0.5">{lc.category}</p>
               </button>
@@ -100,23 +100,23 @@ const ClauseMarketplace = ({ activeClauses, onToggleClause, onUpdateClause, onRe
       {/* Custom Clause */}
       <div className="space-y-3">
         {!showAddCustom ? (
-          <button onClick={() => setShowAddCustom(true)} className="w-full p-4 border-2 border-dashed border-white/5 hover:border-purple-500/20 rounded-2xl text-[10px] font-black uppercase tracking-widest text-gray-600 hover:text-purple-500 flex items-center justify-center gap-2 transition-all">
+          <button onClick={() => setShowAddCustom(true)} className="w-full p-4 border-2 border-dashed border-black/10 dark:border-white/5 hover:border-purple-500/20 rounded-2xl text-[10px] font-black uppercase tracking-widest text-gray-600 hover:text-purple-500 flex items-center justify-center gap-2 transition-all">
             <Plus size={14} /> Add Custom Clause
           </button>
         ) : (
-          <div className="p-4 bg-black/30 border border-white/10 rounded-2xl space-y-3">
-            <input value={customTitle} onChange={e => setCustomTitle(e.target.value)} placeholder="Clause Title" className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-[10px] font-black uppercase tracking-widest outline-none placeholder:text-gray-700 focus:border-purple-500/30" />
+          <div className="p-4 bg-white dark:bg-black/30 border border-black/10 dark:border-white/10 rounded-2xl space-y-3">
+            <input value={customTitle} onChange={e => setCustomTitle(e.target.value)} placeholder="Clause Title" className="w-full bg-white dark:bg-black/40 border border-black/10 dark:border-white/10 rounded-xl p-3 text-[10px] font-black uppercase tracking-widest outline-none placeholder:text-gray-700 focus:border-purple-500/30" />
             <StudioRichEditor 
               value={customContent} 
               onChange={val => setCustomContent(val)} 
               placeholder="Clause content..." 
               minHeight="120px"
-              className="bg-black/20"
+              className="bg-white dark:bg-black/20"
             />
             <div className="flex gap-2">
               <button onClick={() => { if (customTitle.trim()) { onAddCustom(customTitle, customContent); setCustomTitle(''); setCustomContent(''); setShowAddCustom(false); } }}
                 className="px-4 py-2 bg-purple-500 text-black text-[9px] font-black uppercase rounded-lg">Add</button>
-              <button onClick={() => setShowAddCustom(false)} className="px-4 py-2 bg-white/5 text-[9px] font-black uppercase rounded-lg text-gray-500">Cancel</button>
+              <button onClick={() => setShowAddCustom(false)} className="px-4 py-2 bg-black/5 dark:bg-white/5 text-[9px] font-black uppercase rounded-lg text-gray-500">Cancel</button>
             </div>
           </div>
         )}

@@ -239,11 +239,11 @@ const TicketingManagement = () => {
                                 animate={{ opacity: 1, scale: 1 }}
                                 transition={{ duration: 0.4 }}
                                 onClick={() => setSelectedEventId(event.id)}
-                                className="group relative bg-[#0A0A0A] border border-white/5 hover:border-neon-green/20 rounded-[2.5rem] p-5 flex flex-col h-auto min-h-[420px] shadow-[0_20px_60px_rgba(0,0,0,0.5)] overflow-hidden transition-all duration-500 cursor-pointer shrink-0 w-[85vw] md:w-auto snap-center"
+                                className="group relative bg-[#0A0A0A] border border-black/10 dark:border-white/5 hover:border-neon-green/20 rounded-[2.5rem] p-5 flex flex-col h-auto min-h-[420px] shadow-[0_20px_60px_rgba(0,0,0,0.5)] overflow-hidden transition-all duration-500 cursor-pointer shrink-0 w-[85vw] md:w-auto snap-center"
                             >
                                 {/* 16:9 Thumbnail Header */}
                                 <div className="relative mb-6 shrink-0 group-hover:scale-[1.01] transition-transform duration-700">
-                                    <div className="aspect-video rounded-[1.5rem] overflow-hidden bg-black border border-white/5 relative flex items-center justify-center">
+                                    <div className="aspect-video rounded-[1.5rem] overflow-hidden bg-white dark:bg-black border border-black/10 dark:border-white/5 relative flex items-center justify-center">
                                         {(event.hubImage || event.image) ? (
                                             <div
                                                 className="absolute inset-0 bg-cover transition-transform duration-700 group-hover:scale-110"
@@ -256,8 +256,8 @@ const TicketingManagement = () => {
                                                 }}
                                             />
                                         ) : (
-                                            <div className="absolute inset-0 flex items-center justify-center bg-zinc-900/50">
-                                                <Ticket size={32} className="text-white/5" />
+                                            <div className="absolute inset-0 flex items-center justify-center bg-gray-100 dark:bg-zinc-900/50">
+                                                <Ticket size={32} className="text-gray-900 dark:text-white/5" />
                                             </div>
                                         )}
                                         <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent z-10" />
@@ -267,9 +267,9 @@ const TicketingManagement = () => {
                                 {/* Status Badge — floats top-right */}
                                 {isCompleted && (
                                     <div className="absolute top-8 right-8 z-30">
-                                        <div className="px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-md border border-white/10 flex items-center gap-2">
+                                        <div className="px-3 py-1.5 rounded-full bg-white dark:bg-black/60 backdrop-blur-md border border-black/10 dark:border-white/10 flex items-center gap-2">
                                             <div className="w-1.5 h-1.5 rounded-full bg-red-500" />
-                                            <span className="text-[8px] font-black uppercase tracking-widest text-white/80">Completed</span>
+                                            <span className="text-[8px] font-black uppercase tracking-widest text-gray-900 dark:text-white/80">Completed</span>
                                         </div>
                                     </div>
                                 )}
@@ -288,7 +288,7 @@ const TicketingManagement = () => {
                                                 {event.guestlistMode === 'rsvp' ? 'RSVP' : 'GUESTLIST'}
                                             </span>
                                         )}
-                                        <span className="px-2.5 h-5 flex items-center bg-white/5 border border-white/10 text-white/50 text-[7px] font-black uppercase tracking-widest rounded-full backdrop-blur-md">
+                                        <span className="px-2.5 h-5 flex items-center bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-gray-900 dark:text-white/50 text-[7px] font-black uppercase tracking-widest rounded-full backdrop-blur-md">
                                             {event.date 
                                                 ? (typeof event.date === 'string' && event.date.includes('T') 
                                                     ? event.date.split('T')[0] 
@@ -298,7 +298,7 @@ const TicketingManagement = () => {
                                     </div>
 
                                     {/* Title */}
-                                    <h3 className="text-xl font-black font-heading tracking-tight uppercase italic text-white group-hover:text-neon-green transition-colors duration-500 leading-tight line-clamp-2 mb-4">
+                                    <h3 className="text-xl font-black font-heading tracking-tight uppercase italic text-gray-900 dark:text-white group-hover:text-neon-green transition-colors duration-500 leading-tight line-clamp-2 mb-4">
                                         {event.title}
                                     </h3>
 
@@ -344,7 +344,7 @@ const TicketingManagement = () => {
                                                     <Users size={12} />
                                                 </div>
                                             )}
-                                            <div className="w-7 h-7 rounded-lg bg-white/5 flex items-center justify-center text-white/30 border border-white/10 group-hover:bg-neon-green group-hover:text-black group-hover:border-neon-green transition-all" title="Open Operations">
+                                            <div className="w-7 h-7 rounded-lg bg-black/5 dark:bg-white/5 flex items-center justify-center text-gray-900 dark:text-white/30 border border-black/10 dark:border-white/10 group-hover:bg-neon-green group-hover:text-black group-hover:border-neon-green transition-all" title="Open Operations">
                                                 <ChevronRight size={14} />
                                             </div>
                                         </div>
@@ -355,8 +355,8 @@ const TicketingManagement = () => {
                     })}
 
                     {operationalEvents.length === 0 && (
-                        <div className="col-span-full py-32 flex flex-col items-center justify-center gap-6 bg-zinc-900/20 rounded-[3rem] border-2 border-dashed border-white/5">
-                            <div className="w-16 h-16 rounded-full border border-white/10 flex items-center justify-center text-gray-700 animate-pulse">
+                        <div className="col-span-full py-32 flex flex-col items-center justify-center gap-6 bg-gray-100 dark:bg-zinc-900/20 rounded-[3rem] border-2 border-dashed border-black/10 dark:border-white/5">
+                            <div className="w-16 h-16 rounded-full border border-black/10 dark:border-white/10 flex items-center justify-center text-gray-700 animate-pulse">
                                 <Ticket size={28} />
                             </div>
                             <p className="text-[10px] font-black text-gray-600 uppercase tracking-[0.3em]">No ticketing events found.</p>
@@ -761,14 +761,14 @@ const TicketingManagement = () => {
                 <Button 
                     onClick={() => setSelectedEventId(null)} 
                     variant="outline" 
-                    className="gap-2 border-white/10 text-gray-400 hover:text-white rounded-2xl uppercase tracking-widest text-[9px] font-black px-6 py-3"
+                    className="gap-2 border-black/10 dark:border-white/10 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white rounded-2xl uppercase tracking-widest text-[9px] font-black px-6 py-3"
                 >
                     <ArrowLeft size={14} /> Back to Events
                 </Button>
             }
         >
-            <div className="bg-zinc-900/60 backdrop-blur-3xl border border-white/5 rounded-[3rem] p-6 mb-8 flex flex-col md:flex-row gap-6 justify-between items-center shadow-2xl">
-                    <div className="flex flex-wrap gap-2 w-full md:w-auto bg-black/60 p-2 rounded-[2rem] border border-white/5">
+            <div className="bg-gray-100 dark:bg-zinc-900/60 backdrop-blur-3xl border border-black/10 dark:border-white/5 rounded-[3rem] p-6 mb-8 flex flex-col md:flex-row gap-6 justify-between items-center shadow-2xl">
+                    <div className="flex flex-wrap gap-2 w-full md:w-auto bg-white dark:bg-black/60 p-2 rounded-[2rem] border border-black/10 dark:border-white/5">
                         {['buyers', 'guestlist', 'dispatch', 'attendance', 'coupons', 'sheets', 'settings'].map((tab) => {
                             if (isScanner && (tab === 'buyers' || tab === 'dispatch' || tab === 'guestlist' || tab === 'settings')) return null; 
                             if (!event?.isTicketed && (tab === 'buyers' || tab === 'dispatch' || tab === 'settings' || tab === 'coupons')) return null;
@@ -780,8 +780,8 @@ const TicketingManagement = () => {
                                     className={cn(
                                         "px-8 py-4 rounded-3xl text-[11px] font-black uppercase tracking-widest transition-all",
                                         activeTab === tab 
-                                            ? "bg-gradient-to-r from-neon-green/20 to-neon-blue/20 text-white border border-white/10 shadow-[0_0_20px_rgba(0,255,100,0.1)]" 
-                                            : "text-gray-500 hover:text-white hover:bg-white/5"
+                                            ? "bg-gradient-to-r from-neon-green/20 to-neon-blue/20 text-gray-900 dark:text-white border border-black/10 dark:border-white/10 shadow-[0_0_20px_rgba(0,255,100,0.1)]" 
+                                            : "text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5"
                                     )}
                                 >
                                     {tab === 'buyers' ? 'Buyers' : tab === 'guestlist' ? (event?.guestlistMode === 'rsvp' ? 'RSVP' : 'Guestlist') : tab === 'dispatch' ? 'Dispatch' : tab === 'attendance' ? 'Attendance' : tab === 'settings' ? 'Settings' : tab === 'coupons' ? 'Coupons' : 'Sheets'}
@@ -797,14 +797,14 @@ const TicketingManagement = () => {
                         <motion.div key="coupons" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
                             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                                 {/* Coupon Form */}
-                                <Card className="lg:col-span-1 p-8 bg-zinc-900/60 backdrop-blur-3xl border border-white/10 rounded-[3rem] h-fit sticky top-48">
+                                <Card className="lg:col-span-1 p-8 bg-gray-100 dark:bg-zinc-900/60 backdrop-blur-3xl border border-black/10 dark:border-white/10 rounded-[3rem] h-fit sticky top-48">
                                     <div className="space-y-6">
                                         <div className="flex items-center gap-4 mb-8">
                                             <div className="w-12 h-12 rounded-2xl bg-neon-blue/10 border border-neon-blue/20 flex items-center justify-center text-neon-blue">
                                                 <Tag size={20} />
                                             </div>
                                             <div>
-                                                <h3 className="text-xl font-black italic uppercase tracking-tighter text-white">Create Code</h3>
+                                                <h3 className="text-xl font-black italic uppercase tracking-tighter text-gray-900 dark:text-white">Create Code</h3>
                                                 <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Add new discount code.</p>
                                             </div>
                                         </div>
@@ -835,28 +835,28 @@ const TicketingManagement = () => {
                                         }} className="space-y-4">
                                             <div className="space-y-2">
                                                 <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest px-2">COUPON CODE</label>
-                                                <Input name="code" placeholder="e.g. NEWBI20" required className="h-14 bg-black/40 border-white/10 rounded-2xl text-[11px] font-black tracking-[0.2em]" />
+                                                <Input name="code" placeholder="e.g. NEWBI20" required className="h-14 bg-white dark:bg-black/40 border-black/10 dark:border-white/10 rounded-2xl text-[11px] font-black tracking-[0.2em]" />
                                             </div>
                                             <div className="grid grid-cols-2 gap-4">
                                                 <div className="space-y-2">
                                                     <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest px-2">TYPE</label>
-                                                    <select name="type" className="w-full h-14 bg-black/40 border border-white/10 rounded-2xl text-[11px] font-black uppercase tracking-widest px-4 outline-none">
-                                                        <option value="percentage" className="bg-zinc-900">PERCENTAGE %</option>
-                                                        <option value="flat" className="bg-zinc-900">FLAT ₹</option>
+                                                    <select name="type" className="w-full h-14 bg-white dark:bg-black/40 border border-black/10 dark:border-white/10 rounded-2xl text-[11px] font-black uppercase tracking-widest px-4 outline-none">
+                                                        <option value="percentage" className="bg-gray-100 dark:bg-zinc-900">PERCENTAGE %</option>
+                                                        <option value="flat" className="bg-gray-100 dark:bg-zinc-900">FLAT ₹</option>
                                                     </select>
                                                 </div>
                                                 <div className="space-y-2">
                                                     <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest px-2">VALUE</label>
-                                                    <Input name="value" type="number" placeholder="20" required className="h-14 bg-black/40 border-white/10 rounded-2xl text-[11px] font-black" />
+                                                    <Input name="value" type="number" placeholder="20" required className="h-14 bg-white dark:bg-black/40 border-black/10 dark:border-white/10 rounded-2xl text-[11px] font-black" />
                                                 </div>
                                             </div>
                                             <div className="space-y-2">
                                                 <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest px-2">USAGE LIMIT (OPTIONAL)</label>
-                                                <Input name="limit" type="number" placeholder="e.g. 100" className="h-14 bg-black/40 border-white/10 rounded-2xl text-[11px] font-black" />
+                                                <Input name="limit" type="number" placeholder="e.g. 100" className="h-14 bg-white dark:bg-black/40 border-black/10 dark:border-white/10 rounded-2xl text-[11px] font-black" />
                                             </div>
                                             <div className="space-y-2">
                                                 <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest px-2">EXPIRY DATE (OPTIONAL)</label>
-                                                <Input name="expiry" type="date" className="h-14 bg-black/40 border-white/10 rounded-2xl text-[11px] font-black uppercase" />
+                                                <Input name="expiry" type="date" className="h-14 bg-white dark:bg-black/40 border-black/10 dark:border-white/10 rounded-2xl text-[11px] font-black uppercase" />
                                             </div>
                                             <Button type="submit" disabled={isSavingCoupon} className="w-full h-16 bg-neon-blue text-black font-black uppercase tracking-widest text-[10px] rounded-2xl mt-4">
                                                 {isSavingCoupon ? <LoadingSpinner size="sm" /> : 'CREATE COUPON'}
@@ -866,17 +866,17 @@ const TicketingManagement = () => {
                                 </Card>
 
                                 {/* Coupon List */}
-                                <Card className="lg:col-span-2 p-0 bg-zinc-900/60 backdrop-blur-3xl border border-white/10 rounded-[3rem] overflow-hidden shadow-2xl h-fit">
-                                    <div className="p-8 border-b border-white/5 bg-black/40 flex justify-between items-center">
-                                        <h3 className="text-xl font-black italic uppercase tracking-tighter text-white">Active Coupons</h3>
-                                        <div className="px-6 py-2 bg-white/5 border border-white/10 rounded-full text-[9px] font-black uppercase tracking-[0.2em] text-gray-400">
+                                <Card className="lg:col-span-2 p-0 bg-gray-100 dark:bg-zinc-900/60 backdrop-blur-3xl border border-black/10 dark:border-white/10 rounded-[3rem] overflow-hidden shadow-2xl h-fit">
+                                    <div className="p-8 border-b border-black/10 dark:border-white/5 bg-white dark:bg-black/40 flex justify-between items-center">
+                                        <h3 className="text-xl font-black italic uppercase tracking-tighter text-gray-900 dark:text-white">Active Coupons</h3>
+                                        <div className="px-6 py-2 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-full text-[9px] font-black uppercase tracking-[0.2em] text-gray-600 dark:text-gray-400">
                                             {useStore.getState().coupons.filter(c => c.eventId === selectedEventId).length} Active
                                         </div>
                                     </div>
                                     <div className="overflow-x-auto">
                                         <table className="w-full text-left border-collapse">
                                             <thead>
-                                                <tr className="bg-black/80 border-b border-white/10 text-[10px] font-black uppercase tracking-widest text-gray-500">
+                                                <tr className="bg-white dark:bg-black/80 border-b border-black/10 dark:border-white/10 text-[10px] font-black uppercase tracking-widest text-gray-500">
                                                     <th className="p-8">Code</th>
                                                     <th className="p-8">Benefit</th>
                                                     <th className="p-8">Usage</th>
@@ -888,17 +888,17 @@ const TicketingManagement = () => {
                                                     const eventCoupons = useStore.getState().coupons.filter(c => c.eventId === selectedEventId);
                                                     if (eventCoupons.length === 0) return (
                                                         <tr>
-                                                            <td colSpan="4" className="p-20 text-center text-gray-500 bg-black/20">
+                                                            <td colSpan="4" className="p-20 text-center text-gray-500 bg-white dark:bg-black/20">
                                                                 <Percent size={48} className="mx-auto mb-6 opacity-20" />
                                                                 <p className="text-[10px] font-black uppercase tracking-[0.4em]">No coupons active for this event.</p>
                                                             </td>
                                                         </tr>
                                                     );
                                                     return eventCoupons.map((coupon) => (
-                                                        <tr key={coupon.id} className="border-b border-white/5 hover:bg-white/5 transition-colors group">
+                                                        <tr key={coupon.id} className="border-b border-black/10 dark:border-white/5 hover:bg-black/5 dark:hover:bg-white/5 transition-colors group">
                                                             <td className="p-8">
                                                                 <div className="flex flex-col">
-                                                                    <span className="font-black text-white text-base tracking-[0.1em]">{coupon.code}</span>
+                                                                    <span className="font-black text-gray-900 dark:text-white text-base tracking-[0.1em]">{coupon.code}</span>
                                                                     {coupon.expiryDate && <span className="text-[8px] text-gray-500 font-bold uppercase mt-1">Exp: {new Date(coupon.expiryDate).toLocaleDateString()}</span>}
                                                                 </div>
                                                             </td>
@@ -914,10 +914,10 @@ const TicketingManagement = () => {
                                                                 <div className="flex flex-col gap-2">
                                                                     <div className="flex justify-between text-[9px] font-black uppercase tracking-widest">
                                                                         <span className="text-gray-500">Usage</span>
-                                                                        <span className="text-white">{coupon.usedCount || 0} / {coupon.usageLimit || '∞'}</span>
+                                                                        <span className="text-gray-900 dark:text-white">{coupon.usedCount || 0} / {coupon.usageLimit || '∞'}</span>
                                                                     </div>
                                                                     {coupon.usageLimit && (
-                                                                        <div className="w-32 h-1 bg-white/5 rounded-full overflow-hidden">
+                                                                        <div className="w-32 h-1 bg-black/5 dark:bg-white/5 rounded-full overflow-hidden">
                                                                             <div 
                                                                                 className="h-full bg-neon-blue" 
                                                                                 style={{ width: `${Math.min(100, ((coupon.usedCount || 0) / coupon.usageLimit) * 100)}%` }} 
@@ -934,7 +934,7 @@ const TicketingManagement = () => {
                                                                             useStore.getState().addToast("Coupon deleted.", 'success');
                                                                         }
                                                                     }}
-                                                                    className="p-3 rounded-xl bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all opacity-0 group-hover:opacity-100"
+                                                                    className="p-3 rounded-xl bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-gray-900 dark:hover:text-white transition-all opacity-0 group-hover:opacity-100"
                                                                 >
                                                                     <Trash2 size={16} />
                                                                 </button>
@@ -953,8 +953,8 @@ const TicketingManagement = () => {
                     {/* GUESTLIST TAB */}
                     {activeTab === 'guestlist' && !isScanner && (
                         <motion.div key="guestlist" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
-                            <Card className="p-0 bg-zinc-900/60 backdrop-blur-3xl border border-white/10 rounded-[3rem] overflow-hidden shadow-2xl">
-                                <div className="p-8 border-b border-white/5 flex flex-col md:flex-row gap-6 items-start md:items-center justify-between bg-black/40">
+                            <Card className="p-0 bg-gray-100 dark:bg-zinc-900/60 backdrop-blur-3xl border border-black/10 dark:border-white/10 rounded-[3rem] overflow-hidden shadow-2xl">
+                                <div className="p-8 border-b border-black/10 dark:border-white/5 flex flex-col md:flex-row gap-6 items-start md:items-center justify-between bg-white dark:bg-black/40">
                                     <div className="flex gap-4 items-center">
                                         <div className="relative">
                                             <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-500" size={16} />
@@ -962,18 +962,18 @@ const TicketingManagement = () => {
                                                 placeholder="SEARCH GUESTS..." 
                                                 value={searchQuery}
                                                 onChange={e => setSearchQuery(e.target.value)}
-                                                className="h-14 pl-14 w-64 bg-black/60 border-white/10 rounded-2xl text-[11px] font-black uppercase tracking-widest"
+                                                className="h-14 pl-14 w-64 bg-white dark:bg-black/60 border-black/10 dark:border-white/10 rounded-2xl text-[11px] font-black uppercase tracking-widest"
                                             />
                                         </div>
                                     </div>
-                                    <div className="px-6 py-3 bg-white/5 text-white rounded-2xl text-[11px] font-black tracking-widest uppercase border border-white/10">
+                                    <div className="px-6 py-3 bg-black/5 dark:bg-white/5 text-gray-900 dark:text-white rounded-2xl text-[11px] font-black tracking-widest uppercase border border-black/10 dark:border-white/10">
                                         {guestlistEntries.length} Entries
                                     </div>
                                 </div>
                                 <div className="overflow-x-auto">
                                     <table className="w-full text-left border-collapse hidden md:table">
                                         <thead>
-                                            <tr className="bg-black/80 border-b border-white/10 text-[10px] font-black uppercase tracking-widest text-gray-500">
+                                            <tr className="bg-white dark:bg-black/80 border-b border-black/10 dark:border-white/10 text-[10px] font-black uppercase tracking-widest text-gray-500">
                                                 <th className="p-8 font-medium">Guest Details</th>
                                                 <th className="p-8 font-medium">Guests</th>
                                                 <th className="p-8 font-medium">Booking Ref</th>
@@ -987,9 +987,9 @@ const TicketingManagement = () => {
                                                 (e.customerName || e.name)?.toLowerCase().includes(searchQuery.toLowerCase()) || 
                                                 e.bookingRef?.includes(searchQuery)
                                             ).map((entry) => (
-                                                <tr key={entry.id} className="border-b border-white/5 hover:bg-white/5 transition-colors group">
+                                                <tr key={entry.id} className="border-b border-black/10 dark:border-white/5 hover:bg-black/5 dark:hover:bg-white/5 transition-colors group">
                                                     <td className="p-8">
-                                                        <p className="font-black text-white text-base tracking-tight">{entry.customerName || entry.name}</p>
+                                                        <p className="font-black text-gray-900 dark:text-white text-base tracking-tight">{entry.customerName || entry.name}</p>
                                                         <p className="text-[10px] font-bold text-gray-500 tracking-widest mt-1 italic">{entry.customerEmail || entry.email}</p>
                                                     </td>
                                                     <td className="p-8">
@@ -997,7 +997,7 @@ const TicketingManagement = () => {
                                                             {entry.guestsCount || 1} GUEST(S)
                                                         </span>
                                                     </td>
-                                                    <td className="p-8 font-mono text-[11px] text-gray-400 bg-black/20">{entry.bookingRef}</td>
+                                                    <td className="p-8 font-mono text-[11px] text-gray-600 dark:text-gray-400 bg-white dark:bg-black/20">{entry.bookingRef}</td>
                                                     <td className="p-8">
                                                         {entry.attended ? (
                                                             <div className="flex items-center gap-2 text-neon-green">
@@ -1013,7 +1013,7 @@ const TicketingManagement = () => {
                                                     </td>
                                                     <td className="p-8 text-right">
                                                         <div className="flex items-center justify-end gap-3">
-                                                            <span className="px-3 py-1 bg-white/5 text-gray-400 border border-white/10 rounded-md text-[9px] font-black uppercase tracking-widest">Verified</span>
+                                                            <span className="px-3 py-1 bg-black/5 dark:bg-white/5 text-gray-600 dark:text-gray-400 border border-black/10 dark:border-white/10 rounded-md text-[9px] font-black uppercase tracking-widest">Verified</span>
                                                             <button
                                                                 onClick={async () => {
                                                                     if (window.confirm(`Remove ${entry.customerName || entry.name} from the guestlist?`)) {
@@ -1032,7 +1032,7 @@ const TicketingManagement = () => {
                                                                         }
                                                                     }
                                                                 }}
-                                                                className="p-2.5 rounded-xl bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all opacity-0 group-hover:opacity-100"
+                                                                className="p-2.5 rounded-xl bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-gray-900 dark:hover:text-white transition-all opacity-0 group-hover:opacity-100"
                                                                 title="Remove entry"
                                                             >
                                                                 <Trash2 size={14} />
@@ -1042,7 +1042,7 @@ const TicketingManagement = () => {
                                                 </tr>
                                             )) : (
                                                 <tr>
-                                                    <td colSpan="5" className="p-20 text-center text-gray-500 bg-black/20">
+                                                    <td colSpan="5" className="p-20 text-center text-gray-500 bg-white dark:bg-black/20">
                                                         <Users size={64} className="mx-auto mb-6 opacity-20" />
                                                         <p className="text-xs font-black uppercase tracking-[0.4em]">No guestlist entries yet.</p>
                                                     </td>
@@ -1057,23 +1057,23 @@ const TicketingManagement = () => {
                                             (e.customerName || e.name)?.toLowerCase().includes(searchQuery.toLowerCase()) || 
                                             e.bookingRef?.includes(searchQuery)
                                         ).map((entry) => (
-                                            <div key={entry.id} className="bg-white/[0.02] border border-white/5 rounded-2xl p-4 flex flex-col gap-4">
+                                            <div key={entry.id} className="bg-white/[0.02] border border-black/10 dark:border-white/5 rounded-2xl p-4 flex flex-col gap-4">
                                                 <div className="flex justify-between items-start">
                                                     <div className="flex items-center gap-3">
                                                         <div className="w-10 h-10 rounded-xl bg-neon-blue/10 flex items-center justify-center text-neon-blue">
                                                             <Users size={20} />
                                                         </div>
                                                         <div>
-                                                            <p className="font-black text-white text-base tracking-tight">{entry.customerName || entry.name}</p>
+                                                            <p className="font-black text-gray-900 dark:text-white text-base tracking-tight">{entry.customerName || entry.name}</p>
                                                             <p className="text-[10px] font-bold text-gray-500 tracking-widest mt-1 italic">{entry.customerEmail || entry.email}</p>
                                                         </div>
                                                     </div>
                                                     <div className="text-right">
-                                                        <span className="font-mono text-[11px] text-gray-400 bg-black/20 px-2 py-1 rounded">{entry.bookingRef}</span>
+                                                        <span className="font-mono text-[11px] text-gray-600 dark:text-gray-400 bg-white dark:bg-black/20 px-2 py-1 rounded">{entry.bookingRef}</span>
                                                     </div>
                                                 </div>
 
-                                                <div className="flex justify-between items-center bg-white/5 rounded-xl p-3">
+                                                <div className="flex justify-between items-center bg-black/5 dark:bg-white/5 rounded-xl p-3">
                                                     <span className="text-[11px] font-black text-neon-blue bg-neon-blue/10 px-4 py-2 rounded-xl border border-neon-blue/20">
                                                         {entry.guestsCount || 1} GUEST(S)
                                                     </span>
@@ -1092,8 +1092,8 @@ const TicketingManagement = () => {
                                                     </div>
                                                 </div>
 
-                                                <div className="flex flex-wrap justify-end gap-2 pt-2 border-t border-white/5">
-                                                    <span className="px-3 py-1 bg-white/5 text-gray-400 border border-white/10 rounded-md text-[9px] font-black uppercase tracking-widest">Verified</span>
+                                                <div className="flex flex-wrap justify-end gap-2 pt-2 border-t border-black/10 dark:border-white/5">
+                                                    <span className="px-3 py-1 bg-black/5 dark:bg-white/5 text-gray-600 dark:text-gray-400 border border-black/10 dark:border-white/10 rounded-md text-[9px] font-black uppercase tracking-widest">Verified</span>
                                                     <button
                                                         onClick={async () => {
                                                             if (window.confirm(`Remove ${entry.customerName || entry.name} from the guestlist?`)) {
@@ -1111,7 +1111,7 @@ const TicketingManagement = () => {
                                                                 }
                                                             }
                                                         }}
-                                                        className="p-2.5 rounded-xl bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all"
+                                                        className="p-2.5 rounded-xl bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-gray-900 dark:hover:text-white transition-all"
                                                         title="Remove entry"
                                                     >
                                                         <Trash2 size={14} />
@@ -1119,7 +1119,7 @@ const TicketingManagement = () => {
                                                 </div>
                                             </div>
                                         )) : (
-                                            <div className="p-10 text-center text-gray-500 bg-black/20 rounded-2xl">
+                                            <div className="p-10 text-center text-gray-500 bg-white dark:bg-black/20 rounded-2xl">
                                                 <Users size={40} className="mx-auto mb-4 opacity-20" />
                                                 <p className="text-xs font-black uppercase tracking-[0.4em]">No guestlist entries yet.</p>
                                             </div>
@@ -1133,10 +1133,10 @@ const TicketingManagement = () => {
                     {/* BUYERS LIST TAB */}
                     {activeTab === 'buyers' && !isScanner && (
                         <motion.div key="buyers" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
-                            <Card className="p-0 bg-zinc-900/60 backdrop-blur-3xl border border-white/10 rounded-[3rem] overflow-hidden shadow-2xl">
-                                <div className="p-8 border-b border-white/5 flex flex-col md:flex-row gap-6 items-start md:items-center justify-between bg-black/40">
+                            <Card className="p-0 bg-gray-100 dark:bg-zinc-900/60 backdrop-blur-3xl border border-black/10 dark:border-white/10 rounded-[3rem] overflow-hidden shadow-2xl">
+                                <div className="p-8 border-b border-black/10 dark:border-white/5 flex flex-col md:flex-row gap-6 items-start md:items-center justify-between bg-white dark:bg-black/40">
                                     <div className="flex gap-4 items-center">
-                                        <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="h-14 bg-black/60 border border-white/10 rounded-2xl px-6 text-[11px] font-black uppercase tracking-widest text-gray-400 outline-none focus:border-neon-green">
+                                        <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="h-14 bg-white dark:bg-black/60 border border-black/10 dark:border-white/10 rounded-2xl px-6 text-[11px] font-black uppercase tracking-widest text-gray-600 dark:text-gray-400 outline-none focus:border-neon-green">
                                             <option value="ALL">ALL STATUSES</option>
                                             <option value="PENDING">PENDING PAYMENT</option>
                                             <option value="APPROVED">PAYMENT VERIFIED</option>
@@ -1148,18 +1148,18 @@ const TicketingManagement = () => {
                                                 placeholder="SEARCH..." 
                                                 value={searchQuery}
                                                 onChange={e => setSearchQuery(e.target.value)}
-                                                className="h-14 pl-14 w-64 bg-black/60 border-white/10 rounded-2xl text-[11px] font-black uppercase tracking-widest"
+                                                className="h-14 pl-14 w-64 bg-white dark:bg-black/60 border-black/10 dark:border-white/10 rounded-2xl text-[11px] font-black uppercase tracking-widest"
                                             />
                                         </div>
                                     </div>
-                                    <div className="px-6 py-3 bg-white/5 text-white rounded-2xl text-[11px] font-black tracking-widest uppercase border border-white/10">
+                                    <div className="px-6 py-3 bg-black/5 dark:bg-white/5 text-gray-900 dark:text-white rounded-2xl text-[11px] font-black tracking-widest uppercase border border-black/10 dark:border-white/10">
                                         {filteredOrders.length} Records
                                     </div>
                                 </div>
                                 <div className="overflow-x-auto">
                                     <table className="w-full text-left border-collapse hidden md:table">
                                         <thead>
-                                            <tr className="bg-black/80 border-b border-white/10 text-[10px] font-black uppercase tracking-widest text-gray-500">
+                                            <tr className="bg-white dark:bg-black/80 border-b border-black/10 dark:border-white/10 text-[10px] font-black uppercase tracking-widest text-gray-500">
                                                 <th className="p-8 font-medium">Customer Details</th>
                                                 <th className="p-8 font-medium">Tickets</th>
                                                 <th className="p-8 font-medium">UTR / Ref</th>
@@ -1169,21 +1169,21 @@ const TicketingManagement = () => {
                                         </thead>
                                         <tbody className="text-sm">
                                             {filteredOrders.length > 0 ? filteredOrders.map((order) => (
-                                                <tr key={order.id} className="border-b border-white/5 hover:bg-white/5 transition-colors group">
+                                                <tr key={order.id} className="border-b border-black/10 dark:border-white/5 hover:bg-black/5 dark:hover:bg-white/5 transition-colors group">
                                                     <td className="p-8">
-                                                        <p className="font-black text-white text-base tracking-tight">{order.customerName || order.name}</p>
+                                                        <p className="font-black text-gray-900 dark:text-white text-base tracking-tight">{order.customerName || order.name}</p>
                                                         <p className="text-[10px] font-bold text-gray-500 tracking-widest mt-1">{order.customerPhone || order.phone}</p>
                                                     </td>
                                                     <td className="p-8">
                                                         <div className="flex flex-wrap gap-2">
                                                         {(Array.isArray(order.items) ? order.items : Object.entries(order.items || {}).map(([k, v]) => ({ name: k, count: v }))).map((item, i) => (
-                                                            <div key={i} className="text-[9px] font-black uppercase tracking-widest bg-white/5 border border-white/10 px-3 py-1.5 rounded-lg inline-block">
-                                                                {item.count}x <span className="text-white">{item.name}</span>
+                                                            <div key={i} className="text-[9px] font-black uppercase tracking-widest bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 px-3 py-1.5 rounded-lg inline-block">
+                                                                {item.count}x <span className="text-gray-900 dark:text-white">{item.name}</span>
                                                             </div>
                                                         ))}
                                                         </div>
                                                     </td>
-                                                    <td className="p-8 font-mono text-[11px] text-gray-400 bg-black/20">{order.paymentRef}</td>
+                                                    <td className="p-8 font-mono text-[11px] text-gray-600 dark:text-gray-400 bg-white dark:bg-black/20">{order.paymentRef}</td>
                                                     <td className="p-8">
                                                         {order.status === 'pending' && <span className="px-3 py-1 bg-yellow-500/10 text-yellow-500 border border-yellow-500/20 rounded-md text-[9px] font-black uppercase tracking-widest">Pending</span>}
                                                         {order.status === 'approved' && <span className="px-3 py-1 bg-neon-blue/10 text-neon-blue border border-neon-blue/20 rounded-md text-[9px] font-black uppercase tracking-widest">Verified</span>}
@@ -1195,7 +1195,7 @@ const TicketingManagement = () => {
                                                                 <button onClick={() => handleApprove(order.id)} className="w-12 h-12 rounded-2xl bg-neon-green/10 text-neon-green hover:bg-neon-green hover:text-black inline-flex items-center justify-center transition-all border border-neon-green/20 hover:scale-110" title="Verify Payment">
                                                                     <Check size={24} />
                                                                 </button>
-                                                                <button onClick={() => handleReject(order.id)} className="w-12 h-12 rounded-2xl bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white inline-flex items-center justify-center transition-all border border-red-500/20 hover:scale-110" title="Reject Payment">
+                                                                <button onClick={() => handleReject(order.id)} className="w-12 h-12 rounded-2xl bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-gray-900 dark:hover:text-white inline-flex items-center justify-center transition-all border border-red-500/20 hover:scale-110" title="Reject Payment">
                                                                     <X size={24} />
                                                                 </button>
                                                             </>
@@ -1204,7 +1204,7 @@ const TicketingManagement = () => {
                                                 </tr>
                                             )) : (
                                                 <tr>
-                                                    <td colSpan="5" className="p-20 text-center text-gray-500 bg-black/20">
+                                                    <td colSpan="5" className="p-20 text-center text-gray-500 bg-white dark:bg-black/20">
                                                         <Search size={64} className="mx-auto mb-6 opacity-20" />
                                                         <p className="text-xs font-black uppercase tracking-[0.4em]">No records found.</p>
                                                     </td>
@@ -1216,27 +1216,27 @@ const TicketingManagement = () => {
                                     {/* Mobile Stacked Cards for Buyers */}
                                     <div className="flex md:hidden flex-col gap-4 p-4">
                                         {filteredOrders.length > 0 ? filteredOrders.map((order) => (
-                                            <div key={order.id} className="bg-white/[0.02] border border-white/5 rounded-2xl p-4 flex flex-col gap-4">
+                                            <div key={order.id} className="bg-white/[0.02] border border-black/10 dark:border-white/5 rounded-2xl p-4 flex flex-col gap-4">
                                                 <div className="flex justify-between items-start">
                                                     <div className="flex items-center gap-3">
                                                         <div className="w-10 h-10 rounded-xl bg-neon-blue/10 flex items-center justify-center text-neon-blue">
                                                             <Users size={20} />
                                                         </div>
                                                         <div>
-                                                            <p className="font-black text-white text-base tracking-tight">{order.customerName || order.name}</p>
+                                                            <p className="font-black text-gray-900 dark:text-white text-base tracking-tight">{order.customerName || order.name}</p>
                                                             <p className="text-[10px] font-bold text-gray-500 tracking-widest mt-1">{order.customerPhone || order.phone}</p>
                                                         </div>
                                                     </div>
                                                     <div className="text-right">
-                                                        <span className="font-mono text-[11px] text-gray-400 bg-black/20 px-2 py-1 rounded">{order.paymentRef}</span>
+                                                        <span className="font-mono text-[11px] text-gray-600 dark:text-gray-400 bg-white dark:bg-black/20 px-2 py-1 rounded">{order.paymentRef}</span>
                                                     </div>
                                                 </div>
                                                 
-                                                <div className="flex justify-between items-center bg-white/5 rounded-xl p-3">
+                                                <div className="flex justify-between items-center bg-black/5 dark:bg-white/5 rounded-xl p-3">
                                                     <div className="flex flex-wrap gap-2">
                                                         {(Array.isArray(order.items) ? order.items : Object.entries(order.items || {}).map(([k, v]) => ({ name: k, count: v }))).map((item, i) => (
-                                                            <div key={i} className="text-[9px] font-black uppercase tracking-widest bg-white/5 border border-white/10 px-3 py-1.5 rounded-lg inline-block">
-                                                                {item.count}x <span className="text-white">{item.name}</span>
+                                                            <div key={i} className="text-[9px] font-black uppercase tracking-widest bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 px-3 py-1.5 rounded-lg inline-block">
+                                                                {item.count}x <span className="text-gray-900 dark:text-white">{item.name}</span>
                                                             </div>
                                                         ))}
                                                     </div>
@@ -1248,18 +1248,18 @@ const TicketingManagement = () => {
                                                 </div>
 
                                                 {order.status === 'pending' && (
-                                                    <div className="flex flex-wrap justify-end gap-2 pt-2 border-t border-white/5">
+                                                    <div className="flex flex-wrap justify-end gap-2 pt-2 border-t border-black/10 dark:border-white/5">
                                                         <button onClick={() => handleApprove(order.id)} className="w-10 h-10 rounded-xl bg-neon-green/10 text-neon-green hover:bg-neon-green hover:text-black inline-flex items-center justify-center transition-all border border-neon-green/20" title="Verify Payment">
                                                             <Check size={20} />
                                                         </button>
-                                                        <button onClick={() => handleReject(order.id)} className="w-10 h-10 rounded-xl bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white inline-flex items-center justify-center transition-all border border-red-500/20" title="Reject Payment">
+                                                        <button onClick={() => handleReject(order.id)} className="w-10 h-10 rounded-xl bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-gray-900 dark:hover:text-white inline-flex items-center justify-center transition-all border border-red-500/20" title="Reject Payment">
                                                             <X size={20} />
                                                         </button>
                                                     </div>
                                                 )}
                                             </div>
                                         )) : (
-                                            <div className="p-10 text-center text-gray-500 bg-black/20 rounded-2xl">
+                                            <div className="p-10 text-center text-gray-500 bg-white dark:bg-black/20 rounded-2xl">
                                                 <Search size={40} className="mx-auto mb-4 opacity-20" />
                                                 <p className="text-xs font-black uppercase tracking-[0.4em]">No records found.</p>
                                             </div>
@@ -1274,7 +1274,7 @@ const TicketingManagement = () => {
                     {activeTab === 'dispatch' && !isScanner && (
                         <motion.div key="dispatch" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                <Card className="p-10 bg-zinc-900/60 backdrop-blur-3xl border border-white/10 rounded-[3rem] shadow-2xl">
+                                <Card className="p-10 bg-gray-100 dark:bg-zinc-900/60 backdrop-blur-3xl border border-black/10 dark:border-white/10 rounded-[3rem] shadow-2xl">
                                     <h3 className="text-2xl font-black italic uppercase tracking-tighter mb-8">Bulk PDF Upload</h3>
                                     <p className="text-[11px] font-bold tracking-widest uppercase text-gray-500 mb-8">Select a ticket category, then upload PDFs. The system will auto-assign them to verified buyers in this category.</p>
                                     
@@ -1282,11 +1282,11 @@ const TicketingManagement = () => {
                                         {event?.ticketMode === 'pdf' ? (
                                             <>
                                                 <div>
-                                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 block">Target Category</label>
+                                                    <label className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest mb-3 block">Target Category</label>
                                                     <select 
                                                         value={selectedCategory}
                                                         onChange={(e) => setSelectedCategory(e.target.value)}
-                                                        className="w-full h-16 bg-black/60 border border-white/10 rounded-3xl px-6 text-[11px] font-black uppercase tracking-widest text-white outline-none focus:border-neon-blue"
+                                                        className="w-full h-16 bg-white dark:bg-black/60 border border-black/10 dark:border-white/10 rounded-3xl px-6 text-[11px] font-black uppercase tracking-widest text-gray-900 dark:text-white outline-none focus:border-neon-blue"
                                                     >
                                                         <option value="">SELECT A CATEGORY...</option>
                                                         {event?.ticketCategories?.map(cat => (
@@ -1295,7 +1295,7 @@ const TicketingManagement = () => {
                                                     </select>
                                                 </div>
 
-                                                <div className="border-2 border-dashed border-white/10 rounded-3xl p-12 flex flex-col items-center justify-center text-center group hover:border-neon-blue/50 transition-colors relative mt-8">
+                                                <div className="border-2 border-dashed border-black/10 dark:border-white/10 rounded-3xl p-12 flex flex-col items-center justify-center text-center group hover:border-neon-blue/50 transition-colors relative mt-8">
                                                     <input type="file" multiple onChange={handleBulkUpload} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
                                                     {isUploading ? (
                                                         <>
@@ -1304,10 +1304,10 @@ const TicketingManagement = () => {
                                                         </>
                                                     ) : (
                                                         <>
-                                                            <div className="w-20 h-20 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center mb-6 group-hover:scale-110 group-hover:bg-neon-blue/10 transition-all">
+                                                            <div className="w-20 h-20 rounded-2xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 flex items-center justify-center mb-6 group-hover:scale-110 group-hover:bg-neon-blue/10 transition-all">
                                                                 <Upload size={32} className="text-gray-500 group-hover:text-neon-blue" />
                                                             </div>
-                                                            <h4 className="text-sm font-black uppercase tracking-widest text-white mb-2">Drop PDFs Here</h4>
+                                                            <h4 className="text-sm font-black uppercase tracking-widest text-gray-900 dark:text-white mb-2">Drop PDFs Here</h4>
                                                             <p className="text-[10px] text-gray-500 max-w-[200px]">Only verified buyers without tickets will be assigned.</p>
                                                         </>
                                                     )}
@@ -1316,8 +1316,8 @@ const TicketingManagement = () => {
                                         ) : (
                                             <div className="h-full flex flex-col items-center justify-center text-center p-8 bg-neon-green/5 border border-neon-green/10 rounded-3xl">
                                                 <QrCode size={48} className="text-neon-green mb-6" />
-                                                <h4 className="text-lg font-black italic uppercase tracking-widest text-white mb-2">Automated QR Generation</h4>
-                                                <p className="text-xs text-gray-400 font-bold tracking-widest uppercase">
+                                                <h4 className="text-lg font-black italic uppercase tracking-widest text-gray-900 dark:text-white mb-2">Automated QR Generation</h4>
+                                                <p className="text-xs text-gray-600 dark:text-gray-400 font-bold tracking-widest uppercase">
                                                     No uploads required. Unique QR passes are automatically generated and attached to dispatch emails.
                                                 </p>
                                             </div>
@@ -1325,20 +1325,20 @@ const TicketingManagement = () => {
                                     </div>
                                 </Card>
 
-                                <Card className="p-10 bg-zinc-900/60 backdrop-blur-3xl border border-white/10 rounded-[3rem] shadow-2xl flex flex-col justify-between">
+                                <Card className="p-10 bg-gray-100 dark:bg-zinc-900/60 backdrop-blur-3xl border border-black/10 dark:border-white/10 rounded-[3rem] shadow-2xl flex flex-col justify-between">
                                     <div>
                                         <h3 className="text-2xl font-black italic uppercase tracking-tighter mb-8">Dispatch Queue</h3>
                                         <div className="space-y-4 mb-8">
-                                            <div className="p-6 bg-white/5 border border-white/10 rounded-2xl flex justify-between items-center">
+                                            <div className="p-6 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-2xl flex justify-between items-center">
                                                 <div>
                                                     <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">{event?.ticketMode === 'pdf' ? 'Tickets Ready to Send' : 'QR Passes Ready to Send'}</p>
-                                                    <p className="text-3xl font-black text-white">{eventOrders.filter(o => o.status === 'approved').length}</p>
+                                                    <p className="text-3xl font-black text-gray-900 dark:text-white">{eventOrders.filter(o => o.status === 'approved').length}</p>
                                                 </div>
-                                                <div className="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center">
-                                                    <Ticket size={24} className="text-gray-400" />
+                                                <div className="w-12 h-12 bg-black/5 dark:bg-white/5 rounded-full flex items-center justify-center">
+                                                    <Ticket size={24} className="text-gray-600 dark:text-gray-400" />
                                                 </div>
                                             </div>
-                                            <div className="p-6 bg-white/5 border border-white/10 rounded-2xl flex justify-between items-center">
+                                            <div className="p-6 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-2xl flex justify-between items-center">
                                                 <div>
                                                     <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Total Dispatched</p>
                                                     <p className="text-3xl font-black text-neon-green">{eventOrders.filter(o => o.status === 'dispatched').length}</p>
@@ -1367,27 +1367,27 @@ const TicketingManagement = () => {
                     {/* SHEETS TAB */}
                     {activeTab === 'sheets' && (
                         <motion.div key="sheets" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
-                            <Card className="p-10 bg-zinc-900/60 backdrop-blur-3xl border border-white/10 rounded-[3rem] shadow-2xl">
+                            <Card className="p-10 bg-gray-100 dark:bg-zinc-900/60 backdrop-blur-3xl border border-black/10 dark:border-white/10 rounded-[3rem] shadow-2xl">
                                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-6">
                                     <div>
                                         <h3 className="text-2xl font-black italic uppercase tracking-tighter">Sheets & Capacity</h3>
                                         <p className="text-[11px] font-bold tracking-widest uppercase text-gray-500 mt-2">Download raw CSV sheets of verified buyers and scanned tickets.</p>
                                     </div>
-                                    <Button onClick={downloadSheets} className="bg-white/10 hover:bg-white/20 text-white text-[11px] font-black uppercase tracking-widest h-14 px-8 rounded-2xl border border-white/10 hover:border-white/20">
+                                    <Button onClick={downloadSheets} className="bg-black/10 dark:bg-white/10 hover:bg-black/20 dark:hover:bg-white/20 text-gray-900 dark:text-white text-[11px] font-black uppercase tracking-widest h-14 px-8 rounded-2xl border border-black/10 dark:border-white/10 hover:border-black/20 dark:hover:border-white/20">
                                         <Download size={20} className="mr-2" /> Download Master CSV
                                     </Button>
                                 </div>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
                                     {/* Total People Card (Always Shown) */}
-                                    <div className="bg-black/60 p-8 rounded-3xl border border-white/5 relative overflow-hidden group hover:border-white/10 transition-all duration-300">
+                                    <div className="bg-white dark:bg-black/60 p-8 rounded-3xl border border-black/10 dark:border-white/5 relative overflow-hidden group hover:border-black/10 dark:hover:border-white/10 transition-all duration-300">
                                         <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-neon-green/10 to-neon-blue/10 rounded-full blur-2xl" />
                                         <p className="text-[11px] font-black text-gray-500 uppercase tracking-[0.3em] mb-4">Total People</p>
-                                        <p className="text-4xl font-black text-white italic tracking-tighter">
+                                        <p className="text-4xl font-black text-gray-900 dark:text-white italic tracking-tighter">
                                             {totalPeople}
                                         </p>
                                         {(event?.isTicketed && (event?.isGuestlistEnabled || event?.guestlistEnabled)) && (
                                             <p className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mt-2">
-                                                Tickets: <span className="text-white">{totalTicketPeople}</span> | RSVPs: <span className="text-white">{totalGuestlistPeople}</span>
+                                                Tickets: <span className="text-gray-900 dark:text-white">{totalTicketPeople}</span> | RSVPs: <span className="text-gray-900 dark:text-white">{totalGuestlistPeople}</span>
                                             </p>
                                         )}
                                         {(!event?.isTicketed && (event?.isGuestlistEnabled || event?.guestlistEnabled)) && (
@@ -1406,7 +1406,7 @@ const TicketingManagement = () => {
                                     {event?.isTicketed && (
                                         <>
                                             {!isScanner && (user?.role === 'developer' || user?.role === 'founder') && (
-                                                <div className="bg-black/60 p-8 rounded-3xl border border-white/5 relative overflow-hidden group hover:border-white/10 transition-all duration-300">
+                                                <div className="bg-white dark:bg-black/60 p-8 rounded-3xl border border-black/10 dark:border-white/5 relative overflow-hidden group hover:border-black/10 dark:hover:border-white/10 transition-all duration-300">
                                                     <p className="text-[11px] font-black text-gray-500 uppercase tracking-[0.3em] mb-4">Total Revenue</p>
                                                     <p className="text-4xl font-black text-neon-green italic tracking-tighter">
                                                         ₹{approvedOrders.reduce((acc, order) => acc + (order.totalAmount || 0), 0).toLocaleString()}
@@ -1416,9 +1416,9 @@ const TicketingManagement = () => {
                                                     </p>
                                                 </div>
                                             )}
-                                            <div className="bg-black/60 p-8 rounded-3xl border border-white/5 relative overflow-hidden group hover:border-white/10 transition-all duration-300">
+                                            <div className="bg-white dark:bg-black/60 p-8 rounded-3xl border border-black/10 dark:border-white/5 relative overflow-hidden group hover:border-black/10 dark:hover:border-white/10 transition-all duration-300">
                                                 <p className="text-[11px] font-black text-gray-500 uppercase tracking-[0.3em] mb-4">Tickets Sold</p>
-                                                <p className="text-4xl font-black text-white italic tracking-tighter">
+                                                <p className="text-4xl font-black text-gray-900 dark:text-white italic tracking-tighter">
                                                     {totalTicketPeople}
                                                 </p>
                                                 <p className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mt-2">
@@ -1426,7 +1426,7 @@ const TicketingManagement = () => {
                                                 </p>
                                             </div>
                                             {!isScanner && (
-                                                <div className="bg-black/60 p-8 rounded-3xl border border-white/5 relative overflow-hidden group hover:border-white/10 transition-all duration-300">
+                                                <div className="bg-white dark:bg-black/60 p-8 rounded-3xl border border-black/10 dark:border-white/5 relative overflow-hidden group hover:border-black/10 dark:hover:border-white/10 transition-all duration-300">
                                                     <p className="text-[11px] font-black text-gray-500 uppercase tracking-[0.3em] mb-4">Pending Verification</p>
                                                     <p className="text-4xl font-black text-yellow-500 italic tracking-tighter">
                                                         {pendingOrders.length}
@@ -1442,7 +1442,7 @@ const TicketingManagement = () => {
                                     {/* Guestlist/RSVP Stats */}
                                     {(event?.isGuestlistEnabled || event?.guestlistEnabled) && (
                                         <>
-                                            <div className="bg-black/60 p-8 rounded-3xl border border-white/5 relative overflow-hidden group hover:border-white/10 transition-all duration-300">
+                                            <div className="bg-white dark:bg-black/60 p-8 rounded-3xl border border-black/10 dark:border-white/5 relative overflow-hidden group hover:border-black/10 dark:hover:border-white/10 transition-all duration-300">
                                                 <p className="text-[11px] font-black text-gray-500 uppercase tracking-[0.3em] mb-4">
                                                     {event.guestlistMode === 'rsvp' ? 'RSVP' : 'Guestlist'} Entries
                                                 </p>
@@ -1453,7 +1453,7 @@ const TicketingManagement = () => {
                                                     Total registered submissions
                                                 </p>
                                             </div>
-                                            <div className="bg-black/60 p-8 rounded-3xl border border-white/5 relative overflow-hidden group hover:border-white/10 transition-all duration-300">
+                                            <div className="bg-white dark:bg-black/60 p-8 rounded-3xl border border-black/10 dark:border-white/5 relative overflow-hidden group hover:border-black/10 dark:hover:border-white/10 transition-all duration-300">
                                                 <p className="text-[11px] font-black text-gray-500 uppercase tracking-[0.3em] mb-4">Checked In</p>
                                                 <p className="text-4xl font-black text-neon-blue italic tracking-tighter">
                                                     {checkedInGuestlistPeople}
@@ -1472,20 +1472,20 @@ const TicketingManagement = () => {
                     {activeTab === 'settings' && !isScanner && (
                         <motion.div key="settings" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                <Card className="p-10 bg-zinc-900/60 backdrop-blur-3xl border border-white/10 rounded-[3rem] shadow-2xl">
+                                <Card className="p-10 bg-gray-100 dark:bg-zinc-900/60 backdrop-blur-3xl border border-black/10 dark:border-white/10 rounded-[3rem] shadow-2xl">
                                     <h3 className="text-2xl font-black italic uppercase tracking-tighter mb-8">Event Payment Config</h3>
                                         <form onSubmit={handleUpdateEventPayment} className="space-y-8">
                                             <div className="space-y-3">
                                                 <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-2">Event UPI ID</label>
-                                                <Input name="upiId" defaultValue={event?.upiId || ''} placeholder="merchant@upi" className="h-14 bg-black/40 border-white/5 rounded-2xl" />
+                                                <Input name="upiId" defaultValue={event?.upiId || ''} placeholder="merchant@upi" className="h-14 bg-white dark:bg-black/40 border-black/10 dark:border-white/5 rounded-2xl" />
                                             </div>
                                             <div className="space-y-3">
                                                 <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-2">Direct QR Link (Optional)</label>
-                                                <Input name="qrCodeUrl" defaultValue={event?.qrCodeUrl || ''} placeholder="https://..." className="h-14 bg-black/40 border-white/5 rounded-2xl" />
+                                                <Input name="qrCodeUrl" defaultValue={event?.qrCodeUrl || ''} placeholder="https://..." className="h-14 bg-white dark:bg-black/40 border-black/10 dark:border-white/5 rounded-2xl" />
                                             </div>
                                             <div className="space-y-3">
                                                 <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-2">Payment Gateway / Checkout URL (Optional)</label>
-                                                <Input name="gatewayUrl" defaultValue={event?.gatewayUrl || ''} placeholder="https://checkout.payulink.in/..." className="h-14 bg-black/40 border-white/5 rounded-2xl" />
+                                                <Input name="gatewayUrl" defaultValue={event?.gatewayUrl || ''} placeholder="https://checkout.payulink.in/..." className="h-14 bg-white dark:bg-black/40 border-black/10 dark:border-white/5 rounded-2xl" />
                                             </div>
                                             <Button type="submit" className="w-full h-14 bg-neon-green text-black font-black uppercase text-xs tracking-widest rounded-2xl">
                                                 Update Configuration
@@ -1493,12 +1493,12 @@ const TicketingManagement = () => {
                                         </form>
                                 </Card>
 
-                                <Card className="p-10 bg-zinc-900/60 backdrop-blur-3xl border border-white/10 rounded-[3rem] shadow-2xl flex flex-col items-center justify-center text-center group">
+                                <Card className="p-10 bg-gray-100 dark:bg-zinc-900/60 backdrop-blur-3xl border border-black/10 dark:border-white/10 rounded-[3rem] shadow-2xl flex flex-col items-center justify-center text-center group">
                                     <div className="relative w-full">
                                         {event?.qrCodeUrl ? (
                                             <div className="relative group/qr">
-                                                <img src={event.qrCodeUrl} alt="Event QR" className="w-48 h-48 mx-auto object-contain rounded-2xl border border-white/10 p-2 bg-white" />
-                                                <div className="absolute inset-0 bg-black/60 opacity-0 group-hover/qr:opacity-100 transition-opacity flex items-center justify-center rounded-2xl">
+                                                <img src={event.qrCodeUrl} alt="Event QR" className="w-48 h-48 mx-auto object-contain rounded-2xl border border-black/10 dark:border-white/10 p-2 bg-white" />
+                                                <div className="absolute inset-0 bg-white dark:bg-black/60 opacity-0 group-hover/qr:opacity-100 transition-opacity flex items-center justify-center rounded-2xl">
                                                     <label className="cursor-pointer p-4 bg-white text-black rounded-xl font-black uppercase text-[10px]">
                                                         {isUploading ? <LoadingSpinner size="sm" /> : 'Change QR'}
                                                         <input type="file" onChange={handleQRUpload} className="hidden" accept="image/*" />
@@ -1506,7 +1506,7 @@ const TicketingManagement = () => {
                                                 </div>
                                             </div>
                                         ) : (
-                                            <label className="cursor-pointer border-2 border-dashed border-white/10 rounded-[2rem] p-12 flex flex-col items-center justify-center hover:border-neon-blue transition-colors w-full h-64">
+                                            <label className="cursor-pointer border-2 border-dashed border-black/10 dark:border-white/10 rounded-[2rem] p-12 flex flex-col items-center justify-center hover:border-neon-blue transition-colors w-full h-64">
                                                 <QrCode size={48} className="text-gray-600 mb-4" />
                                                 <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Upload Custom QR</p>
                                                 <input type="file" onChange={handleQRUpload} className="hidden" accept="image/*" />
@@ -1514,7 +1514,7 @@ const TicketingManagement = () => {
                                         )}
                                     </div>
                                     <p className="mt-6 text-[9px] font-bold text-gray-500 uppercase tracking-widest leading-relaxed">
-                                        This QR will be displayed to buyers during the payment step of the ticketing modal for <span className="text-white italic">{event?.title}</span>.
+                                        This QR will be displayed to buyers during the payment step of the ticketing modal for <span className="text-gray-900 dark:text-white italic">{event?.title}</span>.
                                     </p>
                                 </Card>
                             </div>

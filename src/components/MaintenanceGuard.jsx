@@ -26,11 +26,11 @@ const MaintenanceGuard = ({ children, category, featureId, isPage = false, isSec
         if (isSection) {
             return (
                 <div className="relative group cursor-not-allowed">
-                    <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px] z-20 flex items-center justify-center rounded-xl border border-dashed border-red-500/50">
+                    <div className="absolute inset-0 bg-white dark:bg-black/60 backdrop-blur-[2px] z-20 flex items-center justify-center rounded-xl border border-dashed border-red-500/50">
                         <div className="text-center p-4">
                             <span className="text-4xl block mb-2">🔧</span>
-                            <h3 className="text-white font-black italic uppercase tracking-tighter">Under Maintenance</h3>
-                            <p className="text-gray-400 text-xs uppercase tracking-widest mt-1">Improvements in Progress</p>
+                            <h3 className="text-gray-900 dark:text-white font-black italic uppercase tracking-tighter">Under Maintenance</h3>
+                            <p className="text-gray-600 dark:text-gray-400 text-xs uppercase tracking-widest mt-1">Improvements in Progress</p>
                         </div>
                     </div>
                     <div className="grayscale opacity-30 pointer-events-none">

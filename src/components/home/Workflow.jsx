@@ -14,18 +14,18 @@ const Workflow = () => {
     ];
 
     return (
-        <section className="py-16 md:py-32 bg-black relative px-4 text-white">
+        <section className="py-16 md:py-32 bg-white dark:bg-black transition-colors duration-300 relative px-4 text-gray-900 dark:text-white">
             <div className="max-w-7xl mx-auto">
                 <div className="text-center mb-16">
                     <motion.h2
                         initial={{ opacity: 0, y: 20 }}
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true }}
-                        className="font-heading text-4xl md:text-5xl font-extrabold mb-4 tracking-tight text-white"
+                        className="font-heading text-4xl md:text-5xl font-extrabold mb-4 tracking-tight text-gray-900 dark:text-white"
                     >
                         Want Us For Your <span className="text-neon-green">Event</span>
                     </motion.h2>
-                    <p className="text-gray-400 max-w-2xl mx-auto">
+                    <p className="text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
                         From initial consultation to post-event success. Our proven process ensures flawless execution.
                     </p>
                 </div>
@@ -46,20 +46,20 @@ const WorkflowCard = ({ step, index }) => {
     return (
         <motion.div
             layout
-            initial={{ opacity: 0, border: '1px solid rgba(255,255,255,0)' }}
-            whileInView={{ opacity: 1, border: '1px solid rgba(255,255,255,0.1)' }}
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
             viewport={{ once: true }}
             transition={{ duration: 0.4, delay: index * 0.1 }}
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
             onClick={() => setIsHovered(!isHovered)}
-            className="bg-black/40 rounded-2xl p-8 relative group hover:bg-white/5 transition-colors duration-300 cursor-pointer min-h-[280px] flex flex-col justify-start"
+            className="bg-white dark:bg-black border border-black/10 dark:border-white/10 rounded-2xl p-8 relative group hover:bg-black/5 dark:hover:bg-white/5 transition-colors duration-300 cursor-pointer min-h-[280px] flex flex-col justify-start"
         >
             <div className="flex justify-between items-start mb-6">
-                <div className="p-3 bg-white/5 rounded-xl text-white group-hover:text-neon-green transition-colors">
+                <div className="p-3 bg-black/5 dark:bg-white/5 rounded-xl text-gray-900 dark:text-white group-hover:text-neon-green transition-colors">
                     <step.icon size={28} />
                 </div>
-                <span className="text-7xl font-black text-white/5 font-heading group-hover:text-white/10 transition-colors absolute top-4 right-4">{step.id}</span>
+                <span className="text-7xl font-black text-black/5 dark:text-white/5 font-heading group-hover:text-black/10 dark:group-hover:text-white/10 transition-colors absolute top-4 right-4">{step.id}</span>
             </div>
 
             <motion.div layout className="relative z-10">
@@ -72,7 +72,7 @@ const WorkflowCard = ({ step, index }) => {
                             initial={{ opacity: 0, height: 0 }}
                             animate={{ opacity: 1, height: 'auto' }}
                             exit={{ opacity: 0, height: 0 }}
-                            className="text-gray-300 text-sm leading-relaxed"
+                            className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed"
                         >
                             {step.fullDesc}
                         </motion.p>
@@ -82,7 +82,7 @@ const WorkflowCard = ({ step, index }) => {
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
-                            className="text-gray-400 text-sm font-medium"
+                            className="text-gray-600 dark:text-gray-400 text-sm font-medium"
                         >
                             {step.shortDesc} <span className="text-neon-green text-xs ml-1 opacity-60">(More info)</span>
                         </motion.p>

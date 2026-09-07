@@ -51,21 +51,21 @@ const SignatureModal = ({ isOpen, onClose, onSave, initialName = '' }) => {
 
     return (
         <AnimatePresence>
-            <div className="fixed inset-0 z-[1000] flex items-center justify-center p-2 sm:p-4 bg-black/80 backdrop-blur-md">
+            <div className="fixed inset-0 z-[1000] flex items-center justify-center p-2 sm:p-4 bg-black/60 backdrop-blur-md">
                 <motion.div 
                     initial={{ opacity: 0, scale: 0.95, y: 20 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                    className="w-full max-w-2xl bg-[#0a0a0a] border border-white/10 rounded-[2rem] sm:rounded-[2.5rem] overflow-hidden shadow-2xl flex flex-col max-h-[95vh]"
+                    className="w-full max-w-2xl bg-white dark:bg-[#0a0a0a] border border-black/10 dark:border-white/10 rounded-[2rem] sm:rounded-[2.5rem] overflow-hidden shadow-2xl flex flex-col max-h-[95vh]"
                 >
                     <div className="overflow-y-auto">
                     {/* Header */}
-                    <div className="p-6 sm:p-8 border-b border-white/5 flex items-center justify-between">
+                    <div className="p-6 sm:p-8 border-b border-black/10 dark:border-white/5 flex items-center justify-between">
                         <div className="space-y-1">
-                            <h3 className="text-xl sm:text-2xl font-black text-white uppercase tracking-tighter italic">Digital Signature.</h3>
+                            <h3 className="text-xl sm:text-2xl font-black text-gray-900 dark:text-white uppercase tracking-tighter italic">Digital Signature.</h3>
                             <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Authorize and execute this instrument</p>
                         </div>
-                        <button onClick={onClose} className="p-2 sm:p-3 hover:bg-white/5 rounded-full text-gray-500 hover:text-white transition-all">
+                        <button onClick={onClose} className="p-2 sm:p-3 hover:bg-black/5 dark:hover:bg-white/5 rounded-full text-gray-500 hover:text-gray-900 dark:hover:text-white transition-all">
                             <X size={20} className="sm:w-6 sm:h-6" />
                         </button>
                     </div>
@@ -78,14 +78,14 @@ const SignatureModal = ({ isOpen, onClose, onSave, initialName = '' }) => {
                                 type="text"
                                 value={typedName}
                                 onChange={(e) => setTypedName(e.target.value)}
-                                className="w-full bg-white/5 border border-white/10 h-12 sm:h-14 rounded-xl px-4 sm:px-6 text-lg sm:text-xl font-bold text-white outline-none focus:border-neon-green/40 transition-all placeholder:text-white/10"
+                                className="w-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 h-12 sm:h-14 rounded-xl px-4 sm:px-6 text-lg sm:text-xl font-bold text-gray-900 dark:text-white outline-none focus:border-neon-green/40 transition-all placeholder:text-gray-400 dark:placeholder:text-white/10"
                                 placeholder="Legal name for record..."
                             />
                         </div>
                     </div>
 
                     {/* Tabs */}
-                    <div className="flex border-b border-white/5 mt-2 sm:mt-4">
+                    <div className="flex border-b border-black/10 dark:border-white/5 mt-2 sm:mt-4">
                         {[
                             { id: 'type', label: 'Type', icon: Type },
                             { id: 'draw', label: 'Draw', icon: PenTool },
@@ -96,7 +96,7 @@ const SignatureModal = ({ isOpen, onClose, onSave, initialName = '' }) => {
                                 onClick={() => setActiveTab(tab.id)}
                                 className={cn(
                                     "flex-1 py-4 sm:py-6 flex items-center justify-center gap-2 sm:gap-3 text-[10px] font-black uppercase tracking-[0.2em] transition-all relative",
-                                    activeTab === tab.id ? "text-neon-green" : "text-gray-500 hover:text-gray-300"
+                                    activeTab === tab.id ? "text-neon-green" : "text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
                                 )}
                             >
                                 <tab.icon size={14} className="sm:w-4 sm:h-4" />
@@ -112,7 +112,7 @@ const SignatureModal = ({ isOpen, onClose, onSave, initialName = '' }) => {
                     <div className="p-6 sm:p-10 min-h-[180px] sm:min-h-[250px] flex flex-col justify-center">
                         {activeTab === 'type' && (
                             <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500 text-center">
-                                <p className="text-3xl sm:text-6xl font-signature text-white min-h-[60px] sm:min-h-[80px] flex items-center justify-center">
+                                <p className="text-3xl sm:text-6xl font-signature text-gray-900 dark:text-white min-h-[60px] sm:min-h-[80px] flex items-center justify-center">
                                     {typedName || "Preview"}
                                 </p>
                                 <p className="text-[10px] text-gray-500 italic">This font style will be used for your signature.</p>
@@ -140,13 +140,13 @@ const SignatureModal = ({ isOpen, onClose, onSave, initialName = '' }) => {
                                 ) : (
                                     <div 
                                         onClick={() => document.getElementById('sig-upload').click()}
-                                        className="aspect-video border-2 border-dashed border-white/10 rounded-[2rem] flex flex-col items-center justify-center gap-4 cursor-pointer hover:bg-white/[0.02] hover:border-neon-green/20 transition-all group"
+                                        className="aspect-video border-2 border-dashed border-black/10 dark:border-white/10 rounded-[2rem] flex flex-col items-center justify-center gap-4 cursor-pointer hover:bg-black/[0.02] dark:hover:bg-white/[0.02] hover:border-neon-green/20 transition-all group"
                                     >
-                                        <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center group-hover:scale-110 transition-all">
-                                            <Upload size={24} className="text-gray-400 group-hover:text-neon-green" />
+                                        <div className="w-16 h-16 bg-black/5 dark:bg-white/5 rounded-full flex items-center justify-center group-hover:scale-110 transition-all">
+                                            <Upload size={24} className="text-gray-600 dark:text-gray-400 group-hover:text-neon-green" />
                                         </div>
                                         <div className="text-center">
-                                            <p className="text-[10px] font-black text-white uppercase tracking-widest">Upload Signature Image</p>
+                                            <p className="text-[10px] font-black text-gray-900 dark:text-white uppercase tracking-widest">Upload Signature Image</p>
                                             <p className="text-[9px] text-gray-500 mt-1">PNG, JPG or SVG with clear background</p>
                                         </div>
                                         <input id="sig-upload" type="file" accept="image/*" className="hidden" onChange={handleFileUpload} />
@@ -158,10 +158,10 @@ const SignatureModal = ({ isOpen, onClose, onSave, initialName = '' }) => {
                     </div>
                     
                     {/* Footer */}
-                    <div className="p-6 sm:p-8 border-t border-white/5 flex gap-3 sm:gap-4 bg-[#0a0a0a]">
+                    <div className="p-6 sm:p-8 border-t border-black/10 dark:border-white/5 flex gap-3 sm:gap-4 bg-gray-50 dark:bg-[#0a0a0a]">
                         <button 
                             onClick={onClose}
-                            className="flex-1 h-12 sm:h-16 bg-white/5 text-gray-400 font-black uppercase tracking-widest text-[10px] rounded-2xl hover:bg-white/10 transition-all"
+                            className="flex-1 h-12 sm:h-16 bg-black/5 dark:bg-white/5 text-gray-600 dark:text-gray-400 font-black uppercase tracking-widest text-[10px] rounded-2xl hover:bg-black/10 dark:hover:bg-white/10 transition-all"
                         >
                             Cancel
                         </button>

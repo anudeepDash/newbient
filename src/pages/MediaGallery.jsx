@@ -11,7 +11,7 @@ const MediaGallery = () => {
     const { galleryImages: mediaItems } = useStore();
 
     return (
-        <div className="min-h-screen bg-[#020202] text-white pt-32 pb-32 px-4 relative overflow-hidden">
+        <div className="min-h-screen bg-gray-50 dark:bg-[#020202] text-gray-900 dark:text-white pt-32 pb-32 px-4 relative overflow-hidden transition-colors duration-300">
             {/* Background Glows */}
             <div className="fixed inset-0 z-0 pointer-events-none">
                 <div className="absolute top-[10%] right-[-10%] w-[50%] h-[50%] bg-neon-pink/5 rounded-full blur-[150px] animate-pulse" />
@@ -27,7 +27,7 @@ const MediaGallery = () => {
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.2 }}
-                        className="text-4xl md:text-8xl font-black font-heading text-transparent bg-clip-text bg-gradient-to-r from-neon-pink via-white to-neon-blue mb-6 tracking-tight leading-none text-center"
+                        className="text-4xl md:text-8xl font-black font-heading text-transparent bg-clip-text bg-gradient-to-r from-neon-pink via-gray-900 dark:via-white to-neon-blue mb-6 tracking-tight leading-none text-center"
                     >
                         MEDIA GALLERY
                     </motion.h1>
@@ -36,7 +36,7 @@ const MediaGallery = () => {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         transition={{ delay: 0.3 }}
-                        className="text-gray-400 max-w-2xl mx-auto text-base md:text-xl font-medium leading-relaxed"
+                        className="text-gray-600 dark:text-gray-400 max-w-2xl mx-auto text-base md:text-xl font-medium leading-relaxed"
                     >
                         Visual stories, moments, and backstage energy captured by the Newbi team.
                     </motion.p>
@@ -47,7 +47,7 @@ const MediaGallery = () => {
                     initial={{ opacity: 0, y: 40 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.3 }}
-                    className="bg-zinc-900/40 backdrop-blur-3xl border border-white/5 rounded-[2.5rem] p-4 md:p-8 shadow-2xl relative overflow-hidden"
+                    className="bg-white dark:bg-zinc-900/40 backdrop-blur-3xl border border-gray-200 dark:border-white/5 rounded-[2.5rem] p-4 md:p-8 shadow-xl dark:shadow-2xl relative overflow-hidden"
                 >
                     <div className="absolute top-0 right-0 w-80 h-80 bg-neon-blue/5 blur-[100px] -mr-40 -mt-40 pointer-events-none" />
 
@@ -62,7 +62,7 @@ const MediaGallery = () => {
                                     className="break-inside-avoid"
                                 >
                                     <div
-                                        className="relative group rounded-2xl overflow-hidden cursor-pointer border border-white/5 hover:border-white/10 transition-all"
+                                        className="relative group rounded-2xl overflow-hidden cursor-pointer border border-gray-200 dark:border-white/5 hover:border-gray-300 dark:hover:border-white/20 transition-all shadow-sm dark:shadow-none"
                                         onClick={() => setSelectedImage(item)}
                                     >
                                         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors duration-300 z-10" />
@@ -75,7 +75,7 @@ const MediaGallery = () => {
                                         {/* Overlay Content */}
                                         <div className="absolute inset-0 z-20 flex flex-col justify-end p-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                                             <span className="text-neon-green text-[10px] font-black uppercase tracking-wider mb-1">
-                                                {item.category}
+                                                 {item.category}
                                             </span>
                                             <h3 className="text-white font-black text-sm truncate uppercase">{item.title}</h3>
                                             {item.type === 'video' && (
@@ -92,10 +92,10 @@ const MediaGallery = () => {
                         </div>
                     ) : (
                         <div className="relative z-10 py-20 flex flex-col items-center justify-center text-center">
-                            <div className="w-20 h-20 rounded-[1.5rem] bg-white/5 border border-white/10 flex items-center justify-center mb-6">
-                                <ImageIcon size={36} className="text-gray-600" />
+                            <div className="w-20 h-20 rounded-[1.5rem] bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 flex items-center justify-center mb-6">
+                                <ImageIcon size={36} className="text-gray-600 dark:text-gray-400" />
                             </div>
-                            <h3 className="text-xl font-black font-heading uppercase tracking-tighter text-white mb-2">No Media Yet</h3>
+                            <h3 className="text-xl font-black font-heading uppercase tracking-tighter text-gray-900 dark:text-white mb-2">No Media Yet</h3>
                             <p className="text-gray-500 text-sm font-medium max-w-xs">
                                 The gallery is being curated. Check back soon for exclusive content.
                             </p>
@@ -111,7 +111,7 @@ const MediaGallery = () => {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-[200] flex items-center justify-center bg-black/95 backdrop-blur-xl p-4"
+                        className="fixed inset-0 z-[200] flex items-center justify-center bg-black/90 backdrop-blur-xl p-4"
                         onClick={() => setSelectedImage(null)}
                     >
                         <button

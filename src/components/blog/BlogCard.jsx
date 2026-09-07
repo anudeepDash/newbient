@@ -96,10 +96,10 @@ const BlogCard = ({ post, variant = 'standard', index = 0 }) => {
                         >
                             {post.category}
                         </span>
-                        <div className="flex items-center gap-2 md:gap-3 px-4 md:px-6 py-2 md:py-3 bg-black/40 backdrop-blur-2xl border border-white/10 rounded-xl md:rounded-2xl text-[9px] md:text-[11px] font-black uppercase tracking-[0.3em]">
+                        <div className="flex items-center gap-2 md:gap-3 px-4 md:px-6 py-2 md:py-3 bg-white dark:bg-black/40 backdrop-blur-2xl border border-black/10 dark:border-white/10 rounded-xl md:rounded-2xl text-[9px] md:text-[11px] font-black uppercase tracking-[0.3em]">
                             <Clock size={14} className="md:size-[16px]" style={{ color: accentColor }} /> {post.readingTime || 5} MIN
                         </div>
-                        <div className="flex items-center gap-2 md:gap-3 px-4 md:px-6 py-2 md:py-3 bg-black/40 backdrop-blur-2xl border border-white/10 rounded-xl md:rounded-2xl text-[9px] md:text-[11px] font-black uppercase tracking-[0.3em]">
+                        <div className="flex items-center gap-2 md:gap-3 px-4 md:px-6 py-2 md:py-3 bg-white dark:bg-black/40 backdrop-blur-2xl border border-black/10 dark:border-white/10 rounded-xl md:rounded-2xl text-[9px] md:text-[11px] font-black uppercase tracking-[0.3em]">
                             <Eye size={14} className="md:size-[16px]" style={{ color: accentColor }} /> {post.viewCount || 0} VIEWS
                         </div>
                     </div>
@@ -117,12 +117,12 @@ const BlogCard = ({ post, variant = 'standard', index = 0 }) => {
                             >
                                 {post.title}
                             </motion.h2>
-                            <p className="text-gray-300 text-base md:text-2xl font-medium max-w-3xl line-clamp-2 opacity-60 group-hover:opacity-100 transition-opacity duration-500 leading-relaxed">
+                            <p className="text-gray-700 dark:text-gray-300 text-base md:text-2xl font-medium max-w-3xl line-clamp-2 opacity-60 group-hover:opacity-100 transition-opacity duration-500 leading-relaxed">
                                 {post.shortDescription}
                             </p>
-                            <div className="flex flex-wrap items-center gap-6 md:gap-10 text-[11px] md:text-[13px] font-black uppercase tracking-[0.4em] text-white/40">
+                            <div className="flex flex-wrap items-center gap-6 md:gap-10 text-[11px] md:text-[13px] font-black uppercase tracking-[0.4em] text-gray-900 dark:text-white/40">
                                 <div className="flex items-center gap-3 md:gap-4">
-                                    <div className="w-10 h-10 md:w-14 md:h-14 rounded-xl md:rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center">
+                                    <div className="w-10 h-10 md:w-14 md:h-14 rounded-xl md:rounded-2xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 flex items-center justify-center">
                                         <User size={16} className="md:size-[20px]" />
                                     </div>
                                     <span className="text-[10px] md:text-[13px]">{post.author || 'NEWBI TEAM'}</span>
@@ -147,7 +147,7 @@ const BlogCard = ({ post, variant = 'standard', index = 0 }) => {
                 initial={{ opacity: 0, scale: 0.98 }}
                 whileInView={{ opacity: 1, scale: 1 }}
                 viewport={{ once: true }}
-                className="group relative h-full min-h-[550px] bg-zinc-900/30 border border-white/5 rounded-3xl overflow-hidden backdrop-blur-3xl transition-all duration-700 shadow-2xl"
+                className="group relative h-full min-h-[550px] bg-gray-100 dark:bg-zinc-900/30 border border-black/10 dark:border-white/5 rounded-3xl overflow-hidden backdrop-blur-3xl transition-all duration-700 shadow-2xl"
                 style={{ '--hover-border': `${accentColor}4D` }}
             >
                 <Link to={detailPath} className="flex flex-col h-full">
@@ -181,13 +181,13 @@ const BlogCard = ({ post, variant = 'standard', index = 0 }) => {
                         )}
                         <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-80" />
                         <div className="absolute top-8 left-8">
-                            <span className="px-6 py-2 bg-black/60 backdrop-blur-2xl border border-white/10 rounded-xl text-[10px] font-bold text-white">
+                            <span className="px-6 py-2 bg-white dark:bg-black/60 backdrop-blur-2xl border border-black/10 dark:border-white/10 rounded-xl text-[10px] font-bold text-gray-900 dark:text-white">
                                 {post.category}
                             </span>
                         </div>
                         {post.featured && (
                             <div 
-                                className="absolute top-8 right-8 w-12 h-12 text-white rounded-xl flex items-center justify-center"
+                                className="absolute top-8 right-8 w-12 h-12 text-gray-900 dark:text-white rounded-xl flex items-center justify-center"
                                 style={{ backgroundColor: accentColor, boxShadow: `0 10px 20px ${accentColor}66` }}
                             >
                                 <Star size={18} fill="currentColor" />
@@ -197,28 +197,28 @@ const BlogCard = ({ post, variant = 'standard', index = 0 }) => {
                     <div className="p-8 md:p-14 flex flex-col flex-grow">
                         <div className="flex items-center gap-4 md:gap-5 text-gray-500 text-[9px] md:text-[11px] font-black uppercase tracking-[0.4em] mb-4 md:mb-6">
                             <div className="flex items-center gap-2 font-black" style={{ color: accentColor }}><Clock size={12} className="md:size-[14px]" /> {post.readingTime || 5} MIN</div>
-                            <div className="w-[1px] h-3 md:h-4 bg-white/10" />
+                            <div className="w-[1px] h-3 md:h-4 bg-black/10 dark:bg-white/10" />
                             <div className="flex items-center gap-2 font-black" style={{ color: accentColor }}><Eye size={12} className="md:size-[14px]" /> {post.viewCount || 0}</div>
-                            <div className="w-[1px] h-3 md:h-4 bg-white/10" />
+                            <div className="w-[1px] h-3 md:h-4 bg-black/10 dark:bg-white/10" />
                             <div>{new Date(post.publishDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</div>
                         </div>
                         <h3 className="text-2xl md:text-4xl font-extrabold font-heading leading-tight tracking-tight mb-4 md:mb-6 group-hover:text-neon-green transition-colors line-clamp-3">
                             {post.title}
                         </h3>
-                        <p className="text-gray-400 text-sm md:text-base font-medium line-clamp-2 mb-8 md:mb-10 opacity-60 group-hover:opacity-100 transition-opacity leading-relaxed">
+                        <p className="text-gray-600 dark:text-gray-400 text-sm md:text-base font-medium line-clamp-2 mb-8 md:mb-10 opacity-60 group-hover:opacity-100 transition-opacity leading-relaxed">
                             {post.shortDescription}
                         </p>
-                        <div className="flex items-center justify-between mt-auto pt-6 md:pt-8 border-t border-white/5">
+                        <div className="flex items-center justify-between mt-auto pt-6 md:pt-8 border-t border-black/10 dark:border-white/5">
                             <div className="flex items-center gap-3 md:gap-4">
-                                <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg md:rounded-xl bg-white/5 border border-white/10 flex items-center justify-center">
-                                    <User size={14} className="text-gray-400 md:size-[16px]" />
+                                <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg md:rounded-xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 flex items-center justify-center">
+                                    <User size={14} className="text-gray-600 dark:text-gray-400 md:size-[16px]" />
                                 </div>
                                 <span className="text-[9px] md:text-[11px] font-black uppercase tracking-widest text-gray-500">
                                     {post.author || 'NEWBI TEAM'}
                                 </span>
                             </div>
                             <div 
-                                className="w-10 h-10 md:w-12 md:h-12 rounded-xl border border-white/10 flex items-center justify-center transition-all duration-500 group-hover:text-black"
+                                className="w-10 h-10 md:w-12 md:h-12 rounded-xl border border-black/10 dark:border-white/10 flex items-center justify-center transition-all duration-500 group-hover:text-black"
                                 style={{ '--hover-bg': accentColor }}
                             >
                                 <ArrowUpRight size={18} className="md:size-[20px]" />
@@ -234,7 +234,7 @@ const BlogCard = ({ post, variant = 'standard', index = 0 }) => {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: index * 0.1 }}
-                className="group relative flex flex-col h-[460px] md:h-full bg-zinc-900/20 border border-white/5 rounded-3xl overflow-hidden backdrop-blur-md hover:bg-white/[0.03] hover:border-white/10 transition-all duration-500 shadow-xl"
+                className="group relative flex flex-col h-[460px] md:h-full bg-white dark:bg-zinc-900/40 border border-gray-200 dark:border-white/5 rounded-3xl overflow-hidden backdrop-blur-md hover:border-gray-300 dark:hover:border-white/10 transition-all duration-500 shadow-sm dark:shadow-xl"
             >
                 <Link to={detailPath} className="flex flex-col h-full">
                     <div className="relative aspect-[16/10] overflow-hidden">
@@ -243,34 +243,31 @@ const BlogCard = ({ post, variant = 'standard', index = 0 }) => {
                             alt={post.title}
                             className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
                         />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-60" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-60" />
                         <div className="absolute top-5 left-5">
-                            <span className="px-4 py-1.5 bg-black/60 backdrop-blur-xl border border-white/10 rounded-xl text-[9px] font-black uppercase tracking-widest text-white">
+                            <span className="px-4 py-1.5 bg-black/60 backdrop-blur-xl border border-white/15 rounded-xl text-[9px] font-black uppercase tracking-widest text-white">
                                 {post.category}
                             </span>
                         </div>
                     </div>
                     <div className="p-8 md:p-10 flex flex-col flex-grow">
-                        <div className="flex items-center gap-4 text-gray-600 text-[10px] font-black uppercase tracking-[0.3em] mb-5">
+                        <div className="flex items-center gap-4 text-gray-500 dark:text-gray-400 text-[10px] font-black uppercase tracking-[0.3em] mb-5">
                             <div className="flex items-center gap-2"><Clock size={12} /> {post.readingTime || 5} MIN</div>
-                            <div className="w-1.5 h-1.5 rounded-full bg-white/20" />
+                            <div className="w-1.5 h-1.5 rounded-full bg-gray-300 dark:bg-white/20" />
                             <div className="flex items-center gap-2"><Eye size={12} /> {post.viewCount || 0}</div>
-                            <div className="w-1.5 h-1.5 rounded-full bg-white/20" />
+                            <div className="w-1.5 h-1.5 rounded-full bg-gray-300 dark:bg-white/20" />
                             <div>{new Date(post.publishDate).toLocaleDateString()}</div>
                         </div>
                         <h3 
-                            className="text-2xl md:text-3xl font-extrabold font-heading leading-snug tracking-tight mb-6 transition-colors line-clamp-2" 
-                            style={{ color: 'white', transition: 'color 0.3s ease' }}
-                            onMouseEnter={(e) => e.currentTarget.style.color = accentColor}
-                            onMouseLeave={(e) => e.currentTarget.style.color = 'white'}
+                            className="text-2xl md:text-3xl font-extrabold font-heading leading-snug tracking-tight mb-6 text-gray-900 dark:text-white group-hover:text-neon-green transition-colors line-clamp-2" 
                         >
                             {post.title}
                         </h3>
-                        <p className="text-gray-500 text-sm font-medium line-clamp-3 mb-10 flex-grow leading-relaxed opacity-80 group-hover:opacity-100 transition-opacity">
+                        <p className="text-gray-600 dark:text-gray-400 text-sm font-medium line-clamp-3 mb-10 flex-grow leading-relaxed opacity-80 group-hover:opacity-100 transition-opacity">
                             {post.shortDescription}
                         </p>
-                        <div className="flex items-center justify-between mt-auto pt-8 border-t border-white/5">
-                            <span className="text-[10px] font-black uppercase tracking-widest text-gray-600 group-hover:text-white transition-colors">
+                        <div className="flex items-center justify-between mt-auto pt-8 border-t border-gray-200 dark:border-white/5">
+                            <span className="text-[10px] font-black uppercase tracking-widest text-gray-500 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">
                                 BY {post.author || 'NEWBI TEAM'}
                             </span>
                             <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.4em] transition-transform group-hover:translate-x-2" style={{ color: accentColor }}>
@@ -288,21 +285,18 @@ const BlogCard = ({ post, variant = 'standard', index = 0 }) => {
                 viewport={{ once: true }}
                 className="group relative"
             >
-                <Link to={detailPath} className="flex gap-4 md:gap-8 items-center p-4 md:p-6 bg-white/[0.02] border border-white/5 rounded-2xl hover:bg-white/[0.05] hover:border-white/10 transition-all duration-500">
-                    <div className="w-20 h-20 md:w-28 md:h-28 shrink-0 rounded-xl overflow-hidden border border-white/10 shadow-lg">
+                <Link to={detailPath} className="flex gap-4 md:gap-8 items-center p-4 md:p-6 bg-white dark:bg-white/[0.02] border border-gray-200 dark:border-white/5 rounded-2xl hover:border-gray-300 dark:hover:border-white/10 transition-all duration-500 shadow-sm dark:shadow-none">
+                    <div className="w-20 h-20 md:w-28 md:h-28 shrink-0 rounded-xl overflow-hidden border border-gray-200 dark:border-white/10 shadow-md">
                         <img src={post.coverImage} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" alt="" />
                     </div>
                     <div className="flex flex-col gap-2 md:gap-3 overflow-hidden">
                         <div className="flex items-center gap-3 md:gap-4">
                             <span className="text-[8px] md:text-[9px] font-black uppercase tracking-[0.4em] whitespace-nowrap" style={{ color: accentColor }}>{post.category}</span>
-                            <div className="w-1 h-1 rounded-full bg-white/10 hidden md:block" />
-                            <span className="text-[8px] md:text-[9px] font-bold text-gray-500 uppercase tracking-widest whitespace-nowrap flex items-center gap-1.5"><Eye size={10} className="md:size-[12px]" /> {post.viewCount || 0}</span>
+                            <div className="w-1 h-1 rounded-full bg-gray-300 dark:bg-white/10 hidden md:block" />
+                            <span className="text-[8px] md:text-[9px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest whitespace-nowrap flex items-center gap-1.5"><Eye size={10} className="md:size-[12px]" /> {post.viewCount || 0}</span>
                         </div>
                         <h4 
-                            className="text-lg md:text-2xl font-extrabold font-heading leading-snug transition-colors line-clamp-2 tracking-tight" 
-                            style={{ color: 'white', transition: 'color 0.3s ease' }}
-                            onMouseEnter={(e) => e.currentTarget.style.color = accentColor}
-                            onMouseLeave={(e) => e.currentTarget.style.color = 'white'}
+                            className="text-lg md:text-2xl font-extrabold font-heading leading-snug text-gray-900 dark:text-white group-hover:text-neon-green transition-colors line-clamp-2 tracking-tight" 
                         >
                             {post.title}
                         </h4>

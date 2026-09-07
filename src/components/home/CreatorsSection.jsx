@@ -1,11 +1,21 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Sparkles, Target, ArrowRight, Users } from 'lucide-react';
+import { Sparkles, Target, ArrowRight, Users, Zap } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useStore } from '../../lib/store';
+import { normalizePhoneNumber } from '../../lib/utils';
 
 const CreatorsSection = () => {
+    const { user, creators } = useStore();
+    const userPhoneNorm = user?.phoneNumber ? normalizePhoneNumber(user.phoneNumber) : null;
+    const userEmailNorm = user?.email ? user.email.toLowerCase() : null;
+    const isCreator = Boolean(creators?.some(c => 
+        c.uid === user?.uid || 
+        (userEmailNorm && c.email && c.email.toLowerCase() === userEmailNorm) ||
+        (userPhoneNorm && c.phone && normalizePhoneNumber(c.phone) === userPhoneNorm)
+    ));
     return (
-        <section id="creators-brands" className="py-16 md:py-24 bg-dark relative px-4 overflow-hidden border-t border-white/5">
+        <section id="creators-brands" className="py-16 md:py-24 bg-gray-50 dark:bg-dark transition-colors duration-300 relative px-4 overflow-hidden border-t border-black/10 dark:border-white/5">
             {/* Background Atmosphere Glows */}
 
             <div className="max-w-7xl mx-auto relative z-10">
@@ -15,16 +25,16 @@ const CreatorsSection = () => {
                             initial={{ opacity: 0, y: 20 }}
                             whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: true }}
-                            className="font-heading text-4xl md:text-6xl font-extrabold mb-6 text-white tracking-tight whitespace-nowrap"
+                            className="font-heading text-4xl md:text-6xl font-extrabold mb-6 text-gray-900 dark:text-white tracking-tight whitespace-nowrap"
                         >
-                            Creative <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-neon-green">Powerhouse</span>
+                            Creative <span className="text-transparent bg-clip-text bg-gradient-to-r from-black to-neon-green dark:from-white dark:to-neon-green">Powerhouse</span>
                         </motion.h2>
                     </div>
                     <motion.p
                         initial={{ opacity: 0 }}
                         whileInView={{ opacity: 1 }}
                         viewport={{ once: true }}
-                        className="text-gray-500 max-w-sm text-base md:text-lg font-medium leading-relaxed pb-2"
+                        className="text-gray-500 dark:text-gray-400 max-w-sm text-base md:text-lg font-medium leading-relaxed pb-2"
                     >
                         Bridging authentic campus and niche creators with high-octane brands for maximum cultural impact.
                     </motion.p>
@@ -38,35 +48,37 @@ const CreatorsSection = () => {
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true }}
                         transition={{ duration: 0.6 }}
-                        className="group relative bg-zinc-900/35 backdrop-blur-3xl border border-white/5 p-6 md:p-14 rounded-3xl overflow-hidden hover:border-white/10 transition-[background-color,border-color,box-shadow] duration-700 min-h-[380px] md:min-h-[460px] flex flex-col justify-between"
+                        className="group relative bg-white dark:bg-zinc-900/35 backdrop-blur-3xl border border-gray-200 dark:border-white/5 p-6 md:p-14 rounded-3xl overflow-hidden hover:border-gray-300 dark:hover:border-white/10 transition-[background-color,border-color,box-shadow] duration-700 min-h-[380px] md:min-h-[460px] flex flex-col justify-between shadow-sm dark:shadow-none"
                     >
                         <div className="space-y-6">
-                            <div className="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-neon-green group-hover:bg-white group-hover:text-black transition-all duration-700 group-hover:scale-110 shadow-lg">
+                            <div className="w-16 h-16 rounded-2xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 flex items-center justify-center text-neon-green group-hover:bg-black group-hover:text-white dark:group-hover:bg-white dark:group-hover:text-black transition-all duration-700 group-hover:scale-110 shadow-lg">
                                 <Users size={32} />
                             </div>
                             <div className="space-y-3">
-                                <h3 className="text-2xl md:text-4xl font-extrabold font-heading text-white tracking-tight leading-none group-hover:translate-x-2 transition-transform duration-500">
+                                <h3 className="text-2xl md:text-4xl font-extrabold font-heading text-gray-900 dark:text-white tracking-tight leading-none group-hover:translate-x-2 transition-transform duration-500">
                                     For Creators
                                 </h3>
                                 <p className="text-neon-green text-xs font-semibold tracking-wider leading-tight">
                                     Unleash Your Influence.
                                 </p>
-                                <p className="text-gray-400 text-sm md:text-base font-medium leading-relaxed pt-2">
+                                <p className="text-gray-600 dark:text-gray-400 text-sm md:text-base font-medium leading-relaxed pt-2">
                                     Join India's premier network of campus and niche content creators. Get access to paid campaigns, build an automated media kit portfolio, track real-time analytics, and secure exclusive sponsorship deals.
                                 </p>
                             </div>
                         </div>
 
                         <div className="pt-8 md:pt-10">
-                            <Link to="/creator">
+                            <Link to={isCreator ? "/creator-dashboard" : "/creator"}>
                                 <motion.div
                                     whileHover={{ scale: 1.03 }}
                                     whileTap={{ scale: 0.98 }}
                                     className="relative inline-block cursor-pointer"
                                 >
-                                    <div className="absolute -inset-1 bg-gradient-to-r from-neon-green to-white/10 rounded-2xl blur opacity-20 group-hover:opacity-60 transition duration-700"></div>
-                                    <div className="relative px-8 py-4 bg-black rounded-2xl leading-none flex items-center gap-3 border border-white/10 group-hover:border-neon-green/40 transition-colors">
-                                        <span className="text-white text-sm font-bold font-heading uppercase tracking-wider">Apply As Creator</span>
+                                    <div className="absolute -inset-1 bg-gradient-to-r from-neon-green to-neon-blue rounded-2xl blur opacity-20 group-hover:opacity-60 transition duration-700"></div>
+                                    <div className="relative px-8 py-4 bg-black text-white dark:bg-white dark:text-black transition-colors duration-300 rounded-2xl leading-none flex items-center gap-3 border border-black/10 dark:border-white/10 group-hover:border-neon-green/40 shadow-lg">
+                                        <span className="text-sm font-bold font-heading uppercase tracking-wider">
+                                            {isCreator ? "Open Creator Studio" : "Apply As Creator"}
+                                        </span>
                                         <div className="p-1 rounded-full bg-neon-green/20 group-hover:bg-neon-green transition-colors">
                                             <ArrowRight className="h-3 w-3 text-neon-green group-hover:text-black" />
                                         </div>
@@ -87,20 +99,20 @@ const CreatorsSection = () => {
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true }}
                         transition={{ duration: 0.6, delay: 0.2 }}
-                        className="group relative bg-zinc-900/35 backdrop-blur-3xl border border-white/5 p-6 md:p-14 rounded-3xl overflow-hidden hover:border-white/10 transition-[background-color,border-color,box-shadow] duration-700 min-h-[380px] md:min-h-[460px] flex flex-col justify-between"
+                        className="group relative bg-white dark:bg-zinc-900/35 backdrop-blur-3xl border border-gray-200 dark:border-white/5 p-6 md:p-14 rounded-3xl overflow-hidden hover:border-gray-300 dark:hover:border-white/10 transition-[background-color,border-color,box-shadow] duration-700 min-h-[380px] md:min-h-[460px] flex flex-col justify-between shadow-sm dark:shadow-none"
                     >
                         <div className="space-y-6">
-                            <div className="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-white group-hover:bg-white group-hover:text-black transition-all duration-700 group-hover:scale-110 shadow-lg">
+                            <div className="w-16 h-16 rounded-2xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 flex items-center justify-center text-gray-900 dark:text-white group-hover:bg-black group-hover:text-white dark:group-hover:bg-white dark:group-hover:text-black transition-all duration-700 group-hover:scale-110 shadow-lg">
                                 <Target size={32} />
                             </div>
                             <div className="space-y-3">
-                                <h3 className="text-2xl md:text-4xl font-extrabold font-heading text-white tracking-tight leading-none group-hover:translate-x-2 transition-transform duration-500">
+                                <h3 className="text-2xl md:text-4xl font-extrabold font-heading text-gray-900 dark:text-white tracking-tight leading-none group-hover:translate-x-2 transition-transform duration-500">
                                     For Brands
                                 </h3>
                                 <p className="text-neon-green text-xs font-semibold tracking-wider leading-tight">
                                     Dominate The Heartland.
                                 </p>
-                                <p className="text-gray-400 text-sm md:text-base font-medium leading-relaxed pt-2">
+                                <p className="text-gray-600 dark:text-gray-400 text-sm md:text-base font-medium leading-relaxed pt-2">
                                     Tap into authentic, high-impact youth networks. Scale up hyper-local college and regional influencer campaigns with automated matching, full-scope reporting, campaign tracking, and verified ROI analytics.
                                 </p>
                             </div>
@@ -113,9 +125,9 @@ const CreatorsSection = () => {
                                     whileTap={{ scale: 0.98 }}
                                     className="relative inline-block cursor-pointer"
                                 >
-                                    <div className="absolute -inset-1 bg-gradient-to-r from-neon-green to-white/10 rounded-2xl blur opacity-20 group-hover:opacity-60 transition duration-700"></div>
-                                    <div className="relative px-8 py-4 bg-black rounded-2xl leading-none flex items-center gap-3 border border-white/10 group-hover:border-neon-green/40 transition-colors">
-                                        <span className="text-white text-sm font-bold font-heading uppercase tracking-wider">Hire Our Network</span>
+                                    <div className="absolute -inset-1 bg-gradient-to-r from-neon-green to-gray-900 dark:to-white/10 rounded-2xl blur opacity-20 group-hover:opacity-60 transition duration-700"></div>
+                                    <div className="relative px-8 py-4 bg-white dark:bg-black transition-colors duration-300 rounded-2xl leading-none flex items-center gap-3 border border-black/10 dark:border-white/10 group-hover:border-neon-green/40 transition-colors">
+                                        <span className="text-gray-900 dark:text-white text-sm font-bold font-heading uppercase tracking-wider">Hire Our Network</span>
                                         <div className="p-1 rounded-full bg-neon-green/20 group-hover:bg-neon-green transition-colors">
                                             <ArrowRight className="h-3 w-3 text-neon-green group-hover:text-black" />
                                         </div>

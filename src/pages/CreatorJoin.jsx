@@ -5,16 +5,11 @@ import { auth } from '../lib/firebase';
 import { RecaptchaVerifier, signInWithPhoneNumber } from 'firebase/auth';
 import confetti from 'canvas-confetti';
 import { PREDEFINED_CITIES } from '../lib/constants';
-import { Button } from '../components/ui/Button';
-import { Input } from '../components/ui/Input';
 import { motion, AnimatePresence } from 'framer-motion';
-import Zap from 'lucide-react/dist/esm/icons/zap';
-import Users from 'lucide-react/dist/esm/icons/users';
 import ArrowRight from 'lucide-react/dist/esm/icons/arrow-right';
+import ArrowLeft from 'lucide-react/dist/esm/icons/arrow-left';
 import Instagram from 'lucide-react/dist/esm/icons/instagram';
 import Youtube from 'lucide-react/dist/esm/icons/youtube';
-import Globe from 'lucide-react/dist/esm/icons/globe';
-import Camera from 'lucide-react/dist/esm/icons/camera';
 import Linkedin from 'lucide-react/dist/esm/icons/linkedin';
 import Twitter from 'lucide-react/dist/esm/icons/twitter';
 import Upload from 'lucide-react/dist/esm/icons/upload';
@@ -23,34 +18,44 @@ import Check from 'lucide-react/dist/esm/icons/check';
 import Phone from 'lucide-react/dist/esm/icons/phone';
 import Mail from 'lucide-react/dist/esm/icons/mail';
 import MapPin from 'lucide-react/dist/esm/icons/map-pin';
-import Tag from 'lucide-react/dist/esm/icons/tag';
 import ShieldCheck from 'lucide-react/dist/esm/icons/shield-check';
 import ChevronDown from 'lucide-react/dist/esm/icons/chevron-down';
 import User from 'lucide-react/dist/esm/icons/user';
 import FileText from 'lucide-react/dist/esm/icons/file-text';
 import Sparkles from 'lucide-react/dist/esm/icons/sparkles';
-import Lock from 'lucide-react/dist/esm/icons/lock';
-import ArrowLeft from 'lucide-react/dist/esm/icons/arrow-left';
-import RefreshCw from 'lucide-react/dist/esm/icons/refresh-cw';
+import Camera from 'lucide-react/dist/esm/icons/camera';
+import TrendingUp from 'lucide-react/dist/esm/icons/trending-up';
+import Award from 'lucide-react/dist/esm/icons/award';
 import { useNavigate, Link } from 'react-router-dom';
 import { cn, normalizePhoneNumber } from '../lib/utils';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import useDynamicMeta from '../hooks/useDynamicMeta';
 
-const NICHES = [
-    'Student/Campus Creator',
-    'Fashion & Luxury',
-    'Tech & Gaming',
-    'Travel & Lifestyle',
-    'Beauty & Fitness',
-    'Food & Beverage',
-    'Comedy & Entertainment',
-    'College Pages',
-    'Startup & Entrepreneurship',
-    'Finance & Business',
-    'Art & Photography',
-    'Music & Dance',
-    'Others'
+// Rich niche definitions with icons and descriptions
+const NICHE_OPTIONS = [
+    { id: 'Fashion & Luxury', label: 'Fashion & Luxury', icon: '👗', color: 'from-pink-500/20 to-purple-500/10' },
+    { id: 'Tech & Gaming', label: 'Tech & Gaming', icon: '🎮', color: 'from-blue-500/20 to-cyan-500/10' },
+    { id: 'Travel & Lifestyle', label: 'Travel & Lifestyle', icon: '✈️', color: 'from-amber-500/20 to-orange-500/10' },
+    { id: 'Beauty & Fitness', label: 'Beauty & Fitness', icon: '💄', color: 'from-rose-500/20 to-pink-500/10' },
+    { id: 'Food & Beverage', label: 'Food & Dining', icon: '🍔', color: 'from-yellow-500/20 to-amber-500/10' },
+    { id: 'Comedy & Entertainment', label: 'Comedy & Memes', icon: '🎭', color: 'from-purple-500/20 to-indigo-500/10' },
+    { id: 'Student/Campus Creator', label: 'Campus & College', icon: '🎓', color: 'from-emerald-500/20 to-teal-500/10' },
+    { id: 'College Pages', label: 'College Pages / Hubs', icon: '🏫', color: 'from-teal-500/20 to-blue-500/10' },
+    { id: 'Startup & Entrepreneurship', label: 'Startup & Founder', icon: '🚀', color: 'from-violet-500/20 to-purple-500/10' },
+    { id: 'Finance & Business', label: 'Finance & Career', icon: '📈', color: 'from-green-500/20 to-emerald-500/10' },
+    { id: 'Music & Dance', label: 'Music & Dance', icon: '🎵', color: 'from-fuchsia-500/20 to-pink-500/10' },
+    { id: 'Others', label: 'Other Specialization', icon: '✨', color: 'from-zinc-500/20 to-zinc-700/10' }
+];
+
+const POPULAR_CITIES = [
+    'Bengaluru',
+    'Mumbai',
+    'Delhi NCR',
+    'Hyderabad',
+    'Pune',
+    'Goa',
+    'Chennai',
+    'Kolkata'
 ];
 
 const COUNTRY_OPTIONS = [
@@ -63,80 +68,19 @@ const COUNTRY_OPTIONS = [
 
 const RECAPTCHA_CONTAINER_ID = 'creator-phone-recaptcha';
 
-const CustomSelect = ({ value, onChange, options, name, placeholder, icon: Icon, className, isCountryCode }) => {
-    const [isOpen, setIsOpen] = useState(false);
-    const containerRef = useRef(null);
-
-    const handleToggle = () => setIsOpen(!isOpen);
-
-    const handleSelect = (option) => {
-        const val = typeof option === 'object' ? option.value : option;
-        onChange({ target: { name, value: val } });
-        setIsOpen(false);
-    };
-
-    useEffect(() => {
-        const handleClickOutside = (e) => {
-            if (containerRef.current && !containerRef.current.contains(e.target)) setIsOpen(false);
-        };
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, []);
-
-    const currentOption = options.find(opt => (typeof opt === 'object' ? opt.value : opt) === value);
-    const displayLabel = currentOption ? (typeof currentOption === 'object' ? currentOption.label : currentOption) : placeholder;
-
-    return (
-        <div ref={containerRef} className={cn("relative", isCountryCode ? "w-24 sm:w-28 shrink-0" : "w-full")}>
-            <button
-                type="button"
-                onClick={handleToggle}
-                className={cn(
-                    "w-full h-14 bg-zinc-900/90 border border-zinc-800 rounded-xl text-sm font-semibold text-left focus:border-white focus:outline-none transition-all flex items-center justify-between group",
-                    isCountryCode ? "px-3" : "pl-11 pr-4",
-                    isOpen && "border-zinc-500 ring-1 ring-zinc-500/40",
-                    className
-                )}
-            >
-                {!isCountryCode && Icon && <Icon className={cn("absolute left-3.5 top-1/2 -translate-y-1/2 transition-colors", isOpen ? "text-white" : "text-zinc-400")} size={18} />}
-                <span className={value ? "text-white truncate" : "text-zinc-400 truncate"}>{displayLabel}</span>
-                <ChevronDown size={14} className={cn("text-zinc-400 transition-transform duration-200 shrink-0", isOpen && "rotate-180 text-white")} />
-            </button>
-
-            <AnimatePresence>
-                {isOpen && (
-                    <motion.ul
-                        initial={{ opacity: 0, y: -6 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -6 }}
-                        transition={{ duration: 0.15 }}
-                        className="absolute z-[100] w-full mt-1.5 max-h-56 overflow-y-auto bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl py-1 text-white scrollbar-thin scrollbar-thumb-zinc-700"
-                    >
-                        {options.map((opt) => {
-                            const optVal = typeof opt === 'object' ? opt.value : opt;
-                            const optLabel = typeof opt === 'object' ? opt.label : opt;
-                            const isSelected = optVal === value;
-                            return (
-                                <li key={optVal}>
-                                    <button
-                                        type="button"
-                                        onClick={() => handleSelect(opt)}
-                                        className={cn(
-                                            "w-full px-3.5 py-2.5 text-left text-xs font-medium transition-all hover:bg-zinc-800 flex items-center justify-between",
-                                            isSelected && "bg-zinc-800/80 text-emerald-400 font-semibold"
-                                        )}
-                                    >
-                                        <span className="truncate">{optLabel}</span>
-                                        {isSelected && <Check size={14} className="text-emerald-400 shrink-0 ml-2" />}
-                                    </button>
-                                </li>
-                            );
-                        })}
-                    </motion.ul>
-                )}
-            </AnimatePresence>
-        </div>
-    );
+const slideVariants = {
+    enter: (direction) => ({
+        x: direction > 0 ? 30 : -30,
+        opacity: 0
+    }),
+    center: {
+        x: 0,
+        opacity: 1
+    },
+    exit: (direction) => ({
+        x: direction < 0 ? 30 : -30,
+        opacity: 0
+    })
 };
 
 const CreatorJoin = () => {
@@ -149,6 +93,10 @@ const CreatorJoin = () => {
 
     const { user, addCreator, creators, uploadToCloudinary, setAuthModal } = useStore();
     const navigate = useNavigate();
+
+    // Step state: 1: Identity, 2: Contact/OTP, 3: Niches & Socials, 4: Collab & Submit
+    const [step, setStep] = useState(1);
+    const [direction, setDirection] = useState(1);
 
     const [formData, setFormData] = useState({
         name: '',
@@ -174,6 +122,7 @@ const CreatorJoin = () => {
     });
 
     const [countryCode, setCountryCode] = useState('+91');
+    const [isCountryCodeOpen, setIsCountryCodeOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
     const [hasJoined, setHasJoined] = useState(false);
@@ -192,6 +141,7 @@ const CreatorJoin = () => {
 
     const otpInputRefs = useRef([]);
     const recaptchaVerifierRef = useRef(null);
+    const countryCodeRef = useRef(null);
 
     // Auto-fill from logged in user if available
     useEffect(() => {
@@ -240,7 +190,18 @@ const CreatorJoin = () => {
         return () => cleanupRecaptcha();
     }, []);
 
-    // If already registered creator, redirect to dashboard
+    // Close popovers on outside click
+    useEffect(() => {
+        const handleClickOutside = (e) => {
+            if (countryCodeRef.current && !countryCodeRef.current.contains(e.target)) {
+                setIsCountryCodeOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    // If already registered creator and logged in, automatic redirect after small grace period
     useEffect(() => {
         if (user && creators && creators.length > 0) {
             const userPhoneNorm = user.phoneNumber ? normalizePhoneNumber(user.phoneNumber) : null;
@@ -256,7 +217,51 @@ const CreatorJoin = () => {
         }
     }, [user, creators, navigate]);
 
-    // Real-time duplicate account checks across Email, Phone, and Instagram
+    // Smart detection of existing creator accounts across logged-in user, email, phone, and social handle
+    const matchedExistingCreator = React.useMemo(() => {
+        if (!creators || creators.length === 0) return null;
+
+        // 1. Check current logged in user
+        if (user) {
+            const userPhoneNorm = user.phoneNumber ? normalizePhoneNumber(user.phoneNumber) : null;
+            const userEmailNorm = user.email ? user.email.toLowerCase() : null;
+            const match = creators.find(c => 
+                c.uid === user.uid || 
+                (userEmailNorm && c.email && c.email.toLowerCase() === userEmailNorm) ||
+                (userPhoneNorm && normalizePhoneNumber(c.phone) === userPhoneNorm)
+            );
+            if (match) return match;
+        }
+
+        // 2. Check entered email
+        if (formData.email?.trim()) {
+            const normEmail = formData.email.trim().toLowerCase();
+            const match = creators.find(c => c.email && c.email.trim().toLowerCase() === normEmail);
+            if (match) return match;
+        }
+
+        // 3. Check entered phone number
+        if (formData.phone) {
+            const normPhone = normalizePhoneNumber(formData.phone);
+            if (normPhone && normPhone.length >= 10) {
+                const match = creators.find(c => normalizePhoneNumber(c.phone) === normPhone);
+                if (match) return match;
+            }
+        }
+
+        // 4. Check entered Instagram
+        if (formData.instagram?.trim()) {
+            const cleanInsta = formData.instagram.trim().replace(/^@/, '').toLowerCase();
+            if (cleanInsta.length >= 3) {
+                const match = creators.find(c => c.instagram && c.instagram.trim().replace(/^@/, '').toLowerCase() === cleanInsta);
+                if (match) return match;
+            }
+        }
+
+        return null;
+    }, [formData.email, formData.phone, formData.instagram, creators, user]);
+
+    // Real-time duplicate warnings for field labels
     const duplicateWarnings = React.useMemo(() => {
         if (!creators || creators.length === 0) return {};
         const warnings = {};
@@ -266,7 +271,7 @@ const CreatorJoin = () => {
             const normEmail = formData.email.trim().toLowerCase();
             const match = creators.find(c => c.uid !== user?.uid && c.email && c.email.trim().toLowerCase() === normEmail);
             if (match) {
-                warnings.email = `This email is already registered to ${match.displayName || match.name || 'an existing creator profile'}.`;
+                warnings.email = `Registered to ${match.displayName || match.name || 'an existing creator'}.`;
             }
         }
 
@@ -276,7 +281,7 @@ const CreatorJoin = () => {
             if (normPhone && normPhone.length >= 10) {
                 const match = creators.find(c => c.uid !== user?.uid && normalizePhoneNumber(c.phone) === normPhone);
                 if (match) {
-                    warnings.phone = `This mobile number is already linked to ${match.displayName || match.name || 'an existing creator profile'}.`;
+                    warnings.phone = `Linked to ${match.displayName || match.name || 'an existing creator'}.`;
                 }
             }
         }
@@ -286,7 +291,7 @@ const CreatorJoin = () => {
             const cleanInsta = formData.instagram.trim().replace(/^@/, '').toLowerCase();
             const match = creators.find(c => c.uid !== user?.uid && c.instagram && c.instagram.trim().replace(/^@/, '').toLowerCase() === cleanInsta);
             if (match) {
-                warnings.instagram = `The handle @${cleanInsta} is already registered to ${match.displayName || match.name || 'an existing creator profile'}.`;
+                warnings.instagram = `@${cleanInsta} is registered to ${match.displayName || match.name || 'an existing creator'}.`;
             }
         }
 
@@ -306,7 +311,6 @@ const CreatorJoin = () => {
     const handleChange = (e) => {
         const { name, value } = e.target;
         if (name === 'phone') {
-            // If phone number changes after verification, reset verified state
             if (isPhoneVerified) {
                 setIsPhoneVerified(false);
                 setVerifiedPhoneNumber('');
@@ -325,7 +329,7 @@ const CreatorJoin = () => {
             setFormData(prev => ({ ...prev, profilePicture: url }));
             useStore.getState().addToast("Profile photo uploaded!", 'success');
         } catch (error) {
-            useStore.getState().addToast("Couldn't upload photo. You can submit without it.", 'error');
+            useStore.getState().addToast("Couldn't upload photo. You can continue without it.", 'error');
         } finally {
             setIsUploadingPhoto(false);
         }
@@ -343,7 +347,7 @@ const CreatorJoin = () => {
         if (normPhone && creators) {
             const existing = creators.find(c => c.uid !== user?.uid && normalizePhoneNumber(c.phone) === normPhone);
             if (existing) {
-                setPhoneError(`This number is already registered under ${existing.displayName || existing.name || 'an existing creator profile'}.`);
+                setPhoneError(`This number is linked to ${existing.displayName || existing.name || 'an existing creator'}.`);
                 return;
             }
         }
@@ -358,7 +362,7 @@ const CreatorJoin = () => {
                 size: 'invisible',
                 callback: () => {},
                 'expired-callback': () => {
-                    setPhoneError("Security check expired. Please tap 'Send OTP' again.");
+                    setPhoneError("Security check expired. Please tap 'Send Code' again.");
                     cleanupRecaptcha();
                 }
             });
@@ -380,7 +384,7 @@ const CreatorJoin = () => {
             cleanupRecaptcha();
             let msg = "Could not send SMS code. Please verify your phone number format.";
             if (err.code === 'auth/invalid-phone-number') msg = "Invalid phone number format.";
-            if (err.code === 'auth/too-many-requests') msg = "Too many attempts. Please wait a few minutes or try again later.";
+            if (err.code === 'auth/too-many-requests') msg = "Too many attempts. Please wait a moment or try again later.";
             if (err.code === 'auth/quota-exceeded') msg = "SMS service temporarily busy. Please try again in a moment.";
             setPhoneError(msg);
             useStore.getState().addToast(msg, 'error');
@@ -441,8 +445,8 @@ const CreatorJoin = () => {
             setIsPhoneVerified(true);
             setVerifiedPhoneNumber(fullFormattedPhone);
             setOtpSent(false);
-            useStore.getState().addToast("Phone number verified successfully! 🎉", 'success');
-            try { confetti({ particleCount: 60, spread: 60, origin: { y: 0.5 } }); } catch (e) {}
+            useStore.getState().addToast("Phone verified successfully! 🎉", 'success');
+            try { confetti({ particleCount: 50, spread: 60, origin: { y: 0.5 } }); } catch (e) {}
         } catch (err) {
             console.error("OTP confirmation error:", err);
             let msg = "Incorrect 6-digit code. Please check and try again.";
@@ -454,46 +458,63 @@ const CreatorJoin = () => {
         }
     };
 
-    // ── FORM VALIDATION ───────────────────────────────────────────────────────
-    const validateForm = () => {
-        if (!formData.name?.trim()) return "Please enter your full name.";
-        if (!formData.email?.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) return "Please enter a valid email address.";
-        
-        const cleanPhone = formData.phone?.replace(/\D/g, '') || '';
-        if (!cleanPhone || cleanPhone.length < 10) return "Please enter a valid 10-digit WhatsApp/contact number.";
-
-        if (!isPhoneVerified) {
-            return "Please verify your mobile number via the 6-digit OTP code before submitting.";
-        }
-
-        if (!formData.city) return "Please select your operating city.";
-        if (formData.city === 'Others' && !formData.customCity?.trim()) return "Please specify your city.";
-        
-        if (!formData.categories) return "Please select your primary content niche.";
-        if (formData.categories === 'Others' && !formData.customNiche?.trim()) return "Please specify your content niche.";
-
-        if (!formData.instagram?.trim() && !formData.linkedin?.trim()) {
-            return "Please provide at least your Instagram handle or LinkedIn profile.";
-        }
-
-        if (formData.instagram?.trim()) {
-            if (formData.instagram.includes('/') || formData.instagram.includes('.com')) {
-                return "Enter just your Instagram username (e.g. username, not a link).";
+    // ── STEP VALIDATION & NAVIGATION ─────────────────────────────────────────
+    const nextStep = () => {
+        if (step === 1) {
+            if (!formData.name.trim()) {
+                useStore.getState().addToast("Please enter your name.", 'warning');
+                return;
+            }
+            if (!formData.city) {
+                useStore.getState().addToast("Please select your city.", 'warning');
+                return;
+            }
+            if (formData.city === 'Others' && !formData.customCity.trim()) {
+                useStore.getState().addToast("Please enter your city name.", 'warning');
+                return;
             }
         }
 
-        if (duplicateWarnings.email) return duplicateWarnings.email + " Please sign in to access your dashboard.";
-        if (duplicateWarnings.phone) return duplicateWarnings.phone + " Multiple accounts with the same phone number are not allowed.";
-        if (duplicateWarnings.instagram) return duplicateWarnings.instagram + " Please use your own unique Instagram handle.";
+        if (step === 2) {
+            if (!formData.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+                useStore.getState().addToast("Please enter a valid email address.", 'warning');
+                return;
+            }
+            if (!isPhoneVerified) {
+                useStore.getState().addToast("Please verify your phone number with the 6-digit code.", 'warning');
+                return;
+            }
+        }
 
-        return null;
+        if (step === 3) {
+            if (!formData.categories) {
+                useStore.getState().addToast("Please select your primary niche.", 'warning');
+                return;
+            }
+            if (formData.categories === 'Others' && !formData.customNiche.trim()) {
+                useStore.getState().addToast("Please specify your content niche.", 'warning');
+                return;
+            }
+            if (!formData.instagram.trim() && !formData.linkedin.trim()) {
+                useStore.getState().addToast("Please provide at least your Instagram or LinkedIn.", 'warning');
+                return;
+            }
+        }
+
+        setDirection(1);
+        setStep(prev => Math.min(prev + 1, 4));
+    };
+
+    const prevStep = () => {
+        setDirection(-1);
+        setStep(prev => Math.max(prev - 1, 1));
     };
 
     const handleSubmit = async (e) => {
-        e.preventDefault();
-        const errorMsg = validateForm();
-        if (errorMsg) {
-            useStore.getState().addToast(errorMsg, 'error');
+        if (e) e.preventDefault();
+        
+        if (!formData.name.trim() || !formData.email.trim() || !isPhoneVerified || !formData.city || !formData.categories) {
+            useStore.getState().addToast("Please complete all required fields.", 'error');
             return;
         }
 
@@ -527,54 +548,60 @@ const CreatorJoin = () => {
             try { confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } }); } catch (err) {}
         } catch (error) {
             console.error("Error submitting application:", error);
-            useStore.getState().addToast(error.message || "Couldn't submit your application. Please try again.", 'error');
+            useStore.getState().addToast(error.message || "Couldn't submit application. Please try again.", 'error');
         } finally {
             setIsSubmitting(false);
         }
     };
 
+    // ── SUCCESS STATE ────────────────────────────────────────────────────────
     if (hasJoined) {
         return (
-            <div className="min-h-screen bg-[#09090b] text-white pt-36 pb-24 px-4 flex items-center justify-center">
+            <div className="min-h-screen bg-gray-50 dark:bg-[#050505] text-gray-900 dark:text-white pt-24 pb-20 px-4 flex items-center justify-center transition-colors duration-300">
                 <motion.div
                     initial={{ opacity: 0, scale: 0.95, y: 20 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
-                    className="max-w-xl w-full p-8 sm:p-12 bg-zinc-900/90 border border-zinc-800 rounded-3xl text-center shadow-2xl relative overflow-hidden"
+                    className="max-w-lg w-full p-6 sm:p-10 bg-white dark:bg-white/[0.02] border border-gray-200 dark:border-white/[0.08] rounded-3xl text-center shadow-xl dark:shadow-2xl relative overflow-hidden backdrop-blur-2xl"
                 >
-                    <div className="w-20 h-20 bg-emerald-500/10 border border-emerald-500/30 rounded-2xl flex items-center justify-center mx-auto mb-6 text-emerald-400">
-                        <CheckCircle2 size={40} />
+                    <div className="w-16 h-16 sm:w-20 sm:h-20 bg-neon-green/10 border border-neon-green/30 rounded-2xl flex items-center justify-center mx-auto mb-5 text-neon-green">
+                        <CheckCircle2 size={36} />
                     </div>
-                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 text-xs font-bold uppercase tracking-wider mb-3">
-                        <ShieldCheck size={14} />
-                        <span>Phone & Profile Verified</span>
+
+                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-neon-green/10 border border-neon-green/20 text-neon-green text-[10px] font-bold uppercase tracking-wider mb-3">
+                        <ShieldCheck size={12} />
+                        <span>Profile & Contact Verified</span>
                     </div>
-                    <h2 className="text-3xl font-extrabold tracking-tight text-white mb-3">Welcome to Newbi, {formData.name}!</h2>
-                    <p className="text-zinc-400 text-sm leading-relaxed mb-6">
-                        Your creator profile is active and your contact number (<strong className="text-white">{countryCode} {formData.phone.slice(-10)}</strong>) is verified. You will receive direct campaign invitations and live gig opportunities in <span className="text-emerald-400 font-semibold">{formData.city}</span>.
+
+                    <h2 className="text-2xl sm:text-3xl font-black font-heading tracking-tight text-gray-900 dark:text-white mb-2">
+                        Welcome to Newbi, {formData.name}!
+                    </h2>
+
+                    <p className="text-gray-600 dark:text-white/60 text-xs sm:text-sm leading-relaxed mb-6">
+                        Your creator profile is active for campaigns in <strong className="text-gray-900 dark:text-white">{formData.city}</strong>. Direct briefs will be sent to <span className="text-neon-green font-mono">{countryCode} {formData.phone.slice(-10)}</span>.
                     </p>
 
-                    <div className="p-4 bg-zinc-950/60 border border-zinc-800/80 rounded-2xl text-left text-xs text-zinc-400 space-y-2 mb-8">
-                        <div className="flex items-center gap-2 text-emerald-400 font-semibold">
-                            <Sparkles size={14} /> What's next?
+                    <div className="p-4 bg-gray-50 dark:bg-black/40 border border-gray-200 dark:border-white/[0.05] rounded-2xl text-left text-xs text-gray-600 dark:text-white/50 space-y-2 mb-6">
+                        <div className="flex items-center gap-2 text-neon-green font-bold text-[11px] uppercase tracking-wider">
+                            <Sparkles size={13} /> Next Steps
                         </div>
-                        <p>1. Our creator talent managers match your niche with active brands.</p>
-                        <p>2. You receive WhatsApp briefs directly for Indiranagar, Koramangala & pan-India campaigns.</p>
-                        <p>3. Zero agency commission on your creator payouts.</p>
+                        <p>1. Talent managers match your niche ({formData.categories}) with active briefs.</p>
+                        <p>2. Direct invitations sent via WhatsApp for pan-India gigs & event passes.</p>
+                        <p>3. 100% payout directly to you with 0% commission.</p>
                     </div>
 
-                    <div className="flex flex-col sm:flex-row gap-3">
+                    <div className="flex flex-col sm:flex-row gap-2.5">
                         <Link
                             to="/campaigns"
-                            className="flex-1 h-12 bg-white hover:bg-zinc-200 text-zinc-950 font-bold rounded-xl flex items-center justify-center gap-2 text-sm transition-all"
+                            className="flex-1 h-11 bg-black text-white hover:bg-neutral-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200 font-bold rounded-xl flex items-center justify-center gap-2 text-xs uppercase tracking-wider transition-all shadow-lg"
                         >
-                            <span>Browse Live Campaigns</span>
-                            <ArrowRight size={16} />
+                            <span>Browse Campaigns</span>
+                            <ArrowRight size={14} />
                         </Link>
                         <Link
                             to="/creator"
-                            className="flex-1 h-12 bg-zinc-800 hover:bg-zinc-700 text-white font-semibold rounded-xl flex items-center justify-center text-sm transition-all"
+                            className="flex-1 h-11 bg-white dark:bg-white/[0.05] hover:bg-gray-100 dark:hover:bg-white/10 text-gray-900 dark:text-white font-bold rounded-xl flex items-center justify-center text-xs uppercase tracking-wider transition-all border border-gray-200 dark:border-white/[0.08]"
                         >
-                            Return to Creator Hub
+                            Return to Hub
                         </Link>
                     </div>
                 </motion.div>
@@ -583,562 +610,754 @@ const CreatorJoin = () => {
     }
 
     return (
-        <div className="min-h-screen bg-[#09090b] text-white pt-28 pb-32 px-4 relative selection:bg-emerald-500 selection:text-black">
+        <div className="min-h-screen bg-gray-50 dark:bg-[#050505] text-gray-900 dark:text-white pt-24 pb-28 px-4 relative selection:bg-neon-pink selection:text-black transition-colors duration-300">
             {/* Hidden Recaptcha Anchor */}
             <div id={RECAPTCHA_CONTAINER_ID} className="invisible pointer-events-none fixed bottom-0 right-0 z-0"></div>
 
-            {/* Subtle Ambient Background */}
+            {/* Ambient Background Glows */}
             <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
-                <div className="absolute top-0 right-1/4 w-96 h-96 bg-emerald-500/5 rounded-full blur-3xl" />
-                <div className="absolute bottom-10 left-1/4 w-96 h-96 bg-cyan-500/5 rounded-full blur-3xl" />
+                <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[350px] bg-gradient-to-b from-neon-pink/[0.04] to-transparent rounded-full blur-3xl" />
+                <div className="absolute bottom-10 right-1/4 w-[400px] h-[300px] bg-neon-green/[0.03] rounded-full blur-3xl" />
             </div>
 
-            <div className="relative z-10 w-full max-w-3xl mx-auto space-y-8">
-                {/* Back Link */}
+            <div className="relative z-10 w-full max-w-2xl mx-auto space-y-6">
+                
+                {/* Top Nav Header */}
                 <div className="flex items-center justify-between">
                     <Link
                         to="/creator"
-                        className="inline-flex items-center gap-2 text-xs font-semibold text-zinc-400 hover:text-white transition-colors"
+                        className="inline-flex items-center gap-1.5 text-xs font-bold text-gray-900 dark:text-white/50 hover:text-gray-900 dark:hover:text-white transition-colors uppercase tracking-wider"
                     >
-                        <ArrowLeft size={14} />
-                        <span>Back to Creator Hub</span>
+                        <ArrowLeft size={13} />
+                        <span>Creator Hub</span>
                     </Link>
 
                     {user ? (
-                        <div className="flex items-center gap-2 text-xs text-zinc-400">
-                            <span className="w-2 h-2 rounded-full bg-emerald-400" />
-                            <span>Signed in as <strong className="text-zinc-200">{user.displayName || user.email}</strong></span>
+                        <div className="flex items-center gap-2 text-xs text-gray-900 dark:text-white/70 bg-black/5 dark:bg-white/5 px-3.5 py-1.5 rounded-full border border-black/10 dark:border-white/10">
+                            <span className="w-2 h-2 rounded-full bg-neon-green" />
+                            <span className="truncate max-w-[160px] font-medium">{user.displayName || user.email}</span>
                         </div>
                     ) : (
                         <button
                             type="button"
                             onClick={() => setAuthModal(true)}
-                            className="text-xs font-semibold text-zinc-400 hover:text-white transition-colors underline"
+                            className="px-4 py-2 rounded-xl bg-black/10 dark:bg-white/10 hover:bg-white text-gray-900 dark:text-white hover:text-black transition-all border border-white/15 text-[11px] font-black uppercase tracking-wider shadow-sm flex items-center gap-2 active:scale-95"
                         >
-                            Already registered? Sign in
+                            <span>Already a Creator? Sign In</span>
                         </button>
                     )}
                 </div>
 
-                {/* Header */}
-                <div className="text-center space-y-3">
-                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-bold uppercase tracking-wider mb-1">
-                        <Sparkles size={12} />
-                        <span>Quick 45-Second Onboarding</span>
-                    </div>
-                    <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-white">
-                        Join Newbi Creator Network
-                    </h1>
-                    <p className="text-zinc-400 text-sm sm:text-base max-w-xl mx-auto leading-relaxed">
-                        Get matched with verified brand campaigns, live concert passes, and experiential gigs in your city. Free forever.
-                    </p>
-                </div>
-
-                {/* Trust & Privacy Guarantee Card */}
-                <div className="bg-zinc-900/60 border border-zinc-800 rounded-2xl p-4 sm:p-5 flex items-start sm:items-center gap-3.5 text-zinc-300 shadow-sm">
-                    <ShieldCheck className="text-emerald-400 shrink-0 mt-0.5 sm:mt-0" size={22} />
-                    <div className="text-xs sm:text-sm leading-relaxed">
-                        <span className="font-semibold text-white">Creator Protection Promise:</span> We never ask for your account passwords or permissions to post on your channels. Your contact info is strictly used for official campaign matching.
-                    </div>
-                </div>
-
-                {/* Registration Form */}
-                <form onSubmit={handleSubmit} className="space-y-6">
-                    {/* Card 1: Creator Basics */}
-                    <div className="bg-zinc-900/80 border border-zinc-800 rounded-2xl p-6 sm:p-8 space-y-6 shadow-lg backdrop-blur-xl">
-                        <div className="flex items-center gap-3 pb-4 border-b border-zinc-800/80">
-                            <div className="w-10 h-10 rounded-xl bg-zinc-800 flex items-center justify-center text-zinc-200">
-                                <User size={20} />
+                {/* Real-time Existing Creator Banner */}
+                {matchedExistingCreator && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="p-4 sm:p-5 rounded-3xl bg-neon-green/10 border border-neon-green/30 backdrop-blur-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-[0_0_30px_rgba(57,255,20,0.15)]"
+                    >
+                        <div className="flex items-center gap-3.5">
+                            <div className="w-10 h-10 rounded-2xl bg-neon-green/20 text-neon-green flex items-center justify-center shrink-0">
+                                <Sparkles size={20} />
                             </div>
                             <div>
-                                <h3 className="text-lg font-bold text-white">1. Basic Details</h3>
-                                <p className="text-xs text-zinc-400">Tell us who you are and where you create.</p>
+                                <p className="text-xs font-black text-gray-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
+                                    <span>Existing Creator Profile Found!</span>
+                                </p>
+                                <p className="text-[11px] text-gray-600 dark:text-zinc-300 mt-0.5">
+                                    Registered to <strong className="text-neon-green">{matchedExistingCreator.displayName || matchedExistingCreator.name}</strong> {matchedExistingCreator.instagram ? `(@${matchedExistingCreator.instagram.replace(/^@/, '')})` : ''}.
+                                </p>
                             </div>
                         </div>
+                        <button
+                            type="button"
+                            onClick={() => {
+                                if (user && (user.uid === matchedExistingCreator.uid || user.email === matchedExistingCreator.email)) {
+                                    navigate('/creator-dashboard');
+                                } else {
+                                    setAuthModal(true);
+                                }
+                            }}
+                            className="px-5 py-2.5 rounded-xl bg-neon-green text-black font-black uppercase tracking-wider text-[11px] hover:bg-white transition-all shrink-0 flex items-center justify-center gap-2 shadow-lg active:scale-95"
+                        >
+                            <span>{user ? 'Open Dashboard' : 'Sign In to Dashboard'}</span>
+                            <ArrowRight size={14} />
+                        </button>
+                    </motion.div>
+                )}
 
-                        {/* Profile Photo (Optional) */}
-                        <div className="flex items-center gap-4">
-                            <div className="relative group shrink-0">
-                                <div className="w-20 h-20 rounded-2xl bg-zinc-950 border border-zinc-800 flex items-center justify-center overflow-hidden">
-                                    {formData.profilePicture ? (
-                                        <img src={formData.profilePicture} alt="Preview" className="w-full h-full object-cover" />
-                                    ) : (
-                                        <Camera size={24} className="text-zinc-600 group-hover:text-zinc-400 transition-colors" />
-                                    )}
+                {/* Stepper Card */}
+                <div className="bg-gray-50/80 dark:bg-white/[0.02] border border-black/[0.08] dark:border-white/[0.06] rounded-3xl p-5 sm:p-8 backdrop-blur-2xl shadow-2xl space-y-6">
+                    
+                    {/* Progress Bar & Header */}
+                    <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                            <span className="text-[9px] font-bold text-neon-pink uppercase tracking-[0.2em] bg-neon-pink/10 border border-neon-pink/20 px-2.5 py-1 rounded-full">
+                                Step {step} of 4 • {step === 1 ? 'Identity' : step === 2 ? 'Verification' : step === 3 ? 'Creative Footprint' : 'Terms & Review'}
+                            </span>
+                            <span className="text-[10px] font-bold text-gray-900 dark:text-white/30 tracking-wider">
+                                {Math.round((step / 4) * 100)}% Complete
+                            </span>
+                        </div>
+
+                        {/* Animated Progress Line */}
+                        <div className="w-full h-1 bg-black/[0.08] dark:bg-white/[0.06] rounded-full overflow-hidden">
+                            <motion.div
+                                className="h-full bg-gradient-to-r from-neon-pink to-neon-green rounded-full"
+                                initial={{ width: '25%' }}
+                                animate={{ width: `${(step / 4) * 100}%` }}
+                                transition={{ duration: 0.3 }}
+                            />
+                        </div>
+                    </div>
+
+                    {/* Step Form Switcher */}
+                    <AnimatePresence mode="wait" custom={direction}>
+                        
+                        {/* ──────── STEP 1: IDENTITY & CITY ──────── */}
+                        {step === 1 && (
+                            <motion.div
+                                key="step1"
+                                custom={direction}
+                                variants={slideVariants}
+                                initial="enter"
+                                animate="center"
+                                exit="exit"
+                                transition={{ duration: 0.25, ease: 'easeOut' }}
+                                className="space-y-6"
+                            >
+                                <div>
+                                    <h2 className="text-xl sm:text-2xl font-black font-heading uppercase tracking-tight text-gray-900 dark:text-white">
+                                        Let's start with the basics
+                                    </h2>
+                                    <p className="text-xs sm:text-sm text-gray-900 dark:text-white/50 mt-1">
+                                        Tell us your name, photo, and where you create content.
+                                    </p>
                                 </div>
-                                <label className="absolute -bottom-1.5 -right-1.5 w-8 h-8 bg-white text-zinc-950 rounded-lg flex items-center justify-center cursor-pointer hover:bg-zinc-200 transition-colors shadow-md">
-                                    {isUploadingPhoto ? <LoadingSpinner size="xs" color="black" /> : <Upload size={14} />}
-                                    <input type="file" className="hidden" accept="image/*" onChange={handleImageUpload} disabled={isUploadingPhoto} />
-                                </label>
-                            </div>
-                            <div>
-                                <h4 className="text-xs font-semibold text-zinc-200">Profile Photo <span className="text-zinc-500 font-normal">(Optional)</span></h4>
-                                <p className="text-[11px] text-zinc-400 mt-0.5">Helps brand managers recognize your profile faster.</p>
-                            </div>
-                        </div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div className="space-y-1.5">
-                                <label className="text-xs font-semibold text-zinc-300">Full Name / Stage Name *</label>
-                                <Input
-                                    name="name"
-                                    value={formData.name}
-                                    onChange={handleChange}
-                                    placeholder="e.g. Aisha Sharma"
-                                    className="h-12 bg-zinc-950/80 border-zinc-800 rounded-xl text-sm px-4 focus:border-white"
-                                    required
-                                />
-                            </div>
+                                {/* Profile Photo Upload */}
+                                <div className="flex items-center gap-4 p-4 bg-gray-50/80 dark:bg-white/[0.02] border border-black/[0.08] dark:border-white/[0.06] rounded-2xl">
+                                    <div className="relative shrink-0">
+                                        <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-white dark:bg-black border border-white/[0.1] flex items-center justify-center overflow-hidden">
+                                            {formData.profilePicture ? (
+                                                <img src={formData.profilePicture} alt="Preview" className="w-full h-full object-cover" />
+                                            ) : (
+                                                <Camera size={22} className="text-gray-900 dark:text-white/20" />
+                                            )}
+                                        </div>
+                                        <label className="absolute -bottom-1 -right-1 w-7 h-7 bg-white text-black rounded-lg flex items-center justify-center cursor-pointer hover:bg-neon-pink transition-colors shadow-lg">
+                                            {isUploadingPhoto ? <LoadingSpinner size="xs" color="black" /> : <Upload size={13} />}
+                                            <input type="file" className="hidden" accept="image/*" onChange={handleImageUpload} disabled={isUploadingPhoto} />
+                                        </label>
+                                    </div>
+                                    <div className="min-w-0">
+                                        <h4 className="text-xs font-bold text-gray-900 dark:text-white uppercase tracking-wider">Creator Avatar</h4>
+                                        <p className="text-[11px] text-gray-900 dark:text-white/40 mt-0.5">Upload a clean headshot for your creator profile.</p>
+                                    </div>
+                                </div>
 
-                            <div className="space-y-1.5">
-                                <label className="text-xs font-semibold text-zinc-300">Email Address *</label>
-                                <div className="relative">
-                                    <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-400" size={16} />
-                                    <Input
-                                        type="email"
-                                        name="email"
-                                        value={formData.email}
+                                {/* Full Name */}
+                                <div className="space-y-1.5">
+                                    <label className="text-[10px] font-bold text-gray-900 dark:text-white/40 uppercase tracking-wider">Full Name or Handle *</label>
+                                    <input
+                                        type="text"
+                                        name="name"
+                                        value={formData.name}
                                         onChange={handleChange}
-                                        placeholder="aisha@gmail.com"
-                                        className="h-12 pl-10 pr-4 bg-zinc-950/80 border-zinc-800 rounded-xl text-sm focus:border-white"
-                                        required
+                                        placeholder="e.g. Aisha Sharma"
+                                        className="w-full h-12 bg-white dark:bg-black/40 border border-black/[0.1] dark:border-white/[0.08] focus:border-black/30 dark:focus:border-white/30 rounded-xl px-4 text-sm font-medium text-gray-900 dark:text-white outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-white/20"
+                                        autoFocus
                                     />
                                 </div>
-                                {duplicateWarnings.email && (
-                                    <div className="p-2.5 bg-amber-500/10 border border-amber-500/30 rounded-xl text-xs text-amber-300 flex items-center justify-between">
-                                        <span>{duplicateWarnings.email}</span>
+
+                                {/* Operating City */}
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-bold text-gray-900 dark:text-white/40 uppercase tracking-wider">Operating City *</label>
+                                    
+                                    {/* Quick City Chips */}
+                                    <div className="flex flex-wrap gap-1.5">
+                                        {POPULAR_CITIES.map(c => {
+                                            const isSelected = formData.city === c;
+                                            return (
+                                                <button
+                                                    key={c}
+                                                    type="button"
+                                                    onClick={() => setFormData(p => ({ ...p, city: c }))}
+                                                    className={cn(
+                                                        "px-3.5 py-2 rounded-xl text-xs font-bold transition-all border",
+                                                        isSelected
+                                                            ? "bg-neon-green text-black border-neon-green font-black shadow-md shadow-neon-green/20 scale-[1.02]"
+                                                            : "bg-white dark:bg-white/[0.04] text-gray-800 dark:text-white/60 border-gray-200 dark:border-white/10 hover:border-gray-300 dark:hover:border-white/20 hover:text-black dark:hover:text-white"
+                                                    )}
+                                                >
+                                                    {c}
+                                                </button>
+                                            );
+                                        })}
                                         <button
                                             type="button"
-                                            onClick={() => setAuthModal(true)}
-                                            className="underline font-bold text-white shrink-0 ml-2"
+                                            onClick={() => setFormData(p => ({ ...p, city: 'Others' }))}
+                                            className={cn(
+                                                "px-3.5 py-2 rounded-xl text-xs font-bold transition-all border",
+                                                formData.city === 'Others' || (!POPULAR_CITIES.includes(formData.city) && formData.city)
+                                                    ? "bg-neon-green text-black border-neon-green font-black shadow-md shadow-neon-green/20 scale-[1.02]"
+                                                    : "bg-white dark:bg-white/[0.04] text-gray-800 dark:text-white/60 border-gray-200 dark:border-white/10 hover:border-gray-300 dark:hover:border-white/20 hover:text-black dark:hover:text-white"
+                                            )}
                                         >
-                                            Sign In
+                                            Other City...
                                         </button>
                                     </div>
-                                )}
-                            </div>
 
-                            {/* Mobile Number & OTP Verification Section */}
-                            <div className="space-y-2 sm:col-span-2">
-                                <label className="text-xs font-semibold text-zinc-300 flex items-center justify-between">
-                                    <span>WhatsApp / Contact Number *</span>
-                                    {isPhoneVerified && (
-                                        <span className="text-emerald-400 font-bold text-[11px] flex items-center gap-1">
-                                            <ShieldCheck size={14} /> Verified Number
-                                        </span>
-                                    )}
-                                </label>
-
-                                {isPhoneVerified ? (
-                                    /* Verified State */
-                                    <div className="p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-xl flex items-center justify-between">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
-                                                <CheckCircle2 size={18} />
-                                            </div>
-                                            <div>
-                                                <div className="text-xs font-bold text-white flex items-center gap-2">
-                                                    <span>{verifiedPhoneNumber || `${countryCode} ${formData.phone.slice(-10)}`}</span>
-                                                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 uppercase font-extrabold tracking-wider">Verified</span>
-                                                </div>
-                                                <div className="text-[11px] text-zinc-400">Verified for direct WhatsApp campaign briefs & payouts.</div>
-                                            </div>
-                                        </div>
-                                        <button
-                                            type="button"
-                                            onClick={() => {
-                                                setIsPhoneVerified(false);
-                                                setVerifiedPhoneNumber('');
-                                                setOtpSent(false);
-                                            }}
-                                            className="text-xs text-zinc-400 hover:text-white underline font-semibold px-2 py-1 transition-colors"
-                                        >
-                                            Change Number
-                                        </button>
-                                    </div>
-                                ) : (
-                                    /* Unverified Phone Input & OTP Actions */
-                                    <div className="space-y-3">
-                                        <div className="flex gap-2">
-                                            <CustomSelect
-                                                value={countryCode}
-                                                onChange={(e) => setCountryCode(e.target.value)}
-                                                options={COUNTRY_OPTIONS}
-                                                name="countryCode"
-                                                placeholder="+91"
-                                                isCountryCode
+                                    {/* Custom City Input */}
+                                    {(formData.city === 'Others' || (!POPULAR_CITIES.includes(formData.city) && formData.city)) && (
+                                        <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} className="pt-2">
+                                            <input
+                                                type="text"
+                                                name="customCity"
+                                                value={formData.customCity}
+                                                onChange={handleChange}
+                                                placeholder="Type your city (e.g. Chandigarh, Jaipur, Kochi)"
+                                                className="w-full h-11 bg-white dark:bg-black/40 border border-black/[0.1] dark:border-white/[0.08] focus:border-black/30 dark:focus:border-white/30 rounded-xl px-4 text-xs font-medium text-gray-900 dark:text-white outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-white/20"
                                             />
-                                            <div className="relative flex-1">
-                                                <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-400" size={16} />
-                                                <Input
-                                                    type="tel"
-                                                    name="phone"
-                                                    value={formData.phone}
+                                        </motion.div>
+                                    )}
+                                </div>
+                            </motion.div>
+                        )}
+
+                        {/* ──────── STEP 2: CONTACT & OTP ──────── */}
+                        {step === 2 && (
+                            <motion.div
+                                key="step2"
+                                custom={direction}
+                                variants={slideVariants}
+                                initial="enter"
+                                animate="center"
+                                exit="exit"
+                                transition={{ duration: 0.25, ease: 'easeOut' }}
+                                className="space-y-6"
+                            >
+                                <div>
+                                    <h2 className="text-xl sm:text-2xl font-black font-heading uppercase tracking-tight text-gray-900 dark:text-white">
+                                        Where should we send briefs?
+                                    </h2>
+                                    <p className="text-xs sm:text-sm text-gray-900 dark:text-white/50 mt-1">
+                                        Verify your phone to receive direct campaign invitations and payouts.
+                                    </p>
+                                </div>
+
+                                {/* Email Address */}
+                                <div className="space-y-1.5">
+                                    <label className="text-[10px] font-bold text-gray-900 dark:text-white/40 uppercase tracking-wider">Email Address *</label>
+                                    <div className="relative">
+                                        <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-900 dark:text-white/20" size={15} />
+                                        <input
+                                            type="email"
+                                            name="email"
+                                            value={formData.email}
+                                            onChange={handleChange}
+                                            placeholder="you@email.com"
+                                            className="w-full h-12 pl-10 pr-4 bg-white dark:bg-black/40 border border-black/[0.1] dark:border-white/[0.08] focus:border-black/30 dark:focus:border-white/30 rounded-xl text-sm font-medium text-gray-900 dark:text-white outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-white/20"
+                                            autoFocus
+                                        />
+                                    </div>
+                                    {duplicateWarnings.email && (
+                                        <p className="text-[11px] text-amber-400 font-medium">{duplicateWarnings.email}</p>
+                                    )}
+                                </div>
+
+                                {/* WhatsApp Phone & OTP Section */}
+                                <div className="space-y-2">
+                                    <div className="flex items-center justify-between">
+                                        <label className="text-[10px] font-bold text-gray-900 dark:text-white/40 uppercase tracking-wider">WhatsApp Contact Number *</label>
+                                        {isPhoneVerified && (
+                                            <span className="text-neon-green font-bold text-[10px] flex items-center gap-1 uppercase tracking-wider">
+                                                <ShieldCheck size={13} /> Verified
+                                            </span>
+                                        )}
+                                    </div>
+
+                                    {isPhoneVerified ? (
+                                        /* Verified Banner */
+                                        <div className="p-4 bg-neon-green/10 border border-neon-green/20 rounded-2xl flex items-center justify-between">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-8 h-8 rounded-xl bg-neon-green text-black flex items-center justify-center font-bold">
+                                                    <Check size={16} strokeWidth={3} />
+                                                </div>
+                                                <div>
+                                                    <p className="text-xs font-bold text-gray-900 dark:text-white font-mono">{verifiedPhoneNumber || `${countryCode} ${formData.phone.slice(-10)}`}</p>
+                                                    <p className="text-[10px] text-gray-900 dark:text-white/40">Verified for direct brand deals & payment receipts.</p>
+                                                </div>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    setIsPhoneVerified(false);
+                                                    setVerifiedPhoneNumber('');
+                                                    setOtpSent(false);
+                                                }}
+                                                className="text-[10px] text-gray-900 dark:text-white/40 hover:text-gray-900 dark:hover:text-white underline font-bold uppercase tracking-wider"
+                                            >
+                                                Change
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        /* Unverified Phone Input with Safe Boundaries */
+                                        <div className="space-y-3">
+                                            <div className="flex items-center gap-2">
+                                                {/* Country Code Dropdown */}
+                                                <div className="relative shrink-0" ref={countryCodeRef}>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setIsCountryCodeOpen(!isCountryCodeOpen)}
+                                                        className="h-12 px-3 bg-white dark:bg-black/40 border border-black/[0.1] dark:border-white/[0.08] rounded-xl text-xs font-bold text-gray-900 dark:text-white flex items-center gap-1.5 hover:border-black/20 dark:hover:border-white/20 transition-all"
+                                                    >
+                                                        <span>{countryCode}</span>
+                                                        <ChevronDown size={12} className="text-gray-900 dark:text-white/30" />
+                                                    </button>
+                                                    {isCountryCodeOpen && (
+                                                        <div className="absolute z-50 top-full left-0 mt-1 bg-gray-100 dark:bg-zinc-950 border border-black/10 dark:border-white/10 rounded-xl p-1 shadow-2xl w-28 space-y-0.5">
+                                                            {COUNTRY_OPTIONS.map(opt => (
+                                                                <button
+                                                                    key={opt.value}
+                                                                    type="button"
+                                                                    onClick={() => { setCountryCode(opt.value); setIsCountryCodeOpen(false); }}
+                                                                    className={cn(
+                                                                        "w-full px-2.5 py-1.5 text-left text-xs font-bold rounded-lg transition-colors",
+                                                                        countryCode === opt.value ? "bg-black/10 dark:bg-white/10 text-gray-900 dark:text-white" : "text-gray-900 dark:text-white/40 hover:text-gray-900 dark:hover:text-white"
+                                                                    )}
+                                                                >
+                                                                    {opt.label}
+                                                                </button>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                {/* Phone Number Input */}
+                                                <div className="relative flex-1 min-w-0">
+                                                    <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-900 dark:text-white/20" size={14} />
+                                                    <input
+                                                        type="tel"
+                                                        name="phone"
+                                                        value={formData.phone}
+                                                        onChange={handleChange}
+                                                        disabled={otpSent || isSendingOtp}
+                                                        placeholder="98765 43210"
+                                                        maxLength={15}
+                                                        className="w-full h-12 pl-9 pr-3 bg-white dark:bg-black/40 border border-black/[0.1] dark:border-white/[0.08] focus:border-black/30 dark:focus:border-white/30 rounded-xl text-sm font-medium text-gray-900 dark:text-white outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-white/20 disabled:opacity-50"
+                                                    />
+                                                </div>
+
+                                                {/* Send OTP Button */}
+                                                {!otpSent && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={handleSendOTP}
+                                                        disabled={isSendingOtp || formData.phone.replace(/\D/g, '').length < 10}
+                                                        className="h-12 px-4 bg-white text-black hover:bg-neon-pink font-bold rounded-xl text-xs uppercase tracking-wider shrink-0 transition-all disabled:opacity-30"
+                                                    >
+                                                        {isSendingOtp ? <LoadingSpinner size="xs" color="black" /> : 'Send Code'}
+                                                    </button>
+                                                )}
+                                            </div>
+
+                                            {/* 6-Digit OTP Box (Safe responsive grid) */}
+                                            <AnimatePresence>
+                                                {otpSent && (
+                                                    <motion.div
+                                                        initial={{ opacity: 0, height: 0 }}
+                                                        animate={{ opacity: 1, height: 'auto' }}
+                                                        exit={{ opacity: 0, height: 0 }}
+                                                        className="p-4 bg-white dark:bg-black/60 border border-black/[0.1] dark:border-white/[0.08] rounded-2xl space-y-3"
+                                                    >
+                                                        <div className="flex items-center justify-between text-xs">
+                                                            <span className="text-gray-900 dark:text-white/60 text-[11px]">
+                                                                Enter 6-digit code sent to <strong className="text-gray-900 dark:text-white font-mono">{countryCode} {formData.phone.slice(-10)}</strong>
+                                                            </span>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => { setOtpSent(false); setOtpDigits(['','','','','','']); }}
+                                                                className="text-[10px] text-gray-900 dark:text-white/40 hover:text-gray-900 dark:hover:text-white underline uppercase font-bold"
+                                                            >
+                                                                Edit
+                                                            </button>
+                                                        </div>
+
+                                                        {/* Mobile Safe Grid of 6 PIN Boxes */}
+                                                        <div className="grid grid-cols-6 gap-1.5 sm:gap-2.5 max-w-[320px] sm:max-w-[360px] w-full mx-auto" onPaste={handleOtpPaste}>
+                                                            {otpDigits.map((digit, index) => (
+                                                                <input
+                                                                  key={index}
+                                                                  ref={el => otpInputRefs.current[index] = el}
+                                                                  type="text"
+                                                                  inputMode="numeric"
+                                                                  maxLength={1}
+                                                                  value={digit}
+                                                                  onChange={(e) => handleOtpDigitChange(e.target.value, index)}
+                                                                  onKeyDown={(e) => handleOtpKeyDown(e, index)}
+                                                                  className="w-full aspect-square text-center bg-gray-50 dark:bg-white/[0.04] border border-black/[0.1] dark:border-white/[0.1] rounded-xl text-lg sm:text-xl font-bold text-gray-900 dark:text-white focus:border-neon-green focus:ring-1 focus:ring-neon-green outline-none transition-all"
+                                                                />
+                                                            ))}
+                                                        </div>
+
+                                                        <div className="flex items-center justify-between text-[11px] pt-1">
+                                                            {isVerifyingOtp ? (
+                                                                <div className="flex items-center gap-1.5 text-neon-green font-bold">
+                                                                    <LoadingSpinner size="xs" color="neon-green" />
+                                                                    <span>Verifying...</span>
+                                                                </div>
+                                                            ) : (
+                                                                <span className="text-gray-900 dark:text-white/30 text-[10px]">Auto-verifies on 6th digit</span>
+                                                            )}
+
+                                                            <div>
+                                                                {otpCooldown > 0 ? (
+                                                                    <span className="text-gray-900 dark:text-white/30 text-[10px]">Resend in {otpCooldown}s</span>
+                                                                ) : (
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={handleSendOTP}
+                                                                        disabled={isSendingOtp}
+                                                                        className="text-[10px] font-bold text-neon-green hover:underline uppercase"
+                                                                    >
+                                                                        Resend Code
+                                                                    </button>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    </motion.div>
+                                                )}
+                                            </AnimatePresence>
+
+                                            {phoneError && (
+                                                <p className="text-xs text-red-400 font-medium">{phoneError}</p>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                            </motion.div>
+                        )}
+
+                        {/* ──────── STEP 3: NICHES & SOCIALS ──────── */}
+                        {step === 3 && (
+                            <motion.div
+                                key="step3"
+                                custom={direction}
+                                variants={slideVariants}
+                                initial="enter"
+                                animate="center"
+                                exit="exit"
+                                transition={{ duration: 0.25, ease: 'easeOut' }}
+                                className="space-y-6"
+                            >
+                                <div>
+                                    <h2 className="text-xl sm:text-2xl font-black font-heading uppercase tracking-tight text-gray-900 dark:text-white">
+                                        Showcase your creative footprint
+                                    </h2>
+                                    <p className="text-xs sm:text-sm text-gray-900 dark:text-white/50 mt-1">
+                                        Select your niche and connect your main creator channels.
+                                    </p>
+                                </div>
+
+                                {/* Visual Niche Selector */}
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-bold text-gray-900 dark:text-white/40 uppercase tracking-wider">Primary Content Niche *</label>
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                        {NICHE_OPTIONS.map(niche => {
+                                            const isSelected = formData.categories === niche.id;
+                                            return (
+                                                <button
+                                                    key={niche.id}
+                                                    type="button"
+                                                    onClick={() => setFormData(p => ({ ...p, categories: niche.id }))}
+                                                    className={cn(
+                                                        "p-3.5 rounded-2xl text-left border transition-all flex flex-col justify-between gap-2 group",
+                                                        isSelected
+                                                            ? "bg-neon-pink/15 dark:bg-neon-pink/20 border-neon-pink shadow-md scale-[1.02] ring-1 ring-neon-pink text-gray-900 dark:text-white"
+                                                            : "bg-white dark:bg-white/[0.02] border-gray-200 dark:border-white/[0.06] hover:bg-gray-50 dark:hover:bg-white/[0.04] hover:border-gray-300 dark:hover:border-white/20 text-gray-700 dark:text-white/70"
+                                                    )}
+                                                >
+                                                    <span className="text-xl">{niche.icon}</span>
+                                                    <div>
+                                                        <p className={cn("text-xs font-bold", isSelected ? "text-neon-pink dark:text-neon-pink font-black" : "text-gray-900 dark:text-white")}>{niche.label}</p>
+                                                    </div>
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+
+                                    {formData.categories === 'Others' && (
+                                        <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} className="pt-2">
+                                            <input
+                                                type="text"
+                                                name="customNiche"
+                                                value={formData.customNiche}
+                                                onChange={handleChange}
+                                                placeholder="Specify niche (e.g. Automotive, Podcasting, DIY)"
+                                                className="w-full h-11 bg-white dark:bg-black/40 border border-black/[0.1] dark:border-white/[0.08] focus:border-black/30 dark:focus:border-white/30 rounded-xl px-4 text-xs font-medium text-gray-900 dark:text-white outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-white/20"
+                                            />
+                                        </motion.div>
+                                    )}
+
+                                    {(formData.categories === 'Student/Campus Creator' || formData.categories === 'College Pages') && (
+                                        <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} className="pt-2">
+                                            <input
+                                                type="text"
+                                                name="collegeName"
+                                                value={formData.collegeName}
+                                                onChange={handleChange}
+                                                placeholder="College / University Name (e.g. Christ University, IIT Bombay)"
+                                                className="w-full h-11 bg-white dark:bg-black/40 border border-black/[0.1] dark:border-white/[0.08] focus:border-black/30 dark:focus:border-white/30 rounded-xl px-4 text-xs font-medium text-gray-900 dark:text-white outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-white/20"
+                                            />
+                                        </motion.div>
+                                    )}
+                                </div>
+
+                                {/* Instagram Profile Handle */}
+                                <div className="p-4 bg-gray-50/80 dark:bg-white/[0.02] border border-black/[0.08] dark:border-white/[0.06] rounded-2xl space-y-3">
+                                    <div className="flex items-center gap-2 text-xs font-bold text-pink-400 uppercase tracking-wider">
+                                        <Instagram size={15} />
+                                        <span>Instagram Profile *</span>
+                                    </div>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                        <div className="space-y-1">
+                                            <label className="text-[10px] font-bold text-gray-900 dark:text-white/30 uppercase tracking-wider">Handle (without @)</label>
+                                            <div className="relative">
+                                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-900 dark:text-white/30 font-bold text-xs">@</span>
+                                                <input
+                                                    type="text"
+                                                    name="instagram"
+                                                    value={formData.instagram}
                                                     onChange={handleChange}
-                                                    disabled={otpSent || isSendingOtp}
-                                                    placeholder="98765 43210"
-                                                    maxLength={15}
-                                                    className="h-12 pl-10 pr-4 bg-zinc-950/80 border-zinc-800 rounded-xl text-sm focus:border-white disabled:opacity-60"
-                                                    required
+                                                    placeholder="yourhandle"
+                                                    className="w-full h-11 pl-7 pr-3 bg-white dark:bg-black/40 border border-black/[0.1] dark:border-white/[0.08] focus:border-pink-500 rounded-xl text-xs font-medium text-gray-900 dark:text-white outline-none transition-all"
                                                 />
                                             </div>
-                                            {!otpSent && (
-                                                <Button
-                                                    type="button"
-                                                    onClick={handleSendOTP}
-                                                    disabled={isSendingOtp || formData.phone.replace(/\D/g, '').length < 10}
-                                                    className="h-12 px-4 sm:px-6 bg-white hover:bg-zinc-200 text-zinc-950 font-bold rounded-xl text-xs sm:text-sm shrink-0 transition-all disabled:opacity-40"
-                                                >
-                                                    {isSendingOtp ? <LoadingSpinner size="xs" color="black" /> : 'Send OTP'}
-                                                </Button>
-                                            )}
                                         </div>
-
-                                        {/* OTP Input Block */}
-                                        <AnimatePresence>
-                                            {otpSent && (
-                                                <motion.div
-                                                    initial={{ opacity: 0, height: 0 }}
-                                                    animate={{ opacity: 1, height: 'auto' }}
-                                                    exit={{ opacity: 0, height: 0 }}
-                                                    className="p-4 bg-zinc-950/90 border border-zinc-800 rounded-xl space-y-3"
-                                                >
-                                                    <div className="flex items-center justify-between">
-                                                        <span className="text-xs font-semibold text-zinc-300">
-                                                            Enter 6-digit code sent to <strong className="text-white">{countryCode} {formData.phone.slice(-10)}</strong>
-                                                        </span>
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => { setOtpSent(false); setOtpDigits(['','','','','','']); }}
-                                                            className="text-[11px] text-zinc-400 hover:text-white underline"
-                                                        >
-                                                            Edit Number
-                                                        </button>
-                                                    </div>
-
-                                                    {/* 6 Digit Inputs */}
-                                                    <div className="flex gap-2 justify-between max-w-sm" onPaste={handleOtpPaste}>
-                                                        {otpDigits.map((digit, index) => (
-                                                            <input
-                                                                key={index}
-                                                                ref={el => otpInputRefs.current[index] = el}
-                                                                type="text"
-                                                                inputMode="numeric"
-                                                                maxLength={1}
-                                                                value={digit}
-                                                                onChange={(e) => handleOtpDigitChange(e.target.value, index)}
-                                                                onKeyDown={(e) => handleOtpKeyDown(e, index)}
-                                                                className="w-11 h-12 text-center bg-zinc-900 border border-zinc-700 rounded-xl text-lg font-bold text-white focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 focus:outline-none transition-all"
-                                                            />
-                                                        ))}
-                                                    </div>
-
-                                                    <div className="flex items-center justify-between text-xs pt-1">
-                                                        {isVerifyingOtp ? (
-                                                            <div className="flex items-center gap-2 text-emerald-400 font-semibold">
-                                                                <LoadingSpinner size="xs" color="emerald" />
-                                                                <span>Verifying code...</span>
-                                                            </div>
-                                                        ) : (
-                                                            <span className="text-[11px] text-zinc-400">Auto-submits on 6th digit</span>
-                                                        )}
-
-                                                        <div>
-                                                            {otpCooldown > 0 ? (
-                                                                <span className="text-[11px] text-zinc-400">Resend in {otpCooldown}s</span>
-                                                            ) : (
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={handleSendOTP}
-                                                                    disabled={isSendingOtp}
-                                                                    className="text-[11px] font-semibold text-emerald-400 hover:text-emerald-300 underline"
-                                                                >
-                                                                    Resend Code
-                                                                </button>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                </motion.div>
-                                            )}
-                                        </AnimatePresence>
-
-                                        {phoneError && (
-                                            <p className="text-xs text-red-400 font-medium">{phoneError}</p>
-                                        )}
-
-                                        <p className="text-[11px] text-zinc-400">
-                                            🔒 We send campaign briefs & payment confirmations to this number. Verification is required.
-                                        </p>
-                                    </div>
-                                )}
-                            </div>
-
-                            <div className="space-y-1.5 sm:col-span-2">
-                                <label className="text-xs font-semibold text-zinc-300">Operating City *</label>
-                                <CustomSelect
-                                    value={formData.city}
-                                    onChange={handleChange}
-                                    options={PREDEFINED_CITIES}
-                                    name="city"
-                                    placeholder="Select your city"
-                                    icon={MapPin}
-                                />
-                            </div>
-
-                            {formData.city === 'Others' && (
-                                <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} className="space-y-1.5 sm:col-span-2">
-                                    <label className="text-xs font-semibold text-zinc-300">Specify City Name</label>
-                                    <Input
-                                        name="customCity"
-                                        value={formData.customCity}
-                                        onChange={handleChange}
-                                        placeholder="e.g. Pune, Mysore, Chandigarh"
-                                        className="h-12 bg-zinc-950/80 border-zinc-800 rounded-xl text-sm px-4 focus:border-white"
-                                    />
-                                </motion.div>
-                            )}
-                        </div>
-                    </div>
-
-                    {/* Card 2: Content Profile & Socials */}
-                    <div className="bg-zinc-900/80 border border-zinc-800 rounded-2xl p-6 sm:p-8 space-y-6 shadow-lg backdrop-blur-xl">
-                        <div className="flex items-center gap-3 pb-4 border-b border-zinc-800/80">
-                            <div className="w-10 h-10 rounded-xl bg-zinc-800 flex items-center justify-center text-zinc-200">
-                                <Instagram size={20} />
-                            </div>
-                            <div>
-                                <h3 className="text-lg font-bold text-white">2. Content & Social Handles</h3>
-                                <p className="text-xs text-zinc-400">Connect your channels to match with relevant brand niches.</p>
-                            </div>
-                        </div>
-
-                        <div className="space-y-4">
-                            <div className="space-y-1.5">
-                                <label className="text-xs font-semibold text-zinc-300">Primary Content Niche *</label>
-                                <CustomSelect
-                                    value={formData.categories}
-                                    onChange={handleChange}
-                                    options={NICHES}
-                                    name="categories"
-                                    placeholder="Select your niche"
-                                    icon={Tag}
-                                />
-                            </div>
-
-                            {formData.categories === 'Others' && (
-                                <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} className="space-y-1.5">
-                                    <label className="text-xs font-semibold text-zinc-300">Specify Niche</label>
-                                    <Input
-                                        name="customNiche"
-                                        value={formData.customNiche}
-                                        onChange={handleChange}
-                                        placeholder="e.g. Automotive, Parenting, Podcasting"
-                                        className="h-12 bg-zinc-950/80 border-zinc-800 rounded-xl text-sm px-4 focus:border-white"
-                                    />
-                                </motion.div>
-                            )}
-
-                            {(formData.categories === 'Student/Campus Creator' || formData.categories === 'College Pages') && (
-                                <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} className="space-y-1.5">
-                                    <label className="text-xs font-semibold text-emerald-400">College / University Name</label>
-                                    <Input
-                                        name="collegeName"
-                                        value={formData.collegeName}
-                                        onChange={handleChange}
-                                        placeholder="e.g. Christ University, IIT Bangalore, Delhi University"
-                                        className="h-12 bg-zinc-950/80 border-zinc-800 rounded-xl text-sm px-4 focus:border-white"
-                                    />
-                                </motion.div>
-                            )}
-
-                            {/* Instagram */}
-                            <div className="p-4 bg-zinc-950/60 border border-zinc-800/80 rounded-xl space-y-3">
-                                <div className="flex items-center gap-2 text-xs font-bold text-pink-400">
-                                    <Instagram size={16} />
-                                    <span>Instagram Profile</span>
-                                </div>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                    <div className="space-y-1">
-                                        <label className="text-[11px] font-medium text-zinc-400">Handle (without @)</label>
-                                        <div className="relative">
-                                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 font-bold text-sm">@</span>
-                                            <Input
-                                                name="instagram"
-                                                value={formData.instagram}
+                                        <div className="space-y-1">
+                                            <label className="text-[10px] font-bold text-gray-900 dark:text-white/30 uppercase tracking-wider">Approx Followers</label>
+                                            <input
+                                                type="number"
+                                                name="instagramFollowers"
+                                                value={formData.instagramFollowers}
                                                 onChange={handleChange}
-                                                placeholder="yourhandle"
-                                                className="h-11 pl-7 pr-3 bg-zinc-900 border-zinc-800 rounded-lg text-sm focus:border-pink-500"
+                                                placeholder="e.g. 5000"
+                                                className="w-full h-11 px-3 bg-white dark:bg-black/40 border border-black/[0.1] dark:border-white/[0.08] focus:border-pink-500 rounded-xl text-xs font-medium text-gray-900 dark:text-white outline-none transition-all"
                                             />
                                         </div>
                                     </div>
-                                    <div className="space-y-1">
-                                        <label className="text-[11px] font-medium text-zinc-400">Approx. Followers</label>
-                                        <Input
-                                            type="number"
-                                            name="instagramFollowers"
-                                            value={formData.instagramFollowers}
+                                    {duplicateWarnings.instagram && (
+                                        <p className="text-[11px] text-amber-400 font-medium">{duplicateWarnings.instagram}</p>
+                                    )}
+                                </div>
+
+                                {/* Optional Additional Channels */}
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-bold text-gray-900 dark:text-white/40 uppercase tracking-wider">Additional Channels (Optional)</label>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                        <div className="relative">
+                                            <Linkedin className="absolute left-3.5 top-1/2 -translate-y-1/2 text-blue-400" size={14} />
+                                            <input
+                                                type="text"
+                                                name="linkedin"
+                                                value={formData.linkedin}
+                                                onChange={handleChange}
+                                                placeholder="LinkedIn profile link"
+                                                className="w-full h-11 pl-9 pr-3 bg-white dark:bg-black/40 border border-black/[0.1] dark:border-white/[0.08] focus:border-blue-400 rounded-xl text-xs font-medium text-gray-900 dark:text-white outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-white/20"
+                                            />
+                                        </div>
+                                        <div className="relative">
+                                            <Youtube className="absolute left-3.5 top-1/2 -translate-y-1/2 text-red-400" size={14} />
+                                            <input
+                                                type="text"
+                                                name="youtube"
+                                                value={formData.youtube}
+                                                onChange={handleChange}
+                                                placeholder="YouTube channel link"
+                                                className="w-full h-11 pl-9 pr-3 bg-white dark:bg-black/40 border border-black/[0.1] dark:border-white/[0.08] focus:border-red-400 rounded-xl text-xs font-medium text-gray-900 dark:text-white outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-white/20"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            </motion.div>
+                        )}
+
+                        {/* ──────── STEP 4: TERMS & CREATOR PASS REVIEW ──────── */}
+                        {step === 4 && (
+                            <motion.div
+                                key="step4"
+                                custom={direction}
+                                variants={slideVariants}
+                                initial="enter"
+                                animate="center"
+                                exit="exit"
+                                transition={{ duration: 0.25, ease: 'easeOut' }}
+                                className="space-y-6"
+                            >
+                                <div>
+                                    <h2 className="text-xl sm:text-2xl font-black font-heading uppercase tracking-tight text-gray-900 dark:text-white">
+                                        Review & Final Terms
+                                    </h2>
+                                    <p className="text-xs sm:text-sm text-gray-900 dark:text-white/50 mt-1">
+                                        Set your collaboration preferences and review your Creator Pass.
+                                    </p>
+                                </div>
+
+                                {/* Collaboration Style Cards */}
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-bold text-gray-900 dark:text-white/40 uppercase tracking-wider">Collaboration Preferences</label>
+                                    <div className="grid grid-cols-3 gap-2">
+                                        {[
+                                            { id: 'both', label: 'Open to Both', icon: '✨' },
+                                            { id: 'paid', label: 'Paid Only', icon: '💰' },
+                                            { id: 'barter', label: 'Barter & Gigs', icon: '🎁' }
+                                        ].map(opt => {
+                                            const isSelected = formData.doBarter === opt.id;
+                                            return (
+                                                <button
+                                                    key={opt.id}
+                                                    type="button"
+                                                    onClick={() => setFormData(p => ({ ...p, doBarter: opt.id }))}
+                                                    className={cn(
+                                                        "p-3.5 rounded-2xl text-center border transition-all flex flex-col items-center gap-1.5",
+                                                        isSelected
+                                                            ? "bg-neon-green text-black border-neon-green font-black shadow-md shadow-neon-green/20 scale-[1.02]"
+                                                            : "bg-white dark:bg-white/[0.02] text-gray-800 dark:text-white/60 border-gray-200 dark:border-white/[0.06] hover:text-black dark:hover:text-white hover:border-gray-300 dark:hover:border-white/20"
+                                                    )}
+                                                >
+                                                    <span className="text-base">{opt.icon}</span>
+                                                    <span className="text-xs">{opt.label}</span>
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+
+                                {/* Short Bio & Commercials */}
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <div className="space-y-1.5 sm:col-span-2">
+                                        <label className="text-[10px] font-bold text-gray-900 dark:text-white/40 uppercase tracking-wider">Short Creator Statement</label>
+                                        <textarea
+                                            name="bio"
+                                            value={formData.bio}
                                             onChange={handleChange}
-                                            placeholder="e.g. 5000"
-                                            className="h-11 bg-zinc-900 border-zinc-800 rounded-lg text-sm px-3 focus:border-pink-500"
+                                            placeholder="e.g. Bangalore lifestyle creator focusing on aesthetics, cafes, and campus culture. High engagement reels."
+                                            rows={2}
+                                            className="w-full bg-white dark:bg-black/40 border border-black/[0.1] dark:border-white/[0.08] focus:border-black/30 dark:focus:border-white/30 rounded-xl p-3 text-xs font-medium text-gray-900 dark:text-white outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-white/20 resize-none"
+                                        />
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        <label className="text-[10px] font-bold text-gray-900 dark:text-white/40 uppercase tracking-wider">Typical Rates (Optional)</label>
+                                        <input
+                                            type="text"
+                                            name="commercials"
+                                            value={formData.commercials}
+                                            onChange={handleChange}
+                                            placeholder="e.g. ₹5,000/Reel"
+                                            className="w-full h-11 bg-white dark:bg-black/40 border border-black/[0.1] dark:border-white/[0.08] focus:border-black/30 dark:focus:border-white/30 rounded-xl px-4 text-xs font-medium text-gray-900 dark:text-white outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-white/20"
+                                        />
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        <label className="text-[10px] font-bold text-gray-900 dark:text-white/40 uppercase tracking-wider flex justify-between">
+                                            <span>Invite Code (Optional)</span>
+                                            {isReferralCodeLocked && <span className="text-neon-green">Applied 🔒</span>}
+                                        </label>
+                                        <input
+                                            type="text"
+                                            name="referredBy"
+                                            value={formData.referredBy}
+                                            onChange={handleChange}
+                                            disabled={isReferralCodeLocked}
+                                            placeholder="Friend or creator invite code"
+                                            className="w-full h-11 bg-white dark:bg-black/40 border border-black/[0.1] dark:border-white/[0.08] focus:border-black/30 dark:focus:border-white/30 rounded-xl px-4 text-xs font-medium text-gray-900 dark:text-white outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-white/20 disabled:opacity-50"
                                         />
                                     </div>
                                 </div>
-                                {duplicateWarnings.instagram && (
-                                    <div className="p-2.5 bg-amber-500/10 border border-amber-500/30 rounded-xl text-xs text-amber-300 flex items-center justify-between">
-                                        <span>{duplicateWarnings.instagram}</span>
-                                        <button
-                                            type="button"
-                                            onClick={() => setAuthModal(true)}
-                                            className="underline font-bold text-white shrink-0 ml-2"
-                                        >
-                                            Sign In
-                                        </button>
-                                    </div>
-                                )}
-                            </div>
 
-                            {/* Optional Channels */}
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
-                                <div className="space-y-1">
-                                    <label className="text-[11px] font-medium text-zinc-400 flex items-center gap-1.5">
-                                        <Linkedin size={12} className="text-blue-400" /> LinkedIn Profile (Optional)
+                                {/* Live Creator Pass Preview Card */}
+                                <div className="space-y-2 pt-2">
+                                    <label className="text-[10px] font-bold text-gray-900 dark:text-white/40 uppercase tracking-wider flex items-center gap-1.5">
+                                        <Award size={13} className="text-neon-pink" />
+                                        <span>Your Newbi Creator Pass Preview</span>
                                     </label>
-                                    <Input
-                                        name="linkedin"
-                                        value={formData.linkedin}
-                                        onChange={handleChange}
-                                        placeholder="https://linkedin.com/in/username"
-                                        className="h-11 bg-zinc-950/80 border-zinc-800 rounded-lg text-sm px-3 focus:border-blue-500"
-                                    />
-                                </div>
-                                <div className="space-y-1">
-                                    <label className="text-[11px] font-medium text-zinc-400 flex items-center gap-1.5">
-                                        <Youtube size={12} className="text-red-400" /> YouTube Channel (Optional)
-                                    </label>
-                                    <Input
-                                        name="youtube"
-                                        value={formData.youtube}
-                                        onChange={handleChange}
-                                        placeholder="Channel link or handle"
-                                        className="h-11 bg-zinc-950/80 border-zinc-800 rounded-lg text-sm px-3 focus:border-red-500"
-                                    />
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Card 3: Collaboration Preferences */}
-                    <div className="bg-zinc-900/80 border border-zinc-800 rounded-2xl p-6 sm:p-8 space-y-6 shadow-lg backdrop-blur-xl">
-                        <div className="flex items-center gap-3 pb-4 border-b border-zinc-800/80">
-                            <div className="w-10 h-10 rounded-xl bg-zinc-800 flex items-center justify-center text-zinc-200">
-                                <FileText size={20} />
-                            </div>
-                            <div>
-                                <h3 className="text-lg font-bold text-white">3. Collaboration Preferences</h3>
-                                <p className="text-xs text-zinc-400">Help brands understand how you like to collaborate.</p>
-                            </div>
-                        </div>
-
-                        <div className="space-y-4">
-                            <div className="space-y-1.5">
-                                <label className="text-xs font-semibold text-zinc-300">Short Bio / What makes your content unique?</label>
-                                <textarea
-                                    name="bio"
-                                    value={formData.bio}
-                                    onChange={handleChange}
-                                    placeholder="e.g. Bangalore-based lifestyle creator focused on affordable fashion, cafes, and city aesthetics. High engagement reels & stories."
-                                    rows={3}
-                                    className="w-full bg-zinc-950/80 border border-zinc-800 rounded-xl p-3.5 text-sm text-zinc-200 placeholder-zinc-500 focus:border-white focus:outline-none resize-none"
-                                />
-                            </div>
-
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div className="space-y-1.5">
-                                    <label className="text-xs font-semibold text-zinc-300">Collaboration Type</label>
-                                    <div className="grid grid-cols-3 gap-2">
-                                        {[
-                                            { id: 'both', label: 'Both' },
-                                            { id: 'paid', label: 'Paid Only' },
-                                            { id: 'barter', label: 'Barter' }
-                                        ].map((opt) => (
-                                            <button
-                                                key={opt.id}
-                                                type="button"
-                                                onClick={() => setFormData(p => ({ ...p, doBarter: opt.id }))}
-                                                className={cn(
-                                                    "h-11 rounded-xl text-xs font-semibold border transition-all",
-                                                    formData.doBarter === opt.id
-                                                        ? "bg-white text-zinc-950 border-white font-bold"
-                                                        : "bg-zinc-950/80 text-zinc-400 border-zinc-800 hover:text-white"
-                                                )}
-                                            >
-                                                {opt.label}
-                                            </button>
-                                        ))}
+                                    <div className="p-4 sm:p-5 bg-gradient-to-br from-gray-100 dark:from-white/[0.05] to-gray-50 dark:to-white/[0.01] border border-black/[0.1] dark:border-white/[0.1] rounded-2xl relative overflow-hidden flex items-center gap-4">
+                                        <div className="w-14 h-14 rounded-2xl bg-white dark:bg-black border border-white/[0.1] overflow-hidden shrink-0 flex items-center justify-center">
+                                            {formData.profilePicture ? (
+                                                <img src={formData.profilePicture} alt="Avatar" className="w-full h-full object-cover" />
+                                            ) : (
+                                                <span className="text-lg font-black text-gray-900 dark:text-white/30">{formData.name ? formData.name.charAt(0).toUpperCase() : 'C'}</span>
+                                            )}
+                                        </div>
+                                        <div className="min-w-0 flex-1">
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <span className="text-[8px] font-bold uppercase tracking-wider bg-neon-green/10 text-neon-green border border-neon-green/20 px-2 py-0.5 rounded-md">Verified</span>
+                                                <span className="text-[8px] font-bold text-gray-900 dark:text-white/30 uppercase tracking-wider">{formData.city || 'City'}</span>
+                                            </div>
+                                            <h4 className="text-sm sm:text-base font-black text-gray-900 dark:text-white uppercase tracking-tight truncate">{formData.name || 'Your Name'}</h4>
+                                            <p className="text-[10px] font-bold text-neon-pink/80 uppercase tracking-wider truncate">{formData.categories || 'Niche'}</p>
+                                        </div>
                                     </div>
                                 </div>
-
-                                <div className="space-y-1.5">
-                                    <label className="text-xs font-semibold text-zinc-300">Typical Rates <span className="text-zinc-500 font-normal">(Optional)</span></label>
-                                    <Input
-                                        name="commercials"
-                                        value={formData.commercials}
-                                        onChange={handleChange}
-                                        placeholder="e.g. ₹5,000/Reel or Open"
-                                        className="h-11 bg-zinc-950/80 border-zinc-800 rounded-xl text-sm px-4 focus:border-white"
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="space-y-1.5 pt-2 border-t border-zinc-800/80">
-                                <label className="text-[11px] font-medium text-zinc-400 flex justify-between">
-                                    <span>Referral Code (Optional)</span>
-                                    {isReferralCodeLocked && <span className="text-emerald-400">Referral Applied 🔒</span>}
-                                </label>
-                                <Input
-                                    name="referredBy"
-                                    value={formData.referredBy}
-                                    onChange={handleChange}
-                                    disabled={isReferralCodeLocked}
-                                    placeholder="Enter creator or friend's invite code"
-                                    className="h-11 bg-zinc-950/80 border-zinc-800 rounded-xl text-sm px-4 focus:border-white disabled:opacity-60"
-                                />
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Submit Button */}
-                    <div className="pt-2">
-                        <Button
-                            type="submit"
-                            disabled={isSubmitting || isUploadingPhoto || !isPhoneVerified}
-                            className="w-full h-14 bg-white hover:bg-zinc-200 text-zinc-950 font-bold rounded-2xl flex items-center justify-center gap-3 text-base shadow-xl transition-all active:scale-[0.99] disabled:opacity-40"
-                        >
-                            {isSubmitting ? (
-                                <>
-                                    <LoadingSpinner size="sm" color="black" />
-                                    <span>Submitting Application...</span>
-                                </>
-                            ) : (
-                                <>
-                                    <span>Submit Verified Creator Application</span>
-                                    <ArrowRight size={18} />
-                                </>
-                            )}
-                        </Button>
-                        {!isPhoneVerified && (
-                            <p className="text-center text-[11px] text-amber-400/90 mt-2 font-medium">
-                                ⚠️ Please verify your phone number above via 6-digit OTP before submitting.
-                            </p>
+                            </motion.div>
                         )}
-                        <p className="text-center text-[11px] text-zinc-500 mt-2">
-                            By applying, you agree to receive official campaign briefs. No exclusivity required.
-                        </p>
+                    </AnimatePresence>
+
+                    {/* Step Navigation Actions */}
+                    <div className="pt-4 border-t border-black/[0.08] dark:border-white/[0.06] flex items-center justify-between gap-3">
+                        {step > 1 ? (
+                            <button
+                                type="button"
+                                onClick={prevStep}
+                                className="h-12 px-5 bg-gray-100 dark:bg-white/[0.04] hover:bg-gray-200 dark:hover:bg-white/[0.08] text-gray-900 dark:text-white/60 hover:text-gray-900 dark:hover:text-white font-bold rounded-xl text-xs uppercase tracking-wider transition-all flex items-center gap-2 border border-black/[0.08] dark:border-white/[0.08]"
+                            >
+                                <ArrowLeft size={14} />
+                                <span>Back</span>
+                            </button>
+                        ) : (
+                            <div />
+                        )}
+
+                        {step < 4 ? (
+                            <button
+                                type="button"
+                                onClick={nextStep}
+                                className="h-12 px-6 bg-white hover:bg-neon-pink text-black font-bold rounded-xl text-xs uppercase tracking-wider transition-all flex items-center gap-2 shadow-lg ml-auto"
+                            >
+                                <span>Continue</span>
+                                <ArrowRight size={14} />
+                            </button>
+                        ) : (
+                            <button
+                                type="button"
+                                onClick={handleSubmit}
+                                disabled={isSubmitting}
+                                className="h-12 px-8 bg-neon-green hover:brightness-110 text-black font-black rounded-xl text-xs uppercase tracking-wider transition-all flex items-center gap-2 shadow-[0_0_25px_rgba(57,255,20,0.3)] ml-auto disabled:opacity-40"
+                            >
+                                {isSubmitting ? (
+                                    <>
+                                        <LoadingSpinner size="xs" color="black" />
+                                        <span>Submitting...</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <span>Submit Creator Application</span>
+                                        <Check size={14} strokeWidth={3} />
+                                    </>
+                                )}
+                            </button>
+                        )}
                     </div>
-                </form>
+                </div>
+
+                {/* Trust Footer Notice */}
+                <div className="flex items-center justify-center gap-2 text-center text-[10px] font-bold text-gray-900 dark:text-white/30 uppercase tracking-wider">
+                    <ShieldCheck size={13} className="text-neon-green" />
+                    <span>Official Newbi Influencer Roster • 0% Commission • Free Forever</span>
+                </div>
             </div>
         </div>
     );
 };
 
 export default CreatorJoin;
+

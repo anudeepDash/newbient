@@ -9,20 +9,20 @@ const MailPreview = ({ data }) => {
 
     return (
         <div className="space-y-6">
-            <div className="flex items-center justify-between bg-zinc-900/60 p-4 rounded-2xl border border-white/5 backdrop-blur-xl">
+            <div className="flex items-center justify-between bg-gray-100 dark:bg-zinc-900/60 p-4 rounded-2xl border border-black/10 dark:border-white/5 backdrop-blur-xl">
                 <h3 className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em] flex items-center gap-2">
                     <Mail size={14} className="text-neon-green" /> LIVE_RENDER_FEED
                 </h3>
-                <div className="flex bg-black/40 p-1 rounded-xl border border-white/5">
+                <div className="flex bg-white dark:bg-black/40 p-1 rounded-xl border border-black/10 dark:border-white/5">
                     <button 
                         onClick={() => setView('desktop')}
-                        className={cn("p-2 rounded-lg transition-all", view === 'desktop' ? "bg-white text-black" : "text-gray-500 hover:text-white")}
+                        className={cn("p-2 rounded-lg transition-all", view === 'desktop' ? "bg-white text-black" : "text-gray-500 hover:text-gray-900 dark:hover:text-white")}
                     >
                         <Monitor size={14} />
                     </button>
                     <button 
                         onClick={() => setView('mobile')}
-                        className={cn("p-2 rounded-lg transition-all", view === 'mobile' ? "bg-white text-black" : "text-gray-500 hover:text-white")}
+                        className={cn("p-2 rounded-lg transition-all", view === 'mobile' ? "bg-white text-black" : "text-gray-500 hover:text-gray-900 dark:hover:text-white")}
                     >
                         <Smartphone size={14} />
                     </button>
@@ -30,16 +30,16 @@ const MailPreview = ({ data }) => {
             </div>
 
             <div className={cn(
-                "mx-auto bg-black border border-white/10 rounded-[2.5rem] overflow-hidden shadow-[0_30px_60px_rgba(0,0,0,0.5)] transition-all duration-500",
+                "mx-auto bg-white dark:bg-black border border-black/10 dark:border-white/10 rounded-[2.5rem] overflow-hidden shadow-[0_30px_60px_rgba(0,0,0,0.5)] transition-all duration-500",
                 view === 'desktop' ? "w-full min-h-[600px]" : "w-[360px] min-h-[600px]"
             )}>
                 {/* Email Content Frame */}
                 <div className={cn(
                     "font-sans overflow-y-auto max-h-[700px] custom-scrollbar transition-colors duration-500",
-                    isDark ? "bg-[#0a0a0a] text-white" : "bg-[#ffffff] text-black"
+                    isDark ? "bg-[#0a0a0a] text-gray-900 dark:text-white" : "bg-[#ffffff] text-black"
                 )}>
                     {/* Header/Logo */}
-                    <div className="p-8 text-left border-b bg-[#0a0a0a] border-white/5">
+                    <div className="p-8 text-left border-b bg-[#0a0a0a] border-black/10 dark:border-white/5">
                         <div className="inline-block relative">
                             <img 
                                 src="/logo_full.png" 
@@ -56,7 +56,7 @@ const MailPreview = ({ data }) => {
                             <img src={data.heroImage} alt="Hero" className="w-full h-full object-cover" />
                             <div className={cn(
                                 "absolute inset-0 bg-gradient-to-t from-transparent via-transparent",
-                                isDark ? "to-[#0a0a0a]" : "to-white"
+                                isDark ? "to-[#0a0a0a]" : "to-gray-900 dark:to-white"
                             )} />
                         </div>
                     )}
@@ -66,7 +66,7 @@ const MailPreview = ({ data }) => {
                         <div className="space-y-4">
                             <h2 className={cn(
                                 "text-3xl md:text-4xl font-black uppercase tracking-tighter leading-[1.1] italic break-words overflow-wrap-anywhere",
-                                isDark ? "text-white" : "text-black"
+                                isDark ? "text-gray-900 dark:text-white" : "text-black"
                             )}>
                                 {data.headerText || "YOUR_HEADER_HERE"}
                             </h2>
@@ -76,7 +76,7 @@ const MailPreview = ({ data }) => {
                         <div 
                             className={cn(
                                 "text-sm md:text-base leading-relaxed font-medium prose max-w-none prose-sm break-words article-content",
-                                isDark ? "text-gray-400 prose-invert" : "text-gray-600 prose-zinc"
+                                isDark ? "text-gray-600 dark:text-gray-400 prose-invert" : "text-gray-600 prose-zinc"
                             )}
                             style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}
                             dangerouslySetInnerHTML={{ 
@@ -103,7 +103,7 @@ const MailPreview = ({ data }) => {
                     {/* Footer */}
                     <div className={cn(
                         "p-12 border-t text-center space-y-6 transition-colors",
-                        isDark ? "bg-black border-white/5" : "bg-gray-50 border-black/5"
+                        isDark ? "bg-white dark:bg-black border-black/10 dark:border-white/5" : "bg-gray-50 border-black/5"
                     )}>
                         <div className="flex justify-center gap-6">
                             {/* Social Icons */}
@@ -119,7 +119,7 @@ const MailPreview = ({ data }) => {
                         </div>
                         <p className={cn(
                             "text-[10px] font-black uppercase tracking-[0.2em]",
-                            isDark ? "text-gray-600" : "text-gray-400"
+                            isDark ? "text-gray-600" : "text-gray-600 dark:text-gray-400"
                         )}>
                             © {new Date().getFullYear()} NEWBI ENTERTAINMENT & MARKETING LLP. ALL RIGHTS RESERVED.
                         </p>

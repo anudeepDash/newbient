@@ -394,7 +394,7 @@ const splitTextIntoPages = (rawText, maxPageHeight = 800) => {
                 const level = headingMatch[1].length;
                 const headingText = headingMatch[2];
                 const sizeClass = level === 1 ? "text-[13px] font-bold" : level === 2 ? "text-[12px] font-bold" : "text-[11px] font-semibold text-zinc-400";
-                elements.push(<p key={i} className={cn(sizeClass, "mt-2 mb-1 text-white")} dangerouslySetInnerHTML={{ __html: formatInline(headingText) }} />);
+                elements.push(<p key={i} className={cn(sizeClass, "mt-2 mb-1 text-gray-900 dark:text-white")} dangerouslySetInnerHTML={{ __html: formatInline(headingText) }} />);
             } else if (line.match(/^[•\-\*](?:\s|&nbsp;|\u00a0)+/)) {
                 const items = [];
                 while (i < lines.length && lines[i].match(/^[•\-\*](?:\s|&nbsp;|\u00a0)+/)) {
@@ -456,7 +456,7 @@ const splitTextIntoPages = (rawText, maxPageHeight = 800) => {
             }
 
             if (line.match(/^[-*_]{3,}$/)) {
-                elements.push(<div key={`hr-${i}`} className="h-[1.5px] bg-black/10 my-8 w-full" />);
+                elements.push(<div key={`hr-${i}`} className="h-[1.5px] bg-white dark:bg-black/10 my-8 w-full" />);
                 i++;
                 continue;
             }
@@ -506,7 +506,7 @@ const splitTextIntoPages = (rawText, maxPageHeight = 800) => {
                     <div key={`ol-${i}`} className="pl-4 space-y-2 my-4">
                         {items.map((item, j) => (
                             <div key={j} className="flex items-start gap-3">
-                                <span className="text-[11px] font-black text-gray-400 mt-0.5 w-6 shrink-0">{item.num}.</span>
+                                <span className="text-[11px] font-black text-gray-600 dark:text-gray-400 mt-0.5 w-6 shrink-0">{item.num}.</span>
                                 <span className={cn("text-[13px] font-medium text-black leading-[1.9]", baseClass)} dangerouslySetInnerHTML={{ __html: inlineFmt(item.text) }} />
                             </div>
                         ))}
@@ -824,18 +824,18 @@ const ProposalGenerator = () => {
 
         return (
             <div 
-                className="fixed z-[999] w-[92vw] max-w-[380px] bg-zinc-950/95 backdrop-blur-2xl border border-neon-green/30 rounded-3xl p-5 shadow-[0_20px_60px_rgba(0,0,0,0.85),0_0_30px_rgba(57,255,20,0.15)] animate-fade-in flex flex-col gap-3 font-['Outfit']"
+                className="fixed z-[999] w-[92vw] max-w-[380px] bg-gray-100 dark:bg-zinc-950/95 backdrop-blur-2xl border border-neon-green/30 rounded-3xl p-5 shadow-[0_20px_60px_rgba(0,0,0,0.85),0_0_30px_rgba(57,255,20,0.15)] animate-fade-in flex flex-col gap-3 font-['Outfit']"
                 style={{ top: `${top}px`, left: `${left}px` }}
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Header */}
-                <div className="flex items-center justify-between border-b border-white/10 pb-3">
+                <div className="flex items-center justify-between border-b border-black/10 dark:border-white/10 pb-3">
                     <div className="flex items-center gap-2">
                         <div className="w-6 h-6 rounded-lg bg-neon-green/10 border border-neon-green/20 flex items-center justify-center">
                             <Sparkles size={12} className="text-neon-green animate-pulse" />
                         </div>
                         <div className="min-w-0">
-                            <h4 className="text-[11px] font-black uppercase tracking-wider text-white truncate">
+                            <h4 className="text-[11px] font-black uppercase tracking-wider text-gray-900 dark:text-white truncate">
                                 Refine with AI
                             </h4>
                             <p className="text-[9px] font-bold text-neon-green truncate">
@@ -846,7 +846,7 @@ const ProposalGenerator = () => {
                     <button
                         type="button"
                         onClick={() => setInlineRefineState(null)}
-                        className="p-1 text-zinc-500 hover:text-white rounded-lg hover:bg-white/5 transition-all"
+                        className="p-1 text-zinc-500 hover:text-gray-900 dark:hover:text-white rounded-lg hover:bg-black/5 dark:hover:bg-white/5 transition-all"
                     >
                         <X size={14} />
                     </button>
@@ -854,7 +854,7 @@ const ProposalGenerator = () => {
 
                 {/* Current Value Preview (if any) */}
                 {inlineRefineState.currentValue && (
-                    <div className="bg-black/40 border border-white/5 rounded-xl px-3 py-2 text-[10px] text-zinc-400 italic line-clamp-2">
+                    <div className="bg-white dark:bg-black/40 border border-black/10 dark:border-white/5 rounded-xl px-3 py-2 text-[10px] text-zinc-400 italic line-clamp-2">
                         "{inlineRefineState.currentValue}"
                     </div>
                 )}
@@ -871,7 +871,7 @@ const ProposalGenerator = () => {
                             key={preset}
                             type="button"
                             onClick={() => setInlineRefinePrompt(preset)}
-                            className="px-2.5 py-1 bg-white/5 hover:bg-neon-green/10 border border-white/5 hover:border-neon-green/20 rounded-lg text-[8px] font-bold uppercase tracking-wider text-zinc-400 hover:text-neon-green transition-all"
+                            className="px-2.5 py-1 bg-black/5 dark:bg-white/5 hover:bg-neon-green/10 border border-black/10 dark:border-white/5 hover:border-neon-green/20 rounded-lg text-[8px] font-bold uppercase tracking-wider text-zinc-400 hover:text-neon-green transition-all"
                         >
                             {preset}
                         </button>
@@ -895,7 +895,7 @@ const ProposalGenerator = () => {
                         }}
                         placeholder="Type how you want to revise this text (e.g. Add 2 more key objectives, make it punchier)..."
                         disabled={inlineRefineLoading || inlineRefineSuccess}
-                        className="w-full bg-black/60 border border-white/10 focus:border-neon-green/50 rounded-xl p-3 text-xs text-white placeholder:text-zinc-600 outline-none resize-none min-h-[70px] scrollbar-hide font-medium"
+                        className="w-full bg-white dark:bg-black/60 border border-black/10 dark:border-white/10 focus:border-neon-green/50 rounded-xl p-3 text-xs text-gray-900 dark:text-white placeholder:text-zinc-600 outline-none resize-none min-h-[70px] scrollbar-hide font-medium"
                     />
                 </div>
 
@@ -2139,14 +2139,14 @@ const ProposalGenerator = () => {
                 <div className="absolute -top-10 left-1/2 -translate-x-1/2 w-40 h-40 bg-neon-green/5 rounded-full blur-3xl pointer-events-none" />
 
                 {/* Minimal Sleek Header */}
-                <div className="flex items-center justify-between px-3 py-2.5 border-b border-white/5 bg-zinc-950/40 rounded-2xl shrink-0 relative z-10 mb-2">
+                <div className="flex items-center justify-between px-3 py-2.5 border-b border-black/10 dark:border-white/5 bg-gray-100 dark:bg-zinc-950/40 rounded-2xl shrink-0 relative z-10 mb-2">
                     <div className="flex items-center gap-2.5 min-w-0">
                         <div className="w-2 h-2 rounded-full bg-neon-green shadow-[0_0_8px_#39FF14] shrink-0 animate-pulse" />
                         <div className="min-w-0 flex items-center gap-2">
-                            <span className="text-xs font-bold text-white tracking-wide truncate">
+                            <span className="text-xs font-bold text-gray-900 dark:text-white tracking-wide truncate">
                                 AI Proposal Assistant
                             </span>
-                            <span className="text-[9px] font-mono text-zinc-500 font-medium px-1.5 py-0.5 rounded bg-white/5 border border-white/5 shrink-0">
+                            <span className="text-[9px] font-mono text-zinc-500 font-medium px-1.5 py-0.5 rounded bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/5 shrink-0">
                                 {activeModel || 'Gemini'}
                             </span>
                         </div>
@@ -2178,7 +2178,7 @@ const ProposalGenerator = () => {
                             <button
                                 type="button"
                                 onClick={() => setIsFloatingChatOpen(false)}
-                                className="p-1.5 text-zinc-500 hover:text-white hover:bg-white/10 rounded-xl transition-all"
+                                className="p-1.5 text-zinc-500 hover:text-gray-900 dark:hover:text-white hover:bg-black/10 dark:hover:bg-white/10 rounded-xl transition-all"
                                 title="Close chat"
                             >
                                 <X size={15} />
@@ -2199,7 +2199,7 @@ const ProposalGenerator = () => {
                                 <Sparkles size={18} className="text-neon-green" />
                             </div>
                             <div className="space-y-1 max-w-[280px]">
-                                <h3 className="text-xs font-bold text-white tracking-wide">
+                                <h3 className="text-xs font-bold text-gray-900 dark:text-white tracking-wide">
                                     How can I help with your proposal?
                                 </h3>
                                 <p className="text-[10px] text-zinc-400 leading-relaxed">
@@ -2219,7 +2219,7 @@ const ProposalGenerator = () => {
                                         key={s}
                                         type="button"
                                         onClick={() => setPromptText(s)}
-                                        className="px-2.5 py-1 rounded-xl bg-white/[0.03] hover:bg-neon-green/10 border border-white/5 hover:border-neon-green/30 text-[9px] font-medium text-zinc-400 hover:text-neon-green transition-all text-left"
+                                        className="px-2.5 py-1 rounded-xl bg-white/[0.03] hover:bg-neon-green/10 border border-black/10 dark:border-white/5 hover:border-neon-green/30 text-[9px] font-medium text-zinc-400 hover:text-neon-green transition-all text-left"
                                     >
                                         ✨ {s}
                                     </button>
@@ -2235,7 +2235,7 @@ const ProposalGenerator = () => {
                             className={cn(
                                 "max-w-[88%] rounded-2xl p-3 text-xs leading-relaxed transition-all shadow-sm relative overflow-hidden",
                                 m.sender === 'user'
-                                    ? "bg-zinc-800/90 text-zinc-100 self-end rounded-tr-sm border border-white/10 ml-auto"
+                                    ? "bg-zinc-800/90 text-zinc-100 self-end rounded-tr-sm border border-black/10 dark:border-white/10 ml-auto"
                                     : "bg-white/[0.03] border border-white/[0.06] text-zinc-200 self-start rounded-tl-sm mr-auto"
                             )}
                         >
@@ -2265,7 +2265,7 @@ const ProposalGenerator = () => {
                                     {generationTime}s
                                 </span>
                             </div>
-                            <div className="w-full h-1 bg-zinc-900 rounded-full overflow-hidden">
+                            <div className="w-full h-1 bg-gray-100 dark:bg-zinc-900 rounded-full overflow-hidden">
                                 <div 
                                     className="h-full bg-neon-green transition-all duration-500 shadow-[0_0_8px_#39FF14]" 
                                     style={{ width: `${generationProgress}%` }}
@@ -2278,7 +2278,7 @@ const ProposalGenerator = () => {
 
                 {/* Clean Prompt Input Bar */}
                 <div className="pt-2 shrink-0 relative z-10">
-                    <div className="bg-zinc-900/90 border border-white/10 focus-within:border-neon-green/40 rounded-2xl p-2 flex flex-col gap-1.5 shadow-lg transition-all">
+                    <div className="bg-gray-100 dark:bg-zinc-900/90 border border-black/10 dark:border-white/10 focus-within:border-emerald-500 dark:focus-within:border-neon-green/40 rounded-2xl p-2 flex flex-col gap-1.5 shadow-lg transition-all">
                         {/* Refinement Quote Banner */}
                         {refinementContext && (
                             <div className="px-2.5 py-1.5 bg-neon-green/10 border border-neon-green/20 rounded-xl flex items-center justify-between gap-2 animate-fade-in">
@@ -2290,7 +2290,7 @@ const ProposalGenerator = () => {
                                 <button 
                                     type="button" 
                                     onClick={() => setRefinementContext(null)}
-                                    className="text-zinc-500 hover:text-white p-0.5 rounded"
+                                    className="text-zinc-500 hover:text-gray-900 dark:hover:text-white p-0.5 rounded"
                                 >
                                     <X size={10} />
                                 </button>
@@ -2303,7 +2303,7 @@ const ProposalGenerator = () => {
                                 value={promptText}
                                 onChange={e => setPromptText(e.target.value)}
                                 placeholder={refinementContext ? `Instructions for "${refinementContext.fieldLabel}"...` : (isBulkMode ? "Paste requirements for bulk generation..." : "Type instructions or ask to modify anything...")}
-                                className="flex-grow bg-transparent border-none text-xs font-medium text-white placeholder:text-zinc-500 outline-none min-h-[36px] max-h-[90px] py-1 px-1 resize-none leading-relaxed scrollbar-hide"
+                                className="flex-grow bg-transparent border-none text-xs font-medium text-gray-900 dark:text-white placeholder:text-zinc-500 outline-none min-h-[36px] max-h-[90px] py-1 px-1 resize-none leading-relaxed scrollbar-hide"
                                 rows={1}
                                 disabled={isGenerating}
                                 onKeyDown={e => {
@@ -2347,7 +2347,7 @@ const ProposalGenerator = () => {
     const currentTab = tabs.find(t => t.id === activeTab);
 
     return (
-        <div className="h-full w-full overflow-hidden bg-[#0B0F17] text-white selection:bg-neon-green selection:text-black font-['Outfit'] flex flex-col admin-hub-content-container">
+        <div className="h-full w-full overflow-hidden bg-gray-50 dark:bg-[#0B0F17] text-gray-900 dark:text-white selection:bg-neon-green selection:text-black font-['Outfit'] flex flex-col admin-hub-content-container">
             <style dangerouslySetInnerHTML={{ __html: `
                 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap');
                 @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400..700&display=swap');
@@ -2358,20 +2358,20 @@ const ProposalGenerator = () => {
             `}} />
 
             {/* Top Bar */}
-            <header className="h-16 md:h-20 border-b border-white/5 bg-black/50 backdrop-blur-3xl flex items-center justify-between px-4 md:px-8 shrink-0 relative z-50">
+            <header className="h-16 md:h-20 border-b border-black/10 dark:border-white/5 bg-white dark:bg-black/50 backdrop-blur-3xl flex items-center justify-between px-4 md:px-8 shrink-0 relative z-50">
                 <div className="flex items-center gap-2 md:gap-4 min-w-0">
                     <div className="flex items-center gap-2 md:gap-3 shrink-0">
-                        <Link to="/admin/proposals" className="p-2.5 md:p-3 bg-white/5 rounded-2xl hover:bg-white/10 border border-white/5 group"><ArrowLeft size={16} /></Link>
+                        <Link to="/admin/proposals" className="p-2.5 md:p-3 bg-black/5 dark:bg-white/5 rounded-2xl hover:bg-black/10 dark:hover:bg-white/10 border border-black/10 dark:border-white/5 group"><ArrowLeft size={16} /></Link>
                     </div>
                     <div className="min-w-0 flex flex-col justify-center">
-                        <h1 className="text-sm md:text-xl font-extrabold tracking-tight text-white truncate leading-none">Quotation <span className="text-neon-green">Engine.</span></h1>
+                        <h1 className="text-sm md:text-xl font-extrabold tracking-tight text-gray-900 dark:text-white truncate leading-none">Quotation <span className="text-neon-green">Engine.</span></h1>
                         <p className="text-[7px] md:text-[9px] font-bold text-gray-500 uppercase tracking-widest mt-1 truncate">Business Summary</p>
                     </div>
                 </div>
 
                 <div className="flex items-center gap-1.5 md:gap-4 shrink-0">
                     {autosaveStatus !== 'idle' && (
-                        <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white/5 border border-white/10 select-none">
+                        <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 select-none">
                             <span className={cn(
                                 "w-1.5 h-1.5 rounded-full shrink-0",
                                 autosaveStatus === 'saving' && "bg-amber-400 animate-pulse",
@@ -2385,7 +2385,7 @@ const ProposalGenerator = () => {
                             </span>
                         </div>
                     )}
-                    <button onClick={handleSave} className="hidden lg:flex h-10 md:h-12 px-3 md:px-6 bg-white/5 hover:bg-white/10 text-white border border-white/10 font-black uppercase tracking-widest text-[9px] md:text-[10px] rounded-xl transition-all items-center gap-2">
+                    <button onClick={handleSave} className="hidden lg:flex h-10 md:h-12 px-3 md:px-6 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-gray-900 dark:text-white border border-black/10 dark:border-white/10 font-black uppercase tracking-widest text-[9px] md:text-[10px] rounded-xl transition-all items-center gap-2">
                         <Save size={14} className="sm:hidden" />
                         <span className="hidden sm:inline">Save</span>
                     </button>
@@ -2399,14 +2399,14 @@ const ProposalGenerator = () => {
             <main className="flex-1 flex overflow-hidden min-h-0">
                 {/* Sidebar - Desktop */}
                 <aside className={cn(
-                    "hidden lg:flex w-64 shrink-0 border-r border-white/5 bg-zinc-900/20 flex-col p-6 gap-6 overflow-y-auto scrollbar-hide",
+                    "hidden lg:flex w-64 shrink-0 border-r border-black/10 dark:border-white/5 bg-gray-100 dark:bg-zinc-900/20 flex-col p-6 gap-6 overflow-y-auto scrollbar-hide",
                     isExpandedPreview && "lg:hidden"
                 )}>
                     <div className="space-y-2">
                         <p className="text-[9px] font-black text-gray-600 uppercase tracking-widest px-4 mb-4">Navigation</p>
                         {tabs.map(tab => (
-                            <button key={tab.id} onClick={() => handleTabClick(tab.id)} className={cn("w-full p-4 rounded-2xl flex items-center gap-4 transition-all text-left group", activeTab === tab.id ? "bg-white text-black shadow-xl" : "hover:bg-white/5 text-gray-500 hover:text-white")}>
-                                <div className={cn("p-2.5 rounded-xl transition-all", activeTab === tab.id ? "bg-black/20" : "bg-white/5 group-hover:bg-white/10")}><tab.icon size={18} /></div>
+                            <button key={tab.id} onClick={() => handleTabClick(tab.id)} className={cn("w-full p-4 rounded-2xl flex items-center gap-4 transition-all text-left group", activeTab === tab.id ? "bg-white text-black shadow-xl" : "hover:bg-black/5 dark:hover:bg-white/5 text-gray-500 hover:text-gray-900 dark:hover:text-white")}>
+                                <div className={cn("p-2.5 rounded-xl transition-all", activeTab === tab.id ? "bg-white dark:bg-black/20" : "bg-black/5 dark:bg-white/5 group-hover:bg-black/10 dark:group-hover:bg-white/10")}><tab.icon size={18} /></div>
                                 <div>
                                     <p className="text-[10px] font-black uppercase tracking-widest leading-none mb-1">{tab.label}</p>
                                     <p className={cn("text-[9px] font-bold opacity-60 uppercase tracking-tighter", activeTab === tab.id ? "text-black" : "text-gray-600")}>{tab.desc}</p>
@@ -2417,7 +2417,7 @@ const ProposalGenerator = () => {
                 </aside>
 
                 {/* Mobile Bottom Navigation */}
-                <div className="lg:hidden fixed bottom-0 left-0 right-0 h-20 bg-black/80 backdrop-blur-3xl border-t border-white/10 z-[100] px-4 flex items-center justify-around no-scrollbar">
+                <div className="lg:hidden fixed bottom-0 left-0 right-0 h-20 bg-white dark:bg-black/80 backdrop-blur-3xl border-t border-black/10 dark:border-white/10 z-[100] px-4 flex items-center justify-around no-scrollbar">
                     {tabs.map(tab => (
                         <button key={tab.id} onClick={() => handleTabClick(tab.id)} className={cn("flex flex-col items-center justify-center min-w-[64px] h-full transition-all gap-1", activeTab === tab.id ? "text-neon-green" : "text-gray-500")}>
                             <tab.icon size={20} />
@@ -2437,7 +2437,7 @@ const ProposalGenerator = () => {
                             <Eye size={14} />
                             <span className="text-[9px] font-black uppercase tracking-widest">Preview</span>
                         </button>
-                        <button onClick={handleSave} className="h-10 px-3 flex-1 bg-white/5 text-white border border-white/10 font-black uppercase tracking-widest text-[9px] rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg backdrop-blur-md">
+                        <button onClick={handleSave} className="h-10 px-3 flex-1 bg-black/5 dark:bg-white/5 text-gray-900 dark:text-white border border-black/10 dark:border-white/10 font-black uppercase tracking-widest text-[9px] rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg backdrop-blur-md">
                             <Save size={14} />
                             <span>Save</span>
                         </button>
@@ -2449,14 +2449,14 @@ const ProposalGenerator = () => {
                 </div>
 
                 <main className={cn(
-                    "flex-grow scrollbar-hide bg-[#050505] px-4 md:px-12 py-10 md:py-16 overflow-y-auto pb-32",
+                    "flex-grow scrollbar-hide bg-white dark:bg-[#050505] px-4 md:px-12 py-10 md:py-16 overflow-y-auto pb-32",
                     isExpandedPreview && "hidden"
                 )}>
                     <div className="max-w-[1600px] mx-auto w-full space-y-10 md:space-y-12">
 
                         {/* ... */}
                         {activeTab !== 'ai' && (
-                            <div className="flex flex-col 2xl:flex-row items-start 2xl:items-end justify-between gap-6 mb-16 pb-8 border-b border-white/5 relative overflow-hidden">
+                            <div className="flex flex-col 2xl:flex-row items-start 2xl:items-end justify-between gap-6 mb-16 pb-8 border-b border-black/10 dark:border-white/5 relative overflow-hidden">
                                 <div className="space-y-4 min-w-0 w-full 2xl:w-auto">
                                     <div className="flex items-center gap-2">
                                         <div className="w-8 h-[2px] bg-neon-green/40" />
@@ -2465,7 +2465,7 @@ const ProposalGenerator = () => {
                                         </p>
                                     </div>
                                     <div className="space-y-2 min-w-0">
-                                        <h2 className="text-xl sm:text-2xl md:text-3xl font-extrabold tracking-tight text-white leading-none truncate">
+                                        <h2 className="text-xl sm:text-2xl md:text-3xl font-extrabold tracking-tight text-gray-900 dark:text-white leading-none truncate">
                                             {currentTab?.label}<span className="text-neon-green">.</span>
                                         </h2>
                                         <p className="text-[11px] text-gray-500 font-bold uppercase tracking-[0.3em] pl-1 truncate">
@@ -2476,7 +2476,7 @@ const ProposalGenerator = () => {
 
                                 <div className="flex flex-col items-start 2xl:items-end gap-4 w-full 2xl:w-auto shrink-0 pt-2 2xl:pt-0">
                                     {/* Compact Progress Line */}
-                                    <div className="w-full sm:w-48 h-0.5 bg-white/5 rounded-full overflow-hidden shrink-0">
+                                    <div className="w-full sm:w-48 h-0.5 bg-black/5 dark:bg-white/5 rounded-full overflow-hidden shrink-0">
                                         <div 
                                             className="h-full bg-neon-green transition-all duration-700 shadow-[0_0_10px_rgba(57,255,20,0.8)]" 
                                             style={{ width: `${(tabs.findIndex(t => t.id === activeTab) + 1) / tabs.length * 100}%` }} 
@@ -2502,7 +2502,7 @@ const ProposalGenerator = () => {
                                                 <div className="w-16 h-16 bg-neon-green/10 rounded-3xl flex items-center justify-center mx-auto border border-neon-green/20 shadow-[0_0_30px_rgba(57,255,20,0.1)]">
                                                     <Sparkles className="w-8 h-8 text-neon-green animate-pulse" />
                                                 </div>
-                                                <h2 className="text-2xl md:text-3xl font-extrabold tracking-tight text-white">AI Proposal Studio<span className="text-neon-green">.</span></h2>
+                                                <h2 className="text-2xl md:text-3xl font-extrabold tracking-tight text-gray-900 dark:text-white">AI Proposal Studio<span className="text-neon-green">.</span></h2>
                                                 <p className="text-sm text-gray-500 font-medium max-w-md mx-auto leading-relaxed">
                                                     Describe what you need and our AI will craft a complete, professional proposal in seconds. You can refine it through the chat.
                                                 </p>
@@ -2515,7 +2515,7 @@ const ProposalGenerator = () => {
                                             </div>
 
                                             {/* Quick Prompt Card */}
-                                            <div className="bg-zinc-900/60 border border-white/5 rounded-[2rem] p-6 md:p-8 space-y-4 shadow-2xl">
+                                            <div className="bg-gray-100 dark:bg-zinc-900/60 border border-black/10 dark:border-white/5 rounded-[2rem] p-6 md:p-8 space-y-4 shadow-2xl">
                                                 <textarea
                                                     value={promptText}
                                                     onChange={e => setPromptText(e.target.value)}
@@ -2525,7 +2525,7 @@ const ProposalGenerator = () => {
                                                             handleStudioSubmit();
                                                         }
                                                     }}
-                                                    className="w-full bg-black/40 border border-white/10 rounded-2xl p-5 text-sm text-white placeholder:text-gray-600 font-medium outline-none focus:border-neon-green/30 transition-all resize-none min-h-[120px] scrollbar-hide"
+                                                    className="w-full bg-white dark:bg-black/40 border border-black/10 dark:border-white/10 rounded-2xl p-5 text-sm text-gray-900 dark:text-white placeholder:text-gray-600 font-medium outline-none focus:border-neon-green/30 transition-all resize-none min-h-[120px] scrollbar-hide"
                                                     placeholder={isBulkMode ? "Paste multiple proposals separated by --- or double line breaks..." : "e.g. Create a proposal for a 3-day music festival in Mumbai for XYZ Corp..."}
                                                 />
                                                 <div className="flex items-center justify-between">
@@ -2555,7 +2555,7 @@ const ProposalGenerator = () => {
                                                         key={s}
                                                         type="button"
                                                         onClick={() => setPromptText(`Create a detailed proposal for a ${s.toLowerCase()} for a premium client in India.`)}
-                                                        className="px-4 py-2 bg-white/5 border border-white/5 rounded-full text-[9px] font-bold uppercase tracking-wider text-gray-400 hover:text-neon-green hover:border-neon-green/20 hover:bg-neon-green/5 transition-all"
+                                                        className="px-4 py-2 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/5 rounded-full text-[9px] font-bold uppercase tracking-wider text-gray-600 dark:text-gray-400 hover:text-neon-green hover:border-neon-green/20 hover:bg-neon-green/5 transition-all"
                                                     >
                                                         <Sparkles size={10} className="inline mr-1.5 opacity-50" />{s}
                                                     </button>
@@ -2578,13 +2578,13 @@ const ProposalGenerator = () => {
                                             </div>
                                             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 md:gap-4">
                                                 {logoOptions.map(logo => (
-                                                    <button key={logo.id} onClick={() => setFormData({...formData, selectedLogo: logo.id})} className={cn("p-4 rounded-2xl border transition-all text-[10px] font-black uppercase tracking-widest flex flex-col items-center gap-2 overflow-hidden relative group/btn", formData.selectedLogo === logo.id ? "bg-neon-green border-neon-green text-black scale-105 shadow-xl" : "bg-zinc-900 border-white/5 text-gray-500 hover:text-white")}>
+                                                    <button key={logo.id} onClick={() => setFormData({...formData, selectedLogo: logo.id})} className={cn("p-4 rounded-2xl border transition-all text-[10px] font-black uppercase tracking-widest flex flex-col items-center gap-2 overflow-hidden relative group/btn", formData.selectedLogo === logo.id ? "bg-neon-green border-neon-green text-black scale-105 shadow-xl" : "bg-gray-100 dark:bg-zinc-900 border-black/10 dark:border-white/5 text-gray-500 hover:text-gray-900 dark:hover:text-white")}>
                                                         <div className="w-full aspect-[4/3] rounded-xl bg-white flex items-center justify-center p-2 relative overflow-hidden">
                                                             <img src={logo.path} alt={logo.label} className="w-full h-full object-contain" />
-                                                            <div className="absolute inset-0 bg-black/5" />
+                                                            <div className="absolute inset-0 bg-white dark:bg-black/5" />
                                                         </div>
                                                         <span className="text-[8px] sm:text-[10px] font-black uppercase tracking-widest relative z-10 leading-tight">{logo.label}</span>
-                                                        {formData.selectedLogo === logo.id && <div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-black animate-pulse" />}
+                                                        {formData.selectedLogo === logo.id && <div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-white dark:bg-black animate-pulse" />}
                                                     </button>
                                                 ))}
                                             </div>
@@ -2596,8 +2596,8 @@ const ProposalGenerator = () => {
                                                     <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Client Entity</label>
                                                 </div>
                                                 <div className="relative group/refine w-full">
-                                                    <input value={formData.clientName} onChange={e => setFormData({...formData, clientName: e.target.value})} className="w-full bg-zinc-900 border border-white/10 h-16 pl-6 pr-12 rounded-2xl font-bold text-sm outline-none focus:border-neon-green/40 transition-all" placeholder="Organization Name" />
-                                                    <button type="button" onClick={(e) => handleRefineClick('clientName', 'Client Entity', formData.clientName, e)} className="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-zinc-950 border border-white/10 text-neon-green hover:text-white rounded-xl hover:scale-105 z-10" title="Refine with AI"><Sparkles size={14} className="animate-pulse" /></button>
+                                                    <input value={formData.clientName} onChange={e => setFormData({...formData, clientName: e.target.value})} className="w-full bg-gray-100 dark:bg-zinc-900 border border-black/10 dark:border-white/10 h-16 pl-6 pr-12 rounded-2xl font-bold text-sm outline-none focus:border-neon-green/40 transition-all" placeholder="Organization Name" />
+                                                    <button type="button" onClick={(e) => handleRefineClick('clientName', 'Client Entity', formData.clientName, e)} className="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-gray-100 dark:bg-zinc-950 border border-black/10 dark:border-white/10 text-neon-green hover:text-gray-900 dark:hover:text-white rounded-xl hover:scale-105 z-10" title="Refine with AI"><Sparkles size={14} className="animate-pulse" /></button>
                                                 </div>
                                             </div>
                                             <div className="space-y-4">
@@ -2605,8 +2605,8 @@ const ProposalGenerator = () => {
                                                     <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Project Name</label>
                                                 </div>
                                                 <div className="relative group/refine w-full">
-                                                    <input value={formData.campaignName} onChange={e => setFormData({...formData, campaignName: e.target.value})} className="w-full bg-zinc-900 border border-white/10 h-16 pl-6 pr-12 rounded-2xl font-bold text-sm outline-none focus:border-neon-green/40 transition-all" placeholder="Project or Event Title" />
-                                                    <button type="button" onClick={(e) => handleRefineClick('campaignName', 'Project Name', formData.campaignName, e)} className="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-zinc-950 border border-white/10 text-neon-green hover:text-white rounded-xl hover:scale-105 z-10" title="Refine with AI"><Sparkles size={14} className="animate-pulse" /></button>
+                                                    <input value={formData.campaignName} onChange={e => setFormData({...formData, campaignName: e.target.value})} className="w-full bg-gray-100 dark:bg-zinc-900 border border-black/10 dark:border-white/10 h-16 pl-6 pr-12 rounded-2xl font-bold text-sm outline-none focus:border-neon-green/40 transition-all" placeholder="Project or Event Title" />
+                                                    <button type="button" onClick={(e) => handleRefineClick('campaignName', 'Project Name', formData.campaignName, e)} className="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-gray-100 dark:bg-zinc-950 border border-black/10 dark:border-white/10 text-neon-green hover:text-gray-900 dark:hover:text-white rounded-xl hover:scale-105 z-10" title="Refine with AI"><Sparkles size={14} className="animate-pulse" /></button>
                                                 </div>
                                             </div>
                                         </div>
@@ -2617,15 +2617,15 @@ const ProposalGenerator = () => {
                                                     <VisibilityToggle field="clientAddress" />
                                                 </div>
                                                 <div className="relative group/refine w-full">
-                                                    <input value={formData.clientAddress} onChange={e => setFormData({...formData, clientAddress: e.target.value})} className={cn("w-full bg-zinc-900 border border-white/10 h-16 pl-6 pr-12 rounded-2xl font-bold text-sm outline-none focus:border-neon-green/40 transition-all", isHidden('clientAddress') && "opacity-30")} placeholder="Business Location" />
-                                                    <button type="button" onClick={(e) => handleRefineClick('clientAddress', 'Client Address', formData.clientAddress, e)} className="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-zinc-950 border border-white/10 text-neon-green hover:text-white rounded-xl hover:scale-105 z-10" title="Refine with AI"><Sparkles size={14} className="animate-pulse" /></button>
+                                                    <input value={formData.clientAddress} onChange={e => setFormData({...formData, clientAddress: e.target.value})} className={cn("w-full bg-gray-100 dark:bg-zinc-900 border border-black/10 dark:border-white/10 h-16 pl-6 pr-12 rounded-2xl font-bold text-sm outline-none focus:border-neon-green/40 transition-all", isHidden('clientAddress') && "opacity-30")} placeholder="Business Location" />
+                                                    <button type="button" onClick={(e) => handleRefineClick('clientAddress', 'Client Address', formData.clientAddress, e)} className="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-gray-100 dark:bg-zinc-950 border border-black/10 dark:border-white/10 text-neon-green hover:text-gray-900 dark:hover:text-white rounded-xl hover:scale-105 z-10" title="Refine with AI"><Sparkles size={14} className="animate-pulse" /></button>
                                                 </div>
                                             </div>
                                             <div className="space-y-4">
                                                 <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest px-2">Timeline / Duration</label>
                                                 <div className="relative group/refine w-full">
-                                                    <input value={formData.campaignDuration} onChange={e => setFormData({...formData, campaignDuration: e.target.value})} className="w-full bg-zinc-900 border border-white/10 h-16 pl-6 pr-12 rounded-2xl font-bold text-sm outline-none focus:border-neon-green/40 transition-all" placeholder="e.g. 15th - 20th Oct or 3 Months" />
-                                                    <button type="button" onClick={(e) => handleRefineClick('campaignDuration', 'Timeline / Duration', formData.campaignDuration, e)} className="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-zinc-950 border border-white/10 text-neon-green hover:text-white rounded-xl hover:scale-105 z-10" title="Refine with AI"><Sparkles size={14} className="animate-pulse" /></button>
+                                                    <input value={formData.campaignDuration} onChange={e => setFormData({...formData, campaignDuration: e.target.value})} className="w-full bg-gray-100 dark:bg-zinc-900 border border-black/10 dark:border-white/10 h-16 pl-6 pr-12 rounded-2xl font-bold text-sm outline-none focus:border-neon-green/40 transition-all" placeholder="e.g. 15th - 20th Oct or 3 Months" />
+                                                    <button type="button" onClick={(e) => handleRefineClick('campaignDuration', 'Timeline / Duration', formData.campaignDuration, e)} className="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-gray-100 dark:bg-zinc-950 border border-black/10 dark:border-white/10 text-neon-green hover:text-gray-900 dark:hover:text-white rounded-xl hover:scale-105 z-10" title="Refine with AI"><Sparkles size={14} className="animate-pulse" /></button>
                                                 </div>
                                             </div>
                                         </div>
@@ -2659,7 +2659,7 @@ const ProposalGenerator = () => {
                                                         accentColor="neon-green"
                                                         className={cn(isHidden('coverDescription') && 'opacity-30')}
                                                     />
-                                                    <button type="button" onClick={(e) => handleRefineClick('coverDescription', 'Cover Memorandum', formData.coverDescription, e)} className="absolute right-4 top-12 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-zinc-950 border border-white/10 text-neon-green hover:text-white rounded-xl hover:scale-105 z-[70]" title="Refine with AI"><Sparkles size={14} className="animate-pulse" /></button>
+                                                    <button type="button" onClick={(e) => handleRefineClick('coverDescription', 'Cover Memorandum', formData.coverDescription, e)} className="absolute right-4 top-12 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-gray-100 dark:bg-zinc-950 border border-black/10 dark:border-white/10 text-neon-green hover:text-gray-900 dark:hover:text-white rounded-xl hover:scale-105 z-[70]" title="Refine with AI"><Sparkles size={14} className="animate-pulse" /></button>
                                                 </div>
                                             </div>
                                     </div>
@@ -2700,7 +2700,7 @@ const ProposalGenerator = () => {
                                                      accentColor="neon-green"
                                                      className={cn(isHidden('overview') && 'opacity-30')}
                                                  />
-                                                 <button type="button" onClick={(e) => handleRefineClick('overview', 'Executive Summary', formData.overview, e)} className="absolute right-4 top-12 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-zinc-950 border border-white/10 text-neon-green hover:text-white rounded-xl hover:scale-105 z-[70]" title="Refine with AI"><Sparkles size={14} className="animate-pulse" /></button>
+                                                 <button type="button" onClick={(e) => handleRefineClick('overview', 'Executive Summary', formData.overview, e)} className="absolute right-4 top-12 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-gray-100 dark:bg-zinc-950 border border-black/10 dark:border-white/10 text-neon-green hover:text-gray-900 dark:hover:text-white rounded-xl hover:scale-105 z-[70]" title="Refine with AI"><Sparkles size={14} className="animate-pulse" /></button>
                                              </div>
                                          </div>
                                          <div className="space-y-4 relative group/editor group/refine">
@@ -2733,7 +2733,7 @@ const ProposalGenerator = () => {
                                                      accentColor="neon-green"
                                                      className={cn(isHidden('primaryGoal') && 'opacity-30')}
                                                  />
-                                                 <button type="button" onClick={(e) => handleRefineClick('primaryGoal', 'Primary Objective', formData.primaryGoal, e)} className="absolute right-4 top-12 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-zinc-950 border border-white/10 text-neon-green hover:text-white rounded-xl hover:scale-105 z-[70]" title="Refine with AI"><Sparkles size={14} className="animate-pulse" /></button>
+                                                 <button type="button" onClick={(e) => handleRefineClick('primaryGoal', 'Primary Objective', formData.primaryGoal, e)} className="absolute right-4 top-12 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-gray-100 dark:bg-zinc-950 border border-black/10 dark:border-white/10 text-neon-green hover:text-gray-900 dark:hover:text-white rounded-xl hover:scale-105 z-[70]" title="Refine with AI"><Sparkles size={14} className="animate-pulse" /></button>
                                              </div>
                                          </div>
                                      </div>
@@ -2755,7 +2755,7 @@ const ProposalGenerator = () => {
                                                      accentColor="neon-green"
                                                      className={cn(isHidden('scopeOfWork') && 'opacity-30')}
                                                  />
-                                                 <button type="button" onClick={(e) => handleRefineClick('scopeOfWork', 'Scope of Work', formData.scopeOfWork, e)} className="absolute right-4 top-12 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-zinc-950 border border-white/10 text-neon-green hover:text-white rounded-xl hover:scale-105 z-[70]" title="Refine with AI"><Sparkles size={14} className="animate-pulse" /></button>
+                                                 <button type="button" onClick={(e) => handleRefineClick('scopeOfWork', 'Scope of Work', formData.scopeOfWork, e)} className="absolute right-4 top-12 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-gray-100 dark:bg-zinc-950 border border-black/10 dark:border-white/10 text-neon-green hover:text-gray-900 dark:hover:text-white rounded-xl hover:scale-105 z-[70]" title="Refine with AI"><Sparkles size={14} className="animate-pulse" /></button>
                                              </div>
                                          </div>
                                      </div>
@@ -2777,16 +2777,16 @@ const ProposalGenerator = () => {
                                              </div>
                                             <div className={cn("space-y-4 transition-opacity", isHidden('deliverables') && "opacity-30")}>
                                                 {(formData.deliverables || []).map((d, idx) => (
-                                                    <div key={d.id} className="flex items-start gap-4 bg-zinc-900/40 p-5 rounded-3xl border border-white/5 group transition-all hover:bg-zinc-900/60">
+                                                    <div key={d.id} className="flex items-start gap-4 bg-gray-100 dark:bg-zinc-900/40 p-5 rounded-3xl border border-black/10 dark:border-white/5 group transition-all hover:bg-gray-100 dark:hover:bg-zinc-900/60">
                                                         <span className="text-[10px] font-black text-gray-600 mt-4 w-6 shrink-0">{String(idx + 1).padStart(2, '0')}</span>
                                                         <div className="flex-1 space-y-3">
                                                             <div className="relative group/refine w-full">
-                                                                <input value={d.item} onChange={e => { const updated = [...formData.deliverables]; updated[idx] = {...d, item: e.target.value}; setFormData({...formData, deliverables: updated}); }} className="w-full bg-transparent border-b border-white/10 pb-2 pr-8 text-sm font-bold outline-none focus:border-neon-green/40 transition-all text-white placeholder:text-gray-600" placeholder="Deliverable description..." />
-                                                                <button type="button" onClick={(e) => handleRefineClick(`deliverables[${idx}].item`, `Deliverable ${idx + 1}`, d.item, e)} className="absolute right-2 bottom-2 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-1 text-neon-green hover:text-white rounded-lg hover:scale-105 z-10" title="Refine with AI"><Sparkles size={11} className="animate-pulse" /></button>
+                                                                <input value={d.item} onChange={e => { const updated = [...formData.deliverables]; updated[idx] = {...d, item: e.target.value}; setFormData({...formData, deliverables: updated}); }} className="w-full bg-transparent border-b border-black/10 dark:border-white/10 pb-2 pr-8 text-sm font-bold outline-none focus:border-neon-green/40 transition-all text-gray-900 dark:text-white placeholder:text-gray-600" placeholder="Deliverable description..." />
+                                                                <button type="button" onClick={(e) => handleRefineClick(`deliverables[${idx}].item`, `Deliverable ${idx + 1}`, d.item, e)} className="absolute right-2 bottom-2 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-1 text-neon-green hover:text-gray-900 dark:hover:text-white rounded-lg hover:scale-105 z-10" title="Refine with AI"><Sparkles size={11} className="animate-pulse" /></button>
                                                             </div>
                                                             <div className="flex gap-4">
-                                                                <input value={d.qty} onChange={e => { const updated = [...formData.deliverables]; updated[idx] = {...d, qty: e.target.value}; setFormData({...formData, deliverables: updated}); }} className="w-32 bg-black/40 border border-white/10 h-10 px-4 rounded-lg text-[10px] font-bold outline-none focus:border-neon-green/40 text-gray-300 placeholder:text-gray-600" placeholder="Qty / Unit" />
-                                                                <input value={d.timeline} onChange={e => { const updated = [...formData.deliverables]; updated[idx] = {...d, timeline: e.target.value}; setFormData({...formData, deliverables: updated}); }} className="flex-1 bg-black/40 border border-white/10 h-10 px-4 rounded-lg text-[10px] font-bold outline-none focus:border-neon-green/40 text-gray-300 placeholder:text-gray-600" placeholder="Timeline (e.g. Week 1-2)" />
+                                                                <input value={d.qty} onChange={e => { const updated = [...formData.deliverables]; updated[idx] = {...d, qty: e.target.value}; setFormData({...formData, deliverables: updated}); }} className="w-32 bg-white dark:bg-black/40 border border-black/10 dark:border-white/10 h-10 px-4 rounded-lg text-[10px] font-bold outline-none focus:border-neon-green/40 text-gray-700 dark:text-gray-300 placeholder:text-gray-600" placeholder="Qty / Unit" />
+                                                                <input value={d.timeline} onChange={e => { const updated = [...formData.deliverables]; updated[idx] = {...d, timeline: e.target.value}; setFormData({...formData, deliverables: updated}); }} className="flex-1 bg-white dark:bg-black/40 border border-black/10 dark:border-white/10 h-10 px-4 rounded-lg text-[10px] font-bold outline-none focus:border-neon-green/40 text-gray-700 dark:text-gray-300 placeholder:text-gray-600" placeholder="Timeline (e.g. Week 1-2)" />
                                                             </div>
                                                         </div>
                                                         <button onClick={() => setFormData({...formData, deliverables: formData.deliverables.filter(x => x.id !== d.id)})} className="p-2 text-gray-600 hover:text-red-500 transition-colors hover:bg-red-500/10 rounded-lg mt-3"><Trash2 size={14} /></button>
@@ -2796,7 +2796,7 @@ const ProposalGenerator = () => {
                                         </div>
 
                                         {/* Client Requirements Section */}
-                                        <div className="space-y-8 pt-10 border-t border-white/5">
+                                        <div className="space-y-8 pt-10 border-t border-black/10 dark:border-white/5">
                                             <div className="flex justify-between items-center px-2">
                                                  <div className="flex items-center gap-4">
                                                      <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Requirements from Client</label>
@@ -2806,11 +2806,11 @@ const ProposalGenerator = () => {
                                              </div>
                                             <div className={cn("space-y-4 transition-opacity", isHidden('clientRequirements') && "opacity-30")}>
                                                 {(formData.clientRequirements || []).map((r, idx) => (
-                                                    <div key={r.id} className="flex items-center gap-4 bg-zinc-900/40 p-4 pl-6 rounded-3xl border border-white/5 group transition-all hover:bg-zinc-900/60">
+                                                    <div key={r.id} className="flex items-center gap-4 bg-gray-100 dark:bg-zinc-900/40 p-4 pl-6 rounded-3xl border border-black/10 dark:border-white/5 group transition-all hover:bg-gray-100 dark:hover:bg-zinc-900/60">
                                                         <span className="text-[10px] font-black text-gray-600 w-6 shrink-0">{String(idx + 1).padStart(2, '0')}</span>
                                                         <div className="relative group/refine flex-1">
-                                                            <input value={r.description} onChange={e => { const updated = [...formData.clientRequirements]; updated[idx] = {...r, description: e.target.value}; setFormData({...formData, clientRequirements: updated}); }} className="w-full bg-transparent border-none pr-8 text-sm font-bold outline-none text-white placeholder:text-gray-600" placeholder="What the client needs to provide..." />
-                                                            <button type="button" onClick={(e) => handleRefineClick(`clientRequirements[${idx}].description`, `Client Requirement ${idx + 1}`, r.description, e)} className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-1 text-neon-green hover:text-white rounded-lg hover:scale-105 z-10" title="Refine with AI"><Sparkles size={11} className="animate-pulse" /></button>
+                                                            <input value={r.description} onChange={e => { const updated = [...formData.clientRequirements]; updated[idx] = {...r, description: e.target.value}; setFormData({...formData, clientRequirements: updated}); }} className="w-full bg-transparent border-none pr-8 text-sm font-bold outline-none text-gray-900 dark:text-white placeholder:text-gray-600" placeholder="What the client needs to provide..." />
+                                                            <button type="button" onClick={(e) => handleRefineClick(`clientRequirements[${idx}].description`, `Client Requirement ${idx + 1}`, r.description, e)} className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-1 text-neon-green hover:text-gray-900 dark:hover:text-white rounded-lg hover:scale-105 z-10" title="Refine with AI"><Sparkles size={11} className="animate-pulse" /></button>
                                                         </div>
                                                         <button 
                                                             disabled={isHidden('clientRequirements')}
@@ -2844,11 +2844,11 @@ const ProposalGenerator = () => {
 
                                         <div className={cn("space-y-8 transition-opacity", isHidden('inventory') && "opacity-30")}>
                                             {/* Manage Columns Section */}
-                                            <div className="bg-[#0b0b0c]/40 border border-white/5 rounded-3xl p-6 space-y-4">
+                                            <div className="bg-[#0b0b0c]/40 border border-black/10 dark:border-white/5 rounded-3xl p-6 space-y-4">
                                                 <div className="flex justify-between items-center">
                                                     <div>
                                                         <p className="text-[10px] font-black text-neon-green uppercase tracking-widest">Table Architecture</p>
-                                                        <h4 className="text-sm font-black text-white uppercase tracking-wider">Configure Columns</h4>
+                                                        <h4 className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-wider">Configure Columns</h4>
                                                     </div>
                                                     <button 
                                                         disabled={isHidden('inventory')}
@@ -2892,7 +2892,7 @@ const ProposalGenerator = () => {
                                                                     setFormData({ ...formData, tableColumns: cols });
                                                                 }}
                                                                 className={cn(
-                                                                    "inline-flex items-center gap-1 bg-black/50 border border-white/10 pl-1.5 pr-1 py-1 rounded-full transition-all group/col",
+                                                                    "inline-flex items-center gap-1 bg-white dark:bg-black/50 border border-black/10 dark:border-white/10 pl-1.5 pr-1 py-1 rounded-full transition-all group/col",
                                                                     !isHidden('inventory') ? "cursor-grab active:cursor-grabbing hover:border-neon-green/30 hover:bg-neon-green/5" : ""
                                                                 )}
                                                             >
@@ -2917,7 +2917,7 @@ const ProposalGenerator = () => {
                                                                         "shrink-0 w-4 h-4 flex items-center justify-center rounded-full text-[8px] font-black transition-all",
                                                                         colType === 'amount' ? 'bg-neon-green/20 text-neon-green border border-neon-green/30' :
                                                                         colType === 'number' ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' :
-                                                                        'bg-white/5 text-gray-500 border border-white/10',
+                                                                        'bg-black/5 dark:bg-white/5 text-gray-500 border border-black/10 dark:border-white/10',
                                                                         isProtected ? 'opacity-40 cursor-default' : 'hover:scale-110 cursor-pointer'
                                                                     )}
                                                                 >
@@ -2932,7 +2932,7 @@ const ProposalGenerator = () => {
                                                                         cols[cIdx] = { ...col, label: e.target.value };
                                                                         setFormData({ ...formData, tableColumns: cols });
                                                                     }}
-                                                                    className="bg-transparent border-none text-[10px] font-bold text-white/80 outline-none focus:text-neon-green w-auto min-w-[40px]"
+                                                                    className="bg-transparent border-none text-[10px] font-bold text-gray-900 dark:text-white/80 outline-none focus:text-emerald-600 dark:focus:text-neon-green w-auto min-w-[40px]"
                                                                     style={{ width: `${Math.max(40, col.label.length * 7)}px` }}
                                                                     placeholder="Column"
                                                                     draggable
@@ -2954,7 +2954,7 @@ const ProposalGenerator = () => {
                                                                             });
                                                                             setItems(updatedItems);
                                                                         }}
-                                                                        className="shrink-0 w-3.5 h-3.5 flex items-center justify-center rounded-full bg-white/5 text-gray-500 hover:bg-red-500/20 hover:text-red-400 transition-all disabled:opacity-30"
+                                                                        className="shrink-0 w-3.5 h-3.5 flex items-center justify-center rounded-full bg-black/5 dark:bg-white/5 text-gray-500 hover:bg-red-500/20 hover:text-red-400 transition-all disabled:opacity-30"
                                                                     >
                                                                         <X size={8} />
                                                                     </button>
@@ -2968,7 +2968,7 @@ const ProposalGenerator = () => {
                                             {/* Resource Table Row list */}
                                             <div className="space-y-6">
                                                 <div className="flex justify-between items-center px-4">
-                                                    <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Resource Table</h4>
+                                                    <h4 className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest">Resource Table</h4>
                                                     <button 
                                                         disabled={isHidden('inventory')} 
                                                         onClick={() => {
@@ -2992,7 +2992,7 @@ const ProposalGenerator = () => {
                                                         const descCol = cols.find(c => c.key === 'description') || { key: 'description', label: 'Resource Inventory' };
                                                         const otherCols = cols.filter(c => c.key !== 'description');
                                                         return (
-                                                            <div key={item.id} className="flex flex-col gap-4 bg-zinc-900/40 p-5 rounded-3xl border border-white/5 group/refine transition-all hover:bg-zinc-900/60 relative">
+                                                            <div key={item.id} className="flex flex-col gap-4 bg-gray-100 dark:bg-zinc-900/40 p-5 rounded-3xl border border-black/10 dark:border-white/5 group/refine transition-all hover:bg-gray-100 dark:hover:bg-zinc-900/60 relative">
                                                                 <div className="flex flex-col md:flex-row md:items-start gap-4 md:gap-6">
                                                                     <div className="flex-1 relative w-full">
                                                                         <span className="text-[8px] font-black text-neon-green uppercase tracking-widest mb-1.5 block">{descCol.label}</span>
@@ -3001,10 +3001,10 @@ const ProposalGenerator = () => {
                                                                             value={item.description} 
                                                                             onChange={e => { const newItems = [...items]; newItems[idx].description = e.target.value; setItems(newItems); }} 
                                                                             rows={1} 
-                                                                            className="w-full bg-transparent border-none p-0 pr-8 text-sm font-bold outline-none resize-none scrollbar-hide text-white placeholder:text-gray-600" 
+                                                                            className="w-full bg-transparent border-none p-0 pr-8 text-sm font-bold outline-none resize-none scrollbar-hide text-gray-900 dark:text-white placeholder:text-gray-600" 
                                                                             placeholder={`${descCol.label}...`} 
                                                                         />
-                                                                        <button type="button" disabled={isHidden('inventory')} onClick={(e) => handleRefineClick(`items[${idx}].description`, `${descCol.label} ${idx + 1}`, item.description, e)} className="absolute right-2 top-[22px] opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-1 text-neon-green hover:text-white rounded-lg hover:scale-105 z-10 disabled:opacity-0" title="Refine with AI"><Sparkles size={11} className="animate-pulse" /></button>
+                                                                        <button type="button" disabled={isHidden('inventory')} onClick={(e) => handleRefineClick(`items[${idx}].description`, `${descCol.label} ${idx + 1}`, item.description, e)} className="absolute right-2 top-[22px] opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-1 text-neon-green hover:text-gray-900 dark:hover:text-white rounded-lg hover:scale-105 z-10 disabled:opacity-0" title="Refine with AI"><Sparkles size={11} className="animate-pulse" /></button>
                                                                     </div>
 
                                                                     <div className="flex flex-wrap items-center gap-4 md:gap-6 w-full md:w-auto pt-2 md:pt-0 border-t md:border-t-0 border-white/[0.03]">
@@ -3013,7 +3013,7 @@ const ProposalGenerator = () => {
                                                                                 return (
                                                                                     <div key={col.key} className="flex flex-col items-start w-20">
                                                                                         <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest mb-1.5">{col.label}</span>
-                                                                                        <input disabled={isHidden('inventory')} type="number" value={item.qty} onChange={e => { const newItems = [...items]; newItems[idx].qty = Number(e.target.value); setItems(newItems); }} className="w-full bg-black/40 border border-white/10 h-10 rounded-lg text-center text-xs font-black outline-none focus:border-neon-green/50 text-white" />
+                                                                                        <input disabled={isHidden('inventory')} type="number" value={item.qty} onChange={e => { const newItems = [...items]; newItems[idx].qty = Number(e.target.value); setItems(newItems); }} className="w-full bg-white dark:bg-black/40 border border-black/10 dark:border-white/10 h-10 rounded-lg text-center text-xs font-black outline-none focus:border-neon-green/50 text-gray-900 dark:text-white" />
                                                                                     </div>
                                                                                 );
                                                                             }
@@ -3023,7 +3023,7 @@ const ProposalGenerator = () => {
                                                                                         <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest mb-1.5">{col.label}</span>
                                                                                         <div className="relative w-full">
                                                                                             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] font-black text-neon-green">₹</span>
-                                                                                            <input disabled={isHidden('inventory')} type="number" value={item.price} onChange={e => { const newItems = [...items]; newItems[idx].price = Number(e.target.value); setItems(newItems); }} className="w-full bg-black/40 border border-white/10 h-10 pl-7 pr-3 rounded-lg text-right text-xs font-black text-neon-green outline-none focus:border-neon-green/50" />
+                                                                                            <input disabled={isHidden('inventory')} type="number" value={item.price} onChange={e => { const newItems = [...items]; newItems[idx].price = Number(e.target.value); setItems(newItems); }} className="w-full bg-white dark:bg-black/40 border border-black/10 dark:border-white/10 h-10 pl-7 pr-3 rounded-lg text-right text-xs font-black text-neon-green outline-none focus:border-neon-green/50" />
                                                                                         </div>
                                                                                     </div>
                                                                                 );
@@ -3045,7 +3045,7 @@ const ProposalGenerator = () => {
                                                                                                     newItems[idx][col.key] = e.target.value === '' ? '' : Number(e.target.value);
                                                                                                     setItems(newItems);
                                                                                                 }}
-                                                                                                className="w-full bg-black/40 border border-white/10 h-10 pl-7 pr-3 rounded-lg text-right text-xs font-black text-neon-green outline-none focus:border-neon-green/50"
+                                                                                                className="w-full bg-white dark:bg-black/40 border border-black/10 dark:border-white/10 h-10 pl-7 pr-3 rounded-lg text-right text-xs font-black text-neon-green outline-none focus:border-neon-green/50"
                                                                                                 placeholder="0"
                                                                                             />
                                                                                         </div>
@@ -3059,7 +3059,7 @@ const ProposalGenerator = () => {
                                                                                                 newItems[idx][col.key] = e.target.value === '' ? '' : Number(e.target.value);
                                                                                                 setItems(newItems);
                                                                                             }}
-                                                                                            className="w-full bg-black/40 border border-white/10 h-10 rounded-lg text-center text-xs font-black outline-none focus:border-neon-green/50 text-white"
+                                                                                            className="w-full bg-white dark:bg-black/40 border border-black/10 dark:border-white/10 h-10 rounded-lg text-center text-xs font-black outline-none focus:border-neon-green/50 text-gray-900 dark:text-white"
                                                                                             placeholder="0"
                                                                                         />
                                                                                     ) : (
@@ -3072,7 +3072,7 @@ const ProposalGenerator = () => {
                                                                                                 newItems[idx][col.key] = e.target.value;
                                                                                                 setItems(newItems);
                                                                                             }}
-                                                                                            className="w-full bg-black/40 border border-white/10 h-10 px-4 rounded-lg text-xs font-bold outline-none focus:border-neon-green/50 text-white placeholder:text-gray-700"
+                                                                                            className="w-full bg-white dark:bg-black/40 border border-black/10 dark:border-white/10 h-10 px-4 rounded-lg text-xs font-bold outline-none focus:border-neon-green/50 text-gray-900 dark:text-white placeholder:text-gray-700"
                                                                                             placeholder={`${col.label}...`}
                                                                                         />
                                                                                     )}
@@ -3092,7 +3092,7 @@ const ProposalGenerator = () => {
                                 )}
                                 {activeTab === '6' && (
                                      <div className="flex flex-col gap-8">
-                                         <div className="grid grid-cols-2 gap-4 bg-zinc-900/20 p-6 border border-white/5 rounded-[2rem]">
+                                         <div className="grid grid-cols-2 gap-4 bg-gray-100 dark:bg-zinc-900/20 p-6 border border-black/10 dark:border-white/5 rounded-[2rem]">
                                              <Input label="Section Title" value={formData.commercialsTitle ?? 'COMMERCIAL TERMS'} onChange={(e) => setFormData({ ...formData, commercialsTitle: e.target.value })} placeholder="COMMERCIAL TERMS" />
                                              <Input label="Section Subtitle" value={formData.commercialsSub ?? 'SETTLEMENT & SIGN-OFF'} onChange={(e) => setFormData({ ...formData, commercialsSub: e.target.value })} placeholder="SETTLEMENT & SIGN-OFF" />
                                          </div>
@@ -3128,10 +3128,10 @@ const ProposalGenerator = () => {
                                              }
                                          `}</style>
                                          {/* Row 1: Commercial Matrix & Terms (Financial Center) */}
-                                         <div className="p-4 md:p-8 lg:p-10 bg-zinc-900/40 border border-white/5 rounded-[3rem] space-y-10 relative overflow-hidden">
+                                         <div className="p-4 md:p-8 lg:p-10 bg-gray-100 dark:bg-zinc-900/40 border border-black/10 dark:border-white/5 rounded-[3rem] space-y-10 relative overflow-hidden">
                                              <div className="flex items-center justify-between">
                                                  <div className="space-y-1">
-                                                      <h3 className="text-2xl font-black uppercase tracking-tighter italic text-white">Commercial Center.</h3>
+                                                      <h3 className="text-2xl font-black uppercase tracking-tighter italic text-gray-900 dark:text-white">Commercial Center.</h3>
                                                       <p className="text-[10px] font-bold text-neon-green uppercase tracking-[0.3em]">Financial Matrix & Settlement</p>
                                                  </div>
                                                  <div className="p-3 bg-neon-green/10 rounded-2xl border border-neon-green/20">
@@ -3143,13 +3143,13 @@ const ProposalGenerator = () => {
                                                   {/* Row 1: Taxation & Advance side by side */}
                                                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6 font-sans">
                                                        {/* Taxation (GST) Card */}
-                                                       <div className="relative overflow-hidden bg-gradient-to-br from-zinc-900/90 via-zinc-950/95 to-zinc-900/90 border border-white/10 hover:border-neon-green/20 rounded-3xl p-4 h-56 flex flex-col justify-between transition-all duration-300 shadow-[0_12px_40px_rgba(0,0,0,0.5)] group/card">
+                                                       <div className="relative overflow-hidden bg-gradient-to-br from-zinc-900/90 via-zinc-950/95 to-zinc-900/90 border border-black/10 dark:border-white/10 hover:border-neon-green/20 rounded-3xl p-4 h-56 flex flex-col justify-between transition-all duration-300 shadow-[0_12px_40px_rgba(0,0,0,0.5)] group/card">
                                                            {/* Glow effect on hover */}
-                                                           <div className="absolute -top-12 -left-12 w-24 h-24 bg-neon-green/5 blur-2xl group-hover/card:bg-neon-green/10 transition-all rounded-full pointer-events-none" />
+                                                           <div className="absolute -top-12 -left-12 w-24 h-24 bg-neon-green/5 blur-2xl group-hover/card:bg-emerald-500 dark:card:bg-neon-green/10 transition-all rounded-full pointer-events-none" />
                                                            
                                                            <div className="flex items-center gap-2 z-10">
-                                                               <div className="w-8 h-8 rounded-xl bg-white/[0.03] border border-white/10 flex items-center justify-center group-hover/card:border-neon-green/20 group-hover/card:bg-neon-green/5 transition-all">
-                                                                   <span className="text-xs font-black text-gray-400 group-hover/card:text-neon-green transition-colors font-mono">%</span>
+                                                               <div className="w-8 h-8 rounded-xl bg-white/[0.03] border border-black/10 dark:border-white/10 flex items-center justify-center group-hover/card:border-emerald-500 dark:card:border-neon-green/20 group-hover/card:bg-emerald-500 dark:card:bg-neon-green/5 transition-all">
+                                                                   <span className="text-xs font-black text-gray-600 dark:text-gray-400 group-hover/card:text-emerald-600 dark:card:text-neon-green transition-colors font-mono">%</span>
                                                                </div>
                                                                <div className="flex-1">
                                                                    <div className="flex items-center gap-1.5">
@@ -3164,14 +3164,14 @@ const ProposalGenerator = () => {
                                                            </div>
 
                                                            <div className="flex flex-col gap-2 z-10 w-full">
-                                                               <div className="flex items-center justify-between bg-black/40 border border-white/5 rounded-xl px-3 py-1.5">
-                                                                   <span className="text-[9px] font-black text-gray-400 uppercase tracking-wider">GST Active</span>
+                                                               <div className="flex items-center justify-between bg-white dark:bg-black/40 border border-black/10 dark:border-white/5 rounded-xl px-3 py-1.5">
+                                                                   <span className="text-[9px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-wider">GST Active</span>
                                                                    <button 
                                                                        type="button"
                                                                        onClick={() => setFormData({...formData, showGst: !formData.showGst})} 
                                                                        className={cn(
                                                                            "relative w-9 h-5 rounded-full transition-all duration-300 ease-in-out flex items-center px-0.5 border shrink-0 shadow-inner",
-                                                                           formData.showGst ? "bg-neon-green/20 border-neon-green/40 shadow-[0_0_8px_rgba(57,255,20,0.2)]" : "bg-zinc-950 border-white/10"
+                                                                           formData.showGst ? "bg-neon-green/20 border-neon-green/40 shadow-[0_0_8px_rgba(57,255,20,0.2)]" : "bg-gray-100 dark:bg-zinc-950 border-black/10 dark:border-white/10"
                                                                        )}
                                                                    >
                                                                        <div className={cn(
@@ -3183,7 +3183,7 @@ const ProposalGenerator = () => {
 
                                                                {formData.showGst ? (
                                                                    <div className="space-y-1.5">
-                                                                       <div className="flex items-center justify-between bg-black/50 border border-white/5 rounded-xl px-3 py-1 focus-within:border-neon-green/30">
+                                                                       <div className="flex items-center justify-between bg-white dark:bg-black/50 border border-black/10 dark:border-white/5 rounded-xl px-3 py-1 focus-within:border-emerald-500 dark:focus-within:border-neon-green/30">
                                                                            <span className="text-[8px] font-black text-gray-500 uppercase">Rate (%)</span>
                                                                            <input 
                                                                                type="number" 
@@ -3205,7 +3205,7 @@ const ProposalGenerator = () => {
                                                                                        "flex-1 py-1 rounded-lg text-[9px] font-mono font-bold transition-all border",
                                                                                        formData.gstRate === rate 
                                                                                            ? "bg-neon-green text-black border-neon-green font-black shadow-[0_0_10px_rgba(57,255,20,0.2)]" 
-                                                                                           : "bg-white/5 border-white/5 text-gray-400 hover:text-white"
+                                                                                           : "bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/5 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
                                                                                    )}
                                                                                >
                                                                                    {rate}%
@@ -3214,7 +3214,7 @@ const ProposalGenerator = () => {
                                                                        </div>
                                                                    </div>
                                                                ) : (
-                                                                   <div className="w-full h-[58px] relative bg-black/40 rounded-xl border border-dashed border-white/5 flex items-center justify-center gap-1.5 overflow-hidden transition-all duration-300 group-hover/card:border-white/10">
+                                                                   <div className="w-full h-[58px] relative bg-white dark:bg-black/40 rounded-xl border border-dashed border-black/10 dark:border-white/5 flex items-center justify-center gap-1.5 overflow-hidden transition-all duration-300 group-hover/card:border-black/10 dark:card:border-white/10">
                                                                        <div className="absolute inset-0 bg-[radial-gradient(rgba(255,255,255,0.02)_1px,transparent_1px)] [background-size:8px_8px] pointer-events-none" />
                                                                        <Lock size={11} className="text-gray-600" />
                                                                        <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Tax Exempt</span>
@@ -3224,13 +3224,13 @@ const ProposalGenerator = () => {
                                                        </div>
 
                                                        {/* Advance Request Card */}
-                                                       <div className="relative overflow-hidden bg-gradient-to-br from-zinc-900/90 via-zinc-950/95 to-zinc-900/90 border border-white/10 hover:border-neon-green/20 rounded-3xl p-4 h-56 flex flex-col justify-between transition-all duration-300 shadow-[0_12px_40px_rgba(0,0,0,0.5)] group/card">
+                                                       <div className="relative overflow-hidden bg-gradient-to-br from-zinc-900/90 via-zinc-950/95 to-zinc-900/90 border border-black/10 dark:border-white/10 hover:border-neon-green/20 rounded-3xl p-4 h-56 flex flex-col justify-between transition-all duration-300 shadow-[0_12px_40px_rgba(0,0,0,0.5)] group/card">
                                                            {/* Glow effect on hover */}
-                                                           <div className="absolute -top-12 -left-12 w-24 h-24 bg-neon-green/5 blur-2xl group-hover/card:bg-neon-green/10 transition-all rounded-full pointer-events-none" />
+                                                           <div className="absolute -top-12 -left-12 w-24 h-24 bg-neon-green/5 blur-2xl group-hover/card:bg-emerald-500 dark:card:bg-neon-green/10 transition-all rounded-full pointer-events-none" />
                                                            
                                                            <div className="flex items-center gap-2 z-10">
-                                                               <div className="w-8 h-8 rounded-xl bg-white/[0.03] border border-white/10 flex items-center justify-center group-hover/card:border-neon-green/20 group-hover/card:bg-neon-green/5 transition-all">
-                                                                   <Zap size={14} className="text-gray-400 group-hover/card:text-neon-green transition-colors" />
+                                                               <div className="w-8 h-8 rounded-xl bg-white/[0.03] border border-black/10 dark:border-white/10 flex items-center justify-center group-hover/card:border-emerald-500 dark:card:border-neon-green/20 group-hover/card:bg-emerald-500 dark:card:bg-neon-green/5 transition-all">
+                                                                   <Zap size={14} className="text-gray-600 dark:text-gray-400 group-hover/card:text-emerald-600 dark:card:text-neon-green transition-colors" />
                                                                </div>
                                                                <div className="flex-1">
                                                                    <div className="flex items-center gap-1.5">
@@ -3245,8 +3245,8 @@ const ProposalGenerator = () => {
                                                            </div>
 
                                                            <div className="flex flex-col gap-2 z-10 w-full">
-                                                               <div className="flex items-center justify-between bg-black/40 border border-white/5 rounded-xl px-3 py-1.5">
-                                                                   <span className="text-[9px] font-black text-gray-400 uppercase tracking-wider">Retainer</span>
+                                                               <div className="flex items-center justify-between bg-white dark:bg-black/40 border border-black/10 dark:border-white/5 rounded-xl px-3 py-1.5">
+                                                                   <span className="text-[9px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-wider">Retainer</span>
                                                                    <span className="text-[9px] font-black text-neon-green bg-neon-green/10 border border-neon-green/20 px-2 py-0.5 rounded-lg select-none font-mono tracking-widest">
                                                                        {formData.advanceRequested}%
                                                                    </span>
@@ -3275,7 +3275,7 @@ const ProposalGenerator = () => {
                                                                                    "flex-1 py-1 rounded-lg text-[9px] font-mono font-bold transition-all border",
                                                                                    formData.advanceRequested === pct 
                                                                                        ? "bg-neon-green text-black border-neon-green font-black shadow-[0_0_10px_rgba(57,255,20,0.2)]" 
-                                                                                       : "bg-white/5 border-white/5 text-gray-400 hover:text-white"
+                                                                                       : "bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/5 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
                                                                                )}
                                                                            >
                                                                                {pct}%
@@ -3287,13 +3287,13 @@ const ProposalGenerator = () => {
                                                        </div>
 
                                                         {/* Visibility Card */}
-                                                         <div className="relative overflow-hidden bg-gradient-to-br from-zinc-900/90 via-zinc-950/95 to-zinc-900/90 border border-white/10 hover:border-neon-green/20 rounded-3xl p-4 h-72 flex flex-col justify-between transition-all duration-300 shadow-[0_12px_40px_rgba(0,0,0,0.5)] group/card">
+                                                         <div className="relative overflow-hidden bg-gradient-to-br from-zinc-900/90 via-zinc-950/95 to-zinc-900/90 border border-black/10 dark:border-white/10 hover:border-neon-green/20 rounded-3xl p-4 h-72 flex flex-col justify-between transition-all duration-300 shadow-[0_12px_40px_rgba(0,0,0,0.5)] group/card">
                                                              {/* Glow effect on hover */}
-                                                             <div className="absolute -top-12 -left-12 w-24 h-24 bg-neon-green/5 blur-2xl group-hover/card:bg-neon-green/10 transition-all rounded-full pointer-events-none" />
+                                                             <div className="absolute -top-12 -left-12 w-24 h-24 bg-neon-green/5 blur-2xl group-hover/card:bg-emerald-500 dark:card:bg-neon-green/10 transition-all rounded-full pointer-events-none" />
                                                              
                                                              <div className="flex items-center gap-2 z-10">
-                                                                 <div className="w-8 h-8 rounded-xl bg-white/[0.03] border border-white/10 flex items-center justify-center group-hover/card:border-neon-green/20 group-hover/card:bg-neon-green/5 transition-all">
-                                                                     <EyeOff size={14} className="text-gray-400 group-hover/card:text-neon-green transition-colors" />
+                                                                 <div className="w-8 h-8 rounded-xl bg-white/[0.03] border border-black/10 dark:border-white/10 flex items-center justify-center group-hover/card:border-emerald-500 dark:card:border-neon-green/20 group-hover/card:bg-emerald-500 dark:card:bg-neon-green/5 transition-all">
+                                                                     <EyeOff size={14} className="text-gray-600 dark:text-gray-400 group-hover/card:text-emerald-600 dark:card:text-neon-green transition-colors" />
                                                                  </div>
                                                                  <div className="flex-1">
                                                                      <div className="flex items-center gap-1.5">
@@ -3308,14 +3308,14 @@ const ProposalGenerator = () => {
                                                              </div>
 
                                                              <div className="flex flex-col gap-2.5 z-10 w-full">
-                                                                 <div className="flex items-center justify-between bg-black/40 border border-white/5 rounded-xl px-3 py-1.5">
-                                                                     <span className="text-[9px] font-black text-gray-400 uppercase tracking-wider">Hide Totals</span>
+                                                                 <div className="flex items-center justify-between bg-white dark:bg-black/40 border border-black/10 dark:border-white/5 rounded-xl px-3 py-1.5">
+                                                                     <span className="text-[9px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-wider">Hide Totals</span>
                                                                      <button 
                                                                          type="button"
                                                                          onClick={() => setFormData({...formData, hideTotalColumn: !formData.hideTotalColumn})} 
                                                                          className={cn(
                                                                              "relative w-9 h-5 rounded-full transition-all duration-300 ease-in-out flex items-center px-0.5 border shrink-0 shadow-inner",
-                                                                             formData.hideTotalColumn ? "bg-neon-green/20 border-neon-green/40 shadow-[0_0_8px_rgba(57,255,20,0.2)]" : "bg-zinc-950 border-white/10"
+                                                                             formData.hideTotalColumn ? "bg-neon-green/20 border-neon-green/40 shadow-[0_0_8px_rgba(57,255,20,0.2)]" : "bg-gray-100 dark:bg-zinc-950 border-black/10 dark:border-white/10"
                                                                          )}
                                                                      >
                                                                          <div className={cn(
@@ -3324,14 +3324,14 @@ const ProposalGenerator = () => {
                                                                          )} />
                                                                      </button>
                                                                  </div>
-                                                                 <div className="flex items-center justify-between bg-black/40 border border-white/5 rounded-xl px-3 py-1.5">
-                                                                     <span className="text-[9px] font-black text-gray-400 uppercase tracking-wider">Hide Settlement</span>
+                                                                 <div className="flex items-center justify-between bg-white dark:bg-black/40 border border-black/10 dark:border-white/5 rounded-xl px-3 py-1.5">
+                                                                     <span className="text-[9px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-wider">Hide Settlement</span>
                                                                      <button 
                                                                          type="button"
                                                                          onClick={() => setFormData({...formData, showPaymentDetails: formData.showPaymentDetails === false ? true : false})} 
                                                                          className={cn(
                                                                              "relative w-9 h-5 rounded-full transition-all duration-300 ease-in-out flex items-center px-0.5 border shrink-0 shadow-inner",
-                                                                             formData.showPaymentDetails === false ? "bg-neon-green/20 border-neon-green/40 shadow-[0_0_8px_rgba(57,255,20,0.2)]" : "bg-zinc-950 border-white/10"
+                                                                             formData.showPaymentDetails === false ? "bg-neon-green/20 border-neon-green/40 shadow-[0_0_8px_rgba(57,255,20,0.2)]" : "bg-gray-100 dark:bg-zinc-950 border-black/10 dark:border-white/10"
                                                                          )}
                                                                      >
                                                                          <div className={cn(
@@ -3348,14 +3348,14 @@ const ProposalGenerator = () => {
                                                   </div>
 
                                                   {/* Row 2: Live Valuation Summary */}
-                                                  <div className="relative overflow-hidden bg-gradient-to-br from-zinc-900/90 via-zinc-950/95 to-zinc-900/90 border border-white/10 hover:border-neon-green/20 rounded-3xl p-6 md:p-8 flex flex-col gap-6 transition-all duration-300 shadow-[0_12px_40px_rgba(0,0,0,0.5)] group/card w-full min-w-0">
+                                                  <div className="relative overflow-hidden bg-gradient-to-br from-zinc-900/90 via-zinc-950/95 to-zinc-900/90 border border-black/10 dark:border-white/10 hover:border-neon-green/20 rounded-3xl p-6 md:p-8 flex flex-col gap-6 transition-all duration-300 shadow-[0_12px_40px_rgba(0,0,0,0.5)] group/card w-full min-w-0">
                                                             {/* Glow */}
-                                                            <div className="absolute -top-12 -left-12 w-24 h-24 bg-neon-green/5 blur-2xl group-hover/card:bg-neon-green/10 transition-all rounded-full pointer-events-none" />
+                                                            <div className="absolute -top-12 -left-12 w-24 h-24 bg-neon-green/5 blur-2xl group-hover/card:bg-emerald-500 dark:card:bg-neon-green/10 transition-all rounded-full pointer-events-none" />
 
                                                             {/* Header */}
-                                                            <div className="flex items-center gap-2.5 z-10 border-b border-white/5 pb-4">
-                                                                <div className="w-10 h-10 rounded-2xl bg-white/[0.03] border border-white/10 flex items-center justify-center group-hover/card:border-neon-green/20 group-hover/card:bg-neon-green/5 transition-all shrink-0">
-                                                                    <CreditCard size={18} className="text-gray-400 group-hover/card:text-neon-green transition-colors" />
+                                                            <div className="flex items-center gap-2.5 z-10 border-b border-black/10 dark:border-white/5 pb-4">
+                                                                <div className="w-10 h-10 rounded-2xl bg-white/[0.03] border border-black/10 dark:border-white/10 flex items-center justify-center group-hover/card:border-emerald-500 dark:card:border-neon-green/20 group-hover/card:bg-emerald-500 dark:card:bg-neon-green/5 transition-all shrink-0">
+                                                                    <CreditCard size={18} className="text-gray-600 dark:text-gray-400 group-hover/card:text-emerald-600 dark:card:text-neon-green transition-colors" />
                                                                 </div>
                                                                 <div className="min-w-0">
                                                                     <p className="text-xs font-black text-neon-green uppercase tracking-widest leading-none">Summary</p>
@@ -3376,22 +3376,22 @@ const ProposalGenerator = () => {
                                                                         
                                                                         <div className="space-y-3">
                                                                             {/* Subtotal */}
-                                                                            <div className="flex justify-between items-baseline py-2.5 border-b border-white/5">
-                                                                                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Subtotal</span>
-                                                                                <span className="font-mono text-sm font-black text-white">₹{subtotal.toLocaleString()}</span>
+                                                                            <div className="flex justify-between items-baseline py-2.5 border-b border-black/10 dark:border-white/5">
+                                                                                <span className="text-[10px] font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Subtotal</span>
+                                                                                <span className="font-mono text-sm font-black text-gray-900 dark:text-white">₹{subtotal.toLocaleString()}</span>
                                                                             </div>
 
                                                                             {/* GST */}
                                                                             {formData.showGst ? (
-                                                                                <div className="flex justify-between items-baseline py-2.5 border-b border-white/5">
-                                                                                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
+                                                                                <div className="flex justify-between items-baseline py-2.5 border-b border-black/10 dark:border-white/5">
+                                                                                    <span className="text-[10px] font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
                                                                                         GST ({formData.gstRate}%)
                                                                                         {hasOverride && <span className="text-amber-400 text-[8px] font-bold uppercase tracking-wider">› override</span>}
                                                                                     </span>
-                                                                                    <span className="font-mono text-sm font-black text-white">₹{gstAmount.toLocaleString()}</span>
+                                                                                    <span className="font-mono text-sm font-black text-gray-900 dark:text-white">₹{gstAmount.toLocaleString()}</span>
                                                                                 </div>
                                                                             ) : (
-                                                                                <div className="flex justify-between items-baseline py-2.5 border-b border-white/5 opacity-40">
+                                                                                <div className="flex justify-between items-baseline py-2.5 border-b border-black/10 dark:border-white/5 opacity-40">
                                                                                     <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">GST (Exempt)</span>
                                                                                     <span className="font-mono text-sm font-black text-gray-500">₹0</span>
                                                                                 </div>
@@ -3410,7 +3410,7 @@ const ProposalGenerator = () => {
                                                                         <span className="text-[8px] text-gray-500 uppercase mt-0.5">Final payable amount</span>
                                                                     </div>
                                                                     
-                                                                    <div className="relative overflow-hidden bg-black/60 border border-white/10 hover:border-neon-green/30 rounded-2xl px-2.5 py-4 sm:px-4 sm:py-5 flex flex-col justify-between min-h-[120px] transition-all duration-300 shadow-[inset_0_2px_10px_rgba(0,0,0,0.8)] group/estimate">
+                                                                    <div className="relative overflow-hidden bg-white dark:bg-black/60 border border-black/10 dark:border-white/10 hover:border-neon-green/30 rounded-2xl px-2.5 py-4 sm:px-4 sm:py-5 flex flex-col justify-between min-h-[120px] transition-all duration-300 shadow-[inset_0_2px_10px_rgba(0,0,0,0.8)] group/estimate">
                                                                         <div className="absolute inset-0 bg-[radial-gradient(rgba(57,255,20,0.015)_1px,transparent_1px)] [background-size:8px_8px] pointer-events-none" />
                                                                         
                                                                         <div className="flex justify-between items-center z-10">
@@ -3446,7 +3446,7 @@ const ProposalGenerator = () => {
                                                                         </div>
 
                                                                         {hasOverride && (
-                                                                            <div className="mt-3 pt-2 border-t border-white/5 flex justify-between items-center text-[8px] text-gray-500 z-10 uppercase tracking-wider">
+                                                                            <div className="mt-3 pt-2 border-t border-black/10 dark:border-white/5 flex justify-between items-center text-[8px] text-gray-500 z-10 uppercase tracking-wider">
                                                                                 <span>Auto-Calc</span>
                                                                                 <span className="font-mono line-through">₹{computedTotal.toLocaleString()}</span>
                                                                             </div>
@@ -3477,7 +3477,7 @@ const ProposalGenerator = () => {
                                                                                                 "px-2.5 py-1 rounded-xl text-[8px] font-black transition-all border whitespace-nowrap uppercase tracking-wider",
                                                                                                 totalSrcCol === c.key
                                                                                                     ? 'bg-neon-green text-black border-neon-green shadow-[0_0_8px_rgba(57,255,20,0.3)]'
-                                                                                                    : 'bg-white/5 border-white/5 text-gray-400 hover:text-white'
+                                                                                                    : 'bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/5 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
                                                                                             )}
                                                                                         >
                                                                                             {c.label}
@@ -3530,7 +3530,7 @@ const ProposalGenerator = () => {
                                                                             <button
                                                                                 type="button"
                                                                                 onClick={() => setFormData({ ...formData, totalOverride: subtotal })}
-                                                                                className="w-full flex items-center justify-center gap-1.5 py-2 bg-white/5 border border-white/10 hover:border-white/20 text-gray-400 hover:text-white text-[8px] font-black uppercase rounded-xl transition-all tracking-wider"
+                                                                                className="w-full flex items-center justify-center gap-1.5 py-2 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 hover:border-black/20 dark:hover:border-white/20 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-[8px] font-black uppercase rounded-xl transition-all tracking-wider"
                                                                             >
                                                                                 <Pencil size={8} className="text-gray-500" />
                                                                                 <span>Activate Override</span>
@@ -3554,7 +3554,7 @@ const ProposalGenerator = () => {
                                                                   accentColor="neon-green"
                                                                   className={cn(isHidden('terms') && 'opacity-30')}
                                                               />
-                                                              <button type="button" disabled={isHidden('terms')} onClick={(e) => handleRefineClick('terms', 'Settlement Terms', formData.terms, e)} className="absolute right-4 top-12 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-zinc-950 border border-white/10 text-neon-green hover:text-white rounded-xl hover:scale-105 z-[70] disabled:opacity-0" title="Refine with AI"><Sparkles size={14} className="animate-pulse" /></button>
+                                                              <button type="button" disabled={isHidden('terms')} onClick={(e) => handleRefineClick('terms', 'Settlement Terms', formData.terms, e)} className="absolute right-4 top-12 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-gray-100 dark:bg-zinc-950 border border-black/10 dark:border-white/10 text-neon-green hover:text-gray-900 dark:hover:text-white rounded-xl hover:scale-105 z-[70] disabled:opacity-0" title="Refine with AI"><Sparkles size={14} className="animate-pulse" /></button>
                                                           </div>
                                                       </div>
                                                       
@@ -3580,7 +3580,7 @@ const ProposalGenerator = () => {
                                                                   value={formData.paymentDetails || ''} 
                                                                   onChange={e => setFormData({...formData, paymentDetails: e.target.value})} 
                                                                   disabled={formData.showPaymentDetails === false}
-                                                                  className="w-full bg-black/60 border border-white/10 p-6 rounded-[2rem] font-mono font-bold text-xs text-white outline-none focus:border-neon-green/40 transition-all min-h-[120px]" 
+                                                                  className="w-full bg-white dark:bg-black/60 border border-black/10 dark:border-white/10 p-6 rounded-[2rem] font-mono font-bold text-xs text-gray-900 dark:text-white outline-none focus:border-neon-green/40 transition-all min-h-[120px]" 
                                                                   placeholder="Account Name, Number, IFSC, UPI, etc..." 
                                                               />
                                                           </div>
@@ -3588,7 +3588,7 @@ const ProposalGenerator = () => {
                                                   </div>
                                              </div>
                                          </div>
-                                         <div className="border border-white/5 rounded-[3rem] overflow-hidden bg-white/[0.01]">
+                                         <div className="border border-black/10 dark:border-white/5 rounded-[3rem] overflow-hidden bg-white/[0.01]">
                                              {/* Collapsible Header */}
                                              <div 
                                                  className="flex items-center justify-between p-4 md:p-8 bg-white/[0.02] cursor-pointer hover:bg-white/[0.04] transition-all"
@@ -3600,14 +3600,14 @@ const ProposalGenerator = () => {
                                                      </div>
                                                      <div className="space-y-1">
                                                          <p className="text-[10px] font-black text-neon-green uppercase tracking-[0.4em]">Authorization</p>
-                                                         <h3 className="text-2xl font-black uppercase tracking-tighter italic text-white leading-none">Signatures & Seals.</h3>
+                                                         <h3 className="text-2xl font-black uppercase tracking-tighter italic text-gray-900 dark:text-white leading-none">Signatures & Seals.</h3>
                                                      </div>
                                                  </div>
                                                  <div className="flex items-center gap-4" onClick={e => e.stopPropagation()}>
                                                      <VisibilityToggle field="signatures" />
                                                      <button 
                                                          onClick={() => setIsSignaturesCollapsed(!isSignaturesCollapsed)}
-                                                         className="p-2 text-gray-400 hover:text-white transition-colors"
+                                                         className="p-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
                                                      >
                                                          <span className="text-[10px] font-black uppercase tracking-widest">{isSignaturesCollapsed ? 'Expand +' : 'Collapse -'}</span>
                                                      </button>
@@ -3617,7 +3617,7 @@ const ProposalGenerator = () => {
                                              {/* Collapsible Content */}
                                              <div className={cn(
                                                  "transition-all duration-500 overflow-hidden",
-                                                 isSignaturesCollapsed ? "max-h-0 opacity-0" : "max-h-[2000px] opacity-100 border-t border-white/5"
+                                                 isSignaturesCollapsed ? "max-h-0 opacity-0" : "max-h-[2000px] opacity-100 border-t border-black/10 dark:border-white/5"
                                              )}>
                                                   <div className="p-4 md:p-8 lg:p-10 space-y-10">
                                                       {/* Sub-toggles: Official Seal and Digital Sign */}
@@ -3628,8 +3628,8 @@ const ProposalGenerator = () => {
                                                               className={cn(
                                                                   "h-20 w-full rounded-[1.8rem] border transition-all duration-500 group/btn relative overflow-hidden flex items-center px-6 gap-5",
                                                                   formData.showSeal 
-                                                                      ? "bg-zinc-950/60 text-neon-green border-neon-green/30 shadow-[0_0_20px_rgba(57,255,20,0.1)]" 
-                                                                      : "bg-white/[0.02] text-gray-500 border-white/5 hover:border-white/10 hover:bg-white/[0.04]"
+                                                                      ? "bg-gray-100 dark:bg-zinc-950/60 text-neon-green border-neon-green/30 shadow-[0_0_20px_rgba(57,255,20,0.1)]" 
+                                                                      : "bg-white/[0.02] text-gray-500 border-black/10 dark:border-white/5 hover:border-black/10 dark:hover:border-white/10 hover:bg-white/[0.04]"
                                                               )}
                                                           >
                                                               {formData.showSeal && (
@@ -3640,13 +3640,13 @@ const ProposalGenerator = () => {
                                                               )}
                                                               <div className={cn(
                                                                   "w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-500 shrink-0",
-                                                                  formData.showSeal ? "bg-neon-green/10 border border-neon-green/20" : "bg-white/5 border border-white/5"
+                                                                  formData.showSeal ? "bg-neon-green/10 border border-neon-green/20" : "bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/5"
                                                               )}>
                                                                   <Stamp size={22} className={cn("transition-transform duration-500 group-hover/btn:rotate-12", formData.showSeal ? "text-neon-green" : "text-gray-500")} />
                                                               </div>
                                                               <div className="text-left">
                                                                   <p className={cn("text-[8px] font-black uppercase tracking-[0.2em] mb-0.5", formData.showSeal ? "text-neon-green/50" : "text-gray-600")}>Protocol</p>
-                                                                  <p className={cn("text-[11px] font-black uppercase tracking-widest", formData.showSeal ? "text-white" : "text-gray-400")}>Official Seal</p>
+                                                                  <p className={cn("text-[11px] font-black uppercase tracking-widest", formData.showSeal ? "text-gray-900 dark:text-white" : "text-gray-600 dark:text-gray-400")}>Official Seal</p>
                                                               </div>
                                                           </button>
 
@@ -3656,8 +3656,8 @@ const ProposalGenerator = () => {
                                                               className={cn(
                                                                   "h-20 w-full rounded-[1.8rem] border transition-all duration-500 group/btn relative overflow-hidden flex items-center px-6 gap-5",
                                                                   formData.showSignatures 
-                                                                      ? "bg-zinc-950/60 text-neon-green border-neon-green/30 shadow-[0_0_20px_rgba(57,255,20,0.1)]" 
-                                                                      : "bg-white/[0.02] text-gray-500 border-white/5 hover:border-white/10 hover:bg-white/[0.04]"
+                                                                      ? "bg-gray-100 dark:bg-zinc-950/60 text-neon-green border-neon-green/30 shadow-[0_0_20px_rgba(57,255,20,0.1)]" 
+                                                                      : "bg-white/[0.02] text-gray-500 border-black/10 dark:border-white/5 hover:border-black/10 dark:hover:border-white/10 hover:bg-white/[0.04]"
                                                               )}
                                                           >
                                                               {formData.showSignatures && (
@@ -3668,27 +3668,27 @@ const ProposalGenerator = () => {
                                                               )}
                                                               <div className={cn(
                                                                   "w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-500 shrink-0",
-                                                                  formData.showSignatures ? "bg-neon-green/10 border border-neon-green/20" : "bg-white/5 border border-white/5"
+                                                                  formData.showSignatures ? "bg-neon-green/10 border border-neon-green/20" : "bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/5"
                                                               )}>
                                                                   <PenTool size={22} className={cn("transition-transform duration-500 group-hover/btn:rotate-12", formData.showSignatures ? "text-neon-green" : "text-gray-500")} />
                                                               </div>
                                                               <div className="text-left">
                                                                   <p className={cn("text-[8px] font-black uppercase tracking-[0.2em] mb-0.5", formData.showSignatures ? "text-neon-green/50" : "text-gray-600")}>Protocol</p>
-                                                                  <p className={cn("text-[11px] font-black uppercase tracking-widest", formData.showSignatures ? "text-white" : "text-gray-400")}>Digital Signatures</p>
+                                                                  <p className={cn("text-[11px] font-black uppercase tracking-widest", formData.showSignatures ? "text-gray-900 dark:text-white" : "text-gray-600 dark:text-gray-400")}>Digital Signatures</p>
                                                               </div>
                                                           </button>
                                                       </div>
 
                                                       {/* Signatory Identity Form */}
-                                                      <div className="p-8 bg-white/[0.01] border border-white/5 rounded-[2rem] hover:border-white/10 transition-colors">
+                                                      <div className="p-8 bg-white/[0.01] border border-black/10 dark:border-white/5 rounded-[2rem] hover:border-black/10 dark:hover:border-white/10 transition-colors">
                                                           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                                              <div className="relative bg-black/60 border border-white/5 focus-within:border-neon-green/30 focus-within:shadow-[0_0_15px_rgba(57,255,20,0.03)] rounded-[1.2rem] px-5 pt-6 pb-2.5 transition-all duration-300">
+                                                              <div className="relative bg-white dark:bg-black/60 border border-black/10 dark:border-white/5 focus-within:border-emerald-500 dark:focus-within:border-neon-green/30 focus-within:shadow-[0_0_15px_rgba(57,255,20,0.03)] rounded-[1.2rem] px-5 pt-6 pb-2.5 transition-all duration-300">
                                                                   <span className="absolute top-2.5 left-5 text-[8px] font-black text-gray-500 uppercase tracking-[0.25em] pointer-events-none">Authorized Representative</span>
-                                                                  <input value={formData.senderName} onChange={e => setFormData({...formData, senderName: e.target.value})} placeholder="Full Legal Name" className="w-full bg-transparent border-none text-sm font-black text-white outline-none p-0 pt-0.5 transition-all placeholder:text-zinc-800 caret-neon-green" />
+                                                                  <input value={formData.senderName} onChange={e => setFormData({...formData, senderName: e.target.value})} placeholder="Full Legal Name" className="w-full bg-transparent border-none text-sm font-black text-gray-900 dark:text-white outline-none p-0 pt-0.5 transition-all placeholder:text-zinc-800 caret-neon-green" />
                                                               </div>
-                                                              <div className="relative bg-black/60 border border-white/5 focus-within:border-neon-green/30 focus-within:shadow-[0_0_15px_rgba(57,255,20,0.03)] rounded-[1.2rem] px-5 pt-6 pb-2.5 transition-all duration-300">
+                                                              <div className="relative bg-white dark:bg-black/60 border border-black/10 dark:border-white/5 focus-within:border-emerald-500 dark:focus-within:border-neon-green/30 focus-within:shadow-[0_0_15px_rgba(57,255,20,0.03)] rounded-[1.2rem] px-5 pt-6 pb-2.5 transition-all duration-300">
                                                                   <span className="absolute top-2.5 left-5 text-[8px] font-black text-gray-500 uppercase tracking-[0.25em] pointer-events-none">Designation</span>
-                                                                  <input value={formData.senderDesignation} onChange={e => setFormData({...formData, senderDesignation: e.target.value})} placeholder="e.g. Director of Operations" className="w-full bg-transparent border-none text-sm font-black text-white outline-none p-0 pt-0.5 transition-all placeholder:text-zinc-800 caret-neon-green" />
+                                                                  <input value={formData.senderDesignation} onChange={e => setFormData({...formData, senderDesignation: e.target.value})} placeholder="e.g. Director of Operations" className="w-full bg-transparent border-none text-sm font-black text-gray-900 dark:text-white outline-none p-0 pt-0.5 transition-all placeholder:text-zinc-800 caret-neon-green" />
                                                               </div>
                                                           </div>
                                                       </div>
@@ -3696,14 +3696,14 @@ const ProposalGenerator = () => {
                                                       {/* Pad & Seals */}
                                                       <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
                                                           {/* Signature Pad */}
-                                                          <div className="p-4 md:p-8 bg-zinc-900/40 border border-white/5 rounded-[2.5rem] relative overflow-hidden group">
+                                                          <div className="p-4 md:p-8 bg-gray-100 dark:bg-zinc-900/40 border border-black/10 dark:border-white/5 rounded-[2.5rem] relative overflow-hidden group">
                                                               <div className="flex items-center justify-between mb-6">
-                                                                  <h4 className="text-lg font-black text-white uppercase tracking-tighter italic">Signature Capture.</h4>
+                                                                  <h4 className="text-lg font-black text-gray-900 dark:text-white uppercase tracking-tighter italic">Signature Capture.</h4>
                                                                   {formData.providerSignature && (
                                                                       <button onClick={() => setFormData({...formData, providerSignature: null})} className="text-[9px] font-black text-red-500 uppercase tracking-widest hover:underline">Clear Pad</button>
                                                                   )}
                                                               </div>
-                                                              <div onClick={() => setIsSignatureModalOpen(true)} className="h-48 bg-black/80 rounded-[2rem] border border-white/5 flex items-center justify-center cursor-pointer hover:border-neon-green/40 transition-all relative overflow-hidden group/pad">
+                                                              <div onClick={() => setIsSignatureModalOpen(true)} className="h-48 bg-white dark:bg-black/80 rounded-[2rem] border border-black/10 dark:border-white/5 flex items-center justify-center cursor-pointer hover:border-neon-green/40 transition-all relative overflow-hidden group/pad">
                                                                   {/* Dotted Grid Background */}
                                                                   <div className="absolute inset-0 bg-[radial-gradient(rgba(57,255,20,0.05)_1px,transparent_1px)] [background-size:12px_12px] pointer-events-none" />
                                                                   {/* Corner Brackets */}
@@ -3715,7 +3715,7 @@ const ProposalGenerator = () => {
                                                                   {formData.providerSignature ? (
                                                                       <img src={formData.providerSignature} className="max-h-[70%] object-contain invert brightness-200 drop-shadow-[0_0_30px_rgba(57,255,20,0.4)] relative z-10" alt="Signature" />
                                                                   ) : (
-                                                                      <div className="flex flex-col items-center gap-3 text-white/5 group-hover/pad:text-neon-green/30 transition-all relative z-10">
+                                                                      <div className="flex flex-col items-center gap-3 text-gray-900 dark:text-white/5 group-hover/pad:text-emerald-600 dark:pad:text-neon-green/30 transition-all relative z-10">
                                                                           <PenTool size={24} />
                                                                           <p className="text-[9px] font-black uppercase tracking-[0.5em]">Execute Pad</p>
                                                                       </div>
@@ -3724,7 +3724,7 @@ const ProposalGenerator = () => {
                                                           </div>
 
                                                           {/* Integrity Hub */}
-                                                          <div className="p-4 md:p-8 bg-white/[0.01] border border-white/5 rounded-[2.5rem] flex flex-col items-center justify-center gap-6 relative overflow-hidden group">
+                                                          <div className="p-4 md:p-8 bg-white/[0.01] border border-black/10 dark:border-white/5 rounded-[2.5rem] flex flex-col items-center justify-center gap-6 relative overflow-hidden group">
                                                               <div className="absolute inset-0 bg-neon-green/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
                                                               <div className="relative shrink-0 flex items-center justify-center w-40 h-40">
                                                                   <div className="relative z-10 scale-90">
@@ -3742,14 +3742,14 @@ const ProposalGenerator = () => {
                                                                       <p className="text-[9px] font-black text-neon-green uppercase tracking-[0.4em] drop-shadow-[0_0_8px_rgba(57,255,20,0.2)]">Execution Reference</p>
                                                                       <p className="text-[7px] font-bold text-gray-600 uppercase tracking-widest">AUTHENTICATION DECRYPT HASH</p>
                                                                   </div>
-                                                                  <div className="relative group/ref bg-black/60 px-6 py-3.5 rounded-[1.5rem] border border-white/5 group-hover:border-neon-green/30 transition-all duration-300 inline-block w-full max-w-[260px]">
+                                                                  <div className="relative group/ref bg-white dark:bg-black/60 px-6 py-3.5 rounded-[1.5rem] border border-black/10 dark:border-white/5 group-hover:border-neon-green/30 transition-all duration-300 inline-block w-full max-w-[260px]">
                                                                       {/* Tech Corner Accents */}
                                                                       <div className="absolute top-2 left-2 w-1.5 h-1.5 border-t border-l border-neon-green/30" />
                                                                       <div className="absolute top-2 right-2 w-1.5 h-1.5 border-t border-r border-neon-green/30" />
                                                                       <div className="absolute bottom-2 left-2 w-1.5 h-1.5 border-b border-l border-neon-green/30" />
                                                                       <div className="absolute bottom-2 right-2 w-1.5 h-1.5 border-b border-r border-neon-green/30" />
                                                                       
-                                                                      <h2 className="text-md lg:text-lg font-black text-white tracking-[0.08em] italic uppercase font-mono">
+                                                                      <h2 className="text-md lg:text-lg font-black text-gray-900 dark:text-white tracking-[0.08em] italic uppercase font-mono">
                                                                           NB-<span className="text-neon-green">{formData.campaignNumber || 'PROPOSAL-26'}</span>
                                                                       </h2>
                                                                       <div className="flex items-center justify-center gap-1 mt-1.5 text-[6.5px] font-black text-gray-500 uppercase tracking-widest">
@@ -3769,7 +3769,7 @@ const ProposalGenerator = () => {
                                     <div className="space-y-8">
                                         <div className="flex justify-between items-center px-4">
                                             <div className="space-y-1">
-                                                <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Custom Proposal Pages</h4>
+                                                <h4 className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest">Custom Proposal Pages</h4>
                                                 <p className="text-xs text-gray-600">Add blank pages with custom titles and content to your document.</p>
                                             </div>
                                             <button 
@@ -3792,7 +3792,7 @@ const ProposalGenerator = () => {
                                                 <button 
                                                     disabled={isHidden('customPages')}
                                                     onClick={duplicateAllCustomPages}
-                                                    className="flex items-center gap-2 px-4 py-2.5 bg-white/5 text-white border border-white/10 rounded-xl font-black uppercase text-[9px] tracking-widest hover:bg-white/10 transition-all disabled:opacity-30"
+                                                    className="flex items-center gap-2 px-4 py-2.5 bg-black/5 dark:bg-white/5 text-gray-900 dark:text-white border border-black/10 dark:border-white/10 rounded-xl font-black uppercase text-[9px] tracking-widest hover:bg-black/10 dark:hover:bg-white/10 transition-all disabled:opacity-30"
                                                 >
                                                     <Copy size={14} /> Duplicate All Pages
                                                 </button>
@@ -3801,14 +3801,14 @@ const ProposalGenerator = () => {
 
                                         <div className={cn("space-y-8 transition-opacity", isHidden('customPages') && "opacity-30")}>
                                             {!(formData.customPages && formData.customPages.length > 0) ? (
-                                                <div className="p-16 border-2 border-dashed border-white/5 rounded-[2.5rem] text-center text-gray-600 space-y-4">
+                                                <div className="p-16 border-2 border-dashed border-black/10 dark:border-white/5 rounded-[2.5rem] text-center text-gray-600 space-y-4">
                                                     <FileText size={36} className="mx-auto text-gray-700" />
                                                     <p className="text-[10px] font-black uppercase tracking-widest">No custom pages added yet</p>
                                                 </div>
                                             ) : (
                                                 <div className="space-y-8">
                                                     {(formData.customPages || []).map((cp, idx) => (
-                                                        <div key={cp.id} className="p-4 md:p-8 bg-zinc-900/40 border border-white/5 rounded-[2.5rem] space-y-6 relative group">
+                                                        <div key={cp.id} className="p-4 md:p-8 bg-gray-100 dark:bg-zinc-900/40 border border-black/10 dark:border-white/5 rounded-[2.5rem] space-y-6 relative group">
                                                             <div className="flex items-center justify-between">
                                                                 <span className="text-[10px] font-black text-neon-green/60 uppercase tracking-widest bg-neon-green/5 border border-neon-green/10 px-3 py-1 rounded-full">Custom Page {String(idx + 1).padStart(2, '0')}</span>
                                                                 <div className="flex items-center gap-1.5">
@@ -3869,7 +3869,7 @@ const ProposalGenerator = () => {
                                                                             setFormData({ ...formData, customPages: updated });
                                                                         }} 
                                                                         placeholder="Page Title (e.g. Terms of Service, Project Timelines)" 
-                                                                        className="h-14 w-full bg-black/60 border border-white/5 focus:border-neon-green/50 rounded-xl text-sm font-black px-5 text-white outline-none transition-all placeholder:text-gray-800" 
+                                                                        className="h-14 w-full bg-white dark:bg-black/60 border border-black/10 dark:border-white/5 focus:border-neon-green/50 rounded-xl text-sm font-black px-5 text-gray-900 dark:text-white outline-none transition-all placeholder:text-gray-800" 
                                                                     />
                                                                 </div>
                                                                 <div className="space-y-2">
@@ -3883,7 +3883,7 @@ const ProposalGenerator = () => {
                                                                             setFormData({ ...formData, customPages: updated });
                                                                         }} 
                                                                         placeholder="Page Subtitle (e.g. Additional Specifications)" 
-                                                                        className="h-14 w-full bg-black/60 border border-white/5 focus:border-neon-green/50 rounded-xl text-sm font-black px-5 text-white outline-none transition-all placeholder:text-gray-800" 
+                                                                        className="h-14 w-full bg-white dark:bg-black/60 border border-black/10 dark:border-white/5 focus:border-neon-green/50 rounded-xl text-sm font-black px-5 text-gray-900 dark:text-white outline-none transition-all placeholder:text-gray-800" 
                                                                     />
                                                                 </div>
                                                                 <div className="space-y-2">
@@ -3897,15 +3897,15 @@ const ProposalGenerator = () => {
                                                                                 updated[idx] = { ...cp, insertAfter: e.target.value };
                                                                                 setFormData({ ...formData, customPages: updated });
                                                                             }}
-                                                                            className="h-14 w-full bg-black/60 border border-white/5 focus:border-neon-green/50 rounded-xl text-xs font-black px-5 text-white outline-none transition-all appearance-none cursor-pointer"
+                                                                            className="h-14 w-full bg-white dark:bg-black/60 border border-black/10 dark:border-white/5 focus:border-neon-green/50 rounded-xl text-xs font-black px-5 text-gray-900 dark:text-white outline-none transition-all appearance-none cursor-pointer"
                                                                         >
-                                                                            <option value="default" className="bg-zinc-950">Before Commercials (Default)</option>
-                                                                            <option value="cover" className="bg-zinc-950">After Cover Page</option>
-                                                                            <option value="strategy" className="bg-zinc-950">After Strategic Framework</option>
-                                                                            <option value="scope" className="bg-zinc-950">After Project Scope</option>
-                                                                            <option value="proposal" className="bg-zinc-950">After Deliverables</option>
-                                                                            <option value="table" className="bg-zinc-950">After Resource Table</option>
-                                                                            <option value="commercials" className="bg-zinc-950">After Commercials (Last Page)</option>
+                                                                            <option value="default" className="bg-gray-100 dark:bg-zinc-950">Before Commercials (Default)</option>
+                                                                            <option value="cover" className="bg-gray-100 dark:bg-zinc-950">After Cover Page</option>
+                                                                            <option value="strategy" className="bg-gray-100 dark:bg-zinc-950">After Strategic Framework</option>
+                                                                            <option value="scope" className="bg-gray-100 dark:bg-zinc-950">After Project Scope</option>
+                                                                            <option value="proposal" className="bg-gray-100 dark:bg-zinc-950">After Deliverables</option>
+                                                                            <option value="table" className="bg-gray-100 dark:bg-zinc-950">After Resource Table</option>
+                                                                            <option value="commercials" className="bg-gray-100 dark:bg-zinc-950">After Commercials (Last Page)</option>
                                                                         </select>
                                                                         <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">
                                                                             <ChevronDown size={14} />
@@ -3931,7 +3931,7 @@ const ProposalGenerator = () => {
                                                                             type="button" 
                                                                             disabled={isHidden('customPages')} 
                                                                             onClick={(e) => handleRefineClick(`customPages[${idx}].content`, `Custom Page ${idx + 1} Content`, cp.content, e)} 
-                                                                            className="p-2 bg-zinc-950 border border-white/10 text-neon-green hover:text-white rounded-xl hover:scale-105 shadow-lg disabled:opacity-0" 
+                                                                            className="p-2 bg-gray-100 dark:bg-zinc-950 border border-black/10 dark:border-white/10 text-neon-green hover:text-gray-900 dark:hover:text-white rounded-xl hover:scale-105 shadow-lg disabled:opacity-0" 
                                                                             title="Refine with AI"
                                                                         >
                                                                             <Sparkles size={14} className="animate-pulse" />
@@ -3949,19 +3949,19 @@ const ProposalGenerator = () => {
                                     <div className="flex flex-col gap-10">
                                         <div className="flex flex-col md:flex-row gap-8">
                                             {/* Upload Card */}
-                                            <div className="flex-1 bg-zinc-900/30 border border-white/5 p-4 md:p-8 rounded-[2.5rem] flex flex-col justify-between group/card relative overflow-hidden min-h-[300px]">
-                                                <div className="absolute -top-12 -left-12 w-24 h-24 bg-neon-green/5 blur-2xl group-hover/card:bg-neon-green/10 transition-all rounded-full pointer-events-none" />
+                                            <div className="flex-1 bg-gray-100 dark:bg-zinc-900/30 border border-black/10 dark:border-white/5 p-4 md:p-8 rounded-[2.5rem] flex flex-col justify-between group/card relative overflow-hidden min-h-[300px]">
+                                                <div className="absolute -top-12 -left-12 w-24 h-24 bg-neon-green/5 blur-2xl group-hover/card:bg-emerald-500 dark:card:bg-neon-green/10 transition-all rounded-full pointer-events-none" />
                                                 <div className="space-y-4 relative z-10">
                                                     <div className="flex items-center justify-between">
                                                         <div className="space-y-1">
-                                                            <h3 className="text-xl font-black uppercase tracking-tight italic text-white">Upload Documents.</h3>
+                                                            <h3 className="text-xl font-black uppercase tracking-tight italic text-gray-900 dark:text-white">Upload Documents.</h3>
                                                             <p className="text-[9px] font-bold text-neon-green uppercase tracking-wider">Spreadsheets & PDFs</p>
                                                         </div>
                                                         <div className="p-3 bg-neon-green/10 rounded-2xl border border-neon-green/20">
                                                             <Upload size={18} className="text-neon-green" />
                                                         </div>
                                                     </div>
-                                                    <p className="text-[11px] text-gray-400 leading-relaxed font-sans">
+                                                    <p className="text-[11px] text-gray-600 dark:text-gray-400 leading-relaxed font-sans">
                                                         Directly attach supporting spreadsheets (CSV, Excel) or PDFs. These files are stored securely and rendered interactively inside the final proposal.
                                                     </p>
                                                 </div>
@@ -3970,7 +3970,7 @@ const ProposalGenerator = () => {
                                                     <label 
                                                         htmlFor="file-uploader" 
                                                         className={cn(
-                                                            "w-full h-32 border-2 border-dashed border-white/10 hover:border-neon-green/30 rounded-2xl flex flex-col items-center justify-center gap-2 cursor-pointer transition-all hover:bg-neon-green/[0.02] group/upload",
+                                                            "w-full h-32 border-2 border-dashed border-black/10 dark:border-white/10 hover:border-neon-green/30 rounded-2xl flex flex-col items-center justify-center gap-2 cursor-pointer transition-all hover:bg-neon-green/[0.02] group/upload",
                                                             isUploadingFile && "opacity-50 pointer-events-none"
                                                         )}
                                                     >
@@ -3981,8 +3981,8 @@ const ProposalGenerator = () => {
                                                             </>
                                                         ) : (
                                                             <>
-                                                                <Upload className="text-gray-400 group-hover/upload:text-neon-green transition-colors" size={24} />
-                                                                <span className="text-[9px] font-black uppercase tracking-widest text-gray-300">Choose file or drag here</span>
+                                                                <Upload className="text-gray-600 dark:text-gray-400 group-hover/upload:text-emerald-600 dark:upload:text-neon-green transition-colors" size={24} />
+                                                                <span className="text-[9px] font-black uppercase tracking-widest text-gray-700 dark:text-gray-300">Choose file or drag here</span>
                                                                 <span className="text-[8px] font-medium text-gray-500 uppercase">PDF, CSV, XLSX (Max 10MB)</span>
                                                             </>
                                                         )}
@@ -4068,19 +4068,19 @@ const ProposalGenerator = () => {
                                             </div>
 
                                             {/* Link Card */}
-                                            <div className="flex-1 bg-zinc-900/30 border border-white/5 p-4 md:p-8 rounded-[2.5rem] flex flex-col justify-between group/card relative overflow-hidden min-h-[300px]">
-                                                <div className="absolute -top-12 -left-12 w-24 h-24 bg-neon-green/5 blur-2xl group-hover/card:bg-neon-green/10 transition-all rounded-full pointer-events-none" />
+                                            <div className="flex-1 bg-gray-100 dark:bg-zinc-900/30 border border-black/10 dark:border-white/5 p-4 md:p-8 rounded-[2.5rem] flex flex-col justify-between group/card relative overflow-hidden min-h-[300px]">
+                                                <div className="absolute -top-12 -left-12 w-24 h-24 bg-neon-green/5 blur-2xl group-hover/card:bg-emerald-500 dark:card:bg-neon-green/10 transition-all rounded-full pointer-events-none" />
                                                 <div className="space-y-4 relative z-10 w-full">
                                                     <div className="flex items-center justify-between">
                                                         <div className="space-y-1">
-                                                            <h3 className="text-xl font-black uppercase tracking-tight italic text-white">Link Directories.</h3>
+                                                            <h3 className="text-xl font-black uppercase tracking-tight italic text-gray-900 dark:text-white">Link Directories.</h3>
                                                             <p className="text-[9px] font-bold text-neon-green uppercase tracking-wider">External Sheets & Hubs</p>
                                                         </div>
                                                         <div className="p-3 bg-neon-green/10 rounded-2xl border border-neon-green/20">
                                                             <LinkIcon size={18} className="text-neon-green" />
                                                         </div>
                                                     </div>
-                                                    <p className="text-[11px] text-gray-400 leading-relaxed font-sans">
+                                                    <p className="text-[11px] text-gray-600 dark:text-gray-400 leading-relaxed font-sans">
                                                         Attach external Google Sheets, Airtable, Notion dashboards, or web PDF links for active sync.
                                                     </p>
                                                 </div>
@@ -4128,7 +4128,7 @@ const ProposalGenerator = () => {
                                                             setLinkUrl('');
                                                             addToast('Link added successfully', 'success');
                                                         }}
-                                                        className="w-full bg-zinc-950 border border-white/10 text-white hover:bg-neon-green hover:text-black uppercase tracking-widest text-[9px] font-black h-12"
+                                                        className="w-full bg-gray-100 dark:bg-zinc-950 border border-black/10 dark:border-white/10 text-gray-900 dark:text-white hover:bg-neon-green hover:text-black uppercase tracking-widest text-[9px] font-black h-12"
                                                     >
                                                         Link Document
                                                     </Button>
@@ -4141,7 +4141,7 @@ const ProposalGenerator = () => {
                                             <h4 className="text-[10px] font-black text-gray-500 uppercase tracking-widest px-2">Current Attachments ({(formData.attachments || []).length})</h4>
                                             
                                             {(formData.attachments || []).length === 0 ? (
-                                                <div className="p-12 border border-dashed border-white/5 rounded-[2.5rem] bg-zinc-950/20 text-center">
+                                                <div className="p-12 border border-dashed border-black/10 dark:border-white/5 rounded-[2.5rem] bg-gray-100 dark:bg-zinc-950/20 text-center">
                                                     <p className="text-gray-500 text-xs font-bold uppercase tracking-wider">No documents attached yet</p>
                                                     <p className="text-gray-600 text-[10px] font-medium uppercase mt-1">Files or links added will appear here</p>
                                                 </div>
@@ -4152,7 +4152,7 @@ const ProposalGenerator = () => {
                                                         const isPdf = attachment.fileType === 'pdf';
                                                         
                                                         return (
-                                                            <div key={attachment.id || idx} className="p-6 bg-zinc-950/40 border border-white/5 rounded-[2.5rem] flex items-center justify-between group/item hover:border-white/10 transition-all">
+                                                            <div key={attachment.id || idx} className="p-6 bg-gray-100 dark:bg-zinc-950/40 border border-black/10 dark:border-white/5 rounded-[2.5rem] flex items-center justify-between group/item hover:border-black/10 dark:hover:border-white/10 transition-all">
                                                                 <div className="flex items-center gap-4 min-w-0 flex-1">
                                                                     <div className={cn(
                                                                         "w-12 h-12 rounded-2xl flex items-center justify-center border shrink-0",
@@ -4177,7 +4177,7 @@ const ProposalGenerator = () => {
                                                                                 updated[idx] = { ...attachment, name: e.target.value };
                                                                                 setFormData({ ...formData, attachments: updated });
                                                                             }}
-                                                                            className="bg-transparent border-b border-transparent hover:border-white/20 focus:border-neon-green/50 text-xs font-black text-white w-full outline-none transition-all pb-0.5"
+                                                                            className="bg-transparent border-b border-transparent hover:border-black/20 dark:hover:border-white/20 focus:border-neon-green/50 text-xs font-black text-gray-900 dark:text-white w-full outline-none transition-all pb-0.5"
                                                                         />
                                                                         <p className="text-[8px] font-bold text-gray-500 uppercase tracking-widest mt-1 truncate">
                                                                             {attachment.type === 'file' ? 'Uploaded Storage File' : 'External Web URL'} &bull; {attachment.fileType?.toUpperCase()}
@@ -4190,7 +4190,7 @@ const ProposalGenerator = () => {
                                                                         href={attachment.url} 
                                                                         target="_blank" 
                                                                         rel="noopener noreferrer" 
-                                                                        className="p-2 bg-zinc-900 hover:bg-zinc-800 text-gray-400 hover:text-white rounded-xl border border-white/5 transition-colors"
+                                                                        className="p-2 bg-gray-100 dark:bg-zinc-900 hover:bg-zinc-800 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white rounded-xl border border-black/10 dark:border-white/5 transition-colors"
                                                                         title="Open Link"
                                                                     >
                                                                         <Maximize2 size={13} />
@@ -4220,14 +4220,14 @@ const ProposalGenerator = () => {
 
                         {/* Section Navigation Footer */}
                         {activeTab !== 'ai' && (
-                            <div className="mt-20 pt-8 border-t border-white/5 flex items-center justify-between pb-12">
+                            <div className="mt-20 pt-8 border-t border-black/10 dark:border-white/5 flex items-center justify-between pb-12">
                                 <button 
                                     onClick={() => {
                                         const idx = tabs.findIndex(t => t.id === activeTab);
                                         if (idx > 0) handleTabClick(tabs[idx - 1].id);
                                     }}
                                     disabled={activeTab === tabs[0].id}
-                                    className="flex items-center gap-2 px-6 py-3 rounded-xl bg-white/5 text-gray-400 hover:text-white hover:bg-white/10 transition-all disabled:opacity-0 disabled:pointer-events-none"
+                                    className="flex items-center gap-2 px-6 py-3 rounded-xl bg-black/5 dark:bg-white/5 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-black/10 dark:hover:bg-white/10 transition-all disabled:opacity-0 disabled:pointer-events-none"
                                 >
                                     <ChevronLeft size={16} />
                                     <span className="text-[10px] font-black uppercase tracking-widest">Previous</span>
@@ -4241,7 +4241,7 @@ const ProposalGenerator = () => {
                                     className={cn(
                                         "flex items-center gap-2 px-8 py-3 rounded-xl font-black uppercase tracking-widest text-[10px] transition-all",
                                         activeTab === tabs[tabs.length - 1].id 
-                                            ? "bg-white/5 text-gray-500 cursor-not-allowed opacity-50" 
+                                            ? "bg-black/5 dark:bg-white/5 text-gray-500 cursor-not-allowed opacity-50" 
                                             : "bg-neon-green text-black hover:scale-105 shadow-[0_0_20px_rgba(57,255,20,0.2)]"
                                     )}
                                 >
@@ -4257,16 +4257,16 @@ const ProposalGenerator = () => {
 
                 {/* Doc Preview */}
                 <section className={cn(
-                    "lg:static lg:flex fixed inset-0 z-[60] lg:z-0 bg-[#050505] lg:bg-zinc-900/10 flex-col overflow-hidden shrink-0 transition-transform duration-500 lg:translate-x-0",
-                    isExpandedPreview ? "w-full lg:w-full border-l-0" : "w-full lg:w-[400px] 2xl:w-[600px] border-l border-white/5",
+                    "lg:static lg:flex fixed inset-0 z-[60] lg:z-0 bg-white dark:bg-[#050505] lg:bg-gray-100 dark:lg:bg-zinc-900/10 flex-col overflow-hidden shrink-0 transition-transform duration-500 lg:translate-x-0",
+                    isExpandedPreview ? "w-full lg:w-full border-l-0" : "w-full lg:w-[400px] 2xl:w-[600px] border-l border-black/10 dark:border-white/5",
                     showPreviewMobile ? "translate-x-0" : "translate-x-full lg:translate-x-0"
                 )}>
-                    <div className="h-20 lg:h-16 flex items-center justify-between px-8 border-b border-white/5 bg-black/20 shrink-0">
+                    <div className="h-20 lg:h-16 flex items-center justify-between px-8 border-b border-black/10 dark:border-white/5 bg-white dark:bg-black/20 shrink-0">
                         <div className="flex items-center gap-4">
-                            <button onClick={() => setShowPreviewMobile(false)} className="lg:hidden p-3 bg-white/5 rounded-xl border border-white/5"><ArrowLeft size={18} /></button>
+                            <button onClick={() => setShowPreviewMobile(false)} className="lg:hidden p-3 bg-black/5 dark:bg-white/5 rounded-xl border border-black/10 dark:border-white/5"><ArrowLeft size={18} /></button>
                             <button 
                                 onClick={() => setIsExpandedPreview(!isExpandedPreview)} 
-                                className="hidden lg:flex p-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-gray-400 hover:text-white transition-all items-center gap-2 text-[9px] font-black uppercase tracking-wider h-10 px-3"
+                                className="hidden lg:flex p-2 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 border border-black/10 dark:border-white/10 rounded-xl text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all items-center gap-2 text-[9px] font-black uppercase tracking-wider h-10 px-3"
                                 title={isExpandedPreview ? "Exit Fullscreen Preview" : "Fullscreen Preview"}
                             >
                                 {isExpandedPreview ? <Minimize2 size={12} /> : <Maximize2 size={12} />}
@@ -4275,20 +4275,20 @@ const ProposalGenerator = () => {
                             <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Document Live View</p>
                         </div>
                         <div className="flex items-center gap-4">
-                            <div className="flex items-center bg-black/40 rounded-lg p-1 border border-white/5">
-                                <button onClick={() => setUserZoom(Math.max(0.5, userZoom - 0.1))} className="p-1.5 hover:bg-white/5 rounded text-gray-400 transition-colors"><Minus size={12} /></button>
+                            <div className="flex items-center bg-white dark:bg-black/40 rounded-lg p-1 border border-black/10 dark:border-white/5">
+                                <button onClick={() => setUserZoom(Math.max(0.5, userZoom - 0.1))} className="p-1.5 hover:bg-black/5 dark:hover:bg-white/5 rounded text-gray-600 dark:text-gray-400 transition-colors"><Minus size={12} /></button>
                                 <span className="text-[10px] font-black text-gray-500 px-2 min-w-[40px] text-center">{Math.round(userZoom * 100)}%</span>
-                                <button onClick={() => setUserZoom(Math.min(2, userZoom + 0.1))} className="p-1.5 hover:bg-white/5 rounded text-gray-400 transition-colors"><Plus size={12} /></button>
+                                <button onClick={() => setUserZoom(Math.min(2, userZoom + 0.1))} className="p-1.5 hover:bg-black/5 dark:hover:bg-white/5 rounded text-gray-600 dark:text-gray-400 transition-colors"><Plus size={12} /></button>
                             </div>
                             <div className="flex items-center gap-3">
-                                <button onClick={() => setCurrentPreviewPage(Math.max(0, currentPreviewPage - 1))} disabled={currentPreviewPage === 0} className="p-2.5 bg-white/5 rounded-xl disabled:opacity-20 hover:bg-white/10 transition-all"><ChevronLeft size={16} /></button>
+                                <button onClick={() => setCurrentPreviewPage(Math.max(0, currentPreviewPage - 1))} disabled={currentPreviewPage === 0} className="p-2.5 bg-black/5 dark:bg-white/5 rounded-xl disabled:opacity-20 hover:bg-black/10 dark:hover:bg-white/10 transition-all"><ChevronLeft size={16} /></button>
                                 <span className="text-[10px] font-black text-neon-green">{currentPreviewPage + 1} / {paginatedPages.length}</span>
-                                <button onClick={() => setCurrentPreviewPage(Math.min(paginatedPages.length - 1, currentPreviewPage + 1))} disabled={currentPreviewPage === paginatedPages.length - 1} className="p-2.5 bg-white/5 rounded-xl disabled:opacity-20 hover:bg-white/10 transition-all"><ChevronRight size={16} /></button>
+                                <button onClick={() => setCurrentPreviewPage(Math.min(paginatedPages.length - 1, currentPreviewPage + 1))} disabled={currentPreviewPage === paginatedPages.length - 1} className="p-2.5 bg-black/5 dark:bg-white/5 rounded-xl disabled:opacity-20 hover:bg-black/10 dark:hover:bg-white/10 transition-all"><ChevronRight size={16} /></button>
                             </div>
                         </div>
                     </div>
 
-                    <div ref={previewContainerRef} className="flex-1 bg-[#050505] flex flex-col items-center justify-start p-0 overflow-y-auto overflow-x-hidden relative scrollbar-hide">
+                    <div ref={previewContainerRef} className="flex-1 bg-gray-200/70 dark:bg-[#050505] flex flex-col items-center justify-start p-0 overflow-y-auto overflow-x-hidden relative scrollbar-hide">
                         <div style={{ 
                             width: `${794 * previewScale}px`,
                             height: `${1123 * previewScale}px`,
@@ -4313,7 +4313,7 @@ const ProposalGenerator = () => {
                                         <div className="text-right space-y-3">
                                             <div><h4 className={cn("text-[10px] font-black uppercase text-black tracking-[0.4em] mb-0", currentPreviewPage > 0 && "text-[7px]")}>Quotation</h4><p className={cn("text-lg font-black text-black tracking-widest font-mono", currentPreviewPage > 0 && "text-sm")}>{formData.proposalNumber}</p></div>
                                             {currentPreviewPage === 0 && (
-                                                <div className="space-y-0.5"><p className="text-[8px] font-black text-gray-400 uppercase">Issue Date</p><p className="text-[10px] font-black text-black">{new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</p></div>
+                                                <div className="space-y-0.5"><p className="text-[8px] font-black text-gray-600 dark:text-gray-400 uppercase">Issue Date</p><p className="text-[10px] font-black text-black">{new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</p></div>
                                             )}
                                         </div>
                                     </div>
@@ -4323,12 +4323,12 @@ const ProposalGenerator = () => {
                                         {paginatedPages[currentPreviewPage]?.type === 'cover' && (
                                             <div className="h-full flex flex-col justify-start space-y-20 py-8">
                                                 <div className="grid grid-cols-2 gap-10">
-                                                    <div className="space-y-6 min-w-0"><p className="text-[10px] font-black uppercase text-gray-400 tracking-widest border-b border-gray-100 pb-2">Client Entity</p><div className="space-y-2"><h2 className="text-lg font-black uppercase text-black leading-snug break-words">{formData.clientName || 'Valued Partner'}</h2>{!isHidden('clientAddress') && <p className="text-[12px] font-medium text-gray-500 whitespace-pre-line leading-relaxed">{formData.clientAddress || 'Client Address'}</p>}</div></div>
-                                                    <div className="space-y-6 text-right min-w-0"><p className="text-[10px] font-black uppercase text-gray-400 tracking-widest border-b border-gray-100 pb-2">Project Details</p><div className="space-y-2"><h2 className="text-lg font-black uppercase text-black leading-snug italic break-words">{formData.campaignName || 'Project Title'}</h2><p className="text-[12px] font-black text-neon-green bg-black px-3 py-1 inline-block uppercase tracking-widest">Period: {formData.campaignDuration || 'TBD'}</p></div></div>
+                                                    <div className="space-y-6 min-w-0"><p className="text-[10px] font-black uppercase text-gray-600 dark:text-gray-400 tracking-widest border-b border-gray-100 pb-2">Client Entity</p><div className="space-y-2"><h2 className="text-lg font-black uppercase text-black leading-snug break-words">{formData.clientName || 'Valued Partner'}</h2>{!isHidden('clientAddress') && <p className="text-[12px] font-medium text-gray-500 whitespace-pre-line leading-relaxed">{formData.clientAddress || 'Client Address'}</p>}</div></div>
+                                                    <div className="space-y-6 text-right min-w-0"><p className="text-[10px] font-black uppercase text-gray-600 dark:text-gray-400 tracking-widest border-b border-gray-100 pb-2">Project Details</p><div className="space-y-2"><h2 className="text-lg font-black uppercase text-black leading-snug italic break-words">{formData.campaignName || 'Project Title'}</h2><p className="text-[12px] font-black text-neon-green bg-white dark:bg-black px-3 py-1 inline-block uppercase tracking-widest">Period: {formData.campaignDuration || 'TBD'}</p></div></div>
                                                 </div>
                                                 <div className="pt-16 space-y-10">
                                                     <div className="flex items-center gap-4">
-                                                        <div className="w-12 h-1 bg-black" />
+                                                        <div className="w-12 h-1 bg-white dark:bg-black" />
                                                         <p className="text-[11px] font-black uppercase tracking-[0.6em]">Project Overview</p>
                                                     </div>
                                                     {!isHidden('coverDescription') && (
@@ -4337,7 +4337,7 @@ const ProposalGenerator = () => {
                                                         </div>
                                                     )}
                                                 </div>
-                                                <div className="mt-auto grid grid-cols-2 gap-10 pt-10 border-t border-gray-100"><div><p className="text-[9px] font-black text-gray-400 uppercase mb-2">Quote Reference</p><p className="text-[11px] font-black text-black">{formData.proposalNumber}</p></div><div className="text-right"><p className="text-[9px] font-black text-gray-400 uppercase mb-2">Classification</p><p className="text-[11px] font-black text-black italic">Business Proposal</p></div></div>
+                                                <div className="mt-auto grid grid-cols-2 gap-10 pt-10 border-t border-gray-100"><div><p className="text-[9px] font-black text-gray-600 dark:text-gray-400 uppercase mb-2">Quote Reference</p><p className="text-[11px] font-black text-black">{formData.proposalNumber}</p></div><div className="text-right"><p className="text-[9px] font-black text-gray-600 dark:text-gray-400 uppercase mb-2">Classification</p><p className="text-[11px] font-black text-black italic">Business Proposal</p></div></div>
                                             </div>
                                         )}
                                         {paginatedPages[currentPreviewPage]?.type === 'strategy' && (
@@ -4347,7 +4347,7 @@ const ProposalGenerator = () => {
                                                         {formData.strategyTitle ?? 'EXECUTIVE SUMMARY'}
                                                     </h3>
                                                     <div className="w-20 h-1.5 bg-neon-green" />
-                                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">
+                                                    <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-[0.35em] mt-3">
                                                         {formData.strategySub ?? 'STRATEGIC OUTLINE'}
                                                     </p>
                                                 </div>
@@ -4359,7 +4359,7 @@ const ProposalGenerator = () => {
                                                 {paginatedPages[currentPreviewPage]?.primaryGoalText && !isHtmlEmpty(paginatedPages[currentPreviewPage]?.primaryGoalText) && (
                                                     <div className="pt-12">
                                                         <div className="p-12 border-2 border-black rounded-[2.5rem] space-y-6">
-                                                            <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest">Primary Objective</p>
+                                                            <p className="text-[11px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest">Primary Objective</p>
                                                             <div className="text-lg font-black text-black leading-relaxed">{renderContent(paginatedPages[currentPreviewPage]?.primaryGoalText)}</div>
                                                         </div>
                                                     </div>
@@ -4373,7 +4373,7 @@ const ProposalGenerator = () => {
                                                         {formData.scopeTitle ?? 'SCOPE OF WORK'}
                                                     </h3>
                                                     <div className="w-20 h-1.5 bg-neon-green" />
-                                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">
+                                                    <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-[0.35em] mt-3">
                                                         {formData.scopeSub ?? 'RESOURCE DELIVERABLES'}
                                                     </p>
                                                 </div>
@@ -4389,7 +4389,7 @@ const ProposalGenerator = () => {
                                                         {formData.proposalTitle ?? 'DELIVERABLES'}
                                                     </h3>
                                                     <div className="w-20 h-1.5 bg-neon-green" />
-                                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">
+                                                    <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-[0.35em] mt-3">
                                                         {formData.proposalSub ?? 'PROJECT INVENTORY'}
                                                     </p>
                                                 </div>
@@ -4398,10 +4398,10 @@ const ProposalGenerator = () => {
                                                     <div className="space-y-6">
                                                         <table className="w-full text-left border-collapse border border-black">
                                                             <thead>
-                                                                <tr className="bg-black text-[9px] font-black uppercase text-white tracking-[0.3em]">
-                                                                    <th className="p-4 w-12 text-center border-r border-white/20">#</th>
-                                                                    <th className="p-4 border-r border-white/20">Deliverable</th>
-                                                                    <th className="p-4 text-center w-28 border-r border-white/20">Qty / Unit</th>
+                                                                <tr className="bg-white dark:bg-black text-[9px] font-black uppercase text-gray-900 dark:text-white tracking-[0.3em]">
+                                                                    <th className="p-4 w-12 text-center border-r border-black/20 dark:border-white/20">#</th>
+                                                                    <th className="p-4 border-r border-black/20 dark:border-white/20">Deliverable</th>
+                                                                    <th className="p-4 text-center w-28 border-r border-black/20 dark:border-white/20">Qty / Unit</th>
                                                                     <th className="p-4 text-right w-40">Timeline</th>
                                                                 </tr>
                                                             </thead>
@@ -4423,11 +4423,11 @@ const ProposalGenerator = () => {
 
                                                 {paginatedPages[currentPreviewPage]?.clientRequirements?.length > 0 && (
                                                     <div className="pt-8 border-t border-gray-100">
-                                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mb-6">Requirements From Client</p>
+                                                        <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-[0.35em] mb-6">Requirements From Client</p>
                                                         <div className="p-8 border-2 border-gray-200 space-y-0">
                                                             {paginatedPages[currentPreviewPage]?.clientRequirements?.map((r, i) => (
                                                                 <div key={r.id || i} className={cn("flex items-start gap-4 py-4", i > 0 && "border-t border-gray-100")}>
-                                                                    <div className="w-8 h-8 bg-black flex items-center justify-center shrink-0 mt-0.5"><span className="text-[9px] font-black text-white">{String(i + 1).padStart(2, '0')}</span></div>
+                                                                    <div className="w-8 h-8 bg-white dark:bg-black flex items-center justify-center shrink-0 mt-0.5"><span className="text-[9px] font-black text-gray-900 dark:text-white">{String(i + 1).padStart(2, '0')}</span></div>
                                                                     <p className="text-[12px] font-bold text-black leading-relaxed">{r.description}</p>
                                                                 </div>
                                                             ))}
@@ -4443,7 +4443,7 @@ const ProposalGenerator = () => {
                                                         {formData.inventoryTitle ?? 'RESOURCE INVENTORY'}
                                                     </h3>
                                                     <div className="w-20 h-1.5 bg-neon-green" />
-                                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">
+                                                    <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-[0.35em] mt-3">
                                                         {paginatedPages[currentPreviewPage]?.tablePageIdx > 1 
                                                             ? `${formData.inventorySub ?? 'COMMERCIALS BREAKDOWN'} — Part ${paginatedPages[currentPreviewPage]?.tablePageIdx}` 
                                                             : (formData.inventorySub ?? 'COMMERCIALS BREAKDOWN')}
@@ -4451,7 +4451,7 @@ const ProposalGenerator = () => {
                                                 </div>
                                                 <table className="w-full text-left border-collapse border border-black">
                                           <thead>
-                                              <tr className="bg-black text-[9px] font-black uppercase text-white tracking-[0.3em]">
+                                              <tr className="bg-white dark:bg-black text-[9px] font-black uppercase text-gray-900 dark:text-white tracking-[0.3em]">
                                                   {(formData.tableColumns || defaultColumns).map((col, cIdx, arr) => {
                                                       const colType = col.type || (col.key === 'price' ? 'amount' : (col.key === 'qty' ? 'number' : 'text'));
                                                       return (
@@ -4459,7 +4459,7 @@ const ProposalGenerator = () => {
                                                               key={col.key} 
                                                               className={cn(
                                                                   "p-4",
-                                                                  cIdx < arr.length - 1 && "border-r border-white/20",
+                                                                  cIdx < arr.length - 1 && "border-r border-black/20 dark:border-white/20",
                                                                   colType === 'number' && "text-center w-24",
                                                                   colType === 'amount' && "text-right w-48"
                                                               )}
@@ -4509,7 +4509,7 @@ const ProposalGenerator = () => {
                                                         {paginatedPages[currentPreviewPage]?.title ? paginatedPages[currentPreviewPage]?.title?.toUpperCase() : "CUSTOM PAGE"}
                                                     </h3>
                                                     <div className="w-20 h-1.5 bg-neon-green" />
-                                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">
+                                                    <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-[0.35em] mt-3">
                                                         {(formData.customPages?.[paginatedPages[currentPreviewPage]?.pageIndex || 0]?.subtitle || "Additional Specifications").toUpperCase()}
                                                     </p>
                                                 </div>
@@ -4525,7 +4525,7 @@ const ProposalGenerator = () => {
                                                         GENERAL TERMS.
                                                     </h3>
                                                     <div className="w-20 h-1.5 bg-neon-green" />
-                                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">Part {paginatedPages[currentPreviewPage]?.termsPageIdx}</p>
+                                                    <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-[0.35em] mt-3">Part {paginatedPages[currentPreviewPage]?.termsPageIdx}</p>
                                                 </div>
                                                 <div className="text-[12px] font-semibold text-gray-600 leading-relaxed space-y-3">
                                                     {renderContent(paginatedPages[currentPreviewPage]?.termsText)}
@@ -4541,7 +4541,7 @@ const ProposalGenerator = () => {
                                                             {formData.commercialsTitle ?? 'COMMERCIAL TERMS'}
                                                         </h3>
                                                         <div className="w-20 h-1.5 bg-neon-green" />
-                                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">
+                                                        <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-[0.35em] mt-3">
                                                             {formData.commercialsSub ?? 'SETTLEMENT & SIGN-OFF'}
                                                         </p>
                                                     </div>
@@ -4558,7 +4558,7 @@ const ProposalGenerator = () => {
                                                             )}
                                                             {paginatedPages[currentPreviewPage]?.paymentDetailsText && (
                                                                 <div className="p-6 bg-gray-50 border border-gray-150 rounded-2xl space-y-2">
-                                                                    <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Settlement Details</p>
+                                                                    <p className="text-[9px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest">Settlement Details</p>
                                                                     <div className="text-[11px] font-mono font-bold text-black whitespace-pre-line leading-relaxed">{paginatedPages[currentPreviewPage]?.paymentDetailsText}</div>
                                                                 </div>
                                                             )}
@@ -4567,25 +4567,25 @@ const ProposalGenerator = () => {
                                                         <div className="space-y-4">
                                                             <div className="bg-gray-50/50 border border-gray-250/60 rounded-[2rem] p-8 space-y-6">
                                                                 <div className="flex justify-between items-center pb-4 border-b border-gray-200/60">
-                                                                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Subtotal</span>
+                                                                    <span className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest">Subtotal</span>
                                                                     <span className="text-base font-bold text-black font-mono">₹{subtotal.toLocaleString()}</span>
                                                                 </div>
                                                                 {formData.showGst && (
                                                                     <div className="flex justify-between items-center pb-4 border-b border-gray-200/60">
-                                                                        <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">GST ({formData.gstRate}%)</span>
+                                                                        <span className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest">GST ({formData.gstRate}%)</span>
                                                                         <span className="text-base font-bold text-black font-mono">₹{gstAmount.toLocaleString()}</span>
                                                                     </div>
                                                                 )}
-                                                                <div className="p-8 bg-black text-right relative overflow-hidden rounded-[1.5rem] shadow-xl">
-                                                                    <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-3">Total Estimated Cost</p>
-                                                                    <h2 className="text-3xl font-black tracking-widest text-white font-mono leading-none">₹{totalAmount.toLocaleString()}</h2>
+                                                                <div className="p-8 bg-white dark:bg-black text-right relative overflow-hidden rounded-[1.5rem] shadow-xl">
+                                                                    <p className="text-[9px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest mb-3">Total Estimated Cost</p>
+                                                                    <h2 className="text-3xl font-black tracking-widest text-gray-900 dark:text-white font-mono leading-none">₹{totalAmount.toLocaleString()}</h2>
                                                                     <div className="absolute top-0 right-0 w-1.5 h-full bg-neon-green" />
                                                                 </div>
                                                                 {formData.advanceRequested > 0 && (
                                                                     <div className="p-6 bg-neon-green/5 border border-neon-green/20 rounded-[1.5rem] flex justify-between items-center">
                                                                         <div>
                                                                             <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest block">Advance Fee ({formData.advanceRequested}%)</span>
-                                                                            <span className="text-[7px] font-bold text-gray-400 uppercase tracking-wider block">Due upon signature</span>
+                                                                            <span className="text-[7px] font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider block">Due upon signature</span>
                                                                         </div>
                                                                         <span className="text-xl font-black text-black font-mono">₹{(totalAmount * formData.advanceRequested / 100).toLocaleString()}</span>
                                                                     </div>
@@ -4604,29 +4604,29 @@ const ProposalGenerator = () => {
                                                                 <div className="grid grid-cols-2 gap-16">
                                                                     {/* Provider Signature */}
                                                                     <div className="space-y-6">
-                                                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">For {currentLogo.label}</p>
+                                                                        <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest">For {currentLogo.label}</p>
                                                                         <div className="h-32 flex items-center justify-start relative">
                                                                             {formData.providerSignature ? (
                                                                                 <img src={formData.providerSignature} alt="Provider Signature" className="h-full object-contain grayscale" />
                                                                             ) : (
                                                                                 <p className="text-[18px] font-formal italic text-black opacity-40">{formData.senderName || 'Authorized Signatory'}</p>
                                                                             )}
-                                                                            <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-black/10" />
+                                                                            <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-white dark:bg-black/10" />
                                                                         </div>
                                                                         <p className="text-[9px] font-black text-black uppercase tracking-widest">{formData.senderName || 'Authorized Signatory'}</p>
-                                                                        <p className="text-[7px] font-bold text-gray-400 uppercase tracking-widest">{formData.senderDesignation || 'Director of Operations'}</p>
+                                                                        <p className="text-[7px] font-bold text-gray-600 dark:text-gray-400 uppercase tracking-widest">{formData.senderDesignation || 'Director of Operations'}</p>
                                                                     </div>
 
                                                                     {/* Client Signature */}
                                                                     <div className="space-y-6 text-right">
-                                                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">For {formData.clientName || 'Valued Partner'}</p>
+                                                                        <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest">For {formData.clientName || 'Valued Partner'}</p>
                                                                         <div className="h-32 flex items-center justify-end relative">
                                                                             {formData.clientSignature ? (
                                                                                 <img src={formData.clientSignature} alt="Client Signature" className="h-full object-contain grayscale" />
                                                                             ) : (
                                                                                 <p className="text-[18px] font-formal italic text-black opacity-20">Type name to sign</p>
                                                                             )}
-                                                                            <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-black/10" />
+                                                                            <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-white dark:bg-black/10" />
                                                                         </div>
                                                                         <p className="text-[9px] font-black text-black uppercase tracking-widest">Acknowledged & Accepted</p>
                                                                     </div>
@@ -4641,7 +4641,7 @@ const ProposalGenerator = () => {
                                                             formData.showSeal && (
                                                                 <div className="flex flex-col items-center justify-center p-8 border-2 border-dashed border-gray-200 rounded-[20px]">
                                                                     <DocumentSeal className="w-44 h-44" />
-                                                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-4">Official Document Seal</p>
+                                                                    <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest mt-4">Official Document Seal</p>
                                                                 </div>
                                                             )
                                                         )}
@@ -4657,7 +4657,7 @@ const ProposalGenerator = () => {
                                                             APPENDIX / ATTACHMENTS.
                                                         </h3>
                                                         <div className="w-20 h-1.5 bg-neon-green" />
-                                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">
+                                                        <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-[0.35em] mt-3">
                                                             SUPPORTING INSTRUMENTS & DOCUMENTATION
                                                         </p>
                                                     </div>
@@ -4675,7 +4675,7 @@ const ProposalGenerator = () => {
                                                                             <h4 className="text-xs font-black text-black uppercase tracking-wider truncate" title={attachment.name}>
                                                                                 {attachment.name}
                                                                             </h4>
-                                                                            <p className="text-[8px] font-bold text-gray-400 uppercase tracking-widest mt-1">
+                                                                            <p className="text-[8px] font-bold text-gray-600 dark:text-gray-400 uppercase tracking-widest mt-1">
                                                                                 {attachment.type === 'file' ? 'Uploaded Storage File' : 'Linked URL'}
                                                                             </p>
                                                                         </div>
@@ -4694,7 +4694,7 @@ const ProposalGenerator = () => {
                                                                             href={attachment.url} 
                                                                             target="_blank" 
                                                                             rel="noopener noreferrer" 
-                                                                            className="text-[9px] font-black uppercase tracking-widest text-neon-green bg-black hover:bg-zinc-800 transition-colors px-3 py-1.5 rounded-xl inline-block"
+                                                                            className="text-[9px] font-black uppercase tracking-widest text-neon-green bg-white dark:bg-black hover:bg-zinc-800 transition-colors px-3 py-1.5 rounded-xl inline-block"
                                                                         >
                                                                             View Document &rarr;
                                                                         </a>
@@ -4712,7 +4712,7 @@ const ProposalGenerator = () => {
                                         )}
                                         </div>
                                     </div>
-                                    <div className="mt-auto pt-8 pb-10 border-t border-gray-100 flex justify-between items-center text-[9px] font-black text-gray-400 uppercase tracking-[0.4em]">
+                                    <div className="mt-auto pt-8 pb-10 border-t border-gray-100 flex justify-between items-center text-[9px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-[0.4em]">
                                         <p>© NEWBI ENTERTAINMENT & MARKETING LLP</p>
                                         <p className="text-black">Page {currentPreviewPage + 1} of {paginatedPages.length}</p>
                                     </div>
@@ -4737,7 +4737,7 @@ const ProposalGenerator = () => {
                             <div className="text-right space-y-3">
                                 <div><h4 className={cn("text-[10px] font-black uppercase text-black tracking-[0.4em] mb-0", idx > 0 && "text-[7px]")}>Quotation</h4><p className={cn("text-lg font-black text-black tracking-widest font-mono", idx > 0 && "text-sm")}>{formData.proposalNumber}</p></div>
                                 {idx === 0 && (
-                                    <div className="space-y-0.5"><p className="text-[8px] font-black text-gray-400 uppercase">Issue Date</p><p className="text-[10px] font-black text-black">{new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</p></div>
+                                    <div className="space-y-0.5"><p className="text-[8px] font-black text-gray-600 dark:text-gray-400 uppercase">Issue Date</p><p className="text-[10px] font-black text-black">{new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</p></div>
                                 )}
                             </div>
                         </div>
@@ -4747,12 +4747,12 @@ const ProposalGenerator = () => {
                             {page.type === 'cover' && (
                                 <div className="h-full flex flex-col justify-start space-y-20 py-8">
                                     <div className="grid grid-cols-2 gap-10">
-                                        <div className="space-y-6 min-w-0"><p className="text-[10px] font-black uppercase text-gray-400 tracking-widest border-b border-gray-100 pb-2">Client Entity</p><div className="space-y-2"><h2 className="text-lg font-black uppercase text-black leading-snug break-words">{formData.clientName || 'Valued Partner'}</h2>{!isHidden('clientAddress') && <p className="text-[12px] font-medium text-gray-500 whitespace-pre-line leading-relaxed">{formData.clientAddress || 'Client Address'}</p>}</div></div>
-                                        <div className="space-y-6 text-right min-w-0"><p className="text-[10px] font-black uppercase text-gray-400 tracking-widest border-b border-gray-100 pb-2">Project Specification</p><div className="space-y-2"><h2 className="text-lg font-black uppercase text-black leading-snug italic break-words">{formData.campaignName || 'Project Title'}</h2><p className="text-[12px] font-black text-neon-green bg-black px-3 py-1 inline-block uppercase tracking-widest">Duration: {formData.campaignDuration || 'TBD'}</p></div></div>
+                                        <div className="space-y-6 min-w-0"><p className="text-[10px] font-black uppercase text-gray-600 dark:text-gray-400 tracking-widest border-b border-gray-100 pb-2">Client Entity</p><div className="space-y-2"><h2 className="text-lg font-black uppercase text-black leading-snug break-words">{formData.clientName || 'Valued Partner'}</h2>{!isHidden('clientAddress') && <p className="text-[12px] font-medium text-gray-500 whitespace-pre-line leading-relaxed">{formData.clientAddress || 'Client Address'}</p>}</div></div>
+                                        <div className="space-y-6 text-right min-w-0"><p className="text-[10px] font-black uppercase text-gray-600 dark:text-gray-400 tracking-widest border-b border-gray-100 pb-2">Project Specification</p><div className="space-y-2"><h2 className="text-lg font-black uppercase text-black leading-snug italic break-words">{formData.campaignName || 'Project Title'}</h2><p className="text-[12px] font-black text-neon-green bg-white dark:bg-black px-3 py-1 inline-block uppercase tracking-widest">Duration: {formData.campaignDuration || 'TBD'}</p></div></div>
                                     </div>
                                     <div className="pt-16 space-y-10">
                                         <div className="flex items-center gap-4">
-                                            <div className="w-12 h-1 bg-black" />
+                                            <div className="w-12 h-1 bg-white dark:bg-black" />
                                             <p className="text-[11px] font-black uppercase tracking-[0.6em]">Official Strategic Quotation</p>
                                         </div>
                                         {!isHidden('coverDescription') && (
@@ -4761,7 +4761,7 @@ const ProposalGenerator = () => {
                                             </div>
                                         )}
                                     </div>
-                                    <div className="mt-auto grid grid-cols-2 gap-10 pt-10 border-t border-gray-100"><div><p className="text-[9px] font-black text-gray-400 uppercase mb-2">Quote Reference</p><p className="text-[11px] font-black text-black">{formData.proposalNumber}</p></div><div className="text-right"><p className="text-[9px] font-black text-gray-400 uppercase mb-2">Classification</p><p className="text-[11px] font-black text-black italic">Strategic Commercial</p></div></div>
+                                    <div className="mt-auto grid grid-cols-2 gap-10 pt-10 border-t border-gray-100"><div><p className="text-[9px] font-black text-gray-600 dark:text-gray-400 uppercase mb-2">Quote Reference</p><p className="text-[11px] font-black text-black">{formData.proposalNumber}</p></div><div className="text-right"><p className="text-[9px] font-black text-gray-600 dark:text-gray-400 uppercase mb-2">Classification</p><p className="text-[11px] font-black text-black italic">Strategic Commercial</p></div></div>
                                 </div>
                             )}
                             {page.type === 'strategy' && (
@@ -4771,7 +4771,7 @@ const ProposalGenerator = () => {
                                             {formData.strategyTitle ?? 'EXECUTIVE SUMMARY'}
                                         </h3>
                                         <div className="w-20 h-1.5 bg-neon-green" />
-                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">
+                                        <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-[0.35em] mt-3">
                                             {formData.strategySub ?? 'STRATEGIC OUTLINE'}
                                         </p>
                                     </div>
@@ -4783,7 +4783,7 @@ const ProposalGenerator = () => {
                                     {page.primaryGoalText && !isHtmlEmpty(page.primaryGoalText) && (
                                         <div className="pt-12">
                                             <div className="p-12 border-2 border-black rounded-[2.5rem] space-y-6">
-                                                <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest">Primary Objective</p>
+                                                <p className="text-[11px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest">Primary Objective</p>
                                                 <div className="text-lg font-black text-black leading-relaxed">{renderContent(page.primaryGoalText)}</div>
                                             </div>
                                         </div>
@@ -4797,7 +4797,7 @@ const ProposalGenerator = () => {
                                             {formData.scopeTitle ?? 'SCOPE OF WORK'}
                                         </h3>
                                         <div className="w-20 h-1.5 bg-neon-green" />
-                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">
+                                        <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-[0.35em] mt-3">
                                             {formData.scopeSub ?? 'RESOURCE DELIVERABLES'}
                                         </p>
                                     </div>
@@ -4813,7 +4813,7 @@ const ProposalGenerator = () => {
                                             {formData.proposalTitle ?? 'DELIVERABLES'}
                                         </h3>
                                         <div className="w-20 h-1.5 bg-neon-green" />
-                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">
+                                        <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-[0.35em] mt-3">
                                             {formData.proposalSub ?? 'PROJECT INVENTORY'}
                                         </p>
                                     </div>
@@ -4821,10 +4821,10 @@ const ProposalGenerator = () => {
                                         <div className="space-y-6">
                                             <table className="w-full text-left border-collapse border border-black">
                                                 <thead>
-                                                    <tr className="bg-black text-[9px] font-black uppercase text-white tracking-[0.3em]">
-                                                        <th className="p-4 w-12 text-center border-r border-white/20">#</th>
-                                                        <th className="p-4 border-r border-white/20">Deliverable</th>
-                                                        <th className="p-4 text-center w-28 border-r border-white/20">Qty / Unit</th>
+                                                    <tr className="bg-white dark:bg-black text-[9px] font-black uppercase text-gray-900 dark:text-white tracking-[0.3em]">
+                                                        <th className="p-4 w-12 text-center border-r border-black/20 dark:border-white/20">#</th>
+                                                        <th className="p-4 border-r border-black/20 dark:border-white/20">Deliverable</th>
+                                                        <th className="p-4 text-center w-28 border-r border-black/20 dark:border-white/20">Qty / Unit</th>
                                                         <th className="p-4 text-right w-40">Timeline</th>
                                                     </tr>
                                                 </thead>
@@ -4845,11 +4845,11 @@ const ProposalGenerator = () => {
                                     )}
                                     {page.clientRequirements?.length > 0 && (
                                         <div className="pt-8 border-t border-gray-100">
-                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mb-6">Requirements From Client</p>
+                                            <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-[0.35em] mb-6">Requirements From Client</p>
                                             <div className="p-8 border-2 border-gray-200 space-y-0">
                                                 {page.clientRequirements.map((r, i) => (
                                                     <div key={r.id || i} className={cn("flex items-start gap-4 py-4", i > 0 && "border-t border-gray-100")}>
-                                                        <div className="w-8 h-8 bg-black flex items-center justify-center shrink-0 mt-0.5"><span className="text-[9px] font-black text-white">{String(i + 1).padStart(2, '0')}</span></div>
+                                                        <div className="w-8 h-8 bg-white dark:bg-black flex items-center justify-center shrink-0 mt-0.5"><span className="text-[9px] font-black text-gray-900 dark:text-white">{String(i + 1).padStart(2, '0')}</span></div>
                                                         <p className="text-[12px] font-bold text-black leading-relaxed">{r.description}</p>
                                                     </div>
                                                 ))}
@@ -4865,7 +4865,7 @@ const ProposalGenerator = () => {
                                             {formData.inventoryTitle ?? 'RESOURCE INVENTORY'}
                                         </h3>
                                         <div className="w-20 h-1.5 bg-neon-green" />
-                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">
+                                        <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-[0.35em] mt-3">
                                             {page.tablePageIdx > 1 
                                                 ? `${formData.inventorySub ?? 'COMMERCIALS BREAKDOWN'} — Part ${page.tablePageIdx}` 
                                                 : (formData.inventorySub ?? 'COMMERCIALS BREAKDOWN')}
@@ -4873,7 +4873,7 @@ const ProposalGenerator = () => {
                                     </div>
                                     <table className="w-full text-left border-collapse border border-black">
                                           <thead>
-                                              <tr className="bg-black text-[9px] font-black uppercase text-white tracking-[0.3em]">
+                                              <tr className="bg-white dark:bg-black text-[9px] font-black uppercase text-gray-900 dark:text-white tracking-[0.3em]">
                                                   {(formData.tableColumns || defaultColumns).map((col, cIdx, arr) => {
                                                       const colType = col.type || (col.key === 'price' ? 'amount' : (col.key === 'qty' ? 'number' : 'text'));
                                                       return (
@@ -4881,7 +4881,7 @@ const ProposalGenerator = () => {
                                                               key={col.key} 
                                                               className={cn(
                                                                   "p-4",
-                                                                  cIdx < arr.length - 1 && "border-r border-white/20",
+                                                                  cIdx < arr.length - 1 && "border-r border-black/20 dark:border-white/20",
                                                                   colType === 'number' && "text-center w-24",
                                                                   colType === 'amount' && "text-right w-48"
                                                               )}
@@ -4931,7 +4931,7 @@ const ProposalGenerator = () => {
                                             {page.title ? page.title.toUpperCase() : "CUSTOM PAGE"}
                                         </h3>
                                         <div className="w-20 h-1.5 bg-neon-green" />
-                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">
+                                        <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-[0.35em] mt-3">
                                             {(formData.customPages?.[page.pageIndex]?.subtitle || "Additional Specifications").toUpperCase()}
                                         </p>
                                     </div>
@@ -4947,7 +4947,7 @@ const ProposalGenerator = () => {
                                             GENERAL TERMS.
                                         </h3>
                                         <div className="w-20 h-1.5 bg-neon-green" />
-                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">Part {page.termsPageIdx}</p>
+                                        <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-[0.35em] mt-3">Part {page.termsPageIdx}</p>
                                     </div>
                                     <div className="text-[12px] font-semibold text-gray-600 leading-relaxed space-y-3">
                                         {renderContent(page.termsText)}
@@ -4962,7 +4962,7 @@ const ProposalGenerator = () => {
                                                  {formData.commercialsTitle ?? 'COMMERCIAL TERMS'}
                                              </h3>
                                              <div className="w-20 h-1.5 bg-neon-green" />
-                                             <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">
+                                             <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-[0.35em] mt-3">
                                                  {formData.commercialsSub ?? 'SETTLEMENT & SIGN-OFF'}
                                              </p>
                                          </div>
@@ -4979,7 +4979,7 @@ const ProposalGenerator = () => {
                                                  )}
                                                  {page.paymentDetailsText && (
                                                      <div className="p-6 bg-gray-50 border border-gray-150 rounded-2xl space-y-2">
-                                                         <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Settlement Details</p>
+                                                         <p className="text-[9px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest">Settlement Details</p>
                                                          <div className="text-[11px] font-mono font-bold text-black whitespace-pre-line leading-relaxed">{page.paymentDetailsText}</div>
                                                      </div>
                                                  )}
@@ -4988,25 +4988,25 @@ const ProposalGenerator = () => {
                                              <div className="space-y-4">
                                                  <div className="bg-gray-50/50 border border-gray-250/60 rounded-[2rem] p-8 space-y-6">
                                                      <div className="flex justify-between items-center pb-4 border-b border-gray-200/60">
-                                                         <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Subtotal</span>
+                                                         <span className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest">Subtotal</span>
                                                          <span className="text-base font-bold text-black font-mono">₹{subtotal.toLocaleString()}</span>
                                                      </div>
                                                      {formData.showGst && (
                                                          <div className="flex justify-between items-center pb-4 border-b border-gray-200/60">
-                                                             <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">GST ({formData.gstRate}%)</span>
+                                                             <span className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest">GST ({formData.gstRate}%)</span>
                                                              <span className="text-base font-bold text-black font-mono">₹{gstAmount.toLocaleString()}</span>
                                                          </div>
                                                      )}
-                                                     <div className="p-8 bg-black text-right relative overflow-hidden rounded-[1.5rem] shadow-xl">
-                                                         <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-3">Total Estimated Cost</p>
-                                                         <h2 className="text-3xl font-black tracking-widest text-white font-mono leading-none">₹{totalAmount.toLocaleString()}</h2>
+                                                     <div className="p-8 bg-white dark:bg-black text-right relative overflow-hidden rounded-[1.5rem] shadow-xl">
+                                                         <p className="text-[9px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest mb-3">Total Estimated Cost</p>
+                                                         <h2 className="text-3xl font-black tracking-widest text-gray-900 dark:text-white font-mono leading-none">₹{totalAmount.toLocaleString()}</h2>
                                                          <div className="absolute top-0 right-0 w-1.5 h-full bg-neon-green" />
                                                      </div>
                                                      {formData.advanceRequested > 0 && (
                                                          <div className="p-6 bg-neon-green/5 border border-neon-green/20 rounded-[1.5rem] flex justify-between items-center">
                                                              <div>
                                                                  <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest block">Advance Fee ({formData.advanceRequested}%)</span>
-                                                                 <span className="text-[7px] font-bold text-gray-400 uppercase tracking-wider block">Due upon signature</span>
+                                                                 <span className="text-[7px] font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider block">Due upon signature</span>
                                                              </div>
                                                              <span className="text-xl font-black text-black font-mono">₹{(totalAmount * formData.advanceRequested / 100).toLocaleString()}</span>
                                                          </div>
@@ -5025,29 +5025,29 @@ const ProposalGenerator = () => {
                                                     <div className="grid grid-cols-2 gap-20">
                                                         {/* Provider Signature */}
                                                         <div className="space-y-6">
-                                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">For {currentLogo.label}</p>
+                                                            <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest">For {currentLogo.label}</p>
                                                             <div className="h-40 flex items-center justify-start relative">
                                                                 {formData.providerSignature ? (
                                                                     <img src={formData.providerSignature} alt="Provider Signature" className="h-full object-contain grayscale mix-blend-multiply" crossOrigin="anonymous" />
                                                                 ) : (
                                                                     <p className="text-[24px] font-formal italic text-black opacity-40">{formData.senderName || 'Authorized Signatory'}</p>
                                                                 )}
-                                                                <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-black" />
+                                                                <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-white dark:bg-black" />
                                                             </div>
                                                             <p className="text-[11px] font-black text-black uppercase tracking-widest">{formData.senderName || 'Authorized Signatory'}</p>
-                                                            <p className="text-[8px] font-bold text-gray-400 uppercase tracking-widest">{formData.senderDesignation || 'Director of Operations'}</p>
+                                                            <p className="text-[8px] font-bold text-gray-600 dark:text-gray-400 uppercase tracking-widest">{formData.senderDesignation || 'Director of Operations'}</p>
                                                         </div>
 
                                                         {/* Client Signature */}
                                                         <div className="space-y-6 text-right">
-                                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">For {formData.clientName || 'Valued Partner'}</p>
+                                                            <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest">For {formData.clientName || 'Valued Partner'}</p>
                                                             <div className="h-40 flex items-center justify-end relative">
                                                                 {formData.clientSignature ? (
                                                                     <img src={formData.clientSignature} alt="Client Signature" className="h-full object-contain grayscale mix-blend-multiply" crossOrigin="anonymous" />
                                                                 ) : (
                                                                     <p className="text-[24px] font-formal italic text-black opacity-10">Type name to sign</p>
                                                                 )}
-                                                                <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-black" />
+                                                                <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-white dark:bg-black" />
                                                             </div>
                                                             <p className="text-[11px] font-black text-black uppercase tracking-widest">Acknowledged & Accepted</p>
                                                         </div>
@@ -5062,7 +5062,7 @@ const ProposalGenerator = () => {
                                                 formData.showSeal && (
                                                     <div className="flex flex-col items-center justify-center p-8 border-2 border-dashed border-gray-200 rounded-[20px]">
                                                         <DocumentSeal className="w-56 h-56" />
-                                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-4">Official Document Seal</p>
+                                                        <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest mt-4">Official Document Seal</p>
                                                     </div>
                                                 )
                                             )}
@@ -5078,7 +5078,7 @@ const ProposalGenerator = () => {
                                                 APPENDIX / ATTACHMENTS.
                                             </h3>
                                             <div className="w-20 h-1.5 bg-neon-green" />
-                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">
+                                            <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-[0.35em] mt-3">
                                                 SUPPORTING INSTRUMENTS & DOCUMENTATION
                                             </p>
                                         </div>
@@ -5094,7 +5094,7 @@ const ProposalGenerator = () => {
                                                     return (
                                                         <div key={idx} className="w-full relative rounded-2xl overflow-hidden border border-gray-200">
                                                             <img src={attachment.url} alt={attachment.name} className="w-full h-auto object-contain" />
-                                                            <div className="absolute top-4 left-4 bg-black/80 backdrop-blur-md px-4 py-2 rounded-full text-white text-[10px] font-black uppercase tracking-wider">
+                                                            <div className="absolute top-4 left-4 bg-white dark:bg-black/80 backdrop-blur-md px-4 py-2 rounded-full text-gray-900 dark:text-white text-[10px] font-black uppercase tracking-wider">
                                                                 {attachment.name}
                                                             </div>
                                                         </div>
@@ -5105,7 +5105,7 @@ const ProposalGenerator = () => {
                                                     return (
                                                         <div key={idx} className="w-full h-[600px] relative rounded-2xl overflow-hidden border border-gray-200">
                                                             <iframe src={attachment.url} title={attachment.name} className="w-full h-full border-none bg-gray-50" />
-                                                            <div className="absolute top-4 left-4 bg-black/80 backdrop-blur-md px-4 py-2 rounded-full text-white text-[10px] font-black uppercase tracking-wider pointer-events-none">
+                                                            <div className="absolute top-4 left-4 bg-white dark:bg-black/80 backdrop-blur-md px-4 py-2 rounded-full text-gray-900 dark:text-white text-[10px] font-black uppercase tracking-wider pointer-events-none">
                                                                 {attachment.name}
                                                             </div>
                                                         </div>
@@ -5119,13 +5119,13 @@ const ProposalGenerator = () => {
                                                                 <h4 className="text-xs font-black text-black uppercase tracking-wider truncate" title={attachment.name}>
                                                                     {attachment.name}
                                                                 </h4>
-                                                                <p className="text-[8px] font-bold text-gray-400 uppercase tracking-widest mt-1">
+                                                                <p className="text-[8px] font-bold text-gray-600 dark:text-gray-400 uppercase tracking-widest mt-1">
                                                                     {attachment.type === 'file' ? 'Uploaded Storage File' : 'Linked URL'}
                                                                 </p>
                                                             </div>
                                                         </div>
                                                         <div className="flex items-end justify-between mt-4">
-                                                            <a href={attachment.url} target="_blank" rel="noopener noreferrer" className="text-[9px] font-black uppercase tracking-widest text-neon-green bg-black px-3 py-1.5 rounded-xl inline-block">
+                                                            <a href={attachment.url} target="_blank" rel="noopener noreferrer" className="text-[9px] font-black uppercase tracking-widest text-neon-green bg-white dark:bg-black px-3 py-1.5 rounded-xl inline-block">
                                                                 View Document &rarr;
                                                             </a>
                                                             <div className="w-14 h-14 bg-white p-0.5 rounded-lg border border-gray-200 shadow-sm shrink-0">
@@ -5141,7 +5141,7 @@ const ProposalGenerator = () => {
                             )}
                             </div>
                         </div>
-                        <div className="mt-auto pt-8 pb-10 border-t border-gray-100 flex justify-between items-center text-[9px] font-black text-gray-400 uppercase tracking-[0.4em]">
+                        <div className="mt-auto pt-8 pb-10 border-t border-gray-100 flex justify-between items-center text-[9px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-[0.4em]">
                             <p>© NEWBI ENTERTAINMENT & MARKETING LLP</p>
                             <p className="text-black">Page {idx + 1} of {paginatedPages.length}</p>
                         </div>
@@ -5169,7 +5169,7 @@ const ProposalGenerator = () => {
                     className={cn(
                         "w-14 h-14 rounded-full flex items-center justify-center cursor-pointer transition-all duration-300 active:scale-95 relative",
                         isFloatingChatOpen
-                            ? "bg-zinc-900 border border-neon-green/50 text-neon-green shadow-[0_0_25px_rgba(57,255,20,0.3)]"
+                            ? "bg-gray-100 dark:bg-zinc-900 border border-neon-green/50 text-neon-green shadow-[0_0_25px_rgba(57,255,20,0.3)]"
                             : "bg-neon-green/10 text-neon-green hover:bg-neon-green/20 border border-neon-green/30 hover:border-neon-green/60 shadow-[0_0_20px_rgba(57,255,20,0.2)] hover:shadow-[0_0_30px_rgba(57,255,20,0.4)] hover:scale-105"
                     )}
                     title="Open AI Proposal Assistant"
@@ -5192,7 +5192,7 @@ const ProposalGenerator = () => {
             {/* Floating AI Chat Pop-up Overlay (Resizable & Persistent) */}
             {isFloatingChatOpen && (
                 <div 
-                    className="fixed bottom-40 right-4 sm:right-6 lg:bottom-24 lg:right-8 bg-zinc-950/95 backdrop-blur-2xl border border-neon-green/20 rounded-[2.5rem] shadow-[0_20px_60px_rgba(0,0,0,0.85),0_0_30px_rgba(57,255,20,0.1)] overflow-hidden flex flex-col p-4 z-[120] animate-fade-in"
+                    className="fixed bottom-40 right-4 sm:right-6 lg:bottom-24 lg:right-8 bg-gray-100 dark:bg-zinc-950/95 backdrop-blur-2xl border border-neon-green/20 rounded-[2.5rem] shadow-[0_20px_60px_rgba(0,0,0,0.85),0_0_30px_rgba(57,255,20,0.1)] overflow-hidden flex flex-col p-4 z-[120] animate-fade-in"
                     style={{
                         width: `${Math.min(chatPopupSize.width, window.innerWidth - 32)}px`,
                         height: `${Math.min(chatPopupSize.height, window.innerHeight - 100)}px`,

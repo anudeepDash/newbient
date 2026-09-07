@@ -52,7 +52,7 @@ const VerifyPayout = () => {
     // ── Invalid State ──────────────────────────────────────────────
     if (!isValid) {
         return (
-            <div className="min-h-screen bg-[#060807] text-white flex flex-col items-center justify-center p-6 relative overflow-hidden">
+            <div className="min-h-screen bg-gray-50 dark:bg-[#060807] text-gray-900 dark:text-white flex flex-col items-center justify-center p-6 relative overflow-hidden transition-colors duration-300">
                 <style>{`
                     @keyframes pulse-ring {
                         0% { transform: scale(0.95); opacity: 0.4; }
@@ -63,14 +63,14 @@ const VerifyPayout = () => {
                 {/* Background Mesh */}
                 <div className="absolute inset-0 pointer-events-none overflow-hidden">
                     <div className="absolute top-[-30%] left-[-20%] w-[70%] h-[70%] bg-red-500/5 rounded-full blur-[160px]" />
-                    <div className="absolute bottom-[-30%] right-[-20%] w-[70%] h-[70%] bg-zinc-900/30 rounded-full blur-[160px]" />
+                    <div className="absolute bottom-[-30%] right-[-20%] w-[70%] h-[70%] bg-gray-100 dark:bg-zinc-900/30 rounded-full blur-[160px]" />
                 </div>
 
                 <motion.div
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ duration: 0.6, ease: 'easeOut' }}
-                    className="relative z-10 flex flex-col items-center text-center max-w-md bg-zinc-950/60 backdrop-blur-2xl border border-red-500/10 p-8 sm:p-10 rounded-[2.5rem] shadow-2xl"
+                    className="relative z-10 flex flex-col items-center text-center max-w-md bg-white dark:bg-zinc-950/60 backdrop-blur-2xl border border-red-500/20 p-8 sm:p-10 rounded-[2.5rem] shadow-xl dark:shadow-2xl"
                 >
                     <div className="relative mb-6">
                         <div className="absolute inset-0 bg-red-500/20 rounded-full blur-2xl animate-pulse" />
@@ -78,7 +78,7 @@ const VerifyPayout = () => {
                             <ShieldAlert size={36} className="text-red-500" />
                         </div>
                     </div>
-                    <h1 className="text-2xl sm:text-3xl font-black uppercase tracking-tight italic text-white mb-3">
+                    <h1 className="text-2xl sm:text-3xl font-black uppercase tracking-tight italic text-gray-900 dark:text-white mb-3">
                         Verification <span className="text-red-500">Failed</span>
                     </h1>
                     <p className="text-[10px] font-black uppercase tracking-widest text-gray-500 leading-relaxed max-w-xs mb-8">
@@ -86,7 +86,7 @@ const VerifyPayout = () => {
                     </p>
                     <a
                         href="https://newbi.live"
-                        className="px-8 py-4 bg-white/5 rounded-xl text-[10px] font-black uppercase tracking-widest text-gray-400 hover:bg-white/10 hover:text-white transition-all border border-white/5"
+                        className="px-8 py-4 bg-gray-100 dark:bg-white/5 rounded-xl text-[10px] font-black uppercase tracking-widest text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-white/10 hover:text-gray-900 dark:hover:text-white transition-all border border-gray-200 dark:border-white/5"
                     >
                         Go to Newbi.live
                     </a>
@@ -97,7 +97,7 @@ const VerifyPayout = () => {
 
     // ── Valid Verification Card ────────────────────────────────────
     return (
-        <div className="min-h-screen bg-[#050706] text-white flex flex-col items-center justify-center px-4 py-20 sm:py-24 relative overflow-hidden selection:bg-[#39ff14] selection:text-black">
+        <div className="min-h-screen bg-gray-50 dark:bg-[#050706] text-gray-900 dark:text-white flex flex-col items-center justify-center px-4 py-20 sm:py-24 relative overflow-hidden selection:bg-[#39ff14] selection:text-black transition-colors duration-300">
             {/* Custom Animations styles block */}
             <style>{`
                 @keyframes scan {
@@ -146,11 +146,11 @@ const VerifyPayout = () => {
                     initial={{ opacity: 0, x: -30 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
-                    className="w-full max-w-[340px] bg-white/[0.03] backdrop-blur-xl border border-white/10 shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)] rounded-[2.5rem] overflow-hidden relative group shrink-0 flex flex-col p-6 sm:p-8 justify-between shadow-2xl"
+                    className="w-full max-w-[340px] bg-white dark:bg-white/[0.03] backdrop-blur-xl border border-gray-200 dark:border-white/10 shadow-xl dark:shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)] rounded-[2.5rem] overflow-hidden relative group shrink-0 flex flex-col p-6 sm:p-8 justify-between"
                 >
                     {/* Top Header Card */}
-                    <div className="text-center relative pb-6 border-b border-white/10">
-                        <div className="inline-block px-3 py-1 bg-white/5 border border-white/10 rounded-full mb-4">
+                    <div className="text-center relative pb-6 border-b border-gray-200 dark:border-white/10">
+                        <div className="inline-block px-3 py-1 bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-full mb-4">
                             <img 
                                 src="/logo_full.png" 
                                 alt="Newbi Logo" 
@@ -162,48 +162,48 @@ const VerifyPayout = () => {
                         {/* Huge modern amount banner */}
                         <div className="my-3">
                             <span className="text-[10px] font-extrabold text-[#39ff14]/65 align-super mr-0.5">INR</span>
-                            <span className="text-4xl font-black tracking-tighter text-white font-mono drop-shadow-[0_4px_12px_rgba(57,255,20,0.25)]">
+                            <span className="text-4xl font-black tracking-tighter text-gray-900 dark:text-white font-mono drop-shadow-[0_4px_12px_rgba(57,255,20,0.25)]">
                                 {formattedAmount.split('.')[0]}
                             </span>
-                            <span className="text-sm font-bold text-white/60">.{formattedAmount.split('.')[1] || '00'}</span>
+                            <span className="text-sm font-bold text-gray-900 dark:text-white/60">.{formattedAmount.split('.')[1] || '00'}</span>
                         </div>
                         <p className="text-[7px] font-mono text-gray-500 uppercase tracking-widest mt-1">Transaction Ref: {ref.slice(0, 16)}...</p>
                     </div>
 
                     {/* Details Card Body */}
-                    <div className="flex flex-col relative pt-6 space-y-4 text-[10px] uppercase font-bold text-gray-300">
+                    <div className="flex flex-col relative pt-6 space-y-4 text-[10px] uppercase font-bold text-gray-700 dark:text-gray-300">
                         <div className="space-y-4">
-                            <div className="flex justify-between items-end pb-1 border-b border-white/5">
+                            <div className="flex justify-between items-end pb-1 border-b border-gray-200 dark:border-white/5">
                                 <span className="text-gray-500 font-extrabold text-[8px] tracking-wider flex items-center gap-1.5">
                                     <Calendar size={10} className="text-gray-600" /> DATE
                                 </span>
-                                <span className="text-white font-bold font-mono tracking-tight">{verifiedDate}</span>
+                                <span className="text-gray-900 dark:text-white font-bold font-mono tracking-tight">{verifiedDate}</span>
                             </div>
-                            <div className="flex justify-between items-end pb-1 border-b border-white/5">
+                            <div className="flex justify-between items-end pb-1 border-b border-gray-200 dark:border-white/5">
                                 <span className="text-gray-500 font-extrabold text-[8px] tracking-wider flex items-center gap-1.5">
                                     <User size={10} className="text-gray-600" /> PAYEE
                                 </span>
                                 <span className="text-[#39ff14] font-black tracking-wide truncate max-w-[170px]" title={decodeURIComponent(payee)}>{decodeURIComponent(payee)}</span>
                             </div>
-                            <div className="flex justify-between items-end pb-1 border-b border-white/5">
+                            <div className="flex justify-between items-end pb-1 border-b border-gray-200 dark:border-white/5">
                                 <span className="text-gray-500 font-extrabold text-[8px] tracking-wider flex items-center gap-1.5">
                                     <CreditCard size={10} className="text-gray-600" /> METHOD
                                 </span>
-                                <span className="text-white font-bold tracking-wide truncate max-w-[170px]" title={decodeURIComponent(modeParam)}>{decodeURIComponent(modeParam)}</span>
+                                <span className="text-gray-900 dark:text-white font-bold tracking-wide truncate max-w-[170px]" title={decodeURIComponent(modeParam)}>{decodeURIComponent(modeParam)}</span>
                             </div>
-                            <div className="flex justify-between items-end pb-1 border-b border-white/5">
+                            <div className="flex justify-between items-end pb-1 border-b border-gray-200 dark:border-white/5">
                                 <span className="text-gray-500 font-extrabold text-[8px] tracking-wider flex items-center gap-1.5">
                                     <Lock size={10} className="text-gray-600" /> TXN ID
                                 </span>
-                                <span className="text-white font-bold select-all tracking-normal text-right truncate max-w-[170px]" title={ref}>{ref.slice(0, 16)}...</span>
+                                <span className="text-gray-900 dark:text-white font-bold select-all tracking-normal text-right truncate max-w-[170px]" title={ref}>{ref.slice(0, 16)}...</span>
                             </div>
                         </div>
 
                         {/* Audit Verification Log Hash */}
-                        <div className="mt-4 p-3 bg-white/[0.02] border border-white/10 rounded-xl font-mono text-[7px] text-gray-500 space-y-1 leading-normal">
+                        <div className="mt-4 p-3 bg-gray-50 dark:bg-white/[0.02] border border-gray-200 dark:border-white/10 rounded-xl font-mono text-[7px] text-gray-500 space-y-1 leading-normal">
                             <div className="flex justify-between">
                                 <span>BLOCK_MATCH:</span>
-                                <span className="text-gray-400">LEDGER_OK</span>
+                                <span className="text-gray-600 dark:text-gray-400">LEDGER_OK</span>
                             </div>
                             <div className="flex justify-between truncate">
                                 <span>LEDGER_HASH:</span>
@@ -218,7 +218,7 @@ const VerifyPayout = () => {
                     initial={{ opacity: 0, x: 30 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1], delay: 0.15 }}
-                    className="flex-1 w-full max-w-[500px] bg-zinc-950/60 backdrop-blur-2xl border border-white/10 rounded-[2.5rem] p-6 sm:p-8 flex flex-col justify-between shadow-2xl relative overflow-hidden"
+                    className="flex-1 w-full max-w-[500px] bg-white dark:bg-zinc-950/60 backdrop-blur-2xl border border-gray-200 dark:border-white/10 rounded-[2.5rem] p-6 sm:p-8 flex flex-col justify-between shadow-xl dark:shadow-2xl relative overflow-hidden"
                 >
                     {/* Header: Audit Title */}
                     <div className="space-y-4">
@@ -233,7 +233,7 @@ const VerifyPayout = () => {
                         </div>
 
                         <div>
-                            <h2 className="text-2xl sm:text-3xl font-black uppercase tracking-tight italic text-white leading-none">
+                            <h2 className="text-2xl sm:text-3xl font-black uppercase tracking-tight italic text-gray-900 dark:text-white leading-none">
                                 Transaction <span className="text-[#39ff14]">Verified.</span>
                             </h2>
                             <p className="text-[9px] font-black text-gray-500 uppercase tracking-wider mt-1.5">
@@ -260,7 +260,7 @@ const VerifyPayout = () => {
                                         <Check size={10} strokeWidth={3} />
                                     </div>
                                     <div className="space-y-0.5">
-                                        <h4 className="text-[10px] font-black uppercase tracking-widest text-white">{step.title}</h4>
+                                        <h4 className="text-[10px] font-black uppercase tracking-widest text-gray-900 dark:text-white">{step.title}</h4>
                                         <p className="text-[9px] text-gray-500 font-bold uppercase tracking-wider leading-relaxed">{step.desc}</p>
                                     </div>
                                 </motion.div>
@@ -270,33 +270,33 @@ const VerifyPayout = () => {
 
                     {/* Attached Proof Document Pocket */}
                     {proof ? (
-                        <div className="mt-6 border-t border-white/5 pt-6 space-y-4">
+                        <div className="mt-6 border-t border-black/10 dark:border-white/5 pt-6 space-y-4">
                             <div className="flex items-center justify-between">
                                 <span className="text-[8px] font-black uppercase tracking-widest text-gray-500">Audit Documentation</span>
                                 <span className="text-[8px] font-black uppercase tracking-widest text-[#00F0FF]">Payment Proof File</span>
                             </div>
 
                             {isImageProof ? (
-                                <div className="rounded-2xl overflow-hidden border border-white/10 bg-black/50 relative group cursor-pointer aspect-[16/9]">
+                                <div className="rounded-2xl overflow-hidden border border-black/10 dark:border-white/10 bg-white dark:bg-black/50 relative group cursor-pointer aspect-[16/9]">
                                     <img
                                         src={decodeURIComponent(proof)}
                                         alt="Payment proof"
                                         className="w-full h-full object-cover object-top opacity-60 group-hover:opacity-85 transition-all duration-500 group-hover:scale-105"
                                         onError={(e) => { e.target.style.display = 'none'; }}
                                     />
-                                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all duration-300">
+                                    <div className="absolute inset-0 bg-white dark:bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all duration-300">
                                         <div className="w-10 h-10 rounded-full bg-white text-black flex items-center justify-center shadow-lg">
                                             <Eye size={18} />
                                         </div>
                                     </div>
                                 </div>
                             ) : (
-                                <div className="p-5 border border-white/10 rounded-2xl bg-black/40 flex items-center gap-4 group hover:border-[#00F0FF]/30 transition-colors">
+                                <div className="p-5 border border-black/10 dark:border-white/10 rounded-2xl bg-white dark:bg-black/40 flex items-center gap-4 group hover:border-[#00F0FF]/30 transition-colors">
                                     <div className="w-12 h-12 rounded-xl bg-[#00F0FF]/10 border border-[#00F0FF]/20 flex items-center justify-center text-[#00F0FF]">
                                         <FileText size={22} />
                                     </div>
                                     <div className="flex-1 overflow-hidden">
-                                        <h4 className="text-[10px] font-black uppercase text-white truncate">proof_document_{ref.slice(0,6)}.pdf</h4>
+                                        <h4 className="text-[10px] font-black uppercase text-gray-900 dark:text-white truncate">proof_document_{ref.slice(0,6)}.pdf</h4>
                                         <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest mt-0.5">PDF Document • External Link</p>
                                     </div>
                                 </div>
@@ -314,7 +314,7 @@ const VerifyPayout = () => {
                             </a>
                         </div>
                     ) : (
-                        <div className="mt-6 border-t border-white/5 pt-6 text-center py-6">
+                        <div className="mt-6 border-t border-black/10 dark:border-white/5 pt-6 text-center py-6">
                             <p className="text-[9px] font-black uppercase tracking-widest text-gray-500">No external documents attached to this record.</p>
                         </div>
                     )}

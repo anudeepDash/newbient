@@ -36,16 +36,16 @@ const TYPE_CONFIG = {
     google_sheet: { label: 'GOOGLE SHEET', color: 'text-neon-blue', bg: 'bg-neon-blue/10', border: 'border-neon-blue/20', icon: Sheet, pill: 'bg-neon-blue/15 text-neon-blue border-neon-blue/20' },
     google_drive: { label: 'GOOGLE DRIVE', color: 'text-neon-purple', bg: 'bg-neon-purple/10', border: 'border-neon-purple/20', icon: HardDrive, pill: 'bg-neon-purple/15 text-neon-purple border-neon-purple/20' },
     pdf: { label: 'PDF', color: 'text-neon-pink', bg: 'bg-neon-pink/10', border: 'border-neon-pink/20', icon: FileText, pill: 'bg-neon-pink/15 text-neon-pink border-neon-pink/20' },
-    file: { label: 'FILE', color: 'text-gray-400', bg: 'bg-gray-500/10', border: 'border-gray-500/20', icon: File, pill: 'bg-gray-500/15 text-gray-400 border-gray-500/20' },
+    file: { label: 'FILE', color: 'text-gray-600 dark:text-gray-400', bg: 'bg-gray-500/10', border: 'border-gray-500/20', icon: File, pill: 'bg-gray-500/15 text-gray-600 dark:text-gray-400 border-gray-500/20' },
 };
 
 const FILTER_PILLS = [
-    { key: 'all', label: 'ALL', color: 'bg-white/10 text-white border-white/10' },
+    { key: 'all', label: 'ALL', color: 'bg-black/10 dark:bg-white/10 text-gray-900 dark:text-white border-black/10 dark:border-white/10' },
     { key: 'google_doc', label: 'GOOGLE DOCS', color: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/20' },
     { key: 'google_sheet', label: 'SHEETS', color: 'bg-neon-blue/15 text-neon-blue border-neon-blue/20' },
     { key: 'google_drive', label: 'DRIVE', color: 'bg-neon-purple/15 text-neon-purple border-neon-purple/20' },
     { key: 'pdf', label: 'PDFs', color: 'bg-neon-pink/15 text-neon-pink border-neon-pink/20' },
-    { key: 'file', label: 'FILES', color: 'bg-gray-500/15 text-gray-400 border-gray-500/20' },
+    { key: 'file', label: 'FILES', color: 'bg-gray-500/15 text-gray-600 dark:text-gray-400 border-gray-500/20' },
 ];
 
 const detectGoogleDocType = (url) => {
@@ -147,7 +147,7 @@ const DocumentCard = ({ doc, onPreview, onCopyLink, onTogglePublic, onDelete }) 
             <div 
                 onMouseMove={handleMouseMove}
                 className={cn(
-                    "p-6 bg-gradient-to-br from-white/[0.04] to-white/[0.01] hover:from-white/[0.07] hover:to-white/[0.02] backdrop-blur-xl border border-white/10 border-t-white/20 rounded-2xl shadow-[inset_0_1px_1px_rgba(255,255,255,0.15),_0_8px_32px_rgba(0,0,0,0.4)] hover:border-white/20 hover:shadow-[0_20px_40px_rgba(0,0,0,0.65)] transition-all duration-500 flex flex-col justify-between h-[250px] relative overflow-hidden hover:translate-y-[-4px]"
+                    "p-6 bg-gradient-to-br from-gray-900 dark:from-white/[0.04] to-gray-900 dark:to-white/[0.01] hover:from-gray-900 dark:hover:from-white/[0.07] hover:to-gray-900 dark:hover:to-white/[0.02] backdrop-blur-xl border border-black/10 dark:border-white/10 border-t-white/20 rounded-2xl shadow-[inset_0_1px_1px_rgba(255,255,255,0.15),_0_8px_32px_rgba(0,0,0,0.4)] hover:border-black/20 dark:hover:border-white/20 hover:shadow-[0_20px_40px_rgba(0,0,0,0.65)] transition-all duration-500 flex flex-col justify-between h-[250px] relative overflow-hidden hover:translate-y-[-4px]"
                 )}
                 style={{ 
                     background: `radial-gradient(circle at ${mousePos.x}% ${mousePos.y}%, ${glowColor}0D 0%, rgba(255,255,255,0.01) 60%)`
@@ -158,7 +158,7 @@ const DocumentCard = ({ doc, onPreview, onCopyLink, onTogglePublic, onDelete }) 
 
                 {/* Header: Badge + Visibility */}
                 <div className="flex items-center justify-between relative z-10">
-                    <div className={cn("flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[8px] font-black uppercase tracking-[0.2em] bg-white/[0.03] border-white/10 backdrop-blur-md shadow-sm", cfg.pill)}>
+                    <div className={cn("flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[8px] font-black uppercase tracking-[0.2em] bg-white/[0.03] border-black/10 dark:border-white/10 backdrop-blur-md shadow-sm", cfg.pill)}>
                         <Icon size={9} className="animate-pulse" />
                         {cfg.label}
                     </div>
@@ -179,11 +179,11 @@ const DocumentCard = ({ doc, onPreview, onCopyLink, onTogglePublic, onDelete }) 
 
                 {/* Title & Description */}
                 <div className="my-auto relative z-10 space-y-1.5 pt-2">
-                    <h3 className="text-xl font-black font-heading uppercase italic tracking-tight text-white group-hover:text-neon-blue transition-colors duration-300 leading-tight line-clamp-2 drop-shadow-md">
+                    <h3 className="text-xl font-black font-heading uppercase italic tracking-tight text-gray-900 dark:text-white group-hover:text-neon-blue transition-colors duration-300 leading-tight line-clamp-2 drop-shadow-md">
                         {doc.title}
                     </h3>
                     {doc.description ? (
-                        <p className="text-[11px] font-medium text-gray-400 tracking-normal line-clamp-2 leading-relaxed">
+                        <p className="text-[11px] font-medium text-gray-600 dark:text-gray-400 tracking-normal line-clamp-2 leading-relaxed">
                             {doc.description}
                         </p>
                     ) : (
@@ -198,12 +198,12 @@ const DocumentCard = ({ doc, onPreview, onCopyLink, onTogglePublic, onDelete }) 
                     {/* Metadata */}
                     <div className="flex items-center gap-1.5 min-w-0">
                         {doc.fileSize > 0 && (
-                            <span className="text-[8px] font-black text-gray-500 uppercase tracking-[0.2em] px-2 py-1 bg-white/[0.02] border border-white/5 rounded-lg shrink-0">
+                            <span className="text-[8px] font-black text-gray-500 uppercase tracking-[0.2em] px-2 py-1 bg-white/[0.02] border border-black/10 dark:border-white/5 rounded-lg shrink-0">
                                 {formatFileSize(doc.fileSize)}
                             </span>
                         )}
                         {doc.createdAt && (
-                            <span className="flex items-center gap-1 text-[8px] font-black text-gray-500 uppercase tracking-[0.2em] px-2 py-1 bg-white/[0.02] border border-white/5 rounded-lg shrink-0">
+                            <span className="flex items-center gap-1 text-[8px] font-black text-gray-500 uppercase tracking-[0.2em] px-2 py-1 bg-white/[0.02] border border-black/10 dark:border-white/5 rounded-lg shrink-0">
                                 <Calendar size={8} className="text-gray-600" />
                                 {formatDate(doc.createdAt)}
                             </span>
@@ -214,14 +214,14 @@ const DocumentCard = ({ doc, onPreview, onCopyLink, onTogglePublic, onDelete }) 
                     <div className="flex items-center gap-1.5 shrink-0">
                         <button
                             onClick={() => onPreview(doc)}
-                            className="w-9 h-9 rounded-full bg-white/[0.03] border border-white/10 flex items-center justify-center text-gray-400 hover:text-neon-blue hover:border-neon-blue/30 hover:bg-neon-blue/10 hover:scale-110 active:scale-95 hover:shadow-[0_0_15px_rgba(0,240,255,0.35)] transition-all duration-300"
+                            className="w-9 h-9 rounded-full bg-white/[0.03] border border-black/10 dark:border-white/10 flex items-center justify-center text-gray-600 dark:text-gray-400 hover:text-neon-blue hover:border-neon-blue/30 hover:bg-neon-blue/10 hover:scale-110 active:scale-95 hover:shadow-[0_0_15px_rgba(0,240,255,0.35)] transition-all duration-300"
                             title="View Document"
                         >
                             <Eye size={13} />
                         </button>
                         <button
                             onClick={() => onCopyLink(doc)}
-                            className="w-9 h-9 rounded-full bg-white/[0.03] border border-white/10 flex items-center justify-center text-gray-400 hover:text-neon-purple hover:border-neon-purple/30 hover:bg-neon-purple/10 hover:scale-110 active:scale-95 hover:shadow-[0_0_15px_rgba(168,85,247,0.35)] transition-all duration-300"
+                            className="w-9 h-9 rounded-full bg-white/[0.03] border border-black/10 dark:border-white/10 flex items-center justify-center text-gray-600 dark:text-gray-400 hover:text-neon-purple hover:border-neon-purple/30 hover:bg-neon-purple/10 hover:scale-110 active:scale-95 hover:shadow-[0_0_15px_rgba(168,85,247,0.35)] transition-all duration-300"
                             title="Copy Shareable Link"
                         >
                             <Link2 size={13} />
@@ -231,8 +231,8 @@ const DocumentCard = ({ doc, onPreview, onCopyLink, onTogglePublic, onDelete }) 
                             className={cn(
                                 "w-9 h-9 rounded-full border flex items-center justify-center hover:scale-110 active:scale-95 transition-all duration-300",
                                 doc.isPublic
-                                    ? "bg-white/[0.03] border-white/10 text-emerald-400 hover:bg-amber-500/10 hover:border-amber-500/30 hover:text-amber-400 hover:shadow-[0_0_15px_rgba(245,158,11,0.35)]"
-                                    : "bg-white/[0.03] border-white/10 text-amber-400 hover:bg-emerald-500/10 hover:border-emerald-500/30 hover:text-emerald-400 hover:shadow-[0_0_15px_rgba(16,185,129,0.35)]"
+                                    ? "bg-white/[0.03] border-black/10 dark:border-white/10 text-emerald-400 hover:bg-amber-500/10 hover:border-amber-500/30 hover:text-amber-400 hover:shadow-[0_0_15px_rgba(245,158,11,0.35)]"
+                                    : "bg-white/[0.03] border-black/10 dark:border-white/10 text-amber-400 hover:bg-emerald-500/10 hover:border-emerald-500/30 hover:text-emerald-400 hover:shadow-[0_0_15px_rgba(16,185,129,0.35)]"
                             )}
                             title={doc.isPublic ? "Set to Private" : "Set to Public"}
                         >
@@ -240,7 +240,7 @@ const DocumentCard = ({ doc, onPreview, onCopyLink, onTogglePublic, onDelete }) 
                         </button>
                         <button
                             onClick={() => onDelete(doc)}
-                            className="w-9 h-9 rounded-full bg-white/[0.03] border border-white/10 flex items-center justify-center text-red-500/70 hover:text-white hover:bg-red-500/20 hover:border-red-500/40 hover:scale-110 active:scale-95 hover:shadow-[0_0_15px_rgba(239,68,68,0.35)] transition-all duration-300"
+                            className="w-9 h-9 rounded-full bg-white/[0.03] border border-black/10 dark:border-white/10 flex items-center justify-center text-red-500/70 hover:text-gray-900 dark:hover:text-white hover:bg-red-500/20 hover:border-red-500/40 hover:scale-110 active:scale-95 hover:shadow-[0_0_15px_rgba(239,68,68,0.35)] transition-all duration-300"
                             title="Delete Document"
                         >
                             <Trash2 size={13} />
@@ -545,7 +545,7 @@ const DocumentHub = () => {
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                         placeholder="SEARCH DOCUMENTS..."
-                        className="pl-11 h-12 bg-black/40 border-white/5 rounded-xl text-[10px] font-black uppercase tracking-widest"
+                        className="pl-11 h-12 bg-white dark:bg-black/40 border-black/10 dark:border-white/5 rounded-xl text-[10px] font-black uppercase tracking-widest"
                     />
                 </div>
                 <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
@@ -557,7 +557,7 @@ const DocumentHub = () => {
                                 "px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-[0.2em] border transition-all shrink-0",
                                 filter === pill.key
                                     ? cn(pill.color, 'ring-1 ring-white/20')
-                                    : 'bg-white/[0.03] text-gray-500 border-white/5 hover:bg-white/[0.06] hover:text-gray-300'
+                                    : 'bg-white/[0.03] text-gray-500 border-black/10 dark:border-white/5 hover:bg-white/[0.06] hover:text-gray-700 dark:hover:text-gray-300'
                             )}
                         >
                             {pill.label}
@@ -597,11 +597,11 @@ const DocumentHub = () => {
                     animate={{ opacity: 1, y: 0 }}
                     className="flex flex-col items-center justify-center py-32 gap-6"
                 >
-                    <div className="w-24 h-24 rounded-[2rem] bg-white/[0.03] border border-white/5 flex items-center justify-center">
+                    <div className="w-24 h-24 rounded-[2rem] bg-white/[0.03] border border-black/10 dark:border-white/5 flex items-center justify-center">
                         <FolderOpen size={40} className="text-gray-700" />
                     </div>
                     <div className="text-center space-y-2">
-                        <h3 className="text-xl font-black font-heading uppercase italic tracking-tight text-gray-400">
+                        <h3 className="text-xl font-black font-heading uppercase italic tracking-tight text-gray-600 dark:text-gray-400">
                             No documents yet
                         </h3>
                         <p className="text-[10px] font-black text-gray-600 uppercase tracking-[0.3em]">
@@ -632,7 +632,7 @@ const DocumentHub = () => {
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
                             onClick={() => { if (!saving) { setShowAddModal(false); resetForm(); } }}
-                            className="absolute inset-0 bg-black/80 backdrop-blur-xl"
+                            className="absolute inset-0 bg-white dark:bg-black/80 backdrop-blur-xl"
                         />
 
                         {/* Modal */}
@@ -641,13 +641,13 @@ const DocumentHub = () => {
                             animate={{ opacity: 1, scale: 1, y: 0 }}
                             exit={{ opacity: 0, scale: 0.95, y: 20 }}
                             transition={{ type: "spring", damping: 25, stiffness: 300 }}
-                            className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-zinc-950 border border-white/10 rounded-[2rem] shadow-2xl"
+                            className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-gray-100 dark:bg-zinc-950 border border-black/10 dark:border-white/10 rounded-[2rem] shadow-2xl"
                         >
                             {/* Modal Header */}
-                            <div className="sticky top-0 z-10 bg-zinc-950/95 backdrop-blur-xl px-8 pt-8 pb-4 border-b border-white/5">
+                            <div className="sticky top-0 z-10 bg-gray-100 dark:bg-zinc-950/95 backdrop-blur-xl px-8 pt-8 pb-4 border-b border-black/10 dark:border-white/5">
                                 <div className="flex items-center justify-between mb-6">
                                     <div>
-                                        <h2 className="text-2xl font-black font-heading uppercase italic tracking-tight text-white">
+                                        <h2 className="text-2xl font-black font-heading uppercase italic tracking-tight text-gray-900 dark:text-white">
                                             ADD <span className="text-neon-blue">DOCUMENT.</span>
                                         </h2>
                                         <p className="text-[9px] font-black text-gray-600 uppercase tracking-[0.3em] mt-1">
@@ -656,14 +656,14 @@ const DocumentHub = () => {
                                     </div>
                                     <button
                                         onClick={() => { if (!saving) { setShowAddModal(false); resetForm(); } }}
-                                        className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 transition-all"
+                                        className="w-10 h-10 rounded-xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 flex items-center justify-center text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-black/10 dark:hover:bg-white/10 transition-all"
                                     >
                                         <X size={16} />
                                     </button>
                                 </div>
 
                                 {/* Tabs */}
-                                <div className="flex items-center gap-1.5 p-1 bg-white/5 border border-white/5 rounded-xl">
+                                <div className="flex items-center gap-1.5 p-1 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/5 rounded-xl">
                                     {MODAL_TABS.map(tab => {
                                         const TabIcon = tab.icon;
                                         return (
@@ -674,7 +674,7 @@ const DocumentHub = () => {
                                                     "flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-[9px] font-black uppercase tracking-[0.15em] transition-all",
                                                     activeTab === tab.key
                                                         ? "bg-white text-black"
-                                                        : "text-gray-500 hover:text-white hover:bg-white/5"
+                                                        : "text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5"
                                                 )}
                                             >
                                                 <TabIcon size={12} />
@@ -703,7 +703,7 @@ const DocumentHub = () => {
                                                     value={googleUrl}
                                                     onChange={(e) => handleGoogleUrlChange(e.target.value)}
                                                     placeholder="https://docs.google.com/document/d/..."
-                                                    className="h-14 bg-black/50 border-white/5 rounded-xl text-sm focus:border-neon-blue/30"
+                                                    className="h-14 bg-white dark:bg-black/50 border-black/10 dark:border-white/5 rounded-xl text-sm focus:border-neon-blue/30"
                                                 />
                                                 {detectedType && (
                                                     <div className="space-y-3">
@@ -721,14 +721,14 @@ const DocumentHub = () => {
                                                             <p className="text-[10px] font-black text-amber-400 uppercase tracking-widest flex items-center gap-1.5">
                                                                 <span>⚠️ GOOGLE ACCESS CONTROL TIP</span>
                                                             </p>
-                                                            <p className="text-[9px] text-gray-400 uppercase tracking-wider leading-relaxed">
+                                                            <p className="text-[9px] text-gray-600 dark:text-gray-400 uppercase tracking-wider leading-relaxed">
                                                                 If your document is restricted, viewers will see a Google Sign-in screen.
                                                                 <br />
                                                                 To avoid this:
                                                                 <br />
-                                                                1. Set file share settings to <span className="text-white">"Anyone with the link can view"</span>, OR
+                                                                1. Set file share settings to <span className="text-gray-900 dark:text-white">"Anyone with the link can view"</span>, OR
                                                                 <br />
-                                                                2. Download the file as <span className="text-white">PDF/Excel</span> and upload it using the <span className="text-white">"UPLOAD FILE"</span> tab above.
+                                                                2. Download the file as <span className="text-gray-900 dark:text-white">PDF/Excel</span> and upload it using the <span className="text-gray-900 dark:text-white">"UPLOAD FILE"</span> tab above.
                                                             </p>
                                                         </div>
                                                     </div>
@@ -746,7 +746,7 @@ const DocumentHub = () => {
                                                     value={docTitle}
                                                     onChange={(e) => setDocTitle(e.target.value)}
                                                     placeholder="Document title"
-                                                    className="h-14 bg-black/50 border-white/5 rounded-xl text-sm focus:border-neon-blue/30"
+                                                    className="h-14 bg-white dark:bg-black/50 border-black/10 dark:border-white/5 rounded-xl text-sm focus:border-neon-blue/30"
                                                 />
                                             </div>
 
@@ -757,7 +757,7 @@ const DocumentHub = () => {
                                                     onChange={(e) => setDocDescription(e.target.value)}
                                                     placeholder="Brief description..."
                                                     rows={3}
-                                                    className="flex w-full rounded-xl border border-white/5 bg-black/50 px-4 py-3 text-sm text-white placeholder:text-white/20 focus:border-neon-blue/30 focus:outline-none focus:ring-1 focus:ring-neon-blue/30 resize-none"
+                                                    className="flex w-full rounded-xl border border-black/10 dark:border-white/5 bg-white dark:bg-black/50 px-4 py-3 text-sm text-gray-900 dark:text-white placeholder:text-gray-900 dark:placeholder:text-white/20 focus:border-neon-blue/30 focus:outline-none focus:ring-1 focus:ring-neon-blue/30 resize-none"
                                                 />
                                             </div>
 
@@ -767,15 +767,15 @@ const DocumentHub = () => {
                                                     value={docTags}
                                                     onChange={(e) => setDocTags(e.target.value)}
                                                     placeholder="e.g. contracts, legal, finance"
-                                                    className="h-14 bg-black/50 border-white/5 rounded-xl text-sm focus:border-neon-blue/30"
+                                                    className="h-14 bg-white dark:bg-black/50 border-black/10 dark:border-white/5 rounded-xl text-sm focus:border-neon-blue/30"
                                                 />
                                             </div>
 
-                                            <div className="flex items-center justify-between p-4 bg-white/[0.02] border border-white/5 rounded-xl">
+                                            <div className="flex items-center justify-between p-4 bg-white/[0.02] border border-black/10 dark:border-white/5 rounded-xl">
                                                 <div className="flex items-center gap-3">
                                                     {docIsPublic ? <Globe size={16} className="text-emerald-400" /> : <Lock size={16} className="text-amber-400" />}
                                                     <div>
-                                                        <span className="text-[10px] font-black text-white uppercase tracking-[0.2em]">
+                                                        <span className="text-[10px] font-black text-gray-900 dark:text-white uppercase tracking-[0.2em]">
                                                             {docIsPublic ? 'PUBLIC' : 'PRIVATE'}
                                                         </span>
                                                         <p className="text-[8px] text-gray-600 uppercase tracking-wider mt-0.5">
@@ -823,7 +823,7 @@ const DocumentHub = () => {
                                                     value={driveUrl}
                                                     onChange={(e) => setDriveUrl(e.target.value)}
                                                     placeholder="https://drive.google.com/file/d/... or .../folders/..."
-                                                    className="h-14 bg-black/50 border-white/5 rounded-xl text-sm focus:border-neon-blue/30"
+                                                    className="h-14 bg-white dark:bg-black/50 border-black/10 dark:border-white/5 rounded-xl text-sm focus:border-neon-blue/30"
                                                 />
                                                 {driveUrl && /drive\.google\.com/.test(driveUrl) && (
                                                     <div className="space-y-3">
@@ -835,14 +835,14 @@ const DocumentHub = () => {
                                                             <p className="text-[10px] font-black text-amber-400 uppercase tracking-widest flex items-center gap-1.5">
                                                                 <span>⚠️ GOOGLE ACCESS CONTROL TIP</span>
                                                             </p>
-                                                            <p className="text-[9px] text-gray-400 uppercase tracking-wider leading-relaxed">
+                                                            <p className="text-[9px] text-gray-600 dark:text-gray-400 uppercase tracking-wider leading-relaxed">
                                                                 If your Drive file/folder is restricted, viewers will see a Google Sign-in screen.
                                                                 <br />
                                                                 To avoid this:
                                                                 <br />
-                                                                1. Set file/folder share settings to <span className="text-white">"Anyone with the link can view"</span>, OR
+                                                                1. Set file/folder share settings to <span className="text-gray-900 dark:text-white">"Anyone with the link can view"</span>, OR
                                                                 <br />
-                                                                2. Download the file locally and upload it using the <span className="text-white">"UPLOAD FILE"</span> tab above.
+                                                                2. Download the file locally and upload it using the <span className="text-gray-900 dark:text-white">"UPLOAD FILE"</span> tab above.
                                                             </p>
                                                         </div>
                                                     </div>
@@ -855,7 +855,7 @@ const DocumentHub = () => {
                                                     value={driveTitle}
                                                     onChange={(e) => setDriveTitle(e.target.value)}
                                                     placeholder="Drive file or folder title"
-                                                    className="h-14 bg-black/50 border-white/5 rounded-xl text-sm focus:border-neon-blue/30"
+                                                    className="h-14 bg-white dark:bg-black/50 border-black/10 dark:border-white/5 rounded-xl text-sm focus:border-neon-blue/30"
                                                 />
                                             </div>
 
@@ -866,7 +866,7 @@ const DocumentHub = () => {
                                                     onChange={(e) => setDriveDescription(e.target.value)}
                                                     placeholder="Brief description..."
                                                     rows={3}
-                                                    className="flex w-full rounded-xl border border-white/5 bg-black/50 px-4 py-3 text-sm text-white placeholder:text-white/20 focus:border-neon-blue/30 focus:outline-none focus:ring-1 focus:ring-neon-blue/30 resize-none"
+                                                    className="flex w-full rounded-xl border border-black/10 dark:border-white/5 bg-white dark:bg-black/50 px-4 py-3 text-sm text-gray-900 dark:text-white placeholder:text-gray-900 dark:placeholder:text-white/20 focus:border-neon-blue/30 focus:outline-none focus:ring-1 focus:ring-neon-blue/30 resize-none"
                                                 />
                                             </div>
 
@@ -876,15 +876,15 @@ const DocumentHub = () => {
                                                     value={driveTags}
                                                     onChange={(e) => setDriveTags(e.target.value)}
                                                     placeholder="e.g. assets, media, shared"
-                                                    className="h-14 bg-black/50 border-white/5 rounded-xl text-sm focus:border-neon-blue/30"
+                                                    className="h-14 bg-white dark:bg-black/50 border-black/10 dark:border-white/5 rounded-xl text-sm focus:border-neon-blue/30"
                                                 />
                                             </div>
 
-                                            <div className="flex items-center justify-between p-4 bg-white/[0.02] border border-white/5 rounded-xl">
+                                            <div className="flex items-center justify-between p-4 bg-white/[0.02] border border-black/10 dark:border-white/5 rounded-xl">
                                                 <div className="flex items-center gap-3">
                                                     {driveIsPublic ? <Globe size={16} className="text-emerald-400" /> : <Lock size={16} className="text-amber-400" />}
                                                     <div>
-                                                        <span className="text-[10px] font-black text-white uppercase tracking-[0.2em]">
+                                                        <span className="text-[10px] font-black text-gray-900 dark:text-white uppercase tracking-[0.2em]">
                                                             {driveIsPublic ? 'PUBLIC' : 'PRIVATE'}
                                                         </span>
                                                         <p className="text-[8px] text-gray-600 uppercase tracking-wider mt-0.5">
@@ -936,7 +936,7 @@ const DocumentHub = () => {
                                                     "relative h-40 border-2 border-dashed rounded-2xl flex flex-col items-center justify-center gap-3 cursor-pointer transition-all duration-300",
                                                     isDragging
                                                         ? "border-neon-blue/50 bg-neon-blue/5"
-                                                        : "border-white/10 bg-black/30 hover:border-neon-blue/30 hover:bg-black/40"
+                                                        : "border-black/10 dark:border-white/10 bg-white dark:bg-black/30 hover:border-neon-blue/30 hover:bg-white dark:hover:bg-black/40"
                                                 )}
                                             >
                                                 <input
@@ -972,12 +972,12 @@ const DocumentHub = () => {
                                                 >
                                                     <File size={20} className="text-neon-blue shrink-0" />
                                                     <div className="flex-1 min-w-0">
-                                                        <p className="text-xs font-bold text-white truncate">{selectedFile.name}</p>
+                                                        <p className="text-xs font-bold text-gray-900 dark:text-white truncate">{selectedFile.name}</p>
                                                         <p className="text-[9px] text-gray-500">{formatFileSize(selectedFile.size)}</p>
                                                     </div>
                                                     <button
                                                         onClick={(e) => { e.stopPropagation(); setSelectedFile(null); }}
-                                                        className="p-1 rounded-lg hover:bg-white/10 transition-colors"
+                                                        className="p-1 rounded-lg hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
                                                     >
                                                         <X size={14} className="text-gray-500" />
                                                     </button>
@@ -990,7 +990,7 @@ const DocumentHub = () => {
                                                     value={uploadTitle}
                                                     onChange={(e) => setUploadTitle(e.target.value)}
                                                     placeholder="Document title"
-                                                    className="h-14 bg-black/50 border-white/5 rounded-xl text-sm focus:border-neon-blue/30"
+                                                    className="h-14 bg-white dark:bg-black/50 border-black/10 dark:border-white/5 rounded-xl text-sm focus:border-neon-blue/30"
                                                 />
                                             </div>
 
@@ -1001,7 +1001,7 @@ const DocumentHub = () => {
                                                     onChange={(e) => setUploadDescription(e.target.value)}
                                                     placeholder="Brief description..."
                                                     rows={3}
-                                                    className="flex w-full rounded-xl border border-white/5 bg-black/50 px-4 py-3 text-sm text-white placeholder:text-white/20 focus:border-neon-blue/30 focus:outline-none focus:ring-1 focus:ring-neon-blue/30 resize-none"
+                                                    className="flex w-full rounded-xl border border-black/10 dark:border-white/5 bg-white dark:bg-black/50 px-4 py-3 text-sm text-gray-900 dark:text-white placeholder:text-gray-900 dark:placeholder:text-white/20 focus:border-neon-blue/30 focus:outline-none focus:ring-1 focus:ring-neon-blue/30 resize-none"
                                                 />
                                             </div>
 
@@ -1011,15 +1011,15 @@ const DocumentHub = () => {
                                                     value={uploadTags}
                                                     onChange={(e) => setUploadTags(e.target.value)}
                                                     placeholder="e.g. report, analysis, presentation"
-                                                    className="h-14 bg-black/50 border-white/5 rounded-xl text-sm focus:border-neon-blue/30"
+                                                    className="h-14 bg-white dark:bg-black/50 border-black/10 dark:border-white/5 rounded-xl text-sm focus:border-neon-blue/30"
                                                 />
                                             </div>
 
-                                            <div className="flex items-center justify-between p-4 bg-white/[0.02] border border-white/5 rounded-xl">
+                                            <div className="flex items-center justify-between p-4 bg-white/[0.02] border border-black/10 dark:border-white/5 rounded-xl">
                                                 <div className="flex items-center gap-3">
                                                     {uploadIsPublic ? <Globe size={16} className="text-emerald-400" /> : <Lock size={16} className="text-amber-400" />}
                                                     <div>
-                                                        <span className="text-[10px] font-black text-white uppercase tracking-[0.2em]">
+                                                        <span className="text-[10px] font-black text-gray-900 dark:text-white uppercase tracking-[0.2em]">
                                                             {uploadIsPublic ? 'PUBLIC' : 'PRIVATE'}
                                                         </span>
                                                         <p className="text-[8px] text-gray-600 uppercase tracking-wider mt-0.5">
@@ -1073,11 +1073,11 @@ const DocumentHub = () => {
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
                             onClick={() => setPreviewDoc(null)}
-                            className="absolute inset-0 bg-black/90 backdrop-blur-xl"
+                            className="absolute inset-0 bg-white dark:bg-black/90 backdrop-blur-xl"
                         />
 
                         {/* Preview Header */}
-                        <div className="relative z-10 flex items-center justify-between px-6 md:px-10 py-4 bg-zinc-950/80 backdrop-blur-xl border-b border-white/5">
+                        <div className="relative z-10 flex items-center justify-between px-6 md:px-10 py-4 bg-gray-100 dark:bg-zinc-950/80 backdrop-blur-xl border-b border-black/10 dark:border-white/5">
                             <div className="flex items-center gap-4 min-w-0">
                                 {(() => {
                                     const cfg = TYPE_CONFIG[previewDoc.type] || TYPE_CONFIG.file;
@@ -1088,13 +1088,13 @@ const DocumentHub = () => {
                                         </div>
                                     );
                                 })()}
-                                <h3 className="text-sm md:text-base font-black font-heading uppercase italic tracking-tight text-white truncate">
+                                <h3 className="text-sm md:text-base font-black font-heading uppercase italic tracking-tight text-gray-900 dark:text-white truncate">
                                     {previewDoc.title}
                                 </h3>
                             </div>
                             <button
                                 onClick={() => setPreviewDoc(null)}
-                                className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 transition-all shrink-0 ml-4"
+                                className="w-10 h-10 rounded-xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 flex items-center justify-center text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-black/10 dark:hover:bg-white/10 transition-all shrink-0 ml-4"
                             >
                                 <X size={16} />
                             </button>
@@ -1105,18 +1105,18 @@ const DocumentHub = () => {
                             {(previewDoc.type === 'google_doc' || previewDoc.type === 'google_sheet' || previewDoc.type === 'google_drive' || previewDoc.type === 'pdf') ? (
                                 <iframe
                                     src={previewDoc.sourceUrl}
-                                    className="w-full h-full rounded-2xl border border-white/10 bg-white"
+                                    className="w-full h-full rounded-2xl border border-black/10 dark:border-white/10 bg-white"
                                     title={previewDoc.title}
                                     allow="autoplay"
                                     sandbox="allow-same-origin allow-scripts allow-popups allow-forms"
                                 />
                             ) : (
                                 <div className="flex flex-col items-center justify-center h-full gap-6">
-                                    <div className="w-24 h-24 rounded-[2rem] bg-white/[0.03] border border-white/5 flex items-center justify-center">
+                                    <div className="w-24 h-24 rounded-[2rem] bg-white/[0.03] border border-black/10 dark:border-white/5 flex items-center justify-center">
                                         <File size={40} className="text-gray-600" />
                                     </div>
                                     <div className="text-center space-y-2">
-                                        <h3 className="text-lg font-black font-heading uppercase italic text-white">{previewDoc.fileName || previewDoc.title}</h3>
+                                        <h3 className="text-lg font-black font-heading uppercase italic text-gray-900 dark:text-white">{previewDoc.fileName || previewDoc.title}</h3>
                                         {previewDoc.fileSize > 0 && (
                                             <p className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em]">
                                                 {formatFileSize(previewDoc.fileSize)}

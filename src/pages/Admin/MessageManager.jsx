@@ -74,14 +74,14 @@ const MessageManager = () => {
         >
             {/* Filters & Search */}
             <div className="grid grid-cols-1 md:grid-cols-12 gap-6 mb-12">
-                    <div className="md:col-span-4 flex bg-zinc-900/50 p-1.5 rounded-2xl border border-white/5 h-14">
+                    <div className="md:col-span-4 flex bg-gray-100 dark:bg-zinc-900/50 p-1.5 rounded-2xl border border-black/10 dark:border-white/5 h-14">
                         {['all', 'unread', 'read'].map((f) => (
                             <button
                                 key={f}
                                 onClick={() => setFilter(f)}
                                 className={cn(
                                     "flex-1 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
-                                    filter === f ? "bg-white text-black shadow-lg" : "text-gray-500 hover:text-white"
+                                    filter === f ? "bg-white text-black shadow-lg" : "text-gray-500 hover:text-gray-900 dark:hover:text-white"
                                 )}
                             >
                                 {f}
@@ -94,7 +94,7 @@ const MessageManager = () => {
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                             placeholder="SEARCH SENDER, EMAIL OR CONTENT"
-                            className="bg-zinc-900/50 border-white/5 h-14 pl-14 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] focus:border-neon-pink/30"
+                            className="bg-gray-100 dark:bg-zinc-900/50 border-black/10 dark:border-white/5 h-14 pl-14 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] focus:border-neon-pink/30"
                         />
                     </div>
                 </div>
@@ -114,20 +114,20 @@ const MessageManager = () => {
                                     <div className={cn(
                                         "p-6 md:p-8 transition-all duration-500 border rounded-[2rem] backdrop-blur-3xl group",
                                         msg.status === 'new'
-                                            ? "bg-zinc-900/60 border-neon-pink/20 shadow-[0_0_40px_rgba(255,46,144,0.05)]"
-                                            : "bg-zinc-900/30 border-white/5 hover:border-white/10"
+                                            ? "bg-gray-100 dark:bg-zinc-900/60 border-neon-pink/20 shadow-[0_0_40px_rgba(255,46,144,0.05)]"
+                                            : "bg-gray-100 dark:bg-zinc-900/30 border-black/10 dark:border-white/5 hover:border-black/10 dark:hover:border-white/10"
                                     )}>
                                         {/* Top row: Avatar + name + email + status + actions */}
                                         <div className="flex flex-col sm:flex-row items-start justify-between gap-4 sm:gap-6 mb-6">
                                             <div className="flex items-center gap-4 w-full sm:w-auto">
                                                 <div className={cn(
                                                     "w-12 h-12 rounded-2xl flex items-center justify-center font-black text-xl shrink-0 transition-all duration-300",
-                                                    msg.status === 'new' ? "bg-neon-pink text-black" : "bg-white/5 text-gray-400 group-hover:bg-white/10"
+                                                    msg.status === 'new' ? "bg-neon-pink text-black" : "bg-black/5 dark:bg-white/5 text-gray-600 dark:text-gray-400 group-hover:bg-black/10 dark:group-hover:bg-white/10"
                                                 )}>
                                                     {(msg.name || 'A').charAt(0).toUpperCase()}
                                                 </div>
                                                 <div>
-                                                    <h3 className="font-black text-sm uppercase tracking-tight text-white leading-none mb-1">{msg.name || 'ANONYMOUS'}</h3>
+                                                    <h3 className="font-black text-sm uppercase tracking-tight text-gray-900 dark:text-white leading-none mb-1">{msg.name || 'ANONYMOUS'}</h3>
                                                     <div className="flex items-center flex-wrap gap-2 sm:gap-3">
                                                         <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest break-all">{msg.email}</span>
                                                         <span className="text-[9px] font-bold text-gray-600 uppercase tracking-widest flex items-center gap-1">
@@ -150,7 +150,7 @@ const MessageManager = () => {
                                                         "h-9 px-4 rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center gap-2 transition-all",
                                                         msg.status === 'new'
                                                             ? "bg-neon-pink text-black hover:scale-105"
-                                                            : "bg-white/5 text-gray-500 hover:bg-white/10 hover:text-white border border-white/5"
+                                                            : "bg-black/5 dark:bg-white/5 text-gray-500 hover:bg-black/10 dark:hover:bg-white/10 hover:text-gray-900 dark:hover:text-white border border-black/10 dark:border-white/5"
                                                     )}
                                                 >
                                                     {msg.status === 'new' ? (
@@ -161,7 +161,7 @@ const MessageManager = () => {
                                                 </button>
                                                 <button
                                                     onClick={() => handleDelete(msg.id)}
-                                                    className="w-9 h-9 rounded-xl bg-red-500/10 text-red-500 border border-red-500/20 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all"
+                                                    className="w-9 h-9 rounded-xl bg-red-500/10 text-red-500 border border-red-500/20 flex items-center justify-center hover:bg-red-500 hover:text-gray-900 dark:hover:text-white transition-all"
                                                 >
                                                     <Trash2 size={14} />
                                                 </button>
@@ -170,8 +170,8 @@ const MessageManager = () => {
 
                                         {/* Message body */}
                                         <div className="pl-0 md:pl-16">
-                                            <div className="p-5 md:p-6 bg-black/30 rounded-2xl border border-white/5 group-hover:border-white/8 transition-all">
-                                                <p className="text-sm font-medium text-gray-300 whitespace-pre-wrap leading-relaxed selection:bg-neon-pink selection:text-black">
+                                            <div className="p-5 md:p-6 bg-white dark:bg-black/30 rounded-2xl border border-black/10 dark:border-white/5 group-hover:border-white/8 transition-all">
+                                                <p className="text-sm font-medium text-gray-700 dark:text-gray-300 whitespace-pre-wrap leading-relaxed selection:bg-neon-pink selection:text-black">
                                                     {msg.message}
                                                 </p>
                                             </div>
@@ -180,8 +180,8 @@ const MessageManager = () => {
                                 </motion.div>
                             ))
                         ) : (
-                            <div className="py-32 text-center bg-zinc-900/20 rounded-[3rem] border-2 border-dashed border-white/5 flex flex-col items-center gap-6">
-                                <div className="w-20 h-20 rounded-full bg-white/5 flex items-center justify-center text-gray-700">
+                            <div className="py-32 text-center bg-gray-100 dark:bg-zinc-900/20 rounded-[3rem] border-2 border-dashed border-black/10 dark:border-white/5 flex flex-col items-center gap-6">
+                                <div className="w-20 h-20 rounded-full bg-black/5 dark:bg-white/5 flex items-center justify-center text-gray-700">
                                     <Mail size={40} />
                                 </div>
                                 <div className="space-y-2">

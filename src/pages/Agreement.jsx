@@ -217,7 +217,7 @@ const Agreement = () => {
     }, [displayAgreement]);
 
     if (!displayAgreement) return (
-        <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="min-h-screen bg-white dark:bg-black flex items-center justify-center">
             <RefreshCw className="animate-spin text-[#A855F7]" size={40} />
         </div>
     );
@@ -289,7 +289,7 @@ const Agreement = () => {
     const paginatedPages = getPaginatedPages();
 
     return (
-        <div className="min-h-screen bg-[#050505] text-white font-['Outfit'] selection:bg-white selection:text-black">
+        <div className="min-h-screen bg-[#050505] text-gray-900 dark:text-white font-['Outfit'] selection:bg-white selection:text-black">
             <style dangerouslySetInnerHTML={{ __html: `
                 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap');
                 @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400..700&display=swap');
@@ -299,10 +299,10 @@ const Agreement = () => {
                 @media print { .no-print { display: none !important; } .agreement-page-render { margin: 0 !important; box-shadow: none !important; } }
             `}} />
 
-            <nav className="fixed top-0 left-0 right-0 z-50 bg-black/60 backdrop-blur-3xl border-b border-white/5 h-20 flex items-center px-4 md:px-6 no-print">
+            <nav className="fixed top-0 left-0 right-0 z-50 bg-white dark:bg-black/60 backdrop-blur-3xl border-b border-black/10 dark:border-white/5 h-20 flex items-center px-4 md:px-6 no-print">
                 <div className="max-w-[1400px] mx-auto w-full flex items-center justify-between">
                     <div className="flex items-center gap-3 md:gap-6">
-                        <Link to={isAdmin ? "/admin/agreements" : "/"} className="p-2.5 md:p-3 bg-white/5 rounded-2xl hover:bg-white/10 border border-white/5 transition-all"><ArrowLeft size={16} /></Link>
+                        <Link to={isAdmin ? "/admin/agreements" : "/"} className="p-2.5 md:p-3 bg-black/5 dark:bg-white/5 rounded-2xl hover:bg-black/10 dark:hover:bg-white/10 border border-black/10 dark:border-white/5 transition-all"><ArrowLeft size={16} /></Link>
                         <div className="min-w-0 max-w-[120px] xs:max-w-[180px] sm:max-w-none">
                             <p className="text-[9px] md:text-[10px] font-black text-[#A855F7] uppercase tracking-widest leading-none mb-1 truncate">
                                 {displayAgreement.parties?.secondParty?.name ? `${displayAgreement.parties.secondParty.name} (${displayAgreement.agreementNumber || displayAgreement.id})` : 'Legal Instrument'}
@@ -314,7 +314,7 @@ const Agreement = () => {
                         </div>
                     </div>
                     <div className="flex items-center gap-2 md:gap-4">
-                        <button onClick={() => window.print()} className="p-2.5 md:p-3 bg-white/5 rounded-2xl hover:bg-white/10 border border-white/5 hidden sm:block"><Printer size={18} /></button>
+                        <button onClick={() => window.print()} className="p-2.5 md:p-3 bg-black/5 dark:bg-white/5 rounded-2xl hover:bg-black/10 dark:hover:bg-white/10 border border-black/10 dark:border-white/5 hidden sm:block"><Printer size={18} /></button>
                         <Button onClick={handleDownloadPDF} disabled={isExporting} className="bg-[#A855F7] text-black font-black uppercase tracking-widest text-[9px] md:text-[10px] h-10 md:h-12 px-4 md:px-8 rounded-xl shadow-2xl">
                             {isExporting ? <RefreshCw className="animate-spin mr-2" size={14} /> : <Download size={14} className="mr-1 md:mr-2" />} <span className="hidden sm:inline">Export PDF</span><span className="sm:hidden">Export</span>
                         </Button>
@@ -333,11 +333,11 @@ const Agreement = () => {
                                 <img src="/logo_document.png" alt="Logo" className="h-8 w-auto object-contain grayscale opacity-80" crossOrigin="anonymous" />
                                 <div className="flex items-center gap-6 text-right">
                                     <div className="space-y-0.5">
-                                        <span className="text-[7px] font-bold text-gray-400 uppercase tracking-widest block">Agreement ID</span>
+                                        <span className="text-[7px] font-bold text-gray-600 dark:text-gray-400 uppercase tracking-widest block">Agreement ID</span>
                                         <span className="text-[10px] font-bold text-black tracking-widest block">{displayAgreement.agreementNumber}</span>
                                     </div>
                                     <div className="space-y-0.5 border-l border-black/10 pl-6">
-                                        <span className="text-[7px] font-bold text-gray-400 uppercase tracking-widest block">Effective Date</span>
+                                        <span className="text-[7px] font-bold text-gray-600 dark:text-gray-400 uppercase tracking-widest block">Effective Date</span>
                                         <span className="text-[10px] font-bold text-black uppercase tracking-wider block">{new Date(displayAgreement.effectiveDate || Date.now()).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
                                     </div>
                                 </div>
@@ -360,7 +360,7 @@ const Agreement = () => {
                                                     <p className="font-bold uppercase tracking-widest text-[10px]">Between:</p>
                                                     <p><span className="font-bold">{displayAgreement.parties.firstParty.name}</span>, a registered entity with its principal office at {displayAgreement.parties.firstParty.address} (hereinafter referred to as the <span className="font-bold uppercase">"Provider"</span>);</p>
                                                 </div>
-                                                <div className="flex justify-center py-2 font-bold italic text-gray-400">AND</div>
+                                                <div className="flex justify-center py-2 font-bold italic text-gray-600 dark:text-gray-400">AND</div>
                                                 <div className="space-y-1">
                                                     <p className="font-bold uppercase tracking-widest text-[10px]">And:</p>
                                                     <p><span className="font-bold">{displayAgreement.parties.secondParty.name}</span>, a registered entity with its principal office at {displayAgreement.parties.secondParty.address} (hereinafter referred to as the <span className="font-bold uppercase">"Client"</span>).</p>
@@ -393,7 +393,7 @@ const Agreement = () => {
                                         <h3 className="text-lg font-black uppercase tracking-widest text-black border-b border-black pb-1 inline-block">Section 02. Financial Considerations.</h3>
                                         <div className="grid grid-cols-1 gap-8 mt-4">
                                             <div className="space-y-8 text-center py-8 border-y border-black/5 bg-gray-50/50">
-                                                <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Total Valuation</p>
+                                                <p className="text-[9px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest">Total Valuation</p>
                                                 <h2 className="text-5xl font-black tracking-tighter text-black">{displayAgreement.commercials.currency} {displayAgreement.commercials.totalValue}</h2>
                                             </div>
                                             <div className="space-y-4">
@@ -427,7 +427,7 @@ const Agreement = () => {
                                                     <p className="text-[12px] italic text-gray-500 mb-8">IN WITNESS WHEREOF, the Parties hereto have executed this Agreement as of the Effective Date first above written.</p>
                                                     <div className="grid grid-cols-2 gap-20">
                                                     <div className="space-y-6">
-                                                        <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest border-b border-black pb-1">Provider Signature</p>
+                                                        <p className="text-[9px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest border-b border-black pb-1">Provider Signature</p>
                                                         <div className="h-20 flex items-end">
                                                             {displayAgreement.providerSignature ? (
                                                                 <img src={displayAgreement.providerSignature} className="h-full object-contain grayscale mix-blend-multiply" alt="Provider Signature" />
@@ -441,7 +441,7 @@ const Agreement = () => {
                                                         </div>
                                                     </div>
                                                     <div className="space-y-6 text-right">
-                                                        <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest border-b border-black pb-1">Client Signature</p>
+                                                        <p className="text-[9px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest border-b border-black pb-1">Client Signature</p>
                                                         <div className="h-20 flex items-end justify-end">
                                                             {displayAgreement.status === 'Executed' ? (
                                                                 displayAgreement.approvalMetadata?.clientSignature ? (
@@ -450,14 +450,14 @@ const Agreement = () => {
                                                                     <p className="text-5xl font-signature text-black leading-none opacity-90">{displayAgreement.approvalMetadata?.signedBy || 'Authorized Signatory'}</p>
                                                                 )
                                                             ) : (
-                                                                <div className="w-full h-px bg-black opacity-20 border-dashed border-t" />
+                                                                <div className="w-full h-px bg-white dark:bg-black opacity-20 border-dashed border-t" />
                                                             )}
                                                         </div>
                                                         <div className="pt-2 border-t border-black/5">
                                                             <p className="text-[10px] font-bold uppercase">Name: {displayAgreement.status === 'Executed' ? (displayAgreement.approvalMetadata?.signedBy || 'Authorized Signatory') : '________________'}</p>
                                                             <p className="text-[9px] text-gray-500 uppercase">Title: Authorized Signatory</p>
                                                             {displayAgreement.status === 'Executed' && displayAgreement.approvalMetadata && (
-                                                                <p className="text-[7px] text-gray-400 mt-1">IP: {displayAgreement.approvalMetadata?.ip || 'N/A'} | Signed: {displayAgreement.approvalMetadata?.signedAt ? new Date(displayAgreement.approvalMetadata.signedAt).toLocaleString() : 'N/A'}</p>
+                                                                <p className="text-[7px] text-gray-600 dark:text-gray-400 mt-1">IP: {displayAgreement.approvalMetadata?.ip || 'N/A'} | Signed: {displayAgreement.approvalMetadata?.signedAt ? new Date(displayAgreement.approvalMetadata.signedAt).toLocaleString() : 'N/A'}</p>
                                                             )}
                                                         </div>
                                                     </div>
@@ -469,7 +469,7 @@ const Agreement = () => {
                                                     <DocumentSeal type="agreement" date={displayAgreement.approvalMetadata?.signedAt || displayAgreement.effectiveDate} className="w-40 h-40 opacity-90" />
                                                 )}
                                                 {displayAgreement.approvalMetadata && (
-                                                    <div className="text-[9px] font-bold text-gray-400 uppercase tracking-widest space-y-1">
+                                                    <div className="text-[9px] font-bold text-gray-600 dark:text-gray-400 uppercase tracking-widest space-y-1">
                                                         <p>IP: {displayAgreement.approvalMetadata?.ip || 'N/A'}</p>
                                                         <p>Time: {displayAgreement.approvalMetadata?.signedAt ? new Date(displayAgreement.approvalMetadata.signedAt).toLocaleString() : 'N/A'}</p>
                                                         <p>Hash: {displayAgreement.id ? displayAgreement.id.slice(-12).toUpperCase() : 'N/A'}</p>
@@ -480,7 +480,7 @@ const Agreement = () => {
                                     </div>
                                 )}
                             </div>
-                            <div className="mt-auto pt-8 flex justify-between items-center text-[9px] font-black text-gray-400 uppercase tracking-widest">
+                            <div className="mt-auto pt-8 flex justify-between items-center text-[9px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest">
                                 <p className="w-1/3 text-left">© NEWBI ENTERTAINMENT & MARKETING LLP</p>
                                 <p className="w-1/3 text-center text-gray-500 truncate px-2"></p>
                                 <p className="w-1/3 text-right text-black">Page {idx + 1} of {paginatedPages.length}</p>
@@ -491,9 +491,9 @@ const Agreement = () => {
 
                 {(displayAgreement.showSignatures || displayAgreement.showSeal) && displayAgreement.status !== 'Executed' && !isExporting && (
                     <div className="w-full max-w-[794px] space-y-10 no-print">
-                        <div className="flex items-center justify-between border-b border-white/5 pb-8">
+                        <div className="flex items-center justify-between border-b border-black/10 dark:border-white/5 pb-8">
                             <div className="space-y-2">
-                                <h3 className="text-3xl font-black uppercase tracking-tighter italic text-white">Execute Instrument.</h3>
+                                <h3 className="text-3xl font-black uppercase tracking-tighter italic text-gray-900 dark:text-white">Execute Instrument.</h3>
                                 <p className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em]">Authorize this strategic agreement</p>
                             </div>
                             <div className="flex items-center gap-2 px-4 py-2 bg-[#A855F7]/10 rounded-full border border-[#A855F7]/20">
@@ -505,16 +505,16 @@ const Agreement = () => {
                         {displayAgreement.showSignatures && (
                             <div 
                                 onClick={() => setIsSignatureModalOpen(true)}
-                                className="group cursor-pointer bg-[#0a0a0a] border-2 border-dashed border-white/10 rounded-[2.5rem] p-12 flex flex-col items-center justify-center gap-8 hover:bg-white/[0.02] hover:border-[#A855F7]/20 transition-all shadow-2xl relative overflow-hidden"
+                                className="group cursor-pointer bg-[#0a0a0a] border-2 border-dashed border-black/10 dark:border-white/10 rounded-[2.5rem] p-12 flex flex-col items-center justify-center gap-8 hover:bg-white/[0.02] hover:border-[#A855F7]/20 transition-all shadow-2xl relative overflow-hidden"
                             >
                                 {clientSignature ? (
                                     <div className="w-full space-y-8">
                                         <div className="h-40 flex items-center justify-center">
                                             <img src={clientSignature} alt="Client Signature" className="max-h-full object-contain invert" />
                                         </div>
-                                        <div className="text-center border-t border-white/5 pt-8 flex items-center justify-center gap-6">
+                                        <div className="text-center border-t border-black/10 dark:border-white/5 pt-8 flex items-center justify-center gap-6">
                                             <div className="space-y-1">
-                                                <p className="text-[12px] font-black text-white uppercase tracking-widest">{signatureName || 'Authorized Signatory'}</p>
+                                                <p className="text-[12px] font-black text-gray-900 dark:text-white uppercase tracking-widest">{signatureName || 'Authorized Signatory'}</p>
                                                 <p className="text-[8px] text-gray-500 uppercase tracking-widest">Signatory Representative</p>
                                             </div>
                                             <button 
@@ -522,7 +522,7 @@ const Agreement = () => {
                                                     e.stopPropagation();
                                                     setClientSignature(null);
                                                 }}
-                                                className="p-3 bg-red-500/10 text-red-500 rounded-xl hover:bg-red-500 hover:text-white transition-all"
+                                                className="p-3 bg-red-500/10 text-red-500 rounded-xl hover:bg-red-500 hover:text-gray-900 dark:hover:text-white transition-all"
                                             >
                                                 <Trash2 size={16} />
                                             </button>
@@ -530,11 +530,11 @@ const Agreement = () => {
                                     </div>
                                 ) : (
                                     <>
-                                        <div className="w-24 h-24 bg-white/5 rounded-full flex items-center justify-center group-hover:scale-110 group-hover:bg-[#A855F7]/10 transition-all duration-500">
-                                            <PenTool size={36} className="text-gray-400 group-hover:text-[#A855F7]" />
+                                        <div className="w-24 h-24 bg-black/5 dark:bg-white/5 rounded-full flex items-center justify-center group-hover:scale-110 group-hover:bg-[#A855F7]/10 transition-all duration-500">
+                                            <PenTool size={36} className="text-gray-600 dark:text-gray-400 group-hover:text-[#A855F7]" />
                                         </div>
                                         <div className="text-center">
-                                            <p className="text-[13px] font-black text-white uppercase tracking-[0.2em]">Click to sign agreement</p>
+                                            <p className="text-[13px] font-black text-gray-900 dark:text-white uppercase tracking-[0.2em]">Click to sign agreement</p>
                                             <p className="text-[10px] text-gray-500 mt-2 uppercase tracking-[0.3em]">Type, Draw or Upload</p>
                                         </div>
                                     </>
@@ -570,13 +570,13 @@ const Agreement = () => {
 
             <AnimatePresence>
                 {isVerifying && (
-                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-white dark:bg-black/80 backdrop-blur-md">
                         <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="w-full max-w-md bg-white rounded-[2.5rem] p-10 text-black shadow-2xl relative">
                             <div className="space-y-6 relative z-10">
                                 <h3 className="text-3xl font-black uppercase tracking-tighter italic">Identity Verification.</h3>
                                 <div className="space-y-4">
                                     <div className="space-y-2">
-                                        <label className="text-[9px] font-black uppercase tracking-widest text-gray-400 px-1">Authorization Email</label>
+                                        <label className="text-[9px] font-black uppercase tracking-widest text-gray-600 dark:text-gray-400 px-1">Authorization Email</label>
                                         <input 
                                             type="email" 
                                             value={verificationEmail}
@@ -589,13 +589,13 @@ const Agreement = () => {
                                         <Globe size={18} className="text-[#A855F7]" />
                                         <div className="flex-1">
                                             <p className="text-[10px] font-black uppercase text-black">{ipAddress}</p>
-                                            <p className="text-[8px] font-bold text-gray-400 uppercase tracking-tighter">Network Signature Detected</p>
+                                            <p className="text-[8px] font-bold text-gray-600 dark:text-gray-400 uppercase tracking-tighter">Network Signature Detected</p>
                                         </div>
                                     </div>
                                 </div>
                                 <div className="grid grid-cols-2 gap-4 pt-4">
                                     <button onClick={() => setIsVerifying(false)} className="h-14 rounded-xl border-2 border-gray-100 text-[10px] font-black uppercase tracking-widest hover:bg-gray-50 transition-all">Cancel</button>
-                                    <Button onClick={handleApprove} disabled={isSubmitting || !verificationEmail.includes('@')} className="h-14 bg-black text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-[#A855F7] hover:text-black transition-all">
+                                    <Button onClick={handleApprove} disabled={isSubmitting || !verificationEmail.includes('@')} className="h-14 bg-white dark:bg-black text-gray-900 dark:text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-[#A855F7] hover:text-black transition-all">
                                         {isSubmitting ? 'Executing...' : 'Verify & Sign'}
                                     </Button>
                                 </div>

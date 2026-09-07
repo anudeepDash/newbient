@@ -11,14 +11,14 @@ const ToneSwitch = ({ value, onChange }) => {
     return (
         <div className="flex flex-col gap-4">
             <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest px-2">Voice & Tone</label>
-            <div className="grid grid-cols-3 gap-2 bg-zinc-900/40 p-1.5 rounded-2xl border border-white/5">
+            <div className="grid grid-cols-3 gap-2 bg-gray-100 dark:bg-zinc-900/40 p-1.5 rounded-2xl border border-black/10 dark:border-white/5">
                 {tones.map(tone => (
                     <button 
                         key={tone.id} 
                         onClick={() => onChange(tone.id)}
                         className={cn(
                             "flex flex-col items-center justify-center py-3 rounded-xl transition-all relative group",
-                            value === tone.id ? "bg-white text-black shadow-lg" : "text-gray-500 hover:text-white"
+                            value === tone.id ? "bg-white text-black shadow-lg" : "text-gray-500 hover:text-gray-900 dark:hover:text-white"
                         )}
                     >
                         <span className="text-[9px] font-black uppercase tracking-widest">{tone.label}</span>

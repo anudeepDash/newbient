@@ -34,14 +34,14 @@ const StudioDatePicker = ({ value, onChange, placeholder = "SELECT DATE", classN
     const selectedDate = (value && value !== 'TBD' && isValid(new Date(value))) ? new Date(value) : null;
 
     const renderHeader = () => (
-        <div className="flex items-center justify-between px-4 py-3 border-b border-white/5">
-            <button type="button" onClick={prevMonth} className="p-2 hover:bg-white/5 rounded-lg transition-colors text-gray-400 hover:text-white">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-black/10 dark:border-white/5">
+            <button type="button" onClick={prevMonth} className="p-2 hover:bg-black/5 dark:hover:bg-white/5 rounded-lg transition-colors text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">
                 <ChevronLeft size={16} />
             </button>
-            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white italic">
+            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-900 dark:text-white italic">
                 {isValid(currentMonth) ? format(currentMonth, 'MMMM yyyy') : 'SELECT MONTH'}
             </span>
-            <button type="button" onClick={nextMonth} className="p-2 hover:bg-white/5 rounded-lg transition-colors text-gray-400 hover:text-white">
+            <button type="button" onClick={nextMonth} className="p-2 hover:bg-black/5 dark:hover:bg-white/5 rounded-lg transition-colors text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">
                 <ChevronRight size={16} />
             </button>
         </div>
@@ -81,7 +81,7 @@ const StudioDatePicker = ({ value, onChange, placeholder = "SELECT DATE", classN
                             onClick={() => handleDateClick(day)}
                             className={cn(
                                 "h-10 w-full rounded-xl flex items-center justify-center text-[10px] font-bold transition-all relative group",
-                                !isCurrentMonth ? "text-gray-700 opacity-30" : "text-gray-300 hover:bg-white/10 hover:text-white",
+                                !isCurrentMonth ? "text-gray-700 opacity-30" : "text-gray-700 dark:text-gray-300 hover:bg-black/10 dark:hover:bg-white/10 hover:text-gray-900 dark:hover:text-white",
                                 isSelected && "bg-neon-pink text-black font-black shadow-[0_0_15px_rgba(255,79,139,0.3)] hover:bg-neon-pink hover:text-black",
                                 isToday(day) && !isSelected && "border border-neon-pink/30 text-neon-pink"
                             )}
@@ -98,11 +98,11 @@ const StudioDatePicker = ({ value, onChange, placeholder = "SELECT DATE", classN
         <div className={cn("relative", className)} ref={containerRef}>
             <div 
                 onClick={() => setIsOpen(!isOpen)}
-                className="flex items-center justify-between h-full bg-black/40 border border-white/5 rounded-xl px-6 cursor-pointer hover:border-white/20 transition-all group"
+                className="flex items-center justify-between h-full bg-white dark:bg-black/40 border border-black/10 dark:border-white/5 rounded-xl px-6 cursor-pointer hover:border-black/20 dark:hover:border-white/20 transition-all group"
             >
                 <div className="flex items-center gap-4">
-                    <CalendarIcon size={16} className={cn("transition-colors", isOpen ? "text-neon-pink" : "text-white/20 group-hover:text-white/40")} />
-                    <span className={cn("text-[11px] font-black uppercase tracking-widest", !value ? "text-white/20" : "text-white italic")}>
+                    <CalendarIcon size={16} className={cn("transition-colors", isOpen ? "text-neon-pink" : "text-gray-900 dark:text-white/20 group-hover:text-gray-900 dark:group-hover:text-white/40")} />
+                    <span className={cn("text-[11px] font-black uppercase tracking-widest", !value ? "text-gray-900 dark:text-white/20" : "text-gray-900 dark:text-white italic")}>
                         {value && value !== 'TBD' && selectedDate ? format(selectedDate, 'dd-MM-yyyy') : (value === 'TBD' ? 'TBD' : placeholder)}
                     </span>
                 </div>
@@ -114,14 +114,14 @@ const StudioDatePicker = ({ value, onChange, placeholder = "SELECT DATE", classN
                         initial={{ opacity: 0, y: 10, scale: 0.95 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                        className="absolute z-[100] top-full mt-3 left-0 w-[300px] bg-black/95 backdrop-blur-[64px] border border-white/10 rounded-[2rem] shadow-[0_30px_60px_rgba(0,0,0,0.8)] overflow-hidden"
+                        className="absolute z-[100] top-full mt-3 left-0 w-[300px] bg-white dark:bg-black/95 backdrop-blur-[64px] border border-black/10 dark:border-white/10 rounded-[2rem] shadow-[0_30px_60px_rgba(0,0,0,0.8)] overflow-hidden"
                     >
                         {renderHeader()}
                         <div className="p-4">
                             {renderDays()}
                             {renderCells()}
                         </div>
-                        <div className="p-4 bg-white/5 flex justify-center">
+                        <div className="p-4 bg-black/5 dark:bg-white/5 flex justify-center">
                             <button 
                                 type="button"
                                 onClick={() => handleDateClick(new Date())}

@@ -45,14 +45,14 @@ const statusConfig = {
 function DetailRow({ icon: Icon, label, value }) {
   return (
     <div className="flex items-center gap-3">
-      <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center shrink-0">
-        <Icon className="w-4 h-4 text-gray-400" />
+      <div className="w-8 h-8 rounded-lg bg-black/5 dark:bg-white/5 flex items-center justify-center shrink-0">
+        <Icon className="w-4 h-4 text-gray-600 dark:text-gray-400" />
       </div>
       <div className="min-w-0">
         <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest">
           {label}
         </p>
-        <p className="text-xs font-bold text-white truncate">{value}</p>
+        <p className="text-xs font-bold text-gray-900 dark:text-white truncate">{value}</p>
       </div>
     </div>
   );
@@ -108,7 +108,7 @@ export default function PaymentClaimReview({ invoice, onApprove, onDecline }) {
     >
       {/* Header */}
       <div className="flex items-center justify-between mb-5">
-        <h3 className="text-[10px] font-black uppercase tracking-widest text-white/70">
+        <h3 className="text-[10px] font-black uppercase tracking-widest text-gray-900 dark:text-white/70">
           Payment Claim
         </h3>
         <span
@@ -125,7 +125,7 @@ export default function PaymentClaimReview({ invoice, onApprove, onDecline }) {
       </div>
 
       {/* Details Card */}
-      <div className="space-y-3.5 bg-black/30 rounded-xl p-4 border border-white/5 mb-5">
+      <div className="space-y-3.5 bg-white dark:bg-black/30 rounded-xl p-4 border border-black/10 dark:border-white/5 mb-5">
         <DetailRow icon={User} label="Name" value={claim.name || '—'} />
         <DetailRow icon={Mail} label="Email" value={claim.email || '—'} />
         <DetailRow icon={Globe} label="IP Address" value={claim.ip || '—'} />

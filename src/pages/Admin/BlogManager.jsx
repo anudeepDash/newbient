@@ -81,14 +81,14 @@ const BlogManager = () => {
             <div className="relative z-10 pb-20">
                 {/* Status Bar - Refined alignment */}
                 <div className="flex items-center gap-4 mb-12">
-                    <div className="flex items-center gap-2.5 px-4 py-2 bg-white/5 border border-white/10 rounded-full">
+                    <div className="flex items-center gap-2.5 px-4 py-2 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-full">
                         <div className="w-1.5 h-1.5 rounded-full bg-neon-blue shadow-[0_0_10px_rgba(0,255,255,0.5)]" />
-                        <span className="text-[9px] font-black uppercase tracking-[0.3em] text-white/60">LIVE STATUS</span>
+                        <span className="text-[9px] font-black uppercase tracking-[0.3em] text-gray-900 dark:text-white/60">LIVE STATUS</span>
                     </div>
-                    <div className="w-px h-4 bg-white/10" />
+                    <div className="w-px h-4 bg-black/10 dark:bg-white/10" />
                     <p className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-500">
-                        <span className="text-white">{posts.length} ARTICLES</span>
-                        <span className="mx-3 text-white/10">•</span>
+                        <span className="text-gray-900 dark:text-white">{posts.length} ARTICLES</span>
+                        <span className="mx-3 text-gray-900 dark:text-white/10">•</span>
                         <span className="text-neon-blue">{subscribers.length} SUBSCRIBERS</span>
                     </p>
                 </div>
@@ -107,8 +107,8 @@ const BlogManager = () => {
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: i * 0.1 }}
                         >
-                            <Card className="p-8 bg-zinc-900/40 border-white/5 relative group overflow-hidden hover:border-white/10 transition-all">
-                                <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                            <Card className="p-8 bg-gray-100 dark:bg-zinc-900/40 border-black/10 dark:border-white/5 relative group overflow-hidden hover:border-black/10 dark:hover:border-white/10 transition-all">
+                                <div className="absolute inset-0 bg-gradient-to-br from-gray-900 dark:from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                                 <div className="relative z-10">
                                     <p className="text-[10px] font-black uppercase tracking-widest text-gray-500 mb-2">{stat.label}</p>
                                     <div className="flex items-baseline gap-2">
@@ -125,24 +125,24 @@ const BlogManager = () => {
                 {/* Ticker Editor */}
                 <div className="mb-12">
                     <button onClick={() => setShowTickerEditor(!showTickerEditor)}
-                        className="flex items-center gap-3 text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-white transition-colors mb-4">
+                        className="flex items-center gap-3 text-[10px] font-black uppercase tracking-widest text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors mb-4">
                         <Radio size={14} className="text-neon-blue" /> Manage Ticker Bar
                         <span className="text-gray-600">{showTickerEditor ? '▲' : '▼'}</span>
                     </button>
                     {showTickerEditor && (
-                        <Card className="p-6 bg-zinc-900/40 border-white/5">
+                        <Card className="p-6 bg-gray-100 dark:bg-zinc-900/40 border-black/10 dark:border-white/5">
                             <p className="text-xs text-gray-500 mb-4">These items scroll across the top of the ConcertZone page.</p>
                             {tickerItems.map((item, idx) => (
                                 <div key={idx} className="flex items-center gap-2 mb-2">
                                     <input value={item} onChange={e => { const n = [...tickerItems]; n[idx] = e.target.value; setTickerItems(n); }}
-                                        className="flex-1 bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-neon-blue/40" />
+                                        className="flex-1 bg-white dark:bg-black/40 border border-black/10 dark:border-white/10 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-neon-blue/40" />
                                     <button onClick={() => setTickerItems(tickerItems.filter((_, i) => i !== idx))}
                                         className="text-gray-600 hover:text-neon-pink transition-colors"><Trash2 size={14} /></button>
                                 </div>
                             ))}
                             <div className="flex items-center gap-2 mt-3">
                                 <button onClick={() => setTickerItems([...tickerItems, ''])}
-                                    className="h-8 px-4 bg-white/5 border border-white/10 rounded-lg text-[10px] font-bold uppercase tracking-wider hover:bg-white/10 transition-all flex items-center gap-1">
+                                    className="h-8 px-4 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-lg text-[10px] font-bold uppercase tracking-wider hover:bg-black/10 dark:hover:bg-white/10 transition-all flex items-center gap-1">
                                     <Plus size={12} /> Add Item
                                 </button>
                                 <button onClick={async () => {
@@ -160,27 +160,27 @@ const BlogManager = () => {
                 {/* Control Bar */}
                 <div className="flex flex-col xl:flex-row gap-6 mb-12 items-stretch xl:items-center">
                     <div className="relative flex-grow group">
-                        <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-neon-blue transition-colors" size={20} />
+                        <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-blue-600 dark:group-focus-within:text-neon-blue transition-colors" size={20} />
                         <input
                             type="text"
                             placeholder="SEARCH STORIES BY TITLE OR KEYWORD..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full h-16 bg-white/5 border border-white/10 rounded-[1.5rem] pl-16 pr-6 font-black font-heading uppercase tracking-widest text-[11px] text-white placeholder:text-white/10 focus:outline-none focus:border-neon-blue/50 transition-all backdrop-blur-xl"
+                            className="w-full h-16 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-[1.5rem] pl-16 pr-6 font-black font-heading uppercase tracking-widest text-[11px] text-gray-900 dark:text-white placeholder:text-gray-900 dark:placeholder:text-white/10 focus:outline-none focus:border-neon-blue/50 transition-all backdrop-blur-xl"
                         />
                     </div>
 
                     <div className="flex flex-wrap items-center gap-4">
-                        <div className="flex bg-white/5 p-1.5 rounded-2xl border border-white/5">
+                        <div className="flex bg-black/5 dark:bg-white/5 p-1.5 rounded-2xl border border-black/10 dark:border-white/5">
                             <button 
                                 onClick={() => setViewMode('grid')}
-                                className={`p-3 rounded-xl transition-all ${viewMode === 'grid' ? 'bg-white text-black shadow-lg' : 'text-gray-500 hover:text-white'}`}
+                                className={`p-3 rounded-xl transition-all ${viewMode === 'grid' ? 'bg-white text-black shadow-lg' : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'}`}
                             >
                                 <LayoutGrid size={18} />
                             </button>
                             <button 
                                 onClick={() => setViewMode('list')}
-                                className={`p-3 rounded-xl transition-all ${viewMode === 'list' ? 'bg-white text-black shadow-lg' : 'text-gray-500 hover:text-white'}`}
+                                className={`p-3 rounded-xl transition-all ${viewMode === 'list' ? 'bg-white text-black shadow-lg' : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'}`}
                             >
                                 <List size={18} />
                             </button>
@@ -189,7 +189,7 @@ const BlogManager = () => {
                         <select
                             value={selectedCategory}
                             onChange={(e) => setSelectedCategory(e.target.value)}
-                            className="h-16 bg-zinc-900 border border-white/10 rounded-[1.5rem] px-8 font-black font-heading uppercase tracking-widest text-[10px] focus:outline-none focus:border-neon-blue/50 appearance-none cursor-pointer hover:bg-white/5 transition-all"
+                            className="h-16 bg-gray-100 dark:bg-zinc-900 border border-black/10 dark:border-white/10 rounded-[1.5rem] px-8 font-black font-heading uppercase tracking-widest text-[10px] focus:outline-none focus:border-neon-blue/50 appearance-none cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 transition-all"
                         >
                             {categories.map(cat => <option key={cat} value={cat}>{cat === 'All' ? 'ALL CATEGORIES' : cat.toUpperCase()}</option>)}
                         </select>
@@ -197,7 +197,7 @@ const BlogManager = () => {
                         <select
                             value={selectedStatus}
                             onChange={(e) => setSelectedStatus(e.target.value)}
-                            className="h-16 bg-zinc-900 border border-white/10 rounded-[1.5rem] px-8 font-black font-heading uppercase tracking-widest text-[10px] focus:outline-none focus:border-neon-blue/50 appearance-none cursor-pointer hover:bg-white/5 transition-all"
+                            className="h-16 bg-gray-100 dark:bg-zinc-900 border border-black/10 dark:border-white/10 rounded-[1.5rem] px-8 font-black font-heading uppercase tracking-widest text-[10px] focus:outline-none focus:border-neon-blue/50 appearance-none cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 transition-all"
                         >
                             <option value="All">ALL STATUS</option>
                             <option value="Published">PUBLISHED</option>
@@ -220,7 +220,7 @@ const BlogManager = () => {
                                     transition={{ delay: i * 0.05 }}
                                     className="group relative shrink-0 w-[85vw] md:w-auto snap-center"
                                 >
-                                    <div className="bg-zinc-900/60 border border-white/5 rounded-[2.5rem] overflow-hidden backdrop-blur-3xl hover:border-neon-blue/20 transition-all duration-500 h-full flex flex-col">
+                                    <div className="bg-gray-100 dark:bg-zinc-900/60 border border-black/10 dark:border-white/5 rounded-[2.5rem] overflow-hidden backdrop-blur-3xl hover:border-neon-blue/20 transition-all duration-500 h-full flex flex-col">
                                         {/* Image Header */}
                                         <div className="relative aspect-video overflow-hidden">
                                             <img src={post.coverImage} className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110" alt="" />
@@ -228,7 +228,7 @@ const BlogManager = () => {
                                             
                                             {/* Top Badges */}
                                             <div className="absolute top-6 left-6 flex items-center gap-2">
-                                                <span className="px-4 py-1.5 bg-black/50 backdrop-blur-md border border-white/10 rounded-full text-[8px] font-black uppercase tracking-widest text-white">
+                                                <span className="px-4 py-1.5 bg-white dark:bg-black/50 backdrop-blur-md border border-black/10 dark:border-white/10 rounded-full text-[8px] font-black uppercase tracking-widest text-gray-900 dark:text-white">
                                                     {post.category}
                                                 </span>
                                                 {post.featured && (
@@ -254,7 +254,7 @@ const BlogManager = () => {
                                         <div className="p-8 flex flex-col flex-grow">
                                             <div className="flex items-center gap-3 text-gray-500 text-[9px] font-black uppercase tracking-widest mb-4">
                                                 <span>{new Date(post.publishDate).toLocaleDateString()}</span>
-                                                <span className="w-1 h-1 rounded-full bg-white/10" />
+                                                <span className="w-1 h-1 rounded-full bg-black/10 dark:bg-white/10" />
                                                 <span>{post.author || 'NEWBI TEAM'}</span>
                                             </div>
                                             
@@ -262,15 +262,15 @@ const BlogManager = () => {
                                                 {post.title}
                                             </h3>
                                             
-                                            <p className="text-gray-400 text-xs font-medium line-clamp-2 mb-8 flex-grow">
+                                            <p className="text-gray-600 dark:text-gray-400 text-xs font-medium line-clamp-2 mb-8 flex-grow">
                                                 {post.shortDescription}
                                             </p>
 
                                             {/* Action Grid */}
-                                            <div className="grid grid-cols-4 gap-3 pt-6 border-t border-white/5 mt-auto">
+                                            <div className="grid grid-cols-4 gap-3 pt-6 border-t border-black/10 dark:border-white/5 mt-auto">
                                                 <button 
                                                     onClick={() => navigate(`/concertzone/${post.category?.toLowerCase().replace(' ', '-') || 'news'}/${post.slug}`)}
-                                                    className="p-4 bg-white/5 hover:bg-white/10 border border-white/5 rounded-2xl text-gray-400 hover:text-white transition-all flex items-center justify-center"
+                                                    className="p-4 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 border border-black/10 dark:border-white/5 rounded-2xl text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all flex items-center justify-center"
                                                     title="Preview"
                                                 >
                                                     <Eye size={18} />
@@ -280,7 +280,7 @@ const BlogManager = () => {
                                                     className={`p-4 border rounded-2xl transition-all flex items-center justify-center ${
                                                         post.featured 
                                                             ? 'bg-neon-pink/10 border-neon-pink/20 text-neon-pink shadow-[0_0_15px_rgba(255,0,85,0.2)]' 
-                                                            : 'bg-white/5 border-white/5 text-gray-400 hover:text-neon-pink hover:bg-neon-pink/5'
+                                                            : 'bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/5 text-gray-600 dark:text-gray-400 hover:text-neon-pink hover:bg-neon-pink/5'
                                                     }`}
                                                     title={post.featured ? "Unfeature" : "Feature Story"}
                                                 >
@@ -288,20 +288,20 @@ const BlogManager = () => {
                                                 </button>
                                                 <button 
                                                     onClick={() => navigate(`/admin/blog/edit/${post.id}`)}
-                                                    className="p-4 bg-white/5 hover:bg-neon-blue/10 border border-white/5 hover:border-neon-blue/20 rounded-2xl text-gray-400 hover:text-neon-blue transition-all flex items-center justify-center"
+                                                    className="p-4 bg-black/5 dark:bg-white/5 hover:bg-neon-blue/10 border border-black/10 dark:border-white/5 hover:border-neon-blue/20 rounded-2xl text-gray-600 dark:text-gray-400 hover:text-neon-blue transition-all flex items-center justify-center"
                                                     title="Edit"
                                                 >
                                                     <Edit2 size={18} />
                                                 </button>
                                                 <div className="relative group/menu">
-                                                    <button className="w-full h-full bg-white/5 hover:bg-white/10 border border-white/5 rounded-2xl text-gray-400 hover:text-white transition-all flex items-center justify-center">
+                                                    <button className="w-full h-full bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 border border-black/10 dark:border-white/5 rounded-2xl text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all flex items-center justify-center">
                                                         <MoreHorizontal size={18} />
                                                     </button>
                                                     {/* Floating Menu */}
-                                                    <div className="absolute bottom-full right-0 mb-4 w-56 bg-zinc-900 border border-white/10 rounded-2xl p-2 opacity-0 pointer-events-none group-hover/menu:opacity-100 group-hover/menu:pointer-events-auto transition-all translate-y-2 group-hover/menu:translate-y-0 backdrop-blur-3xl shadow-2xl z-50">
+                                                    <div className="absolute bottom-full right-0 mb-4 w-56 bg-gray-100 dark:bg-zinc-900 border border-black/10 dark:border-white/10 rounded-2xl p-2 opacity-0 pointer-events-none group-hover/menu:opacity-100 group-hover/menu:pointer-events-auto transition-all translate-y-2 group-hover/menu:translate-y-0 backdrop-blur-3xl shadow-2xl z-50">
                                                         <button 
                                                             onClick={() => toggleFeatured(post)}
-                                                            className="w-full p-4 flex items-center gap-4 text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-white hover:bg-white/5 rounded-xl transition-all"
+                                                            className="w-full p-4 flex items-center gap-4 text-[10px] font-black uppercase tracking-widest text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 rounded-xl transition-all"
                                                         >
                                                             <Star size={16} fill={post.featured ? 'currentColor' : 'none'} className={post.featured ? 'text-neon-pink' : ''} /> 
                                                             {post.featured ? 'Unfeature' : 'Feature Story'}
@@ -318,17 +318,17 @@ const BlogManager = () => {
                                                                     useStore.getState().addToast("PUSH_SIGNAL_TRANSMITTED.", 'success');
                                                                 }
                                                             }}
-                                                            className="w-full p-4 flex items-center gap-4 text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-neon-blue hover:bg-neon-blue/5 rounded-xl transition-all"
+                                                            className="w-full p-4 flex items-center gap-4 text-[10px] font-black uppercase tracking-widest text-gray-600 dark:text-gray-400 hover:text-neon-blue hover:bg-neon-blue/5 rounded-xl transition-all"
                                                         >
                                                             <Sparkles size={16} className="text-neon-blue" /> Direct Push
                                                         </button>
                                                         <button 
                                                             onClick={() => handleSendNewsletter(post)}
-                                                            className="w-full p-4 flex items-center gap-4 text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-neon-pink hover:bg-neon-pink/5 rounded-xl transition-all"
+                                                            className="w-full p-4 flex items-center gap-4 text-[10px] font-black uppercase tracking-widest text-gray-600 dark:text-gray-400 hover:text-neon-pink hover:bg-neon-pink/5 rounded-xl transition-all"
                                                         >
                                                             <Mail size={16} className="text-neon-pink" /> Send Newsletter
                                                         </button>
-                                                        <div className="h-px bg-white/5 my-2" />
+                                                        <div className="h-px bg-black/5 dark:bg-white/5 my-2" />
                                                         <button 
                                                             onClick={() => handleDelete(post.id)}
                                                             className="w-full p-4 flex items-center gap-4 text-[10px] font-black uppercase tracking-widest text-gray-500 hover:text-red-500 hover:bg-red-500/5 rounded-xl transition-all"
@@ -345,15 +345,15 @@ const BlogManager = () => {
                         </AnimatePresence>
                     </div>
                 ) : (
-                    <div className="bg-zinc-900/40 border border-white/5 rounded-[2.5rem] overflow-hidden backdrop-blur-3xl">
+                    <div className="bg-gray-100 dark:bg-zinc-900/40 border border-black/10 dark:border-white/5 rounded-[2.5rem] overflow-hidden backdrop-blur-3xl">
                         <table className="w-full text-left">
                             <thead>
-                                <tr className="border-b border-white/5 bg-white/5">
-                                    <th className="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-gray-400">ARTICLE_ID</th>
-                                    <th className="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-gray-400">CATEGORY</th>
-                                    <th className="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-gray-400">STATS</th>
-                                    <th className="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-gray-400">STATUS</th>
-                                    <th className="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-gray-400 text-right">ACTIONS</th>
+                                <tr className="border-b border-black/10 dark:border-white/5 bg-black/5 dark:bg-white/5">
+                                    <th className="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-gray-600 dark:text-gray-400">ARTICLE_ID</th>
+                                    <th className="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-gray-600 dark:text-gray-400">CATEGORY</th>
+                                    <th className="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-gray-600 dark:text-gray-400">STATS</th>
+                                    <th className="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-gray-600 dark:text-gray-400">STATUS</th>
+                                    <th className="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-gray-600 dark:text-gray-400 text-right">ACTIONS</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -365,7 +365,7 @@ const BlogManager = () => {
                                             initial={{ opacity: 0 }}
                                             animate={{ opacity: 1 }}
                                             exit={{ opacity: 0 }}
-                                            className="border-b border-white/5 hover:bg-white/[0.02] transition-colors group"
+                                            className="border-b border-black/10 dark:border-white/5 hover:bg-white/[0.02] transition-colors group"
                                         >
                                             <td className="px-8 py-6">
                                                 <div className="flex items-center gap-4">
@@ -377,7 +377,7 @@ const BlogManager = () => {
                                                 </div>
                                             </td>
                                             <td className="px-8 py-6">
-                                                <span className="px-3 py-1 bg-white/5 border border-white/10 rounded-full text-[9px] font-black uppercase tracking-widest text-gray-400">
+                                                <span className="px-3 py-1 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-full text-[9px] font-black uppercase tracking-widest text-gray-600 dark:text-gray-400">
                                                     {post.category}
                                                 </span>
                                             </td>
@@ -402,14 +402,14 @@ const BlogManager = () => {
                                                         className={`p-3 border rounded-xl transition-all ${
                                                             post.featured 
                                                                 ? 'bg-neon-pink/10 border-neon-pink/20 text-neon-pink shadow-[0_0_15px_rgba(255,0,85,0.2)]' 
-                                                                : 'bg-white/5 border-white/5 text-gray-400 hover:text-neon-pink hover:bg-neon-pink/5'
+                                                                : 'bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/5 text-gray-600 dark:text-gray-400 hover:text-neon-pink hover:bg-neon-pink/5'
                                                         }`}
                                                         title={post.featured ? "Unfeature" : "Feature Story"}
                                                     >
                                                         <Star size={16} fill={post.featured ? 'currentColor' : 'none'} />
                                                     </button>
-                                                    <button onClick={() => navigate(`/admin/blog/edit/${post.id}`)} className="p-3 bg-white/5 hover:bg-neon-blue/10 border border-white/5 hover:border-neon-blue/20 rounded-xl text-gray-400 hover:text-neon-blue transition-all"><Edit2 size={16} /></button>
-                                                    <button onClick={() => handleDelete(post.id)} className="p-3 bg-white/5 hover:bg-red-500/10 border border-white/5 hover:border-red-500/20 rounded-xl text-gray-400 hover:text-red-500 transition-all"><Trash2 size={16} /></button>
+                                                    <button onClick={() => navigate(`/admin/blog/edit/${post.id}`)} className="p-3 bg-black/5 dark:bg-white/5 hover:bg-neon-blue/10 border border-black/10 dark:border-white/5 hover:border-neon-blue/20 rounded-xl text-gray-600 dark:text-gray-400 hover:text-neon-blue transition-all"><Edit2 size={16} /></button>
+                                                    <button onClick={() => handleDelete(post.id)} className="p-3 bg-black/5 dark:bg-white/5 hover:bg-red-500/10 border border-black/10 dark:border-white/5 hover:border-red-500/20 rounded-xl text-gray-600 dark:text-gray-400 hover:text-red-500 transition-all"><Trash2 size={16} /></button>
                                                 </div>
                                             </td>
                                         </motion.tr>

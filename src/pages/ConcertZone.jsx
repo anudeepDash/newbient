@@ -19,7 +19,7 @@ const ConcertZone = () => {
     }, []);
 
     return (
-        <div className="min-h-screen bg-[#020202] text-white pt-32 pb-32 px-4 relative overflow-hidden">
+        <div className="min-h-screen bg-gray-50 dark:bg-[#020202] text-gray-900 dark:text-white pt-32 pb-32 px-4 relative overflow-hidden transition-colors duration-300">
             {/* Background Glows */}
             <div className="fixed inset-0 z-0 pointer-events-none">
                 <div className="absolute top-[10%] right-[-10%] w-[50%] h-[50%] bg-neon-pink/6 rounded-full blur-[150px] animate-pulse" />
@@ -28,9 +28,9 @@ const ConcertZone = () => {
 
             {/* Floating Back to newbi.live */}
             <div className="fixed top-14 left-5 md:top-16 md:left-8 z-[150]">
-                <Link to="/" className="flex items-center gap-3 md:gap-4 px-4 py-3 md:px-6 md:py-4 bg-black/60 hover:bg-black/80 border border-white/10 rounded-2xl md:rounded-[1.5rem] backdrop-blur-3xl transition-all shadow-[0_15px_40px_rgba(0,0,0,0.6)] group">
+                <Link to="/" className="flex items-center gap-3 md:gap-4 px-4 py-3 md:px-6 md:py-4 bg-white dark:bg-black/60 hover:bg-gray-100 dark:hover:bg-black/80 border border-gray-200 dark:border-white/10 rounded-2xl md:rounded-[1.5rem] backdrop-blur-3xl transition-all shadow-[0_15px_40px_rgba(0,0,0,0.1)] dark:shadow-[0_15px_40px_rgba(0,0,0,0.6)] group">
                     <Home size={16} className="text-neon-blue group-hover:scale-110 transition-transform" />
-                    <span className="text-[9px] md:text-[10px] font-black uppercase tracking-[0.3em] md:tracking-[0.4em] text-gray-400 group-hover:text-white transition-colors">Back to newbi.live</span>
+                    <span className="text-[9px] md:text-[10px] font-black uppercase tracking-[0.3em] md:tracking-[0.4em] text-gray-600 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">Back to newbi.live</span>
                 </Link>
             </div>
 
@@ -41,16 +41,16 @@ const ConcertZone = () => {
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.2 }}
-                        className="text-4xl md:text-8xl font-black font-heading text-transparent bg-clip-text bg-gradient-to-r from-neon-pink via-white to-purple-500 mb-6 tracking-tight leading-none text-center"
+                        className="text-4xl md:text-8xl font-black font-heading text-transparent bg-clip-text bg-gradient-to-r from-neon-pink via-gray-900 dark:via-white to-purple-500 mb-6 tracking-tight leading-none text-center"
                     >
-                        Concert <span className="text-white">Zone.</span>
+                        Concert <span className="text-gray-900 dark:text-white">Zone.</span>
                     </motion.h1>
 
                     <motion.p
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         transition={{ delay: 0.3 }}
-                        className="text-gray-400 max-w-2xl mx-auto text-base md:text-xl font-medium leading-relaxed mb-10"
+                        className="text-gray-600 dark:text-gray-400 max-w-2xl mx-auto text-base md:text-xl font-medium leading-relaxed mb-10"
                     >
                         Experience the energy. Relive the moments. Join the movement.
                     </motion.p>
@@ -78,7 +78,7 @@ const ConcertZone = () => {
                     initial={{ opacity: 0, y: 40 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.5 }}
-                    className="bg-zinc-900/40 backdrop-blur-3xl border border-white/5 rounded-[2.5rem] p-6 md:p-10 shadow-2xl relative overflow-hidden"
+                    className="bg-white dark:bg-zinc-900/40 backdrop-blur-3xl border border-gray-200 dark:border-white/5 rounded-[2.5rem] p-6 md:p-10 shadow-xl dark:shadow-2xl relative overflow-hidden"
                 >
                     <div className="absolute top-0 right-0 w-80 h-80 bg-neon-pink/5 blur-[100px] -mr-40 -mt-40 pointer-events-none" />
 
@@ -97,19 +97,19 @@ const ConcertZone = () => {
                     </div>
 
                     {/* Bottom CTA */}
-                    <div className="mt-8 pt-6 border-t border-white/5 flex items-center justify-between relative z-10">
+                    <div className="mt-8 pt-6 border-t border-black/10 dark:border-white/5 flex items-center justify-between relative z-10">
                         <div className="flex items-center gap-4">
                             <div className="relative flex h-2.5 w-2.5">
                                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-neon-pink opacity-75"></span>
                                 <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-neon-pink"></span>
                             </div>
-                            <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Feed Live</span>
+                            <span className="text-[10px] font-black uppercase tracking-widest text-gray-600 dark:text-gray-400">Feed Live</span>
                         </div>
                         <a
                             href="https://www.instagram.com/newbi.live/"
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-neon-pink hover:text-white transition-colors"
+                            className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-neon-pink hover:text-gray-900 dark:hover:text-white transition-colors"
                         >
                             Follow <Zap size={12} />
                         </a>

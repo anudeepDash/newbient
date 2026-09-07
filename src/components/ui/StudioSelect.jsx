@@ -87,24 +87,24 @@ const StudioSelect = ({
             <div 
                 onClick={() => !disabled && setIsOpen(!isOpen)}
                 className={cn(
-                    "flex items-center justify-between h-full bg-black/60 border border-white/10 rounded-xl px-4 transition-all group shadow-inner",
-                    disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer hover:border-white/20",
-                    isOpen && "border-white/20"
+                    "flex items-center justify-between h-full bg-white dark:bg-black/60 border border-black/10 dark:border-white/10 rounded-xl px-3 sm:px-4 transition-all group shadow-inner",
+                    disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer hover:border-black/20 dark:hover:border-white/20",
+                    isOpen && "border-black/20 dark:border-white/20"
                 )}
             >
-                <div className="flex items-center gap-3 flex-1 overflow-hidden">
+                <div className="flex items-center gap-2 flex-1 overflow-hidden">
                     <span className={cn(
-                        "text-[10px] font-black uppercase tracking-[0.15em] truncate leading-none",
-                        (!value || (multi && value.length === 0)) ? "text-white/30" : "text-white italic"
+                        "text-[9px] font-bold uppercase tracking-wider truncate leading-none",
+                        (!value || (multi && value.length === 0) || value === 'All') ? "text-gray-900 dark:text-white/40" : "text-gray-900 dark:text-white"
                     )}>
                         {getDisplayLabel()}
                     </span>
                 </div>
                 <ChevronDown 
-                    size={14} 
+                    size={12} 
                     className={cn(
-                        "transition-all duration-300 shrink-0 ml-2", 
-                        isOpen ? cn("rotate-180", `text-${accentColor}`) : "text-white/30 group-hover:text-white/50"
+                        "transition-all duration-300 shrink-0 ml-1.5", 
+                        isOpen ? cn("rotate-180", `text-${accentColor}`) : "text-gray-900 dark:text-white/30 group-hover:text-gray-900 dark:group-hover:text-white/50"
                     )} 
                 />
             </div>
@@ -116,11 +116,11 @@ const StudioSelect = ({
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: position === "top" ? -10 : 10, scale: 0.95 }}
                         className={cn(
-                            "absolute z-[100] left-0 w-full bg-[#0a0a0a]/95 backdrop-blur-[64px] border border-white/10 rounded-2xl shadow-[0_30px_60px_rgba(0,0,0,0.8)] overflow-hidden",
-                            position === "top" ? "bottom-full mb-3" : "top-full mt-3"
+                            "absolute z-[100] left-0 w-full bg-white/95 dark:bg-[#0a0a0a]/95 backdrop-blur-[64px] border border-black/10 dark:border-white/10 rounded-2xl shadow-[0_30px_60px_rgba(0,0,0,0.8)] overflow-hidden",
+                            position === "top" ? "bottom-full mb-3" : "top-full mt-2"
                         )}
                     >
-                        <div className="max-h-[320px] overflow-y-auto py-2 custom-scrollbar">
+                        <div className="max-h-[280px] sm:max-h-[320px] overflow-y-auto py-1.5 custom-scrollbar">
                             {options.map((option) => {
                                 const active = isSelected(option.value);
                                 return (
@@ -128,13 +128,13 @@ const StudioSelect = ({
                                         key={option.value}
                                         onClick={() => handleSelect(option.value)}
                                         className={cn(
-                                            "px-6 py-4 text-[11px] font-black uppercase tracking-widest cursor-pointer transition-all flex items-center justify-between",
-                                            active ? activeAccentClasses[accentColor] : "text-gray-500",
+                                            "px-4 py-2.5 sm:py-3 text-[9px] sm:text-[10px] font-bold uppercase tracking-wider cursor-pointer transition-all flex items-center justify-between",
+                                            active ? activeAccentClasses[accentColor] : "text-gray-600 dark:text-gray-400",
                                             !active && hoverAccentClasses[accentColor]
                                         )}
                                     >
-                                        <span className={cn(active ? "italic" : "")}>{option.label}</span>
-                                        {active && <Check size={14} />}
+                                        <span>{option.label}</span>
+                                        {active && <Check size={13} />}
                                     </div>
                                 );
                             })}

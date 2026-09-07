@@ -241,7 +241,7 @@ const CampaignPublicView = () => {
     const isFullyComplete = requiredTasks.length > 0 && requiredTasks.every(t => getSubmissionStatus(t, user?.uid) === 'approved');
 
     return (
-        <div className="min-h-screen bg-[#050505] text-white pb-40 overflow-y-auto relative selection:bg-neon-blue selection:text-black">
+        <div className="min-h-screen bg-gray-50 dark:bg-[#050505] text-gray-900 dark:text-white pb-40 overflow-y-auto relative selection:bg-neon-blue selection:text-black transition-colors duration-300">
             {/* Ambient Background */}
             <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
                 <div className="absolute top-0 right-0 w-[50%] h-[50%] bg-neon-blue/10 rounded-full blur-[150px]" />
@@ -249,12 +249,12 @@ const CampaignPublicView = () => {
             </div>
 
             {/* Top Navigation Bar */}
-            <div className="sticky top-0 z-50 bg-[#050505]/80 backdrop-blur-2xl border-b border-white/10 px-4 md:px-8 py-4 flex items-center justify-between shadow-2xl">
+            <div className="sticky top-0 z-50 bg-white/80 dark:bg-[#050505]/80 backdrop-blur-2xl border-b border-gray-200 dark:border-white/10 px-4 md:px-8 py-4 flex items-center justify-between shadow-sm dark:shadow-2xl">
                 <button 
                     onClick={() => navigate('/creator-dashboard')}
-                    className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.2em] text-gray-400 hover:text-white transition-colors group"
+                    className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.2em] text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors group"
                 >
-                    <div className="w-8 h-8 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center group-hover:bg-neon-blue group-hover:text-black group-hover:border-neon-blue transition-all">
+                    <div className="w-8 h-8 rounded-xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 flex items-center justify-center group-hover:bg-neon-blue group-hover:text-black group-hover:border-neon-blue transition-all">
                         <ChevronLeft size={16} />
                     </div>
                     Back to Creator Hub
@@ -262,7 +262,7 @@ const CampaignPublicView = () => {
 
                 <div className="flex items-center gap-4">
                     {profile && (
-                        <div className="flex items-center gap-3 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-widest text-gray-300 backdrop-blur-md">
+                        <div className="flex items-center gap-3 px-4 py-1.5 rounded-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-[10px] font-black uppercase tracking-widest text-gray-700 dark:text-gray-300 backdrop-blur-md">
                             <span className="w-2 h-2 rounded-full bg-neon-green animate-pulse shadow-[0_0_8px_#39ff14]" />
                             {profile.name || user?.email}
                         </div>
@@ -273,7 +273,7 @@ const CampaignPublicView = () => {
             {/* Hero Image Section */}
             <div className="max-w-7xl mx-auto px-4 md:px-8 pt-8">
                 {campaign.thumbnail ? (
-                    <div className="relative w-full aspect-video rounded-[2rem] md:rounded-[2.5rem] overflow-hidden border border-white/10 shadow-2xl bg-zinc-950">
+                    <div className="relative w-full aspect-video rounded-[2rem] md:rounded-[2.5rem] overflow-hidden border border-black/10 dark:border-white/10 shadow-2xl bg-gray-100 dark:bg-zinc-950">
                         <img 
                             src={campaign.thumbnail} 
                             alt={campaign.title} 
@@ -282,24 +282,24 @@ const CampaignPublicView = () => {
                         <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-[#050505]/20 to-transparent pointer-events-none" />
                         <div className="absolute inset-0 bg-gradient-to-b from-[#050505]/10 via-transparent to-transparent pointer-events-none" />
                         <div className="absolute bottom-6 left-6 flex items-center gap-3 z-10">
-                            <div className="p-3 rounded-xl bg-black/60 backdrop-blur-md border border-white/10 text-neon-blue shadow-lg">
+                            <div className="p-3 rounded-xl bg-white dark:bg-black/60 backdrop-blur-md border border-black/10 dark:border-white/10 text-neon-blue shadow-lg">
                                 <Instagram size={18} />
                             </div>
-                            <div className="px-3 py-1.5 rounded-xl bg-black/60 backdrop-blur-md border border-white/10 text-[9px] font-black uppercase tracking-widest text-white shadow-lg flex items-center gap-1.5">
+                            <div className="px-3 py-1.5 rounded-xl bg-white dark:bg-black/60 backdrop-blur-md border border-black/10 dark:border-white/10 text-[9px] font-black uppercase tracking-widest text-gray-900 dark:text-white shadow-lg flex items-center gap-1.5">
                                 <MapPin size={12} className="text-neon-pink" /> {campaign.targetCity || 'Universal'}
                             </div>
                         </div>
                     </div>
                 ) : (
-                    <div className="relative w-full aspect-[21/9] min-h-[250px] bg-gradient-to-r from-neon-blue/20 via-neon-purple/20 to-[#050505] rounded-[2rem] md:rounded-[2.5rem] overflow-hidden flex items-end p-8 border border-white/10 shadow-2xl">
+                    <div className="relative w-full aspect-[21/9] min-h-[250px] bg-gradient-to-r from-neon-blue/20 via-neon-purple/20 to-[#050505] rounded-[2rem] md:rounded-[2.5rem] overflow-hidden flex items-end p-8 border border-black/10 dark:border-white/10 shadow-2xl">
                         <div className="absolute -right-20 -top-20 w-80 h-80 bg-neon-blue/10 rounded-full blur-3xl pointer-events-none" />
                         <div className="flex items-center gap-4 z-10">
-                            <div className="p-3.5 rounded-2xl bg-black/60 backdrop-blur-xl border border-white/10 text-neon-blue shadow-2xl">
+                            <div className="p-3.5 rounded-2xl bg-white dark:bg-black/60 backdrop-blur-xl border border-black/10 dark:border-white/10 text-neon-blue shadow-2xl">
                                 <Instagram size={24} />
                             </div>
                             <div>
                                 <span className="text-[9px] font-black text-neon-blue uppercase tracking-[0.4em] block mb-1">Creator Opportunity</span>
-                                <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-white">
+                                <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-gray-900 dark:text-white">
                                     <MapPin size={12} className="text-neon-pink" /> {campaign.targetCity || 'Universal'}
                                 </div>
                             </div>
@@ -318,22 +318,22 @@ const CampaignPublicView = () => {
                             <h1 className="text-3xl md:text-5xl font-black font-heading leading-tight uppercase tracking-tighter italic">{campaign.title}</h1>
                             
                             {/* Badges Grid */}
-                            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 py-6 border-y border-white/5">
-                                <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/5 space-y-1 backdrop-blur-sm">
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 py-6 border-y border-gray-200 dark:border-white/5">
+                                <div className="p-4 rounded-2xl bg-white dark:bg-white/[0.02] border border-gray-200 dark:border-white/5 space-y-1 backdrop-blur-sm shadow-sm dark:shadow-none">
                                     <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest block">Location</span>
-                                    <div className="flex items-center gap-2 text-white font-bold uppercase text-xs truncate">
+                                    <div className="flex items-center gap-2 text-gray-900 dark:text-white font-bold uppercase text-xs truncate">
                                         <MapPin size={14} className="text-neon-blue shrink-0" /> {campaign.targetCity}
                                     </div>
                                 </div>
-                                <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/5 space-y-1 backdrop-blur-sm">
+                                <div className="p-4 rounded-2xl bg-white dark:bg-white/[0.02] border border-gray-200 dark:border-white/5 space-y-1 backdrop-blur-sm shadow-sm dark:shadow-none">
                                     <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest block">Rewards</span>
                                     <div className="flex items-center gap-2 text-neon-green font-bold uppercase text-xs truncate">
                                         <Zap size={14} className="shrink-0" /> {campaign.reward}
                                     </div>
                                 </div>
-                                <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/5 space-y-1 backdrop-blur-sm col-span-2 md:col-span-1">
+                                <div className="p-4 rounded-2xl bg-white dark:bg-white/[0.02] border border-gray-200 dark:border-white/5 space-y-1 backdrop-blur-sm col-span-2 md:col-span-1 shadow-sm dark:shadow-none">
                                     <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest block">Min. Followers</span>
-                                    <div className="flex items-center gap-2 text-white font-bold uppercase text-xs truncate">
+                                    <div className="flex items-center gap-2 text-gray-900 dark:text-white font-bold uppercase text-xs truncate">
                                         <Users size={14} className="text-neon-blue shrink-0" /> {Number(campaign.minInstagramFollowers || 0).toLocaleString()}+
                                     </div>
                                 </div>
@@ -341,18 +341,18 @@ const CampaignPublicView = () => {
                         </div>
 
                         {/* Campaign Description */}
-                        <div className="space-y-4 p-5 sm:p-8 rounded-[1.5rem] sm:rounded-[2.5rem] bg-white/[0.02] border border-white/5 backdrop-blur-xl relative overflow-hidden">
+                        <div className="space-y-4 p-5 sm:p-8 rounded-[1.5rem] sm:rounded-[2.5rem] bg-white dark:bg-white/[0.02] border border-gray-200 dark:border-white/5 backdrop-blur-xl relative overflow-hidden shadow-sm dark:shadow-none">
                             <div className="absolute top-0 left-0 w-1.5 h-full bg-neon-blue" />
                             <h3 className="text-[10px] font-black text-neon-blue uppercase tracking-[0.4em] flex items-center gap-2">
                                 <FileText size={14} /> Campaign Briefing
                             </h3>
-                            <div className="article-content text-gray-300 text-base md:text-lg font-medium leading-relaxed" dangerouslySetInnerHTML={{ __html: campaign.description }} />
+                            <div className="article-content text-gray-700 dark:text-gray-300 text-base md:text-lg font-medium leading-relaxed" dangerouslySetInnerHTML={{ __html: campaign.description }} />
                         </div>
 
                         {/* Campaign Tasks Section */}
                         {campaignTasks.length > 0 && (
                             <div className="space-y-6">
-                                <div className="flex items-center justify-between border-b border-white/5 pb-4">
+                                <div className="flex items-center justify-between border-b border-gray-200 dark:border-white/5 pb-4">
                                     <h3 className="text-[10px] font-black text-neon-blue uppercase tracking-[0.4em] flex items-center gap-2">
                                         <Target size={14} /> Campaign Deliverables
                                     </h3>
@@ -376,22 +376,22 @@ const CampaignPublicView = () => {
                                                 transition={{ delay: idx * 0.08 }}
                                                 onClick={() => isJoined && setSelectedTask(task)}
                                                 className={cn(
-                                                    "p-5 sm:p-6 bg-white/[0.03] border border-white/5 rounded-[1.5rem] sm:rounded-[2.0rem] flex items-start gap-3 sm:gap-5 group transition-all duration-300 backdrop-blur-xl relative overflow-hidden",
-                                                    isJoined ? "cursor-pointer hover:border-neon-blue/40 hover:bg-white/[0.05] hover:shadow-[0_0_30px_rgba(46,191,255,0.15)]" : "hover:border-white/10"
+                                                    "p-5 sm:p-6 bg-white dark:bg-white/[0.03] border border-gray-200 dark:border-white/5 rounded-[1.5rem] sm:rounded-[2.0rem] flex items-start gap-3 sm:gap-5 group transition-all duration-300 backdrop-blur-xl relative overflow-hidden shadow-sm dark:shadow-none",
+                                                    isJoined ? "cursor-pointer hover:border-neon-blue/40 hover:bg-gray-50 dark:hover:bg-white/[0.05] hover:shadow-[0_0_30px_rgba(46,191,255,0.15)]" : "hover:border-gray-300 dark:hover:border-white/10"
                                                 )}
                                             >
                                                 <div className={cn(
-                                                    "w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 border border-white/5 transition-transform group-hover:scale-110 shadow-lg",
+                                                    "w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 border border-gray-200 dark:border-white/5 transition-transform group-hover:scale-110 shadow-sm",
                                                     status === 'approved' ? "bg-neon-green/20 text-neon-green border-neon-green/30" :
                                                     status === 'submitted' ? "bg-yellow-500/10 text-yellow-500 border-yellow-500/30" :
-                                                    "bg-black/40 group-hover:border-neon-blue/30",
+                                                    "bg-white dark:bg-black/40 group-hover:border-neon-blue/30",
                                                     typeInfo.color
                                                 )}>
                                                     {status === 'approved' ? <CheckCircle2 size={22} /> : <TypeIcon size={22} />}
                                                 </div>
                                                 <div className="flex-1 min-w-0">
                                                     <div className="flex items-center flex-wrap gap-2.5 mb-2">
-                                                         <p className="font-black text-base text-white uppercase tracking-tight italic">{task.title}</p>
+                                                         <p className="font-black text-base text-gray-900 dark:text-white uppercase tracking-tight italic">{task.title}</p>
                                                         {task.priority === 'required' && (
                                                             <span className="px-2.5 py-1 bg-neon-blue/10 border border-neon-blue/20 rounded-lg text-[8px] font-black uppercase tracking-widest text-neon-blue shadow-sm">★ Required</span>
                                                         )}
@@ -405,18 +405,18 @@ const CampaignPublicView = () => {
                                                                 "px-3 py-1 border rounded-lg text-[8px] font-black uppercase tracking-widest shadow-sm ml-auto",
                                                                 status === 'approved' ? "bg-neon-green/10 border-neon-green/20 text-neon-green" :
                                                                 status === 'submitted' ? "bg-yellow-500/10 border-yellow-500/20 text-yellow-500" :
-                                                                "bg-white/5 border-white/10 text-gray-400"
+                                                                "bg-gray-100 dark:bg-white/5 border-gray-200 dark:border-white/10 text-gray-600 dark:text-gray-400"
                                                             )}>
                                                                 {status === 'not_started' ? 'Pending Submission' : status.toUpperCase().replace('_', ' ')}
                                                             </span>
                                                         )}
                                                     </div>
-                                                    {task.description && <div className="article-content text-xs text-gray-400 mt-1.5 leading-relaxed font-medium" dangerouslySetInnerHTML={{ __html: task.description }} />}
-                                                    <div className="flex flex-wrap items-center gap-3 mt-4 pt-3 border-t border-white/5">
-                                                        <span className="px-2.5 py-1 bg-white/5 rounded-lg text-[8px] font-black uppercase tracking-widest text-gray-400 flex items-center gap-1.5">
+                                                    {task.description && <div className="article-content text-xs text-gray-600 dark:text-gray-400 mt-1.5 leading-relaxed font-medium" dangerouslySetInnerHTML={{ __html: task.description }} />}
+                                                    <div className="flex flex-wrap items-center gap-3 mt-4 pt-3 border-t border-gray-200 dark:border-white/5">
+                                                        <span className="px-2.5 py-1 bg-gray-100 dark:bg-white/5 rounded-lg text-[8px] font-black uppercase tracking-widest text-gray-600 dark:text-gray-400 flex items-center gap-1.5">
                                                             {React.createElement(platInfo.icon, { size: 10 })} {platInfo.label}
                                                         </span>
-                                                        <span className="px-2.5 py-1 bg-white/5 rounded-lg text-[8px] font-black uppercase tracking-widest text-gray-400 flex items-center gap-1.5">
+                                                        <span className="px-2.5 py-1 bg-gray-100 dark:bg-white/5 rounded-lg text-[8px] font-black uppercase tracking-widest text-gray-600 dark:text-gray-400 flex items-center gap-1.5">
                                                             {React.createElement(typeInfo.icon, { size: 10 })} {typeInfo.label}
                                                         </span>
                                                         {isJoined && (
@@ -436,29 +436,29 @@ const CampaignPublicView = () => {
 
                     {/* Right Column: Interactive Form & Progress Workbench (5 Cols) */}
                     <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.2 }} className="lg:col-span-5 lg:sticky lg:top-28">
-                        <div className="bg-zinc-900/60 backdrop-blur-3xl border border-white/10 rounded-[1.5rem] sm:rounded-[2.5rem] p-5 sm:p-8 md:p-10 shadow-[0_0_50px_rgba(0,0,0,0.8)] relative overflow-hidden">
+                        <div className="bg-white dark:bg-zinc-900/60 backdrop-blur-3xl border border-gray-200 dark:border-white/10 rounded-[1.5rem] sm:rounded-[2.5rem] p-5 sm:p-8 md:p-10 shadow-xl dark:shadow-[0_0_50px_rgba(0,0,0,0.8)] relative overflow-hidden">
                             <div className="absolute top-0 right-0 w-40 h-40 bg-neon-blue/5 rounded-full blur-3xl pointer-events-none" />
                             
                             {isJoined ? (
                                 <div className="relative z-10 space-y-8">
-                                    <div className="flex items-center gap-4 pb-6 border-b border-white/5">
+                                    <div className="flex items-center gap-4 pb-6 border-b border-black/10 dark:border-white/5">
                                         <div className="w-14 h-14 rounded-2xl bg-neon-green/10 border border-neon-green/20 flex items-center justify-center shadow-[0_0_20px_rgba(57,255,20,0.2)] shrink-0">
                                             <CheckCircle2 className="text-neon-green" size={28} />
                                         </div>
                                         <div>
-                                            <h2 className="text-2xl font-black font-heading text-white uppercase tracking-tighter italic">Active Campaign</h2>
+                                            <h2 className="text-2xl font-black font-heading text-gray-900 dark:text-white uppercase tracking-tighter italic">Active Campaign</h2>
                                             <p className="text-neon-green text-[10px] font-black uppercase tracking-widest mt-1">Profile Synchronized</p>
                                         </div>
                                     </div>
 
                                     <div className="space-y-6">
                                         {/* Progress Bar */}
-                                        <div className="space-y-3 p-6 rounded-2xl bg-white/[0.02] border border-white/5 backdrop-blur-md">
+                                        <div className="space-y-3 p-6 rounded-2xl bg-white/[0.02] border border-black/10 dark:border-white/5 backdrop-blur-md">
                                             <div className="flex items-center justify-between">
-                                                <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Campaign Progress</span>
+                                                <span className="text-[10px] font-black uppercase tracking-widest text-gray-600 dark:text-gray-400">Campaign Progress</span>
                                                 <span className="text-sm font-black text-neon-blue italic">{Math.round(progress)}%</span>
                                             </div>
-                                            <div className="h-2 bg-white/5 rounded-full overflow-hidden shadow-inner">
+                                            <div className="h-2 bg-black/5 dark:bg-white/5 rounded-full overflow-hidden shadow-inner">
                                                 <motion.div 
                                                     initial={{ width: 0 }} 
                                                     animate={{ width: `${progress}%` }} 
@@ -468,13 +468,13 @@ const CampaignPublicView = () => {
                                         </div>
 
                                         {/* Deliverables Summary */}
-                                        <div className="p-6 bg-white/[0.02] border border-white/5 rounded-2xl space-y-4 backdrop-blur-md">
+                                        <div className="p-6 bg-white/[0.02] border border-black/10 dark:border-white/5 rounded-2xl space-y-4 backdrop-blur-md">
                                             <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest">
-                                                <span className="text-gray-400 flex items-center gap-2"><Target size={14} className="text-neon-blue" /> Deliverables</span>
-                                                <span className="text-white text-xs">{approvedTotal} / {campaignTasks.length} Completed</span>
+                                                <span className="text-gray-600 dark:text-gray-400 flex items-center gap-2"><Target size={14} className="text-neon-blue" /> Deliverables</span>
+                                                <span className="text-gray-900 dark:text-white text-xs">{approvedTotal} / {campaignTasks.length} Completed</span>
                                             </div>
-                                            <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest pt-3 border-t border-white/5">
-                                                <span className="text-gray-400 flex items-center gap-2"><ShieldCheck size={14} className="text-neon-green" /> Status</span>
+                                            <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest pt-3 border-t border-black/10 dark:border-white/5">
+                                                <span className="text-gray-600 dark:text-gray-400 flex items-center gap-2"><ShieldCheck size={14} className="text-neon-green" /> Status</span>
                                                 <span className={cn("text-xs font-black uppercase", isFullyComplete ? "text-neon-green" : "text-neon-blue")}>
                                                     {isFullyComplete ? "Fully Verified" : isShortlisted ? "Shortlisted & Active" : "Awaiting Review"}
                                                 </span>
@@ -492,7 +492,7 @@ const CampaignPublicView = () => {
 
                                         <Button 
                                             onClick={() => navigate('/creator-dashboard')}
-                                            className="w-full h-16 bg-white/5 border border-white/10 text-white font-black uppercase tracking-[0.2em] rounded-2xl hover:bg-white hover:text-black transition-all text-xs shadow-xl"
+                                            className="w-full h-16 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-gray-900 dark:text-white font-black uppercase tracking-[0.2em] rounded-2xl hover:bg-white hover:text-black transition-all text-xs shadow-xl"
                                         >
                                             Open Creator Hub
                                         </Button>
@@ -500,13 +500,13 @@ const CampaignPublicView = () => {
                                 </div>
                             ) : (
                                 <div className="relative z-10 space-y-8">
-                                    <div className="flex items-center gap-4 pb-6 border-b border-white/5">
+                                    <div className="flex items-center gap-4 pb-6 border-b border-black/10 dark:border-white/5">
                                         <div className="w-14 h-14 rounded-2xl bg-neon-blue/10 border border-neon-blue/20 flex items-center justify-center shadow-[0_0_20px_rgba(46,191,255,0.2)] shrink-0">
                                             <Zap className="text-neon-blue" size={28} />
                                         </div>
                                         <div>
-                                            <h2 className="text-2xl font-black font-heading text-white uppercase tracking-tighter italic">Creator Application</h2>
-                                            <p className="text-gray-400 text-[10px] font-black uppercase tracking-widest mt-1">Submit your profile for review</p>
+                                            <h2 className="text-2xl font-black font-heading text-gray-900 dark:text-white uppercase tracking-tighter italic">Creator Application</h2>
+                                            <p className="text-gray-600 dark:text-gray-400 text-[10px] font-black uppercase tracking-widest mt-1">Submit your profile for review</p>
                                         </div>
                                     </div>
 
@@ -516,20 +516,20 @@ const CampaignPublicView = () => {
                                                 <div className="space-y-4">
                                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                         <div className="space-y-2">
-                                                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">Instagram Handle</label>
-                                                            <Input value={form.instagram} onChange={e => setForm({...form, instagram: e.target.value})} placeholder="@username" className="h-14 bg-black/60 border-white/10 rounded-2xl text-xs font-bold focus:border-neon-blue" disabled={isEligible} />
+                                                            <label className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest pl-1">Instagram Handle</label>
+                                                            <Input value={form.instagram} onChange={e => setForm({...form, instagram: e.target.value})} placeholder="@username" className="h-14 bg-white dark:bg-black/60 border-black/10 dark:border-white/10 rounded-2xl text-xs font-bold focus:border-neon-blue" disabled={isEligible} />
                                                         </div>
                                                         <div className="space-y-2">
-                                                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">Current Followers</label>
-                                                            <Input type="number" value={form.followers} onChange={e => setForm({...form, followers: e.target.value})} placeholder="Enter count" className="h-14 bg-black/60 border-white/10 rounded-2xl text-xs font-bold focus:border-neon-blue" disabled={isEligible} />
+                                                            <label className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest pl-1">Current Followers</label>
+                                                            <Input type="number" value={form.followers} onChange={e => setForm({...form, followers: e.target.value})} placeholder="Enter count" className="h-14 bg-white dark:bg-black/60 border-black/10 dark:border-white/10 rounded-2xl text-xs font-bold focus:border-neon-blue" disabled={isEligible} />
                                                         </div>
                                                     </div>
 
                                                     <AnimatePresence mode="wait">
                                                         {verificationStep === 'verifying' ? (
-                                                            <motion.div key="verifying" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="h-14 bg-white/5 border border-neon-blue/20 rounded-2xl flex items-center px-6 gap-4 backdrop-blur-md">
+                                                            <motion.div key="verifying" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="h-14 bg-black/5 dark:bg-white/5 border border-neon-blue/20 rounded-2xl flex items-center px-6 gap-4 backdrop-blur-md">
                                                                 <LoadingSpinner size="xs" color="#00F0FF" />
-                                                                <span className="text-[10px] font-black uppercase tracking-widest text-white/70">Verifying qualifications...</span>
+                                                                <span className="text-[10px] font-black uppercase tracking-widest text-gray-900 dark:text-white/70">Verifying qualifications...</span>
                                                             </motion.div>
                                                         ) : verificationStep === 'success' ? (
                                                             <motion.div key="verified" initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="h-14 bg-neon-green/10 border border-neon-green/30 rounded-2xl flex items-center px-6 gap-4 backdrop-blur-md shadow-[0_0_20px_rgba(57,255,20,0.15)]">
@@ -546,20 +546,20 @@ const CampaignPublicView = () => {
 
                                                 <AnimatePresence>
                                                     {isEligible && (
-                                                        <motion.form key="submission-form" initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} onSubmit={handleJoin} className="space-y-6 pt-6 border-t border-white/5">
+                                                        <motion.form key="submission-form" initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} onSubmit={handleJoin} className="space-y-6 pt-6 border-t border-black/10 dark:border-white/5">
                                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                                 <div className="space-y-2">
-                                                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">Full Name</label>
-                                                                    <Input required value={form.name} onChange={e => setForm({...form, name: e.target.value})} placeholder="Full name" className="h-14 bg-black/60 border-white/10 rounded-2xl text-xs font-bold focus:border-neon-blue" />
+                                                                    <label className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest pl-1">Full Name</label>
+                                                                    <Input required value={form.name} onChange={e => setForm({...form, name: e.target.value})} placeholder="Full name" className="h-14 bg-white dark:bg-black/60 border-black/10 dark:border-white/10 rounded-2xl text-xs font-bold focus:border-neon-blue" />
                                                                 </div>
                                                                 <div className="space-y-2">
-                                                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">WhatsApp / Phone</label>
-                                                                    <Input required type="tel" value={form.phone} onChange={e => setForm({...form, phone: e.target.value})} placeholder="+91..." className="h-14 bg-black/60 border-white/10 rounded-2xl text-xs font-bold focus:border-neon-blue" />
+                                                                    <label className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest pl-1">WhatsApp / Phone</label>
+                                                                    <Input required type="tel" value={form.phone} onChange={e => setForm({...form, phone: e.target.value})} placeholder="+91..." className="h-14 bg-white dark:bg-black/60 border-black/10 dark:border-white/10 rounded-2xl text-xs font-bold focus:border-neon-blue" />
                                                                 </div>
                                                             </div>
                                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                                 <div className="space-y-2">
-                                                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1 block mb-2">Target City</label>
+                                                                    <label className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest pl-1 block mb-2">Target City</label>
                                                                     <StudioSelect 
                                                                         value={form.city} 
                                                                         options={PREDEFINED_CITIES.map(c => ({ value: c, label: c.toUpperCase() }))}
@@ -570,13 +570,13 @@ const CampaignPublicView = () => {
                                                                     />
                                                                 </div>
                                                                 <div className="space-y-2">
-                                                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">Specializations</label>
-                                                                    <Input required value={form.categories} onChange={e => setForm({...form, categories: e.target.value})} placeholder="Fashion, Travel, Tech..." className="h-14 bg-black/60 border-white/10 rounded-2xl text-xs font-bold focus:border-neon-blue" />
+                                                                    <label className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest pl-1">Specializations</label>
+                                                                    <Input required value={form.categories} onChange={e => setForm({...form, categories: e.target.value})} placeholder="Fashion, Travel, Tech..." className="h-14 bg-white dark:bg-black/60 border-black/10 dark:border-white/10 rounded-2xl text-xs font-bold focus:border-neon-blue" />
                                                                 </div>
                                                             </div>
                                                             <div className="space-y-2">
-                                                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">Creator Bio</label>
-                                                                <textarea required value={form.bio} onChange={e => setForm({...form, bio: e.target.value})} placeholder="Tell us about yourself..." className="w-full h-28 bg-black/60 border border-white/10 rounded-2xl p-5 text-white focus:outline-none focus:border-neon-blue text-xs font-medium resize-none shadow-inner" />
+                                                                <label className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest pl-1">Creator Bio</label>
+                                                                <textarea required value={form.bio} onChange={e => setForm({...form, bio: e.target.value})} placeholder="Tell us about yourself..." className="w-full h-28 bg-white dark:bg-black/60 border border-black/10 dark:border-white/10 rounded-2xl p-5 text-gray-900 dark:text-white focus:outline-none focus:border-neon-blue text-xs font-medium resize-none shadow-inner" />
                                                             </div>
                                                             <Button type="submit" disabled={isJoining} className="w-full h-16 bg-neon-blue text-black font-black uppercase tracking-[0.3em] rounded-2xl shadow-[0_0_40px_rgba(46,191,255,0.4)] hover:shadow-[0_0_60px_rgba(46,191,255,0.6)] hover:scale-[1.02] transition-all border-none text-xs">
                                                                 {isJoining ? <LoadingSpinner size="xs" color="#000000" /> : 'Submit Creator Application'}
@@ -597,9 +597,9 @@ const CampaignPublicView = () => {
                                                 <div className="w-24 h-24 rounded-full bg-neon-blue/10 border border-neon-blue/20 flex items-center justify-center mx-auto mb-8 shadow-[0_0_30px_rgba(46,191,255,0.2)]">
                                                     <CheckCircle2 className="text-neon-blue" size={48} />
                                                 </div>
-                                                <h2 className="text-3xl font-black font-heading text-white uppercase tracking-tighter italic">Application Sent</h2>
-                                                <p className="text-gray-400 text-sm font-medium leading-relaxed max-w-[280px] mx-auto">Your creator profile has been submitted for this campaign. We will review your analytics and notify you via email.</p>
-                                                <Button onClick={() => navigate('/creator-dashboard')} className="w-full h-16 bg-white/5 border border-white/10 text-white font-black uppercase tracking-[0.2em] rounded-2xl hover:bg-white hover:text-black transition-all text-xs mt-8 shadow-xl">
+                                                <h2 className="text-3xl font-black font-heading text-gray-900 dark:text-white uppercase tracking-tighter italic">Application Sent</h2>
+                                                <p className="text-gray-600 dark:text-gray-400 text-sm font-medium leading-relaxed max-w-[280px] mx-auto">Your creator profile has been submitted for this campaign. We will review your analytics and notify you via email.</p>
+                                                <Button onClick={() => navigate('/creator-dashboard')} className="w-full h-16 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-gray-900 dark:text-white font-black uppercase tracking-[0.2em] rounded-2xl hover:bg-white hover:text-black transition-all text-xs mt-8 shadow-xl">
                                                     Go to Creator Hub
                                                 </Button>
                                             </motion.div>

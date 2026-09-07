@@ -326,10 +326,10 @@ const FinanceDashboard = () => {
                     <select
                         value={selectedMonth}
                         onChange={(e) => setSelectedMonth(e.target.value)}
-                        className="bg-zinc-950/40 border border-white/10 h-11 px-4 rounded-xl text-[10px] font-extrabold uppercase tracking-widest text-white outline-none focus:border-neon-green/40 focus:ring-1 focus:ring-neon-green/10 shadow-xl cursor-pointer hover:border-white/20 transition-all font-mono"
+                        className="bg-gray-100 dark:bg-zinc-950/40 border border-black/10 dark:border-white/10 h-11 px-4 rounded-xl text-[10px] font-extrabold uppercase tracking-widest text-gray-900 dark:text-white outline-none focus:border-neon-green/40 focus:ring-1 focus:ring-neon-green/10 shadow-xl cursor-pointer hover:border-black/20 dark:hover:border-white/20 transition-all font-mono"
                     >
                         {monthOptions.map(opt => (
-                            <option key={opt} value={opt} className="bg-zinc-950 text-white font-semibold">{opt}</option>
+                            <option key={opt} value={opt} className="bg-gray-100 dark:bg-zinc-950 text-gray-900 dark:text-white font-semibold">{opt}</option>
                         ))}
                     </select>
                 </div>
@@ -352,7 +352,7 @@ const FinanceDashboard = () => {
                                     "flex items-center gap-2 px-5 py-2.5 rounded-full border text-[10px] font-black uppercase tracking-widest transition-all duration-300 group",
                                     pill.isActive 
                                         ? "bg-neon-green text-black border-neon-green shadow-[0_0_15px_rgba(57,255,20,0.3)]" 
-                                        : "bg-white/[0.03] text-zinc-400 border-white/10 hover:border-white/30 hover:text-white hover:bg-white/[0.05]"
+                                        : "bg-white/[0.03] text-zinc-400 border-black/10 dark:border-white/10 hover:border-white/30 hover:text-gray-900 dark:hover:text-white hover:bg-white/[0.05]"
                                 )}
                             >
                                 <Icon size={14} className={cn("transition-transform group-hover:scale-110", pill.isActive ? "text-black" : "text-neon-green")} />
@@ -365,9 +365,9 @@ const FinanceDashboard = () => {
                 {/* Section 2: Hero Metrics Row */}
                 <motion.div 
                     initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-                    className="bg-zinc-950/35 backdrop-blur-xl border border-white/10 rounded-3xl overflow-hidden flex flex-col md:flex-row shadow-[0_10px_40px_rgba(0,0,0,0.5)]"
+                    className="bg-gray-100 dark:bg-zinc-950/35 backdrop-blur-xl border border-black/10 dark:border-white/10 rounded-3xl overflow-hidden flex flex-col md:flex-row shadow-[0_10px_40px_rgba(0,0,0,0.5)]"
                 >
-                    <div className="flex-1 p-6 md:p-8 flex flex-col justify-center border-b md:border-b-0 md:border-r border-white/5 relative group">
+                    <div className="flex-1 p-6 md:p-8 flex flex-col justify-center border-b md:border-b-0 md:border-r border-black/10 dark:border-white/5 relative group">
                         <div className="absolute inset-0 bg-neon-green/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
                         <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest mb-1">Net Position</span>
                         <div className={cn(
@@ -377,36 +377,36 @@ const FinanceDashboard = () => {
                             <IndianRupee className="size-6 stroke-[3]" />
                             {metrics.netCashFlow.toLocaleString('en-IN')}
                         </div>
-                        <span className="text-[8px] font-bold text-zinc-500 uppercase tracking-widest mt-2 bg-white/5 px-2 py-0.5 rounded self-start border border-white/5">
+                        <span className="text-[8px] font-bold text-zinc-500 uppercase tracking-widest mt-2 bg-black/5 dark:bg-white/5 px-2 py-0.5 rounded self-start border border-black/10 dark:border-white/5">
                             {selectedMonth}
                         </span>
                     </div>
                     
-                    <div className="flex-1 p-6 md:p-8 flex flex-col justify-center border-b md:border-b-0 md:border-r border-white/5 relative group">
+                    <div className="flex-1 p-6 md:p-8 flex flex-col justify-center border-b md:border-b-0 md:border-r border-black/10 dark:border-white/5 relative group">
                         <div className="absolute inset-0 bg-neon-green/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
                         <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest mb-1 flex items-center gap-2">
                             Revenue <TrendingUp size={12} className="text-neon-green" />
                         </span>
-                        <div className="text-2xl md:text-3xl font-mono font-black tracking-tighter text-white flex items-center gap-1">
+                        <div className="text-2xl md:text-3xl font-mono font-black tracking-tighter text-gray-900 dark:text-white flex items-center gap-1">
                             <IndianRupee className="size-5 stroke-[3] text-neon-green" />
                             {metrics.totalRevenue.toLocaleString('en-IN')}
                         </div>
                         <div className="text-[9px] font-bold text-zinc-400 mt-2 uppercase tracking-widest">
-                            <span className="text-white">₹{metrics.systemPaid.toLocaleString('en-IN')}</span> Inv / <span className="text-white">₹{metrics.otherPaid.toLocaleString('en-IN')}</span> Other
+                            <span className="text-gray-900 dark:text-white">₹{metrics.systemPaid.toLocaleString('en-IN')}</span> Inv / <span className="text-gray-900 dark:text-white">₹{metrics.otherPaid.toLocaleString('en-IN')}</span> Other
                         </div>
                     </div>
 
-                    <div className="flex-1 p-6 md:p-8 flex flex-col justify-center border-b md:border-b-0 md:border-r border-white/5 relative group">
+                    <div className="flex-1 p-6 md:p-8 flex flex-col justify-center border-b md:border-b-0 md:border-r border-black/10 dark:border-white/5 relative group">
                         <div className="absolute inset-0 bg-neon-pink/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
                         <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest mb-1 flex items-center gap-2">
                             Expenditure <TrendingDown size={12} className="text-neon-pink" />
                         </span>
-                        <div className="text-2xl md:text-3xl font-mono font-black tracking-tighter text-white flex items-center gap-1">
+                        <div className="text-2xl md:text-3xl font-mono font-black tracking-tighter text-gray-900 dark:text-white flex items-center gap-1">
                             <IndianRupee className="size-5 stroke-[3] text-neon-pink" />
                             {metrics.totalExpenses.toLocaleString('en-IN')}
                         </div>
                         <div className="text-[9px] font-bold text-zinc-400 mt-2 uppercase tracking-widest">
-                            <span className="text-white">₹{metrics.spendsPaid.toLocaleString('en-IN')}</span> Paid Out
+                            <span className="text-gray-900 dark:text-white">₹{metrics.spendsPaid.toLocaleString('en-IN')}</span> Paid Out
                         </div>
                     </div>
 
@@ -415,7 +415,7 @@ const FinanceDashboard = () => {
                         <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest mb-1 flex items-center gap-2">
                             Receivables <Clock size={12} className="text-neon-blue" />
                         </span>
-                        <div className="text-2xl md:text-3xl font-mono font-black tracking-tighter text-white flex items-center gap-1">
+                        <div className="text-2xl md:text-3xl font-mono font-black tracking-tighter text-gray-900 dark:text-white flex items-center gap-1">
                             <IndianRupee className="size-5 stroke-[3] text-neon-blue" />
                             {metrics.outstandingReceivables.toLocaleString('en-IN')}
                         </div>
@@ -443,7 +443,7 @@ const FinanceDashboard = () => {
                             </div>
                             <div className="flex items-center gap-4 relative z-10">
                                 <div className="text-right hidden sm:block">
-                                    <div className="text-sm font-mono font-black text-white">₹{metrics.pendingSpends.toLocaleString('en-IN')}</div>
+                                    <div className="text-sm font-mono font-black text-gray-900 dark:text-white">₹{metrics.pendingSpends.toLocaleString('en-IN')}</div>
                                 </div>
                                 <Link to="/admin/spends" className="size-8 rounded-full bg-neon-pink text-black flex items-center justify-center hover:scale-110 transition-transform">
                                     <ArrowRight size={14} strokeWidth={3} />
@@ -456,11 +456,11 @@ const FinanceDashboard = () => {
                 {/* Section 3: Cashflow Visualization */}
                 <motion.div 
                     initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
-                    className="bg-white/[0.03] backdrop-blur-xl border border-white/10 rounded-3xl p-6 md:p-8"
+                    className="bg-white/[0.03] backdrop-blur-xl border border-black/10 dark:border-white/10 rounded-3xl p-6 md:p-8"
                 >
                     <div className="flex justify-between items-end mb-8">
                         <div>
-                            <h3 className="text-sm font-black uppercase tracking-widest text-white">Cashflow Dynamics</h3>
+                            <h3 className="text-sm font-black uppercase tracking-widest text-gray-900 dark:text-white">Cashflow Dynamics</h3>
                             <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mt-1">6-Month Liquidity Trend</p>
                         </div>
                         <div className="flex items-center gap-4">
@@ -562,8 +562,8 @@ const FinanceDashboard = () => {
                                         <span className={cn(
                                             "text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full transition-all",
                                             isCurrentSelection 
-                                                ? "bg-white/10 text-white" 
-                                                : "text-zinc-500 group-hover:text-white"
+                                                ? "bg-black/10 dark:bg-white/10 text-gray-900 dark:text-white" 
+                                                : "text-zinc-500 group-hover:text-gray-900 dark:group-hover:text-white"
                                         )}>
                                             {data.label.split(' ')[0]}
                                         </span>
@@ -580,10 +580,10 @@ const FinanceDashboard = () => {
                     {/* Left: Transaction Feed */}
                     <motion.div 
                         initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.4 }}
-                        className="lg:col-span-2 bg-white/[0.03] backdrop-blur-xl border border-white/10 rounded-3xl p-6 md:p-8 flex flex-col h-[500px]"
+                        className="lg:col-span-2 bg-white/[0.03] backdrop-blur-xl border border-black/10 dark:border-white/10 rounded-3xl p-6 md:p-8 flex flex-col h-[500px]"
                     >
                         <div className="mb-6">
-                            <h3 className="text-sm font-black uppercase tracking-widest text-white">Chronicle Feed</h3>
+                            <h3 className="text-sm font-black uppercase tracking-widest text-gray-900 dark:text-white">Chronicle Feed</h3>
                             <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mt-1">Real-time ledger events</p>
                         </div>
                         <div className="flex-1 overflow-y-auto pr-2 space-y-1 scrollbar-hide">
@@ -598,11 +598,11 @@ const FinanceDashboard = () => {
                                     const amountColor = isSpend ? 'text-neon-pink' : 'text-neon-green';
                                     
                                     return (
-                                        <div key={i} className="group flex items-center justify-between p-3 rounded-xl hover:bg-white/[0.04] transition-colors border border-transparent hover:border-white/5">
+                                        <div key={i} className="group flex items-center justify-between p-3 rounded-xl hover:bg-white/[0.04] transition-colors border border-transparent hover:border-black/10 dark:hover:border-white/5">
                                             <div className="flex items-center gap-4">
                                                 <div className={cn("size-2 rounded-full", dotColor)} />
                                                 <div>
-                                                    <div className="text-xs font-bold text-white group-hover:text-white transition-colors">{act.title}</div>
+                                                    <div className="text-xs font-bold text-gray-900 dark:text-white group-hover:text-gray-900 dark:group-hover:text-white transition-colors">{act.title}</div>
                                                     <div className="text-[9px] font-mono text-zinc-500 mt-0.5">{new Date(act.date).toLocaleDateString()} • {act.handler}</div>
                                                 </div>
                                             </div>
@@ -621,10 +621,10 @@ const FinanceDashboard = () => {
                         {/* Spend DNA */}
                         <motion.div 
                             initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.5 }}
-                            className="flex-1 bg-white/[0.03] backdrop-blur-xl border border-white/10 rounded-3xl p-6 flex flex-col"
+                            className="flex-1 bg-white/[0.03] backdrop-blur-xl border border-black/10 dark:border-white/10 rounded-3xl p-6 flex flex-col"
                         >
                             <div className="mb-4">
-                                <h3 className="text-[11px] font-black uppercase tracking-widest text-white">Spend DNA</h3>
+                                <h3 className="text-[11px] font-black uppercase tracking-widest text-gray-900 dark:text-white">Spend DNA</h3>
                             </div>
                             <div className="flex-1 overflow-y-auto space-y-4 pr-1 scrollbar-hide">
                                 {categorySpends.length === 0 ? (
@@ -636,7 +636,7 @@ const FinanceDashboard = () => {
                                                 <span className="text-zinc-400">{cat.category}</span>
                                                 <span className="text-neon-pink font-mono">{cat.percentage}%</span>
                                             </div>
-                                            <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
+                                            <div className="h-1.5 w-full bg-black/5 dark:bg-white/5 rounded-full overflow-hidden">
                                                 <div className="h-full bg-gradient-to-r from-neon-pink to-rose-500 rounded-full" style={{ width: `${cat.percentage}%` }} />
                                             </div>
                                         </div>
@@ -648,10 +648,10 @@ const FinanceDashboard = () => {
                         {/* Revenue DNA */}
                         <motion.div 
                             initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.6 }}
-                            className="flex-1 bg-white/[0.03] backdrop-blur-xl border border-white/10 rounded-3xl p-6 flex flex-col"
+                            className="flex-1 bg-white/[0.03] backdrop-blur-xl border border-black/10 dark:border-white/10 rounded-3xl p-6 flex flex-col"
                         >
                             <div className="mb-4">
-                                <h3 className="text-[11px] font-black uppercase tracking-widest text-white">Revenue DNA</h3>
+                                <h3 className="text-[11px] font-black uppercase tracking-widest text-gray-900 dark:text-white">Revenue DNA</h3>
                             </div>
                             <div className="flex-1 overflow-y-auto space-y-4 pr-1 scrollbar-hide">
                                 {categoryIncome.length === 0 ? (
@@ -663,7 +663,7 @@ const FinanceDashboard = () => {
                                                 <span className="text-zinc-400">{cat.category}</span>
                                                 <span className="text-neon-green font-mono">{cat.percentage}%</span>
                                             </div>
-                                            <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
+                                            <div className="h-1.5 w-full bg-black/5 dark:bg-white/5 rounded-full overflow-hidden">
                                                 <div className="h-full bg-gradient-to-r from-neon-green to-[#00F0FF] rounded-full" style={{ width: `${cat.percentage}%` }} />
                                             </div>
                                         </div>

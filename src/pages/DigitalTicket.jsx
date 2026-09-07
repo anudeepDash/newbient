@@ -109,11 +109,11 @@ const DigitalTicket = () => {
 
     if (error || !ticketData) {
         return (
-            <div className="min-h-screen bg-[#020202] text-white flex flex-col items-center justify-center p-6 text-center">
+            <div className="min-h-screen bg-gray-50 dark:bg-[#020202] text-gray-900 dark:text-white flex flex-col items-center justify-center p-6 text-center">
                 <AlertTriangle size={64} className="text-red-500 mb-6 opacity-80" />
                 <h1 className="text-3xl font-black italic uppercase tracking-tighter mb-4">Invalid Pass</h1>
-                <p className="text-gray-400 font-bold tracking-widest text-xs uppercase">{error}</p>
-                <Link to="/" className="mt-8 px-8 py-4 bg-white/10 rounded-2xl text-[11px] font-black uppercase tracking-widest hover:bg-white/20 transition-all">Return Home</Link>
+                <p className="text-gray-600 dark:text-gray-400 font-bold tracking-widest text-xs uppercase">{error}</p>
+                <Link to="/" className="mt-8 px-8 py-4 bg-gray-200 dark:bg-white/10 rounded-2xl text-[11px] font-black uppercase tracking-widest hover:bg-gray-300 dark:hover:bg-white/20 transition-all">Return Home</Link>
             </div>
         );
     }
@@ -165,7 +165,7 @@ const DigitalTicket = () => {
     };
 
     return (
-        <div className="min-h-screen bg-[#020202] text-white py-20 px-4 flex flex-col items-center justify-center relative overflow-hidden">
+        <div className="min-h-screen bg-gray-50 dark:bg-[#020202] text-gray-900 dark:text-white py-20 px-4 flex flex-col items-center justify-center relative overflow-hidden transition-colors duration-300">
             {/* Atmos */}
             <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
                 <div className="absolute top-[-20%] right-[-10%] w-[60%] h-[60%] bg-neon-green/10 rounded-full blur-[150px]" />
@@ -176,16 +176,16 @@ const DigitalTicket = () => {
                 id="digital-pass-card"
                 initial={{ opacity: 0, y: 40 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="relative z-10 w-full max-w-md bg-zinc-900/80 backdrop-blur-3xl border border-white/10 rounded-[3rem] overflow-hidden shadow-[0_0_100px_rgba(0,255,100,0.1)]"
+                className="relative z-10 w-full max-w-md bg-white dark:bg-zinc-900/80 backdrop-blur-3xl border border-gray-200 dark:border-white/10 rounded-[3rem] overflow-hidden shadow-xl dark:shadow-[0_0_100px_rgba(0,255,100,0.1)]"
             >
                 {/* Header Strip */}
-                <div className={`p-8 border-b border-white/10 text-center ${isRSVPOnly ? 'bg-neon-pink/10' : isVerified ? 'bg-black/40' : 'bg-yellow-500/10'}`}>
+                <div className={`p-8 border-b border-gray-200 dark:border-white/10 text-center ${isRSVPOnly ? 'bg-neon-pink/10' : isVerified ? 'bg-gray-50 dark:bg-black/40' : 'bg-yellow-500/10'}`}>
                     {isRSVPOnly ? (
                         <>
                             <div className="w-16 h-16 bg-neon-pink/10 rounded-full flex items-center justify-center mx-auto mb-4 border border-neon-pink/20">
                                 <CheckCircle2 size={32} className="text-neon-pink animate-[pulse_2s_infinite]" />
                             </div>
-                            <h2 className="text-xl font-black italic uppercase tracking-widest text-white">RSVP Confirmed</h2>
+                            <h2 className="text-xl font-black italic uppercase tracking-widest text-gray-900 dark:text-white">RSVP Confirmed</h2>
                             <p className="text-[10px] text-neon-pink font-bold tracking-[0.2em] uppercase mt-1">No QR Code Required</p>
                         </>
                     ) : isVerified ? (
@@ -193,7 +193,7 @@ const DigitalTicket = () => {
                             <div className="w-16 h-16 bg-neon-green/10 rounded-full flex items-center justify-center mx-auto mb-4 border border-neon-green/20">
                                 <CheckCircle2 size={32} className="text-neon-green" />
                             </div>
-                            <h2 className="text-xl font-black italic uppercase tracking-widest text-white">Valid Pass</h2>
+                            <h2 className="text-xl font-black italic uppercase tracking-widest text-gray-900 dark:text-white">Valid Pass</h2>
                             <p className="text-[10px] text-neon-green font-bold tracking-[0.2em] uppercase mt-1">Ready for Scan</p>
                         </>
                     ) : (
@@ -201,7 +201,7 @@ const DigitalTicket = () => {
                             <div className="w-16 h-16 bg-yellow-500/10 rounded-full flex items-center justify-center mx-auto mb-4 border border-yellow-500/20">
                                 <ShieldCheck size={32} className="text-yellow-500" />
                             </div>
-                            <h2 className="text-xl font-black italic uppercase tracking-widest text-white">Pending Verification</h2>
+                            <h2 className="text-xl font-black italic uppercase tracking-widest text-gray-900 dark:text-white">Pending Verification</h2>
                             <p className="text-[10px] text-yellow-500 font-bold tracking-[0.2em] uppercase mt-1">Payment under review</p>
                         </>
                     )}
@@ -211,7 +211,7 @@ const DigitalTicket = () => {
                     {/* Event Info */}
                     <div className="text-center">
                         <h1 className="text-3xl font-black font-heading italic uppercase tracking-tighter leading-none mb-4">{eventTitle || 'Event'}</h1>
-                        <div className="flex flex-col gap-2 items-center text-[10px] font-bold uppercase tracking-widest text-gray-400 mt-4">
+                        <div className="flex flex-col gap-2 items-center text-[10px] font-bold uppercase tracking-widest text-gray-600 dark:text-gray-400 mt-4">
                             {eventDate && (
                                 <span className="flex items-center gap-2">
                                     <Calendar size={14} className="text-neon-pink" /> 
@@ -228,9 +228,9 @@ const DigitalTicket = () => {
                     </div>
 
                     {/* Divider */}
-                    <div className="relative h-px bg-white/10 w-full">
-                        <div className="absolute -left-10 top-1/2 -translate-y-1/2 w-6 h-6 bg-[#020202] rounded-full border border-white/10" />
-                        <div className="absolute -right-10 top-1/2 -translate-y-1/2 w-6 h-6 bg-[#020202] rounded-full border border-white/10" />
+                    <div className="relative h-px bg-gray-200 dark:bg-white/10 w-full">
+                        <div className="absolute -left-10 top-1/2 -translate-y-1/2 w-6 h-6 bg-gray-50 dark:bg-[#020202] rounded-full border border-gray-200 dark:border-white/10" />
+                        <div className="absolute -right-10 top-1/2 -translate-y-1/2 w-6 h-6 bg-gray-50 dark:bg-[#020202] rounded-full border border-gray-200 dark:border-white/10" />
                     </div>
 
                     {/* QR Code */}
@@ -242,7 +242,7 @@ const DigitalTicket = () => {
                                 <span className="text-[8px] font-bold text-gray-500 uppercase tracking-widest leading-relaxed">Present name/reference at gate. No barcode check needed.</span>
                             </div>
                         ) : ticketData.ticketMode === 'pdf' ? (
-                            <div className="w-48 h-48 flex flex-col items-center justify-center text-gray-400 gap-4 text-center">
+                            <div className="w-48 h-48 flex flex-col items-center justify-center text-gray-600 dark:text-gray-400 gap-4 text-center">
                                 <Ticket size={48} className="opacity-20" />
                                 <span className="text-[10px] font-black uppercase tracking-widest px-4">PDF Ticket Issued</span>
                                 <span className="text-[9px] font-bold text-gray-500">Check your email for the attached PDF pass.</span>
@@ -254,21 +254,21 @@ const DigitalTicket = () => {
                                 className="w-48 h-48 object-contain mix-blend-multiply transition-transform group-hover:scale-105"
                             />
                         ) : (
-                            <div className="w-48 h-48 flex flex-col items-center justify-center text-gray-400 gap-4">
+                            <div className="w-48 h-48 flex flex-col items-center justify-center text-gray-600 dark:text-gray-400 gap-4">
                                 <ShieldCheck size={48} className="opacity-20" />
                                 <span className="text-[10px] font-black uppercase tracking-widest text-center px-4">QR generates after payment verification</span>
                             </div>
                         )}
-                        <div className="mt-6 px-6 py-3 bg-black/5 rounded-xl border border-black/10 w-full text-center">
+                        <div className="mt-6 px-6 py-3 bg-white dark:bg-black/5 rounded-xl border border-black/10 w-full text-center">
                             <span className="text-sm font-black font-mono tracking-[0.3em] text-black/80 uppercase">{id}</span>
                         </div>
                     </div>
 
                     {/* Guest Details */}
-                    <div className="bg-black/50 p-6 rounded-3xl border border-white/5 space-y-4">
+                    <div className="bg-white dark:bg-black/50 p-6 rounded-3xl border border-black/10 dark:border-white/5 space-y-4">
                         <div className="flex justify-between items-center">
                             <span className="text-[10px] font-bold uppercase tracking-widest text-gray-500">Holder</span>
-                            <span className="text-xs font-black uppercase tracking-widest text-white">{customerName}</span>
+                            <span className="text-xs font-black uppercase tracking-widest text-gray-900 dark:text-white">{customerName}</span>
                         </div>
                         <div className="flex justify-between items-center">
                             <span className="text-[10px] font-bold uppercase tracking-widest text-gray-500">Access Type</span>
@@ -276,7 +276,7 @@ const DigitalTicket = () => {
                         </div>
                         <div className="flex justify-between items-center">
                             <span className="text-[10px] font-bold uppercase tracking-widest text-gray-500">Capacity</span>
-                            <span className="text-xs font-black uppercase tracking-widest text-white">
+                            <span className="text-xs font-black uppercase tracking-widest text-gray-900 dark:text-white">
                                 {type === 'guestlist' 
                                     ? `${guestsCount || 1} Guests` 
                                     : items?.map(i => `${i.count}x ${i.name}`).join(', ')
@@ -294,7 +294,7 @@ const DigitalTicket = () => {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.5 }}
                     onClick={handleDownloadPass} 
-                    className="relative z-20 mt-8 h-14 px-8 bg-white/5 rounded-full flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest text-white hover:bg-white/10 transition-all border border-white/10 shadow-2xl"
+                    className="relative z-20 mt-8 h-14 px-8 bg-black/5 dark:bg-white/5 rounded-full flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest text-gray-900 dark:text-white hover:bg-black/10 dark:hover:bg-white/10 transition-all border border-black/10 dark:border-white/10 shadow-2xl"
                 >
                     <Download size={16} className="text-neon-green" /> DOWNLOAD DIGITAL PASS
                 </motion.button>

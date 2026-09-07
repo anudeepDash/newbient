@@ -15,7 +15,7 @@ const WeeklyLogo = ({ className = "" }) => {
                             <span key={i}>{char}</span>
                         ))}
                     </div>
-                    <div className="relative flex justify-between w-full text-white font-black uppercase italic text-3xl md:text-6xl leading-[0.8]">
+                    <div className="relative flex justify-between w-full text-gray-900 dark:text-white font-black uppercase italic text-3xl md:text-6xl leading-[0.8]">
                         {"WEEKLY".split("").map((char, i) => (
                             <span key={i}>{char}</span>
                         ))}
@@ -25,7 +25,7 @@ const WeeklyLogo = ({ className = "" }) => {
                 {/* Styled Subtitle */}
                 <div className="mt-2 md:mt-4 flex items-center gap-2 md:gap-4">
                     <div className="h-[2px] w-6 md:w-12 bg-gradient-to-r from-neon-blue to-transparent rounded-full" />
-                    <span className="text-[8px] md:text-xs font-black uppercase tracking-[0.4em] md:tracking-[0.6em] text-white/30 italic whitespace-nowrap">
+                    <span className="text-[8px] md:text-xs font-black uppercase tracking-[0.4em] md:tracking-[0.6em] text-gray-900 dark:text-white/30 italic whitespace-nowrap">
                         BY CONCERT ZONE<span className="text-neon-blue">.</span>
                     </span>
                 </div>

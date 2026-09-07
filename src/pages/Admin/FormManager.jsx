@@ -86,14 +86,14 @@ const FormManager = () => {
             <div className="relative z-10 max-w-[1400px] mx-auto pb-32">
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
                     {forms.map((item) => (
-                        <Card key={item.id} className="p-0 bg-zinc-950/40 backdrop-blur-3xl border border-white/5 rounded-[2rem] overflow-hidden group hover:border-neon-pink/30 transition-all duration-700 shadow-2xl flex flex-col h-full">
+                        <Card key={item.id} className="p-0 bg-gray-100 dark:bg-zinc-950/40 backdrop-blur-3xl border border-black/10 dark:border-white/5 rounded-[2rem] overflow-hidden group hover:border-neon-pink/30 transition-all duration-700 shadow-2xl flex flex-col h-full">
                             {/* Card Header Media */}
                             <div className="h-48 relative overflow-hidden">
                                 {item.image ? (
                                     <img src={item.image} alt={item.title} className="w-full h-full object-cover opacity-40 group-hover:opacity-70 group-hover:scale-110 transition-all duration-1000" />
                                 ) : (
                                     <div className="w-full h-full bg-gradient-to-br from-zinc-900 to-black flex items-center justify-center">
-                                        <FileText size={48} className="text-white/10" />
+                                        <FileText size={48} className="text-gray-900 dark:text-white/10" />
                                     </div>
                                 )}
                                 <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/20 to-transparent" />
@@ -109,9 +109,9 @@ const FormManager = () => {
                                 </div>
 
                                 <div className="absolute bottom-6 left-8 right-8">
-                                    <h3 className="text-2xl font-black italic uppercase tracking-tighter text-white truncate drop-shadow-2xl">{item.title}</h3>
+                                    <h3 className="text-2xl font-black italic uppercase tracking-tighter text-gray-900 dark:text-white truncate drop-shadow-2xl">{item.title}</h3>
                                     <div className="flex items-center gap-4 mt-2 opacity-60">
-                                        <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
+                                        <span className="text-[9px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
                                             <Calendar size={10} className="text-neon-pink" /> {item.date || 'ALWAYS ACTIVE'}
                                         </span>
                                     </div>
@@ -124,12 +124,12 @@ const FormManager = () => {
                                     {item.description || "No description provided."}
                                 </p>
 
-                                <div className="mt-8 pt-6 border-t border-white/5 space-y-4">
+                                <div className="mt-8 pt-6 border-t border-black/10 dark:border-white/5 space-y-4">
                                     <div className="flex items-center gap-3">
                                         <Button 
                                             variant="outline" 
                                             onClick={() => handlePushNotification(item)}
-                                            className="flex-1 h-12 rounded-xl border-white/5 bg-yellow-500/5 text-yellow-500 hover:bg-yellow-500 hover:text-black transition-all flex items-center justify-center gap-2 group/btn"
+                                            className="flex-1 h-12 rounded-xl border-black/10 dark:border-white/5 bg-yellow-500/5 text-yellow-500 hover:bg-yellow-500 hover:text-black transition-all flex items-center justify-center gap-2 group/btn"
                                         >
                                             <Megaphone size={14} className="group-hover/btn:rotate-12 transition-transform" />
                                             <span className="text-[9px] font-black uppercase tracking-widest">NOTIFY</span>
@@ -137,7 +137,7 @@ const FormManager = () => {
                                         <Button 
                                             variant="outline" 
                                             onClick={() => handleShareWhatsApp(item)}
-                                            className="w-12 h-12 rounded-xl border-white/5 bg-neon-pink/5 text-neon-pink hover:bg-neon-pink hover:text-black transition-all flex items-center justify-center"
+                                            className="w-12 h-12 rounded-xl border-black/10 dark:border-white/5 bg-neon-pink/5 text-neon-pink hover:bg-neon-pink hover:text-black transition-all flex items-center justify-center"
                                         >
                                             <Share2 size={16} />
                                         </Button>
@@ -151,28 +151,28 @@ const FormManager = () => {
                                                 useStore.getState().updateForm(item.id, { ...item, activeLabel: newLabel });
                                             }}
                                             className={cn(
-                                                "w-12 h-14 rounded-2xl border-white/5 transition-all flex items-center justify-center",
-                                                item.activeLabel === 'Live' ? "bg-white/5 text-neon-green hover:bg-neon-green hover:text-black" : "bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white"
+                                                "w-12 h-14 rounded-2xl border-black/10 dark:border-white/5 transition-all flex items-center justify-center",
+                                                item.activeLabel === 'Live' ? "bg-black/5 dark:bg-white/5 text-neon-green hover:bg-neon-green hover:text-black" : "bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-gray-900 dark:hover:text-white"
                                             )}
                                             title={item.activeLabel === 'Live' ? "Close Form" : "Open Form"}
                                         >
                                             {item.activeLabel === 'Live' ? <Unlock size={18} /> : <Lock size={18} />}
                                         </Button>
                                         <Link to={`/admin/forms/edit/${item.id}`} className="flex-1">
-                                            <Button variant="outline" className="w-full h-14 rounded-2xl border-white/5 hover:bg-white hover:text-black transition-all flex items-center justify-center gap-2">
+                                            <Button variant="outline" className="w-full h-14 rounded-2xl border-black/10 dark:border-white/5 hover:bg-white hover:text-black transition-all flex items-center justify-center gap-2">
                                                 <Edit size={16} />
                                                 <span className="text-[10px] font-black uppercase tracking-widest">EDIT</span>
                                             </Button>
                                         </Link>
                                         <Link to={`/forms/${item.id}`} target="_blank">
-                                            <Button variant="outline" className="w-14 h-14 rounded-2xl border-white/5 text-gray-500 hover:text-white hover:bg-white/5 flex items-center justify-center">
+                                            <Button variant="outline" className="w-14 h-14 rounded-2xl border-black/10 dark:border-white/5 text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 flex items-center justify-center">
                                                 <Eye size={18} />
                                             </Button>
                                         </Link>
                                         <Button 
                                             variant="outline" 
                                             onClick={() => handleDelete(item.id)}
-                                            className="w-14 h-14 rounded-2xl bg-red-500 text-white border-none hover:bg-red-600 transition-all flex items-center justify-center shrink-0"
+                                            className="w-14 h-14 rounded-2xl bg-red-500 text-gray-900 dark:text-white border-none hover:bg-red-600 transition-all flex items-center justify-center shrink-0"
                                         >
                                             <Trash2 size={20} />
                                         </Button>
@@ -184,10 +184,10 @@ const FormManager = () => {
 
                     {forms.length === 0 && (
                         <div className="col-span-full py-40 text-center">
-                            <div className="w-20 h-20 bg-white/5 rounded-[1.5rem] flex items-center justify-center mx-auto mb-8 border border-dashed border-white/10">
-                                <FileText size={32} className="text-white/20" />
+                            <div className="w-20 h-20 bg-black/5 dark:bg-white/5 rounded-[1.5rem] flex items-center justify-center mx-auto mb-8 border border-dashed border-black/10 dark:border-white/10">
+                                <FileText size={32} className="text-gray-900 dark:text-white/20" />
                             </div>
-                            <h3 className="text-xl font-black italic uppercase tracking-tighter text-white/40">No forms found.</h3>
+                            <h3 className="text-xl font-black italic uppercase tracking-tighter text-gray-900 dark:text-white/40">No forms found.</h3>
                             <p className="text-[10px] font-black text-gray-600 uppercase tracking-[0.3em] mt-2">CREATE ONE TO START.</p>
                         </div>
                     )}

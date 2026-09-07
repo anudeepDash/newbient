@@ -53,8 +53,7 @@ const AdminCommunityHubLayout = ({ children, title, description, action, studioH
                 { name: "Finance Board", path: "/admin/finance", icon: TrendingUp, color: "neon-green", show: ['developer', 'founder'].includes(user?.role) && !cards.invoices },
                 { name: "Invoices", path: "/admin/invoices", icon: FileText, color: "neon-blue", show: ['developer', 'founder'].includes(user?.role) && !cards.invoices },
                 { name: "Proposals", path: "/admin/proposals", icon: FolderOpen, color: "neon-green", show: !cards.docs },
-                { name: "Contracts", path: "/admin/agreements", icon: ListChecks, color: "neon-purple", show: !cards.docs },
-                { name: "Documents", path: "/admin/documents", icon: FolderOpen, color: "neon-blue", show: true }
+                { name: "Contracts", path: "/admin/agreements", icon: ListChecks, color: "neon-purple", show: !cards.docs }
             ]
         },
         {
@@ -89,13 +88,14 @@ const AdminCommunityHubLayout = ({ children, title, description, action, studioH
                 { name: "Mailing", path: "/admin/mailing", icon: Mail, color: "neon-blue", show: !cards.mailing },
                 { name: "Active Users", path: "/admin/active-users", icon: UserCheck, color: "neon-green", show: user?.role !== 'editor' && user?.role !== 'content_admin' && user?.role !== 'blog_writer' && !cards.admins },
                 { name: "Members", path: "/admin/manage-admins", icon: Shield, color: "neon-blue", show: user?.role !== 'editor' && user?.role !== 'content_admin' && user?.role !== 'blog_writer' && !cards.admins },
+                { name: "System Command", path: "/admin/system-command", icon: Settings, color: "neon-blue", show: ['developer', 'super_admin', 'founder'].includes(user?.role) },
                 { name: "Inbox", path: "/admin/messages", icon: Mail, color: "white", show: !cards.messages }
             ]
         }
     ];
 
     return (
-        <div className="min-h-screen bg-dark text-white pt-32 md:pt-48 pb-32 relative overflow-x-hidden selection:bg-neon-green selection:text-black">
+        <div className="min-h-screen bg-gray-50 dark:bg-dark text-gray-900 dark:text-white pt-32 md:pt-48 pb-32 relative overflow-x-hidden selection:bg-neon-green selection:text-black">
 
             {/* Cinematic Background Atmosphere */}
             <div className="fixed inset-0 z-0 pointer-events-none">
@@ -117,14 +117,14 @@ const AdminCommunityHubLayout = ({ children, title, description, action, studioH
                                         <img src={studioHeader.logo} alt="Logo" className="h-8 md:h-16 w-auto object-contain" />
                                     </div>
                                 )}
-                                <h1 className="text-2xl sm:text-3xl md:text-5xl font-extrabold font-heading tracking-tight text-white flex flex-wrap items-center gap-x-3 gap-y-1 leading-none">
+                                <h1 className="text-2xl sm:text-3xl md:text-5xl font-extrabold font-heading tracking-tight text-gray-900 dark:text-white flex flex-wrap items-center gap-x-3 gap-y-1 leading-none">
                                     {studioHeader.title} <span className={studioHeader.accentClass}>{studioHeader.subtitle}.</span>
                                 </h1>
                             </div>
                         ) : (
                             <div>
-                                <h1 className="text-3xl md:text-5xl font-extrabold font-heading tracking-tight text-white pr-4 leading-none">
-                                    COMMUNITY <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-green to-white">HUB.</span>
+                                <h1 className="text-3xl md:text-5xl font-extrabold font-heading tracking-tight text-gray-900 dark:text-white pr-4 leading-none">
+                                    COMMUNITY <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-green to-black dark:to-white">HUB.</span>
                                 </h1>
                                 <p className="text-gray-500 text-[10px] md:text-xs font-black uppercase tracking-[0.2em] mt-2">Management & Engagement Systems</p>
                             </div>
@@ -136,7 +136,7 @@ const AdminCommunityHubLayout = ({ children, title, description, action, studioH
                     {/* Navigation Tabs (Header - Desktop Only) */}
                     {!hideTabs && (
                         <div className="hidden md:flex w-full md:w-auto justify-start md:justify-end -mx-4 md:mx-0 px-4 md:px-0">
-                            <div className="flex items-center gap-1.5 p-1 md:p-1.5 bg-white/5 border border-white/10 rounded-xl md:rounded-2xl backdrop-blur-xl shrink-0 overflow-x-auto no-scrollbar max-w-full">
+                            <div className="flex items-center gap-1.5 p-1 md:p-1.5 bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl md:rounded-2xl backdrop-blur-xl shrink-0 overflow-x-auto no-scrollbar max-w-full">
                                 {tabs.map((tab) => {
                                     const Icon = tab.icon;
                                     const isActive = location.pathname === tab.path;
@@ -147,12 +147,12 @@ const AdminCommunityHubLayout = ({ children, title, description, action, studioH
                                             className={cn(
                                                 "flex items-center gap-2 md:gap-3 px-3 md:px-6 py-2 md:py-3 rounded-lg md:rounded-xl transition-all duration-500 group relative shrink-0",
                                                 isActive 
-                                                    ? "text-white font-extrabold" 
-                                                    : "text-gray-400 hover:text-white hover:bg-white/5",
+                                                    ? "text-gray-900 dark:text-white font-extrabold" 
+                                                    : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5",
                                                 tab.comingSoon && "opacity-40 cursor-not-allowed pointer-events-none"
                                             )}
                                         >
-                                            <Icon size={14} className={cn(isActive ? tab.color || "text-white" : "text-gray-400 group-hover:text-white", "md:size-[16px] transition-colors")} />
+                                            <Icon size={14} className={cn(isActive ? tab.color || "text-gray-900 dark:text-white" : "text-gray-600 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white", "md:size-[16px] transition-colors")} />
                                             <div className="flex flex-col text-left">
                                                 <span className="text-[8px] md:text-[10px] uppercase tracking-widest leading-none">{tab.name}</span>
                                                 {tab.comingSoon && <span className="text-[7px] font-black text-gray-500 uppercase tracking-tighter mt-0.5">Soon</span>}
@@ -160,7 +160,7 @@ const AdminCommunityHubLayout = ({ children, title, description, action, studioH
                                             {isActive && (
                                                 <motion.div
                                                     layoutId="admin-hub-active-tab"
-                                                    className="absolute inset-0 bg-white/10 border border-white/15 rounded-lg md:rounded-xl -z-10 shadow-[0_4px_20px_rgba(0,0,0,0.4)]"
+                                                    className="absolute inset-0 bg-white dark:bg-white/10 border border-gray-200 dark:border-white/15 rounded-lg md:rounded-xl -z-10 shadow-sm dark:shadow-[0_4px_20px_rgba(0,0,0,0.4)]"
                                                     transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
                                                 />
                                             )}
@@ -173,15 +173,15 @@ const AdminCommunityHubLayout = ({ children, title, description, action, studioH
                 </div>
 
                 {/* Content Container (Redesigned with Premium Glassmorphism) */}
-                <div className="admin-hub-content-container bg-zinc-950/35 border border-white/5 rounded-3xl p-4 sm:p-6 md:p-10 backdrop-blur-3xl min-h-[60vh] shadow-[0_30px_70px_rgba(0,0,0,0.8)] relative overflow-hidden">
+                <div className="admin-hub-content-container bg-white dark:bg-zinc-950/35 border border-gray-200/80 dark:border-white/5 rounded-3xl p-4 sm:p-6 md:p-10 backdrop-blur-3xl min-h-[60vh] shadow-sm dark:shadow-[0_30px_70px_rgba(0,0,0,0.8)] relative overflow-hidden">
                     {/* Decorative radial gradient */}
-                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-white/5 to-transparent" />
+                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-gray-200 dark:via-white/5 to-transparent" />
                     
                     {(title || description || action) && (
                         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 md:gap-6 mb-6 md:mb-8">
                             {(title || description) && (
                                 <div className="flex-1">
-                                    {title && <h2 className="text-xl md:text-2xl font-extrabold font-heading text-white tracking-tight">{title}</h2>}
+                                    {title && <h2 className="text-xl md:text-2xl font-extrabold font-heading text-gray-900 dark:text-white tracking-tight">{title}</h2>}
                                     {description && <p className="text-gray-500 text-[10px] md:text-sm mt-1 uppercase font-bold tracking-widest">{description}</p>}
                                 </div>
                             )}
@@ -199,10 +199,10 @@ const AdminCommunityHubLayout = ({ children, title, description, action, studioH
                 <div className="mt-12 flex justify-center md:justify-end pb-24 md:pb-0">
                     <Link 
                         to="/admin" 
-                        className="group flex items-center gap-4 px-10 py-5 bg-white/[0.03] border border-white/5 hover:border-white/20 hover:bg-white/[0.05] rounded-[2rem] transition-all duration-500 shadow-xl"
+                        className="group flex items-center gap-4 px-10 py-5 bg-white/[0.03] border border-black/10 dark:border-white/5 hover:border-black/20 dark:hover:border-white/20 hover:bg-white/[0.05] rounded-[2rem] transition-all duration-500 shadow-xl"
                     >
                         <LayoutGrid size={16} className="text-neon-blue group-hover:rotate-90 transition-transform duration-500" />
-                        <span className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-500 group-hover:text-white transition-colors">RETURN TO DASHBOARD</span>
+                        <span className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-500 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">RETURN TO DASHBOARD</span>
                     </Link>
                 </div>
             </div>
@@ -210,12 +210,12 @@ const AdminCommunityHubLayout = ({ children, title, description, action, studioH
             {/* Mobile Persistent Floating Control Bar */}
             {!hideMobileMenu && (
                 <div 
-                    className="fixed bottom-6 inset-x-0 mx-auto z-[100] w-[90%] max-w-[420px] h-16 bg-[#050505]/80 backdrop-blur-2xl border border-white/10 rounded-full flex items-center justify-between p-2 shadow-2xl md:hidden"
+                    className="fixed bottom-6 inset-x-0 mx-auto z-[100] w-[90%] max-w-[420px] h-16 bg-[#050505]/80 backdrop-blur-2xl border border-black/10 dark:border-white/10 rounded-full flex items-center justify-between p-2 shadow-2xl md:hidden"
                     style={{ bottom: 'max(1.5rem, calc(0.75rem + env(safe-area-inset-bottom, 0px)))' }}
                 >
                 <Link
                     to="/admin"
-                    className="w-10 h-10 rounded-full bg-white/5 border border-white/5 hover:bg-white/10 flex items-center justify-center text-gray-400 hover:text-white transition-all active:scale-90"
+                    className="w-10 h-10 rounded-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/5 hover:bg-black/10 dark:hover:bg-white/10 flex items-center justify-center text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all active:scale-90"
                     title="Admin Dashboard"
                 >
                     <LayoutDashboard size={16} />
@@ -223,7 +223,7 @@ const AdminCommunityHubLayout = ({ children, title, description, action, studioH
                 
                 <button
                     onClick={() => setIsMenuOpen(!isMenuOpen)}
-                    className="flex-1 mx-2 h-10 rounded-full bg-gradient-to-r from-neon-green/10 via-neon-blue/10 to-neon-pink/10 border border-white/10 hover:border-white/20 flex items-center justify-center gap-2 text-[9px] font-black uppercase tracking-[0.2em] text-white transition-all active:scale-[0.98]"
+                    className="flex-1 mx-2 h-10 rounded-full bg-gradient-to-r from-neon-green/10 via-neon-blue/10 to-neon-pink/10 border border-black/10 dark:border-white/10 hover:border-black/20 dark:hover:border-white/20 flex items-center justify-center gap-2 text-[9px] font-black uppercase tracking-[0.2em] text-gray-900 dark:text-white transition-all active:scale-[0.98]"
                 >
                     <Compass size={14} className="text-neon-blue animate-pulse" />
                     <span>{title || "ADMIN MENU"}</span>
@@ -232,7 +232,7 @@ const AdminCommunityHubLayout = ({ children, title, description, action, studioH
                 
                 <Link
                     to="/admin/messages"
-                    className="w-10 h-10 rounded-full bg-white/5 border border-white/5 hover:bg-white/10 flex items-center justify-center text-gray-400 hover:text-white relative transition-all active:scale-90"
+                    className="w-10 h-10 rounded-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/5 hover:bg-black/10 dark:hover:bg-white/10 flex items-center justify-center text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white relative transition-all active:scale-90"
                     title="Inbox"
                 >
                     <Mail size={16} />
@@ -255,10 +255,10 @@ const AdminCommunityHubLayout = ({ children, title, description, action, studioH
                     >
                         <div className="max-w-md mx-auto w-full space-y-8">
                             <div className="text-center">
-                                <div className="inline-flex p-3 rounded-2xl bg-white/5 border border-white/10 mb-4">
+                                <div className="inline-flex p-3 rounded-2xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 mb-4">
                                     <LayoutGrid className="text-neon-green w-6 h-6" />
                                 </div>
-                                <h2 className="text-2xl font-black font-heading uppercase tracking-tighter text-white leading-none">ADMIN NAVIGATION</h2>
+                                <h2 className="text-2xl font-black font-heading uppercase tracking-tighter text-gray-900 dark:text-white leading-none">ADMIN NAVIGATION</h2>
                                 <p className="text-[8px] font-black uppercase tracking-[0.4em] text-gray-500 mt-2">Administrative Portal Modules</p>
                             </div>
 
@@ -286,7 +286,7 @@ const AdminCommunityHubLayout = ({ children, title, description, action, studioH
                                                                 "flex items-center justify-between p-3.5 rounded-2xl transition-all duration-300 border",
                                                                 isActive 
                                                                     ? "bg-white text-black font-black border-white"
-                                                                    : "bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white border-white/5"
+                                                                    : "bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white border-black/10 dark:border-white/5"
                                                             )}
                                                         >
                                                             <div className="flex items-center gap-3">

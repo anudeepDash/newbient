@@ -136,7 +136,7 @@ const PayeeRegistration = () => {
     };
 
     return (
-        <div className="min-h-screen bg-[#020202] text-white flex flex-col justify-center items-center pt-48 md:pt-56 pb-20 px-4 relative overflow-hidden selection:bg-neon-green selection:text-black">
+        <div className="min-h-screen bg-gray-50 dark:bg-[#020202] text-gray-900 dark:text-white flex flex-col justify-center items-center pt-48 md:pt-56 pb-20 px-4 relative overflow-hidden selection:bg-neon-green selection:text-black transition-colors duration-300">
             {/* Ambient Background Glows */}
             <div className="absolute top-1/4 left-1/4 -translate-x-1/2 -translate-y-1/2 w-[350px] h-[350px] bg-neon-green/5 rounded-full blur-[100px] pointer-events-none" />
             <div className="absolute bottom-1/4 right-1/4 translate-x-1/2 translate-y-1/2 w-[350px] h-[350px] bg-neon-blue/5 rounded-full blur-[100px] pointer-events-none" />
@@ -152,7 +152,7 @@ const PayeeRegistration = () => {
                             transition={{ duration: 0.5 }}
                         >
                             <div className="text-center mb-8">
-                                <h1 className="text-4xl font-black font-heading tracking-tighter uppercase italic text-white leading-none">
+                                <h1 className="text-4xl font-black font-heading tracking-tighter uppercase italic text-gray-900 dark:text-white leading-none">
                                     PAYOUT <span className="text-neon-green">REGISTRATION.</span>
                                 </h1>
                                 <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mt-2 leading-relaxed">
@@ -160,12 +160,12 @@ const PayeeRegistration = () => {
                                 </p>
                             </div>
 
-                            <Card className="p-8 md:p-10 bg-zinc-950/80 border-white/5 rounded-[2.5rem] shadow-[0_30px_70px_rgba(0,0,0,0.8)] backdrop-blur-2xl border">
+                            <Card className="p-8 md:p-10 bg-white dark:bg-zinc-950/80 border-gray-200 dark:border-white/5 rounded-[2.5rem] shadow-xl dark:shadow-[0_30px_70px_rgba(0,0,0,0.8)] backdrop-blur-2xl border">
                                 <form onSubmit={handleSubmit} className="space-y-5">
                                     
                                     {/* Role Read-only Badge (Set dynamically from Link parameters) */}
                                     <div className="flex justify-center mb-4">
-                                        <span className="px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest bg-zinc-900/60 border border-white/5 text-neon-green">
+                                        <span className="px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest bg-gray-50 dark:bg-zinc-900/60 border border-gray-200 dark:border-white/5 text-neon-green">
                                             Role Type: {type === 'Volunteer' ? 'Volunteer' : type === 'Vendor' ? 'Vendor / Partner' : type === 'Salary' ? 'Team Member' : 'Artist / Creator'}
                                         </span>
                                     </div>
@@ -173,7 +173,7 @@ const PayeeRegistration = () => {
                                     {type === 'Volunteer' && paramEvent && (
                                         <div className="p-4 bg-neon-green/5 border border-neon-green/10 rounded-2xl text-[9px] font-black uppercase tracking-widest text-center">
                                             <span className="text-gray-500 block">Registered Event Gig</span>
-                                            <span className="text-white mt-1 block select-all">{paramEvent}</span>
+                                            <span className="text-gray-900 dark:text-white mt-1 block select-all">{paramEvent}</span>
                                         </div>
                                     )}
 
@@ -184,7 +184,7 @@ const PayeeRegistration = () => {
                                             value={name}
                                             onChange={(e) => setName(e.target.value)}
                                             placeholder="Enter your full name or legal entity name"
-                                            className="h-12 border-white/10 bg-white/5 focus:border-neon-green"
+                                            className="h-12 border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 focus:border-neon-green"
                                             required
                                         />
                                     </div>
@@ -193,13 +193,13 @@ const PayeeRegistration = () => {
                                         <div className="space-y-1.5">
                                             <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest pl-1">Email Address *</label>
                                             <div className="relative group">
-                                                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600 group-focus-within:text-neon-green transition-colors" size={14} />
+                                                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600 group-focus-within:text-emerald-600 dark:group-focus-within:text-neon-green transition-colors" size={14} />
                                                 <Input
                                                     type="email"
                                                     value={email}
                                                     onChange={(e) => setEmail(e.target.value)}
                                                     placeholder="Enter email address"
-                                                    className="h-12 pl-12 border-white/10 bg-white/5 focus:border-neon-green"
+                                                    className="h-12 pl-12 border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 focus:border-neon-green"
                                                     required
                                                 />
                                             </div>
@@ -207,20 +207,20 @@ const PayeeRegistration = () => {
                                         <div className="space-y-1.5">
                                             <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest pl-1">Phone Number *</label>
                                             <div className="relative group">
-                                                <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600 group-focus-within:text-neon-green transition-colors" size={14} />
+                                                <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600 group-focus-within:text-emerald-600 dark:group-focus-within:text-neon-green transition-colors" size={14} />
                                                 <Input
                                                     type="tel"
                                                     value={phone}
                                                     onChange={(e) => setPhone(e.target.value)}
                                                     placeholder="Enter phone number"
-                                                    className="h-12 pl-12 border-white/10 bg-white/5 focus:border-neon-green"
+                                                    className="h-12 pl-12 border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 focus:border-neon-green"
                                                     required
                                                 />
                                             </div>
                                         </div>
                                     </div>
 
-                                    <hr className="border-white/5 my-6" />
+                                    <hr className="border-black/10 dark:border-white/5 my-6" />
 
                                     {/* Payment Mode Toggles */}
                                     <div className="space-y-1.5">
@@ -234,7 +234,7 @@ const PayeeRegistration = () => {
                                                     className={`py-3 px-2 rounded-xl text-[8px] font-black uppercase tracking-widest border transition-all ${
                                                         paymentMode === mode
                                                             ? 'bg-neon-green/10 text-neon-green border-neon-green/30 shadow-[0_0_12px_rgba(16,185,129,0.1)]'
-                                                            : 'bg-white/5 text-gray-400 border-white/5 hover:border-white/10 hover:text-white'
+                                                            : 'bg-black/5 dark:bg-white/5 text-gray-600 dark:text-gray-400 border-black/10 dark:border-white/5 hover:border-black/10 dark:hover:border-white/10 hover:text-gray-900 dark:hover:text-white'
                                                     }`}
                                                 >
                                                     {mode}
@@ -258,7 +258,7 @@ const PayeeRegistration = () => {
                                                     value={upiId}
                                                     onChange={(e) => setUpiId(e.target.value)}
                                                     placeholder="Enter UPI ID (e.g., username@bank)"
-                                                    className="h-12 border-white/10 bg-white/5 focus:border-neon-green"
+                                                    className="h-12 border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 focus:border-neon-green"
                                                     required
                                                 />
                                             </motion.div>
@@ -279,7 +279,7 @@ const PayeeRegistration = () => {
                                                             value={bankName}
                                                             onChange={(e) => setBankName(e.target.value)}
                                                             placeholder="Enter bank name"
-                                                            className="h-12 border-white/10 bg-white/5 focus:border-neon-green"
+                                                            className="h-12 border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 focus:border-neon-green"
                                                             required
                                                         />
                                                     </div>
@@ -289,7 +289,7 @@ const PayeeRegistration = () => {
                                                             value={ifscCode}
                                                             onChange={(e) => setIfscCode(e.target.value)}
                                                             placeholder="Enter IFSC code"
-                                                            className="h-12 border-white/10 bg-white/5 focus:border-neon-green font-mono uppercase"
+                                                            className="h-12 border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 focus:border-neon-green font-mono uppercase"
                                                             required
                                                         />
                                                     </div>
@@ -300,7 +300,7 @@ const PayeeRegistration = () => {
                                                         value={accountNumber}
                                                         onChange={(e) => setAccountNumber(e.target.value)}
                                                         placeholder="Enter bank account number"
-                                                        className="h-12 border-white/10 bg-white/5 focus:border-neon-green font-mono"
+                                                        className="h-12 border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 focus:border-neon-green font-mono"
                                                         required
                                                     />
                                                 </div>
@@ -320,7 +320,7 @@ const PayeeRegistration = () => {
                                                     value={otherDetails}
                                                     onChange={(e) => setOtherDetails(e.target.value)}
                                                     placeholder="Enter international wire details or transfer info"
-                                                    className="h-12 border-white/10 bg-white/5 focus:border-neon-green"
+                                                    className="h-12 border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 focus:border-neon-green"
                                                     required
                                                 />
                                             </motion.div>
@@ -333,7 +333,7 @@ const PayeeRegistration = () => {
                                             value={notes}
                                             onChange={(e) => setNotes(e.target.value)}
                                             placeholder="Specify payout schedules, milestone releases, or additional notes..."
-                                            className="w-full bg-white/5 border border-white/10 h-24 rounded-lg text-xs font-semibold p-4 text-white outline-none focus:border-neon-green placeholder:text-white/20 transition-all"
+                                            className="w-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 h-24 rounded-lg text-xs font-semibold p-4 text-gray-900 dark:text-white outline-none focus:border-neon-green placeholder:text-gray-900 dark:placeholder:text-white/20 transition-all"
                                         />
                                     </div>
 
@@ -358,7 +358,7 @@ const PayeeRegistration = () => {
                             transition={{ duration: 0.4 }}
                             className="w-full max-w-md mx-auto"
                         >
-                            <Card className="p-8 md:p-10 bg-zinc-950/80 border-white/5 rounded-[2.5rem] shadow-[0_30px_70px_rgba(0,0,0,0.8)] backdrop-blur-2xl border text-center">
+                            <Card className="p-8 md:p-10 bg-gray-100 dark:bg-zinc-950/80 border-black/10 dark:border-white/5 rounded-[2.5rem] shadow-[0_30px_70px_rgba(0,0,0,0.8)] backdrop-blur-2xl border text-center">
                                 <div className="flex flex-col items-center">
                                     {/* Success Ring with Glow */}
                                     <div className="relative mb-6">
@@ -368,18 +368,18 @@ const PayeeRegistration = () => {
                                         </div>
                                     </div>
 
-                                    <h2 className="text-2xl font-black font-heading tracking-tighter uppercase italic text-white mb-2">
+                                    <h2 className="text-2xl font-black font-heading tracking-tighter uppercase italic text-gray-900 dark:text-white mb-2">
                                         REGISTRATION <span className="text-neon-green">COMPLETE!</span>
                                     </h2>
-                                    <p className="text-gray-400 font-bold uppercase tracking-wider text-[9px] max-w-xs mx-auto mb-8 leading-relaxed">
+                                    <p className="text-gray-600 dark:text-gray-400 font-bold uppercase tracking-wider text-[9px] max-w-xs mx-auto mb-8 leading-relaxed">
                                         Your payment preferences have been updated. Our team will reference this information for future disbursements.
                                     </p>
 
                                     {/* Summary Display Box */}
-                                    <div className="w-full bg-white/[0.02] border border-white/5 rounded-2xl p-5 mb-8 text-left space-y-3">
+                                    <div className="w-full bg-white/[0.02] border border-black/10 dark:border-white/5 rounded-2xl p-5 mb-8 text-left space-y-3">
                                         <div className="flex justify-between items-center text-[9px] font-black uppercase tracking-widest text-gray-500 gap-4">
                                             <span>Registered Name</span>
-                                            <span className="text-white text-right truncate max-w-[140px] sm:max-w-[200px]">{name}</span>
+                                            <span className="text-gray-900 dark:text-white text-right truncate max-w-[140px] sm:max-w-[200px]">{name}</span>
                                         </div>
                                         <div className="flex justify-between items-center text-[9px] font-black uppercase tracking-widest text-gray-500 gap-4">
                                             <span>Payout Method</span>
@@ -388,18 +388,18 @@ const PayeeRegistration = () => {
                                         {paymentMode === 'UPI' && upiId && (
                                             <div className="flex justify-between items-center text-[9px] font-black uppercase tracking-widest text-gray-500 gap-4">
                                                 <span>UPI ID</span>
-                                                <span className="text-white font-mono text-right truncate max-w-[140px] sm:max-w-[200px]">{upiId}</span>
+                                                <span className="text-gray-900 dark:text-white font-mono text-right truncate max-w-[140px] sm:max-w-[200px]">{upiId}</span>
                                             </div>
                                         )}
                                         {paymentMode === 'Bank Transfer' && bankName && (
                                             <>
                                                 <div className="flex justify-between items-center text-[9px] font-black uppercase tracking-widest text-gray-500 gap-4">
                                                     <span>Bank Name</span>
-                                                    <span className="text-white text-right truncate max-w-[140px] sm:max-w-[200px]">{bankName}</span>
+                                                    <span className="text-gray-900 dark:text-white text-right truncate max-w-[140px] sm:max-w-[200px]">{bankName}</span>
                                                 </div>
                                                 <div className="flex justify-between items-center text-[9px] font-black uppercase tracking-widest text-gray-500">
                                                     <span>A/C Number</span>
-                                                    <span className="text-white font-mono text-right">
+                                                    <span className="text-gray-900 dark:text-white font-mono text-right">
                                                         {accountNumber.length > 4 
                                                             ? `•••• •••• ${accountNumber.slice(-4)}` 
                                                             : accountNumber}
@@ -410,14 +410,14 @@ const PayeeRegistration = () => {
                                         {paymentMode === 'Other' && otherDetails && (
                                             <div className="flex flex-col gap-1 text-[9px] font-black uppercase tracking-widest text-gray-500">
                                                 <span>Payout Instructions</span>
-                                                <span className="text-white text-left font-mono break-all line-clamp-2 mt-1">{otherDetails}</span>
+                                                <span className="text-gray-900 dark:text-white text-left font-mono break-all line-clamp-2 mt-1">{otherDetails}</span>
                                             </div>
                                         )}
                                     </div>
 
                                     <button
                                         onClick={handleReset}
-                                        className="w-full h-12 bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white font-black uppercase tracking-widest text-[9px] rounded-xl border border-white/5 transition-all flex items-center justify-center gap-2"
+                                        className="w-full h-12 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white font-black uppercase tracking-widest text-[9px] rounded-xl border border-black/10 dark:border-white/5 transition-all flex items-center justify-center gap-2"
                                     >
                                         Register Another Account
                                     </button>

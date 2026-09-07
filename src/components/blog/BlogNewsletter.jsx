@@ -37,7 +37,7 @@ const BlogNewsletter = () => {
     };
 
     return (
-        <div className="relative group overflow-hidden rounded-[2.5rem] bg-zinc-900/40 backdrop-blur-3xl border border-white/5 p-8 md:p-12">
+        <div className="relative group overflow-hidden rounded-[2.5rem] bg-gray-100 dark:bg-zinc-900/40 backdrop-blur-3xl border border-black/10 dark:border-white/5 p-8 md:p-12">
             {/* Background Glows */}
             <div className="absolute top-0 right-0 w-64 h-64 bg-neon-blue/5 blur-[100px] -mr-32 -mt-32 pointer-events-none group-hover:bg-neon-blue/10 transition-all duration-500" />
             <div className="absolute bottom-0 left-0 w-64 h-64 bg-neon-pink/5 blur-[100px] -ml-32 -mb-32 pointer-events-none group-hover:bg-neon-pink/10 transition-all duration-500" />
@@ -47,18 +47,18 @@ const BlogNewsletter = () => {
                     <span className="text-[10px] font-black text-neon-blue uppercase tracking-[0.5em] mb-4">STAY UPDATED</span>
                     <WeeklyLogo />
                 </div>
-                <p className="text-gray-400 text-sm md:text-base font-medium mb-12 leading-relaxed max-w-lg mx-auto md:mx-0 opacity-70 italic">
+                <p className="text-gray-600 dark:text-gray-400 text-sm md:text-base font-medium mb-12 leading-relaxed max-w-lg mx-auto md:mx-0 opacity-70 italic">
                     Your weekly dose of nightlife culture, artist stories, and behind-the-scenes blueprints. Stay ahead of the beat with the definitive music industry briefing.
                 </p>
 
                 <div className="flex items-center gap-4 mb-12 justify-center md:justify-start">
-                    <a href="https://www.instagram.com/newbi.live" target="_blank" rel="noopener noreferrer" className="w-12 h-12 rounded-full border border-white/10 bg-white/5 flex items-center justify-center text-white/50 hover:text-neon-pink hover:border-neon-pink hover:bg-neon-pink/10 transition-all group shadow-lg">
+                    <a href="https://www.instagram.com/newbi.live" target="_blank" rel="noopener noreferrer" className="w-12 h-12 rounded-full border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 flex items-center justify-center text-gray-900 dark:text-white/50 hover:text-neon-pink hover:border-neon-pink hover:bg-neon-pink/10 transition-all group shadow-lg">
                         <Instagram size={20} className="group-hover:scale-110 transition-transform" />
                     </a>
-                    <a href="https://www.linkedin.com/company/newbi-ent/" target="_blank" rel="noopener noreferrer" className="w-12 h-12 rounded-full border border-white/10 bg-white/5 flex items-center justify-center text-white/50 hover:text-[#0a66c2] hover:border-[#0a66c2] hover:bg-[#0a66c2]/10 transition-all group shadow-lg">
+                    <a href="https://www.linkedin.com/company/newbi-ent/" target="_blank" rel="noopener noreferrer" className="w-12 h-12 rounded-full border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 flex items-center justify-center text-gray-900 dark:text-white/50 hover:text-[#0a66c2] hover:border-[#0a66c2] hover:bg-[#0a66c2]/10 transition-all group shadow-lg">
                         <Linkedin size={20} className="group-hover:scale-110 transition-transform" />
                     </a>
-                    <a href="https://newbi.live" target="_blank" rel="noopener noreferrer" className="w-12 h-12 rounded-full border border-white/10 bg-white/5 flex items-center justify-center text-white/50 hover:text-neon-blue hover:border-neon-blue hover:bg-neon-blue/10 transition-all group shadow-lg">
+                    <a href="https://newbi.live" target="_blank" rel="noopener noreferrer" className="w-12 h-12 rounded-full border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 flex items-center justify-center text-gray-900 dark:text-white/50 hover:text-neon-blue hover:border-neon-blue hover:bg-neon-blue/10 transition-all group shadow-lg">
                         <Globe size={20} className="group-hover:scale-110 transition-transform" />
                     </a>
                 </div>
@@ -91,7 +91,7 @@ const BlogNewsletter = () => {
                                     placeholder="YOUR NAME"
                                     value={name}
                                     onChange={(e) => setName(e.target.value)}
-                                    className="w-full h-14 bg-white/[0.03] border border-white/10 rounded-xl px-6 font-black text-[10px] md:text-[11px] uppercase tracking-[0.2em] text-white placeholder:text-white/20 focus:outline-none focus:border-neon-blue/40 transition-all"
+                                    className="w-full h-14 bg-white/[0.03] border border-black/10 dark:border-white/10 rounded-xl px-6 font-black text-[10px] md:text-[11px] uppercase tracking-[0.2em] text-gray-900 dark:text-white placeholder:text-gray-900 dark:placeholder:text-white/20 focus:outline-none focus:border-neon-blue/40 transition-all"
                                 />
                             </div>
                             <div className="md:col-span-5 group/input relative">
@@ -101,7 +101,7 @@ const BlogNewsletter = () => {
                                     placeholder="EMAIL ADDRESS"
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
-                                    className="w-full h-14 bg-white/[0.03] border border-white/10 rounded-xl px-6 font-black text-[10px] md:text-[11px] uppercase tracking-[0.2em] text-white placeholder:text-white/20 focus:outline-none focus:border-neon-blue/40 transition-all"
+                                    className="w-full h-14 bg-white/[0.03] border border-black/10 dark:border-white/10 rounded-xl px-6 font-black text-[10px] md:text-[11px] uppercase tracking-[0.2em] text-gray-900 dark:text-white placeholder:text-gray-900 dark:placeholder:text-white/20 focus:outline-none focus:border-neon-blue/40 transition-all"
                                 />
                             </div>
                             <div className="md:col-span-2">

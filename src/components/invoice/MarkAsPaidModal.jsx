@@ -161,7 +161,7 @@ export default function MarkAsPaidModal({ isOpen, onClose, invoice, onSubmit }) 
         >
           {/* Backdrop */}
           <motion.div
-            className="absolute inset-0 bg-black/90 backdrop-blur-sm"
+            className="absolute inset-0 bg-white dark:bg-black/90 backdrop-blur-sm"
             onClick={!isSubmitting && !isSuccess ? onClose : undefined}
           />
 
@@ -169,7 +169,7 @@ export default function MarkAsPaidModal({ isOpen, onClose, invoice, onSubmit }) 
           <motion.div
             className={cn(
               'relative w-full max-w-lg',
-              'bg-zinc-900 border border-white/10 rounded-[3rem] shadow-2xl',
+              'bg-gray-100 dark:bg-zinc-900 border border-black/10 dark:border-white/10 rounded-[3rem] shadow-2xl',
               'overflow-hidden'
             )}
             variants={modalVariants}
@@ -184,9 +184,9 @@ export default function MarkAsPaidModal({ isOpen, onClose, invoice, onSubmit }) 
                 className={cn(
                   'absolute -top-3 -right-3 z-10',
                   'w-10 h-10 rounded-full',
-                  'bg-zinc-800 border border-white/10',
+                  'bg-zinc-800 border border-black/10 dark:border-white/10',
                   'flex items-center justify-center',
-                  'text-gray-400 hover:text-white hover:bg-zinc-700',
+                  'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-zinc-700',
                   'transition-colors duration-200'
                 )}
               >
@@ -232,7 +232,7 @@ export default function MarkAsPaidModal({ isOpen, onClose, invoice, onSubmit }) 
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.25 }}
-                    className="text-2xl font-black font-heading tracking-tighter uppercase italic text-white mb-2"
+                    className="text-2xl font-black font-heading tracking-tighter uppercase italic text-gray-900 dark:text-white mb-2"
                   >
                     Verification Request Sent
                   </motion.h3>
@@ -241,7 +241,7 @@ export default function MarkAsPaidModal({ isOpen, onClose, invoice, onSubmit }) 
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.35 }}
-                    className="text-sm text-gray-400"
+                    className="text-sm text-gray-600 dark:text-gray-400"
                   >
                     Our team will verify and update shortly
                   </motion.p>
@@ -264,7 +264,7 @@ export default function MarkAsPaidModal({ isOpen, onClose, invoice, onSubmit }) 
                       </span>
                     </div>
 
-                    <h2 className="text-4xl font-black font-heading tracking-tighter uppercase italic text-white mb-3">
+                    <h2 className="text-4xl font-black font-heading tracking-tighter uppercase italic text-gray-900 dark:text-white mb-3">
                       Confirm Payment
                     </h2>
 
@@ -296,12 +296,12 @@ export default function MarkAsPaidModal({ isOpen, onClose, invoice, onSubmit }) 
                         disabled={isSubmitting}
                         className={cn(
                           'w-full h-14 px-5',
-                          'bg-black/50 border rounded-2xl',
-                          'text-white text-sm placeholder:text-gray-600',
+                          'bg-white dark:bg-black/50 border rounded-2xl',
+                          'text-gray-900 dark:text-white text-sm placeholder:text-gray-600',
                           'outline-none transition-colors duration-200',
                           'focus:border-[#39FF14]/30 focus:ring-1 focus:ring-[#39FF14]/10',
                           'disabled:opacity-50 disabled:cursor-not-allowed',
-                          errors.name ? 'border-red-500/50' : 'border-white/5'
+                          errors.name ? 'border-red-500/50' : 'border-black/10 dark:border-white/5'
                         )}
                       />
                       {errors.name && (
@@ -327,12 +327,12 @@ export default function MarkAsPaidModal({ isOpen, onClose, invoice, onSubmit }) 
                         disabled={isSubmitting}
                         className={cn(
                           'w-full h-14 px-5',
-                          'bg-black/50 border rounded-2xl',
-                          'text-white text-sm placeholder:text-gray-600',
+                          'bg-white dark:bg-black/50 border rounded-2xl',
+                          'text-gray-900 dark:text-white text-sm placeholder:text-gray-600',
                           'outline-none transition-colors duration-200',
                           'focus:border-[#39FF14]/30 focus:ring-1 focus:ring-[#39FF14]/10',
                           'disabled:opacity-50 disabled:cursor-not-allowed',
-                          errors.email ? 'border-red-500/50' : 'border-white/5'
+                          errors.email ? 'border-red-500/50' : 'border-black/10 dark:border-white/5'
                         )}
                       />
                       {errors.email && (

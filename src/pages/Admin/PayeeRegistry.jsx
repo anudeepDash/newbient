@@ -169,7 +169,7 @@ const PayeeRegistry = () => {
                                     "flex items-center gap-2 px-5 py-2.5 rounded-full border text-[10px] font-black uppercase tracking-widest transition-all duration-300 group",
                                     pill.isActive 
                                         ? "bg-neon-green text-black border-neon-green shadow-[0_0_15px_rgba(57,255,20,0.3)]" 
-                                        : "bg-white/[0.03] text-zinc-400 border-white/10 hover:border-white/30 hover:text-white hover:bg-white/[0.05]"
+                                        : "bg-white/[0.03] text-zinc-400 border-black/10 dark:border-white/10 hover:border-white/30 hover:text-gray-900 dark:hover:text-white hover:bg-white/[0.05]"
                                 )}
                             >
                                 <Icon size={14} className={cn("transition-transform group-hover:scale-110", pill.isActive ? "text-black" : "text-neon-green")} />
@@ -182,10 +182,10 @@ const PayeeRegistry = () => {
                 {/* Upper Grid: Link Builder Console & Quick Stats */}
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     {/* Registration Link Generator Console */}
-                    <div className="lg:col-span-2 p-6 md:p-8 bg-white/[0.03] backdrop-blur-xl border border-white/10 rounded-3xl hover:border-white/20 transition-all">
+                    <div className="lg:col-span-2 p-6 md:p-8 bg-white/[0.03] backdrop-blur-xl border border-black/10 dark:border-white/10 rounded-3xl hover:border-black/20 dark:hover:border-white/20 transition-all">
                         <div className="flex items-center justify-between mb-4">
                             <div>
-                                <h3 className="text-lg font-black font-heading tracking-tighter uppercase italic text-white mb-1 flex items-center gap-2">
+                                <h3 className="text-lg font-black font-heading tracking-tighter uppercase italic text-gray-900 dark:text-white mb-1 flex items-center gap-2">
                                     <LinkIcon className="text-neon-blue" size={16} /> targeted link builder
                                 </h3>
                                 <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest">
@@ -213,13 +213,13 @@ const PayeeRegistry = () => {
                                                 }}
                                                 className={cn(
                                                     "flex flex-col text-left p-4 rounded-2xl border transition-all hover:scale-[1.01] active:scale-[0.99] select-none",
-                                                    isActive ? role.activeBg : `bg-black/40 ${role.border} text-gray-400 hover:text-white`
+                                                    isActive ? role.activeBg : `bg-white dark:bg-black/40 ${role.border} text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white`
                                                 )}
                                             >
-                                                <div className={cn("w-8 h-8 rounded-xl bg-white/5 flex items-center justify-center mb-3 shrink-0", role.color)}>
+                                                <div className={cn("w-8 h-8 rounded-xl bg-black/5 dark:bg-white/5 flex items-center justify-center mb-3 shrink-0", role.color)}>
                                                     <IconComp size={16} />
                                                 </div>
-                                                <div className="text-[10px] font-black uppercase tracking-wider text-white leading-tight mb-1">{role.label}</div>
+                                                <div className="text-[10px] font-black uppercase tracking-wider text-gray-900 dark:text-white leading-tight mb-1">{role.label}</div>
                                                 <div className="text-[8px] font-medium text-gray-500 leading-normal line-clamp-2">{role.desc}</div>
                                             </button>
                                         );
@@ -246,11 +246,11 @@ const PayeeRegistry = () => {
                                                         setSelectedEvent(e.target.value);
                                                         if (e.target.value) setCustomEvent('');
                                                     }}
-                                                    className="w-full bg-zinc-950/40 border border-white/10 rounded-xl text-[10px] font-extrabold uppercase tracking-widest text-white h-10 px-3 outline-none focus:border-neon-blue transition-all appearance-none cursor-pointer"
+                                                    className="w-full bg-gray-100 dark:bg-zinc-950/40 border border-black/10 dark:border-white/10 rounded-xl text-[10px] font-extrabold uppercase tracking-widest text-gray-900 dark:text-white h-10 px-3 outline-none focus:border-neon-blue transition-all appearance-none cursor-pointer"
                                                 >
-                                                    <option value="" className="bg-zinc-950">-- Select Active Event --</option>
+                                                    <option value="" className="bg-gray-100 dark:bg-zinc-950">-- Select Active Event --</option>
                                                     {upcomingEvents.map(ev => (
-                                                        <option key={ev.id} value={ev.title} className="bg-zinc-950">{ev.title}</option>
+                                                        <option key={ev.id} value={ev.title} className="bg-gray-100 dark:bg-zinc-950">{ev.title}</option>
                                                     ))}
                                                 </select>
                                                 <ChevronDown size={14} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
@@ -266,7 +266,7 @@ const PayeeRegistry = () => {
                                                     if (e.target.value) setSelectedEvent('');
                                                 }}
                                                 placeholder="e.g. Summer Festival 2026 Coordinator"
-                                                className="w-full bg-zinc-950/40 border border-white/10 rounded-xl text-[10px] font-extrabold uppercase tracking-widest text-white h-10 px-3 outline-none focus:border-neon-blue transition-all placeholder:text-gray-600"
+                                                className="w-full bg-gray-100 dark:bg-zinc-950/40 border border-black/10 dark:border-white/10 rounded-xl text-[10px] font-extrabold uppercase tracking-widest text-gray-900 dark:text-white h-10 px-3 outline-none focus:border-neon-blue transition-all placeholder:text-gray-600"
                                             />
                                         </div>
                                     </motion.div>
@@ -274,7 +274,7 @@ const PayeeRegistry = () => {
                             </AnimatePresence>
 
                             {/* Generated Output View Block */}
-                            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 pt-4 border-t border-white/5">
+                            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 pt-4 border-t border-black/10 dark:border-white/5">
                                 <button 
                                     type="submit" 
                                     className="h-10 px-8 bg-gradient-to-r from-neon-blue to-blue-600 text-black font-black uppercase tracking-widest text-[9px] rounded-xl hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2 shadow-[0_5px_15px_rgba(59,130,246,0.2)] shrink-0"
@@ -296,7 +296,7 @@ const PayeeRegistry = () => {
                                                 useStore.getState().addToast('Registration link copied!', 'success');
                                                 setTimeout(() => setCopiedLink(false), 2000);
                                             }}
-                                            className="p-1.5 hover:bg-white/10 rounded transition-colors shrink-0"
+                                            className="p-1.5 hover:bg-black/10 dark:hover:bg-white/10 rounded transition-colors shrink-0"
                                         >
                                             <Copy size={12} className="text-neon-blue" />
                                         </button>
@@ -307,9 +307,9 @@ const PayeeRegistry = () => {
                     </div>
 
                     {/* Stats summary panel */}
-                    <div className="p-6 md:p-8 bg-white/[0.03] backdrop-blur-xl border border-white/10 rounded-3xl hover:border-white/20 transition-all flex flex-col justify-between">
+                    <div className="p-6 md:p-8 bg-white/[0.03] backdrop-blur-xl border border-black/10 dark:border-white/10 rounded-3xl hover:border-black/20 dark:hover:border-white/20 transition-all flex flex-col justify-between">
                         <div>
-                            <h3 className="text-lg font-black font-heading tracking-tighter uppercase italic text-white mb-1">
+                            <h3 className="text-lg font-black font-heading tracking-tighter uppercase italic text-gray-900 dark:text-white mb-1">
                                 registry status
                             </h3>
                             <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest mb-6">
@@ -317,23 +317,23 @@ const PayeeRegistry = () => {
                             </p>
                         </div>
                         <div className="grid grid-cols-2 gap-4">
-                            <div className="p-4 bg-black/40 border border-white/5 rounded-2xl flex flex-col gap-1">
+                            <div className="p-4 bg-white dark:bg-black/40 border border-black/10 dark:border-white/5 rounded-2xl flex flex-col gap-1">
                                 <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Total Payees</span>
-                                <span className="text-2xl font-mono font-black text-white">{financePayees.length}</span>
+                                <span className="text-2xl font-mono font-black text-gray-900 dark:text-white">{financePayees.length}</span>
                             </div>
-                            <div className="p-4 bg-black/40 border border-white/5 rounded-2xl flex flex-col gap-1">
+                            <div className="p-4 bg-white dark:bg-black/40 border border-black/10 dark:border-white/5 rounded-2xl flex flex-col gap-1">
                                 <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Volunteers</span>
                                 <span className="text-2xl font-mono font-black text-neon-green">
                                     {financePayees.filter(p => p.type === 'Volunteer').length}
                                 </span>
                             </div>
-                            <div className="p-4 bg-black/40 border border-white/5 rounded-2xl flex flex-col gap-1">
+                            <div className="p-4 bg-white dark:bg-black/40 border border-black/10 dark:border-white/5 rounded-2xl flex flex-col gap-1">
                                 <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Vendors</span>
                                 <span className="text-2xl font-mono font-black text-neon-pink">
                                     {financePayees.filter(p => p.type === 'Vendor').length}
                                 </span>
                             </div>
-                            <div className="p-4 bg-black/40 border border-white/5 rounded-2xl flex flex-col gap-1">
+                            <div className="p-4 bg-white dark:bg-black/40 border border-black/10 dark:border-white/5 rounded-2xl flex flex-col gap-1">
                                 <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Core & Artists</span>
                                 <span className="text-2xl font-mono font-black text-neon-blue">
                                     {financePayees.filter(p => p.type === 'Salary' || p.type === 'Artist').length}
@@ -344,16 +344,16 @@ const PayeeRegistry = () => {
                 </motion.div>
 
                 {/* Filters & Control Console */}
-                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="bg-white/[0.03] backdrop-blur-xl border border-white/10 rounded-2xl p-4">
+                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="bg-white/[0.03] backdrop-blur-xl border border-black/10 dark:border-white/10 rounded-2xl p-4">
                     <div className="flex flex-col md:flex-row items-center gap-4">
                         {/* Search Input */}
                         <div className="relative flex-1 w-full group">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-white transition-colors" size={14} />
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-gray-900 dark:group-focus-within:text-white transition-colors" size={14} />
                             <input 
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                                 placeholder="Search payees by name, contact info..."
-                                className="w-full bg-zinc-950/40 border border-white/10 rounded-xl text-[10px] font-extrabold uppercase tracking-widest text-white h-10 pl-9 pr-3 outline-none focus:border-white/30 transition-all placeholder:text-gray-600"
+                                className="w-full bg-gray-100 dark:bg-zinc-950/40 border border-black/10 dark:border-white/10 rounded-xl text-[10px] font-extrabold uppercase tracking-widest text-gray-900 dark:text-white h-10 pl-9 pr-3 outline-none focus:border-white/30 transition-all placeholder:text-gray-600"
                             />
                         </div>
 
@@ -362,13 +362,13 @@ const PayeeRegistry = () => {
                             <select 
                                 value={typeFilter} 
                                 onChange={(e) => setTypeFilter(e.target.value)}
-                                className="w-full bg-zinc-950/40 border border-white/10 rounded-xl text-[10px] font-extrabold uppercase tracking-widest text-white h-10 px-3 outline-none focus:border-white/30 transition-all appearance-none cursor-pointer"
+                                className="w-full bg-gray-100 dark:bg-zinc-950/40 border border-black/10 dark:border-white/10 rounded-xl text-[10px] font-extrabold uppercase tracking-widest text-gray-900 dark:text-white h-10 px-3 outline-none focus:border-white/30 transition-all appearance-none cursor-pointer"
                             >
-                                <option value="All" className="bg-zinc-950">All Types</option>
-                                <option value="Volunteer" className="bg-zinc-950">Volunteers</option>
-                                <option value="Vendor" className="bg-zinc-950">Vendors</option>
-                                <option value="Salary" className="bg-zinc-950">Core Team</option>
-                                <option value="Artist" className="bg-zinc-950">Artists</option>
+                                <option value="All" className="bg-gray-100 dark:bg-zinc-950">All Types</option>
+                                <option value="Volunteer" className="bg-gray-100 dark:bg-zinc-950">Volunteers</option>
+                                <option value="Vendor" className="bg-gray-100 dark:bg-zinc-950">Vendors</option>
+                                <option value="Salary" className="bg-gray-100 dark:bg-zinc-950">Core Team</option>
+                                <option value="Artist" className="bg-gray-100 dark:bg-zinc-950">Artists</option>
                             </select>
                             <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
                         </div>
@@ -378,12 +378,12 @@ const PayeeRegistry = () => {
                             <select 
                                 value={paymentModeFilter} 
                                 onChange={(e) => setPaymentModeFilter(e.target.value)}
-                                className="w-full bg-zinc-950/40 border border-white/10 rounded-xl text-[10px] font-extrabold uppercase tracking-widest text-white h-10 px-3 outline-none focus:border-white/30 transition-all appearance-none cursor-pointer"
+                                className="w-full bg-gray-100 dark:bg-zinc-950/40 border border-black/10 dark:border-white/10 rounded-xl text-[10px] font-extrabold uppercase tracking-widest text-gray-900 dark:text-white h-10 px-3 outline-none focus:border-white/30 transition-all appearance-none cursor-pointer"
                             >
-                                <option value="All" className="bg-zinc-950">All Modes</option>
-                                <option value="UPI" className="bg-zinc-950">UPI</option>
-                                <option value="Bank Transfer" className="bg-zinc-950">Bank Transfer</option>
-                                <option value="Other" className="bg-zinc-950">Other Methods</option>
+                                <option value="All" className="bg-gray-100 dark:bg-zinc-950">All Modes</option>
+                                <option value="UPI" className="bg-gray-100 dark:bg-zinc-950">UPI</option>
+                                <option value="Bank Transfer" className="bg-gray-100 dark:bg-zinc-950">Bank Transfer</option>
+                                <option value="Other" className="bg-gray-100 dark:bg-zinc-950">Other Methods</option>
                             </select>
                             <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
                         </div>
@@ -395,7 +395,7 @@ const PayeeRegistry = () => {
                                 setTypeFilter('All');
                                 setPaymentModeFilter('All');
                             }}
-                            className="w-full md:w-auto h-10 px-5 bg-white/5 hover:bg-white/10 text-white rounded-xl transition-all border border-white/10 flex items-center justify-center gap-2 font-black tracking-widest uppercase text-[10px] shrink-0"
+                            className="w-full md:w-auto h-10 px-5 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-gray-900 dark:text-white rounded-xl transition-all border border-black/10 dark:border-white/10 flex items-center justify-center gap-2 font-black tracking-widest uppercase text-[10px] shrink-0"
                         >
                             <X size={12} /> Clear
                         </button>
@@ -408,10 +408,10 @@ const PayeeRegistry = () => {
                         filteredPayees.map((payee) => {
                             const isExpanded = expandedPayeeId === payee.id;
                             return (
-                                <div key={payee.id} className="bg-white/[0.03] border border-white/10 rounded-2xl p-5 hover:bg-white/[0.04] hover:border-white/20 transition-all flex flex-col gap-4 relative overflow-hidden">
+                                <div key={payee.id} className="bg-white/[0.03] border border-black/10 dark:border-white/10 rounded-2xl p-5 hover:bg-white/[0.04] hover:border-black/20 dark:hover:border-white/20 transition-all flex flex-col gap-4 relative overflow-hidden">
                                     <div className="flex justify-between items-start gap-4">
                                         <div>
-                                            <h4 className="text-sm font-black text-white">{payee.name}</h4>
+                                            <h4 className="text-sm font-black text-gray-900 dark:text-white">{payee.name}</h4>
                                             <span className="text-[8px] font-black text-zinc-500 uppercase tracking-widest font-mono select-all block mt-0.5">ID: {payee.id.slice(0, 8)}...</span>
                                         </div>
                                         <span className={cn(
@@ -425,26 +425,26 @@ const PayeeRegistry = () => {
                                         </span>
                                     </div>
                                     
-                                    <div className="space-y-1.5 text-[10px] text-zinc-400 border-t border-white/5 pt-3">
+                                    <div className="space-y-1.5 text-[10px] text-zinc-400 border-t border-black/10 dark:border-white/5 pt-3">
                                         <div className="flex items-center gap-2 select-all"><Mail size={12} className="text-zinc-500 shrink-0" /> {payee.email}</div>
                                         <div className="flex items-center gap-2 select-all"><Phone size={12} className="text-zinc-500 shrink-0" /> {payee.phone}</div>
                                         <div className="flex items-center gap-2 select-all"><CreditCard size={12} className="text-zinc-500 shrink-0" /> {payee.paymentMode}: {payee.destinationDetails || 'N/A'}</div>
                                     </div>
 
                                     {payee.notes && (
-                                        <div className="text-[9px] text-zinc-400 leading-normal font-semibold normal-case italic bg-white/[0.01] p-3 rounded-lg border border-white/5 mt-1">
+                                        <div className="text-[9px] text-zinc-400 leading-normal font-semibold normal-case italic bg-white/[0.01] p-3 rounded-lg border border-black/10 dark:border-white/5 mt-1">
                                             {payee.notes}
                                         </div>
                                     )}
 
-                                    <div className="flex items-center justify-between border-t border-white/5 pt-3 mt-1 gap-4">
+                                    <div className="flex items-center justify-between border-t border-black/10 dark:border-white/5 pt-3 mt-1 gap-4">
                                         <span className="text-[8px] font-black text-neon-blue uppercase tracking-widest">
                                             {payee.linkedGig || 'Global Retainer'}
                                         </span>
                                         <div className="flex gap-2">
                                             <button 
                                                 onClick={() => handleCopyDetails(payee.destinationDetails)} 
-                                                className="p-2 text-zinc-400 hover:text-white transition-colors border border-white/10 rounded-lg bg-zinc-950/40 hover:bg-zinc-800"
+                                                className="p-2 text-zinc-400 hover:text-gray-900 dark:hover:text-white transition-colors border border-black/10 dark:border-white/10 rounded-lg bg-gray-100 dark:bg-zinc-950/40 hover:bg-zinc-800"
                                                 title="Copy Payment Address"
                                             >
                                                 <Copy size={12} />
@@ -452,7 +452,7 @@ const PayeeRegistry = () => {
                                             {user?.role !== 'editor' && user?.role !== 'content_admin' && (
                                                 <button 
                                                     onClick={() => handleDeletePayee(payee.id)} 
-                                                    className="p-2 text-zinc-400 hover:text-red-500 transition-colors border border-white/10 rounded-lg bg-zinc-950/40 hover:bg-red-500/10 hover:border-red-500/30"
+                                                    className="p-2 text-zinc-400 hover:text-red-500 transition-colors border border-black/10 dark:border-white/10 rounded-lg bg-gray-100 dark:bg-zinc-950/40 hover:bg-red-500/10 hover:border-red-500/30"
                                                     title="Remove Payee"
                                                 >
                                                     <Trash2 size={12} />
@@ -464,7 +464,7 @@ const PayeeRegistry = () => {
                             );
                         })
                     ) : (
-                        <div className="flex items-center justify-center py-20 bg-white/[0.03] border border-white/10 rounded-2xl">
+                        <div className="flex items-center justify-center py-20 bg-white/[0.03] border border-black/10 dark:border-white/10 rounded-2xl">
                             <span className="text-[10px] font-black uppercase tracking-widest text-zinc-600">No records found</span>
                         </div>
                     )}
@@ -472,10 +472,10 @@ const PayeeRegistry = () => {
 
                 {/* DESKTOP TABLE VIEW */}
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} className="hidden lg:block overflow-x-auto scrollbar-hide">
-                    <div className="min-w-[1000px] bg-white/[0.03] backdrop-blur-xl border border-white/10 rounded-3xl p-0 overflow-hidden">
+                    <div className="min-w-[1000px] bg-white/[0.03] backdrop-blur-xl border border-black/10 dark:border-white/10 rounded-3xl p-0 overflow-hidden">
                         <table className="w-full text-left border-collapse">
                             <thead>
-                                <tr className="border-b border-white/5 text-[9px] font-black uppercase tracking-[0.2em] text-zinc-500 bg-white/[0.02]">
+                                <tr className="border-b border-black/10 dark:border-white/5 text-[9px] font-black uppercase tracking-[0.2em] text-zinc-500 bg-white/[0.02]">
                                     <th className="p-6">payee name</th>
                                     <th className="p-6">classification</th>
                                     <th className="p-6">contact details</th>
@@ -493,15 +493,15 @@ const PayeeRegistry = () => {
                                         return (
                                             <React.Fragment key={payee.id}>
                                                 <tr className={cn(
-                                                    "border-b border-white/5 hover:bg-white/[0.03] transition-all group cursor-pointer",
+                                                    "border-b border-black/10 dark:border-white/5 hover:bg-white/[0.03] transition-all group cursor-pointer",
                                                     isExpanded && "bg-white/[0.04]"
                                                 )}
                                                     onClick={() => setExpandedPayeeId(isExpanded ? null : payee.id)}
                                                 >
                                                     <td className="p-6">
                                                         <div className="flex items-center gap-2">
-                                                            {isExpanded ? <ChevronUp size={12} className="text-neon-blue" /> : <ChevronDown size={12} className="text-zinc-500 group-hover:text-white" />}
-                                                            <div className="text-xs font-black text-white">{payee.name}</div>
+                                                            {isExpanded ? <ChevronUp size={12} className="text-neon-blue" /> : <ChevronDown size={12} className="text-zinc-500 group-hover:text-gray-900 dark:group-hover:text-white" />}
+                                                            <div className="text-xs font-black text-gray-900 dark:text-white">{payee.name}</div>
                                                         </div>
                                                     </td>
                                                     <td className="p-6 text-[9px]">
@@ -523,10 +523,10 @@ const PayeeRegistry = () => {
                                                     <td className="p-6 text-zinc-400">
                                                         {payee.destinationDetails ? (
                                                             <div className="flex items-center gap-2 max-w-[240px]" onClick={e => e.stopPropagation()}>
-                                                                <span className="font-mono text-[9px] truncate text-white select-all">{payee.destinationDetails}</span>
+                                                                <span className="font-mono text-[9px] truncate text-gray-900 dark:text-white select-all">{payee.destinationDetails}</span>
                                                                 <button 
                                                                     onClick={() => handleCopyDetails(payee.destinationDetails)}
-                                                                    className="p-1.5 hover:bg-white/10 text-zinc-500 rounded hover:text-white transition-all shrink-0 border border-white/5"
+                                                                    className="p-1.5 hover:bg-black/10 dark:hover:bg-white/10 text-zinc-500 rounded hover:text-gray-900 dark:hover:text-white transition-all shrink-0 border border-black/10 dark:border-white/5"
                                                                     title="Copy Payout Address"
                                                                 >
                                                                     <Copy size={10} />
@@ -546,7 +546,7 @@ const PayeeRegistry = () => {
                                                         <div className="flex justify-end gap-2">
                                                             <button 
                                                                 onClick={() => handleCopyDetails(payee.destinationDetails)} 
-                                                                className="p-2 text-zinc-400 hover:text-white transition-colors border border-white/10 rounded-lg bg-zinc-950/40 hover:bg-zinc-800"
+                                                                className="p-2 text-zinc-400 hover:text-gray-900 dark:hover:text-white transition-colors border border-black/10 dark:border-white/10 rounded-lg bg-gray-100 dark:bg-zinc-950/40 hover:bg-zinc-800"
                                                                 title="Copy Payment Address"
                                                             >
                                                                 <Copy size={14} />
@@ -554,7 +554,7 @@ const PayeeRegistry = () => {
                                                             {user?.role !== 'editor' && user?.role !== 'content_admin' && (
                                                                 <button 
                                                                     onClick={() => handleDeletePayee(payee.id)} 
-                                                                    className="p-2 text-zinc-400 hover:text-red-500 transition-colors border border-white/10 rounded-lg bg-zinc-950/40 hover:bg-red-500/10 hover:border-red-500/30"
+                                                                    className="p-2 text-zinc-400 hover:text-red-500 transition-colors border border-black/10 dark:border-white/10 rounded-lg bg-gray-100 dark:bg-zinc-950/40 hover:bg-red-500/10 hover:border-red-500/30"
                                                                     title="Remove Payee"
                                                                 >
                                                                     <Trash2 size={14} />
@@ -566,7 +566,7 @@ const PayeeRegistry = () => {
                                                 
                                                 {/* Expanded Details Drawer */}
                                                 {isExpanded && (
-                                                    <tr className="bg-zinc-950/40 border-b border-white/5">
+                                                    <tr className="bg-gray-100 dark:bg-zinc-950/40 border-b border-black/10 dark:border-white/5">
                                                         <td colSpan="8" className="p-0">
                                                             <motion.div
                                                                 initial={{ height: 0, opacity: 0 }}
@@ -581,7 +581,7 @@ const PayeeRegistry = () => {
                                                                         <span className="text-[8px] font-black text-zinc-500 uppercase tracking-widest flex items-center gap-1.5">
                                                                             <FileText size={10} className="text-neon-blue" /> Payee Biography & Notes
                                                                         </span>
-                                                                        <p className="text-[10px] text-zinc-300 normal-case font-semibold leading-relaxed italic bg-zinc-950/40 border border-white/5 p-4 rounded-xl min-h-[90px]">
+                                                                        <p className="text-[10px] text-zinc-300 normal-case font-semibold leading-relaxed italic bg-gray-100 dark:bg-zinc-950/40 border border-black/10 dark:border-white/5 p-4 rounded-xl min-h-[90px]">
                                                                             {payee.notes || "No notes or specific instructions provided for this payee profile."}
                                                                         </p>
                                                                     </div>
@@ -591,24 +591,24 @@ const PayeeRegistry = () => {
                                                                         <span className="text-[8px] font-black text-zinc-500 uppercase tracking-widest flex items-center gap-1.5">
                                                                             <CreditCard size={10} className="text-neon-green" /> Payout Credentials
                                                                         </span>
-                                                                        <div className="bg-zinc-950/40 border border-white/5 p-4 rounded-xl space-y-2 text-[10px] min-h-[90px] flex flex-col justify-center">
+                                                                        <div className="bg-gray-100 dark:bg-zinc-950/40 border border-black/10 dark:border-white/5 p-4 rounded-xl space-y-2 text-[10px] min-h-[90px] flex flex-col justify-center">
                                                                             <div className="flex justify-between items-center">
                                                                                 <span className="text-zinc-500 font-bold uppercase">Payment Mode</span>
-                                                                                <span className="text-white font-black">{payee.paymentMode}</span>
+                                                                                <span className="text-gray-900 dark:text-white font-black">{payee.paymentMode}</span>
                                                                             </div>
                                                                             <div className="flex justify-between items-start gap-4">
                                                                                 <span className="text-zinc-500 font-bold uppercase shrink-0">Address</span>
-                                                                                <span className="text-white font-mono break-all font-semibold select-all text-right">{payee.destinationDetails || 'N/A'}</span>
+                                                                                <span className="text-gray-900 dark:text-white font-mono break-all font-semibold select-all text-right">{payee.destinationDetails || 'N/A'}</span>
                                                                             </div>
                                                                             {payee.bankDetails && (
                                                                                 <>
                                                                                     <div className="flex justify-between items-center">
                                                                                         <span className="text-zinc-500 font-bold uppercase">Bank Name</span>
-                                                                                        <span className="text-white font-black">{payee.bankDetails.bankName}</span>
+                                                                                        <span className="text-gray-900 dark:text-white font-black">{payee.bankDetails.bankName}</span>
                                                                                     </div>
                                                                                     <div className="flex justify-between items-center">
                                                                                         <span className="text-zinc-500 font-bold uppercase">Bank IFSC</span>
-                                                                                        <span className="text-white font-mono font-black">{payee.bankDetails.ifscCode}</span>
+                                                                                        <span className="text-gray-900 dark:text-white font-mono font-black">{payee.bankDetails.ifscCode}</span>
                                                                                     </div>
                                                                                 </>
                                                                             )}
@@ -620,14 +620,14 @@ const PayeeRegistry = () => {
                                                                         <span className="text-[8px] font-black text-zinc-500 uppercase tracking-widest flex items-center gap-1.5">
                                                                             <Clock size={10} className="text-neon-pink" /> Record Metadata
                                                                         </span>
-                                                                        <div className="bg-zinc-950/40 border border-white/5 p-4 rounded-xl space-y-2 text-[10px] min-h-[90px] flex flex-col justify-center">
+                                                                        <div className="bg-gray-100 dark:bg-zinc-950/40 border border-black/10 dark:border-white/5 p-4 rounded-xl space-y-2 text-[10px] min-h-[90px] flex flex-col justify-center">
                                                                             <div className="flex justify-between items-center">
                                                                                 <span className="text-zinc-500 font-bold uppercase">Registry ID</span>
-                                                                                <span className="text-white font-mono text-[9px] select-all">{payee.id}</span>
+                                                                                <span className="text-gray-900 dark:text-white font-mono text-[9px] select-all">{payee.id}</span>
                                                                             </div>
                                                                             <div className="flex justify-between items-center">
                                                                                 <span className="text-zinc-500 font-bold uppercase">Onboarded</span>
-                                                                                <span className="text-white font-semibold">{payee.createdAt ? new Date(payee.createdAt).toLocaleString('en-IN') : 'N/A'}</span>
+                                                                                <span className="text-gray-900 dark:text-white font-semibold">{payee.createdAt ? new Date(payee.createdAt).toLocaleString('en-IN') : 'N/A'}</span>
                                                                             </div>
                                                                             <div className="flex justify-between items-center">
                                                                                 <span className="text-zinc-500 font-bold uppercase">Gig Scope</span>

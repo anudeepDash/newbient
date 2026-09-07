@@ -44,7 +44,7 @@ const About = () => {
     }, [isPaused, stats]);
 
     return (
-        <section className="py-10 md:py-16 bg-dark relative overflow-hidden">
+        <section className="py-10 md:py-16 bg-gray-50 dark:bg-dark transition-colors duration-300 relative overflow-hidden">
             {/* Ambient Background Glows */}
 
             <div className="max-w-7xl mx-auto px-4 relative z-10">
@@ -54,15 +54,15 @@ const About = () => {
                         initial={{ opacity: 0, y: 30 }}
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true }}
-                        className="text-4xl md:text-6xl font-extrabold text-white mb-6 tracking-tight"
+                        className="text-4xl md:text-6xl font-extrabold text-gray-900 dark:text-white mb-6 tracking-tight"
                     >
-                        Making <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-neon-green">Impact</span>
+                        Making <span className="text-transparent bg-clip-text bg-gradient-to-r from-black to-neon-green dark:from-white dark:to-neon-green">Impact</span>
                     </motion.h2>
                     <motion.p
                         initial={{ opacity: 0 }}
                         whileInView={{ opacity: 1 }}
                         viewport={{ once: true }}
-                        className="text-gray-400 max-w-2xl mx-auto text-lg font-medium leading-relaxed"
+                        className="text-gray-600 dark:text-gray-400 max-w-2xl mx-auto text-lg font-medium leading-relaxed"
                     >
                         We specialize in bridging the gap between global brands and the Indian youth through high-fidelity campus activations and disruptive marketing.
                     </motion.p>
@@ -86,13 +86,13 @@ const About = () => {
                             transition={{ duration: 0.6, delay: index * 0.1 }}
                             className="relative group p-1 min-w-[85vw] md:min-w-0 snap-center"
                         >
-                            <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent rounded-3xl opacity-0 md:group-hover:opacity-100 transition-opacity" />
-                            <div className="relative bg-zinc-900/60 backdrop-blur-2xl border border-white/5 rounded-3xl p-6 md:p-10 h-full flex flex-col items-center text-center md:group-hover:border-white/20 transition-all duration-500 md:group-hover:-translate-y-2">
+                            <div className="absolute inset-0 bg-gradient-to-br from-black/10 dark:from-white/10 to-transparent rounded-3xl opacity-0 md:group-hover:opacity-100 transition-opacity" />
+                            <div className="relative bg-white dark:bg-zinc-900/60 backdrop-blur-2xl border border-gray-200 dark:border-white/5 rounded-3xl p-6 md:p-10 h-full flex flex-col items-center text-center md:group-hover:border-gray-300 dark:md:group-hover:border-white/20 transition-all duration-500 md:group-hover:-translate-y-2 shadow-sm dark:shadow-none">
                                 <span className="text-[10px] font-bold tracking-[0.25em] text-neon-green uppercase mb-8">{stat.label}</span>
-                                <h4 className="text-5xl md:text-7xl font-extrabold text-white mb-4 tracking-tight md:group-hover:scale-105 transition-transform duration-500">
+                                <h4 className="text-5xl md:text-7xl font-extrabold text-gray-900 dark:text-white mb-4 tracking-tight md:group-hover:scale-105 transition-transform duration-500">
                                     {stat.value}
                                 </h4>
-                                <p className="text-xs text-gray-400 font-medium leading-relaxed max-w-[240px]">
+                                <p className="text-xs text-gray-600 dark:text-gray-400 font-medium leading-relaxed max-w-[240px]">
                                     {stat.sub}
                                 </p>
                             </div>
@@ -104,13 +104,13 @@ const About = () => {
                     <div className="flex md:hidden items-center justify-center gap-4 mt-2">
                         <button 
                             onClick={() => scroll('left')}
-                            className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-white active:bg-white active:text-black transition-all"
+                            className="w-10 h-10 rounded-xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 flex items-center justify-center text-gray-900 dark:text-white active:bg-white active:text-black transition-all"
                         >
                             <ChevronLeft size={16} />
                         </button>
                         <button 
                             onClick={() => scroll('right')}
-                            className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-white active:bg-white active:text-black transition-all"
+                            className="w-10 h-10 rounded-xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 flex items-center justify-center text-gray-900 dark:text-white active:bg-white active:text-black transition-all"
                         >
                             <ChevronRight size={16} />
                         </button>

@@ -307,11 +307,6 @@ export const useStore = create((set, get) => ({
     agreements: [], // New Agreement Generator state
     genDocuments: [], // Generated Document PDFs state
     creators: [], // Influencer Marketing
-    campusProfiles: [], // Role-based campus hub
-    campusActivations: [], // Gamified events
-    campusActivationEntries: [],
-    campusWallPosts: [], // Spotted & Gigs micro-bulletin feed
-    campusGuestlistPasses: [], // Dynamic QR guestlist passes
     campaigns: [], // Influencer Marketing
     giveaways: [], // Giveaway Campaigns
     giveawayEntries: [], // Giveaway Entries
@@ -341,6 +336,11 @@ export const useStore = create((set, get) => ({
     },
     siteSettings: { showUpcomingEvents: true, hideMaintenancePages: false },
     siteDetails: { instagram: '#', linkedin: '#', whatsappCommunity: '', phone: '', address: '', email: '' },
+    isProfilePanelOpen: false,
+    profilePanelTab: 'overview',
+    openProfilePanel: (tab = 'overview') => set({ isProfilePanelOpen: true, profilePanelTab: tab }),
+    closeProfilePanel: () => set({ isProfilePanelOpen: false }),
+    setProfilePanelTab: (tab) => set({ profilePanelTab: tab }),
     loading: true,
     authInitialized: initialUser !== null,
     user: initialUser,
@@ -415,8 +415,6 @@ export const useStore = create((set, get) => ({
     })),
     subscribeToGiveaways: () => get().subscribeToKey('giveaways', 'giveaways'),
     subscribeToPosts: () => get().subscribeToKey('posts', 'posts'),
-    subscribeToCampusWallPosts: () => get().subscribeToKey('campusWallPosts', 'campus_wall_posts'),
-    subscribeToCampusGuestlistPasses: () => get().subscribeToKey('campusGuestlistPasses', 'campus_guestlist_passes'),
 
     // Admin On-Demand Subscriptions
     subscribeToInvoices: () => get().subscribeToKey('invoices', 'invoices', (data) => data.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))),
@@ -425,9 +423,6 @@ export const useStore = create((set, get) => ({
     subscribeToFinancePayees: () => get().subscribeToKey('financePayees', 'finance_payees', (data) => data.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))),
     subscribeToMessages: () => get().subscribeToKey('messages', 'messages', (data) => data.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))),
     subscribeToCreators: () => get().subscribeToKey('creators', 'creators'),
-    subscribeToCampusProfiles: () => get().subscribeToKey('campusProfiles', 'campus_profiles'),
-    subscribeToCampusActivations: () => get().subscribeToKey('campusActivations', 'campus_activations'),
-    subscribeToCampusActivationEntries: () => get().subscribeToKey('campusActivationEntries', 'campus_activation_entries'),
     subscribeToCampaigns: () => get().subscribeToKey('campaigns', 'campaigns'),
     subscribeToProposals: () => get().subscribeToKey('proposals', 'proposals', (data) => data.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))),
     subscribeToAgreements: () => get().subscribeToKey('agreements', 'agreements', (data) => data.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))),
@@ -1703,95 +1698,6 @@ export const useStore = create((set, get) => ({
     },
     deleteMessage: async (id) => {
         await deleteDoc(doc(db, 'messages', id));
-    },
-
-    // Campus Profiles
-    addCampusProfile: async (profile) => {
-        const namePart = (profile.fullName || 'CAMPUS').split(' ')[0].toUpperCase().replace(/[^A-Z0-9]/g, '');
-        const randomPart = Math.random().toString(36).substring(2, 6).toUpperCase();
-        const referralCode = `CAMPUS-${namePart}-${randomPart}`;
-
-        const finalProfile = await processAndUploadBase64Fields({
-            ...profile,
-            referralCode,
-            referralsCount: 0,
-            campusPoints: 0,
-            redeemedPerks: [],
-        }, `campus/${profile.uid}`);
-        await setDoc(doc(db, 'campus_profiles', profile.uid), finalProfile);
-    },
-    redeemCampusPerk: async (uid, perk, cost) => {
-        const profileRef = doc(db, 'campus_profiles', uid);
-        await updateDoc(profileRef, {
-            campusPoints: increment(-cost),
-            redeemedPerks: arrayUnion({ perkId: perk.id, title: perk.title, cost, redeemedAt: new Date().toISOString() })
-        });
-    },
-    updateCampusProfile: async (uid, data) => {
-        const finalData = await processAndUploadBase64Fields(data, `campus/${uid}`);
-        await updateDoc(doc(db, 'campus_profiles', uid), finalData);
-    },
-    deleteCampusProfile: async (uid) => {
-        await deleteDoc(doc(db, 'campus_profiles', uid));
-    },
-
-    // Campus Activations
-    addCampusActivation: async (activation) => {
-        const finalActivation = await processAndUploadBase64Fields({
-            ...activation,
-            createdAt: serverTimestamp()
-        }, `campus_activations/${Date.now()}`);
-        await addDoc(collection(db, 'campus_activations'), finalActivation);
-    },
-    updateCampusActivation: async (id, data) => {
-        const finalData = await processAndUploadBase64Fields(data, `campus_activations/${id}`);
-        await updateDoc(doc(db, 'campus_activations', id), finalData);
-    },
-    deleteCampusActivation: async (id) => {
-        await deleteDoc(doc(db, 'campus_activations', id));
-    },
-    
-    // Campus Activation Entries (Gamification Tracking)
-    joinCampusActivation: async (campaignId, userId, userData) => {
-        const entryId = `${campaignId}_${userId}`;
-        await setDoc(doc(db, 'campus_activation_entries', entryId), {
-            campaignId,
-            userId,
-            ...userData,
-            points: 0,
-            completedTasks: [],
-            joinedAt: serverTimestamp()
-        });
-    },
-    completeActivationTask: async (entryId, taskId, points) => {
-        const entryRef = doc(db, 'campus_activation_entries', entryId);
-        await updateDoc(entryRef, {
-            completedTasks: arrayUnion(taskId),
-            points: increment(points)
-        });
-    },
-
-    // Campus Wall Posts (Spotted & Gigs)
-    addCampusWallPost: async (post) => {
-        await addDoc(collection(db, 'campus_wall_posts'), {
-            ...post,
-            createdAt: serverTimestamp()
-        });
-    },
-    deleteCampusWallPost: async (id) => {
-        await deleteDoc(doc(db, 'campus_wall_posts', id));
-    },
-
-    // Campus Guestlist Passes (Dynamic QR)
-    generateGuestlistPass: async (eventId, userId, userData) => {
-        const passId = `${eventId}_${userId}`;
-        await setDoc(doc(db, 'campus_guestlist_passes', passId), {
-            eventId,
-            userId,
-            ...userData,
-            claimedAt: serverTimestamp(),
-            status: 'active'
-        });
     },
 
     // Creators / Influencers

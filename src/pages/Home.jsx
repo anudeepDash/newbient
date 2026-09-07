@@ -21,7 +21,7 @@ const Home = () => {
     const { siteSettings } = useStore();
 
     return (
-        <main className="bg-dark min-h-screen">
+        <main className="bg-gray-50 dark:bg-dark min-h-screen transition-colors duration-300">
             <Hero />
 
             <MaintenanceGuard isSection featureId="home_why">
