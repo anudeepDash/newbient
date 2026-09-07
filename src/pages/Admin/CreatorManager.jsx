@@ -408,89 +408,85 @@ const CreatorManager = ({ showLeaderboardOnly = false, isEmbedded = false }) => 
             <div className={cn("relative z-10 max-w-[1700px] mx-auto pb-20", isEmbedded ? "px-4 md:px-12 pt-6" : "")}>
             <div>
                 {/* Control Panel */}
-                <div className="relative z-50 bg-[#0A0A0A]/90 backdrop-blur-3xl border border-white/10 rounded-[1.5rem] md:rounded-[2rem] p-3 md:p-5 mb-8 md:mb-12 shadow-[0_30px_100px_rgba(0,0,0,0.8)] space-y-3 md:space-y-4">
+                <div className="relative z-50 bg-white/[0.02] border border-white/[0.06] rounded-2xl p-3 sm:p-4 mb-6 md:mb-8 space-y-3">
                     
                     {/* Row 1: Search Engine & Action Bar */}
-                    <div className="flex flex-col lg:flex-row items-stretch lg:items-center gap-3">
+                    <div className="flex flex-col lg:flex-row items-stretch lg:items-center gap-2.5 sm:gap-3">
                         {/* Search Input */}
-                        <div className="relative flex-1 min-w-0 group">
-                            <div className="absolute inset-0 bg-gradient-to-r from-neon-pink/10 to-transparent opacity-0 group-focus-within:opacity-100 transition-opacity rounded-full pointer-events-none" />
-                            <Search className="absolute left-5 md:left-6 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-neon-pink transition-colors" size={16} />
+                        <div className="relative flex-1 min-w-0">
+                            <Search className="absolute left-3.5 sm:left-4 top-1/2 -translate-y-1/2 text-white/20" size={14} />
                             <input
                                 type="text"
-                                placeholder="SEARCH CREATORS..."
+                                placeholder="Search creators..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
-                                className="w-full h-12 md:h-14 pl-12 md:pl-14 pr-10 bg-black/60 border border-white/10 group-hover:border-white/20 focus:border-neon-pink/60 rounded-xl md:rounded-full text-[10px] font-black uppercase tracking-[0.2em] outline-none transition-all placeholder:text-gray-700 text-white min-w-0 shadow-inner"
+                                className="w-full h-10 pl-9 sm:pl-10 pr-9 bg-black/30 border border-white/[0.06] focus:border-white/20 rounded-xl text-xs font-medium outline-none transition-all placeholder:text-white/15 text-white min-w-0"
                             />
                             {searchTerm && (
                                 <button
                                     onClick={() => setSearchTerm('')}
-                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white transition-colors"
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-white/20 hover:text-white transition-colors"
                                 >
-                                    <X size={14} />
+                                    <X size={13} />
                                 </button>
                             )}
                         </div>
 
                         {/* Action Controls Cluster */}
-                        <div className="flex items-center flex-wrap sm:flex-nowrap gap-2 shrink-0">
+                        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5 w-full lg:w-auto justify-start lg:justify-end shrink-0">
                             {/* View Switcher */}
-                            <div className="flex bg-black/60 p-1 rounded-xl md:rounded-full border border-white/10 shrink-0 h-12 md:h-14 items-center">
+                            <div className="flex bg-black/30 p-0.5 rounded-xl border border-white/[0.06] shrink-0 h-10 items-center">
                                 <button 
                                     onClick={() => setViewMode('grid')} 
                                     title="Grid View"
                                     className={cn(
-                                        "w-9 h-9 md:w-11 md:h-11 rounded-lg md:rounded-full flex items-center justify-center transition-all", 
-                                        viewMode === 'grid' ? "bg-white text-black shadow-xl" : "text-gray-500 hover:text-white"
+                                        "w-9 h-9 rounded-lg flex items-center justify-center transition-all", 
+                                        viewMode === 'grid' ? "bg-white/10 text-white" : "text-white/25 hover:text-white/50"
                                     )}
                                 >
-                                    <LayoutGrid size={15} />
+                                    <LayoutGrid size={14} />
                                 </button>
                                 <button 
                                     onClick={() => setViewMode('list')} 
                                     title="List View"
                                     className={cn(
-                                        "w-9 h-9 md:w-11 md:h-11 rounded-lg md:rounded-full flex items-center justify-center transition-all", 
-                                        viewMode === 'list' ? "bg-white text-black shadow-xl" : "text-gray-500 hover:text-white"
+                                        "w-9 h-9 rounded-lg flex items-center justify-center transition-all", 
+                                        viewMode === 'list' ? "bg-white/10 text-white" : "text-white/25 hover:text-white/50"
                                     )}
                                 >
-                                    <FileSpreadsheet size={15} />
+                                    <FileSpreadsheet size={14} />
                                 </button>
                             </div>
 
                             {/* Export CSV */}
                             <button 
                                 onClick={exportToCSV}
-                                className="group relative h-12 md:h-14 px-4 md:px-6 bg-white/5 border border-white/10 hover:border-white/20 text-white rounded-xl md:rounded-full font-black uppercase tracking-[0.15em] text-[9px] md:text-[10px] overflow-hidden hover:scale-[1.02] active:scale-95 transition-all shadow-lg flex items-center justify-center gap-2 shrink-0"
+                                className="h-10 px-3 sm:px-4 bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.08] text-white/60 hover:text-white rounded-xl font-bold uppercase tracking-wider text-[9px] transition-all flex items-center justify-center gap-1.5 shrink-0"
                             >
-                                <div className="absolute inset-0 bg-gradient-to-r from-neon-pink via-purple-500 to-neon-blue opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                                <div className="relative z-10 flex items-center gap-2 group-hover:text-black transition-colors duration-500">
-                                    <Download size={15} />
-                                    <span>EXPORT CSV</span>
-                                </div>
+                                <Download size={13} />
+                                <span>Export</span>
                             </button>
 
                             {/* Import Sheet */}
-                            <label className="group relative h-12 md:h-14 px-4 md:px-6 bg-zinc-900 border border-white/10 hover:border-white/20 text-white rounded-xl md:rounded-full font-black uppercase tracking-[0.15em] text-[9px] md:text-[10px] hover:scale-[1.02] active:scale-95 transition-all cursor-pointer flex items-center justify-center gap-2 shrink-0">
-                                <Upload size={15} className="text-neon-pink" />
-                                <span>IMPORT SHEET</span>
+                            <label className="h-10 px-3 sm:px-4 bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.08] text-white/60 hover:text-white rounded-xl font-bold uppercase tracking-wider text-[9px] transition-all cursor-pointer flex items-center justify-center gap-1.5 shrink-0">
+                                <Upload size={13} />
+                                <span>Import</span>
                                 <input type="file" accept=".csv" onChange={handleImportCSV} className="hidden" />
                             </label>
 
-                            {/* Add Creator Button - High Contrast Primary Action */}
+                            {/* Add Creator */}
                             <button 
                                 onClick={() => setIsAddModalOpen(true)}
-                                className="group relative h-12 md:h-14 px-5 md:px-7 bg-white text-black hover:bg-neon-pink hover:text-black rounded-xl md:rounded-full font-black uppercase tracking-[0.15em] text-[9px] md:text-[10px] hover:scale-[1.02] active:scale-95 transition-all shadow-[0_10px_30px_rgba(255,255,255,0.15)] flex items-center justify-center gap-2 shrink-0"
+                                className="h-10 px-4 sm:px-5 bg-white text-black hover:bg-neon-pink rounded-xl font-bold uppercase tracking-wider text-[9px] transition-all flex items-center justify-center gap-1.5 shrink-0 ml-auto sm:ml-0"
                             >
-                                <Plus size={16} className="text-black font-black" />
-                                <span>ADD CREATOR</span>
+                                <Plus size={14} />
+                                <span>Add Creator</span>
                             </button>
                         </div>
                     </div>
 
-                    {/* Row 2: Filter Toolbar */}
-                    <div className="pt-2 md:pt-3 border-t border-white/5 flex flex-col md:flex-row md:flex-wrap lg:flex-nowrap items-stretch md:items-center gap-2 md:gap-2.5">
+                    {/* Row 2: Filter Toolbar (2-column on mobile, inline flex on desktop) */}
+                    <div className="pt-2.5 border-t border-white/[0.04] grid grid-cols-2 sm:flex sm:flex-wrap lg:flex-nowrap items-center gap-2">
                         
                         {/* Filter Indicator Label */}
                         <div className="hidden xl:flex items-center gap-1.5 px-2 text-[9px] font-black uppercase tracking-widest text-gray-500 shrink-0 select-none">
@@ -499,26 +495,26 @@ const CreatorManager = ({ showLeaderboardOnly = false, isEmbedded = false }) => 
                         </div>
 
                         {/* Custom Followers Range Popover Selector */}
-                        <div className="relative flex-1 min-w-[130px] sm:min-w-[140px]" ref={followersRef}>
+                        <div className="relative col-span-1 sm:flex-1 sm:min-w-[130px]" ref={followersRef}>
                             <div 
                                 onClick={() => setIsFollowersOpen(!isFollowersOpen)}
                                 className={cn(
-                                    "flex items-center justify-between h-11 md:h-12 bg-black/60 border border-white/10 rounded-xl md:rounded-full px-4 cursor-pointer hover:border-white/20 transition-all group shadow-inner select-none",
+                                    "flex items-center justify-between h-10 bg-black/40 border border-white/[0.06] rounded-xl px-3 cursor-pointer hover:border-white/20 transition-all group select-none",
                                     isFollowersOpen && "border-neon-pink/40"
                                 )}
                             >
                                 <span className={cn(
-                                    "text-[9px] md:text-[10px] font-black uppercase tracking-[0.12em] truncate leading-none",
-                                    (!minFollowers && !maxFollowers) ? "text-white/40" : "text-white italic"
+                                    "text-[9px] font-bold uppercase tracking-wider truncate leading-none",
+                                    (!minFollowers && !maxFollowers) ? "text-white/40" : "text-white"
                                 )}
                                 title={getFollowersLabel()}
                                 >
                                     {getFollowersLabel()}
                                 </span>
                                 <ChevronDown 
-                                    size={14} 
+                                    size={12} 
                                     className={cn(
-                                        "transition-all duration-300 shrink-0 ml-2 text-white/30 group-hover:text-white/50",
+                                        "transition-all duration-300 shrink-0 ml-1.5 text-white/30 group-hover:text-white/50",
                                         isFollowersOpen && "rotate-180 text-neon-pink"
                                     )} 
                                 />
@@ -530,31 +526,31 @@ const CreatorManager = ({ showLeaderboardOnly = false, isEmbedded = false }) => 
                                         initial={{ opacity: 0, y: 10, scale: 0.95 }}
                                         animate={{ opacity: 1, y: 0, scale: 1 }}
                                         exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                                        className="absolute z-[100] left-0 mt-3 w-[260px] bg-[#0a0a0a]/95 backdrop-blur-[64px] border border-white/10 rounded-2xl shadow-[0_30px_60px_rgba(0,0,0,0.8)] p-6 space-y-4"
+                                        className="absolute z-[100] left-0 mt-2 w-[calc(100vw-3rem)] sm:w-[260px] max-w-[280px] bg-[#0a0a0a]/95 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-2xl p-4 sm:p-5 space-y-3"
                                     >
                                         <div className="space-y-1">
-                                            <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest pl-1">FOLLOWER RANGE</p>
+                                            <p className="text-[9px] font-bold text-white/40 uppercase tracking-wider">Follower Range</p>
                                         </div>
                                         <div className="flex gap-2 items-center">
                                             <div className="space-y-1 flex-1">
-                                                <label className="text-[8px] font-black text-gray-600 uppercase tracking-widest pl-1">MIN</label>
+                                                <label className="text-[7px] font-bold text-white/30 uppercase tracking-wider pl-0.5">Min</label>
                                                 <input 
                                                     type="number" 
                                                     value={minFollowers} 
                                                     onChange={(e) => setMinFollowers(e.target.value)}
                                                     placeholder="0" 
-                                                    className="w-full h-10 bg-black/40 border border-white/10 rounded-lg px-2 text-xs font-bold text-white focus:border-neon-pink outline-none transition-all"
+                                                    className="w-full h-9 bg-black/40 border border-white/10 rounded-lg px-2 text-xs font-bold text-white focus:border-neon-pink outline-none transition-all"
                                                 />
                                             </div>
-                                            <span className="text-gray-600 text-xs font-bold pt-4">-</span>
+                                            <span className="text-white/20 text-xs font-bold pt-4">-</span>
                                             <div className="space-y-1 flex-1">
-                                                <label className="text-[8px] font-black text-gray-600 uppercase tracking-widest pl-1">MAX</label>
+                                                <label className="text-[7px] font-bold text-white/30 uppercase tracking-wider pl-0.5">Max</label>
                                                 <input 
                                                     type="number" 
                                                     value={maxFollowers} 
                                                     onChange={(e) => setMaxFollowers(e.target.value)}
                                                     placeholder="Any" 
-                                                    className="w-full h-10 bg-black/40 border border-white/10 rounded-lg px-2 text-xs font-bold text-white focus:border-neon-pink outline-none transition-all"
+                                                    className="w-full h-9 bg-black/40 border border-white/10 rounded-lg px-2 text-xs font-bold text-white focus:border-neon-pink outline-none transition-all"
                                                 />
                                             </div>
                                         </div>
@@ -562,8 +558,8 @@ const CreatorManager = ({ showLeaderboardOnly = false, isEmbedded = false }) => 
                                         <div className="h-px bg-white/5" />
 
                                         {/* Preset quick ranges */}
-                                        <div className="space-y-2">
-                                            <p className="text-[8px] font-black text-gray-600 uppercase tracking-widest pl-1">PRESETS</p>
+                                        <div className="space-y-1.5">
+                                            <p className="text-[7px] font-bold text-white/30 uppercase tracking-wider pl-0.5">Presets</p>
                                             <div className="grid grid-cols-2 gap-1.5">
                                                 {[
                                                     { label: '0 - 10K', min: '0', max: '10000' },
@@ -577,10 +573,10 @@ const CreatorManager = ({ showLeaderboardOnly = false, isEmbedded = false }) => 
                                                         key={idx}
                                                         type="button"
                                                         onClick={() => {
-                                                            setMinFollowers(p.min);
-                                                            setMaxFollowers(p.max);
+                                                             setMinFollowers(p.min);
+                                                             setMaxFollowers(p.max);
                                                         }}
-                                                        className="px-3 py-2 bg-white/5 border border-white/5 hover:border-neon-pink/20 hover:bg-neon-pink/5 hover:text-neon-pink rounded-lg text-[9px] font-black uppercase tracking-wider text-gray-400 transition-all text-center"
+                                                        className="px-2.5 py-1.5 bg-white/5 border border-white/5 hover:border-neon-pink/20 hover:bg-neon-pink/5 hover:text-neon-pink rounded-lg text-[8px] font-bold uppercase tracking-wider text-white/50 transition-all text-center"
                                                     >
                                                         {p.label}
                                                     </button>
@@ -588,7 +584,7 @@ const CreatorManager = ({ showLeaderboardOnly = false, isEmbedded = false }) => 
                                             </div>
                                         </div>
 
-                                        <div className="flex gap-2 pt-2 select-none">
+                                        <div className="flex gap-2 pt-1 select-none">
                                             <button
                                                 type="button"
                                                 onClick={() => {
@@ -596,16 +592,16 @@ const CreatorManager = ({ showLeaderboardOnly = false, isEmbedded = false }) => 
                                                     setMaxFollowers('');
                                                     setIsFollowersOpen(false);
                                                 }}
-                                                className="flex-1 py-2 rounded-lg border border-white/5 hover:bg-white/5 text-[9px] font-black uppercase tracking-wider text-gray-500 hover:text-white transition-all text-center"
+                                                className="flex-1 py-1.5 rounded-lg border border-white/5 hover:bg-white/5 text-[8px] font-bold uppercase tracking-wider text-white/40 hover:text-white transition-all text-center"
                                             >
-                                                RESET
+                                                Reset
                                             </button>
                                             <button
                                                 type="button"
                                                 onClick={() => setIsFollowersOpen(false)}
-                                                className="flex-1 py-2 rounded-lg bg-neon-pink text-black text-[9px] font-black uppercase tracking-wider transition-all text-center hover:scale-[1.02] active:scale-95"
+                                                className="flex-1 py-1.5 rounded-lg bg-neon-pink text-black text-[8px] font-bold uppercase tracking-wider transition-all text-center hover:brightness-110 active:scale-95"
                                             >
-                                                APPLY
+                                                Apply
                                             </button>
                                         </div>
                                     </motion.div>
@@ -614,31 +610,31 @@ const CreatorManager = ({ showLeaderboardOnly = false, isEmbedded = false }) => 
                         </div>
 
                         {/* Niche Filter */}
-                        <div className="flex-1 min-w-[130px] sm:min-w-[140px]">
+                        <div className="col-span-1 sm:flex-1 sm:min-w-[130px]">
                             <StudioSelect 
                                 value={filterNiche} 
                                 options={['All', ...NICHES].map(n => ({ value: n, label: n === 'All' ? 'NICHE' : n.toUpperCase() }))} 
                                 onChange={setFilterNiche} 
-                                className="w-full min-w-0 h-11 md:h-12 rounded-xl md:rounded-full border-white/10 bg-black/60 text-[9px] md:text-[10px]" 
+                                className="w-full min-w-0 h-10 rounded-xl border-white/[0.06] bg-black/40 text-[9px]" 
                                 accentColor="neon-pink" 
                                 classNamePrefix="studio-select"
                             />
                         </div>
 
                         {/* Location Filter */}
-                        <div className="flex-1 min-w-[130px] sm:min-w-[140px]">
+                        <div className="col-span-1 sm:flex-1 sm:min-w-[130px]">
                             <StudioSelect 
                                 value={filterCity} 
                                 options={cities.map(c => ({ value: c, label: c === 'All' ? 'LOCATION' : c.toUpperCase() }))} 
                                 onChange={setFilterCity} 
-                                className="w-full min-w-0 h-11 md:h-12 rounded-xl md:rounded-full border-white/10 bg-black/60 text-[9px] md:text-[10px]" 
+                                className="w-full min-w-0 h-10 rounded-xl border-white/[0.06] bg-black/40 text-[9px]" 
                                 accentColor="neon-blue" 
                                 classNamePrefix="studio-select"
                             />
                         </div>
 
                         {/* Status Filter */}
-                        <div className="flex-1 min-w-[120px] sm:min-w-[130px]">
+                        <div className="col-span-1 sm:flex-1 sm:min-w-[120px]">
                             <StudioSelect 
                                 value={filterStatus} 
                                 options={[
@@ -648,14 +644,14 @@ const CreatorManager = ({ showLeaderboardOnly = false, isEmbedded = false }) => 
                                     { value: 'rejected', label: 'REJECTED' }
                                 ]} 
                                 onChange={setFilterStatus} 
-                                className="w-full min-w-0 h-11 md:h-12 rounded-xl md:rounded-full border-white/10 bg-black/60 text-[9px] md:text-[10px]" 
+                                className="w-full min-w-0 h-10 rounded-xl border-white/[0.06] bg-black/40 text-[9px]" 
                                 accentColor="neon-green" 
                                 classNamePrefix="studio-select"
                             />
                         </div>
 
                         {/* Platform Filter */}
-                        <div className="flex-1 min-w-[120px] sm:min-w-[130px]">
+                        <div className="col-span-1 sm:flex-1 sm:min-w-[120px]">
                             <StudioSelect 
                                 value={filterPlatform} 
                                 options={[
@@ -665,7 +661,7 @@ const CreatorManager = ({ showLeaderboardOnly = false, isEmbedded = false }) => 
                                     { value: 'youtube', label: 'YOUTUBE' }
                                 ]} 
                                 onChange={setFilterPlatform} 
-                                className="w-full min-w-0 h-11 md:h-12 rounded-xl md:rounded-full border-white/10 bg-black/60 text-[9px] md:text-[10px]" 
+                                className="w-full min-w-0 h-10 rounded-xl border-white/[0.06] bg-black/40 text-[9px]" 
                                 accentColor="neon-blue" 
                                 classNamePrefix="studio-select"
                             />
@@ -675,18 +671,18 @@ const CreatorManager = ({ showLeaderboardOnly = false, isEmbedded = false }) => 
                         {hasActiveFilters && (
                             <button
                                 onClick={resetAllFilters}
-                                className="h-11 md:h-12 px-4 rounded-xl md:rounded-full bg-neon-pink/10 border border-neon-pink/30 hover:bg-neon-pink/20 text-neon-pink text-[9px] font-black uppercase tracking-widest flex items-center justify-center gap-1.5 transition-all shrink-0 active:scale-95"
+                                className="col-span-1 sm:col-auto h-10 px-3.5 rounded-xl bg-neon-pink/10 border border-neon-pink/30 hover:bg-neon-pink/20 text-neon-pink text-[9px] font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all shrink-0 active:scale-95"
                                 title="Reset all filters"
                             >
                                 <X size={12} />
-                                <span>RESET</span>
+                                <span>Reset</span>
                             </button>
                         )}
 
                         {/* Creators Count Badge */}
-                        <div className="hidden lg:flex items-center gap-2 text-[9px] font-black text-gray-500 uppercase tracking-widest ml-auto shrink-0 pl-2 select-none">
+                        <div className="col-span-2 sm:col-auto flex items-center justify-center sm:justify-start gap-1.5 text-[8px] font-bold text-white/30 uppercase tracking-wider sm:ml-auto shrink-0 py-1 select-none">
                             <span className="w-1.5 h-1.5 rounded-full bg-neon-pink animate-pulse" />
-                            <span>{filteredCreators.length} / {creators.length} Creators</span>
+                            <span>{filteredCreators.length} of {creators.length} Creators</span>
                         </div>
                     </div>
                 </div>
@@ -915,15 +911,15 @@ const CreatorManager = ({ showLeaderboardOnly = false, isEmbedded = false }) => 
                             animate={{ y: 0, x: '-50%', opacity: 1 }}
                             exit={{ y: 100, x: '-50%', opacity: 0 }}
                             transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-                            className="fixed bottom-28 md:bottom-8 left-1/2 z-[100] w-[90%] max-w-2xl bg-black/60 backdrop-blur-2xl border border-white/10 rounded-3xl px-6 py-4 flex flex-col md:flex-row items-center justify-between gap-4 shadow-[0_20px_50px_rgba(0,0,0,0.5)] border-t-white/20"
+                            className="fixed bottom-6 md:bottom-8 left-1/2 z-[100] w-[94%] sm:w-[90%] max-w-2xl bg-black/80 backdrop-blur-2xl border border-white/10 rounded-2xl sm:rounded-3xl px-4 sm:px-6 py-3 sm:py-4 flex flex-col md:flex-row items-center justify-between gap-3 sm:gap-4 shadow-[0_20px_50px_rgba(0,0,0,0.5)] border-t-white/20"
                         >
-                            <div className="flex items-center gap-3">
-                                <span className="w-3 h-3 rounded-full bg-neon-pink animate-pulse" />
-                                <span className="text-[10px] font-black uppercase tracking-widest text-white">
+                            <div className="flex items-center gap-2.5">
+                                <span className="w-2.5 h-2.5 rounded-full bg-neon-pink animate-pulse" />
+                                <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-white">
                                     {selectedUids.length} Creator{selectedUids.length > 1 ? 's' : ''} Selected
                                 </span>
                             </div>
-                            <div className="flex items-center gap-3 w-full md:w-auto">
+                            <div className="flex items-center gap-2 w-full md:w-auto">
                                 <button
                                     onClick={() => {
                                         const pageUids = paginatedCreators.map(c => c.uid);
@@ -935,19 +931,19 @@ const CreatorManager = ({ showLeaderboardOnly = false, isEmbedded = false }) => 
                                             return newUids;
                                         });
                                     }}
-                                    className="flex-1 md:flex-none h-10 px-4 bg-white/5 border border-white/10 hover:border-white/20 text-white font-black text-[9px] uppercase tracking-widest rounded-xl transition-all"
+                                    className="flex-1 md:flex-none h-9 sm:h-10 px-3 sm:px-4 bg-white/5 border border-white/10 hover:border-white/20 text-white font-black text-[8px] sm:text-[9px] uppercase tracking-widest rounded-xl transition-all"
                                 >
                                     Select Page
                                 </button>
                                 <button
                                     onClick={handleDeselectAll}
-                                    className="flex-1 md:flex-none h-10 px-4 bg-white/5 border border-white/10 hover:border-white/20 text-white font-black text-[9px] uppercase tracking-widest rounded-xl transition-all"
+                                    className="flex-1 md:flex-none h-9 sm:h-10 px-3 sm:px-4 bg-white/5 border border-white/10 hover:border-white/20 text-white font-black text-[8px] sm:text-[9px] uppercase tracking-widest rounded-xl transition-all"
                                 >
                                     Deselect All
                                 </button>
                                 <button
                                     onClick={() => setIsBulkEmailModalOpen(true)}
-                                    className="flex-1 md:flex-none h-10 px-6 bg-neon-pink text-black hover:bg-neon-pink/90 font-black text-[9px] uppercase tracking-widest rounded-xl transition-all flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(255,0,127,0.3)]"
+                                    className="flex-1 md:flex-none h-9 sm:h-10 px-4 sm:px-6 bg-neon-pink text-black hover:bg-neon-pink/90 font-black text-[8px] sm:text-[9px] uppercase tracking-widest rounded-xl transition-all flex items-center justify-center gap-1.5 shadow-[0_0_20px_rgba(255,0,127,0.3)]"
                                 >
                                     <Mail size={12} /> Email Selected
                                 </button>
@@ -1021,176 +1017,140 @@ const CreatorBadgeCard = ({ creator, onSelect, isSelected, onToggleSelect }) => 
     const instagramUrl = creator.instagram 
         ? (creator.instagram.includes('instagram.com') ? creator.instagram : `https://instagram.com/${creator.instagram.replace(/^@/, '').trim()}`)
         : '';
-    const instagramHandle = creator.instagram 
-        ? `@${creator.instagram.replace(/^@/, '').trim()}`
-        : '';
 
     const earnedBadges = getEarnedBadges(creator, creators, campaigns);
     const customBadges = creator.adminBadges || [];
+
+    const maxFollowers = Math.max(Number(creator.instagramFollowers || 0), Number(creator.youtubeSubscribers || 0), Number(creator.linkedinFollowers || 0));
 
     return (
         <motion.div 
             layout
             onClick={onSelect}
             className={cn(
-                "group relative bg-zinc-950/45 border backdrop-blur-3xl rounded-[2.5rem] p-6 cursor-pointer overflow-hidden transition-all duration-700 hover:-translate-y-2 hover:shadow-[inset_0_1px_1px_rgba(255,255,255,0.2),0_40px_80px_rgba(0,0,0,0.7)] hover:border-white/20 flex flex-col h-full min-h-[560px] shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)]",
-                isSelected ? "border-neon-pink/50 shadow-[0_0_30px_rgba(255,0,127,0.15)] bg-zinc-900/60" : "border-white/[0.08]"
+                "group relative bg-white/[0.02] border rounded-2xl cursor-pointer overflow-hidden transition-all duration-300 hover:bg-white/[0.04] hover:border-white/[0.12] flex flex-col",
+                isSelected ? "border-neon-pink/40 bg-neon-pink/[0.03]" : "border-white/[0.06]"
             )}
         >
-            <div className="absolute inset-0 bg-gradient-to-br from-neon-pink/5 via-transparent to-neon-blue/5 opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
-            
-            <div className="relative mb-6 group-hover:scale-[1.01] transition-transform duration-700">
-                <div className="aspect-[1/1] rounded-[2rem] overflow-hidden bg-black/40 border border-white/[0.08] relative flex items-center justify-center">
-                    {/* Checkbox overlay in the top-left */}
-                    <div className="absolute top-4 left-4 z-30 flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
-                        <input
-                            type="checkbox"
-                            checked={isSelected || false}
-                            onChange={() => onToggleSelect(creator.uid)}
-                            className="w-5 h-5 rounded-lg border-white/20 bg-black text-neon-pink focus:ring-0 cursor-pointer shadow-lg transition-transform hover:scale-105 active:scale-95"
-                        />
+            {/* Image */}
+            <div className="relative aspect-[4/3] overflow-hidden bg-black/30">
+                {/* Checkbox */}
+                <div className="absolute top-3 left-3 z-30" onClick={(e) => e.stopPropagation()}>
+                    <input
+                        type="checkbox"
+                        checked={isSelected || false}
+                        onChange={() => onToggleSelect(creator.uid)}
+                        className="w-4 h-4 rounded border-white/20 bg-black/60 text-neon-pink focus:ring-0 cursor-pointer"
+                    />
+                </div>
+                {creator.profilePicture ? (
+                    <img src={creator.profilePicture} alt={creator.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                ) : (
+                    <div className="w-full h-full flex items-center justify-center text-5xl font-black text-white/[0.03] uppercase italic select-none">
+                        {creator.name.charAt(0)}
                     </div>
-                    {creator.profilePicture ? (
-                        <img src={creator.profilePicture} alt={creator.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000" />
-                    ) : (
-                        <div className="text-7xl font-black text-white/[0.03] uppercase italic select-none">
-                            {creator.name.charAt(0)}
-                        </div>
-                    )}
-                    <div className="absolute top-4 right-4">
-                        <StatusPill status={creator.profileStatus} />
-                    </div>
+                )}
+                <div className="absolute top-3 right-3">
+                    <StatusPill status={creator.profileStatus} />
                 </div>
                 {creator.profileStatus === 'approved' && (
-                    <div className="absolute -bottom-4 -right-2 w-12 h-12 bg-neon-green text-black rounded-2xl flex items-center justify-center border-8 border-zinc-950 shadow-[0_10px_20px_rgba(57,255,20,0.3)] z-20 group-hover:rotate-12 transition-transform">
-                        <Check size={20} strokeWidth={4} />
+                    <div className="absolute bottom-3 right-3 w-8 h-8 bg-neon-green text-black rounded-xl flex items-center justify-center shadow-lg">
+                        <Check size={14} strokeWidth={3} />
                     </div>
                 )}
             </div>
 
-            <div className="flex-1 flex flex-col">
-                <div className="mb-4">
-                    <p className="text-[10px] font-black text-neon-pink uppercase tracking-[0.4em] mb-2">{(creator.niches || creator.specializations || [])[0] || 'CREATOR'}</p>
-                    <h3 className="text-3xl font-black text-white tracking-tighter uppercase italic leading-[0.9] group-hover:text-neon-pink transition-colors duration-500 line-clamp-2 mb-3">
+            {/* Content */}
+            <div className="flex-1 flex flex-col p-4 gap-3">
+                {/* Name & Niche */}
+                <div>
+                    <p className="text-[9px] font-bold text-neon-pink/70 uppercase tracking-wider mb-1">{(creator.niches || creator.specializations || [])[0] || 'Creator'}</p>
+                    <h3 className="text-lg font-black text-white tracking-tight uppercase leading-tight line-clamp-1">
                         {creator.name}
                     </h3>
-                    
-                    {/* Badges Row */}
-                    <div className="flex flex-wrap gap-1.5 max-h-[36px] overflow-hidden">
-                        {earnedBadges.slice(0, 3).map(badge => (
+                </div>
+                
+                {/* Badges — max 3 */}
+                {(earnedBadges.length > 0 || customBadges.length > 0) && (
+                    <div className="flex flex-wrap gap-1 max-h-[28px] overflow-hidden">
+                        {earnedBadges.slice(0, 2).map(badge => (
                             <span 
                                 key={badge.id} 
                                 title={badge.desc}
-                                className={cn("inline-flex items-center gap-0.5 px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-widest border", badge.bg)}
+                                className={cn("inline-flex items-center gap-0.5 px-2 py-0.5 rounded-md text-[7px] font-bold uppercase tracking-wider border", badge.bg)}
                             >
                                 <span>{badge.icon}</span>
-                                <span className="text-[7px]">{badge.label.split(' ')[0]}</span>
+                                <span>{badge.label.split(' ')[0]}</span>
                             </span>
                         ))}
-                        {customBadges.slice(0, 2).map((badge, idx) => (
+                        {customBadges.slice(0, 1).map((badge, idx) => (
                             <span 
                                 key={`custom-${idx}`} 
-                                className="inline-flex items-center gap-0.5 px-2 py-0.5 bg-neon-purple/10 border border-neon-purple/35 text-neon-purple rounded-md text-[8px] font-black uppercase tracking-widest"
-                                title={`Custom badge: ${badge}`}
+                                className="inline-flex items-center gap-0.5 px-2 py-0.5 bg-purple-500/10 border border-purple-500/20 text-purple-400 rounded-md text-[7px] font-bold uppercase tracking-wider"
                             >
-                                <span>🏅</span>
-                                <span className="text-[7px] truncate max-w-[45px]">{badge}</span>
+                                🏅 <span className="truncate max-w-[40px]">{badge}</span>
                             </span>
                         ))}
                     </div>
+                )}
+
+                {/* Meta pills */}
+                <div className="flex flex-wrap gap-1.5">
+                    <span className="flex items-center gap-1 text-[8px] font-bold text-white/30 uppercase tracking-wider bg-white/[0.03] px-2 py-1 rounded-md border border-white/[0.04]">
+                        <MapPin size={9} className="text-neon-pink/50" />{creator.city || 'Global'}
+                    </span>
+                    <span className="flex items-center gap-1 text-[8px] font-bold text-white/30 uppercase tracking-wider bg-white/[0.03] px-2 py-1 rounded-md border border-white/[0.04]">
+                        <TrendingUp size={9} />{maxFollowers.toLocaleString()} flw
+                    </span>
                 </div>
 
-                <div className="space-y-2 mb-6">
-                    <div className="flex flex-wrap gap-2">
-                        <div className="flex items-center gap-1.5 text-gray-400 text-[9px] font-black uppercase tracking-[0.15em] bg-white/[0.03] px-3 py-1.5 rounded-xl border border-white/5">
-                            <MapPin size={10} className="text-neon-pink" />
-                            <span>{creator.city || 'GLOBAL'}</span>
-                        </div>
-                        <div className="flex items-center gap-1.5 text-neon-blue/80 text-[9px] font-black uppercase tracking-[0.15em] bg-neon-blue/5 px-3 py-1.5 rounded-xl border border-neon-blue/10">
-                            <TrendingUp size={10} className="animate-pulse" />
-                            <span>{Math.max(Number(creator.instagramFollowers || 0), Number(creator.youtubeSubscribers || 0), Number(creator.linkedinFollowers || 0)).toLocaleString()} FLW</span>
-                        </div>
+                {/* Contact */}
+                <div className="space-y-1">
+                    <div className="flex items-center gap-2 text-[8px] font-bold text-white/25 uppercase tracking-wider truncate">
+                        <Mail size={10} className="shrink-0 text-white/15" /><span className="truncate">{creator.email || 'N/A'}</span>
                     </div>
-
-                    <div className="space-y-1.5">
-                        <div className="flex items-center gap-2.5 text-gray-400 text-[9px] font-black uppercase tracking-[0.15em] bg-white/[0.02] px-3.5 py-2 rounded-xl border border-white/5 w-full">
-                            <Mail size={12} className="text-neon-pink shrink-0" />
-                            <span className="truncate">{creator.email || 'N/A'}</span>
+                    <div className="flex items-center justify-between text-[8px] font-bold text-white/25 uppercase tracking-wider">
+                        <div className="flex items-center gap-2 min-w-0">
+                            <Phone size={10} className="shrink-0 text-white/15" /><span className="truncate">{creator.phone || 'N/A'}</span>
                         </div>
-                        <div className="flex items-center justify-between text-gray-400 text-[9px] font-black uppercase tracking-[0.15em] bg-white/[0.02] px-3.5 py-2 rounded-xl border border-white/5 w-full">
-                            <div className="flex items-center gap-2.5 min-w-0">
-                                <Phone size={12} className="text-neon-blue shrink-0" />
-                                <span className="truncate">{creator.phone || 'N/A'}</span>
-                            </div>
-                            {creator.isPhoneVerified ? (
-                                <span className="flex items-center gap-0.5 text-neon-green text-[8px] tracking-widest shrink-0 bg-neon-green/10 border border-neon-green/20 px-2 py-0.5 rounded-md font-extrabold">
-                                    <Check size={8} strokeWidth={3} /> VERIFIED
-                                </span>
-                            ) : (
-                                <span className="text-yellow-500 text-[8px] tracking-widest shrink-0 bg-yellow-500/10 border border-yellow-500/20 px-2 py-0.5 rounded-md font-extrabold">
-                                    UNVERIFIED
-                                </span>
-                            )}
-                        </div>
+                        {creator.isPhoneVerified && (
+                            <span className="flex items-center gap-0.5 text-neon-green text-[7px] tracking-wider shrink-0 bg-neon-green/10 border border-neon-green/20 px-1.5 py-0.5 rounded">
+                                <Check size={7} strokeWidth={3} /> OK
+                            </span>
+                        )}
                     </div>
-
-                    {creator.collegeName && (
-                        <div className="flex items-center gap-2.5 text-gray-400 text-[9px] font-black uppercase tracking-[0.15em] bg-white/[0.02] px-3.5 py-2 rounded-xl border border-white/5 w-full">
-                            <Layers size={12} className="text-purple-400 shrink-0" />
-                            <span className="truncate">{creator.collegeName}</span>
-                        </div>
-                    )}
                 </div>
 
-                <div className="mt-auto pt-4 border-t border-white/5 flex items-center justify-between">
-                    <div>
-                        <p className="text-[8px] font-black text-gray-600 uppercase tracking-widest mb-1.5">PLATFORM CONNECT</p>
-                        <div className="flex gap-2">
-                            {creator.instagram && (
-                                <a 
-                                    href={instagramUrl}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    onClick={(e) => e.stopPropagation()}
-                                    className="inline-flex items-center gap-1.5 text-neon-pink hover:text-white text-[9px] font-black uppercase tracking-[0.2em] bg-neon-pink/5 hover:bg-neon-pink/10 px-2.5 py-1.5 rounded-xl border border-neon-pink/10 transition-all"
-                                    title={instagramHandle}
-                                >
-                                    <Instagram size={11} />
-                                </a>
-                            )}
-                            {creator.linkedin && (
-                                <a 
-                                    href={creator.linkedin.includes('http') ? creator.linkedin : `https://${creator.linkedin}`}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    onClick={(e) => e.stopPropagation()}
-                                    className="inline-flex items-center gap-1.5 text-neon-blue hover:text-white text-[9px] font-black uppercase tracking-[0.2em] bg-neon-blue/5 hover:bg-neon-blue/10 px-2.5 py-1.5 rounded-xl border border-neon-blue/10 transition-all"
-                                    title="LinkedIn Profile"
-                                >
-                                    <Linkedin size={11} />
-                                </a>
-                            )}
-                            {creator.youtube && (
-                                <a 
-                                    href={creator.youtube.includes('http') ? creator.youtube : `https://${creator.youtube}`}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    onClick={(e) => e.stopPropagation()}
-                                    className="inline-flex items-center gap-1.5 text-red-500 hover:text-white text-[9px] font-black uppercase tracking-[0.2em] bg-red-500/5 hover:bg-red-500/10 px-2.5 py-1.5 rounded-xl border border-red-500/10 transition-all"
-                                    title="YouTube Channel"
-                                >
-                                    <Youtube size={11} />
-                                </a>
-                            )}
-                            {!creator.instagram && !creator.linkedin && !creator.youtube && (
-                                <span className="text-[9px] font-black text-gray-500 tracking-wider">N/A</span>
-                            )}
-                        </div>
+                {/* Footer */}
+                <div className="mt-auto pt-3 border-t border-white/[0.04] flex items-center justify-between">
+                    <div className="flex gap-1.5">
+                        {creator.instagram && (
+                            <a 
+                                href={instagramUrl} target="_blank" rel="noopener noreferrer"
+                                onClick={(e) => e.stopPropagation()}
+                                className="w-7 h-7 rounded-lg bg-pink-500/10 border border-pink-500/15 flex items-center justify-center text-pink-400 hover:bg-pink-500/20 transition-all"
+                            ><Instagram size={11} /></a>
+                        )}
+                        {creator.linkedin && (
+                            <a 
+                                href={creator.linkedin.includes('http') ? creator.linkedin : `https://${creator.linkedin}`} target="_blank" rel="noopener noreferrer"
+                                onClick={(e) => e.stopPropagation()}
+                                className="w-7 h-7 rounded-lg bg-blue-500/10 border border-blue-500/15 flex items-center justify-center text-blue-400 hover:bg-blue-500/20 transition-all"
+                            ><Linkedin size={11} /></a>
+                        )}
+                        {creator.youtube && (
+                            <a 
+                                href={creator.youtube.includes('http') ? creator.youtube : `https://${creator.youtube}`} target="_blank" rel="noopener noreferrer"
+                                onClick={(e) => e.stopPropagation()}
+                                className="w-7 h-7 rounded-lg bg-red-500/10 border border-red-500/15 flex items-center justify-center text-red-400 hover:bg-red-500/20 transition-all"
+                            ><Youtube size={11} /></a>
+                        )}
+                        {!creator.instagram && !creator.linkedin && !creator.youtube && (
+                            <span className="text-[8px] font-bold text-white/15">No socials</span>
+                        )}
                     </div>
-                    <div className="flex gap-2">
-                        <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/5 flex items-center justify-center text-gray-500 hover:text-white hover:bg-white/10 transition-all shrink-0">
-                            <ChevronRight size={16} />
-                        </div>
+                    <div className="w-7 h-7 rounded-lg bg-white/[0.03] border border-white/[0.05] flex items-center justify-center text-white/20 group-hover:text-white/40 transition-colors">
+                        <ChevronRight size={13} />
                     </div>
                 </div>
             </div>
@@ -1210,65 +1170,65 @@ const CreatorListItem = ({ creator, onSelect, isSelected, onToggleSelect }) => {
         <div 
             onClick={onSelect}
             className={cn(
-                "group flex flex-col lg:flex-row items-start lg:items-center p-6 bg-zinc-950/45 backdrop-blur-3xl border shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)] hover:border-white/20 hover:bg-zinc-900/60 rounded-3xl cursor-pointer transition-all duration-300 gap-6",
-                isSelected ? "border-neon-pink/50 bg-zinc-900/60" : "border-white/[0.08]"
+                "group flex flex-col lg:flex-row items-start lg:items-center p-4 sm:p-5 bg-white/[0.02] border hover:border-white/[0.12] hover:bg-white/[0.04] rounded-2xl cursor-pointer transition-all duration-200 gap-4 sm:gap-6",
+                isSelected ? "border-neon-pink/40 bg-neon-pink/[0.03]" : "border-white/[0.06]"
             )}
         >
-            <div className="flex items-center gap-4 w-full lg:w-auto min-w-0">
-                <div onClick={(e) => e.stopPropagation()} className="shrink-0 flex items-center justify-center pr-2">
+            <div className="flex items-center gap-3 sm:gap-4 w-full lg:w-auto min-w-0">
+                <div onClick={(e) => e.stopPropagation()} className="shrink-0 flex items-center justify-center">
                     <input
                         type="checkbox"
                         checked={isSelected || false}
                         onChange={() => onToggleSelect(creator.uid)}
-                        className="w-5 h-5 rounded border-white/20 bg-black text-neon-pink focus:ring-0 cursor-pointer transition-transform hover:scale-105 active:scale-95"
+                        className="w-4 h-4 rounded border-white/20 bg-black/60 text-neon-pink focus:ring-0 cursor-pointer"
                     />
                 </div>
-                <div className="w-14 h-14 bg-black/40 border border-white/[0.08] rounded-2xl flex items-center justify-center font-black text-white group-hover:border-neon-pink/40 overflow-hidden shrink-0 transition-all group-hover:scale-105">
+                <div className="w-12 h-12 bg-black/40 border border-white/[0.08] rounded-xl flex items-center justify-center font-black text-white overflow-hidden shrink-0">
                     {creator.profilePicture ? (
                         <img src={creator.profilePicture} alt={creator.name} className="w-full h-full object-cover" />
                     ) : (
-                        <span className="italic">{creator.name.charAt(0)}</span>
+                        <span className="italic text-white/30">{creator.name.charAt(0)}</span>
                     )}
                 </div>
                 <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 flex-wrap">
-                        <h4 className="text-lg font-black text-white uppercase italic tracking-tight group-hover:text-neon-pink transition-colors truncate">{creator.name}</h4>
+                        <h4 className="text-base font-black text-white uppercase tracking-tight truncate">{creator.name}</h4>
                         {creator.isPhoneVerified && (
-                            <span className="flex items-center gap-0.5 text-neon-green text-[8px] font-black tracking-widest bg-neon-green/10 border border-neon-green/20 px-1.5 py-0.5 rounded-md">
-                                <Check size={8} strokeWidth={3} /> VERIFIED
+                            <span className="flex items-center gap-0.5 text-neon-green text-[7px] font-bold tracking-wider bg-neon-green/10 border border-neon-green/20 px-1.5 py-0.5 rounded">
+                                <Check size={7} strokeWidth={3} /> OK
                             </span>
                         )}
                     </div>
-                    <div className="flex flex-wrap items-center gap-y-1 gap-x-3 mt-1 text-[9px] text-gray-500 font-black tracking-widest uppercase">
-                        <span className="truncate">{creator.email}</span>
-                        <span className="w-1 h-1 rounded-full bg-white/10 hidden sm:inline-block" />
-                        <span className="flex items-center gap-1"><Phone size={10} className="text-neon-blue" /> {creator.phone || 'N/A'}</span>
+                    <div className="flex flex-wrap items-center gap-y-1 gap-x-2 mt-0.5 text-[8px] text-white/30 font-bold tracking-wider uppercase">
+                        <span className="truncate max-w-[150px]">{creator.email}</span>
+                        <span className="text-white/10">•</span>
+                        <span className="flex items-center gap-1"><Phone size={9} className="text-white/20" /> {creator.phone || 'N/A'}</span>
                     </div>
                 </div>
             </div>
 
-            <div className="flex flex-wrap gap-2 w-full lg:w-64 shrink-0">
-                <span className="text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 bg-white/5 border border-white/5 px-3 py-1.5 rounded-xl">
-                    {(creator.niches || creator.specializations || [])[0] || 'CREATOR'}
+            <div className="flex flex-wrap gap-1.5 w-full lg:w-56 shrink-0">
+                <span className="text-[8px] font-bold uppercase tracking-wider text-white/40 bg-white/[0.03] border border-white/[0.04] px-2.5 py-1 rounded-lg">
+                    {(creator.niches || creator.specializations || [])[0] || 'Creator'}
                 </span>
                 {creator.collegeName && (
-                    <span className="text-[9px] font-black uppercase tracking-[0.2em] text-purple-400 bg-purple-500/5 border border-purple-500/10 px-3 py-1.5 rounded-xl truncate max-w-[180px]">
+                    <span className="text-[8px] font-bold uppercase tracking-wider text-purple-400/80 bg-purple-500/5 border border-purple-500/10 px-2.5 py-1 rounded-lg truncate max-w-[140px]">
                         {creator.collegeName}
                     </span>
                 )}
             </div>
 
-            <div className="w-full lg:w-48 shrink-0 flex gap-2 flex-wrap">
+            <div className="w-full lg:w-44 shrink-0 flex gap-1.5 flex-wrap">
                 {creator.instagram && (
                     <a
                         href={instagramUrl}
                         target="_blank"
                         rel="noopener noreferrer"
                         onClick={(e) => e.stopPropagation()}
-                        className="inline-flex items-center gap-1.5 text-neon-pink hover:text-white text-[10px] font-black uppercase tracking-[0.2em] bg-neon-pink/5 hover:bg-neon-pink/10 px-2.5 py-1.5 rounded-xl border border-neon-pink/10 transition-all"
+                        className="w-7 h-7 rounded-lg bg-pink-500/10 border border-pink-500/15 flex items-center justify-center text-pink-400 hover:bg-pink-500/20 transition-all"
                         title={instagramHandle}
                     >
-                        <Instagram size={12} />
+                        <Instagram size={11} />
                     </a>
                 )}
                 {creator.linkedin && (
@@ -1277,10 +1237,10 @@ const CreatorListItem = ({ creator, onSelect, isSelected, onToggleSelect }) => {
                         target="_blank"
                         rel="noopener noreferrer"
                         onClick={(e) => e.stopPropagation()}
-                        className="inline-flex items-center gap-1.5 text-neon-blue hover:text-white text-[10px] font-black uppercase tracking-[0.2em] bg-neon-blue/5 hover:bg-neon-blue/10 px-2.5 py-1.5 rounded-xl border border-neon-blue/10 transition-all"
+                        className="w-7 h-7 rounded-lg bg-blue-500/10 border border-blue-500/15 flex items-center justify-center text-blue-400 hover:bg-blue-500/20 transition-all"
                         title="LinkedIn Profile"
                     >
-                        <Linkedin size={12} />
+                        <Linkedin size={11} />
                     </a>
                 )}
                 {creator.youtube && (
@@ -1289,23 +1249,23 @@ const CreatorListItem = ({ creator, onSelect, isSelected, onToggleSelect }) => {
                         target="_blank"
                         rel="noopener noreferrer"
                         onClick={(e) => e.stopPropagation()}
-                        className="inline-flex items-center gap-1.5 text-red-500 hover:text-white text-[10px] font-black uppercase tracking-[0.2em] bg-red-500/5 hover:bg-red-500/10 px-2.5 py-1.5 rounded-xl border border-red-500/10 transition-all"
+                        className="w-7 h-7 rounded-lg bg-red-500/10 border border-red-500/15 flex items-center justify-center text-red-400 hover:bg-red-500/20 transition-all"
                         title="YouTube Channel"
                     >
-                        <Youtube size={12} />
+                        <Youtube size={11} />
                     </a>
                 )}
             </div>
 
-            <div className="hidden lg:block w-40 text-right pr-4">
-                <p className="text-[8px] font-black text-gray-600 uppercase tracking-widest mb-0.5">FOLLOWERS</p>
-                <p className="text-base font-black text-white font-mono">{Math.max(Number(creator.instagramFollowers || 0), Number(creator.youtubeSubscribers || 0), Number(creator.linkedinFollowers || 0)).toLocaleString()}</p>
+            <div className="hidden lg:block w-32 text-right pr-2">
+                <p className="text-[7px] font-bold text-white/20 uppercase tracking-wider mb-0.5">FOLLOWERS</p>
+                <p className="text-sm font-bold text-white tabular-nums">{Math.max(Number(creator.instagramFollowers || 0), Number(creator.youtubeSubscribers || 0), Number(creator.linkedinFollowers || 0)).toLocaleString()}</p>
             </div>
 
-            <div className="flex items-center justify-between lg:justify-end gap-4 w-full lg:w-48 shrink-0">
+            <div className="flex items-center justify-between lg:justify-end gap-3 w-full lg:w-44 shrink-0">
                 <StatusPill status={creator.profileStatus} />
-                <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/5 flex items-center justify-center text-gray-500 group-hover:bg-white group-hover:text-black transition-all group-hover:scale-105 shrink-0">
-                    <ChevronRight size={16} />
+                <div className="w-8 h-8 rounded-lg bg-white/[0.03] border border-white/[0.05] flex items-center justify-center text-white/20 group-hover:text-white/50 transition-all shrink-0">
+                    <ChevronRight size={14} />
                 </div>
             </div>
         </div>
@@ -1314,14 +1274,14 @@ const CreatorListItem = ({ creator, onSelect, isSelected, onToggleSelect }) => {
 
 const StatusPill = ({ status }) => {
     const config = {
-        approved: "bg-neon-green/10 text-neon-green border-neon-green/30",
-        rejected: "bg-red-500/10 text-red-500 border-red-500/30",
-        blocked: "bg-red-500/10 text-red-500 border-red-500/30",
-        pending: "bg-yellow-500/10 text-yellow-500 border-yellow-500/30"
+        approved: "bg-neon-green/10 text-neon-green border-neon-green/20",
+        rejected: "bg-red-500/10 text-red-400 border-red-500/20",
+        blocked: "bg-red-500/10 text-red-400 border-red-500/20",
+        pending: "bg-yellow-500/10 text-yellow-400 border-yellow-500/20"
     };
     const style = config[status] || config.pending;
     return (
-        <span className={cn("px-4 py-1.5 rounded-full text-[8px] font-black uppercase tracking-[0.2em] border backdrop-blur-md", style)}>
+        <span className={cn("px-2.5 py-1 rounded-lg text-[8px] font-bold uppercase tracking-wider border", style)}>
             {status || 'PENDING'}
         </span>
     );
@@ -1334,14 +1294,13 @@ const CreatorDetailModal = ({ creator, onClose, onUpdateStatus, onDelete, isUpda
     const [isFeatured, setIsFeatured] = useState(creator.isFeatured || false);
     const [customBadgeText, setCustomBadgeText] = useState('');
     const [adminBadges, setAdminBadges] = useState(creator.adminBadges || []);
-    const [communicationTab, setCommunicationTab] = useState('email'); // 'email' or 'message'
+    const [communicationTab, setCommunicationTab] = useState('email');
     const [emailSubject, setEmailSubject] = useState('Partnership Update - Newbi Entertainment');
     const [emailBody, setEmailBody] = useState('');
     const [messageText, setMessageText] = useState('');
     const [sendingEmail, setSendingEmail] = useState(false);
     const [sendingMessage, setSendingMessage] = useState(false);
 
-    // Synchronize states with creator changes
     useEffect(() => {
         setIsFeatured(creator.isFeatured || false);
         setAdminBadges(creator.adminBadges || []);
@@ -1354,7 +1313,7 @@ const CreatorDetailModal = ({ creator, onClose, onUpdateStatus, onDelete, isUpda
             await updateCreator(creator.uid, { isFeatured: nextVal });
             useStore.getState().addToast(`Creator ${nextVal ? 'featured' : 'unfeatured'} successfully!`, 'success');
         } catch (err) {
-            setIsFeatured(!nextVal); // Rollback
+            setIsFeatured(!nextVal);
             useStore.getState().addToast("Failed to update featured status.", 'error');
         }
     };
@@ -1436,283 +1395,244 @@ const CreatorDetailModal = ({ creator, onClose, onUpdateStatus, onDelete, isUpda
 
     const earnedBadges = getEarnedBadges(creator, creators, campaigns);
 
+    const instagramUrl = creator.instagram
+        ? (creator.instagram.includes('instagram.com') ? creator.instagram : `https://instagram.com/${creator.instagram.replace(/^@/, '').trim()}`)
+        : '';
+
+    const socialLinks = [
+        creator.instagram && { platform: 'Instagram', icon: Instagram, handle: `@${creator.instagram.replace(/^@/, '').trim()}`, followers: creator.instagramFollowers, url: instagramUrl, color: 'text-pink-400', bg: 'bg-pink-500/10 border-pink-500/20' },
+        creator.linkedin && { platform: 'LinkedIn', icon: Linkedin, handle: 'Profile', followers: creator.linkedinFollowers, url: creator.linkedin.includes('http') ? creator.linkedin : `https://${creator.linkedin}`, color: 'text-blue-400', bg: 'bg-blue-500/10 border-blue-500/20' },
+        creator.youtube && { platform: 'YouTube', icon: Youtube, handle: 'Channel', followers: creator.youtubeSubscribers, url: creator.youtube.includes('http') ? creator.youtube : `https://${creator.youtube}`, color: 'text-red-400', bg: 'bg-red-500/10 border-red-500/20' },
+        creator.twitter && { platform: 'X / Web', icon: Twitter, handle: 'Link', followers: null, url: creator.twitter.includes('http') ? creator.twitter : `https://${creator.twitter}`, color: 'text-sky-400', bg: 'bg-sky-500/10 border-sky-500/20' },
+    ].filter(Boolean);
+
+    // Section heading component
+    const SectionLabel = ({ children }) => (
+        <p className="text-[10px] font-bold text-white/30 uppercase tracking-[0.2em] mb-3">{children}</p>
+    );
+
     return createPortal(
-        <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 md:p-10 bg-black/50 backdrop-blur-md">
+        <div className="fixed inset-0 z-[99999] flex justify-end">
+            {/* Backdrop */}
             <motion.div 
-                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} 
-                className="absolute inset-0 bg-black/80" 
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className="absolute inset-0 bg-black/60 backdrop-blur-sm" 
                 onClick={onClose} 
             />
-            <motion.div 
-                initial={{ scale: 0.95, opacity: 0, y: 30 }}
-                animate={{ scale: 1, opacity: 1, y: 0 }}
-                exit={{ scale: 0.95, opacity: 0, y: 30 }}
-                transition={{ type: "spring", damping: 25, stiffness: 200 }}
-                className="relative bg-[#050505] border border-white/10 rounded-[3rem] w-full max-w-5xl h-[85vh] flex flex-col overflow-hidden shadow-[0_0_100px_rgba(0,0,0,1)] z-10"
-            >
-                {/* Modal Glow Decor */}
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-2/3 h-px bg-gradient-to-r from-transparent via-neon-pink to-transparent opacity-50" />
-                
-                <button 
-                    onClick={onClose} 
-                    className="absolute top-6 right-6 w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white hover:text-black transition-all group z-50 hover:scale-110 active:scale-95"
-                >
-                    <X size={20} className="group-hover:rotate-90 transition-transform duration-500" />
-                </button>
 
-                <div className="flex-1 flex flex-col lg:flex-row overflow-hidden p-6 sm:p-10 gap-8 h-full">
-                    {/* Left Side: Profile, Meta, Contact, Actions */}
-                    <div className="w-full lg:w-[350px] flex flex-col justify-between gap-6 shrink-0 border-b lg:border-b-0 lg:border-r border-white/10 pb-6 lg:pb-0 lg:pr-8 overflow-y-auto custom-scrollbar">
-                        <div className="space-y-6">
-                            <div className="relative w-36 h-36 bg-black border-2 border-white/10 rounded-[2.5rem] flex items-center justify-center text-5xl font-black text-white shadow-[0_20px_45px_rgba(0,0,0,0.8)] overflow-hidden group mx-auto lg:mx-0">
-                                <div className="absolute inset-0 bg-gradient-to-br from-neon-pink/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+            {/* Drawer Panel */}
+            <motion.div 
+                initial={{ x: '100%' }}
+                animate={{ x: 0 }}
+                exit={{ x: '100%' }}
+                transition={{ type: "spring", damping: 30, stiffness: 300 }}
+                className="relative w-full sm:max-w-xl md:max-w-2xl h-[100dvh] max-h-[100dvh] bg-[#0A0A0A] sm:border-l border-white/[0.06] flex flex-col z-10 shadow-[-20px_0_60px_rgba(0,0,0,0.5)]"
+            >
+                {/* Sticky Header */}
+                <div className="sticky top-0 z-50 flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 bg-[#0A0A0A]/95 backdrop-blur-xl border-b border-white/[0.06]">
+                    <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+                        <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl bg-white/[0.04] border border-white/[0.06] flex items-center justify-center shrink-0">
+                            <Users size={13} className="text-white/40" />
+                        </div>
+                        <div className="min-w-0">
+                            <p className="text-[8px] sm:text-[9px] font-bold text-white/30 uppercase tracking-[0.15em]">Creator Profile</p>
+                            <p className="text-xs font-bold text-white truncate">{creator.name}</p>
+                        </div>
+                    </div>
+                    <button 
+                        onClick={onClose}
+                        className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-white/[0.04] border border-white/[0.06] flex items-center justify-center text-white/40 hover:bg-white/10 hover:text-white transition-all shrink-0"
+                    >
+                        <X size={16} />
+                    </button>
+                </div>
+
+                {/* Scrollable Content */}
+                <div className="flex-1 overflow-y-auto custom-scrollbar">
+                    <div className="px-4 sm:px-6 py-4 sm:py-6 space-y-5 sm:space-y-6">
+
+                        {/* ─── Hero Section ─── */}
+                        <div className="flex items-start gap-3.5 sm:gap-5">
+                            <div className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-xl sm:rounded-2xl bg-black border border-white/[0.08] overflow-hidden shrink-0">
                                 {creator.profilePicture ? (
                                     <img src={creator.profilePicture} alt="" className="w-full h-full object-cover" />
                                 ) : (
-                                    <div className="w-full h-full flex items-center justify-center text-6xl font-black text-white/5 italic select-none">{creator.name.charAt(0)}</div>
+                                    <div className="w-full h-full flex items-center justify-center text-xl sm:text-2xl font-black text-white/[0.06] italic select-none">{creator.name.charAt(0)}</div>
+                                )}
+                                {creator.profileStatus === 'approved' && (
+                                    <div className="absolute -bottom-0.5 -right-0.5 w-5 h-5 sm:w-6 sm:h-6 bg-neon-green rounded-md sm:rounded-lg flex items-center justify-center border-2 border-[#0A0A0A]">
+                                        <Check size={10} strokeWidth={3} className="text-black" />
+                                    </div>
                                 )}
                             </div>
-
-                            <div className="space-y-3 text-center lg:text-left">
-                                <div className="flex flex-wrap justify-center lg:justify-start gap-2 items-center">
+                            <div className="flex-1 min-w-0 pt-0.5">
+                                <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-1">
                                     <StatusPill status={creator.profileStatus} />
-                                    <span className="px-3 py-1 bg-white/5 border border-white/5 rounded-full text-[8px] font-black text-gray-500 tracking-[0.2em] uppercase">
-                                        ID: {creator.creatorId || creator.uid.slice(0, 8).toUpperCase()}
+                                    <span className="text-[7px] sm:text-[8px] font-bold text-white/20 uppercase tracking-[0.15em] bg-white/[0.03] px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-md border border-white/[0.04]">
+                                        {creator.creatorId || creator.uid.slice(0, 8).toUpperCase()}
                                     </span>
                                 </div>
-                                <h2 className="text-3xl font-black font-heading tracking-tighter uppercase italic leading-[0.9] text-white break-words">
+                                <h2 className="text-xl sm:text-2xl font-black font-heading tracking-tight uppercase text-white leading-tight break-words">
                                     {creator.name}
                                 </h2>
-                                
-                                {/* Badges Row */}
-                                <div className="flex flex-wrap gap-1.5 justify-center lg:justify-start mt-2">
-                                    {earnedBadges.map(badge => (
-                                        <span 
-                                            key={badge.id} 
-                                            title={badge.desc}
-                                            className={cn("inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-widest border", badge.bg)}
-                                        >
-                                            <span>{badge.icon}</span>
-                                            <span className="text-[7px]">{badge.label}</span>
-                                        </span>
-                                    ))}
-                                    {adminBadges.map((badge, idx) => (
-                                        <span 
-                                            key={`custom-${idx}`} 
-                                            className="inline-flex items-center gap-1 px-2 py-0.5 bg-neon-purple/10 border border-neon-purple/35 text-neon-purple rounded-md text-[8px] font-black uppercase tracking-widest shadow-[0_0_15px_rgba(168,85,247,0.1)]"
-                                            title={`Custom badge: ${badge}`}
-                                        >
-                                            <span>🏅</span>
-                                            <span className="text-[7px]">{badge}</span>
-                                            <button 
-                                                onClick={() => handleRemoveBadge(badge)}
-                                                className="ml-1 text-red-500 hover:text-white font-black"
-                                                title="Remove Badge"
-                                            >
-                                                ×
-                                            </button>
-                                        </span>
-                                    ))}
+                                <div className="flex items-center gap-2 sm:gap-3 mt-1.5 text-[8px] sm:text-[9px] font-bold text-white/30 uppercase tracking-wider flex-wrap">
+                                    <span className="flex items-center gap-1"><MapPin size={9} className="text-neon-pink/60" />{creator.city || 'Global'}</span>
+                                    <span className="text-white/10">•</span>
+                                    <span className="flex items-center gap-1"><Calendar size={9} className="text-white/20" />{new Date(creator.createdAt || Date.now()).getFullYear()} Joined</span>
                                 </div>
-                            </div>
-
-                            {/* Meta Grid */}
-                            <div className="grid grid-cols-2 gap-2.5 text-[9px] font-black uppercase tracking-[0.1em]">
-                                <div className="px-3.5 py-2.5 bg-white/5 border border-white/5 rounded-2xl text-gray-300 flex items-center gap-2">
-                                    <MapPin size={12} className="text-neon-pink shrink-0" />
-                                    <span className="truncate">{creator.city || 'GLOBAL'}</span>
-                                </div>
-                                <div className="px-3.5 py-2.5 bg-white/5 border border-white/5 rounded-2xl text-gray-300 flex items-center gap-2">
-                                    <Calendar size={12} className="text-neon-blue shrink-0" />
-                                    <span className="truncate">{new Date(creator.createdAt || Date.now()).getFullYear()} Joined</span>
-                                </div>
-                            </div>
-
-                            {/* Contact channels */}
-                            <div className="space-y-2">
-                                <div className="p-3 bg-[#0A0A0A] border border-white/5 rounded-2xl flex items-center gap-3">
-                                    <Mail size={14} className="text-gray-500 shrink-0" />
-                                    <div className="min-w-0 flex-1">
-                                        <p className="text-[7px] font-black text-gray-600 uppercase tracking-widest">Email</p>
-                                        <p className="text-xs font-black text-white truncate">{creator.email || 'N/A'}</p>
-                                    </div>
-                                </div>
-                                <div className="p-3 bg-[#0A0A0A] border border-white/5 rounded-2xl flex items-center gap-3">
-                                    <Phone size={14} className="text-gray-500 shrink-0" />
-                                    <div className="min-w-0 flex-1">
-                                        <p className="text-[7px] font-black text-gray-600 uppercase tracking-widest">Phone</p>
-                                        <p className="text-xs font-black text-white truncate">{creator.phone || 'N/A'}</p>
-                                    </div>
-                                </div>
-                                {creator.collegeName && (
-                                    <div className="p-3 bg-[#0A0A0A] border border-white/5 rounded-2xl flex items-center gap-3">
-                                        <Layers size={14} className="text-gray-500 shrink-0" />
-                                        <div className="min-w-0 flex-1">
-                                            <p className="text-[7px] font-black text-gray-600 uppercase tracking-widest">College Name</p>
-                                            <p className="text-xs font-black text-white truncate">{creator.collegeName}</p>
-                                        </div>
-                                    </div>
-                                )}
                             </div>
                         </div>
 
-                        {/* Actions block */}
-                        <div className="space-y-3 pt-4 border-t border-white/5 shrink-0">
-                            <div className="flex gap-2">
-                                <button 
-                                    onClick={() => onUpdateStatus(creator.uid, 'approved')}
-                                    disabled={isUpdating}
-                                    className={cn(
-                                        "flex-1 h-12 rounded-xl font-black uppercase tracking-[0.2em] text-[9px] transition-all flex items-center justify-center gap-2",
-                                        creator.profileStatus === 'approved' ? "bg-white/5 text-gray-600 cursor-not-allowed border border-white/5" : "bg-neon-green text-black shadow-lg hover:scale-[1.02]"
-                                    )}
-                                >
-                                    {isUpdating ? <LoadingSpinner size="xs" color="black" /> : 'VERIFY'}
-                                </button>
-                                <button 
-                                    onClick={() => onUpdateStatus(creator.uid, 'rejected')}
-                                    disabled={isUpdating}
-                                    className={cn(
-                                        "flex-1 h-12 rounded-xl font-black uppercase tracking-[0.2em] text-[9px] transition-all border flex items-center justify-center gap-2",
-                                        creator.profileStatus === 'rejected' ? "bg-white/5 text-gray-600 cursor-not-allowed border-white/5" : "bg-black border-yellow-500/20 text-yellow-500 hover:bg-yellow-500/5"
-                                    )}
-                                >
-                                    {isUpdating ? <LoadingSpinner size="xs" color="black" /> : 'REJECT'}
-                                </button>
-                            </div>
-                            <button 
-                                onClick={() => onDelete(creator.uid)}
-                                disabled={isDeleting}
-                                className="w-full h-12 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all active:scale-90 gap-2 font-black uppercase tracking-[0.2em] text-[9px]"
-                            >
-                                <Trash2 size={14} /> DELETE PROFILE
-                            </button>
-                        </div>
-                    </div>
-
-                    {/* Right Side: Dossier, Socials, Specialization, Badge Manager & Direct Communication */}
-                    <div className="flex-1 flex flex-col gap-6 overflow-y-auto custom-scrollbar pr-2 pb-6">
-                        <section className="space-y-3">
-                            <div className="flex items-center gap-4">
-                                <h3 className="text-[10px] font-black text-neon-pink uppercase tracking-[0.4em] whitespace-nowrap">STRATEGIC DOSSIER</h3>
-                                <div className="w-full h-px bg-gradient-to-r from-neon-pink/30 to-transparent" />
-                            </div>
-                            <div className="bg-[#0A0A0A] p-5 rounded-2xl border border-white/5 max-h-[160px] overflow-y-auto custom-scrollbar">
-                                <p className="text-gray-300 leading-relaxed italic text-sm font-medium">"{creator.bio || "No professional overview provided."}"</p>
-                            </div>
-                        </section>
-
-                        <section className="space-y-3">
-                            <div className="flex items-center gap-4">
-                                <h3 className="text-[10px] font-black text-gray-500 uppercase tracking-[0.4em] whitespace-nowrap">SOCIAL FOOTPRINT</h3>
-                                <div className="w-full h-px bg-gradient-to-r from-white/10 to-transparent" />
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                {creator.instagram && (
-                                    <div className="p-4 bg-[#0A0A0A] border border-white/5 hover:border-neon-pink/40 rounded-2xl flex items-center justify-between transition-all">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-9 h-9 rounded-lg bg-neon-pink/10 flex items-center justify-center text-neon-pink"><Instagram size={16} /></div>
-                                            <div>
-                                                <p className="text-[7px] font-black text-gray-600 uppercase tracking-widest">Instagram</p>
-                                                <p className="text-xs font-black text-white truncate">@{creator.instagram.replace(/^@/, '').trim()}</p>
-                                                <p className="text-[8px] font-bold text-gray-500 uppercase tracking-wider">{Number(creator.instagramFollowers || 0).toLocaleString()} Followers</p>
-                                            </div>
-                                        </div>
-                                        <a href={creator.instagram.includes('instagram.com') ? creator.instagram : `https://instagram.com/${creator.instagram.replace(/^@/, '').trim()}`} target="_blank" rel="noopener noreferrer" className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-gray-500 hover:bg-white hover:text-black transition-all">
-                                            <ExternalLink size={12} />
-                                        </a>
-                                    </div>
-                                )}
-                                {creator.linkedin && (
-                                    <div className="p-4 bg-[#0A0A0A] border border-white/5 hover:border-neon-blue/40 rounded-2xl flex items-center justify-between transition-all">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-9 h-9 rounded-lg bg-neon-blue/10 flex items-center justify-center text-neon-blue"><Linkedin size={16} /></div>
-                                            <div>
-                                                <p className="text-[7px] font-black text-gray-600 uppercase tracking-widest">LinkedIn</p>
-                                                <p className="text-xs font-black text-white truncate">Profile</p>
-                                                <p className="text-[8px] font-bold text-gray-500 uppercase tracking-wider">{Number(creator.linkedinFollowers || 0).toLocaleString()} Connections</p>
-                                            </div>
-                                        </div>
-                                        <a href={creator.linkedin.includes('http') ? creator.linkedin : `https://${creator.linkedin}`} target="_blank" rel="noreferrer" className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-gray-500 hover:bg-white hover:text-black transition-all">
-                                            <ExternalLink size={12} />
-                                        </a>
-                                    </div>
-                                )}
-                                {creator.youtube && (
-                                    <div className="p-4 bg-[#0A0A0A] border border-white/5 hover:border-red-500/40 rounded-2xl flex items-center justify-between transition-all">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-9 h-9 rounded-lg bg-red-500/10 flex items-center justify-center text-red-500"><Youtube size={16} /></div>
-                                            <div>
-                                                <p className="text-[7px] font-black text-gray-600 uppercase tracking-widest">YouTube</p>
-                                                <p className="text-xs font-black text-white truncate">Channel</p>
-                                                <p className="text-[8px] font-bold text-gray-500 uppercase tracking-wider">{Number(creator.youtubeSubscribers || 0).toLocaleString()} Subscribers</p>
-                                            </div>
-                                        </div>
-                                        <a href={creator.youtube.includes('http') ? creator.youtube : `https://${creator.youtube}`} target="_blank" rel="noreferrer" className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-gray-500 hover:bg-white hover:text-black transition-all">
-                                            <ExternalLink size={12} />
-                                        </a>
-                                    </div>
-                                )}
-                                {creator.twitter && (
-                                    <div className="p-4 bg-[#0A0A0A] border border-white/5 hover:border-sky-400/40 rounded-2xl flex items-center justify-between transition-all">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-9 h-9 rounded-lg bg-sky-400/10 flex items-center justify-center text-sky-400"><Twitter size={16} /></div>
-                                            <div>
-                                                <p className="text-[7px] font-black text-gray-600 uppercase tracking-widest">Twitter / X / Web</p>
-                                                <p className="text-xs font-black text-white truncate">Link</p>
-                                            </div>
-                                        </div>
-                                        <a href={creator.twitter.includes('http') ? creator.twitter : `https://${creator.twitter}`} target="_blank" rel="noreferrer" className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-gray-500 hover:bg-white hover:text-black transition-all">
-                                            <ExternalLink size={12} />
-                                        </a>
-                                    </div>
-                                )}
-                            </div>
-                        </section>
-
-                        <section className="space-y-3">
-                            <div className="flex items-center gap-4">
-                                <h3 className="text-[10px] font-black text-gray-500 uppercase tracking-[0.4em] whitespace-nowrap">NICHE & SPECIALIZATION</h3>
-                                <div className="w-full h-px bg-gradient-to-r from-white/10 to-transparent" />
-                            </div>
-                            <div className="flex flex-wrap gap-2">
-                                {(creator.niches || creator.specializations || []).map((n, i) => (
-                                    <span key={i} className="px-4 py-2 bg-white/5 border border-white/5 rounded-xl text-[9px] font-black uppercase tracking-widest text-white/60">
-                                        {n}
+                        {/* ─── Badges Row ─── */}
+                        {(earnedBadges.length > 0 || adminBadges.length > 0) && (
+                            <div className="flex flex-wrap gap-1.5">
+                                {earnedBadges.map(badge => (
+                                    <span 
+                                        key={badge.id} 
+                                        title={badge.desc}
+                                        className={cn("inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[8px] font-bold uppercase tracking-wider border", badge.bg)}
+                                    >
+                                        <span>{badge.icon}</span>
+                                        <span>{badge.label}</span>
+                                    </span>
+                                ))}
+                                {adminBadges.map((badge, idx) => (
+                                    <span 
+                                        key={`custom-${idx}`} 
+                                        className="inline-flex items-center gap-1 px-2.5 py-1 bg-purple-500/10 border border-purple-500/20 text-purple-400 rounded-lg text-[8px] font-bold uppercase tracking-wider"
+                                    >
+                                        <span>🏅</span>
+                                        <span>{badge}</span>
+                                        <button 
+                                            onClick={() => handleRemoveBadge(badge)}
+                                            className="ml-0.5 text-red-400 hover:text-white transition-colors"
+                                        >
+                                            ×
+                                        </button>
                                     </span>
                                 ))}
                             </div>
-                        </section>
+                        )}
 
-                        <section className="space-y-3">
-                            <div className="flex items-center gap-4">
-                                <h3 className="text-[10px] font-black text-gray-500 uppercase tracking-[0.4em] whitespace-nowrap">COLLABORATION PREFERENCES</h3>
-                                <div className="w-full h-px bg-gradient-to-r from-white/10 to-transparent" />
+                        {/* Divider */}
+                        <div className="h-px bg-white/[0.04]" />
+
+                        {/* ─── Contact Info ─── */}
+                        <div>
+                            <SectionLabel>Contact</SectionLabel>
+                            <div className="space-y-2">
+                                <div className="flex items-center gap-3 px-4 py-3 bg-white/[0.02] border border-white/[0.05] rounded-xl">
+                                    <Mail size={14} className="text-white/20 shrink-0" />
+                                    <div className="min-w-0 flex-1">
+                                        <p className="text-[8px] font-bold text-white/20 uppercase tracking-wider">Email</p>
+                                        <p className="text-sm font-medium text-white truncate">{creator.email || 'N/A'}</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-3 px-4 py-3 bg-white/[0.02] border border-white/[0.05] rounded-xl">
+                                    <Phone size={14} className="text-white/20 shrink-0" />
+                                    <div className="min-w-0 flex-1">
+                                        <p className="text-[8px] font-bold text-white/20 uppercase tracking-wider">Phone</p>
+                                        <p className="text-sm font-medium text-white truncate">{creator.phone || 'N/A'}</p>
+                                    </div>
+                                </div>
+                                {creator.collegeName && (
+                                    <div className="flex items-center gap-3 px-4 py-3 bg-white/[0.02] border border-white/[0.05] rounded-xl">
+                                        <Layers size={14} className="text-white/20 shrink-0" />
+                                        <div className="min-w-0 flex-1">
+                                            <p className="text-[8px] font-bold text-white/20 uppercase tracking-wider">College</p>
+                                            <p className="text-sm font-medium text-white truncate">{creator.collegeName}</p>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
-                            <div className="grid grid-cols-2 gap-4 text-[9px] font-black uppercase tracking-[0.1em]">
-                                <div className="p-4 bg-[#0A0A0A] border border-white/5 rounded-2xl">
-                                    <p className="text-[7px] font-black text-gray-600 uppercase tracking-widest mb-1">Barter Collaborations</p>
-                                    <p className="text-white text-xs">
-                                        {creator.doBarter === 'yes' ? 'YES' : creator.doBarter === 'no' ? 'NO (ONLY PAID)' : creator.doBarter === 'selective' ? 'SELECTIVE' : (creator.doBarter?.toUpperCase() || 'N/A')}
+                        </div>
+
+                        {/* ─── Social Links ─── */}
+                        {socialLinks.length > 0 && (
+                            <div>
+                                <SectionLabel>Social Footprint</SectionLabel>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                    {socialLinks.map(social => (
+                                        <a
+                                            key={social.platform}
+                                            href={social.url}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className={cn("flex items-center gap-3 px-4 py-3 rounded-xl border transition-all hover:scale-[1.01] active:scale-[0.99]", social.bg)}
+                                        >
+                                            <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center", social.color)}>
+                                                <social.icon size={15} />
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-[8px] font-bold text-white/30 uppercase tracking-wider">{social.platform}</p>
+                                                <p className="text-xs font-bold text-white truncate">{social.handle}</p>
+                                                {social.followers && (
+                                                    <p className="text-[9px] font-medium text-white/30">{Number(social.followers || 0).toLocaleString()} followers</p>
+                                                )}
+                                            </div>
+                                            <ExternalLink size={12} className="text-white/15 shrink-0" />
+                                        </a>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* ─── Bio / Strategic Dossier ─── */}
+                        <div>
+                            <SectionLabel>Strategic Dossier</SectionLabel>
+                            <div className="px-4 py-4 bg-white/[0.02] border border-white/[0.05] rounded-xl">
+                                <p className="text-sm text-white/60 leading-relaxed italic">
+                                    "{creator.bio || "No professional overview provided."}"
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* ─── Niche & Specialization ─── */}
+                        <div>
+                            <SectionLabel>Niche & Specialization</SectionLabel>
+                            <div className="flex flex-wrap gap-2">
+                                {(creator.niches || creator.specializations || []).map((n, i) => (
+                                    <span key={i} className="px-3 py-1.5 bg-white/[0.03] border border-white/[0.06] rounded-lg text-[9px] font-bold uppercase tracking-wider text-white/50">
+                                        {n}
+                                    </span>
+                                ))}
+                                {(creator.niches || creator.specializations || []).length === 0 && (
+                                    <span className="text-[9px] font-medium text-white/20 italic">No specializations listed</span>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* ─── Collaboration Preferences ─── */}
+                        <div>
+                            <SectionLabel>Collaboration Preferences</SectionLabel>
+                            <div className="grid grid-cols-2 gap-2">
+                                <div className="px-4 py-3 bg-white/[0.02] border border-white/[0.05] rounded-xl">
+                                    <p className="text-[8px] font-bold text-white/20 uppercase tracking-wider mb-1">Barter</p>
+                                    <p className="text-xs font-bold text-white">
+                                        {creator.doBarter === 'yes' ? 'Yes' : creator.doBarter === 'no' ? 'Paid Only' : creator.doBarter === 'selective' ? 'Selective' : (creator.doBarter || 'N/A')}
                                     </p>
                                 </div>
-                                <div className="p-4 bg-[#0A0A0A] border border-white/5 rounded-2xl">
-                                    <p className="text-[7px] font-black text-gray-600 uppercase tracking-widest mb-1">Commercial Rates</p>
-                                    <p className="text-white text-xs normal-case">{creator.commercials || 'N/A'}</p>
+                                <div className="px-4 py-3 bg-white/[0.02] border border-white/[0.05] rounded-xl">
+                                    <p className="text-[8px] font-bold text-white/20 uppercase tracking-wider mb-1">Rates</p>
+                                    <p className="text-xs font-bold text-white">{creator.commercials || 'N/A'}</p>
                                 </div>
                             </div>
-                        </section>
+                        </div>
 
-                        {/* Admin Badge & Promotion Controls */}
-                        <section className="space-y-4 bg-[#0A0A0A] border border-white/5 p-6 rounded-3xl">
-                            <div className="flex items-center justify-between border-b border-white/5 pb-3">
-                                <h3 className="text-[10px] font-black text-neon-blue uppercase tracking-[0.4em]">PROMOTIONS & BADGES</h3>
-                                <div className="flex items-center gap-3">
-                                    <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Feature Creator</span>
+                        {/* Divider */}
+                        <div className="h-px bg-white/[0.04]" />
+
+                        {/* ─── Promotions & Badges ─── */}
+                        <div className="p-4 bg-white/[0.02] border border-white/[0.05] rounded-2xl space-y-4">
+                            <div className="flex items-center justify-between">
+                                <p className="text-[10px] font-bold text-white/30 uppercase tracking-[0.2em]">Promotions & Badges</p>
+                                <div className="flex items-center gap-2.5">
+                                    <span className="text-[9px] font-bold text-white/25 uppercase tracking-wider">Featured</span>
                                     <button 
                                         onClick={handleToggleFeatured}
                                         className={cn(
-                                            "w-12 h-6 rounded-full p-1 transition-all duration-300 flex items-center",
+                                            "w-10 h-5 rounded-full p-0.5 transition-all duration-300 flex items-center",
                                             isFeatured ? "bg-neon-pink justify-end" : "bg-white/10 justify-start"
                                         )}
                                     >
@@ -1720,34 +1640,33 @@ const CreatorDetailModal = ({ creator, onClose, onUpdateStatus, onDelete, isUpda
                                     </button>
                                 </div>
                             </div>
-                            
                             <form onSubmit={handleAddBadge} className="flex gap-2">
                                 <input 
                                     type="text" 
                                     value={customBadgeText}
                                     onChange={(e) => setCustomBadgeText(e.target.value)}
-                                    placeholder="ENTER CUSTOM BADGE NAME (E.G. CAMPUS LEAD)..."
-                                    className="flex-1 h-12 bg-black border border-white/10 rounded-xl px-4 text-xs font-bold text-white focus:border-neon-purple outline-none transition-all placeholder:text-gray-700"
+                                    placeholder="Custom badge name..."
+                                    className="flex-1 h-10 bg-black/40 border border-white/[0.06] rounded-lg px-3 text-xs font-medium text-white focus:border-white/20 outline-none transition-all placeholder:text-white/15"
                                 />
                                 <button 
                                     type="submit"
-                                    className="px-6 h-12 bg-neon-purple text-white rounded-xl text-[10px] font-black uppercase tracking-wider hover:scale-[1.02] active:scale-95 transition-all"
+                                    className="px-4 h-10 bg-white/[0.06] hover:bg-white/10 text-white/60 hover:text-white rounded-lg text-[9px] font-bold uppercase tracking-wider transition-all"
                                 >
-                                    ADD BADGE
+                                    Add
                                 </button>
                             </form>
-                        </section>
+                        </div>
 
-                        {/* Direct Mailing & Messaging unit */}
-                        <section className="space-y-4 bg-[#0A0A0A] border border-white/5 p-6 rounded-3xl">
-                            <div className="flex items-center justify-between border-b border-white/5 pb-3">
-                                <h3 className="text-[10px] font-black text-neon-green uppercase tracking-[0.4em]">DIRECT COMMUNICATION UNIT</h3>
-                                <div className="flex bg-black p-1 rounded-xl border border-white/10 h-10 items-center">
+                        {/* ─── Direct Communication ─── */}
+                        <div className="p-4 bg-white/[0.02] border border-white/[0.05] rounded-2xl space-y-4">
+                            <div className="flex items-center justify-between">
+                                <p className="text-[10px] font-bold text-white/30 uppercase tracking-[0.2em]">Direct Communication</p>
+                                <div className="flex bg-black/40 p-0.5 rounded-lg border border-white/[0.06] h-8 items-center">
                                     <button 
                                         onClick={() => setCommunicationTab('email')} 
                                         className={cn(
-                                            "px-4 h-8 rounded-lg text-[8px] font-black uppercase tracking-wider transition-all",
-                                            communicationTab === 'email' ? "bg-white text-black" : "text-gray-500 hover:text-white"
+                                            "px-3 h-7 rounded-md text-[8px] font-bold uppercase tracking-wider transition-all",
+                                            communicationTab === 'email' ? "bg-white/10 text-white" : "text-white/30 hover:text-white/50"
                                         )}
                                     >
                                         Email
@@ -1755,8 +1674,8 @@ const CreatorDetailModal = ({ creator, onClose, onUpdateStatus, onDelete, isUpda
                                     <button 
                                         onClick={() => setCommunicationTab('message')} 
                                         className={cn(
-                                            "px-4 h-8 rounded-lg text-[8px] font-black uppercase tracking-wider transition-all",
-                                            communicationTab === 'message' ? "bg-white text-black" : "text-gray-500 hover:text-white"
+                                            "px-3 h-7 rounded-md text-[8px] font-bold uppercase tracking-wider transition-all",
+                                            communicationTab === 'message' ? "bg-white/10 text-white" : "text-white/30 hover:text-white/50"
                                         )}
                                     >
                                         Notification
@@ -1766,75 +1685,111 @@ const CreatorDetailModal = ({ creator, onClose, onUpdateStatus, onDelete, isUpda
 
                             {communicationTab === 'email' ? (
                                 <form onSubmit={handleSendEmail} className="space-y-3">
-                                    <div className="space-y-1">
-                                        <label className="text-[8px] font-black text-gray-600 uppercase tracking-widest pl-1">Subject</label>
+                                    <div>
+                                        <label className="text-[8px] font-bold text-white/20 uppercase tracking-wider block mb-1 pl-0.5">Subject</label>
                                         <input 
                                             type="text" 
                                             value={emailSubject}
                                             onChange={(e) => setEmailSubject(e.target.value)}
-                                            placeholder="EMAIL SUBJECT..." 
-                                            className="w-full h-11 bg-black border border-white/10 rounded-xl px-4 text-xs font-bold text-white focus:border-neon-green outline-none transition-all"
+                                            placeholder="Email subject..." 
+                                            className="w-full h-10 bg-black/40 border border-white/[0.06] rounded-lg px-3 text-xs font-medium text-white focus:border-white/20 outline-none transition-all placeholder:text-white/15"
                                         />
                                     </div>
-                                    <div className="space-y-1">
-                                        <label className="text-[8px] font-black text-gray-600 uppercase tracking-widest pl-1">Message Body</label>
+                                    <div>
+                                        <label className="text-[8px] font-bold text-white/20 uppercase tracking-wider block mb-1 pl-0.5">Message Body</label>
                                         <textarea 
                                             value={emailBody}
                                             onChange={(e) => setEmailBody(e.target.value)}
-                                            placeholder="WRITE EMAIL BODY HERE..." 
-                                            className="w-full h-28 bg-black border border-white/10 rounded-xl p-4 text-xs font-bold text-white focus:border-neon-green outline-none transition-all resize-none"
+                                            placeholder="Write email body..." 
+                                            className="w-full h-28 bg-black/40 border border-white/[0.06] rounded-lg p-3 text-xs font-medium text-white focus:border-white/20 outline-none transition-all resize-none placeholder:text-white/15"
                                         />
                                     </div>
                                     <button 
                                         type="submit"
                                         disabled={sendingEmail}
-                                        className="w-full h-12 bg-neon-green hover:bg-neon-green/90 text-black rounded-xl text-[10px] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-2 transition-all hover:scale-[1.01] active:scale-95 disabled:opacity-50"
+                                        className="w-full h-10 bg-white/[0.06] hover:bg-white/10 text-white rounded-lg text-[9px] font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-all disabled:opacity-40"
                                     >
-                                        {sendingEmail ? <LoadingSpinner size="xs" color="black" /> : (
-                                            <>
-                                                <Send size={12} /> SEND OFFICIAL PARTNERSHIP EMAIL
-                                            </>
+                                        {sendingEmail ? <LoadingSpinner size="xs" color="white" /> : (
+                                            <><Send size={11} /> Send Email</>
                                         )}
                                     </button>
                                 </form>
                             ) : (
                                 <form onSubmit={handleSendMessage} className="space-y-3">
-                                    <div className="space-y-1">
-                                        <label className="text-[8px] font-black text-gray-600 uppercase tracking-widest pl-1">In-App Notification Text</label>
+                                    <div>
+                                        <label className="text-[8px] font-bold text-white/20 uppercase tracking-wider block mb-1 pl-0.5">Notification Text</label>
                                         <textarea 
                                             value={messageText}
                                             onChange={(e) => setMessageText(e.target.value)}
-                                            placeholder="WRITE IN-APP PUSH NOTIFICATION MESSAGE HERE..." 
-                                            className="w-full h-28 bg-black border border-white/10 rounded-xl p-4 text-xs font-bold text-white focus:border-neon-green outline-none transition-all resize-none"
+                                            placeholder="Write notification message..." 
+                                            className="w-full h-28 bg-black/40 border border-white/[0.06] rounded-lg p-3 text-xs font-medium text-white focus:border-white/20 outline-none transition-all resize-none placeholder:text-white/15"
                                         />
                                     </div>
                                     <button 
                                         type="submit"
                                         disabled={sendingMessage}
-                                        className="w-full h-12 bg-neon-green hover:bg-neon-green/90 text-black rounded-xl text-[10px] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-2 transition-all hover:scale-[1.01] active:scale-95 disabled:opacity-50"
+                                        className="w-full h-10 bg-white/[0.06] hover:bg-white/10 text-white rounded-lg text-[9px] font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-all disabled:opacity-40"
                                     >
-                                        {sendingMessage ? <LoadingSpinner size="xs" color="black" /> : (
-                                            <>
-                                                <MessageSquare size={12} /> BROADCAST REAL-TIME NOTIFICATION
-                                            </>
+                                        {sendingMessage ? <LoadingSpinner size="xs" color="white" /> : (
+                                            <><MessageSquare size={11} /> Send Notification</>
                                         )}
                                     </button>
                                 </form>
                             )}
-                        </section>
+                        </div>
 
+                        {/* ─── Portfolio Link ─── */}
                         {creator.portfolioInfo && (
                             <button 
                                 onClick={() => window.open(creator.portfolioInfo.includes('http') ? creator.portfolioInfo : `https://${creator.portfolioInfo}`, '_blank')}
-                                className="w-full h-14 bg-white text-black rounded-2xl font-black uppercase tracking-[0.2em] text-[9px] shadow-lg flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-95 transition-all overflow-hidden relative group mt-2 shrink-0"
+                                className="w-full h-11 bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.06] text-white/60 hover:text-white rounded-xl font-bold uppercase tracking-wider text-[9px] flex items-center justify-center gap-2 transition-all"
                             >
-                                <div className="absolute inset-0 bg-gradient-to-r from-neon-pink to-neon-blue opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                                <span className="relative z-10 flex items-center gap-2 group-hover:text-white transition-colors duration-500">
-                                    <FileText size={14} /> VIEW MEDIA KIT / PORTFOLIO
-                                </span>
+                                <FileText size={13} /> View Media Kit / Portfolio
                             </button>
                         )}
+
+                        {/* Bottom spacer for action bar */}
+                        <div className="h-20" />
                     </div>
+                </div>
+
+                {/* ─── Sticky Bottom Action Bar ─── */}
+                <div className="sticky bottom-0 z-50 px-4 sm:px-6 py-3 sm:py-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] bg-[#0A0A0A]/95 backdrop-blur-xl border-t border-white/[0.06] flex items-center gap-2">
+                    <button 
+                        onClick={() => onUpdateStatus(creator.uid, 'approved')}
+                        disabled={isUpdating || creator.profileStatus === 'approved'}
+                        className={cn(
+                            "flex-1 h-10 sm:h-11 rounded-xl font-bold uppercase tracking-wider text-[9px] transition-all flex items-center justify-center gap-1.5",
+                            creator.profileStatus === 'approved' 
+                                ? "bg-neon-green/10 text-neon-green/50 border border-neon-green/20 cursor-default" 
+                                : "bg-neon-green text-black hover:brightness-110 active:scale-[0.98]"
+                        )}
+                    >
+                        {isUpdating ? <LoadingSpinner size="xs" color="black" /> : (
+                            <><CheckCircle2 size={13} /> {creator.profileStatus === 'approved' ? 'Verified' : 'Verify'}</>
+                        )}
+                    </button>
+                    <button 
+                        onClick={() => onUpdateStatus(creator.uid, 'rejected')}
+                        disabled={isUpdating || creator.profileStatus === 'rejected'}
+                        className={cn(
+                            "flex-1 h-10 sm:h-11 rounded-xl font-bold uppercase tracking-wider text-[9px] transition-all border flex items-center justify-center gap-1.5",
+                            creator.profileStatus === 'rejected' 
+                                ? "bg-yellow-500/10 text-yellow-500/50 border-yellow-500/20 cursor-default" 
+                                : "bg-transparent border-yellow-500/30 text-yellow-500 hover:bg-yellow-500/10 active:scale-[0.98]"
+                        )}
+                    >
+                        {isUpdating ? <LoadingSpinner size="xs" color="yellow" /> : (
+                            <><Ban size={12} /> Reject</>
+                        )}
+                    </button>
+                    <button 
+                        onClick={() => onDelete(creator.uid)}
+                        disabled={isDeleting}
+                        className="h-10 sm:h-11 px-3 sm:px-4 rounded-xl bg-transparent border border-red-500/20 text-red-400 hover:bg-red-500/10 transition-all active:scale-[0.98] flex items-center justify-center gap-1 font-bold uppercase tracking-wider text-[9px] shrink-0"
+                    >
+                        <Trash2 size={13} />
+                    </button>
                 </div>
             </motion.div>
         </div>,
@@ -1966,12 +1921,12 @@ const AddCreatorModal = ({ onClose }) => {
     const showCollegeField = form.specializations === 'Student/ Campus Creator' || form.specializations === 'Student Creator/ Campus Creator' || form.specializations === 'College Pages';
 
     return createPortal(
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 md:p-10 bg-black/50 backdrop-blur-md overflow-y-auto">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-6 md:p-10 bg-black/50 backdrop-blur-md overflow-y-auto">
             <div className="fixed inset-0 bg-black/80" onClick={onClose} />
             <motion.div 
                 initial={{ scale: 0.95, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                className="relative bg-[#050505] border border-white/10 rounded-[3rem] w-full max-w-2xl max-h-[90vh] overflow-y-auto p-8 md:p-10 shadow-2xl z-10 custom-scrollbar"
+                className="relative bg-[#050505] border border-white/10 rounded-2xl sm:rounded-[2.5rem] w-full max-w-2xl max-h-[92dvh] overflow-y-auto p-5 sm:p-8 md:p-10 shadow-2xl z-10 custom-scrollbar"
             >
                 <button onClick={onClose} className="absolute top-6 right-6 w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white hover:text-black transition-all">
                     <X size={16} />
@@ -2554,20 +2509,20 @@ const BulkEmailModal = ({ selectedUids, creators, onClose }) => {
     };
 
     return createPortal(
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 md:p-10 bg-black/50 backdrop-blur-md overflow-y-auto">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-6 md:p-10 bg-black/50 backdrop-blur-md overflow-y-auto">
             <div className="fixed inset-0 bg-black/80" onClick={onClose} />
             <motion.div 
                 initial={{ scale: 0.95, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                className="relative bg-[#050505] border border-white/10 rounded-[3rem] w-full max-w-2xl max-h-[90vh] overflow-y-auto p-8 md:p-10 shadow-2xl z-10 custom-scrollbar"
+                className="relative bg-[#050505] border border-white/10 rounded-2xl sm:rounded-[2.5rem] w-full max-w-2xl max-h-[92dvh] overflow-y-auto p-5 sm:p-8 md:p-10 shadow-2xl z-10 custom-scrollbar"
             >
-                <div className="flex items-center justify-between border-b border-white/5 pb-4 mb-6">
+                <div className="flex items-center justify-between border-b border-white/5 pb-4 mb-5 sm:mb-6">
                     <div>
-                        <h3 className="text-2xl font-black font-heading uppercase italic tracking-tighter">BULK PARTNERSHIP EMAIL</h3>
-                        <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest mt-1">Sending to {selectedCreators.length} recipients</p>
+                        <h3 className="text-xl sm:text-2xl font-black font-heading uppercase italic tracking-tighter">BULK PARTNERSHIP EMAIL</h3>
+                        <p className="text-[8px] sm:text-[9px] font-black text-gray-500 uppercase tracking-widest mt-1">Sending to {selectedCreators.length} recipients</p>
                     </div>
-                    <button onClick={onClose} className="w-10 h-10 rounded-full bg-white/5 border border-white/10 text-gray-400 hover:text-white flex items-center justify-center">
-                        <X size={18} />
+                    <button onClick={onClose} className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white/5 border border-white/10 text-gray-400 hover:text-white flex items-center justify-center">
+                        <X size={16} />
                     </button>
                 </div>
 
