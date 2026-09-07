@@ -49,7 +49,7 @@ const DocumentPDFCard = ({ doc, onEdit, onDelete, onDownload, isDownloading }) =
 
             <div
                 onMouseMove={handleMouseMove}
-                className="p-6 bg-gradient-to-br from-white/[0.04] to-white/[0.01] hover:from-white/[0.07] hover:to-white/[0.02] backdrop-blur-xl border border-white/10 border-t-white/20 rounded-2xl shadow-[inset_0_1px_1px_rgba(255,255,255,0.15),_0_8px_32px_rgba(0,0,0,0.4)] hover:border-white/20 hover:shadow-[0_20px_40px_rgba(0,0,0,0.65)] transition-all duration-500 flex flex-col justify-between h-[250px] relative overflow-hidden hover:translate-y-[-4px]"
+                className="p-6 bg-gradient-to-br from-gray-900 dark:from-white/[0.04] to-gray-900 dark:to-white/[0.01] hover:from-gray-900 dark:hover:from-white/[0.07] hover:to-gray-900 dark:hover:to-white/[0.02] backdrop-blur-xl border border-black/10 dark:border-white/10 border-t-white/20 rounded-2xl shadow-[inset_0_1px_1px_rgba(255,255,255,0.15),_0_8px_32px_rgba(0,0,0,0.4)] hover:border-black/20 dark:hover:border-white/20 hover:shadow-[0_20px_40px_rgba(0,0,0,0.65)] transition-all duration-500 flex flex-col justify-between h-[250px] relative overflow-hidden hover:translate-y-[-4px]"
                 style={{
                     background: `radial-gradient(circle at ${mousePos.x}% ${mousePos.y}%, rgba(57,255,20,0.05) 0%, rgba(255,255,255,0.01) 60%)`
                 }}
@@ -68,7 +68,7 @@ const DocumentPDFCard = ({ doc, onEdit, onDelete, onDownload, isDownloading }) =
 
                 {/* Title & Document Number */}
                 <div className="my-auto relative z-10 space-y-1.5 pt-2">
-                    <h3 className="text-xl font-black font-heading uppercase italic tracking-tight text-white group-hover:text-neon-green transition-colors duration-300 leading-tight line-clamp-2 drop-shadow-md">
+                    <h3 className="text-xl font-black font-heading uppercase italic tracking-tight text-gray-900 dark:text-white group-hover:text-neon-green transition-colors duration-300 leading-tight line-clamp-2 drop-shadow-md">
                         {doc.documentTitle || 'Untitled Document'}
                     </h3>
                     <p className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] font-mono">
@@ -80,7 +80,7 @@ const DocumentPDFCard = ({ doc, onEdit, onDelete, onDownload, isDownloading }) =
                 <div className="flex items-center justify-between border-t border-white/[0.06] pt-4 mt-1 relative z-10 gap-2">
                     <div className="flex items-center gap-1.5 min-w-0">
                         {doc.createdAt && (
-                            <span className="flex items-center gap-1 text-[8px] font-black text-gray-500 uppercase tracking-[0.2em] px-2 py-1 bg-white/[0.02] border border-white/5 rounded-lg shrink-0">
+                            <span className="flex items-center gap-1 text-[8px] font-black text-gray-500 uppercase tracking-[0.2em] px-2 py-1 bg-white/[0.02] border border-black/10 dark:border-white/5 rounded-lg shrink-0">
                                 <Calendar size={8} className="text-gray-600" />
                                 {formatDate(doc.createdAt)}
                             </span>
@@ -91,21 +91,21 @@ const DocumentPDFCard = ({ doc, onEdit, onDelete, onDownload, isDownloading }) =
                         <button
                             onClick={() => onDownload(doc)}
                             disabled={isDownloading}
-                            className="w-9 h-9 rounded-full bg-white/[0.03] border border-white/10 flex items-center justify-center text-gray-400 hover:text-neon-green hover:border-neon-green/30 hover:bg-neon-green/10 hover:scale-110 active:scale-95 hover:shadow-[0_0_15px_rgba(57,255,20,0.35)] transition-all duration-300 disabled:opacity-40"
+                            className="w-9 h-9 rounded-full bg-white/[0.03] border border-black/10 dark:border-white/10 flex items-center justify-center text-gray-600 dark:text-gray-400 hover:text-neon-green hover:border-neon-green/30 hover:bg-neon-green/10 hover:scale-110 active:scale-95 hover:shadow-[0_0_15px_rgba(57,255,20,0.35)] transition-all duration-300 disabled:opacity-40"
                             title="Download PDF"
                         >
                             {isDownloading ? <Loader size={13} className="animate-spin" /> : <Download size={13} />}
                         </button>
                         <button
                             onClick={() => onEdit(doc)}
-                            className="w-9 h-9 rounded-full bg-white/[0.03] border border-white/10 flex items-center justify-center text-gray-400 hover:text-neon-blue hover:border-neon-blue/30 hover:bg-neon-blue/10 hover:scale-110 active:scale-95 hover:shadow-[0_0_15px_rgba(0,240,255,0.35)] transition-all duration-300"
+                            className="w-9 h-9 rounded-full bg-white/[0.03] border border-black/10 dark:border-white/10 flex items-center justify-center text-gray-600 dark:text-gray-400 hover:text-neon-blue hover:border-neon-blue/30 hover:bg-neon-blue/10 hover:scale-110 active:scale-95 hover:shadow-[0_0_15px_rgba(0,240,255,0.35)] transition-all duration-300"
                             title="Edit Document"
                         >
                             <Pencil size={13} />
                         </button>
                         <button
                             onClick={() => onDelete(doc)}
-                            className="w-9 h-9 rounded-full bg-white/[0.03] border border-white/10 flex items-center justify-center text-red-500/70 hover:text-white hover:bg-red-500/20 hover:border-red-500/40 hover:scale-110 active:scale-95 hover:shadow-[0_0_15px_rgba(239,68,68,0.35)] transition-all duration-300"
+                            className="w-9 h-9 rounded-full bg-white/[0.03] border border-black/10 dark:border-white/10 flex items-center justify-center text-red-500/70 hover:text-gray-900 dark:hover:text-white hover:bg-red-500/20 hover:border-red-500/40 hover:scale-110 active:scale-95 hover:shadow-[0_0_15px_rgba(239,68,68,0.35)] transition-all duration-300"
                             title="Delete Document"
                         >
                             <Trash2 size={13} />
@@ -196,7 +196,7 @@ const DocumentPDFManagement = () => {
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                         placeholder="SEARCH DOCUMENTS..."
-                        className="pl-11 h-12 bg-black/40 border-white/5 rounded-xl text-[10px] font-black uppercase tracking-widest"
+                        className="pl-11 h-12 bg-white dark:bg-black/40 border-black/10 dark:border-white/5 rounded-xl text-[10px] font-black uppercase tracking-widest"
                     />
                 </div>
             </div>
@@ -232,11 +232,11 @@ const DocumentPDFManagement = () => {
                     animate={{ opacity: 1, y: 0 }}
                     className="flex flex-col items-center justify-center py-32 gap-6"
                 >
-                    <div className="w-24 h-24 rounded-[2rem] bg-white/[0.03] border border-white/5 flex items-center justify-center">
+                    <div className="w-24 h-24 rounded-[2rem] bg-white/[0.03] border border-black/10 dark:border-white/5 flex items-center justify-center">
                         <FileBadge size={40} className="text-gray-700" />
                     </div>
                     <div className="text-center space-y-2">
-                        <h3 className="text-xl font-black font-heading uppercase italic tracking-tight text-gray-400">
+                        <h3 className="text-xl font-black font-heading uppercase italic tracking-tight text-gray-600 dark:text-gray-400">
                             No documents yet
                         </h3>
                         <p className="text-[10px] font-black text-gray-600 uppercase tracking-[0.3em]">

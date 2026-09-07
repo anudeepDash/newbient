@@ -83,7 +83,7 @@ const Services = () => {
     }, [isPaused, services]);
 
     return (
-        <section id="capabilities" className="py-10 md:py-16 bg-dark relative px-4 overflow-hidden">
+        <section id="capabilities" className="py-10 md:py-16 bg-gray-50 dark:bg-dark transition-colors duration-300 relative px-4 overflow-hidden">
              {/* Background Atmosphere */}
 
             <div className="max-w-7xl mx-auto relative z-10">
@@ -93,16 +93,16 @@ const Services = () => {
                             initial={{ opacity: 0, y: 20 }}
                             whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: true }}
-                            className="font-heading text-4xl md:text-6xl font-extrabold mb-6 text-white tracking-tight"
+                            className="font-heading text-4xl md:text-6xl font-extrabold mb-6 text-gray-900 dark:text-white tracking-tight transition-colors duration-300"
                         >
-                            Our <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-neon-green">Capabilities</span>
+                            Our <span className="text-transparent bg-clip-text bg-gradient-to-r from-black to-neon-green dark:from-white dark:to-neon-green">Capabilities</span>
                         </motion.h2>
                     </div>
                     <motion.p
                         initial={{ opacity: 0 }}
                         whileInView={{ opacity: 1 }}
                         viewport={{ once: true }}
-                        className="text-gray-500 max-w-sm text-base md:text-lg font-medium leading-relaxed pb-2"
+                        className="text-gray-500 dark:text-gray-400 max-w-sm text-base md:text-lg font-medium leading-relaxed pb-2"
                     >
                         We bridge the gap between brands and the audience through high-octane activations and digital dominance.
                     </motion.p>
@@ -137,17 +137,17 @@ const Services = () => {
                             className="relative group cursor-pointer"
                         >
                             {/* Animated Glow Backdrop */}
-                            <div className="absolute -inset-1 bg-gradient-to-r from-neon-green via-neon-blue to-neon-pink rounded-xl blur opacity-25 group-hover:opacity-60 transition duration-1000 group-hover:duration-200"></div>
+                            <div className="absolute -inset-1 bg-gradient-to-r from-green-400 via-blue-400 to-pink-400 dark:from-neon-green dark:via-neon-blue dark:to-neon-pink rounded-xl blur opacity-25 group-hover:opacity-60 transition duration-1000 group-hover:duration-200"></div>
                             
-                            <div className="relative px-10 py-4 bg-black rounded-xl leading-none flex items-center gap-3 border border-white/10 group-hover:border-neon-green/30 transition-colors">
-                                <span className="text-white text-xs font-bold uppercase tracking-[0.2em]">Ready to scale?</span>
+                            <div className="relative px-10 py-4 bg-white dark:bg-black rounded-xl leading-none flex items-center gap-3 border border-gray-200 dark:border-white/10 group-hover:border-neon-green/40 transition-colors shadow-md dark:shadow-none">
+                                <span className="text-black dark:text-white text-xs font-bold uppercase tracking-[0.2em]">Ready to scale?</span>
                                 <div className="p-1.5 rounded-lg bg-neon-green/10 group-hover:bg-neon-green transition-colors">
                                     <ArrowRight className="h-3.5 w-3.5 text-neon-green group-hover:text-black" />
                                 </div>
                             </div>
                         </motion.div>
                     </Link>
-                    <p className="text-gray-500 text-[9px] font-bold uppercase tracking-[0.2em] mt-4 opacity-50">GET IN TOUCH FOR A CUSTOM STRATEGY</p>
+                    <p className="text-gray-500 dark:text-gray-400 text-[9px] font-bold uppercase tracking-[0.2em] mt-4 opacity-50">GET IN TOUCH FOR A CUSTOM STRATEGY</p>
                 </motion.div>
             </div>
         </section>
@@ -166,7 +166,7 @@ const ServiceCard = ({ service, index }) => {
             viewport={{ once: true }}
             transition={{ duration: 0.5, delay: index * 0.1 }}
             className={cn(
-                "group relative bg-zinc-900/40 backdrop-blur-3xl border border-white/5 p-6 md:p-10 rounded-3xl md:rounded-[2.5rem] overflow-hidden transition-all duration-700 hover:border-white/20 flex flex-col cursor-pointer",
+                "group relative bg-white dark:bg-zinc-900/40 backdrop-blur-3xl border border-gray-200 dark:border-white/5 p-6 md:p-10 rounded-3xl md:rounded-[2.5rem] overflow-hidden transition-all duration-700 hover:border-gray-300 dark:hover:border-white/20 flex flex-col cursor-pointer shadow-sm dark:shadow-none",
                 isExpanded ? "h-auto" : "min-h-[240px] md:min-h-[340px]",
                 service.className
             )}
@@ -174,24 +174,24 @@ const ServiceCard = ({ service, index }) => {
             <div className="relative z-10 flex flex-col h-full">
                 <div className="mb-auto">
                     <div className={cn(
-                        "w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center transition-all duration-700 md:group-hover:bg-white md:group-hover:text-black md:group-hover:scale-110",
-                        service.color === 'neon-green' ? 'text-neon-green' : (service.color === 'neon-blue' ? 'text-neon-blue' : (service.color === 'neon-pink' ? 'text-neon-pink' : 'text-white'))
+                        "w-16 h-16 rounded-2xl bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 flex items-center justify-center transition-all duration-700 md:group-hover:bg-black md:group-hover:text-white dark:md:group-hover:bg-white dark:md:group-hover:text-black md:group-hover:scale-110 shadow-sm",
+                        service.color === 'neon-green' ? 'text-green-600 dark:text-neon-green' : (service.color === 'neon-blue' ? 'text-sky-500 dark:text-neon-blue' : (service.color === 'neon-pink' ? 'text-rose-500 dark:text-neon-pink' : 'text-gray-900 dark:text-white'))
                     )}>
-                        <service.icon className="w-12 h-12 md:w-8 md:h-8" />
+                        <service.icon className="w-8 h-8 md:w-8 md:h-8" />
                     </div>
                 </div>
 
                 <div className="space-y-4 mt-6">
-                    <h3 className="text-[16px] md:text-2xl font-extrabold font-heading text-white tracking-tight leading-none md:group-hover:translate-x-2 transition-transform duration-500">
+                    <h3 className="text-[16px] md:text-2xl font-extrabold font-heading text-gray-900 dark:text-white tracking-tight leading-none md:group-hover:translate-x-2 transition-transform duration-500">
                         {service.title}
                     </h3>
 
-                    <p className="text-gray-500 text-xs font-bold uppercase tracking-[0.2em] leading-tight">
+                    <p className="text-gray-500 dark:text-gray-400 text-xs font-bold uppercase tracking-[0.2em] leading-tight">
                         {service.shortDesc}
                     </p>
 
                     <div className={cn(
-                        "text-gray-400 text-sm font-medium leading-relaxed transition-all duration-700 overflow-hidden",
+                        "text-gray-600 dark:text-gray-400 text-sm font-medium leading-relaxed transition-all duration-700 overflow-hidden",
                         isExpanded ? "opacity-100 max-h-[500px] mt-4" : "opacity-0 max-h-0 md:max-h-[500px] md:opacity-0 md:group-hover:opacity-100 md:mt-4 md:group-hover:mt-4"
                     )}>
                         {service.fullDesc}

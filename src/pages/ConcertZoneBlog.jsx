@@ -130,7 +130,7 @@ const MiniCard = ({ post, isActive, progress = 0 }) => {
         <Link to={`/concertzone/${slug}/${post.slug}`} 
             className={cn(
                 "group relative flex gap-3 md:gap-5 items-center py-4 md:py-5 px-2 md:px-4 bg-white/[0.01] border border-white/0 transition-all duration-500 rounded-2xl overflow-hidden",
-                isActive ? "bg-white/[0.05] border-white/10" : "hover:border-white/5 hover:bg-white/[0.03]"
+                isActive ? "bg-white/[0.05] border-black/10 dark:border-white/10" : "hover:border-black/10 dark:hover:border-white/5 hover:bg-white/[0.03]"
             )}
         >
             {/* Active Progress Overlay */}
@@ -138,7 +138,7 @@ const MiniCard = ({ post, isActive, progress = 0 }) => {
                 <div className="absolute bottom-0 left-0 h-0.5 bg-neon-blue z-20 transition-all duration-100 ease-linear" style={{ width: `${progress}%` }} />
             )}
 
-            <div className="relative w-24 h-16 rounded-xl overflow-hidden shrink-0 border border-white/10 group-hover:border-neon-blue/30 transition-colors">
+            <div className="relative w-24 h-16 rounded-xl overflow-hidden shrink-0 border border-black/10 dark:border-white/10 group-hover:border-neon-blue/30 transition-colors">
                 <img 
                     src={post.coverImage} 
                     alt="" 
@@ -153,12 +153,12 @@ const MiniCard = ({ post, isActive, progress = 0 }) => {
             <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2 mb-1.5">
                     <span className={cn("text-[8px] font-black uppercase tracking-[0.2em]", isActive ? "text-neon-blue" : "text-neon-blue/80")}>{post.category}</span>
-                    <div className="w-1 h-1 rounded-full bg-white/10" />
+                    <div className="w-1 h-1 rounded-full bg-black/10 dark:bg-white/10" />
                     <span className="text-[8px] font-black uppercase tracking-[0.2em] text-gray-600 flex items-center gap-1"><Eye size={10} className="text-neon-blue/40" /> {post.viewCount || 0}</span>
-                    <div className="w-1 h-1 rounded-full bg-white/10" />
+                    <div className="w-1 h-1 rounded-full bg-black/10 dark:bg-white/10" />
                     <span className="text-[8px] font-black uppercase tracking-[0.2em] text-gray-600">{post.readingTime || 5} MIN</span>
                 </div>
-                <h4 className={cn("text-sm font-bold leading-tight tracking-tight transition-colors line-clamp-2", isActive ? "text-white" : "text-white/60 group-hover:text-white")}>{post.title}</h4>
+                <h4 className={cn("text-sm font-bold leading-tight tracking-tight transition-colors line-clamp-2", isActive ? "text-gray-900 dark:text-white" : "text-gray-900 dark:text-white/60 group-hover:text-gray-900 dark:group-hover:text-white")}>{post.title}</h4>
             </div>
         </Link>
     );
@@ -168,7 +168,7 @@ const MiniCard = ({ post, isActive, progress = 0 }) => {
 const StoryCard = ({ post }) => {
     const slug = post.category?.toLowerCase().replace(' ', '-') || 'news';
     return (
-        <Link to={`/concertzone/${slug}/${post.slug}`} className="group flex flex-col h-full relative bg-slate-900/30 backdrop-blur-3xl border border-white/5 rounded-[2rem] overflow-hidden hover:border-white/15 transition-all duration-500 hover:-translate-y-1">
+        <Link to={`/concertzone/${slug}/${post.slug}`} className="group flex flex-col h-full relative bg-gray-100 dark:bg-slate-900/30 backdrop-blur-3xl border border-black/10 dark:border-white/5 rounded-[2rem] overflow-hidden hover:border-white/15 transition-all duration-500 hover:-translate-y-1">
 
             <div className="relative aspect-[16/10] overflow-hidden">
                 <img 
@@ -183,20 +183,20 @@ const StoryCard = ({ post }) => {
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-[#060606]/80 via-transparent to-transparent" />
                 <div className="absolute top-4 left-4 flex items-center gap-2">
-                    <span className="px-3 py-1 bg-black/60 backdrop-blur-md text-[8px] font-black uppercase tracking-[0.2em] rounded-xl border border-white/10 text-white/90">{post.category}</span>
+                    <span className="px-3 py-1 bg-white dark:bg-black/60 backdrop-blur-md text-[8px] font-black uppercase tracking-[0.2em] rounded-xl border border-black/10 dark:border-white/10 text-gray-900 dark:text-white/90">{post.category}</span>
                 </div>
             </div>
             
             <div className="p-6">
                 <div className="flex items-center gap-3 text-[9px] font-black uppercase tracking-[0.3em] text-gray-500 mb-4">
                     <span className="flex items-center gap-1.5"><Clock size={10} className="text-neon-blue" /> {post.readingTime || 5} MIN</span>
-                    <div className="w-1 h-1 rounded-full bg-white/10" />
+                    <div className="w-1 h-1 rounded-full bg-black/10 dark:bg-white/10" />
                     <span className="flex items-center gap-1.5"><Eye size={10} className="text-neon-blue" /> {post.viewCount || 0}</span>
-                    <div className="w-1 h-1 rounded-full bg-white/10" />
+                    <div className="w-1 h-1 rounded-full bg-black/10 dark:bg-white/10" />
                     <span>{new Date(post.publishDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
                 </div>
                 
-                <h3 className="text-lg md:text-xl font-extrabold leading-tight tracking-tight mb-4 group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-white group-hover:to-neon-blue transition-all duration-500 line-clamp-2">
+                <h3 className="text-lg md:text-xl font-extrabold leading-tight tracking-tight mb-4 group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-gray-900 dark:group-hover:from-white group-hover:to-blue-500 dark:group-hover:to-neon-blue transition-all duration-500 line-clamp-2">
                     {post.title}
                 </h3>
                 
@@ -204,10 +204,10 @@ const StoryCard = ({ post }) => {
                     {post.shortDescription}
                 </p>
                 
-                <div className="flex items-center justify-between pt-5 border-t border-white/5 mt-auto">
+                <div className="flex items-center justify-between pt-5 border-t border-black/10 dark:border-white/5 mt-auto">
                     <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center">
-                            <User size={10} className="text-gray-400" />
+                        <div className="w-6 h-6 rounded-lg bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 flex items-center justify-center">
+                            <User size={10} className="text-gray-600 dark:text-gray-400" />
                         </div>
                         <span className="text-[8px] font-black uppercase tracking-widest text-gray-600">{post.author || 'NEWBI TEAM'}</span>
                     </div>
@@ -314,16 +314,16 @@ const ConcertZoneBlog = () => {
     const leadSlug = leadPost?.category?.toLowerCase().replace(' ', '-') || 'news';
 
     return (
-        <div className="min-h-screen bg-dark text-white pb-32 relative selection:bg-neon-blue selection:text-black">
+        <div className="min-h-screen bg-gray-50 dark:bg-dark text-gray-900 dark:text-white pb-32 relative selection:bg-neon-blue selection:text-black">
 
 
             {/* Anchored Top Bar (Ticker + Navigation) */}
-            <div className="fixed top-0 left-0 right-0 z-[200] bg-black/60 backdrop-blur-3xl border-b border-white/5 flex items-center h-16 px-6 md:px-12 gap-8">
+            <div className="fixed top-0 left-0 right-0 z-[200] bg-white dark:bg-black/60 backdrop-blur-3xl border-b border-black/10 dark:border-white/5 flex items-center h-16 px-6 md:px-12 gap-8">
                 <Link to="/" className="flex items-center gap-2 group whitespace-nowrap">
                     <Home size={14} className="text-neon-blue group-hover:scale-110 transition-transform" />
-                    <span className="text-[9px] font-black uppercase tracking-[0.4em] text-gray-500 group-hover:text-white transition-colors">newbi.live</span>
+                    <span className="text-[9px] font-black uppercase tracking-[0.4em] text-gray-500 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">newbi.live</span>
                 </Link>
-                <div className="w-[1px] h-6 bg-white/10 hidden md:block" />
+                <div className="w-[1px] h-6 bg-black/10 dark:bg-white/10 hidden md:block" />
 
 
 
@@ -357,18 +357,18 @@ const ConcertZoneBlog = () => {
 
             {/* Vertical Sidebar Identity */}
             <div className="fixed left-5 top-1/2 -translate-y-1/2 hidden xl:flex flex-col items-center gap-8 z-50 mix-blend-difference">
-                <span className="text-[8px] font-black uppercase tracking-[0.6em] rotate-180 [writing-mode:vertical-lr] text-white/25">Concert Zone</span>
-                <div className="w-[1px] h-20 bg-white/10" />
+                <span className="text-[8px] font-black uppercase tracking-[0.6em] rotate-180 [writing-mode:vertical-lr] text-gray-900 dark:text-white/25">Concert Zone</span>
+                <div className="w-[1px] h-20 bg-black/10 dark:bg-white/10" />
                 <span className="text-[8px] font-black uppercase tracking-[0.6em] rotate-180 [writing-mode:vertical-lr] text-neon-blue/60">Vol. 01 · 2026</span>
             </div>
 
             {/* Floating Bottom Nav */}
             <nav className={`fixed bottom-8 left-1/2 -translate-x-1/2 z-[100] transition-all duration-500 ${scrolled ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10 pointer-events-none'}`}>
-                <div className="bg-slate-900/40 backdrop-blur-3xl border border-white/5 rounded-2xl px-2 py-1.5 flex items-center gap-1 shadow-inner">
+                <div className="bg-gray-100 dark:bg-slate-900/40 backdrop-blur-3xl border border-black/10 dark:border-white/5 rounded-2xl px-2 py-1.5 flex items-center gap-1 shadow-inner">
                     {CATEGORIES.map((cat) => (
                         <button key={cat.id} onClick={() => handleCategoryChange(cat.id)}
                             className={cn("h-8 px-4 rounded-xl flex items-center gap-1.5 transition-all text-[8px] font-bold uppercase tracking-wider",
-                                activeCategory === cat.id ? "bg-white text-black" : "text-gray-500 hover:text-white hover:bg-white/5"
+                                activeCategory === cat.id ? "bg-white text-black" : "text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5"
                             )}>
                             <cat.icon size={10} />
                             <span className="hidden md:inline">{cat.label}</span>
@@ -392,8 +392,8 @@ const ConcertZoneBlog = () => {
                         <div className="w-1.5 h-1.5 rounded-full bg-neon-blue shadow-[0_0_10px_#00ffff]" />
                         <span className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-500">The Editorial Hub</span>
                     </div>
-                    <h1 className="text-5xl sm:text-7xl md:text-8xl lg:text-[8rem] font-extrabold font-heading uppercase tracking-tight leading-[0.95] text-white flex flex-row flex-wrap md:flex-nowrap items-center justify-start gap-x-3 md:gap-8 w-full overflow-hidden text-left">
-                        <span>Concert</span> <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-white to-neon-blue">Zone.</span>
+                    <h1 className="text-5xl sm:text-7xl md:text-8xl lg:text-[8rem] font-extrabold font-heading uppercase tracking-tight leading-[0.95] text-gray-900 dark:text-white flex flex-row flex-wrap md:flex-nowrap items-center justify-start gap-x-3 md:gap-8 w-full overflow-hidden text-left">
+                        <span>Concert</span> <span className="text-transparent bg-clip-text bg-gradient-to-r from-gray-950 via-gray-800 to-gray-500 dark:from-white dark:via-white to-neon-blue">Zone.</span>
                     </h1>
                 </motion.div>
 
@@ -414,7 +414,7 @@ const ConcertZoneBlog = () => {
                                         "flex items-center gap-2 px-4 md:px-6 py-2 md:py-3 rounded-xl md:rounded-2xl text-[9px] md:text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap border shrink-0",
                                         activeCategory === cat.id 
                                             ? "bg-white text-black border-white shadow-[0_10px_30px_rgba(255,255,255,0.2)]" 
-                                            : "bg-white/5 text-gray-400 border-white/5 hover:bg-white/10 hover:text-white"
+                                            : "bg-black/5 dark:bg-white/5 text-gray-600 dark:text-gray-400 border-black/10 dark:border-white/5 hover:bg-black/10 dark:hover:bg-white/10 hover:text-gray-900 dark:hover:text-white"
                                     )}
                                 >
                                     <cat.icon size={12} className={cn("hidden xs:block md:size-[14px]", activeCategory === cat.id ? "text-black" : "text-neon-blue/60")} />
@@ -425,13 +425,13 @@ const ConcertZoneBlog = () => {
                     </div>
 
                     <div className="relative group flex-1 max-w-md w-full">
-                        <Search className="absolute left-8 top-1/2 -translate-y-1/2 text-white/40 group-focus-within:text-neon-blue transition-all" size={18} />
+                        <Search className="absolute left-8 top-1/2 -translate-y-1/2 text-gray-900 dark:text-white/40 group-focus-within:text-blue-600 dark:group-focus-within:text-neon-blue transition-all" size={18} />
                         <input 
                             type="text" 
                             placeholder="SEARCH ARTICLES..." 
                             value={searchQuery} 
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="bg-slate-950/40 border border-white/5 rounded-2xl pl-20 pr-8 h-16 w-full text-[11px] font-black uppercase tracking-widest focus:outline-none focus:border-neon-blue/20 focus:bg-slate-950/60 transition-all placeholder:text-gray-500 backdrop-blur-3xl"
+                            className="bg-gray-100 dark:bg-slate-950/40 border border-black/10 dark:border-white/5 rounded-2xl pl-20 pr-8 h-16 w-full text-[11px] font-black uppercase tracking-widest focus:outline-none focus:border-neon-blue/20 focus:bg-gray-100 dark:focus:bg-slate-950/60 transition-all placeholder:text-gray-500 backdrop-blur-3xl"
                         />
                     </div>
                 </div>
@@ -450,7 +450,7 @@ const ConcertZoneBlog = () => {
                                     transition={{ duration: 0.8, ease: "easeOut" }}
                                     className="relative"
                                 >
-                                    <Link to={`/concertzone/${leadSlug}/${leadPost.slug}`} className="block relative rounded-[2.5rem] md:rounded-[3rem] overflow-hidden aspect-[4/5] sm:aspect-[16/10] border border-white/5 group-hover:border-white/20 transition-all duration-700">
+                                    <Link to={`/concertzone/${leadSlug}/${leadPost.slug}`} className="block relative rounded-[2.5rem] md:rounded-[3rem] overflow-hidden aspect-[4/5] sm:aspect-[16/10] border border-black/10 dark:border-white/5 group-hover:border-black/20 dark:group-hover:border-white/20 transition-all duration-700">
                                         {leadPost.videoUrl ? (
                                             isRawVideo(leadPost.videoUrl) ? (
                                                 <video 
@@ -484,14 +484,14 @@ const ConcertZoneBlog = () => {
                                             />
                                         )}
                                         <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
-                                        <div className="absolute inset-0 bg-black/20 group-hover:bg-black/0 transition-all duration-700" />
+                                        <div className="absolute inset-0 bg-white dark:bg-black/20 group-hover:bg-white dark:group-hover:bg-black/0 transition-all duration-700" />
 
                                         <div className="absolute top-8 left-8 flex items-center gap-3">
                                             <span className="px-5 py-2 bg-neon-blue text-black text-[10px] font-black uppercase tracking-widest rounded-2xl italic shadow-[0_10px_30px_rgba(0,255,255,0.3)]">{leadPost.category}</span>
-                                            <span className="px-5 py-2 bg-black/60 backdrop-blur-xl text-white/70 text-[10px] font-black uppercase tracking-widest rounded-2xl border border-white/10 flex items-center gap-2">
+                                            <span className="px-5 py-2 bg-white dark:bg-black/60 backdrop-blur-xl text-gray-900 dark:text-white/70 text-[10px] font-black uppercase tracking-widest rounded-2xl border border-black/10 dark:border-white/10 flex items-center gap-2">
                                                 <Clock size={12} className="text-neon-blue" /> {leadPost.readingTime || 5} MIN
                                             </span>
-                                            <span className="px-5 py-2 bg-black/60 backdrop-blur-xl text-white/70 text-[10px] font-black uppercase tracking-widest rounded-2xl border border-white/10 flex items-center gap-2">
+                                            <span className="px-5 py-2 bg-white dark:bg-black/60 backdrop-blur-xl text-gray-900 dark:text-white/70 text-[10px] font-black uppercase tracking-widest rounded-2xl border border-black/10 dark:border-white/10 flex items-center gap-2">
                                                 <Eye size={12} className="text-neon-blue" /> {leadPost.viewCount || 0}
                                             </span>
                                         </div>
@@ -503,15 +503,15 @@ const ConcertZoneBlog = () => {
                                                 className="text-3xl sm:text-4xl md:text-6xl font-extrabold font-heading tracking-tight leading-[1.05] mb-4 md:mb-6 group-hover:translate-x-2 transition-transform duration-700"
                                             >
                                                 {leadPost.title.split(' ').map((word, i) => (
-                                                    <span key={i} className={i % 2 === 1 ? "text-transparent bg-clip-text bg-gradient-to-r from-white to-neon-blue" : "text-white"}>
+                                                    <span key={i} className={i % 2 === 1 ? "text-transparent bg-clip-text bg-gradient-to-r from-black to-neon-blue dark:from-white dark:to-neon-blue" : "text-gray-900 dark:text-white"}>
                                                         {word}{' '}
                                                     </span>
                                                 ))}
                                             </motion.h2>
-                                            <p className="text-gray-300 text-xs md:text-lg font-medium max-w-2xl line-clamp-3 md:line-clamp-2 opacity-70 group-hover:opacity-100 transition-opacity mb-6 md:mb-8 leading-relaxed italic">{leadPost.shortDescription}</p>
-                                            <div className="flex items-center gap-6 text-[10px] font-black uppercase tracking-[0.4em] text-white/30">
+                                            <p className="text-gray-700 dark:text-gray-300 text-xs md:text-lg font-medium max-w-2xl line-clamp-3 md:line-clamp-2 opacity-70 group-hover:opacity-100 transition-opacity mb-6 md:mb-8 leading-relaxed italic">{leadPost.shortDescription}</p>
+                                            <div className="flex items-center gap-6 text-[10px] font-black uppercase tracking-[0.4em] text-gray-900 dark:text-white/30">
                                                 <span className="flex items-center gap-2"><User size={12} className="text-neon-blue" /> {leadPost.author || 'NEWBI TEAM'}</span>
-                                                <div className="w-1 h-1 rounded-full bg-white/20" />
+                                                <div className="w-1 h-1 rounded-full bg-black/20 dark:bg-white/20" />
                                                 <span>{new Date(leadPost.publishDate).toLocaleDateString(undefined, { month: 'long', day: 'numeric' })}</span>
                                             </div>
                                         </div>
@@ -526,10 +526,10 @@ const ConcertZoneBlog = () => {
 
                         {/* Sidebar — 1/3 width */}
                         <div className="lg:col-span-1">
-                            <div className="bg-slate-900/20 border border-white/5 rounded-2xl p-2 md:p-4 h-full">
-                                <div className="flex items-center gap-2 mb-3 py-3 px-2 border-b border-white/5">
+                            <div className="bg-gray-100 dark:bg-slate-900/20 border border-black/10 dark:border-white/5 rounded-2xl p-2 md:p-4 h-full">
+                                <div className="flex items-center gap-2 mb-3 py-3 px-2 border-b border-black/10 dark:border-white/5">
                                     <div className="w-1.5 h-1.5 rounded-full bg-neon-pink shadow-[0_0_10px_rgba(255,0,85,0.5)]" />
-                                    <span className="text-[10px] font-bold uppercase tracking-widest text-white">Featured Stories</span>
+                                    <span className="text-[10px] font-bold uppercase tracking-widest text-gray-900 dark:text-white">Featured Stories</span>
                                 </div>
                                 {featuredPosts.map((post, idx) => (
                                     <MiniCard 
@@ -552,8 +552,8 @@ const ConcertZoneBlog = () => {
                     <section className="mb-20">
                         <div className="flex items-center gap-3 mb-8 px-6 md:px-0">
                             <div className="w-1.5 h-1.5 rounded-full bg-neon-blue" />
-                            <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">MORE STORIES</span>
-                            <div className="flex-1 h-[1px] bg-white/5" />
+                            <span className="text-[10px] font-bold uppercase tracking-widest text-gray-600 dark:text-gray-400">MORE STORIES</span>
+                            <div className="flex-1 h-[1px] bg-black/5 dark:bg-white/5" />
                         </div>
 
                         <div className="relative group">
@@ -582,7 +582,7 @@ const ConcertZoneBlog = () => {
                         {gridPosts.length > visibleCount && (
                             <div className="flex justify-center pt-12 md:flex hidden">
                                 <button onClick={() => setVisibleCount(prev => prev + 6)}
-                                    className="h-10 px-6 bg-white/5 border border-white/10 text-white font-bold uppercase tracking-wider text-[10px] hover:bg-white/10 transition-all rounded-lg flex items-center gap-2">
+                                    className="h-10 px-6 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-gray-900 dark:text-white font-bold uppercase tracking-wider text-[10px] hover:bg-black/10 dark:hover:bg-white/10 transition-all rounded-lg flex items-center gap-2">
                                     Load More <ArrowRight size={12} />
                                 </button>
                             </div>
@@ -593,7 +593,7 @@ const ConcertZoneBlog = () => {
                 {/* Empty State */}
                 {filteredPosts.length === 0 && (
                     <div className="text-center py-24">
-                        <div className="w-16 h-16 rounded-xl bg-white/5 border border-white/5 flex items-center justify-center mx-auto mb-4">
+                        <div className="w-16 h-16 rounded-xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/5 flex items-center justify-center mx-auto mb-4">
                             <Newspaper size={24} className="text-gray-600" />
                         </div>
                         <h3 className="text-lg font-bold mb-1">No stories found</h3>
@@ -605,7 +605,7 @@ const ConcertZoneBlog = () => {
                 <AdSlot className="mb-10" format="horizontal" slot={import.meta.env.VITE_ADSENSE_SLOT_HUB_BOTTOM} />
 
                 {/* Newsletter */}
-                <section className="rounded-[3rem] bg-slate-900/10 border border-white/5 p-8 md:p-20 overflow-hidden relative">
+                <section className="rounded-[3rem] bg-gray-100 dark:bg-slate-900/10 border border-black/10 dark:border-white/5 p-8 md:p-20 overflow-hidden relative">
                     <div className="absolute top-0 left-0 w-[600px] h-[600px] bg-neon-blue/5 blur-[200px] rounded-full pointer-events-none -translate-x-1/2 -translate-y-1/2" />
                     
                     <div className="max-w-4xl mx-auto relative z-10">

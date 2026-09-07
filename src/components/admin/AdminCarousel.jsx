@@ -47,14 +47,14 @@ const AdminCarousel = ({ title, children }) => {
     return (
         <div className="mb-12">
             <div className="flex items-center justify-between mb-6 px-2">
-                <h2 className="text-2xl font-bold text-white">{title}</h2>
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{title}</h2>
                 <div className="flex gap-2">
                     <button
                         onClick={() => scroll('left')}
                         disabled={!canScrollLeft}
                         className={`p-2 rounded-full border transition-all ${canScrollLeft
-                            ? 'border-white/20 hover:bg-white/10 text-white'
-                            : 'border-white/5 text-gray-600 cursor-not-allowed'
+                            ? 'border-black/20 dark:border-white/20 hover:bg-black/10 dark:hover:bg-white/10 text-gray-900 dark:text-white'
+                            : 'border-black/10 dark:border-white/5 text-gray-600 cursor-not-allowed'
                             }`}
                     >
                         <ChevronLeft size={20} />
@@ -63,8 +63,8 @@ const AdminCarousel = ({ title, children }) => {
                         onClick={() => scroll('right')}
                         disabled={!canScrollRight}
                         className={`p-2 rounded-full border transition-all ${canScrollRight
-                            ? 'border-white/20 hover:bg-white/10 text-white'
-                            : 'border-white/5 text-gray-600 cursor-not-allowed'
+                            ? 'border-black/20 dark:border-white/20 hover:bg-black/10 dark:hover:bg-white/10 text-gray-900 dark:text-white'
+                            : 'border-black/10 dark:border-white/5 text-gray-600 cursor-not-allowed'
                             }`}
                     >
                         <ChevronRight size={20} />

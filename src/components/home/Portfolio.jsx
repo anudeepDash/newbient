@@ -54,7 +54,7 @@ const Portfolio = () => {
 
     return (
         <section
-            className="py-10 md:py-16 bg-dark text-white relative overflow-hidden border-t border-white/5"
+            className="py-10 md:py-16 bg-gray-50 dark:bg-dark transition-colors duration-300 text-gray-900 dark:text-white relative overflow-hidden border-t border-black/10 dark:border-white/5"
         >
             {/* ── Atmosphere ── */}
             <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-neon-green/[0.04] blur-[180px] rounded-full pointer-events-none" />
@@ -73,10 +73,10 @@ const Portfolio = () => {
                             whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: true }}
                             transition={{ delay: 0.1 }}
-                            className="font-heading text-4xl md:text-6xl lg:text-7xl font-extrabold tracking-tight text-white leading-none"
+                            className="font-heading text-4xl md:text-6xl lg:text-7xl font-extrabold tracking-tight text-gray-900 dark:text-white leading-none"
                         >
                             Our{' '}
-                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-neon-green">
+                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-black to-neon-green dark:from-white dark:to-neon-green">
                                 Impact
                             </span>
                         </motion.h2>
@@ -86,7 +86,7 @@ const Portfolio = () => {
                             whileInView={{ opacity: 1 }}
                             viewport={{ once: true }}
                             transition={{ delay: 0.2 }}
-                            className="text-gray-500 text-xs font-black uppercase tracking-[0.2em] mt-4"
+                            className="text-gray-500 dark:text-gray-400 text-xs font-black uppercase tracking-[0.2em] mt-4"
                         >
                             {portfolio.length} Documented Activations &amp; Counting
                         </motion.p>
@@ -99,7 +99,7 @@ const Portfolio = () => {
                             whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: true }}
                             transition={{ delay: 0.15 }}
-                            className="flex overflow-x-auto whitespace-nowrap gap-2 p-1.5 rounded-[2rem] bg-white/[0.03] border border-white/10 backdrop-blur-2xl w-full md:w-auto shrink-0 scrollbar-hide"
+                            className="flex overflow-x-auto whitespace-nowrap gap-2 p-1.5 rounded-[2rem] bg-gray-100 dark:bg-white/[0.03] border border-black/10 dark:border-white/10 backdrop-blur-2xl w-full md:w-auto shrink-0 scrollbar-hide"
                         >
                             {categories.map((cat) => {
                                 const isActive = activeTab === cat.id;
@@ -109,8 +109,8 @@ const Portfolio = () => {
                                         onClick={() => { setActiveTab(cat.id); }}
                                         className={`relative flex-shrink-0 px-6 py-2.5 rounded-[1.4rem] font-black text-[10px] uppercase tracking-[0.25em] transition-all duration-500 overflow-hidden ${
                                             isActive
-                                                ? 'bg-white text-black shadow-lg'
-                                                : 'text-gray-500 hover:text-white hover:bg-white/5'
+                                                ? 'bg-black text-white dark:bg-white dark:text-black shadow-lg'
+                                                : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5'
                                         }`}
                                     >
                                         <span className="relative z-10">{cat.label}</span>
@@ -136,13 +136,13 @@ const Portfolio = () => {
                             <div className="hidden lg:block">
                                 <button
                                     onClick={() => { scroll('left'); }}
-                                    className="absolute -left-12 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white hover:bg-neon-green hover:text-black transition-all z-30 backdrop-blur-md opacity-0 group-hover/nav:opacity-100 -translate-x-4 group-hover/nav:translate-x-0 duration-300"
+                                    className="absolute -left-12 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 flex items-center justify-center text-gray-900 dark:text-white hover:bg-neon-green hover:text-black transition-all z-30 backdrop-blur-md opacity-0 group-hover/nav:opacity-100 -translate-x-4 group-hover/nav:translate-x-0 duration-300"
                                 >
                                     <ChevronLeft size={20} />
                                 </button>
                                 <button
                                     onClick={() => { scroll('right'); }}
-                                    className="absolute -right-12 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white hover:bg-neon-green hover:text-black transition-all z-30 backdrop-blur-md opacity-0 group-hover/nav:opacity-100 translate-x-4 group-hover/nav:translate-x-0 duration-300"
+                                    className="absolute -right-12 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 flex items-center justify-center text-gray-900 dark:text-white hover:bg-neon-green hover:text-black transition-all z-30 backdrop-blur-md opacity-0 group-hover/nav:opacity-100 translate-x-4 group-hover/nav:translate-x-0 duration-300"
                                 >
                                     <ChevronRight size={20} />
                                 </button>
@@ -170,13 +170,13 @@ const Portfolio = () => {
                                     <div className="flex md:hidden items-center justify-center gap-4 mt-2">
                                         <button 
                                             onClick={() => scroll('left')}
-                                            className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-white active:bg-white active:text-black transition-all"
+                                            className="w-10 h-10 rounded-xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 flex items-center justify-center text-gray-900 dark:text-white active:bg-white active:text-black transition-all"
                                         >
                                             <ChevronLeft size={16} />
                                         </button>
                                         <button 
                                             onClick={() => scroll('right')}
-                                            className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-white active:bg-white active:text-black transition-all"
+                                            className="w-10 h-10 rounded-xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 flex items-center justify-center text-gray-900 dark:text-white active:bg-white active:text-black transition-all"
                                         >
                                             <ChevronRight size={16} />
                                         </button>
@@ -184,8 +184,8 @@ const Portfolio = () => {
                                 )}
                             </>
                         ) : (
-                            <div className="py-32 flex flex-col items-center justify-center gap-6 bg-white/[0.02] rounded-[3rem] border-2 border-dashed border-white/5">
-                                <div className="w-16 h-16 rounded-full border border-white/10 flex items-center justify-center text-gray-700 animate-pulse">
+                            <div className="py-32 flex flex-col items-center justify-center gap-6 bg-gray-100 dark:bg-white/[0.02] rounded-[3rem] border-2 border-dashed border-black/10 dark:border-white/5">
+                                <div className="w-16 h-16 rounded-full border border-black/10 dark:border-white/10 flex items-center justify-center text-gray-700 animate-pulse">
                                     <Zap size={24} />
                                 </div>
                                 <p className="text-gray-600 font-black uppercase tracking-[0.3em] text-[10px]">
@@ -211,13 +211,13 @@ const PortfolioCard = ({ item, categories, index }) => {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: '-50px' }}
             transition={{ duration: 0.6, delay: Math.min(index * 0.08, 0.3) }}
-            className="group relative aspect-[4/5] rounded-[2.5rem] overflow-hidden bg-zinc-950 border border-white/5 hover:border-white/15 transition-[background-color,border-color,box-shadow] duration-700 shadow-[0_30px_80px_rgba(0,0,0,0.5)] cursor-default"
+            className="group relative aspect-[4/5] rounded-[2.5rem] overflow-hidden bg-gray-100 dark:bg-zinc-950 border border-black/10 dark:border-white/5 hover:border-black/20 dark:hover:border-white/15 transition-[background-color,border-color,box-shadow] duration-700 shadow-md hover:shadow-xl dark:shadow-[0_30px_80px_rgba(0,0,0,0.5)] cursor-default"
         >
             {/* ── Glow Halo ── */}
             <div className="absolute -inset-px rounded-[2.5rem] bg-gradient-to-br from-neon-green/10 to-neon-blue/5 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none blur-xl" />
 
             {/* ── Image Layer ── */}
-            <div className="absolute inset-0 z-0 overflow-hidden bg-black">
+            <div className="absolute inset-0 z-0 overflow-hidden bg-white dark:bg-black transition-colors duration-300">
                 {item.image ? (
                     <div
                         className="absolute inset-0 bg-cover transition-transform duration-700 group-hover:scale-110"
@@ -247,20 +247,18 @@ const PortfolioCard = ({ item, categories, index }) => {
             {/* ── Top Badges ── */}
             <div className="absolute top-6 left-6 right-6 z-30 flex justify-between items-start">
                 {/* Category pill */}
-                <div className="px-4 py-2 rounded-2xl bg-black/40 backdrop-blur-2xl border border-white/10 group-hover:border-neon-green/20 transition-colors duration-500">
+                <div className="px-4 py-2 rounded-2xl bg-black/50 backdrop-blur-2xl border border-white/15 group-hover:border-neon-green/40 transition-colors duration-500">
                     <span className="text-[9px] font-black uppercase tracking-[0.3em] text-neon-green">{categoryLabel}</span>
                 </div>
 
                 {/* Year badge */}
                 {year && (
-                    <div className="px-3 py-1.5 rounded-xl bg-white/5 backdrop-blur-2xl border border-white/10 flex items-center gap-1.5">
-                        <Clock size={10} className="text-white/40" />
-                        <span className="text-[9px] font-black uppercase tracking-widest text-white/50">{year}</span>
+                    <div className="px-3 py-1.5 rounded-xl bg-black/50 backdrop-blur-2xl border border-white/15 flex items-center gap-1.5">
+                        <Clock size={10} className="text-white/60" />
+                        <span className="text-[9px] font-black uppercase tracking-widest text-white/70">{year}</span>
                     </div>
                 )}
             </div>
-
-
 
             {/* ── Content Slab ── */}
             <div className="absolute inset-x-6 bottom-7 z-30 space-y-5">
@@ -270,14 +268,14 @@ const PortfolioCard = ({ item, categories, index }) => {
                     </h3>
 
                     {item.date && (
-                        <p className="text-[9px] font-black text-white/30 uppercase tracking-[0.25em]">
+                        <p className="text-[9px] font-black text-white/50 uppercase tracking-[0.25em]">
                             {new Date(item.date).toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })}
                         </p>
                     )}
                 </div>
 
                 {/* Divider & CTA */}
-                <div className="pt-5 border-t border-white/5 flex items-center justify-between">
+                <div className="pt-5 border-t border-white/10 flex items-center justify-between">
                     {item.highlightUrl ? (
                         <a
                             href={item.highlightUrl}
@@ -289,13 +287,13 @@ const PortfolioCard = ({ item, categories, index }) => {
                             <span className="w-8 h-8 rounded-xl bg-neon-green/90 text-black flex items-center justify-center shadow-[0_0_20px_rgba(46,255,144,0.3)] group-hover/cta:shadow-[0_0_30px_rgba(46,255,144,0.5)] transition-all">
                                 <Play size={14} fill="black" />
                             </span>
-                            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/70 group-hover/cta:text-white transition-colors">
+                            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/80 group-hover/cta:text-white transition-colors">
                                 View Reel
                             </span>
-                            <ArrowRight size={14} className="text-white/30 group-hover/cta:text-neon-green group-hover/cta:translate-x-1 transition-all" />
+                            <ArrowRight size={14} className="text-white/40 group-hover/cta:text-neon-green group-hover/cta:translate-x-1 transition-all" />
                         </a>
                     ) : (
-                        <span className="text-[9px] font-black text-white/20 uppercase tracking-[0.3em] flex items-center gap-2">
+                        <span className="text-[9px] font-black text-white/40 uppercase tracking-[0.3em] flex items-center gap-2">
                             <span className="w-4 h-px bg-white/20" />
                             Archived Record
                         </span>
@@ -304,8 +302,8 @@ const PortfolioCard = ({ item, categories, index }) => {
                     {/* Index dot cluster */}
                     <div className="flex items-center gap-1">
                         <span className="w-1.5 h-1.5 rounded-full bg-neon-green/60" />
-                        <span className="w-1 h-1 rounded-full bg-white/10" />
-                        <span className="w-1 h-1 rounded-full bg-white/10" />
+                        <span className="w-1 h-1 rounded-full bg-white/20" />
+                        <span className="w-1 h-1 rounded-full bg-white/20" />
                     </div>
                 </div>
             </div>

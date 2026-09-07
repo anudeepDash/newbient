@@ -183,9 +183,9 @@ const SpinWheel = ({ onResult, alreadySpun, giveawayEndDate }) => {
                 className={cn(
                     "h-16 px-16 rounded-2xl font-black uppercase tracking-[0.2em] text-sm transition-all shadow-2xl font-heading",
                     alreadySpun
-                        ? "bg-zinc-800 text-gray-500 cursor-not-allowed border border-white/5"
+                        ? "bg-zinc-800 text-gray-500 cursor-not-allowed border border-black/10 dark:border-white/5"
                         : isSpinning
-                            ? "bg-purple-600/50 text-white cursor-wait"
+                            ? "bg-purple-600/50 text-gray-900 dark:text-white cursor-wait"
                             : "bg-white text-black hover:scale-105 active:scale-95 shadow-[0_0_40px_rgba(255,255,255,0.15)]"
                 )}
             >
@@ -198,7 +198,7 @@ const SpinWheel = ({ onResult, alreadySpun, giveawayEndDate }) => {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-xl"
+                        className="fixed inset-0 z-[9999] flex items-center justify-center bg-white dark:bg-black/80 backdrop-blur-xl"
                         onClick={() => setResult(null)}
                     >
                         <motion.div
@@ -206,7 +206,7 @@ const SpinWheel = ({ onResult, alreadySpun, giveawayEndDate }) => {
                             animate={{ scale: 1, opacity: 1 }}
                             exit={{ scale: 0.8, opacity: 0 }}
                             transition={{ type: 'spring', damping: 18, stiffness: 250 }}
-                            className="relative mx-4 w-full max-w-md p-10 bg-zinc-900/90 border border-white/10 rounded-[2.5rem] backdrop-blur-3xl text-center overflow-hidden shadow-[0_0_100px_rgba(168,85,247,0.25)]"
+                            className="relative mx-4 w-full max-w-md p-10 bg-gray-100 dark:bg-zinc-900/90 border border-black/10 dark:border-white/10 rounded-[2.5rem] backdrop-blur-3xl text-center overflow-hidden shadow-[0_0_100px_rgba(168,85,247,0.25)]"
                             onClick={e => e.stopPropagation()}
                         >
                             <div className="absolute inset-0 bg-gradient-to-br from-purple-600/15 to-neon-blue/10" />
@@ -219,11 +219,11 @@ const SpinWheel = ({ onResult, alreadySpun, giveawayEndDate }) => {
                                 </div>
                                 <div>
                                     <p className="text-[10px] font-black text-purple-400 uppercase tracking-[0.4em] mb-2">You Won</p>
-                                    <h3 className="text-5xl font-black font-heading text-white uppercase italic tracking-tighter leading-none">{result.label}</h3>
+                                    <h3 className="text-5xl font-black font-heading text-gray-900 dark:text-white uppercase italic tracking-tighter leading-none">{result.label}</h3>
                                 </div>
                                 <button
                                     onClick={() => setResult(null)}
-                                    className="mt-2 px-8 py-3 rounded-2xl bg-white/10 border border-white/10 text-white font-black text-xs uppercase tracking-widest hover:bg-white/20 transition-all"
+                                    className="mt-2 px-8 py-3 rounded-2xl bg-black/10 dark:bg-white/10 border border-black/10 dark:border-white/10 text-gray-900 dark:text-white font-black text-xs uppercase tracking-widest hover:bg-black/20 dark:hover:bg-white/20 transition-all"
                                 >
                                     AWESOME, CLOSE
                                 </button>

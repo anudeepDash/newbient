@@ -34,3 +34,20 @@ export const ARTIST_CATEGORIES = [
     "Videographer",
     "Others"
 ];
+
+export const CREATOR_NICHES = [
+    'Student/ Campus Creator',
+    'Fashion & Luxury',
+    'Tech & Gaming',
+    'Travel & Lifestyle',
+    'Beauty & Fitness',
+    'Food & Beverage',
+    'College Pages',
+    'Startup',
+    'Finance',
+    'Business',
+    'Real Estate',
+    'Career',
+    'Entrepreneurship',
+    'Others'
+];

@@ -182,7 +182,7 @@ const logoOptions = [
                 const level = headingMatch[1].length;
                 const headingText = headingMatch[2];
                 const sizeClass = level === 1 ? "text-[13px] font-bold" : level === 2 ? "text-[12px] font-bold" : "text-[11px] font-semibold text-zinc-400";
-                elements.push(<p key={i} className={cn(sizeClass, "mt-2 mb-1 text-white")} dangerouslySetInnerHTML={{ __html: formatInline(headingText) }} />);
+                elements.push(<p key={i} className={cn(sizeClass, "mt-2 mb-1 text-gray-900 dark:text-white")} dangerouslySetInnerHTML={{ __html: formatInline(headingText) }} />);
             } else if (line.match(/^[•\-\*](?:\s|&nbsp;|\u00a0)+/)) {
                 const items = [];
                 while (i < lines.length && lines[i].match(/^[•\-\*](?:\s|&nbsp;|\u00a0)+/)) {
@@ -244,7 +244,7 @@ const logoOptions = [
             }
 
             if (line.match(/^[-*_]{3,}$/)) {
-                elements.push(<div key={`hr-${i}`} className="h-[1.5px] bg-black/10 my-8 w-full" />);
+                elements.push(<div key={`hr-${i}`} className="h-[1.5px] bg-white dark:bg-black/10 my-8 w-full" />);
                 i++;
                 continue;
             }
@@ -294,7 +294,7 @@ const logoOptions = [
                     <div key={`ol-${i}`} className="pl-4 space-y-2 my-4">
                         {items.map((item, j) => (
                             <div key={j} className="flex items-start gap-3">
-                                <span className="text-[11px] font-black text-gray-400 mt-0.5 w-6 shrink-0">{item.num}.</span>
+                                <span className="text-[11px] font-black text-gray-600 dark:text-gray-400 mt-0.5 w-6 shrink-0">{item.num}.</span>
                                 <span className={cn("text-[13px] font-medium text-black leading-[1.9]", baseClass)} dangerouslySetInnerHTML={{ __html: inlineFmt(item.text) }} />
                             </div>
                         ))}
@@ -1726,7 +1726,7 @@ const AIStudio = () => {
     }, [paginatedPages.length, currentPreviewPage]);
 
     return (
-        <div className="h-screen overflow-hidden bg-[#020202] text-white font-['Outfit'] flex flex-col">
+        <div className="h-screen overflow-hidden bg-gray-50 dark:bg-[#020202] text-gray-900 dark:text-white font-['Outfit'] flex flex-col">
             <style dangerouslySetInnerHTML={{ __html: `
                 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap');
                 @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400..700&display=swap');
@@ -1736,11 +1736,11 @@ const AIStudio = () => {
             `}} />
 
             {/* TOP BAR BAR */}
-            <header className="h-16 md:h-20 border-b border-white/5 bg-black/50 backdrop-blur-3xl flex items-center justify-between px-4 md:px-8 shrink-0 relative z-50">
+            <header className="h-16 md:h-20 border-b border-black/10 dark:border-white/5 bg-white dark:bg-black/50 backdrop-blur-3xl flex items-center justify-between px-4 md:px-8 shrink-0 relative z-50">
                 <div className="flex items-center gap-4">
                     <Link 
                         to={activeEngine === 'proposal' ? '/admin/proposals' : '/admin/agreements'} 
-                        className="p-2 bg-white/5 hover:bg-white/10 text-zinc-400 hover:text-white rounded-xl transition-all border border-white/5 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest"
+                        className="p-2 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-zinc-400 hover:text-gray-900 dark:hover:text-white rounded-xl transition-all border border-black/10 dark:border-white/5 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest"
                     >
                         <ArrowLeft size={14} />
                         <span className="hidden sm:inline">Vault</span>
@@ -1749,7 +1749,7 @@ const AIStudio = () => {
                 </div>
 
                 {/* UNIFIED ENGINE TOGGLE TABS */}
-                <div className="bg-[#0D0D0D] border border-white/[0.04] p-1 rounded-2xl flex items-center gap-1">
+                <div className="bg-black/5 dark:bg-[#0D0D0D] border border-black/10 dark:border-white/[0.04] p-1 rounded-2xl flex items-center gap-1">
                     <button
                         onClick={() => !isEditing && setActiveEngine('proposal')}
                         disabled={isEditing && activeEngine !== 'proposal'}
@@ -1780,7 +1780,7 @@ const AIStudio = () => {
 
                 <div className="flex items-center gap-3">
                     {autosaveStatus !== 'idle' && (
-                        <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white/5 border border-white/10 select-none">
+                        <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 select-none">
                             <span className={cn(
                                 "w-1.5 h-1.5 rounded-full shrink-0",
                                 autosaveStatus === 'saving' && "bg-amber-400 animate-pulse",
@@ -1797,7 +1797,7 @@ const AIStudio = () => {
                     <button
                         onClick={generatePDF}
                         disabled={isSaving}
-                        className="px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-zinc-400 hover:text-white transition-all flex items-center gap-2 text-[10px] font-black uppercase tracking-wider"
+                        className="px-4 py-2.5 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-xl text-zinc-400 hover:text-gray-900 dark:hover:text-white transition-all flex items-center gap-2 text-[10px] font-black uppercase tracking-wider"
                     >
                         <Download size={14} />
                         <span>Export</span>
@@ -1809,7 +1809,7 @@ const AIStudio = () => {
                             "px-5 py-2.5 rounded-xl font-black uppercase tracking-widest text-[10px] transition-all flex items-center gap-2",
                             activeEngine === 'proposal'
                                 ? "bg-[#39FF14] text-black hover:shadow-[0_0_20px_rgba(57,255,20,0.4)]"
-                                : "bg-[#A855F7] text-white hover:shadow-[0_0_20px_rgba(168,85,247,0.4)]"
+                                : "bg-[#A855F7] text-gray-900 dark:text-white hover:shadow-[0_0_20px_rgba(168,85,247,0.4)]"
                         )}
                     >
                         {isSaving ? <RefreshCw size={14} className="animate-spin" /> : <Save size={14} />}
@@ -1823,11 +1823,11 @@ const AIStudio = () => {
                 
                 {/* LEFT CONTROL PANEL (AI, CHAT, FORMS) */}
                 <div className={cn(
-                    "w-full lg:w-[52%] border-r border-white/5 bg-[#050505] flex flex-col min-h-0 overflow-hidden",
+                    "w-full lg:w-[52%] border-r border-black/10 dark:border-white/5 bg-white dark:bg-[#050505] flex flex-col min-h-0 overflow-hidden",
                     isExpandedPreview && "hidden"
                 )}>
                     {showDraftBanner && (
-                        <div className="mx-6 mt-6 p-4 rounded-2xl bg-zinc-900/90 border border-amber-500/20 shadow-[0_0_20px_rgba(245,158,11,0.05)] flex flex-col gap-3 relative overflow-hidden animate-fade-in shrink-0 z-30">
+                        <div className="mx-6 mt-6 p-4 rounded-2xl bg-gray-100 dark:bg-zinc-900/90 border border-amber-500/20 shadow-[0_0_20px_rgba(245,158,11,0.05)] flex flex-col gap-3 relative overflow-hidden animate-fade-in shrink-0 z-30">
                             <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-amber-400 to-amber-600" />
                             <div className="flex items-start gap-3">
                                 <AlertTriangle size={18} className="text-amber-400 mt-0.5 shrink-0" />
@@ -1856,7 +1856,7 @@ const AIStudio = () => {
                     )}
                     
                     {/* TOP BRANDING PANEL: GEMINI 3.5 FLASH ACTIVE */}
-                    <div className="p-6 border-b border-white/5 relative overflow-hidden shrink-0">
+                    <div className="p-6 border-b border-black/10 dark:border-white/5 relative overflow-hidden shrink-0">
                         
                         {/* Scanning horizontal laser bar */}
                         {isGenerating && (
@@ -1870,13 +1870,13 @@ const AIStudio = () => {
                             <div className="space-y-1">
                                 <div className="flex items-center gap-2">
                                     <Sparkles size={16} className={cn("animate-pulse", activeEngine === 'proposal' ? "text-[#39FF14]" : "text-[#A855F7]")} />
-                                    <h3 className="text-sm font-black uppercase tracking-[0.2em] text-white">Gemini 3.5 Flash Active</h3>
+                                    <h3 className="text-sm font-black uppercase tracking-[0.2em] text-gray-900 dark:text-white">Gemini 3.5 Flash Active</h3>
                                 </div>
                                 <p className="text-[10px] font-medium text-zinc-500 uppercase tracking-widest">Cognitive Documents Orchestration Platform</p>
                             </div>
                             
                             {/* Orbital Tuning Visualization */}
-                            <div className="relative w-14 h-14 rounded-full flex items-center justify-center border border-white/5 bg-zinc-900/40">
+                            <div className="relative w-14 h-14 rounded-full flex items-center justify-center border border-black/10 dark:border-white/5 bg-gray-100 dark:bg-zinc-900/40">
                                 <div className={cn(
                                     "absolute w-12 h-12 rounded-full border border-dashed opacity-25 animate-orbit-1",
                                     activeEngine === 'proposal' ? "border-[#39FF14]" : "border-[#A855F7]"
@@ -1902,14 +1902,14 @@ const AIStudio = () => {
 
                         {/* Dynamic Step Status Bar */}
                         {isGenerating && (
-                            <div className="mt-4 pt-3 border-t border-white/5 flex flex-col gap-2 relative z-10 animate-pulse">
+                            <div className="mt-4 pt-3 border-t border-black/10 dark:border-white/5 flex flex-col gap-2 relative z-10 animate-pulse">
                                 <div className="flex items-center justify-between text-[9px] font-black uppercase tracking-wider">
                                     <span className={activeEngine === 'proposal' ? "text-[#39FF14]" : "text-[#A855F7]"}>
                                         {STAGE_MESSAGES[generationStage]?.text || "Synthesizing parameters..."}
                                     </span>
                                     <span className="text-zinc-500 font-mono font-bold">{generationTime}s elapsed</span>
                                 </div>
-                                <div className="w-full h-1 bg-zinc-950 rounded-full overflow-hidden">
+                                <div className="w-full h-1 bg-gray-100 dark:bg-zinc-950 rounded-full overflow-hidden">
                                     <div 
                                         className={cn("h-full transition-all duration-500", activeEngine === 'proposal' ? "bg-[#39FF14]" : "bg-[#A855F7]")} 
                                         style={{ width: `${generationProgress}%` }}
@@ -1920,7 +1920,7 @@ const AIStudio = () => {
                     </div>
 
                     {/* SEGMENTED MODE SWITCHER */}
-                    <div className="px-6 py-3 border-b border-white/5 bg-black/20 flex gap-2 shrink-0">
+                    <div className="px-6 py-3 border-b border-black/10 dark:border-white/5 bg-white dark:bg-black/20 flex gap-2 shrink-0">
                         <button
                             type="button"
                             onClick={() => setLeftPanelMode('ai')}
@@ -1956,7 +1956,7 @@ const AIStudio = () => {
                     {leftPanelMode === 'ai' && (
                         <>
                             {/* CORE SINGLE PROMPT BOX */}
-                            <div className="p-6 border-b border-white/5 bg-black/40 relative">
+                            <div className="p-6 border-b border-black/10 dark:border-white/5 bg-white dark:bg-black/40 relative">
                         <div className="flex items-center justify-between mb-4">
                             <span className="text-[10px] font-black uppercase text-zinc-400 tracking-widest">Document Intent</span>
                             
@@ -1972,7 +1972,7 @@ const AIStudio = () => {
                                         )}
                                     >
                                         <div className={cn(
-                                            "w-4 h-4 rounded-full bg-black transition-all",
+                                            "w-4 h-4 rounded-full bg-white dark:bg-black transition-all",
                                             isBulkMode ? "translate-x-5" : "translate-x-0"
                                         )} />
                                     </button>
@@ -1982,7 +1982,7 @@ const AIStudio = () => {
 
                         {/* TextArea & Suggestion controls */}
                         <div className={cn(
-                            "border border-white/5 rounded-3xl p-3 bg-zinc-950 flex flex-col relative",
+                            "border border-black/10 dark:border-white/5 rounded-3xl p-3 bg-gray-100 dark:bg-zinc-950 flex flex-col relative",
                             isGenerating && `border-${activeEngine === 'proposal' ? '[#39FF14]' : '[#A855F7]'}/30 shadow-[0_0_20px_rgba(57,255,20,0.05)]`
                         )}>
                             <textarea
@@ -1993,7 +1993,7 @@ const AIStudio = () => {
                                         ? "Paste raw CSV / structured requirements here to process bulk proposals..."
                                         : `Describe the ${activeEngine === 'proposal' ? 'proposal' : 'agreement'} requirements in natural language...`
                                 }
-                                className="w-full bg-transparent text-sm text-white placeholder-zinc-600 outline-none border-none resize-none py-2 px-1 min-h-[60px]"
+                                className="w-full bg-transparent text-sm text-gray-900 dark:text-white placeholder-zinc-600 outline-none border-none resize-none py-2 px-1 min-h-[60px]"
                                 onKeyDown={(e) => {
                                     if (e.key === 'Enter' && !e.shiftKey) {
                                         e.preventDefault();
@@ -2003,14 +2003,14 @@ const AIStudio = () => {
                             />
 
                             {isBulkMode && parsedPrompts.length > 0 && (
-                                <div className="space-y-1.5 mt-2 pt-2 border-t border-white/5 animate-fade-in relative z-10">
+                                <div className="space-y-1.5 mt-2 pt-2 border-t border-black/10 dark:border-white/5 animate-fade-in relative z-10">
                                     <div className="flex items-center justify-between px-1">
                                         <label className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Parsed Prompts ({parsedPrompts.length})</label>
                                         <span className="text-[7px] font-black text-neon-green/70 uppercase tracking-wider">Split using '---' line break</span>
                                     </div>
                                     <div className="max-h-28 overflow-y-auto space-y-1 pr-1 scrollbar-hide">
                                         {parsedPrompts.map((pText, idx) => (
-                                            <div key={idx} className="flex items-start gap-2 p-2 bg-black/60 border border-white/5 rounded-xl text-[9px] text-zinc-400 hover:border-white/10 hover:text-white transition-all font-mono">
+                                            <div key={idx} className="flex items-start gap-2 p-2 bg-white dark:bg-black/60 border border-black/10 dark:border-white/5 rounded-xl text-[9px] text-zinc-400 hover:border-black/10 dark:hover:border-white/10 hover:text-gray-900 dark:hover:text-white transition-all font-mono">
                                                 <span className="text-neon-green font-black select-none">{String(idx + 1).padStart(2, '0')}.</span>
                                                 <span className="truncate flex-1">{pText}</span>
                                             </div>
@@ -2020,12 +2020,12 @@ const AIStudio = () => {
                             )}
 
                             {isBulkGenerating && (
-                                <div className="space-y-1 mt-2 pt-2 border-t border-white/5 animate-pulse relative z-10">
-                                    <div className="flex justify-between items-center text-[8px] font-black uppercase tracking-widest text-gray-400">
+                                <div className="space-y-1 mt-2 pt-2 border-t border-black/10 dark:border-white/5 animate-pulse relative z-10">
+                                    <div className="flex justify-between items-center text-[8px] font-black uppercase tracking-widest text-gray-600 dark:text-gray-400">
                                         <span>AI Pulse Progress ({bulkProgress.current} of {bulkProgress.total})</span>
                                         <span className="text-neon-green">{Math.round((bulkProgress.current / bulkProgress.total) * 100) || 0}%</span>
                                     </div>
-                                    <div className="w-full h-1.5 bg-zinc-950 rounded-full overflow-hidden">
+                                    <div className="w-full h-1.5 bg-gray-100 dark:bg-zinc-950 rounded-full overflow-hidden">
                                         <div 
                                             className="h-full bg-neon-green rounded-full transition-all duration-500 shadow-[0_0_8px_#39FF14]"
                                             style={{ width: `${(bulkProgress.current / bulkProgress.total) * 100}%` }}
@@ -2034,10 +2034,10 @@ const AIStudio = () => {
                                 </div>
                             )}
 
-                            <div className="flex items-center justify-between mt-2 pt-2 border-t border-white/5">
+                            <div className="flex items-center justify-between mt-2 pt-2 border-t border-black/10 dark:border-white/5">
                                 <button
                                     onClick={() => setShowSuggestions(!showSuggestions)}
-                                    className="px-3 py-1 bg-white/5 hover:bg-white/10 rounded-lg text-zinc-500 hover:text-white transition-all text-[9px] font-black uppercase tracking-wider flex items-center gap-1.5"
+                                    className="px-3 py-1 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 rounded-lg text-zinc-500 hover:text-gray-900 dark:hover:text-white transition-all text-[9px] font-black uppercase tracking-wider flex items-center gap-1.5"
                                 >
                                     <Zap size={10} />
                                     Inspiration
@@ -2050,7 +2050,7 @@ const AIStudio = () => {
                                         "px-5 py-2.5 rounded-2xl font-black uppercase tracking-widest text-[9px] flex items-center gap-2 transition-all",
                                         activeEngine === 'proposal'
                                             ? "bg-[#39FF14] text-black disabled:bg-zinc-800 disabled:text-zinc-600"
-                                            : "bg-[#A855F7] text-white disabled:bg-zinc-800 disabled:text-zinc-600"
+                                            : "bg-[#A855F7] text-gray-900 dark:text-white disabled:bg-zinc-800 disabled:text-zinc-600"
                                     )}
                                 >
                                     {isGenerating ? <RefreshCw size={12} className="animate-spin" /> : <Sparkles size={12} />}
@@ -2066,11 +2066,11 @@ const AIStudio = () => {
                                     initial={{ opacity: 0, height: 0 }}
                                     animate={{ opacity: 1, height: 'auto' }}
                                     exit={{ opacity: 0, height: 0 }}
-                                    className="mt-3 overflow-hidden bg-zinc-950/80 border border-white/5 rounded-2xl p-2"
+                                    className="mt-3 overflow-hidden bg-gray-100 dark:bg-zinc-950/80 border border-black/10 dark:border-white/5 rounded-2xl p-2"
                                 >
-                                    <div className="flex items-center justify-between px-3 py-2 border-b border-white/5 text-[9px] font-black uppercase text-zinc-500 tracking-wider">
+                                    <div className="flex items-center justify-between px-3 py-2 border-b border-black/10 dark:border-white/5 text-[9px] font-black uppercase text-zinc-500 tracking-wider">
                                         <span>Sample Requests</span>
-                                        <button onClick={() => setSuggestionCategory(c => (c + 1) % 2)} className="hover:text-white flex items-center gap-1">
+                                        <button onClick={() => setSuggestionCategory(c => (c + 1) % 2)} className="hover:text-gray-900 dark:hover:text-white flex items-center gap-1">
                                             <RefreshCw size={8} /> Next
                                         </button>
                                     </div>
@@ -2079,7 +2079,7 @@ const AIStudio = () => {
                                             <button
                                                 key={idx}
                                                 onClick={() => { setPromptText(s); setShowSuggestions(false); }}
-                                                className="w-full text-left px-3 py-2 rounded-xl text-[11px] text-zinc-400 hover:text-white hover:bg-white/5 transition-all truncate"
+                                                className="w-full text-left px-3 py-2 rounded-xl text-[11px] text-zinc-400 hover:text-gray-900 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-all truncate"
                                             >
                                                 → {s}
                                             </button>
@@ -2091,7 +2091,7 @@ const AIStudio = () => {
                     </div>
 
                     {/* INTERACTIVE CHAT STREAM */}
-                    <div className="p-6 border-b border-white/5 bg-[#080808] flex flex-col gap-4 flex-1 min-h-0 overflow-hidden">
+                    <div className="p-6 border-b border-black/10 dark:border-white/5 bg-gray-50/50 dark:bg-[#080808] flex flex-col gap-4 flex-1 min-h-0 overflow-hidden">
                         <span className="text-[10px] font-black uppercase text-zinc-500 tracking-widest">Interactive refinement stream</span>
                         
                         <div ref={chatContainerRef} className="flex flex-col gap-3 flex-1 min-h-0 overflow-y-auto pr-2">
@@ -2102,7 +2102,7 @@ const AIStudio = () => {
                                         "max-w-[85%] rounded-3xl p-4 text-[12px] leading-relaxed",
                                         m.sender === 'user'
                                             ? "bg-zinc-800 text-zinc-100 self-end rounded-tr-none"
-                                            : "bg-zinc-900/60 border border-white/[0.04] text-zinc-300 self-start rounded-tl-none"
+                                            : "bg-gray-100 dark:bg-zinc-900/60 border border-white/[0.04] text-zinc-300 self-start rounded-tl-none"
                                     )}
                                 >
                                     <div className="flex items-center gap-1.5 mb-1.5">
@@ -2126,7 +2126,7 @@ const AIStudio = () => {
                                             {generationTime}s
                                         </span>
                                     </div>
-                                    <div className="w-full h-1 bg-zinc-950 rounded-full overflow-hidden">
+                                    <div className="w-full h-1 bg-gray-100 dark:bg-zinc-950 rounded-full overflow-hidden">
                                         <div 
                                             className={cn("h-full transition-all duration-500", activeEngine === 'proposal' ? "bg-[#39FF14]" : "bg-[#A855F7]")} 
                                             style={{ width: `${generationProgress}%` }}
@@ -2144,14 +2144,14 @@ const AIStudio = () => {
                                 value={chatInput}
                                 onChange={(e) => setChatInput(e.target.value)}
                                 placeholder="Instruct AI to refine document (e.g. 'Add a confidentiality clause')"
-                                className="flex-1 bg-zinc-950 border border-white/5 rounded-2xl px-4 py-2.5 text-[12px] placeholder-zinc-600 outline-none focus:border-white/20 transition-all text-white"
+                                className="flex-1 bg-gray-100 dark:bg-zinc-950 border border-black/10 dark:border-white/5 rounded-2xl px-4 py-2.5 text-[12px] placeholder-zinc-600 outline-none focus:border-black/20 dark:focus:border-white/20 transition-all text-gray-900 dark:text-white"
                             />
                             <button
                                 type="submit"
                                 disabled={!chatInput.trim() || isGenerating}
                                 className={cn(
                                     "p-3 rounded-2xl text-black transition-all flex items-center justify-center shrink-0 disabled:opacity-20",
-                                    activeEngine === 'proposal' ? "bg-[#39FF14]" : "bg-[#A855F7] text-white"
+                                    activeEngine === 'proposal' ? "bg-[#39FF14]" : "bg-[#A855F7] text-gray-900 dark:text-white"
                                 )}
                             >
                                 <Send size={12} />
@@ -2163,14 +2163,14 @@ const AIStudio = () => {
 
                     {/* Collapsible Forms Section -> spacious scrollable container */}
                     {leftPanelMode === 'manual' && (
-                        <div className="flex-1 overflow-y-auto p-6 space-y-6 pb-24 scrollbar-hide bg-black/20">
+                        <div className="flex-1 overflow-y-auto p-6 space-y-6 pb-24 scrollbar-hide bg-white dark:bg-black/20">
                             <div className="flex-1 flex flex-col min-h-0">
                                 {/* Engine Form switcher */}
                                 {activeEngine === 'proposal' ? (
                             // PROPOSAL ENGINE FORMS
                             <div className="flex-1 flex flex-col min-h-0">
                                 {/* Proposal Local form Tabs */}
-                                <div className="flex gap-2 border-b border-white/5 pb-2 mb-4 overflow-x-auto scrollbar-hide shrink-0">
+                                <div className="flex gap-2 border-b border-black/10 dark:border-white/5 pb-2 mb-4 overflow-x-auto scrollbar-hide shrink-0">
                                     {[
                                         { id: '1', label: 'Identity' },
                                         { id: '2', label: 'Strategy' },
@@ -2324,10 +2324,10 @@ const AIStudio = () => {
                                                 <Input label="Section Subtitle" value={activeProposalData.proposalSub} onChange={(e) => setProposalDataState({ proposalSub: e.target.value })} placeholder="PROJECT INVENTORY" />
                                             </div>
                                             <div className="space-y-4">
-                                                <div className="flex items-center justify-between"><span className="text-[10px] font-black uppercase text-zinc-400">Deliverables List</span><button onClick={() => setProposalDataState(prev => ({ deliverables: [...prev.deliverables, { id: Date.now(), item: '', qty: '1', timeline: '' }] }))} className="p-1 hover:bg-white/10 rounded-lg text-[#39FF14]"><Plus size={14} /></button></div>
+                                                <div className="flex items-center justify-between"><span className="text-[10px] font-black uppercase text-zinc-400">Deliverables List</span><button onClick={() => setProposalDataState(prev => ({ deliverables: [...prev.deliverables, { id: Date.now(), item: '', qty: '1', timeline: '' }] }))} className="p-1 hover:bg-black/10 dark:hover:bg-white/10 rounded-lg text-[#39FF14]"><Plus size={14} /></button></div>
                                                 {activeProposalData.deliverables.map((d, index) => (
-                                                    <div key={d.id} className="flex gap-2 items-center bg-zinc-950 p-3 rounded-2xl border border-white/5">
-                                                        <input type="text" value={d.item} onChange={(e) => setProposalDataState(prev => ({ deliverables: prev.deliverables.map((item, idx) => idx === index ? { ...item, item: e.target.value } : item) }))} placeholder="Specification" className="flex-1 bg-transparent border-none text-xs text-white outline-none" />
+                                                    <div key={d.id} className="flex gap-2 items-center bg-gray-100 dark:bg-zinc-950 p-3 rounded-2xl border border-black/10 dark:border-white/5">
+                                                        <input type="text" value={d.item} onChange={(e) => setProposalDataState(prev => ({ deliverables: prev.deliverables.map((item, idx) => idx === index ? { ...item, item: e.target.value } : item) }))} placeholder="Specification" className="flex-1 bg-transparent border-none text-xs text-gray-900 dark:text-white outline-none" />
                                                         <input type="text" value={d.qty} onChange={(e) => setProposalDataState(prev => ({ deliverables: prev.deliverables.map((item, idx) => idx === index ? { ...item, qty: e.target.value } : item) }))} placeholder="Qty" className="w-16 bg-transparent border-none text-xs text-zinc-400 text-center outline-none" />
                                                         <input type="text" value={d.timeline} onChange={(e) => setProposalDataState(prev => ({ deliverables: prev.deliverables.map((item, idx) => idx === index ? { ...item, timeline: e.target.value } : item) }))} placeholder="Timeline" className="w-24 bg-transparent border-none text-xs text-zinc-400 text-right outline-none" />
                                                         <button onClick={() => setProposalDataState(prev => ({ deliverables: prev.deliverables.filter((_, idx) => idx !== index) }))} className="text-red-400 hover:text-red-500"><Trash2 size={12} /></button>
@@ -2335,11 +2335,11 @@ const AIStudio = () => {
                                                 ))}
                                             </div>
 
-                                            <div className="space-y-4 pt-4 border-t border-white/5">
-                                                <div className="flex items-center justify-between"><span className="text-[10px] font-black uppercase text-zinc-400">Prerequisites</span><button onClick={() => setProposalDataState(prev => ({ clientRequirements: [...prev.clientRequirements, { id: Date.now(), description: '' }] }))} className="p-1 hover:bg-white/10 rounded-lg text-[#39FF14]"><Plus size={14} /></button></div>
+                                            <div className="space-y-4 pt-4 border-t border-black/10 dark:border-white/5">
+                                                <div className="flex items-center justify-between"><span className="text-[10px] font-black uppercase text-zinc-400">Prerequisites</span><button onClick={() => setProposalDataState(prev => ({ clientRequirements: [...prev.clientRequirements, { id: Date.now(), description: '' }] }))} className="p-1 hover:bg-black/10 dark:hover:bg-white/10 rounded-lg text-[#39FF14]"><Plus size={14} /></button></div>
                                                 {activeProposalData.clientRequirements.map((r, index) => (
-                                                    <div key={r.id} className="flex gap-2 items-center bg-zinc-950 p-2 rounded-2xl border border-white/5">
-                                                        <input type="text" value={r.description} onChange={(e) => setProposalDataState(prev => ({ clientRequirements: prev.clientRequirements.map((req, idx) => idx === index ? { ...req, description: e.target.value } : req) }))} placeholder="Prerequisite item" className="flex-1 bg-transparent border-none text-xs text-white outline-none" />
+                                                    <div key={r.id} className="flex gap-2 items-center bg-gray-100 dark:bg-zinc-950 p-2 rounded-2xl border border-black/10 dark:border-white/5">
+                                                        <input type="text" value={r.description} onChange={(e) => setProposalDataState(prev => ({ clientRequirements: prev.clientRequirements.map((req, idx) => idx === index ? { ...req, description: e.target.value } : req) }))} placeholder="Prerequisite item" className="flex-1 bg-transparent border-none text-xs text-gray-900 dark:text-white outline-none" />
                                                         <button onClick={() => setProposalDataState(prev => ({ clientRequirements: prev.clientRequirements.filter((_, idx) => idx !== index) }))} className="text-red-400 hover:text-red-500"><Trash2 size={12} /></button>
                                                     </div>
                                                 ))}
@@ -2353,17 +2353,17 @@ const AIStudio = () => {
                                                 <Input label="Section Title" value={activeProposalData.inventoryTitle} onChange={(e) => setProposalDataState({ inventoryTitle: e.target.value })} placeholder="RESOURCE INVENTORY" />
                                                 <Input label="Section Subtitle" value={activeProposalData.inventorySub} onChange={(e) => setProposalDataState({ inventorySub: e.target.value })} placeholder="COMMERCIALS BREAKDOWN" />
                                             </div>
-                                            <div className="flex items-center justify-between"><span className="text-[10px] font-black uppercase text-zinc-400">Line items (Estimated Cost)</span><button onClick={() => setProposalItemsState(prev => [...prev, { id: Date.now(), description: '', qty: 1, unit: 'Phase', price: 0 }])} className="p-1 hover:bg-white/10 rounded-lg text-[#39FF14]"><Plus size={14} /></button></div>
+                                            <div className="flex items-center justify-between"><span className="text-[10px] font-black uppercase text-zinc-400">Line items (Estimated Cost)</span><button onClick={() => setProposalItemsState(prev => [...prev, { id: Date.now(), description: '', qty: 1, unit: 'Phase', price: 0 }])} className="p-1 hover:bg-black/10 dark:hover:bg-white/10 rounded-lg text-[#39FF14]"><Plus size={14} /></button></div>
                                             {activeProposalItems.map((item, index) => (
-                                                <div key={item.id} className="bg-zinc-950 p-3 border border-white/5 rounded-2xl flex flex-col gap-2">
-                                                    <input type="text" value={item.description} onChange={(e) => setProposalItemsState(prev => prev.map((it, idx) => idx === index ? { ...it, description: e.target.value } : it))} placeholder="Description" className="bg-transparent border-none text-xs text-white outline-none w-full" />
+                                                <div key={item.id} className="bg-gray-100 dark:bg-zinc-950 p-3 border border-black/10 dark:border-white/5 rounded-2xl flex flex-col gap-2">
+                                                    <input type="text" value={item.description} onChange={(e) => setProposalItemsState(prev => prev.map((it, idx) => idx === index ? { ...it, description: e.target.value } : it))} placeholder="Description" className="bg-transparent border-none text-xs text-gray-900 dark:text-white outline-none w-full" />
                                                     <div className="flex items-center justify-between gap-3 mt-1.5">
                                                         <div className="flex items-center gap-2">
-                                                            <input type="number" value={item.qty} onChange={(e) => setProposalItemsState(prev => prev.map((it, idx) => idx === index ? { ...it, qty: Number(e.target.value) } : it))} placeholder="Qty" className="w-16 bg-zinc-900 border border-white/5 text-center text-xs text-zinc-300 rounded-lg py-1 px-2" />
-                                                            <input type="text" value={item.unit} onChange={(e) => setProposalItemsState(prev => prev.map((it, idx) => idx === index ? { ...it, unit: e.target.value } : it))} placeholder="Unit" className="w-16 bg-zinc-900 border border-white/5 text-center text-xs text-zinc-300 rounded-lg py-1 px-2" />
+                                                            <input type="number" value={item.qty} onChange={(e) => setProposalItemsState(prev => prev.map((it, idx) => idx === index ? { ...it, qty: Number(e.target.value) } : it))} placeholder="Qty" className="w-16 bg-gray-100 dark:bg-zinc-900 border border-black/10 dark:border-white/5 text-center text-xs text-zinc-300 rounded-lg py-1 px-2" />
+                                                            <input type="text" value={item.unit} onChange={(e) => setProposalItemsState(prev => prev.map((it, idx) => idx === index ? { ...it, unit: e.target.value } : it))} placeholder="Unit" className="w-16 bg-gray-100 dark:bg-zinc-900 border border-black/10 dark:border-white/5 text-center text-xs text-zinc-300 rounded-lg py-1 px-2" />
                                                         </div>
                                                         <div className="flex items-center gap-3">
-                                                            <input type="number" value={item.price} onChange={(e) => setProposalItemsState(prev => prev.map((it, idx) => idx === index ? { ...it, price: Number(e.target.value) } : it))} placeholder="Price" className="w-32 bg-zinc-900 border border-white/5 text-right text-xs text-[#39FF14] font-mono rounded-lg py-1 px-2" />
+                                                            <input type="number" value={item.price} onChange={(e) => setProposalItemsState(prev => prev.map((it, idx) => idx === index ? { ...it, price: Number(e.target.value) } : it))} placeholder="Price" className="w-32 bg-gray-100 dark:bg-zinc-900 border border-black/10 dark:border-white/5 text-right text-xs text-[#39FF14] font-mono rounded-lg py-1 px-2" />
                                                             <button onClick={() => setProposalItemsState(prev => prev.filter((_, idx) => idx !== index))} className="text-red-400 hover:text-red-500"><Trash2 size={12} /></button>
                                                         </div>
                                                     </div>
@@ -2386,15 +2386,15 @@ const AIStudio = () => {
                                             </div>
                                             <div className="flex flex-wrap items-center gap-6 mt-4">
                                                 <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-zinc-400">
-                                                    <input type="checkbox" checked={activeProposalData.showGst} onChange={(e) => setProposalDataState({ showGst: e.target.checked })} className="rounded bg-zinc-900 border-white/5 text-[#39FF14] focus:ring-[#39FF14]" />
+                                                    <input type="checkbox" checked={activeProposalData.showGst} onChange={(e) => setProposalDataState({ showGst: e.target.checked })} className="rounded bg-gray-100 dark:bg-zinc-900 border-black/10 dark:border-white/5 text-[#39FF14] focus:ring-[#39FF14]" />
                                                     Show GST breakdown
                                                 </label>
                                                 <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-zinc-400">
-                                                    <input type="checkbox" checked={activeProposalData.hideTotalColumn} onChange={(e) => setProposalDataState({ hideTotalColumn: e.target.checked })} className="rounded bg-zinc-900 border-white/5 text-[#39FF14] focus:ring-[#39FF14]" />
+                                                    <input type="checkbox" checked={activeProposalData.hideTotalColumn} onChange={(e) => setProposalDataState({ hideTotalColumn: e.target.checked })} className="rounded bg-gray-100 dark:bg-zinc-900 border-black/10 dark:border-white/5 text-[#39FF14] focus:ring-[#39FF14]" />
                                                     Hide Totals Column
                                                 </label>
                                                 <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-zinc-400">
-                                                    <input type="checkbox" checked={activeProposalData.showPaymentDetails === false} onChange={(e) => setProposalDataState({ showPaymentDetails: !e.target.checked })} className="rounded bg-zinc-900 border-white/5 text-[#39FF14] focus:ring-[#39FF14]" />
+                                                    <input type="checkbox" checked={activeProposalData.showPaymentDetails === false} onChange={(e) => setProposalDataState({ showPaymentDetails: !e.target.checked })} className="rounded bg-gray-100 dark:bg-zinc-900 border-black/10 dark:border-white/5 text-[#39FF14] focus:ring-[#39FF14]" />
                                                     Hide Settlement Details
                                                 </label>
                                             </div>
@@ -2405,29 +2405,29 @@ const AIStudio = () => {
                                         <div className="space-y-4">
                                             <div className="flex items-center gap-6">
                                                 <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-zinc-400">
-                                                    <input type="checkbox" checked={activeProposalData.showSeal} onChange={(e) => setProposalDataState({ showSeal: e.target.checked })} className="rounded bg-zinc-900 border-white/5 text-[#39FF14]" />
+                                                    <input type="checkbox" checked={activeProposalData.showSeal} onChange={(e) => setProposalDataState({ showSeal: e.target.checked })} className="rounded bg-gray-100 dark:bg-zinc-900 border-black/10 dark:border-white/5 text-[#39FF14]" />
                                                     Render Document Seal
                                                 </label>
                                                 <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-zinc-400">
-                                                    <input type="checkbox" checked={activeProposalData.showSignatures} onChange={(e) => setProposalDataState({ showSignatures: e.target.checked })} className="rounded bg-zinc-900 border-white/5 text-[#39FF14]" />
+                                                    <input type="checkbox" checked={activeProposalData.showSignatures} onChange={(e) => setProposalDataState({ showSignatures: e.target.checked })} className="rounded bg-gray-100 dark:bg-zinc-900 border-black/10 dark:border-white/5 text-[#39FF14]" />
                                                     Show Signatures block
                                                 </label>
                                             </div>
                                             <div className="grid grid-cols-2 gap-4 pt-4">
                                                 <button
                                                     onClick={() => { setSigTarget('provider'); setIsSigModalOpen(true); }}
-                                                    className="py-3 bg-zinc-900 border border-white/5 hover:border-[#39FF14]/30 rounded-2xl text-[10px] font-black uppercase tracking-wider transition-all"
+                                                    className="py-3 bg-gray-100 dark:bg-zinc-900 border border-black/10 dark:border-white/5 hover:border-[#39FF14]/30 rounded-2xl text-[10px] font-black uppercase tracking-wider transition-all"
                                                 >
                                                     Sign for Provider
                                                 </button>
                                                 <button
                                                     onClick={() => { setSigTarget('client'); setIsSigModalOpen(true); }}
-                                                    className="py-3 bg-zinc-900 border border-white/5 hover:border-[#39FF14]/30 rounded-2xl text-[10px] font-black uppercase tracking-wider transition-all"
+                                                    className="py-3 bg-gray-100 dark:bg-zinc-900 border border-black/10 dark:border-white/5 hover:border-[#39FF14]/30 rounded-2xl text-[10px] font-black uppercase tracking-wider transition-all"
                                                 >
                                                     Sign for Client
                                                 </button>
                                             </div>
-                                            <div className="space-y-3 pt-4 border-t border-white/5">
+                                            <div className="space-y-3 pt-4 border-t border-black/10 dark:border-white/5">
                                                 <Input label="Sender Signatory Name" value={activeProposalData.senderName} onChange={(e) => setProposalDataState({ senderName: e.target.value })} />
                                                 <Input label="Sender Designation" value={activeProposalData.senderDesignation} onChange={(e) => setProposalDataState({ senderDesignation: e.target.value })} />
                                             </div>
@@ -2438,7 +2438,7 @@ const AIStudio = () => {
                         ) : (
                             // AGREEMENT ENGINE FORMS
                             <div className="flex-1 flex flex-col min-h-0">
-                                <div className="flex gap-2 border-b border-white/5 pb-2 mb-4 overflow-x-auto scrollbar-hide shrink-0">
+                                <div className="flex gap-2 border-b border-black/10 dark:border-white/5 pb-2 mb-4 overflow-x-auto scrollbar-hide shrink-0">
                                     {[
                                         { id: '1', label: 'Entities' },
                                         { id: '2', label: 'Scope' },
@@ -2468,12 +2468,12 @@ const AIStudio = () => {
                                                 <Input label="Agreement No." value={agreementFormData.agreementNumber} onChange={(e) => updateAgreementField('agreementNumber', e.target.value)} />
                                                 <Input label="Template Type" value={agreementFormData.template} onChange={(e) => updateAgreementField('template', e.target.value)} />
                                             </div>
-                                            <div className="space-y-3 pt-2 border-t border-white/5">
+                                            <div className="space-y-3 pt-2 border-t border-black/10 dark:border-white/5">
                                                 <p className="text-[10px] font-black uppercase text-zinc-500 tracking-wider">Party 1 (Provider)</p>
                                                 <Input label="Name" value={agreementFormData.parties.firstParty.name} onChange={(e) => updateAgreementField('parties.firstParty.name', e.target.value)} />
                                                 <Input label="Address" value={agreementFormData.parties.firstParty.address} onChange={(e) => updateAgreementField('parties.firstParty.address', e.target.value)} textarea />
                                             </div>
-                                            <div className="space-y-3 pt-2 border-t border-white/5">
+                                            <div className="space-y-3 pt-2 border-t border-black/10 dark:border-white/5">
                                                 <p className="text-[10px] font-black uppercase text-zinc-500 tracking-wider">Party 2 (Client)</p>
                                                 <Input label="Name" value={agreementFormData.parties.secondParty.name} onChange={(e) => updateAgreementField('parties.secondParty.name', e.target.value)} />
                                                 <Input label="Address" value={agreementFormData.parties.secondParty.address} onChange={(e) => updateAgreementField('parties.secondParty.address', e.target.value)} textarea />
@@ -2502,33 +2502,33 @@ const AIStudio = () => {
                                         <div className="space-y-4">
                                             <div className="flex items-center justify-between mb-2">
                                                 <span className="text-[10px] font-black uppercase text-zinc-400">Legal Clauses</span>
-                                                <button onClick={() => addAgreementCustomClause('New Custom Clause', 'Clause terms details go here.')} className="p-1 hover:bg-white/10 rounded-lg text-[#A855F7]"><Plus size={14} /></button>
+                                                <button onClick={() => addAgreementCustomClause('New Custom Clause', 'Clause terms details go here.')} className="p-1 hover:bg-black/10 dark:hover:bg-white/10 rounded-lg text-[#A855F7]"><Plus size={14} /></button>
                                             </div>
 
                                             {/* Clause List */}
                                             <div className="space-y-3">
                                                 {agreementFormData.clauses.map((clause) => (
-                                                    <div key={clause.id} className="bg-zinc-950 p-3 rounded-2xl border border-white/5 space-y-2">
+                                                    <div key={clause.id} className="bg-gray-100 dark:bg-zinc-950 p-3 rounded-2xl border border-black/10 dark:border-white/5 space-y-2">
                                                         <div className="flex items-center justify-between">
                                                             <input
                                                                 type="text"
                                                                 value={clause.title}
                                                                 onChange={(e) => updateAgreementClause(clause.id, { title: e.target.value })}
-                                                                className="bg-transparent border-none text-xs font-black text-white outline-none flex-1"
+                                                                className="bg-transparent border-none text-xs font-black text-gray-900 dark:text-white outline-none flex-1"
                                                             />
                                                             <button onClick={() => removeAgreementClause(clause.id)} className="text-red-400 hover:text-red-500"><Trash2 size={12} /></button>
                                                         </div>
                                                         <textarea
                                                             value={clause.content}
                                                             onChange={(e) => updateAgreementClause(clause.id, { content: e.target.value })}
-                                                            className="w-full bg-zinc-900 border border-white/5 rounded-xl p-2 text-xs text-zinc-400 outline-none h-20 resize-none leading-relaxed"
+                                                            className="w-full bg-gray-100 dark:bg-zinc-900 border border-black/10 dark:border-white/5 rounded-xl p-2 text-xs text-zinc-400 outline-none h-20 resize-none leading-relaxed"
                                                         />
                                                     </div>
                                                 ))}
                                             </div>
 
                                             {/* Standard clauses marketplace integration */}
-                                            <div className="pt-4 border-t border-white/5">
+                                            <div className="pt-4 border-t border-black/10 dark:border-white/5">
                                                 <p className="text-[10px] font-black uppercase text-zinc-500 mb-2">Clause Library Additions</p>
                                                 <ClauseMarketplace activeClauses={agreementFormData.clauses} onToggleClause={toggleAgreementClause} />
                                             </div>
@@ -2539,29 +2539,29 @@ const AIStudio = () => {
                                         <div className="space-y-4">
                                             <div className="flex items-center gap-6">
                                                 <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-zinc-400">
-                                                    <input type="checkbox" checked={agreementFormData.showSeal} onChange={(e) => updateAgreementField('showSeal', e.target.checked)} className="rounded bg-zinc-900 border-white/5 text-[#A855F7]" />
+                                                    <input type="checkbox" checked={agreementFormData.showSeal} onChange={(e) => updateAgreementField('showSeal', e.target.checked)} className="rounded bg-gray-100 dark:bg-zinc-900 border-black/10 dark:border-white/5 text-[#A855F7]" />
                                                     Render Document Seal
                                                 </label>
                                                 <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-zinc-400">
-                                                    <input type="checkbox" checked={agreementFormData.showSignatures} onChange={(e) => updateAgreementField('showSignatures', e.target.checked)} className="rounded bg-zinc-900 border-white/5 text-[#A855F7]" />
+                                                    <input type="checkbox" checked={agreementFormData.showSignatures} onChange={(e) => updateAgreementField('showSignatures', e.target.checked)} className="rounded bg-gray-100 dark:bg-zinc-900 border-black/10 dark:border-white/5 text-[#A855F7]" />
                                                     Show Signatures block
                                                 </label>
                                             </div>
                                             <div className="grid grid-cols-2 gap-4 pt-4">
                                                 <button
                                                     onClick={() => { setSigTarget('provider'); setIsSigModalOpen(true); }}
-                                                    className="py-3 bg-zinc-900 border border-white/5 hover:border-[#A855F7]/30 rounded-2xl text-[10px] font-black uppercase tracking-wider transition-all"
+                                                    className="py-3 bg-gray-100 dark:bg-zinc-900 border border-black/10 dark:border-white/5 hover:border-[#A855F7]/30 rounded-2xl text-[10px] font-black uppercase tracking-wider transition-all"
                                                 >
                                                     Sign for Provider
                                                 </button>
                                                 <button
                                                     onClick={() => { setSigTarget('client'); setIsSigModalOpen(true); }}
-                                                    className="py-3 bg-zinc-900 border border-white/5 hover:border-[#A855F7]/30 rounded-2xl text-[10px] font-black uppercase tracking-wider transition-all"
+                                                    className="py-3 bg-gray-100 dark:bg-zinc-900 border border-black/10 dark:border-white/5 hover:border-[#A855F7]/30 rounded-2xl text-[10px] font-black uppercase tracking-wider transition-all"
                                                 >
                                                     Sign for Client
                                                 </button>
                                             </div>
-                                            <div className="space-y-3 pt-4 border-t border-white/5">
+                                            <div className="space-y-3 pt-4 border-t border-black/10 dark:border-white/5">
                                                 <Input label="Provider Signatory Name" value={agreementFormData.providerName} onChange={(e) => updateAgreementField('providerName', e.target.value)} />
                                                 <Input label="Provider Designation" value={agreementFormData.providerDesignation} onChange={(e) => updateAgreementField('providerDesignation', e.target.value)} />
                                             </div>
@@ -2576,27 +2576,27 @@ const AIStudio = () => {
                 </div>
 
                 {/* RIGHT COLUMN (INTERACTIVE A4 PREVIEW) */}
-                <div className="hidden lg:flex flex-1 bg-zinc-900/30 flex-col overflow-y-auto min-h-0 relative items-center justify-start p-10 scrollbar-hide" ref={previewContainerRef}>
+                <div className="hidden lg:flex flex-1 bg-gray-100 dark:bg-zinc-900/30 flex-col overflow-y-auto min-h-0 relative items-center justify-start p-10 scrollbar-hide" ref={previewContainerRef}>
                     
                     {/* Floating Zoom & Page indicators */}
-                    <div className="absolute top-4 right-4 z-40 bg-black/60 backdrop-blur-md p-2 rounded-2xl border border-white/5 flex items-center gap-3">
+                    <div className="absolute top-4 right-4 z-40 bg-white dark:bg-black/60 backdrop-blur-md p-2 rounded-2xl border border-black/10 dark:border-white/5 flex items-center gap-3">
                         <button 
                             onClick={() => setIsExpandedPreview(!isExpandedPreview)} 
-                            className="hidden lg:flex p-1.5 hover:bg-white/10 rounded-lg text-zinc-400 hover:text-white transition-all items-center gap-1.5 text-[9px] font-black uppercase tracking-wider px-2.5 h-8"
+                            className="hidden lg:flex p-1.5 hover:bg-black/10 dark:hover:bg-white/10 rounded-lg text-zinc-400 hover:text-gray-900 dark:hover:text-white transition-all items-center gap-1.5 text-[9px] font-black uppercase tracking-wider px-2.5 h-8"
                             title={isExpandedPreview ? "Exit Fullscreen Preview" : "Fullscreen Preview"}
                         >
                             {isExpandedPreview ? <Minimize2 size={12} /> : <Maximize2 size={12} />}
                             <span>{isExpandedPreview ? "Collapse" : "Expand"}</span>
                         </button>
-                        <div className="flex items-center gap-1.5 border-r border-white/10 pr-3">
-                            <button onClick={() => setUserZoom(z => Math.max(0.5, z - 0.05))} className="p-1.5 hover:bg-white/10 rounded-lg text-zinc-400 hover:text-white"><Minus size={12} /></button>
+                        <div className="flex items-center gap-1.5 border-r border-black/10 dark:border-white/10 pr-3">
+                            <button onClick={() => setUserZoom(z => Math.max(0.5, z - 0.05))} className="p-1.5 hover:bg-black/10 dark:hover:bg-white/10 rounded-lg text-zinc-400 hover:text-gray-900 dark:hover:text-white"><Minus size={12} /></button>
                             <span className="text-[10px] font-black uppercase tracking-wider text-zinc-300 font-mono">{Math.round(userZoom * 100)}%</span>
-                            <button onClick={() => setUserZoom(z => Math.min(1.5, z + 0.05))} className="p-1.5 hover:bg-white/10 rounded-lg text-zinc-400 hover:text-white"><Plus size={12} /></button>
+                            <button onClick={() => setUserZoom(z => Math.min(1.5, z + 0.05))} className="p-1.5 hover:bg-black/10 dark:hover:bg-white/10 rounded-lg text-zinc-400 hover:text-gray-900 dark:hover:text-white"><Plus size={12} /></button>
                         </div>
                         <div className="flex items-center gap-2">
-                            <button onClick={() => setCurrentPreviewPage(p => Math.max(0, p - 1))} disabled={currentPreviewPage === 0} className="p-1.5 hover:bg-white/10 rounded-lg text-zinc-400 hover:text-white disabled:opacity-20"><ChevronLeft size={14} /></button>
+                            <button onClick={() => setCurrentPreviewPage(p => Math.max(0, p - 1))} disabled={currentPreviewPage === 0} className="p-1.5 hover:bg-black/10 dark:hover:bg-white/10 rounded-lg text-zinc-400 hover:text-gray-900 dark:hover:text-white disabled:opacity-20"><ChevronLeft size={14} /></button>
                             <span className={cn("text-[10px] font-black font-mono", activeEngine === 'proposal' ? "text-[#39FF14]" : "text-[#A855F7]")}>{currentPreviewPage + 1} / {paginatedPages.length}</span>
-                            <button onClick={() => setCurrentPreviewPage(p => Math.min(paginatedPages.length - 1, p + 1))} disabled={currentPreviewPage === paginatedPages.length - 1} className="p-1.5 hover:bg-white/10 rounded-lg text-zinc-400 hover:text-white disabled:opacity-20"><ChevronRight size={14} /></button>
+                            <button onClick={() => setCurrentPreviewPage(p => Math.min(paginatedPages.length - 1, p + 1))} disabled={currentPreviewPage === paginatedPages.length - 1} className="p-1.5 hover:bg-black/10 dark:hover:bg-white/10 rounded-lg text-zinc-400 hover:text-gray-900 dark:hover:text-white disabled:opacity-20"><ChevronRight size={14} /></button>
                         </div>
                     </div>
 
@@ -2623,7 +2623,7 @@ const AIStudio = () => {
                                             <div className="text-right space-y-3">
                                                 <div><h4 className={cn("text-[10px] font-black uppercase text-black tracking-[0.4em] mb-0", currentPreviewPage > 0 && "text-[7px]")}>Quotation</h4><p className={cn("text-lg font-black text-black tracking-widest font-mono", currentPreviewPage > 0 && "text-sm")}>{activeProposalData.proposalNumber}</p></div>
                                                 {currentPreviewPage === 0 && (
-                                                    <div className="space-y-0.5"><p className="text-[8px] font-black text-gray-400 uppercase">Issue Date</p><p className="text-[10px] font-black text-black">{new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</p></div>
+                                                    <div className="space-y-0.5"><p className="text-[8px] font-black text-gray-600 dark:text-gray-400 uppercase">Issue Date</p><p className="text-[10px] font-black text-black">{new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</p></div>
                                                 )}
                                             </div>
                                         </div>
@@ -2633,12 +2633,12 @@ const AIStudio = () => {
                                             {paginatedPages[currentPreviewPage]?.type === 'cover' && (
                                                 <div className="h-full flex flex-col justify-start space-y-20 py-8">
                                                     <div className="grid grid-cols-2 gap-10">
-                                                        <div className="space-y-6 min-w-0"><p className="text-[10px] font-black uppercase text-gray-400 tracking-widest border-b border-gray-100 pb-2">Client Entity</p><div className="space-y-2"><h2 className="text-lg font-black uppercase text-black leading-snug break-words">{activeProposalData.clientName || 'Valued Partner'}</h2>{!isFieldHidden('clientAddress') && <p className="text-[12px] font-medium text-gray-500 whitespace-pre-line leading-relaxed">{activeProposalData.clientAddress || 'Client Address'}</p>}</div></div>
-                                                        <div className="space-y-6 text-right min-w-0"><p className="text-[10px] font-black uppercase text-gray-400 tracking-widest border-b border-gray-100 pb-2">Project Specification</p><div className="space-y-2"><h2 className="text-lg font-black uppercase text-black leading-snug italic break-words">{activeProposalData.campaignName || 'Project Title'}</h2><p className="text-[12px] font-black text-neon-green bg-black px-3 py-1 inline-block uppercase tracking-widest">Duration: {activeProposalData.campaignDuration || 'TBD'}</p></div></div>
+                                                        <div className="space-y-6 min-w-0"><p className="text-[10px] font-black uppercase text-gray-600 dark:text-gray-400 tracking-widest border-b border-gray-100 pb-2">Client Entity</p><div className="space-y-2"><h2 className="text-lg font-black uppercase text-black leading-snug break-words">{activeProposalData.clientName || 'Valued Partner'}</h2>{!isFieldHidden('clientAddress') && <p className="text-[12px] font-medium text-gray-500 whitespace-pre-line leading-relaxed">{activeProposalData.clientAddress || 'Client Address'}</p>}</div></div>
+                                                        <div className="space-y-6 text-right min-w-0"><p className="text-[10px] font-black uppercase text-gray-600 dark:text-gray-400 tracking-widest border-b border-gray-100 pb-2">Project Specification</p><div className="space-y-2"><h2 className="text-lg font-black uppercase text-black leading-snug italic break-words">{activeProposalData.campaignName || 'Project Title'}</h2><p className="text-[12px] font-black text-neon-green bg-white dark:bg-black px-3 py-1 inline-block uppercase tracking-widest">Duration: {activeProposalData.campaignDuration || 'TBD'}</p></div></div>
                                                     </div>
                                                     <div className="pt-16 space-y-10">
                                                         <div className="flex items-center gap-4">
-                                                            <div className="w-12 h-1 bg-black" />
+                                                            <div className="w-12 h-1 bg-white dark:bg-black" />
                                                             <p className="text-[11px] font-black uppercase tracking-[0.6em]">Official Strategic Quotation</p>
                                                         </div>
                                                         {!isFieldHidden('coverDescription') && (
@@ -2647,7 +2647,7 @@ const AIStudio = () => {
                                                             </div>
                                                         )}
                                                     </div>
-                                                    <div className="mt-auto grid grid-cols-2 gap-10 pt-10 border-t border-gray-100"><div><p className="text-[9px] font-black text-gray-400 uppercase mb-2">Quote Reference</p><p className="text-[11px] font-black text-black">{activeProposalData.proposalNumber}</p></div><div className="text-right"><p className="text-[9px] font-black text-gray-400 uppercase mb-2">Classification</p><p className="text-[11px] font-black text-black italic">Strategic Commercial</p></div></div>
+                                                    <div className="mt-auto grid grid-cols-2 gap-10 pt-10 border-t border-gray-100"><div><p className="text-[9px] font-black text-gray-600 dark:text-gray-400 uppercase mb-2">Quote Reference</p><p className="text-[11px] font-black text-black">{activeProposalData.proposalNumber}</p></div><div className="text-right"><p className="text-[9px] font-black text-gray-600 dark:text-gray-400 uppercase mb-2">Classification</p><p className="text-[11px] font-black text-black italic">Strategic Commercial</p></div></div>
                                                 </div>
                                             )}
                                             {paginatedPages[currentPreviewPage]?.type === 'strategy' && (
@@ -2657,7 +2657,7 @@ const AIStudio = () => {
                                                             {activeProposalData.strategyTitle ?? 'EXECUTIVE SUMMARY'}
                                                         </h3>
                                                         <div className="w-20 h-1.5 bg-neon-green" />
-                                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">
+                                                        <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-[0.35em] mt-3">
                                                             {activeProposalData.strategySub ?? 'STRATEGIC OUTLINE'}
                                                         </p>
                                                     </div>
@@ -2665,7 +2665,7 @@ const AIStudio = () => {
                                                     {paginatedPages[currentPreviewPage]?.primaryGoalText && !isHtmlEmpty(paginatedPages[currentPreviewPage]?.primaryGoalText) && (
                                                         <div className="pt-12">
                                                             <div className="p-12 border-2 border-black rounded-[2.5rem] space-y-6">
-                                                                <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest">Primary Objective</p>
+                                                                <p className="text-[11px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest">Primary Objective</p>
                                                                 <div className="text-lg font-black text-black leading-relaxed">{renderContent(paginatedPages[currentPreviewPage]?.primaryGoalText)}</div>
                                                             </div>
                                                         </div>
@@ -2679,7 +2679,7 @@ const AIStudio = () => {
                                                             {activeProposalData.scopeTitle ?? 'SCOPE OF WORK'}
                                                         </h3>
                                                         <div className="w-20 h-1.5 bg-neon-green" />
-                                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">
+                                                        <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-[0.35em] mt-3">
                                                             {activeProposalData.scopeSub ?? 'RESOURCE DELIVERABLES'}
                                                         </p>
                                                     </div>
@@ -2695,7 +2695,7 @@ const AIStudio = () => {
                                                             {activeProposalData.proposalTitle ?? 'DELIVERABLES'}
                                                         </h3>
                                                         <div className="w-20 h-1.5 bg-neon-green" />
-                                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">
+                                                        <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-[0.35em] mt-3">
                                                             {activeProposalData.proposalSub ?? 'PROJECT INVENTORY'}
                                                         </p>
                                                     </div>
@@ -2703,10 +2703,10 @@ const AIStudio = () => {
                                                         <div className="space-y-6">
                                                             <table className="w-full text-left border-collapse border border-black">
                                                                 <thead>
-                                                                    <tr className="bg-black text-[9px] font-black uppercase text-white tracking-[0.3em]">
-                                                                        <th className="p-4 w-12 text-center border-r border-white/20">#</th>
-                                                                        <th className="p-4 border-r border-white/20">Deliverable</th>
-                                                                        <th className="p-4 text-center w-28 border-r border-white/20">Qty / Unit</th>
+                                                                    <tr className="bg-white dark:bg-black text-[9px] font-black uppercase text-gray-900 dark:text-white tracking-[0.3em]">
+                                                                        <th className="p-4 w-12 text-center border-r border-black/20 dark:border-white/20">#</th>
+                                                                        <th className="p-4 border-r border-black/20 dark:border-white/20">Deliverable</th>
+                                                                        <th className="p-4 text-center w-28 border-r border-black/20 dark:border-white/20">Qty / Unit</th>
                                                                         <th className="p-4 text-right w-40">Timeline</th>
                                                                     </tr>
                                                                 </thead>
@@ -2727,11 +2727,11 @@ const AIStudio = () => {
                                                     )}
                                                     {paginatedPages[currentPreviewPage]?.clientRequirements?.length > 0 && (
                                                         <div className="space-y-6 pt-4">
-                                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mb-6">Requirements From Client</p>
+                                                            <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-[0.35em] mb-6">Requirements From Client</p>
                                                             <div className="p-8 border-2 border-gray-200 space-y-0">
                                                                 {paginatedPages[currentPreviewPage]?.clientRequirements?.map((r, i) => (
                                                                     <div key={r.id || i} className={cn("flex items-start gap-4 py-4", i > 0 && "border-t border-gray-100")}>
-                                                                        <div className="w-8 h-8 bg-black flex items-center justify-center shrink-0 mt-0.5"><span className="text-[9px] font-black text-white">{String(i + 1).padStart(2, '0')}</span></div>
+                                                                        <div className="w-8 h-8 bg-white dark:bg-black flex items-center justify-center shrink-0 mt-0.5"><span className="text-[9px] font-black text-gray-900 dark:text-white">{String(i + 1).padStart(2, '0')}</span></div>
                                                                         <p className="text-[12px] font-bold text-black leading-relaxed">{r.description}</p>
                                                                     </div>
                                                                 ))}
@@ -2747,7 +2747,7 @@ const AIStudio = () => {
                                                             {activeProposalData.inventoryTitle ?? 'RESOURCE INVENTORY'}
                                                         </h3>
                                                         <div className="w-20 h-1.5 bg-neon-green" />
-                                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">
+                                                        <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-[0.35em] mt-3">
                                                             {paginatedPages[currentPreviewPage]?.tablePageIdx > 1 
                                                                 ? `${activeProposalData.inventorySub ?? 'COMMERCIALS BREAKDOWN'} — Part ${paginatedPages[currentPreviewPage]?.tablePageIdx}` 
                                                                 : (activeProposalData.inventorySub ?? 'COMMERCIALS BREAKDOWN')}
@@ -2755,7 +2755,7 @@ const AIStudio = () => {
                                                     </div>
                                                     <table className="w-full text-left border-collapse border border-black">
                                                           <thead>
-                                                              <tr className="bg-black text-[9px] font-black uppercase text-white tracking-[0.3em]">
+                                                              <tr className="bg-white dark:bg-black text-[9px] font-black uppercase text-gray-900 dark:text-white tracking-[0.3em]">
                                                                   {(activeProposalData.tableColumns || [
                                                                       { key: 'description', label: 'Resource Inventory', type: 'text' },
                                                                       { key: 'qty', label: 'Qty', type: 'number' },
@@ -2767,7 +2767,7 @@ const AIStudio = () => {
                                                                               key={col.key} 
                                                                               className={cn(
                                                                                   "p-4",
-                                                                                  cIdx < arr.length - 1 && "border-r border-white/20",
+                                                                                  cIdx < arr.length - 1 && "border-r border-black/20 dark:border-white/20",
                                                                                   colType === 'number' && "text-center w-24",
                                                                                   colType === 'amount' && "text-right w-48"
                                                                               )}
@@ -2821,7 +2821,7 @@ const AIStudio = () => {
                                                             {paginatedPages[currentPreviewPage]?.title ? paginatedPages[currentPreviewPage]?.title?.toUpperCase() : "CUSTOM PAGE"}
                                                         </h3>
                                                         <div className="w-20 h-1.5 bg-neon-green" />
-                                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">
+                                                        <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-[0.35em] mt-3">
                                                             {(activeProposalData.customPages?.[paginatedPages[currentPreviewPage]?.pageIndex || 0]?.subtitle || "Additional Specifications").toUpperCase()}
                                                         </p>
                                                     </div>
@@ -2837,7 +2837,7 @@ const AIStudio = () => {
                                                             GENERAL TERMS.
                                                         </h3>
                                                         <div className="w-20 h-1.5 bg-neon-green" />
-                                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">Part {paginatedPages[currentPreviewPage]?.termsPageIdx}</p>
+                                                        <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-[0.35em] mt-3">Part {paginatedPages[currentPreviewPage]?.termsPageIdx}</p>
                                                     </div>
                                                     <div className="text-[12px] font-semibold text-gray-600 leading-relaxed space-y-3">
                                                         {renderContent(paginatedPages[currentPreviewPage]?.termsText)}
@@ -2852,7 +2852,7 @@ const AIStudio = () => {
                                                                  {activeProposalData.commercialsTitle ?? 'COMMERCIAL TERMS'}
                                                              </h3>
                                                              <div className="w-20 h-1.5 bg-neon-green" />
-                                                             <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">
+                                                             <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-[0.35em] mt-3">
                                                                  {activeProposalData.commercialsSub ?? 'SETTLEMENT & SIGN-OFF'}
                                                              </p>
                                                          </div>
@@ -2866,7 +2866,7 @@ const AIStudio = () => {
                                                                  )}
                                                                  {paginatedPages[currentPreviewPage]?.paymentDetailsText && (
                                                                      <div className="p-6 bg-gray-50 border border-gray-150 rounded-2xl space-y-2">
-                                                                         <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Settlement Details</p>
+                                                                         <p className="text-[9px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest">Settlement Details</p>
                                                                          <div className="text-[11px] font-mono font-bold text-black whitespace-pre-line leading-relaxed">{paginatedPages[currentPreviewPage]?.paymentDetailsText}</div>
                                                                      </div>
                                                                  )}
@@ -2874,25 +2874,25 @@ const AIStudio = () => {
                                                              {!activeProposalData.hideTotalColumn && (<div className="space-y-4">
                                                                  <div className="bg-gray-50/50 border border-gray-250/60 rounded-[2rem] p-8 space-y-6">
                                                                      <div className="flex justify-between items-center pb-4 border-b border-gray-200/60">
-                                                                         <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Subtotal</span>
+                                                                         <span className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest">Subtotal</span>
                                                                          <span className="text-base font-bold text-black font-mono">₹{proposalSubtotal.toLocaleString()}</span>
                                                                      </div>
                                                                      {activeProposalData.showGst && (
                                                                          <div className="flex justify-between items-center pb-4 border-b border-gray-200/60">
-                                                                             <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">GST ({activeProposalData.gstRate}%)</span>
+                                                                             <span className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest">GST ({activeProposalData.gstRate}%)</span>
                                                                              <span className="text-base font-bold text-black font-mono">₹{proposalGstAmount.toLocaleString()}</span>
                                                                          </div>
                                                                      )}
-                                                                     <div className="p-8 bg-black text-right relative overflow-hidden rounded-[1.5rem] shadow-xl">
-                                                                         <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-3">Total Estimated Cost</p>
-                                                                         <h2 className="text-3xl font-black tracking-widest text-white font-mono leading-none">₹{proposalTotalAmount.toLocaleString()}</h2>
+                                                                     <div className="p-8 bg-white dark:bg-black text-right relative overflow-hidden rounded-[1.5rem] shadow-xl">
+                                                                         <p className="text-[9px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest mb-3">Total Estimated Cost</p>
+                                                                         <h2 className="text-3xl font-black tracking-widest text-gray-900 dark:text-white font-mono leading-none">₹{proposalTotalAmount.toLocaleString()}</h2>
                                                                          <div className="absolute top-0 right-0 w-1.5 h-full bg-neon-green" />
                                                                      </div>
                                                                      {activeProposalData.advanceRequested > 0 && (
                                                                          <div className="p-6 bg-neon-green/5 border border-neon-green/20 rounded-[1.5rem] flex justify-between items-center">
                                                                              <div>
                                                                                  <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest block">Advance Fee ({activeProposalData.advanceRequested}%)</span>
-                                                                                 <span className="text-[7px] font-bold text-gray-400 uppercase tracking-wider block">Due upon signature</span>
+                                                                                 <span className="text-[7px] font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider block">Due upon signature</span>
                                                                              </div>
                                                                              <span className="text-xl font-black text-black font-mono">₹{(proposalTotalAmount * activeProposalData.advanceRequested / 100).toLocaleString()}</span>
                                                                          </div>
@@ -2910,29 +2910,29 @@ const AIStudio = () => {
                                                                       <div className="grid grid-cols-2 gap-20">
                                                                           {/* Provider Signature */}
                                                                           <div className="space-y-6">
-                                                                              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">For {currentLogo.label}</p>
+                                                                              <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest">For {currentLogo.label}</p>
                                                                               <div className="h-40 flex items-center justify-start relative">
                                                                                   {activeProposalData.providerSignature ? (
                                                                                       <img src={activeProposalData.providerSignature} alt="Provider Signature" className="h-full object-contain grayscale mix-blend-multiply" crossOrigin="anonymous" />
                                                                                   ) : (
                                                                                       <p className="text-[24px] font-signature text-black opacity-40">{activeProposalData.senderName || 'Authorized Signatory'}</p>
                                                                                   )}
-                                                                                  <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-black" />
+                                                                                  <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-white dark:bg-black" />
                                                                               </div>
                                                                               <p className="text-[11px] font-black text-black uppercase tracking-widest">{activeProposalData.senderName || 'Authorized Signatory'}</p>
-                                                                              <p className="text-[8px] font-bold text-gray-400 uppercase tracking-widest">{activeProposalData.senderDesignation || 'Director of Operations'}</p>
+                                                                              <p className="text-[8px] font-bold text-gray-600 dark:text-gray-400 uppercase tracking-widest">{activeProposalData.senderDesignation || 'Director of Operations'}</p>
                                                                           </div>
 
                                                                           {/* Client Signature */}
                                                                           <div className="space-y-6 text-right">
-                                                                              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">For {activeProposalData.clientName || 'Valued Partner'}</p>
+                                                                              <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest">For {activeProposalData.clientName || 'Valued Partner'}</p>
                                                                               <div className="h-40 flex items-center justify-end relative">
                                                                                   {activeProposalData.clientSignature ? (
                                                                                       <img src={activeProposalData.clientSignature} alt="Client Signature" className="h-full object-contain grayscale mix-blend-multiply" crossOrigin="anonymous" />
                                                                                   ) : (
                                                                                       <p className="text-[24px] font-signature text-black opacity-10">Type name to sign</p>
                                                                                   )}
-                                                                                  <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-black" />
+                                                                                  <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-white dark:bg-black" />
                                                                               </div>
                                                                               <p className="text-[11px] font-black text-black uppercase tracking-widest">Acknowledged & Accepted</p>
                                                                           </div>
@@ -2947,7 +2947,7 @@ const AIStudio = () => {
                                                                   activeProposalData.showSeal && (
                                                                       <div className="flex flex-col items-center justify-center p-8 border-2 border-dashed border-gray-200 rounded-[20px]">
                                                                           <DocumentSeal className="w-56 h-56" />
-                                                                          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-4">Official Document Seal</p>
+                                                                          <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest mt-4">Official Document Seal</p>
                                                                       </div>
                                                                   )
                                                               )}
@@ -2957,7 +2957,7 @@ const AIStudio = () => {
                                             )}
                                             </div>
                                         </div>
-                                        <div className="mt-auto pt-8 pb-10 border-t border-gray-100 flex justify-between items-center text-[9px] font-black text-gray-400 uppercase tracking-[0.4em]">
+                                        <div className="mt-auto pt-8 pb-10 border-t border-gray-100 flex justify-between items-center text-[9px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-[0.4em]">
                                             <p className="w-1/3 text-left">© NEWBI ENTERTAINMENT & MARKETING LLP</p>
                                             <p className="w-1/3 text-center text-gray-600 truncate px-2"></p>
                                             <p className="w-1/3 text-right text-black">Page {currentPreviewPage + 1} of {paginatedPages.length}</p>
@@ -2990,7 +2990,7 @@ const AIStudio = () => {
                                 <div className="text-right space-y-3">
                                     <div><h4 className={cn("text-[10px] font-black uppercase text-black tracking-[0.4em] mb-0", idx > 0 && "text-[7px]")}>Quotation</h4><p className={cn("text-lg font-black text-black tracking-widest font-mono", idx > 0 && "text-sm")}>{activeProposalData.proposalNumber}</p></div>
                                     {idx === 0 && (
-                                        <div className="space-y-0.5"><p className="text-[8px] font-black text-gray-400 uppercase">Issue Date</p><p className="text-[10px] font-black text-black">{new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</p></div>
+                                        <div className="space-y-0.5"><p className="text-[8px] font-black text-gray-600 dark:text-gray-400 uppercase">Issue Date</p><p className="text-[10px] font-black text-black">{new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</p></div>
                                     )}
                                 </div>
                             </div>
@@ -3000,12 +3000,12 @@ const AIStudio = () => {
                                 {page.type === 'cover' && (
                                     <div className="h-full flex flex-col justify-start space-y-20 py-8">
                                         <div className="grid grid-cols-2 gap-10">
-                                            <div className="space-y-6 min-w-0"><p className="text-[10px] font-black uppercase text-gray-400 tracking-widest border-b border-gray-100 pb-2">Client Entity</p><div className="space-y-2"><h2 className="text-lg font-black uppercase text-black leading-snug break-words">{activeProposalData.clientName || 'Valued Partner'}</h2>{!isFieldHidden('clientAddress') && <p className="text-[12px] font-medium text-gray-500 whitespace-pre-line leading-relaxed">{activeProposalData.clientAddress || 'Client Address'}</p>}</div></div>
-                                            <div className="space-y-6 text-right min-w-0"><p className="text-[10px] font-black uppercase text-gray-400 tracking-widest border-b border-gray-100 pb-2">Project Specification</p><div className="space-y-2"><h2 className="text-lg font-black uppercase text-black leading-snug italic break-words">{activeProposalData.campaignName || 'Project Title'}</h2><p className="text-[12px] font-black text-neon-green bg-black px-3 py-1 inline-block uppercase tracking-widest">Duration: {activeProposalData.campaignDuration || 'TBD'}</p></div></div>
+                                            <div className="space-y-6 min-w-0"><p className="text-[10px] font-black uppercase text-gray-600 dark:text-gray-400 tracking-widest border-b border-gray-100 pb-2">Client Entity</p><div className="space-y-2"><h2 className="text-lg font-black uppercase text-black leading-snug break-words">{activeProposalData.clientName || 'Valued Partner'}</h2>{!isFieldHidden('clientAddress') && <p className="text-[12px] font-medium text-gray-500 whitespace-pre-line leading-relaxed">{activeProposalData.clientAddress || 'Client Address'}</p>}</div></div>
+                                            <div className="space-y-6 text-right min-w-0"><p className="text-[10px] font-black uppercase text-gray-600 dark:text-gray-400 tracking-widest border-b border-gray-100 pb-2">Project Specification</p><div className="space-y-2"><h2 className="text-lg font-black uppercase text-black leading-snug italic break-words">{activeProposalData.campaignName || 'Project Title'}</h2><p className="text-[12px] font-black text-neon-green bg-white dark:bg-black px-3 py-1 inline-block uppercase tracking-widest">Duration: {activeProposalData.campaignDuration || 'TBD'}</p></div></div>
                                         </div>
                                         <div className="pt-16 space-y-10">
                                             <div className="flex items-center gap-4">
-                                                <div className="w-12 h-1 bg-black" />
+                                                <div className="w-12 h-1 bg-white dark:bg-black" />
                                                 <p className="text-[11px] font-black uppercase tracking-[0.6em]">Official Strategic Quotation</p>
                                             </div>
                                             {!isFieldHidden('coverDescription') && (
@@ -3014,7 +3014,7 @@ const AIStudio = () => {
                                                 </div>
                                             )}
                                         </div>
-                                        <div className="mt-auto grid grid-cols-2 gap-10 pt-10 border-t border-gray-100"><div><p className="text-[9px] font-black text-gray-400 uppercase mb-2">Quote Reference</p><p className="text-[11px] font-black text-black">{activeProposalData.proposalNumber}</p></div><div className="text-right"><p className="text-[9px] font-black text-gray-400 uppercase mb-2">Classification</p><p className="text-[11px] font-black text-black italic">Strategic Commercial</p></div></div>
+                                        <div className="mt-auto grid grid-cols-2 gap-10 pt-10 border-t border-gray-100"><div><p className="text-[9px] font-black text-gray-600 dark:text-gray-400 uppercase mb-2">Quote Reference</p><p className="text-[11px] font-black text-black">{activeProposalData.proposalNumber}</p></div><div className="text-right"><p className="text-[9px] font-black text-gray-600 dark:text-gray-400 uppercase mb-2">Classification</p><p className="text-[11px] font-black text-black italic">Strategic Commercial</p></div></div>
                                     </div>
                                 )}
                                 {page.type === 'strategy' && (
@@ -3024,7 +3024,7 @@ const AIStudio = () => {
                                                 {activeProposalData.strategyTitle ?? 'EXECUTIVE SUMMARY'}
                                             </h3>
                                             <div className="w-20 h-1.5 bg-neon-green" />
-                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">
+                                            <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-[0.35em] mt-3">
                                                 {activeProposalData.strategySub ?? 'STRATEGIC OUTLINE'}
                                             </p>
                                         </div>
@@ -3032,7 +3032,7 @@ const AIStudio = () => {
                                         {page.primaryGoalText && !isHtmlEmpty(page.primaryGoalText) && (
                                             <div className="pt-12">
                                                 <div className="p-12 border-2 border-black rounded-[2.5rem] space-y-6">
-                                                    <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest">Primary Objective</p>
+                                                    <p className="text-[11px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest">Primary Objective</p>
                                                     <div className="text-lg font-black text-black leading-relaxed">{renderContent(page.primaryGoalText)}</div>
                                                 </div>
                                             </div>
@@ -3046,7 +3046,7 @@ const AIStudio = () => {
                                                 {activeProposalData.scopeTitle ?? 'SCOPE OF WORK'}
                                             </h3>
                                             <div className="w-20 h-1.5 bg-neon-green" />
-                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">
+                                            <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-[0.35em] mt-3">
                                                 {activeProposalData.scopeSub ?? 'RESOURCE DELIVERABLES'}
                                             </p>
                                         </div>
@@ -3062,7 +3062,7 @@ const AIStudio = () => {
                                                 {activeProposalData.proposalTitle ?? 'DELIVERABLES'}
                                             </h3>
                                             <div className="w-20 h-1.5 bg-neon-green" />
-                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">
+                                            <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-[0.35em] mt-3">
                                                 {activeProposalData.proposalSub ?? 'PROJECT INVENTORY'}
                                             </p>
                                         </div>
@@ -3070,10 +3070,10 @@ const AIStudio = () => {
                                             <div className="space-y-6">
                                                 <table className="w-full text-left border-collapse border border-black">
                                                     <thead>
-                                                        <tr className="bg-black text-[9px] font-black uppercase text-white tracking-[0.3em]">
-                                                            <th className="p-4 w-12 text-center border-r border-white/20">#</th>
-                                                            <th className="p-4 border-r border-white/20">Deliverable</th>
-                                                            <th className="p-4 text-center w-28 border-r border-white/20">Qty / Unit</th>
+                                                        <tr className="bg-white dark:bg-black text-[9px] font-black uppercase text-gray-900 dark:text-white tracking-[0.3em]">
+                                                            <th className="p-4 w-12 text-center border-r border-black/20 dark:border-white/20">#</th>
+                                                            <th className="p-4 border-r border-black/20 dark:border-white/20">Deliverable</th>
+                                                            <th className="p-4 text-center w-28 border-r border-black/20 dark:border-white/20">Qty / Unit</th>
                                                             <th className="p-4 text-right w-40">Timeline</th>
                                                         </tr>
                                                     </thead>
@@ -3094,11 +3094,11 @@ const AIStudio = () => {
                                         )}
                                         {page.clientRequirements?.length > 0 && (
                                             <div className="space-y-6 pt-4">
-                                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mb-6">Requirements From Client</p>
+                                                <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-[0.35em] mb-6">Requirements From Client</p>
                                                 <div className="p-8 border-2 border-gray-200 space-y-0">
                                                     {page.clientRequirements.map((r, i) => (
                                                         <div key={r.id || i} className={cn("flex items-start gap-4 py-4", i > 0 && "border-t border-gray-100")}>
-                                                            <div className="w-8 h-8 bg-black flex items-center justify-center shrink-0 mt-0.5"><span className="text-[9px] font-black text-white">{String(i + 1).padStart(2, '0')}</span></div>
+                                                            <div className="w-8 h-8 bg-white dark:bg-black flex items-center justify-center shrink-0 mt-0.5"><span className="text-[9px] font-black text-gray-900 dark:text-white">{String(i + 1).padStart(2, '0')}</span></div>
                                                             <p className="text-[12px] font-bold text-black leading-relaxed">{r.description}</p>
                                                         </div>
                                                     ))}
@@ -3114,7 +3114,7 @@ const AIStudio = () => {
                                                 {activeProposalData.inventoryTitle ?? 'RESOURCE INVENTORY'}
                                             </h3>
                                             <div className="w-20 h-1.5 bg-neon-green" />
-                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">
+                                            <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-[0.35em] mt-3">
                                                 {page.tablePageIdx > 1 
                                                     ? `${activeProposalData.inventorySub ?? 'COMMERCIALS BREAKDOWN'} — Part ${page.tablePageIdx}` 
                                                     : (activeProposalData.inventorySub ?? 'COMMERCIALS BREAKDOWN')}
@@ -3122,7 +3122,7 @@ const AIStudio = () => {
                                         </div>
                                         <table className="w-full text-left border-collapse border border-black">
                                                           <thead>
-                                                              <tr className="bg-black text-[9px] font-black uppercase text-white tracking-[0.3em]">
+                                                              <tr className="bg-white dark:bg-black text-[9px] font-black uppercase text-gray-900 dark:text-white tracking-[0.3em]">
                                                                   {(activeProposalData.tableColumns || [
                                                                       { key: 'description', label: 'Resource Inventory', type: 'text' },
                                                                       { key: 'qty', label: 'Qty', type: 'number' },
@@ -3134,7 +3134,7 @@ const AIStudio = () => {
                                                                               key={col.key} 
                                                                               className={cn(
                                                                                   "p-4",
-                                                                                  cIdx < arr.length - 1 && "border-r border-white/20",
+                                                                                  cIdx < arr.length - 1 && "border-r border-black/20 dark:border-white/20",
                                                                                   colType === 'number' && "text-center w-24",
                                                                                   colType === 'amount' && "text-right w-48"
                                                                               )}
@@ -3188,7 +3188,7 @@ const AIStudio = () => {
                                                 {page.title ? page.title.toUpperCase() : "CUSTOM PAGE"}
                                             </h3>
                                             <div className="w-20 h-1.5 bg-neon-green" />
-                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">
+                                            <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-[0.35em] mt-3">
                                                 {(activeProposalData.customPages?.[page.pageIndex]?.subtitle || "Additional Specifications").toUpperCase()}
                                             </p>
                                         </div>
@@ -3204,7 +3204,7 @@ const AIStudio = () => {
                                                 GENERAL TERMS.
                                             </h3>
                                             <div className="w-20 h-1.5 bg-neon-green" />
-                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">Part {page.termsPageIdx}</p>
+                                            <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-[0.35em] mt-3">Part {page.termsPageIdx}</p>
                                         </div>
                                         <div className="text-[12px] font-semibold text-gray-600 leading-relaxed space-y-3">
                                             {renderContent(page.termsText)}
@@ -3219,7 +3219,7 @@ const AIStudio = () => {
                                                      {activeProposalData.commercialsTitle ?? 'COMMERCIAL TERMS'}
                                                  </h3>
                                                  <div className="w-20 h-1.5 bg-neon-green" />
-                                                 <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">
+                                                 <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-[0.35em] mt-3">
                                                      {activeProposalData.commercialsSub ?? 'SETTLEMENT & SIGN-OFF'}
                                                  </p>
                                              </div>
@@ -3233,7 +3233,7 @@ const AIStudio = () => {
                                                      )}
                                                      {page.paymentDetailsText && (
                                                          <div className="p-6 bg-gray-50 border border-gray-150 rounded-2xl space-y-2">
-                                                             <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Settlement Details</p>
+                                                             <p className="text-[9px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest">Settlement Details</p>
                                                              <div className="text-[11px] font-mono font-bold text-black whitespace-pre-line leading-relaxed">{page.paymentDetailsText}</div>
                                                          </div>
                                                      )}
@@ -3241,25 +3241,25 @@ const AIStudio = () => {
                                                  {!activeProposalData.hideTotalColumn && (<div className="space-y-4">
                                                      <div className="bg-gray-50/50 border border-gray-250/60 rounded-[2rem] p-8 space-y-6">
                                                          <div className="flex justify-between items-center pb-4 border-b border-gray-200/60">
-                                                             <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Subtotal</span>
+                                                             <span className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest">Subtotal</span>
                                                              <span className="text-base font-bold text-black font-mono">₹{proposalSubtotal.toLocaleString()}</span>
                                                          </div>
                                                          {activeProposalData.showGst && (
                                                              <div className="flex justify-between items-center pb-4 border-b border-gray-200/60">
-                                                                 <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">GST ({activeProposalData.gstRate}%)</span>
+                                                                 <span className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest">GST ({activeProposalData.gstRate}%)</span>
                                                                  <span className="text-base font-bold text-black font-mono">₹{proposalGstAmount.toLocaleString()}</span>
                                                              </div>
                                                          )}
-                                                         <div className="p-8 bg-black text-right relative overflow-hidden rounded-[1.5rem] shadow-xl">
-                                                             <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-3">Total Estimated Cost</p>
-                                                             <h2 className="text-3xl font-black tracking-widest text-white font-mono leading-none">₹{proposalTotalAmount.toLocaleString()}</h2>
+                                                         <div className="p-8 bg-white dark:bg-black text-right relative overflow-hidden rounded-[1.5rem] shadow-xl">
+                                                             <p className="text-[9px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest mb-3">Total Estimated Cost</p>
+                                                             <h2 className="text-3xl font-black tracking-widest text-gray-900 dark:text-white font-mono leading-none">₹{proposalTotalAmount.toLocaleString()}</h2>
                                                              <div className="absolute top-0 right-0 w-1.5 h-full bg-neon-green" />
                                                          </div>
                                                          {activeProposalData.advanceRequested > 0 && (
                                                              <div className="p-6 bg-neon-green/5 border border-neon-green/20 rounded-[1.5rem] flex justify-between items-center">
                                                                  <div>
                                                                      <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest block">Advance Fee ({activeProposalData.advanceRequested}%)</span>
-                                                                     <span className="text-[7px] font-bold text-gray-400 uppercase tracking-wider block">Due upon signature</span>
+                                                                     <span className="text-[7px] font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider block">Due upon signature</span>
                                                                  </div>
                                                                  <span className="text-xl font-black text-black font-mono">₹{(proposalTotalAmount * activeProposalData.advanceRequested / 100).toLocaleString()}</span>
                                                              </div>
@@ -3277,29 +3277,29 @@ const AIStudio = () => {
                                                           <div className="grid grid-cols-2 gap-20">
                                                               {/* Provider Signature */}
                                                               <div className="space-y-6">
-                                                                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">For {currentLogo.label}</p>
+                                                                  <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest">For {currentLogo.label}</p>
                                                                   <div className="h-40 flex items-center justify-start relative">
                                                                       {activeProposalData.providerSignature ? (
                                                                           <img src={activeProposalData.providerSignature} alt="Provider Signature" className="h-full object-contain grayscale mix-blend-multiply" crossOrigin="anonymous" />
                                                                       ) : (
                                                                           <p className="text-[24px] font-signature text-black opacity-40">{activeProposalData.senderName || 'Authorized Signatory'}</p>
                                                                       )}
-                                                                      <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-black" />
+                                                                      <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-white dark:bg-black" />
                                                                   </div>
                                                                   <p className="text-[11px] font-black text-black uppercase tracking-widest">{activeProposalData.senderName || 'Authorized Signatory'}</p>
-                                                                  <p className="text-[8px] font-bold text-gray-400 uppercase tracking-widest">{activeProposalData.senderDesignation || 'Director of Operations'}</p>
+                                                                  <p className="text-[8px] font-bold text-gray-600 dark:text-gray-400 uppercase tracking-widest">{activeProposalData.senderDesignation || 'Director of Operations'}</p>
                                                               </div>
 
                                                               {/* Client Signature */}
                                                               <div className="space-y-6 text-right">
-                                                                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">For {activeProposalData.clientName || 'Valued Partner'}</p>
+                                                                  <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest">For {activeProposalData.clientName || 'Valued Partner'}</p>
                                                                   <div className="h-40 flex items-center justify-end relative">
                                                                       {activeProposalData.clientSignature ? (
                                                                           <img src={activeProposalData.clientSignature} alt="Client Signature" className="h-full object-contain grayscale mix-blend-multiply" crossOrigin="anonymous" />
                                                                       ) : (
                                                                           <p className="text-[24px] font-signature text-black opacity-10">Type name to sign</p>
                                                                       )}
-                                                                      <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-black" />
+                                                                      <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-white dark:bg-black" />
                                                                   </div>
                                                                   <p className="text-[11px] font-black text-black uppercase tracking-widest">Acknowledged & Accepted</p>
                                                               </div>
@@ -3314,7 +3314,7 @@ const AIStudio = () => {
                                                       activeProposalData.showSeal && (
                                                           <div className="flex flex-col items-center justify-center p-8 border-2 border-dashed border-gray-200 rounded-[20px]">
                                                               <DocumentSeal className="w-56 h-56" />
-                                                              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-4">Official Document Seal</p>
+                                                              <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest mt-4">Official Document Seal</p>
                                                           </div>
                                                       )
                                                   )}
@@ -3324,7 +3324,7 @@ const AIStudio = () => {
                                 )}
                                 </div>
                             </div>
-                            <div className="mt-auto pt-8 pb-10 border-t border-gray-100 flex justify-between items-center text-[9px] font-black text-gray-400 uppercase tracking-[0.4em]">
+                            <div className="mt-auto pt-8 pb-10 border-t border-gray-100 flex justify-between items-center text-[9px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-[0.4em]">
                                 <p className="w-1/3 text-left">© NEWBI ENTERTAINMENT & MARKETING LLP</p>
                                 <p className="w-1/3 text-center text-gray-600 truncate px-2"></p>
                                 <p className="w-1/3 text-right text-black">Page {idx + 1} of {proposalPaginatedPages.length}</p>
@@ -3338,7 +3338,7 @@ const AIStudio = () => {
                             <div className="flex justify-between items-end mb-8 pb-3 relative z-10">
                                 <img src={agreementFormData.selectedLogo === 'marketing' ? '/logo_marketing.png' : '/logo_document.png'} alt="Logo" className="h-8 w-auto object-contain grayscale opacity-80" crossOrigin="anonymous" />
                                 <div className="flex items-center gap-6 text-right">
-                                    <div className="space-y-0.5"><span className="text-[7px] font-bold text-gray-400 uppercase tracking-widest block">Agreement ID</span><span className="text-[10px] font-bold text-black tracking-widest block">{agreementFormData.agreementNumber}</span></div>
+                                    <div className="space-y-0.5"><span className="text-[7px] font-bold text-gray-600 dark:text-gray-400 uppercase tracking-widest block">Agreement ID</span><span className="text-[10px] font-bold text-black tracking-widest block">{agreementFormData.agreementNumber}</span></div>
                                 </div>
                             </div>
                             <div className="flex-1 relative z-10 flex flex-col px-2">

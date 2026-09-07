@@ -9,11 +9,11 @@ const icons = {
     ticket: <Ticket className="text-neon-pink" size={20} />,
     message: <MessageSquare className="text-neon-green" size={20} />,
     giveaway: <Gift className="text-neon-yellow" size={20} />,
-    blog: <FileText className="text-white" size={20} />,
+    blog: <FileText className="text-gray-900 dark:text-white" size={20} />,
     campaign: <Zap className="text-neon-purple" size={20} />,
     gig: <Users className="text-neon-cyan" size={20} />,
     volunteer: <Heart className="text-red-500" size={20} />,
-    default: <Bell className="text-gray-400" size={20} />
+    default: <Bell className="text-gray-600 dark:text-gray-400" size={20} />
 };
 
 const NotificationToast = () => {
@@ -76,7 +76,7 @@ const NotificationToast = () => {
                     exit={{ opacity: 0, y: -20, scale: 0.95 }}
                     transition={{ type: "spring", stiffness: 300, damping: 25 }}
                     className={cn(
-                        "pointer-events-auto bg-[#0a0a0a]/90 backdrop-blur-2xl border border-white/[0.08]",
+                        "pointer-events-auto bg-white/95 dark:bg-[#0a0a0a]/90 backdrop-blur-2xl border border-black/10 dark:border-white/[0.08]",
                         "rounded-2xl p-4 shadow-[0_20px_40px_rgba(0,0,0,0.6)]",
                         "flex gap-4 md:min-w-[340px] md:max-w-[420px] relative overflow-hidden group cursor-pointer"
                     )}
@@ -93,9 +93,9 @@ const NotificationToast = () => {
                     }}
                 >
                     {/* Subtle pulse background */}
-                    <div className="absolute inset-0 bg-gradient-to-br from-white/[0.04] to-transparent pointer-events-none" />
+                    <div className="absolute inset-0 bg-gradient-to-br from-black/[0.03] dark:from-white/[0.04] to-transparent pointer-events-none" />
                     
-                    <div className="w-10 h-10 rounded-full bg-white/5 border border-white/5 flex items-center justify-center shrink-0 relative z-10 transition-transform group-hover:scale-110 duration-500">
+                    <div className="w-10 h-10 rounded-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/5 flex items-center justify-center shrink-0 relative z-10 transition-transform group-hover:scale-110 duration-500">
                         {activeToast.image && !imgError ? (
                             <img 
                                 src={activeToast.image} 
@@ -110,11 +110,11 @@ const NotificationToast = () => {
                     
                     <div className="flex-1 relative z-10 pr-6">
                         <div className="flex items-center gap-2 mb-0.5">
-                            <h4 className="text-[13px] font-bold text-white line-clamp-1">
+                            <h4 className="text-[13px] font-bold text-gray-900 dark:text-white line-clamp-1">
                                 {activeToast.title}
                             </h4>
                         </div>
-                        <p className="text-[11px] text-gray-400 leading-relaxed line-clamp-2">
+                        <p className="text-[11px] text-gray-600 dark:text-gray-400 leading-relaxed line-clamp-2">
                             {activeToast.content}
                         </p>
                     </div>
@@ -124,7 +124,7 @@ const NotificationToast = () => {
                             e.stopPropagation();
                             setActiveToast(null);
                         }} 
-                        className="absolute top-3 right-3 z-10 text-gray-500 hover:text-white hover:bg-white/10 rounded-full p-1 transition-all"
+                        className="absolute top-3 right-3 z-10 text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-black/10 dark:hover:bg-white/10 rounded-full p-1 transition-all"
                     >
                         <X size={14} />
                     </button>

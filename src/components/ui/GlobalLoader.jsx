@@ -8,7 +8,7 @@ const GlobalLoader = ({ color = "#39FF14" }) => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[9999] bg-black flex items-center justify-center overflow-hidden"
+            className="fixed inset-0 z-[9999] bg-white dark:bg-black flex items-center justify-center overflow-hidden"
         >
             {/* Minimal Background Glow */}
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">

@@ -20,7 +20,7 @@ const EventCard = ({ item, onAction, handleShare }) => {
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="group relative w-full aspect-[4/5] rounded-3xl overflow-hidden bg-black border border-white/5 shadow-2xl cursor-pointer"
+            className="group relative w-full aspect-[4/5] rounded-3xl overflow-hidden bg-white dark:bg-black border border-black/10 dark:border-white/5 shadow-2xl cursor-pointer"
             onClick={onAction}
         >
             {/* Background Visual */}
@@ -53,20 +53,20 @@ const EventCard = ({ item, onAction, handleShare }) => {
             {/* Corner Badges */}
             <div className="absolute top-8 left-8 right-8 z-10 flex justify-between items-start">
                 <div className="flex gap-2">
-                    <div className="px-4 h-8 rounded-2xl bg-black/40 backdrop-blur-3xl border border-white/10 flex items-center gap-2">
+                    <div className="px-4 h-8 rounded-2xl bg-black/50 backdrop-blur-3xl border border-white/15 flex items-center gap-2">
                         <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: highlightColor }} />
                         <span className="text-[9px] font-black uppercase tracking-widest text-white/90">EVENT</span>
                     </div>
                     {item.performanceType && (
-                        <div className="px-4 h-8 rounded-2xl bg-black/40 backdrop-blur-3xl border border-white/10 flex items-center">
-                            <span className="text-[9px] font-black uppercase tracking-widest text-white/50">{item.performanceType}</span>
+                        <div className="px-4 h-8 rounded-2xl bg-black/50 backdrop-blur-3xl border border-white/15 flex items-center">
+                            <span className="text-[9px] font-black uppercase tracking-widest text-white/60">{item.performanceType}</span>
                         </div>
                     )}
                 </div>
                 
                 <button 
                     onClick={(e) => { e.stopPropagation(); handleShare?.(); }}
-                    className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-white/40 hover:text-white hover:bg-white/10 transition-all backdrop-blur-3xl"
+                    className="w-10 h-10 rounded-xl bg-black/50 border border-white/15 flex items-center justify-center text-white/60 hover:text-white hover:bg-black/70 transition-all backdrop-blur-3xl"
                 >
                     <Share2 size={16} />
                 </button>
@@ -79,12 +79,12 @@ const EventCard = ({ item, onAction, handleShare }) => {
                     {item.artists && item.artists.length > 0 && (
                         <div className="flex flex-wrap items-center gap-2 pb-1">
                             {item.artists.slice(0, 2).map((artist, idx) => (
-                                <span key={idx} className="text-[9px] font-black uppercase tracking-widest text-neon-green/80 px-2 py-0.5 rounded bg-neon-green/5 border border-neon-green/20 whitespace-nowrap">
+                                <span key={idx} className="text-[9px] font-black uppercase tracking-widest text-neon-green px-2 py-0.5 rounded bg-neon-green/10 border border-neon-green/30 whitespace-nowrap">
                                     {artist}
                                 </span>
                             ))}
                             {item.artists.length > 2 && (
-                                <span className="text-[9px] font-black uppercase tracking-widest text-white/20 whitespace-nowrap">+{item.artists.length - 2} MORE</span>
+                                <span className="text-[9px] font-black uppercase tracking-widest text-white/50 whitespace-nowrap">+{item.artists.length - 2} MORE</span>
                             )}
                         </div>
                     )}
@@ -94,9 +94,9 @@ const EventCard = ({ item, onAction, handleShare }) => {
                     </h3>
 
                     {/* Metadata Row */}
-                    <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-white/40">
+                    <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-white/70">
                         <div className="flex items-center gap-2">
-                            <Calendar size={12} className="text-zinc-500" />
+                            <Calendar size={12} className="text-zinc-300" />
                             <span className="text-[10px] font-black uppercase tracking-widest whitespace-nowrap">{formatDate(item.date)}</span>
                         </div>
                         <div className="flex items-center gap-2">

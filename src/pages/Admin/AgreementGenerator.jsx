@@ -95,7 +95,7 @@ const renderChatMessage = (text) => {
             const level = headingMatch[1].length;
             const headingText = headingMatch[2];
             const sizeClass = level === 1 ? "text-[13px] font-bold" : level === 2 ? "text-[12px] font-bold" : "text-[11px] font-semibold text-zinc-400";
-            elements.push(<p key={i} className={cn(sizeClass, "mt-2 mb-1 text-white")} dangerouslySetInnerHTML={{ __html: formatInline(headingText) }} />);
+            elements.push(<p key={i} className={cn(sizeClass, "mt-2 mb-1 text-gray-900 dark:text-white")} dangerouslySetInnerHTML={{ __html: formatInline(headingText) }} />);
         } else if (line.match(/^[•\-\*](?:\s|&nbsp;|\u00a0)+/)) {
             const items = [];
             while (i < lines.length && lines[i].match(/^[•\-\*](?:\s|&nbsp;|\u00a0)+/)) {
@@ -641,7 +641,7 @@ const ContractGenerator = () => {
 
                 {/* Brand Header */}
                 <div className={cn(
-                    "bg-zinc-950/45 border border-white/[0.06] backdrop-blur-2xl rounded-2xl flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 shrink-0 relative z-10 shadow-lg",
+                    "bg-gray-100 dark:bg-zinc-950/45 border border-white/[0.06] backdrop-blur-2xl rounded-2xl flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 shrink-0 relative z-10 shadow-lg",
                     isFloating ? "p-3 mb-2" : "p-4 mb-6"
                 )}>
                     <div className="flex items-center gap-3.5 animate-fade-in">
@@ -664,16 +664,16 @@ const ContractGenerator = () => {
                                 <h3 className="text-xs font-bold text-zinc-200 tracking-wide leading-none">
                                     {activeModel || 'Gemini 3.5 Flash'}
                                 </h3>
-                                <span className="h-3 w-px bg-white/10" />
+                                <span className="h-3 w-px bg-black/10 dark:bg-white/10" />
                                 <span className="text-[8px] text-zinc-500 font-mono font-medium lowercase tracking-wide">live pulse</span>
                             </div>
                         </div>
                     </div>
                     {/* Mode status indicator */}
-                    <div className="flex items-center justify-between sm:justify-end gap-4 border-t sm:border-t-0 border-white/5 pt-2 sm:pt-0">
+                    <div className="flex items-center justify-between sm:justify-end gap-4 border-t sm:border-t-0 border-black/10 dark:border-white/5 pt-2 sm:pt-0">
                         <div className="flex items-center gap-2.5">
                             <span className="text-[8px] font-black text-zinc-500 uppercase tracking-[0.2em] leading-none">Active Mode</span>
-                            <div className="flex items-center gap-2 bg-white/[0.02] border border-white/10 px-3 py-1.5 rounded-full shadow-inner">
+                            <div className="flex items-center gap-2 bg-white/[0.02] border border-black/10 dark:border-white/10 px-3 py-1.5 rounded-full shadow-inner">
                                 <span className="h-1.5 w-1.5 rounded-full bg-[#A855F7] animate-pulse" />
                                 <span className="text-[9px] font-bold uppercase tracking-widest text-zinc-300">
                                     {refinementContext ? 'Field Refinement' : (messages.length <= 1 ? 'First Draft' : 'Refinement & Chat')}
@@ -723,7 +723,7 @@ const ContractGenerator = () => {
                             <button
                                 type="button"
                                 onClick={() => setIsFloatingChatOpen(false)}
-                                className="p-2 bg-white/[0.02] hover:bg-white/[0.06] border border-white/10 rounded-xl text-zinc-400 hover:text-white transition-all active:scale-95 shadow-sm"
+                                className="p-2 bg-white/[0.02] hover:bg-white/[0.06] border border-black/10 dark:border-white/10 rounded-xl text-zinc-400 hover:text-gray-900 dark:hover:text-white transition-all active:scale-95 shadow-sm"
                             >
                                 <X size={14} />
                             </button>
@@ -747,12 +747,12 @@ const ContractGenerator = () => {
                         )}>
                             <div className="relative">
                                 <div className="absolute -inset-4 bg-gradient-to-r from-[#A855F7] via-purple-500 to-indigo-500 rounded-full blur-xl opacity-20 animate-pulse" />
-                                <div className="relative w-12 h-12 rounded-full bg-zinc-950 border border-white/10 flex items-center justify-center shadow-[0_0_30px_rgba(168,85,247,0.15)]">
+                                <div className="relative w-12 h-12 rounded-full bg-gray-100 dark:bg-zinc-950 border border-black/10 dark:border-white/10 flex items-center justify-center shadow-[0_0_30px_rgba(168,85,247,0.15)]">
                                     <Sparkles size={20} className="text-[#A855F7] animate-pulse" />
                                 </div>
                             </div>
                             <div className="space-y-2 max-w-md">
-                                <h2 className="text-lg font-black uppercase tracking-tight text-white leading-none">
+                                <h2 className="text-lg font-black uppercase tracking-tight text-gray-900 dark:text-white leading-none">
                                     AI Agreement <span className="bg-gradient-to-r from-[#A855F7] to-purple-400 bg-clip-text text-transparent">Orchestrator</span>
                                 </h2>
                                 <p className="text-[10px] text-zinc-400 leading-relaxed font-medium">
@@ -762,7 +762,7 @@ const ContractGenerator = () => {
 
                             {/* Suggestions Grid */}
                             {!isFloating && (
-                                <div className="w-full space-y-4 pt-4 border-t border-white/5">
+                                <div className="w-full space-y-4 pt-4 border-t border-black/10 dark:border-white/5">
                                     <div className="flex items-center justify-between px-1">
                                         <span className="text-[9px] font-black uppercase text-zinc-500 tracking-[0.2em] flex items-center gap-2">
                                             <Sparkles size={10} className="text-[#A855F7]" /> Suggested Blueprints
@@ -770,7 +770,7 @@ const ContractGenerator = () => {
                                         <button 
                                             type="button"
                                             onClick={() => setSuggestionCategory(c => (c + 1) % 2)}
-                                            className="flex items-center gap-1.5 px-2.5 py-1 bg-white/5 hover:bg-white/10 border border-white/5 hover:border-white/10 rounded-lg text-[8px] font-black uppercase tracking-widest text-zinc-400 hover:text-white transition-all active:scale-95"
+                                            className="flex items-center gap-1.5 px-2.5 py-1 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 border border-black/10 dark:border-white/5 hover:border-black/10 dark:hover:border-white/10 rounded-lg text-[8px] font-black uppercase tracking-widest text-zinc-400 hover:text-gray-900 dark:hover:text-white transition-all active:scale-95"
                                         >
                                             <RefreshCw size={8} className="animate-spin-slow" /> Next Blueprints
                                         </button>
@@ -803,18 +803,18 @@ const ContractGenerator = () => {
                                                     type="button"
                                                     key={idx}
                                                     onClick={() => setPromptText(s)}
-                                                    className="text-left p-4 bg-zinc-900/30 hover:bg-zinc-900/60 border border-white/5 hover:border-[#A855F7]/20 rounded-2xl transition-all duration-300 flex flex-col justify-between gap-4 h-auto min-h-[145px] pb-4 group relative overflow-hidden shadow-sm"
+                                                    className="text-left p-4 bg-gray-100 dark:bg-zinc-900/30 hover:bg-gray-100 dark:hover:bg-zinc-900/60 border border-black/10 dark:border-white/5 hover:border-[#A855F7]/20 rounded-2xl transition-all duration-300 flex flex-col justify-between gap-4 h-auto min-h-[145px] pb-4 group relative overflow-hidden shadow-sm"
                                                 >
                                                     <div className="absolute top-0 right-0 w-16 h-16 bg-[#A855F7]/5 rounded-full blur-xl opacity-0 group-hover:opacity-100 transition-opacity" />
                                                     <div className="flex items-center justify-between w-full relative z-10">
-                                                        <div className="p-2 bg-white/5 group-hover:bg-[#A855F7]/10 rounded-xl transition-colors">
+                                                        <div className="p-2 bg-black/5 dark:bg-white/5 group-hover:bg-[#A855F7]/10 rounded-xl transition-colors">
                                                             <Icon size={14} className="text-zinc-400 group-hover:text-[#A855F7] transition-colors" />
                                                         </div>
                                                         <span className="text-[9px] font-black text-[#A855F7] opacity-0 group-hover:opacity-100 translate-x-2 group-hover:translate-x-0 transition-all">→</span>
                                                     </div>
                                                     <div className="space-y-1 relative z-10 w-full">
                                                         <span className="text-[8px] font-black uppercase tracking-widest text-zinc-500 group-hover:text-zinc-400">{heading}</span>
-                                                        <p className="text-[10px] font-bold text-zinc-400 group-hover:text-white transition-colors line-clamp-2 leading-relaxed">
+                                                        <p className="text-[10px] font-bold text-zinc-400 group-hover:text-gray-900 dark:group-hover:text-white transition-colors line-clamp-2 leading-relaxed">
                                                             {s}
                                                         </p>
                                                     </div>
@@ -834,14 +834,14 @@ const ContractGenerator = () => {
                             className={cn(
                                 "max-w-[85%] rounded-[2rem] p-4 text-xs leading-relaxed transition-all shadow-md relative overflow-hidden group",
                                 m.sender === 'user'
-                                    ? "bg-zinc-900 text-zinc-100 self-end rounded-tr-none border border-white/5"
+                                    ? "bg-gray-100 dark:bg-zinc-900 text-zinc-100 self-end rounded-tr-none border border-black/10 dark:border-white/5"
                                     : "bg-white/[0.02] border border-white/[0.04] text-zinc-300 self-start rounded-tl-none"
                             )}
                         >
                             <div className="flex items-center gap-2 mb-1.5">
                                 <span className={cn(
                                     "text-[8px] font-black uppercase tracking-wider",
-                                    m.sender === 'user' ? "text-gray-400" : "text-[#A855F7]"
+                                    m.sender === 'user' ? "text-gray-600 dark:text-gray-400" : "text-[#A855F7]"
                                 )}>
                                     {m.sender === 'user' ? 'You' : (activeModel || 'Gemini 3.5 Flash')}
                                 </span>
@@ -862,7 +862,7 @@ const ContractGenerator = () => {
                                     {generationTime}s
                                 </span>
                             </div>
-                            <div className="w-full h-1 bg-zinc-950 rounded-full overflow-hidden">
+                            <div className="w-full h-1 bg-gray-100 dark:bg-zinc-950 rounded-full overflow-hidden">
                                 <div 
                                     className="h-full bg-[#A855F7] transition-all duration-500" 
                                     style={{ width: `${generationProgress}%` }}
@@ -875,7 +875,7 @@ const ContractGenerator = () => {
 
                 {/* Prompt container - Command Console Redesign */}
                 <div className={cn("pt-2 bg-transparent", isFloating ? "mt-auto shrink-0" : "mt-6")}>
-                    <div className="bg-zinc-950 border border-white/5 rounded-2xl p-2.5 flex flex-col gap-2 relative shadow-[0_10px_30px_rgba(0,0,0,0.5)] focus-within:border-[#A855F7]/30 focus-within:shadow-[0_0_20px_rgba(168,85,247,0.05)] transition-all">
+                    <div className="bg-gray-100 dark:bg-zinc-950 border border-black/10 dark:border-white/5 rounded-2xl p-2.5 flex flex-col gap-2 relative shadow-[0_10px_30px_rgba(0,0,0,0.5)] focus-within:border-[#A855F7]/30 focus-within:shadow-[0_0_20px_rgba(168,85,247,0.05)] transition-all">
                         {/* Quoted Refinement Context */}
                         {refinementContext && (
                             <div className="px-3 py-2 bg-[#A855F7]/5 border border-[#A855F7]/20 rounded-xl flex items-center justify-between gap-3 border-l-4 border-l-[#A855F7] shadow-inner animate-fade-in">
@@ -888,7 +888,7 @@ const ContractGenerator = () => {
                                 <button 
                                     type="button" 
                                     onClick={() => setRefinementContext(null)}
-                                    className="p-1 hover:bg-white/5 rounded-lg text-zinc-500 hover:text-white transition-all shrink-0"
+                                    className="p-1 hover:bg-black/5 dark:hover:bg-white/5 rounded-lg text-zinc-500 hover:text-gray-900 dark:hover:text-white transition-all shrink-0"
                                 >
                                     <X size={10} />
                                 </button>
@@ -900,7 +900,7 @@ const ContractGenerator = () => {
                                 value={promptText}
                                 onChange={e => setPromptText(e.target.value)}
                                 placeholder={refinementContext ? `Instruct AI to refine "${refinementContext.fieldLabel}"...` : "Describe the agreement you want to generate or modify..."}
-                                className="flex-grow bg-transparent border-none text-[12px] font-medium text-white placeholder:text-zinc-600 outline-none min-h-[36px] max-h-[120px] py-1 px-1.5 resize-none leading-relaxed"
+                                className="flex-grow bg-transparent border-none text-[12px] font-medium text-gray-900 dark:text-white placeholder:text-zinc-600 outline-none min-h-[36px] max-h-[120px] py-1 px-1.5 resize-none leading-relaxed"
                                 rows={1}
                                 disabled={isGenerating}
                                 onKeyDown={e => {
@@ -921,11 +921,11 @@ const ContractGenerator = () => {
                         </div>
 
                         {/* Control Bar inside Prompt Console */}
-                        <div className="flex items-center justify-between border-t border-white/5 pt-2 px-1 text-[8px] text-zinc-500 font-bold">
+                        <div className="flex items-center justify-between border-t border-black/10 dark:border-white/5 pt-2 px-1 text-[8px] text-zinc-500 font-bold">
                             <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
                                 <div className="flex items-center gap-1">
                                     <span>Tone:</span>
-                                    <div className="flex bg-black/40 rounded p-0.5 border border-white/5">
+                                    <div className="flex bg-white dark:bg-black/40 rounded p-0.5 border border-black/10 dark:border-white/5">
                                         {['balanced', 'creative', 'formal'].map(t => (
                                             <button
                                                 type="button"
@@ -944,7 +944,7 @@ const ContractGenerator = () => {
 
                                 <div className="flex items-center gap-1">
                                     <span>Length:</span>
-                                    <div className="flex bg-black/40 rounded p-0.5 border border-white/5">
+                                    <div className="flex bg-white dark:bg-black/40 rounded p-0.5 border border-black/10 dark:border-white/5">
                                         {['concise', 'balanced', 'detailed'].map(l => (
                                             <button
                                                 type="button"
@@ -1000,7 +1000,7 @@ const ContractGenerator = () => {
     };
 
     return (
-        <div className="h-full w-full bg-[#0B0F17] text-white flex flex-col font-['Outfit'] overflow-hidden admin-hub-content-container">
+        <div className="h-full w-full bg-gray-50 dark:bg-[#0B0F17] text-gray-900 dark:text-white flex flex-col font-['Outfit'] overflow-hidden admin-hub-content-container">
             <style dangerouslySetInnerHTML={{ __html: `
                 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap');
                 @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400..700&display=swap');
@@ -1012,11 +1012,11 @@ const ContractGenerator = () => {
             `}} />
 
             {/* Top Navigation */}
-            <nav className="h-16 md:h-20 border-b border-white/5 flex items-center justify-between px-4 md:px-8 bg-black/40 backdrop-blur-3xl sticky top-0 z-[60]">
+            <nav className="h-16 md:h-20 border-b border-black/10 dark:border-white/5 flex items-center justify-between px-4 md:px-8 bg-white dark:bg-black/40 backdrop-blur-3xl sticky top-0 z-[60]">
                 <div className="flex items-center gap-2 md:gap-6 min-w-0">
-                    <Link to="/admin/agreements" className="p-2.5 md:p-3 bg-white/5 rounded-2xl hover:bg-white/10 transition-all border border-white/5 shrink-0"><ArrowLeft size={16} /></Link>
+                    <Link to="/admin/agreements" className="p-2.5 md:p-3 bg-black/5 dark:bg-white/5 rounded-2xl hover:bg-black/10 dark:hover:bg-white/10 transition-all border border-black/10 dark:border-white/5 shrink-0"><ArrowLeft size={16} /></Link>
                     <div className="min-w-0 flex flex-col justify-center">
-                        <h1 className="text-sm md:text-xl font-extrabold tracking-tight text-white truncate mb-1">Contract <span className="text-[#A855F7]">Vault.</span></h1>
+                        <h1 className="text-sm md:text-xl font-extrabold tracking-tight text-gray-900 dark:text-white truncate mb-1">Contract <span className="text-[#A855F7]">Vault.</span></h1>
                         <p className="text-[7px] md:text-[10px] font-bold text-gray-500 uppercase tracking-[0.3em] leading-none truncate">Contract Operating System</p>
                     </div>
                 </div>
@@ -1030,7 +1030,7 @@ const ContractGenerator = () => {
                         <span className="text-[8px] font-black uppercase tracking-widest">Preview</span>
                     </button>
                     {autosaveStatus !== 'idle' && (
-                        <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white/5 border border-white/10 select-none">
+                        <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 select-none">
                             <span className={cn(
                                 "w-1.5 h-1.5 rounded-full shrink-0",
                                 autosaveStatus === 'saving' && "bg-amber-400 animate-pulse",
@@ -1044,7 +1044,7 @@ const ContractGenerator = () => {
                             </span>
                         </div>
                     )}
-                    <button onClick={handleSave} disabled={isSaving} className="h-10 md:h-12 px-3 md:px-8 bg-white/5 hover:bg-white/10 text-white font-black uppercase tracking-widest text-[9px] md:text-[10px] rounded-xl border border-white/10 transition-all flex items-center gap-2">
+                    <button onClick={handleSave} disabled={isSaving} className="h-10 md:h-12 px-3 md:px-8 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-gray-900 dark:text-white font-black uppercase tracking-widest text-[9px] md:text-[10px] rounded-xl border border-black/10 dark:border-white/10 transition-all flex items-center gap-2">
                         {isSaving ? <RefreshCw className="animate-spin" size={14} /> : <Save size={14} />} 
                         <span className="hidden sm:inline">Save Draft</span>
                     </button>
@@ -1058,14 +1058,14 @@ const ContractGenerator = () => {
             <div className="flex-1 flex overflow-hidden min-h-0">
                 {/* Sidebar - Desktop Only */}
                 <aside className={cn(
-                    "hidden lg:flex w-64 shrink-0 border-r border-white/5 bg-zinc-900/20 flex-col p-6 gap-6 overflow-y-auto scrollbar-hide",
+                    "hidden lg:flex w-64 shrink-0 border-r border-black/10 dark:border-white/5 bg-gray-100 dark:bg-zinc-900/20 flex-col p-6 gap-6 overflow-y-auto scrollbar-hide",
                     isExpandedPreview && "lg:hidden"
                 )}>
                     <div className="space-y-2">
                         <p className="text-[9px] font-black text-gray-600 uppercase tracking-widest px-4 mb-4">Navigation</p>
                         {tabs.map(tab => (
-                            <button key={tab.id} onClick={() => handleTabClick(tab.id)} className={cn("w-full p-4 rounded-2xl flex items-center gap-4 transition-all text-left group", activeTab === tab.id ? "bg-white text-black shadow-[0_0_20px_rgba(168,85,247,0.2)]" : "hover:bg-white/5 text-gray-500 hover:text-white")}>
-                                <div className={cn("p-2.5 rounded-xl transition-all", activeTab === tab.id ? "bg-[#A855F7]/20" : "bg-white/5 group-hover:bg-white/10")}><tab.icon size={18} /></div>
+                            <button key={tab.id} onClick={() => handleTabClick(tab.id)} className={cn("w-full p-4 rounded-2xl flex items-center gap-4 transition-all text-left group", activeTab === tab.id ? "bg-white text-black shadow-[0_0_20px_rgba(168,85,247,0.2)]" : "hover:bg-black/5 dark:hover:bg-white/5 text-gray-500 hover:text-gray-900 dark:hover:text-white")}>
+                                <div className={cn("p-2.5 rounded-xl transition-all", activeTab === tab.id ? "bg-[#A855F7]/20" : "bg-black/5 dark:bg-white/5 group-hover:bg-black/10 dark:group-hover:bg-white/10")}><tab.icon size={18} /></div>
                                 <div>
                                     <p className="text-[10px] font-black uppercase tracking-widest leading-none mb-1">{tab.label}</p>
                                     <p className={cn("text-[9px] font-bold opacity-60 uppercase tracking-tighter", activeTab === tab.id ? "text-black" : "text-gray-600")}>{tab.desc}</p>
@@ -1076,7 +1076,7 @@ const ContractGenerator = () => {
                 </aside>
 
                 {/* Mobile Tab Navigation */}
-                <div className="lg:hidden fixed bottom-0 left-0 right-0 h-20 bg-black/80 backdrop-blur-3xl border-t border-white/10 z-[100] px-4 flex items-center justify-between overflow-x-auto no-scrollbar">
+                <div className="lg:hidden fixed bottom-0 left-0 right-0 h-20 bg-white dark:bg-black/80 backdrop-blur-3xl border-t border-black/10 dark:border-white/10 z-[100] px-4 flex items-center justify-between overflow-x-auto no-scrollbar">
                     {tabs.map(tab => (
                         <button key={tab.id} onClick={() => handleTabClick(tab.id)} className={cn("flex flex-col items-center justify-center min-w-[70px] h-full transition-all gap-1", activeTab === tab.id ? "text-neon-purple" : "text-gray-500")}>
                             <tab.icon size={18} />
@@ -1096,7 +1096,7 @@ const ContractGenerator = () => {
                             <Eye size={14} />
                             <span className="text-[9px] font-black uppercase tracking-widest">Preview</span>
                         </button>
-                        <button onClick={handleSave} className="h-10 px-3 flex-1 bg-white/5 text-white border border-white/10 font-black uppercase tracking-widest text-[9px] rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg backdrop-blur-md">
+                        <button onClick={handleSave} className="h-10 px-3 flex-1 bg-black/5 dark:bg-white/5 text-gray-900 dark:text-white border border-black/10 dark:border-white/10 font-black uppercase tracking-widest text-[9px] rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg backdrop-blur-md">
                             <Save size={14} />
                             <span>Save</span>
                         </button>
@@ -1109,14 +1109,14 @@ const ContractGenerator = () => {
 
                 {/* Editor */}
                 <main className={cn(
-                    "flex-grow scrollbar-hide bg-[#050505] px-4 md:px-8 py-6 md:py-10 overflow-y-auto pb-32",
+                    "flex-grow scrollbar-hide bg-white dark:bg-[#050505] px-4 md:px-8 py-6 md:py-10 overflow-y-auto pb-32",
                     isExpandedPreview && "hidden"
                 )}>
                     <div className="max-w-[1600px] mx-auto w-full space-y-10 md:space-y-12">
                         
                         {/* Minimalist Section Header */}
                         {activeTab !== 'ai' && (
-                            <div className="flex flex-col md:flex-row items-end justify-between mb-16 pb-8 border-b border-white/5 relative">
+                            <div className="flex flex-col md:flex-row items-end justify-between mb-16 pb-8 border-b border-black/10 dark:border-white/5 relative">
                                 <div className="space-y-4">
                                     <div className="flex items-center gap-2">
                                         <div className="w-8 h-[2px] bg-[#A855F7]/40" />
@@ -1125,7 +1125,7 @@ const ContractGenerator = () => {
                                         </p>
                                     </div>
                                     <div className="space-y-2">
-                                        <h2 className="text-xl sm:text-2xl md:text-3xl font-extrabold tracking-tight text-white leading-none">
+                                        <h2 className="text-xl sm:text-2xl md:text-3xl font-extrabold tracking-tight text-gray-900 dark:text-white leading-none">
                                             {tabs.find(t => t.id === activeTab)?.label}<span className="text-[#A855F7]">.</span>
                                         </h2>
                                         <p className="text-[11px] text-gray-500 font-bold uppercase tracking-[0.3em] pl-1">
@@ -1136,7 +1136,7 @@ const ContractGenerator = () => {
 
                                 <div className="flex flex-col items-end gap-4 w-full md:w-auto">
                                     {/* Compact Progress Line */}
-                                    <div className="w-48 h-0.5 bg-white/5 rounded-full overflow-hidden">
+                                    <div className="w-48 h-0.5 bg-black/5 dark:bg-white/5 rounded-full overflow-hidden">
                                         <div 
                                             className="h-full bg-[#A855F7] transition-all duration-700 shadow-[0_0_10px_rgba(168,85,247,0.8)]" 
                                             style={{ width: `${(tabs.findIndex(t => t.id === activeTab) + 1) / tabs.length * 100}%` }} 
@@ -1155,7 +1155,7 @@ const ContractGenerator = () => {
                         <AnimatePresence mode="wait">
                             <motion.div key={activeTab} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.2 }} className={cn(activeTab === 'ai' ? "w-full" : "space-y-16")}>
                                 {activeTab === 'ai' && (
-                                    <div className="w-full bg-zinc-950/20 border border-white/5 rounded-[2.5rem] p-6 relative flex flex-col">
+                                    <div className="w-full bg-gray-100 dark:bg-zinc-950/20 border border-black/10 dark:border-white/5 rounded-[2.5rem] p-6 relative flex flex-col">
                                         {renderChatbot(false)}
                                     </div>
                                 )}
@@ -1174,7 +1174,7 @@ const ContractGenerator = () => {
                                                             "p-6 rounded-3xl border transition-all text-[10px] font-black uppercase tracking-widest text-center", 
                                                             (formData.template || 'Service Agreement') === t 
                                                                 ? "bg-[#A855F7] border-[#A855F7] text-black shadow-[0_0_25px_rgba(168,85,247,0.4)] scale-105" 
-                                                                : "bg-zinc-900 border-white/5 text-gray-500 hover:text-white hover:border-[#A855F7]/30"
+                                                                : "bg-gray-100 dark:bg-zinc-900 border-black/10 dark:border-white/5 text-gray-500 hover:text-gray-900 dark:hover:text-white hover:border-[#A855F7]/30"
                                                         )}
                                                     >
                                                         {t === 'MOU' ? 'Memorandum of Understanding' : t}
@@ -1194,12 +1194,12 @@ const ContractGenerator = () => {
                                                             "p-4 rounded-3xl border transition-all text-[10px] font-black uppercase tracking-widest flex flex-col items-center gap-3 overflow-hidden relative group/btn", 
                                                             (formData.selectedLogo || 'entertainment') === logo.id 
                                                                 ? "bg-[#A855F7] border-[#A855F7] text-black scale-105 shadow-[0_0_25px_rgba(168,85,247,0.4)]" 
-                                                                : "bg-zinc-900 border-white/5 text-gray-500 hover:text-white hover:border-[#A855F7]/30"
+                                                                : "bg-gray-100 dark:bg-zinc-900 border-black/10 dark:border-white/5 text-gray-500 hover:text-gray-900 dark:hover:text-white hover:border-[#A855F7]/30"
                                                         )}
                                                     >
                                                         <div className="w-full aspect-[4/3] rounded-2xl bg-white flex items-center justify-center p-2 relative overflow-hidden">
                                                             <img src={logo.path} alt={logo.label} className="w-full h-full object-contain" />
-                                                            <div className="absolute inset-0 bg-black/5" />
+                                                            <div className="absolute inset-0 bg-white dark:bg-black/5" />
                                                         </div>
                                                         <span className="relative z-10">{logo.label}</span>
                                                     </button>
@@ -1211,22 +1211,22 @@ const ContractGenerator = () => {
                                                 <h3 className="text-xl font-black uppercase tracking-tighter italic flex items-center gap-3"><Building2 size={16} /> First Party</h3>
                                                 <div className="space-y-4">
                                                     <div className="relative group/refine w-full">
-                                                        <Input value={formData.parties.firstParty.name} onChange={e => updateField('parties.firstParty.name', e.target.value)} placeholder="Provider Name" className="h-14 bg-black/40 border-white/10 pr-12" />
-                                                        <button type="button" onClick={() => handleRefineClick('parties.firstParty.name', 'Provider Name', formData.parties.firstParty.name)} className="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-zinc-950 border border-white/10 text-[#A855F7] hover:text-white rounded-xl hover:scale-105 z-10" title="Refine with AI"><Sparkles size={14} className="animate-pulse" /></button>
+                                                        <Input value={formData.parties.firstParty.name} onChange={e => updateField('parties.firstParty.name', e.target.value)} placeholder="Provider Name" className="h-14 bg-white dark:bg-black/40 border-black/10 dark:border-white/10 pr-12" />
+                                                        <button type="button" onClick={() => handleRefineClick('parties.firstParty.name', 'Provider Name', formData.parties.firstParty.name)} className="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-gray-100 dark:bg-zinc-950 border border-black/10 dark:border-white/10 text-[#A855F7] hover:text-gray-900 dark:hover:text-white rounded-xl hover:scale-105 z-10" title="Refine with AI"><Sparkles size={14} className="animate-pulse" /></button>
                                                     </div>
                                                     <div className="grid grid-cols-2 gap-4">
                                                         <div className="relative group/refine w-full">
-                                                            <Input value={formData.parties.firstParty.role} onChange={e => updateField('parties.firstParty.role', e.target.value)} placeholder="Role (e.g. Provider)" className="h-14 bg-black/40 border-white/10 pr-12" />
-                                                            <button type="button" onClick={() => handleRefineClick('parties.firstParty.role', 'Provider Role', formData.parties.firstParty.role)} className="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-zinc-950 border border-white/10 text-[#A855F7] hover:text-white rounded-xl hover:scale-105 z-10" title="Refine with AI"><Sparkles size={14} className="animate-pulse" /></button>
+                                                            <Input value={formData.parties.firstParty.role} onChange={e => updateField('parties.firstParty.role', e.target.value)} placeholder="Role (e.g. Provider)" className="h-14 bg-white dark:bg-black/40 border-black/10 dark:border-white/10 pr-12" />
+                                                            <button type="button" onClick={() => handleRefineClick('parties.firstParty.role', 'Provider Role', formData.parties.firstParty.role)} className="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-gray-100 dark:bg-zinc-950 border border-black/10 dark:border-white/10 text-[#A855F7] hover:text-gray-900 dark:hover:text-white rounded-xl hover:scale-105 z-10" title="Refine with AI"><Sparkles size={14} className="animate-pulse" /></button>
                                                         </div>
                                                         <div className="relative group/refine w-full">
-                                                            <Input value={formData.parties.firstParty.acronym} onChange={e => updateField('parties.firstParty.acronym', e.target.value)} placeholder="Acronym (e.g. NB)" className="h-14 bg-black/40 border-white/10 pr-12" />
-                                                            <button type="button" onClick={() => handleRefineClick('parties.firstParty.acronym', 'Provider Acronym', formData.parties.firstParty.acronym)} className="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-zinc-950 border border-white/10 text-[#A855F7] hover:text-white rounded-xl hover:scale-105 z-10" title="Refine with AI"><Sparkles size={14} className="animate-pulse" /></button>
+                                                            <Input value={formData.parties.firstParty.acronym} onChange={e => updateField('parties.firstParty.acronym', e.target.value)} placeholder="Acronym (e.g. NB)" className="h-14 bg-white dark:bg-black/40 border-black/10 dark:border-white/10 pr-12" />
+                                                            <button type="button" onClick={() => handleRefineClick('parties.firstParty.acronym', 'Provider Acronym', formData.parties.firstParty.acronym)} className="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-gray-100 dark:bg-zinc-950 border border-black/10 dark:border-white/10 text-[#A855F7] hover:text-gray-900 dark:hover:text-white rounded-xl hover:scale-105 z-10" title="Refine with AI"><Sparkles size={14} className="animate-pulse" /></button>
                                                         </div>
                                                     </div>
                                                     <div className="relative group/refine w-full">
-                                                        <Input value={formData.parties.firstParty.address} onChange={e => updateField('parties.firstParty.address', e.target.value)} placeholder="Provider Address" className="h-14 bg-black/40 border-white/10 pr-12" />
-                                                        <button type="button" onClick={() => handleRefineClick('parties.firstParty.address', 'Provider Address', formData.parties.firstParty.address)} className="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-zinc-950 border border-white/10 text-[#A855F7] hover:text-white rounded-xl hover:scale-105 z-10" title="Refine with AI"><Sparkles size={14} className="animate-pulse" /></button>
+                                                        <Input value={formData.parties.firstParty.address} onChange={e => updateField('parties.firstParty.address', e.target.value)} placeholder="Provider Address" className="h-14 bg-white dark:bg-black/40 border-black/10 dark:border-white/10 pr-12" />
+                                                        <button type="button" onClick={() => handleRefineClick('parties.firstParty.address', 'Provider Address', formData.parties.firstParty.address)} className="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-gray-100 dark:bg-zinc-950 border border-black/10 dark:border-white/10 text-[#A855F7] hover:text-gray-900 dark:hover:text-white rounded-xl hover:scale-105 z-10" title="Refine with AI"><Sparkles size={14} className="animate-pulse" /></button>
                                                     </div>
                                                 </div>
                                             </div>
@@ -1234,22 +1234,22 @@ const ContractGenerator = () => {
                                                 <h3 className="text-xl font-black uppercase tracking-tighter italic flex items-center gap-3"><Users size={16} /> Second Party</h3>
                                                 <div className="space-y-4">
                                                     <div className="relative group/refine w-full">
-                                                        <Input value={formData.parties.secondParty.name} onChange={e => updateField('parties.secondParty.name', e.target.value)} placeholder="Client Name" className="h-14 bg-black/40 border-white/10 pr-12" />
-                                                        <button type="button" onClick={() => handleRefineClick('parties.secondParty.name', 'Client Name', formData.parties.secondParty.name)} className="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-zinc-950 border border-white/10 text-[#A855F7] hover:text-white rounded-xl hover:scale-105 z-10" title="Refine with AI"><Sparkles size={14} className="animate-pulse" /></button>
+                                                        <Input value={formData.parties.secondParty.name} onChange={e => updateField('parties.secondParty.name', e.target.value)} placeholder="Client Name" className="h-14 bg-white dark:bg-black/40 border-black/10 dark:border-white/10 pr-12" />
+                                                        <button type="button" onClick={() => handleRefineClick('parties.secondParty.name', 'Client Name', formData.parties.secondParty.name)} className="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-gray-100 dark:bg-zinc-950 border border-black/10 dark:border-white/10 text-[#A855F7] hover:text-gray-900 dark:hover:text-white rounded-xl hover:scale-105 z-10" title="Refine with AI"><Sparkles size={14} className="animate-pulse" /></button>
                                                     </div>
                                                     <div className="grid grid-cols-2 gap-4">
                                                         <div className="relative group/refine w-full">
-                                                            <Input value={formData.parties.secondParty.role} onChange={e => updateField('parties.secondParty.role', e.target.value)} placeholder="Role (e.g. Client)" className="h-14 bg-black/40 border-white/10 pr-12" />
-                                                            <button type="button" onClick={() => handleRefineClick('parties.secondParty.role', 'Client Role', formData.parties.secondParty.role)} className="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-zinc-950 border border-white/10 text-[#A855F7] hover:text-white rounded-xl hover:scale-105 z-10" title="Refine with AI"><Sparkles size={14} className="animate-pulse" /></button>
+                                                            <Input value={formData.parties.secondParty.role} onChange={e => updateField('parties.secondParty.role', e.target.value)} placeholder="Role (e.g. Client)" className="h-14 bg-white dark:bg-black/40 border-black/10 dark:border-white/10 pr-12" />
+                                                            <button type="button" onClick={() => handleRefineClick('parties.secondParty.role', 'Client Role', formData.parties.secondParty.role)} className="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-gray-100 dark:bg-zinc-950 border border-black/10 dark:border-white/10 text-[#A855F7] hover:text-gray-900 dark:hover:text-white rounded-xl hover:scale-105 z-10" title="Refine with AI"><Sparkles size={14} className="animate-pulse" /></button>
                                                         </div>
                                                         <div className="relative group/refine w-full">
-                                                            <Input value={formData.parties.secondParty.acronym} onChange={e => updateField('parties.secondParty.acronym', e.target.value)} placeholder="Acronym (e.g. TUM)" className="h-14 bg-black/40 border-white/10 pr-12" />
-                                                            <button type="button" onClick={() => handleRefineClick('parties.secondParty.acronym', 'Client Acronym', formData.parties.secondParty.acronym)} className="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-zinc-950 border border-white/10 text-[#A855F7] hover:text-white rounded-xl hover:scale-105 z-10" title="Refine with AI"><Sparkles size={14} className="animate-pulse" /></button>
+                                                            <Input value={formData.parties.secondParty.acronym} onChange={e => updateField('parties.secondParty.acronym', e.target.value)} placeholder="Acronym (e.g. TUM)" className="h-14 bg-white dark:bg-black/40 border-black/10 dark:border-white/10 pr-12" />
+                                                            <button type="button" onClick={() => handleRefineClick('parties.secondParty.acronym', 'Client Acronym', formData.parties.secondParty.acronym)} className="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-gray-100 dark:bg-zinc-950 border border-black/10 dark:border-white/10 text-[#A855F7] hover:text-gray-900 dark:hover:text-white rounded-xl hover:scale-105 z-10" title="Refine with AI"><Sparkles size={14} className="animate-pulse" /></button>
                                                         </div>
                                                     </div>
                                                     <div className="relative group/refine w-full">
-                                                        <Input value={formData.parties.secondParty.address} onChange={e => updateField('parties.secondParty.address', e.target.value)} placeholder="Client Address" className="h-14 bg-black/40 border-white/10 pr-12" />
-                                                        <button type="button" onClick={() => handleRefineClick('parties.secondParty.address', 'Client Address', formData.parties.secondParty.address)} className="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-zinc-950 border border-white/10 text-[#A855F7] hover:text-white rounded-xl hover:scale-105 z-10" title="Refine with AI"><Sparkles size={14} className="animate-pulse" /></button>
+                                                        <Input value={formData.parties.secondParty.address} onChange={e => updateField('parties.secondParty.address', e.target.value)} placeholder="Client Address" className="h-14 bg-white dark:bg-black/40 border-black/10 dark:border-white/10 pr-12" />
+                                                        <button type="button" onClick={() => handleRefineClick('parties.secondParty.address', 'Client Address', formData.parties.secondParty.address)} className="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-gray-100 dark:bg-zinc-950 border border-black/10 dark:border-white/10 text-[#A855F7] hover:text-gray-900 dark:hover:text-white rounded-xl hover:scale-105 z-10" title="Refine with AI"><Sparkles size={14} className="animate-pulse" /></button>
                                                     </div>
                                                 </div>
                                             </div>
@@ -1261,12 +1261,12 @@ const ContractGenerator = () => {
                                     <div className="space-y-10">
                                         <div className="grid grid-cols-2 gap-8">
                                             <div className="relative group/refine w-full">
-                                                <Input value={formData.details.projectName} onChange={e => updateField('details.projectName', e.target.value)} placeholder="Project Name" className="h-14 bg-black/40 border-white/10 pr-12" />
-                                                <button type="button" onClick={() => handleRefineClick('details.projectName', 'Project Name', formData.details.projectName)} className="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-zinc-950 border border-white/10 text-[#A855F7] hover:text-white rounded-xl hover:scale-105 z-10" title="Refine with AI"><Sparkles size={14} className="animate-pulse" /></button>
+                                                <Input value={formData.details.projectName} onChange={e => updateField('details.projectName', e.target.value)} placeholder="Project Name" className="h-14 bg-white dark:bg-black/40 border-black/10 dark:border-white/10 pr-12" />
+                                                <button type="button" onClick={() => handleRefineClick('details.projectName', 'Project Name', formData.details.projectName)} className="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-gray-100 dark:bg-zinc-950 border border-black/10 dark:border-white/10 text-[#A855F7] hover:text-gray-900 dark:hover:text-white rounded-xl hover:scale-105 z-10" title="Refine with AI"><Sparkles size={14} className="animate-pulse" /></button>
                                             </div>
                                             <div className="relative group/refine w-full">
-                                                <Input value={formData.details.territory} onChange={e => updateField('details.territory', e.target.value)} placeholder="Territory" className="h-14 bg-black/40 border-white/10 pr-12" />
-                                                <button type="button" onClick={() => handleRefineClick('details.territory', 'Territory', formData.details.territory)} className="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-zinc-950 border border-white/10 text-[#A855F7] hover:text-white rounded-xl hover:scale-105 z-10" title="Refine with AI"><Sparkles size={14} className="animate-pulse" /></button>
+                                                <Input value={formData.details.territory} onChange={e => updateField('details.territory', e.target.value)} placeholder="Territory" className="h-14 bg-white dark:bg-black/40 border-black/10 dark:border-white/10 pr-12" />
+                                                <button type="button" onClick={() => handleRefineClick('details.territory', 'Territory', formData.details.territory)} className="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-gray-100 dark:bg-zinc-950 border border-black/10 dark:border-white/10 text-[#A855F7] hover:text-gray-900 dark:hover:text-white rounded-xl hover:scale-105 z-10" title="Refine with AI"><Sparkles size={14} className="animate-pulse" /></button>
                                             </div>
                                         </div>
                                         <div className="relative group/refine w-full">
@@ -1278,7 +1278,7 @@ const ContractGenerator = () => {
                                                 minHeight="200px" 
                                                 accentColor="neon-purple"
                                             />
-                                            <button type="button" onClick={() => handleRefineClick('details.purpose', 'Contract Purpose', formData.details.purpose)} className="absolute right-4 top-2 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-zinc-950 border border-white/10 text-[#A855F7] hover:text-white rounded-xl hover:scale-105 z-[70]" title="Refine with AI"><Sparkles size={14} className="animate-pulse" /></button>
+                                            <button type="button" onClick={() => handleRefineClick('details.purpose', 'Contract Purpose', formData.details.purpose)} className="absolute right-4 top-2 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-gray-100 dark:bg-zinc-950 border border-black/10 dark:border-white/10 text-[#A855F7] hover:text-gray-900 dark:hover:text-white rounded-xl hover:scale-105 z-[70]" title="Refine with AI"><Sparkles size={14} className="animate-pulse" /></button>
                                         </div>
                                     </div>
                                 )}
@@ -1288,10 +1288,10 @@ const ContractGenerator = () => {
                                         <div className="grid grid-cols-2 gap-8">
                                             <div className="relative group/refine w-full">
                                                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-neon-purple font-black text-xs">{formData.commercials.currency}</span>
-                                                <Input value={formData.commercials.totalValue} onChange={e => updateField('commercials.totalValue', e.target.value)} className="h-14 bg-black/40 border-white/10 pl-12 pr-12" placeholder="Total Value" />
-                                                <button type="button" onClick={() => handleRefineClick('commercials.totalValue', 'Total Value', formData.commercials.totalValue)} className="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-zinc-950 border border-white/10 text-[#A855F7] hover:text-white rounded-xl hover:scale-105 z-10" title="Refine with AI"><Sparkles size={14} className="animate-pulse" /></button>
+                                                <Input value={formData.commercials.totalValue} onChange={e => updateField('commercials.totalValue', e.target.value)} className="h-14 bg-white dark:bg-black/40 border-black/10 dark:border-white/10 pl-12 pr-12" placeholder="Total Value" />
+                                                <button type="button" onClick={() => handleRefineClick('commercials.totalValue', 'Total Value', formData.commercials.totalValue)} className="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-gray-100 dark:bg-zinc-950 border border-black/10 dark:border-white/10 text-[#A855F7] hover:text-gray-900 dark:hover:text-white rounded-xl hover:scale-105 z-10" title="Refine with AI"><Sparkles size={14} className="animate-pulse" /></button>
                                             </div>
-                                            <select value={formData.commercials.currency} onChange={e => updateField('commercials.currency', e.target.value)} className="h-14 bg-black/40 border border-white/10 rounded-xl px-6 text-sm font-bold">
+                                            <select value={formData.commercials.currency} onChange={e => updateField('commercials.currency', e.target.value)} className="h-14 bg-white dark:bg-black/40 border border-black/10 dark:border-white/10 rounded-xl px-6 text-sm font-bold">
                                                 <option value="INR">INR (₹)</option><option value="USD">USD ($)</option><option value="EUR">EUR (€)</option>
                                             </select>
                                         </div>
@@ -1304,7 +1304,7 @@ const ContractGenerator = () => {
                                                 minHeight="150px" 
                                                 accentColor="neon-purple"
                                             />
-                                            <button type="button" onClick={() => handleRefineClick('commercials.paymentSchedule', 'Payment Schedule', formData.commercials.paymentSchedule)} className="absolute right-4 top-2 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-zinc-950 border border-white/10 text-[#A855F7] hover:text-white rounded-xl hover:scale-105 z-[70]" title="Refine with AI"><Sparkles size={14} className="animate-pulse" /></button>
+                                            <button type="button" onClick={() => handleRefineClick('commercials.paymentSchedule', 'Payment Schedule', formData.commercials.paymentSchedule)} className="absolute right-4 top-2 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-gray-100 dark:bg-zinc-950 border border-black/10 dark:border-white/10 text-[#A855F7] hover:text-gray-900 dark:hover:text-white rounded-xl hover:scale-105 z-[70]" title="Refine with AI"><Sparkles size={14} className="animate-pulse" /></button>
                                         </div>
                                     </div>
                                 )}
@@ -1324,7 +1324,7 @@ const ContractGenerator = () => {
                                         {/* Row 1: Security & Identity */}
                                         <div className="flex flex-col gap-8">
                                             {/* Security Controls - Full Width */}
-                                            <div className="p-4 md:p-8 bg-white/[0.03] backdrop-blur-3xl border border-white/5 rounded-[3rem] relative overflow-hidden">
+                                            <div className="p-4 md:p-8 bg-white/[0.03] backdrop-blur-3xl border border-black/10 dark:border-white/5 rounded-[3rem] relative overflow-hidden">
                                                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center relative z-10">
                                                     <div className="flex items-center gap-6">
                                                         <div className="w-14 h-14 rounded-2xl bg-[#A855F7]/10 flex items-center justify-center border border-[#A855F7]/20 shrink-0">
@@ -1332,7 +1332,7 @@ const ContractGenerator = () => {
                                                         </div>
                                                         <div className="space-y-1">
                                                             <p className="text-[10px] font-black text-[#A855F7] uppercase tracking-[0.4em]">Verification</p>
-                                                            <h3 className="text-2xl font-black uppercase tracking-tighter italic text-white leading-none">Security Controls.</h3>
+                                                            <h3 className="text-2xl font-black uppercase tracking-tighter italic text-gray-900 dark:text-white leading-none">Security Controls.</h3>
                                                         </div>
                                                     </div>
                                                     <div className="flex flex-col gap-4">
@@ -1342,12 +1342,12 @@ const ContractGenerator = () => {
                                                                 "h-20 w-full rounded-3xl border transition-all duration-500 group/btn relative overflow-hidden flex items-center px-6 gap-5",
                                                                 formData.showSeal 
                                                                     ? "bg-[#A855F7] text-black border-[#A855F7] shadow-[0_20px_40px_rgba(168,85,247,0.25)]" 
-                                                                    : "bg-white/[0.02] text-gray-500 border-white/5 hover:border-white/20 hover:bg-white/[0.05]"
+                                                                    : "bg-white/[0.02] text-gray-500 border-black/10 dark:border-white/5 hover:border-black/20 dark:hover:border-white/20 hover:bg-white/[0.05]"
                                                             )}
                                                         >
                                                             <div className={cn(
                                                                 "w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-500 shrink-0",
-                                                                formData.showSeal ? "bg-black/10 scale-110 shadow-inner" : "bg-white/5"
+                                                                formData.showSeal ? "bg-white dark:bg-black/10 scale-110 shadow-inner" : "bg-black/5 dark:bg-white/5"
                                                             )}>
                                                                 <Stamp size={22} className={cn("transition-transform duration-500 group-hover/btn:rotate-12", formData.showSeal ? "text-black" : "text-gray-500")} />
                                                             </div>
@@ -1363,12 +1363,12 @@ const ContractGenerator = () => {
                                                                 "h-20 w-full rounded-3xl border transition-all duration-500 group/btn relative overflow-hidden flex items-center px-6 gap-5",
                                                                 formData.showSignatures 
                                                                     ? "bg-[#A855F7] text-black border-[#A855F7] shadow-[0_20px_40px_rgba(168,85,247,0.25)]" 
-                                                                    : "bg-white/[0.02] text-gray-500 border-white/5 hover:border-white/20 hover:bg-white/[0.05]"
+                                                                    : "bg-white/[0.02] text-gray-500 border-black/10 dark:border-white/5 hover:border-black/20 dark:hover:border-white/20 hover:bg-white/[0.05]"
                                                             )}
                                                         >
                                                             <div className={cn(
                                                                 "w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-500 shrink-0",
-                                                                formData.showSignatures ? "bg-black/10 scale-110 shadow-inner" : "bg-white/5"
+                                                                formData.showSignatures ? "bg-white dark:bg-black/10 scale-110 shadow-inner" : "bg-black/5 dark:bg-white/5"
                                                             )}>
                                                                 <PenTool size={22} className={cn("transition-transform duration-500 group-hover/btn:rotate-12", formData.showSignatures ? "text-black" : "text-gray-500")} />
                                                             </div>
@@ -1382,34 +1382,34 @@ const ContractGenerator = () => {
                                             </div>
 
                                             {/* Signatory Identity - Full Width */}
-                                            <div className="p-4 md:p-10 bg-white/[0.03] backdrop-blur-3xl border border-white/5 rounded-[3rem] relative overflow-hidden">
+                                            <div className="p-4 md:p-10 bg-white/[0.03] backdrop-blur-3xl border border-black/10 dark:border-white/5 rounded-[3rem] relative overflow-hidden">
                                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
                                                     <div className="space-y-4">
                                                         <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] px-1">Authorized Representative</label>
-                                                        <input value={formData.senderName} onChange={e => setFormData({...formData, senderName: e.target.value})} placeholder="Full Legal Name" className="h-20 w-full bg-black/60 border border-white/5 focus:border-[#A855F7]/50 rounded-[1.5rem] text-lg font-black px-8 text-white outline-none transition-all placeholder:text-gray-800" />
+                                                        <input value={formData.senderName} onChange={e => setFormData({...formData, senderName: e.target.value})} placeholder="Full Legal Name" className="h-20 w-full bg-white dark:bg-black/60 border border-black/10 dark:border-white/5 focus:border-[#A855F7]/50 rounded-[1.5rem] text-lg font-black px-8 text-gray-900 dark:text-white outline-none transition-all placeholder:text-gray-800" />
                                                     </div>
                                                     <div className="space-y-4">
                                                         <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] px-1">Corporate Designation</label>
-                                                        <input value={formData.senderDesignation} onChange={e => setFormData({...formData, senderDesignation: e.target.value})} placeholder="e.g. Director" className="h-20 w-full bg-black/60 border border-white/5 focus:border-[#A855F7]/50 rounded-[1.5rem] text-lg font-black px-8 text-white outline-none transition-all placeholder:text-gray-800" />
+                                                        <input value={formData.senderDesignation} onChange={e => setFormData({...formData, senderDesignation: e.target.value})} placeholder="e.g. Director" className="h-20 w-full bg-white dark:bg-black/60 border border-black/10 dark:border-white/5 focus:border-[#A855F7]/50 rounded-[1.5rem] text-lg font-black px-8 text-gray-900 dark:text-white outline-none transition-all placeholder:text-gray-800" />
                                                     </div>
                                                 </div>
                                             </div>
                                         </div>
 
                                         {/* Row 2: Signature Pad - FULL WIDTH */}
-                                        <div className="p-4 md:p-8 bg-zinc-900/40 border border-white/5 rounded-[3rem] relative overflow-hidden group">
+                                        <div className="p-4 md:p-8 bg-gray-100 dark:bg-zinc-900/40 border border-black/10 dark:border-white/5 rounded-[3rem] relative overflow-hidden group">
                                             <div className="flex flex-col md:flex-row items-center justify-between gap-8 relative z-10">
                                                 <div className="flex items-center gap-4">
                                                     <div className="w-12 h-12 rounded-2xl bg-[#A855F7]/10 flex items-center justify-center border border-[#A855F7]/20">
                                                         <PenTool size={22} className="text-[#A855F7]" />
                                                     </div>
                                                     <div>
-                                                        <h4 className="text-xl font-black text-white uppercase tracking-tighter italic">Signature Capture.</h4>
+                                                        <h4 className="text-xl font-black text-gray-900 dark:text-white uppercase tracking-tighter italic">Signature Capture.</h4>
                                                         <p className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">Biometric Authentication Interface</p>
                                                     </div>
                                                 </div>
                                                 {formData.providerSignature && (
-                                                    <button onClick={() => updateField('providerSignature', null)} className="h-10 px-5 rounded-xl bg-red-500/10 text-red-500 text-[9px] font-black uppercase tracking-widest border border-red-500/20 hover:bg-red-500 hover:text-white transition-all">
+                                                    <button onClick={() => updateField('providerSignature', null)} className="h-10 px-5 rounded-xl bg-red-500/10 text-red-500 text-[9px] font-black uppercase tracking-widest border border-red-500/20 hover:bg-red-500 hover:text-gray-900 dark:hover:text-white transition-all">
                                                         Clear Pad
                                                     </button>
                                                 )}
@@ -1417,7 +1417,7 @@ const ContractGenerator = () => {
 
                                             <div 
                                                 onClick={() => setIsSignatureModalOpen(true)}
-                                                className="w-full h-64 md:h-80 bg-black/80 rounded-[2.5rem] border border-white/5 flex items-center justify-center cursor-pointer hover:border-[#A855F7]/40 transition-all duration-500 relative group/pad mt-8"
+                                                className="w-full h-64 md:h-80 bg-white dark:bg-black/80 rounded-[2.5rem] border border-black/10 dark:border-white/5 flex items-center justify-center cursor-pointer hover:border-[#A855F7]/40 transition-all duration-500 relative group/pad mt-8"
                                             >
                                                 <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
                                                 
@@ -1430,7 +1430,7 @@ const ContractGenerator = () => {
                                                         </div>
                                                     </motion.div>
                                                 ) : (
-                                                    <div className="flex flex-col items-center gap-4 text-white/5 group-hover/pad:text-[#A855F7]/30 transition-all duration-500">
+                                                    <div className="flex flex-col items-center gap-4 text-gray-900 dark:text-white/5 group-hover/pad:text-[#A855F7]/30 transition-all duration-500">
                                                         <PenTool size={48} className="-rotate-12" />
                                                         <p className="text-[10px] font-black uppercase tracking-[0.8em]">Click to Execute</p>
                                                     </div>
@@ -1439,7 +1439,7 @@ const ContractGenerator = () => {
                                         </div>
 
                                         {/* Row 3: Integrity Hub - FULL WIDTH */}
-                                        <div className="p-4 md:p-8 bg-white/[0.02] border border-white/5 rounded-[3.5rem] relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-12 group">
+                                        <div className="p-4 md:p-8 bg-white/[0.02] border border-black/10 dark:border-white/5 rounded-[3.5rem] relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-12 group">
                                             {/* Decorative Background for Section */}
                                             <div className="absolute inset-0 bg-[#A855F7]/5 opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
                                             
@@ -1450,8 +1450,8 @@ const ContractGenerator = () => {
                                                 </div>
                                                 <div className="space-y-4">
                                                     <p className="text-[10px] font-black text-gray-500 uppercase tracking-[0.5em]">Execution Reference</p>
-                                                    <div className="bg-black/60 backdrop-blur-2xl px-8 py-5 rounded-[2rem] border border-white/10 group-hover:border-[#A855F7]/40 transition-all">
-                                                        <h2 className="text-3xl lg:text-4xl font-black text-white tracking-[0.1em] italic leading-none">
+                                                    <div className="bg-white dark:bg-black/60 backdrop-blur-2xl px-8 py-5 rounded-[2rem] border border-black/10 dark:border-white/10 group-hover:border-[#A855F7]/40 transition-all">
+                                                        <h2 className="text-3xl lg:text-4xl font-black text-gray-900 dark:text-white tracking-[0.1em] italic leading-none">
                                                             {formData.agreementNumber.split('-').map((part, i) => (
                                                                 <span key={i} className={i === 3 ? "text-[#A855F7]" : ""}>{part}{i < 3 ? '-' : ''}</span>
                                                             ))}
@@ -1462,17 +1462,17 @@ const ContractGenerator = () => {
 
                                             <div className="flex flex-col gap-6 w-full md:w-80 relative z-10">
                                                 <div className="grid grid-cols-2 gap-3">
-                                                    <div className="p-4 bg-black/40 rounded-2xl border border-white/5 space-y-1">
+                                                    <div className="p-4 bg-white dark:bg-black/40 rounded-2xl border border-black/10 dark:border-white/5 space-y-1">
                                                         <div className="flex items-center gap-2">
                                                             <Lock size={12} className="text-emerald-500" />
-                                                            <span className="text-[8px] font-black text-white uppercase tracking-widest">AES-256</span>
+                                                            <span className="text-[8px] font-black text-gray-900 dark:text-white uppercase tracking-widest">AES-256</span>
                                                         </div>
                                                         <p className="text-[7px] font-bold text-gray-500 uppercase">Secure</p>
                                                     </div>
-                                                    <div className="p-4 bg-black/40 rounded-2xl border border-white/5 space-y-1">
+                                                    <div className="p-4 bg-white dark:bg-black/40 rounded-2xl border border-black/10 dark:border-white/5 space-y-1">
                                                         <div className="flex items-center gap-2">
                                                             <History size={12} className="text-[#A855F7]" />
-                                                            <span className="text-[8px] font-black text-white uppercase tracking-widest">v{formData.version || '1.0'}</span>
+                                                            <span className="text-[8px] font-black text-gray-900 dark:text-white uppercase tracking-widest">v{formData.version || '1.0'}</span>
                                                         </div>
                                                         <p className="text-[7px] font-bold text-gray-500 uppercase">Immutable</p>
                                                     </div>
@@ -1491,14 +1491,14 @@ const ContractGenerator = () => {
 
                         {/* Section Navigation Footer */}
                         {activeTab !== 'ai' && (
-                            <div className="mt-16 flex items-center justify-between border-t border-white/5 pt-10">
+                            <div className="mt-16 flex items-center justify-between border-t border-black/10 dark:border-white/5 pt-10">
                                 <button 
                                     onClick={() => {
                                         const idx = tabs.findIndex(t => t.id === activeTab);
                                         if (idx > 0) handleTabClick(tabs[idx - 1].id);
                                     }}
                                     disabled={activeTab === tabs[0].id}
-                                    className="flex items-center gap-3 px-8 py-4 rounded-2xl bg-white/5 text-gray-400 hover:text-white hover:bg-white/10 transition-all disabled:opacity-0 disabled:pointer-events-none font-black uppercase tracking-widest text-[11px]"
+                                    className="flex items-center gap-3 px-8 py-4 rounded-2xl bg-black/5 dark:bg-white/5 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-black/10 dark:hover:bg-white/10 transition-all disabled:opacity-0 disabled:pointer-events-none font-black uppercase tracking-widest text-[11px]"
                                 >
                                     <ChevronLeft size={18} /> Previous
                                 </button>
@@ -1511,7 +1511,7 @@ const ContractGenerator = () => {
                                     className={cn(
                                         "flex items-center gap-3 px-10 py-4 rounded-2xl font-black uppercase tracking-widest text-[11px] transition-all shadow-xl",
                                         activeTab === tabs[tabs.length - 1].id 
-                                            ? "bg-white/5 text-gray-500 cursor-not-allowed opacity-50" 
+                                            ? "bg-black/5 dark:bg-white/5 text-gray-500 cursor-not-allowed opacity-50" 
                                             : "bg-[#A855F7] text-black hover:scale-105 hover:shadow-[#A855F7]/20"
                                     )}
                                 >
@@ -1524,40 +1524,40 @@ const ContractGenerator = () => {
                 </main>
 
                 <aside className={cn(
-                    "lg:static lg:flex fixed inset-0 z-[60] lg:z-0 bg-[#050505] lg:bg-zinc-900/10 flex-col overflow-hidden shrink-0 transition-transform duration-500 lg:translate-x-0",
-                    isExpandedPreview ? "w-full lg:w-full border-l-0" : "w-full lg:w-[400px] 2xl:w-[600px] border-l border-white/5",
+                    "lg:static lg:flex fixed inset-0 z-[60] lg:z-0 bg-white dark:bg-[#050505] lg:bg-gray-100 dark:lg:bg-zinc-900/10 flex-col overflow-hidden shrink-0 transition-transform duration-500 lg:translate-x-0",
+                    isExpandedPreview ? "w-full lg:w-full border-l-0" : "w-full lg:w-[400px] 2xl:w-[600px] border-l border-black/10 dark:border-white/5",
                     showPreviewMobile ? "translate-x-0" : "translate-x-full lg:translate-x-0"
                 )}>
-                    <div className="p-6 border-b border-white/5 flex items-center justify-between bg-black/20 shrink-0">
+                    <div className="p-6 border-b border-black/10 dark:border-white/5 flex items-center justify-between bg-white dark:bg-black/20 shrink-0">
                         <div className="flex items-center gap-3">
-                            <button onClick={() => setShowPreviewMobile(false)} className="lg:hidden p-3 bg-white/5 rounded-xl border border-white/5 mr-2">
+                            <button onClick={() => setShowPreviewMobile(false)} className="lg:hidden p-3 bg-black/5 dark:bg-white/5 rounded-xl border border-black/10 dark:border-white/5 mr-2">
                                 <ArrowLeft size={18} />
                             </button>
                             <button 
                                 onClick={() => setIsExpandedPreview(!isExpandedPreview)} 
-                                className="hidden lg:flex p-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-gray-400 hover:text-white transition-all items-center gap-2 text-[9px] font-black uppercase tracking-wider h-10 px-3"
+                                className="hidden lg:flex p-2 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 border border-black/10 dark:border-white/10 rounded-xl text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all items-center gap-2 text-[9px] font-black uppercase tracking-wider h-10 px-3"
                                 title={isExpandedPreview ? "Exit Fullscreen Preview" : "Fullscreen Preview"}
                             >
                                 {isExpandedPreview ? <Minimize2 size={12} /> : <Maximize2 size={12} />}
                                 <span>{isExpandedPreview ? "Collapse" : "Expand"}</span>
                             </button>
                             <Eye size={16} className="text-neon-purple" />
-                            <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Live Preview</span>
+                            <span className="text-[10px] font-black uppercase tracking-widest text-gray-600 dark:text-gray-400">Live Preview</span>
                         </div>
                         <div className="flex items-center gap-4">
-                            <div className="flex items-center bg-black/40 rounded-lg p-1 border border-white/5">
-                                <button onClick={() => setUserZoom(Math.max(0.5, userZoom - 0.1))} className="p-1.5 hover:bg-white/5 rounded text-gray-400 transition-colors"><Minus size={12} /></button>
+                            <div className="flex items-center bg-white dark:bg-black/40 rounded-lg p-1 border border-black/10 dark:border-white/5">
+                                <button onClick={() => setUserZoom(Math.max(0.5, userZoom - 0.1))} className="p-1.5 hover:bg-black/5 dark:hover:bg-white/5 rounded text-gray-600 dark:text-gray-400 transition-colors"><Minus size={12} /></button>
                                 <span className="text-[10px] font-black text-gray-500 px-2 min-w-[40px] text-center">{Math.round(userZoom * 100)}%</span>
-                                <button onClick={() => setUserZoom(Math.min(2, userZoom + 0.1))} className="p-1.5 hover:bg-white/5 rounded text-gray-400 transition-colors"><Plus size={12} /></button>
+                                <button onClick={() => setUserZoom(Math.min(2, userZoom + 0.1))} className="p-1.5 hover:bg-black/5 dark:hover:bg-white/5 rounded text-gray-600 dark:text-gray-400 transition-colors"><Plus size={12} /></button>
                             </div>
                             <div className="flex items-center gap-2">
-                                <button onClick={() => setCurrentPage(Math.max(0, currentPage - 1))} className="p-2 bg-white/5 rounded-lg text-gray-500 hover:bg-white/10 transition-colors"><ChevronLeft size={14} /></button>
+                                <button onClick={() => setCurrentPage(Math.max(0, currentPage - 1))} className="p-2 bg-black/5 dark:bg-white/5 rounded-lg text-gray-500 hover:bg-black/10 dark:hover:bg-white/10 transition-colors"><ChevronLeft size={14} /></button>
                                 <span className="text-[10px] font-black text-gray-500">{currentPage + 1} / {paginatedPages.length}</span>
-                                <button onClick={() => setCurrentPage(Math.min(paginatedPages.length - 1, currentPage + 1))} className="p-2 bg-white/5 rounded-lg text-gray-500 hover:bg-white/10 transition-colors"><ChevronRight size={14} /></button>
+                                <button onClick={() => setCurrentPage(Math.min(paginatedPages.length - 1, currentPage + 1))} className="p-2 bg-black/5 dark:bg-white/5 rounded-lg text-gray-500 hover:bg-black/10 dark:hover:bg-white/10 transition-colors"><ChevronRight size={14} /></button>
                             </div>
                         </div>
                     </div>
-                    <div ref={previewContainerRef} className="flex-1 bg-[#050505] flex flex-col items-center justify-start p-0 overflow-y-auto overflow-x-hidden relative scrollbar-hide">
+                    <div ref={previewContainerRef} className="flex-1 bg-gray-200/70 dark:bg-[#050505] flex flex-col items-center justify-start p-0 overflow-y-auto overflow-x-hidden relative scrollbar-hide">
                         <div style={{ 
                             width: `${794 * previewScale}px`,
                             height: `${1123 * previewScale}px`,
@@ -1597,25 +1597,25 @@ const ContractGenerator = () => {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm no-print"
+                        className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-white dark:bg-black/60 backdrop-blur-sm no-print"
                     >
                         <motion.div 
                             initial={{ scale: 0.95, y: 20 }}
                             animate={{ scale: 1, y: 0 }}
                             exit={{ scale: 0.95, y: 20 }}
-                            className="bg-zinc-900 border border-white/10 rounded-[2.5rem] w-full max-w-lg overflow-hidden shadow-2xl flex flex-col text-white"
+                            className="bg-gray-100 dark:bg-zinc-900 border border-black/10 dark:border-white/10 rounded-[2.5rem] w-full max-w-lg overflow-hidden shadow-2xl flex flex-col text-gray-900 dark:text-white"
                         >
-                            <div className="p-6 border-b border-white/5 flex items-center justify-between bg-black/20">
+                            <div className="p-6 border-b border-black/10 dark:border-white/5 flex items-center justify-between bg-white dark:bg-black/20">
                                 <div className="flex items-center gap-3">
                                     <Sparkles size={18} className="text-[#A855F7] animate-pulse" />
                                     <div>
-                                        <h3 className="text-xs font-black uppercase tracking-widest text-white">AI Field Refinement</h3>
+                                        <h3 className="text-xs font-black uppercase tracking-widest text-gray-900 dark:text-white">AI Field Refinement</h3>
                                         <p className="text-[10px] text-gray-500 font-semibold mt-0.5">Refining: {refinementContext.fieldLabel}</p>
                                     </div>
                                 </div>
                                 <button 
                                     onClick={() => setRefinementContext(null)}
-                                    className="p-2 bg-white/5 hover:bg-white/10 border border-white/5 rounded-xl text-gray-400 hover:text-white transition-all"
+                                    className="p-2 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 border border-black/10 dark:border-white/5 rounded-xl text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all"
                                 >
                                     <X size={16} />
                                 </button>
@@ -1624,7 +1624,7 @@ const ContractGenerator = () => {
                             <div className="p-6 space-y-4">
                                 <div className="space-y-1">
                                     <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest block">Current Content Preview</label>
-                                    <div className="p-4 bg-black/40 border border-white/5 rounded-2xl max-h-40 overflow-y-auto text-[11px] text-zinc-300 whitespace-pre-wrap leading-relaxed">
+                                    <div className="p-4 bg-white dark:bg-black/40 border border-black/10 dark:border-white/5 rounded-2xl max-h-40 overflow-y-auto text-[11px] text-zinc-300 whitespace-pre-wrap leading-relaxed">
                                         {htmlToPlainText(refinementContext.currentValue) || <span className="italic text-gray-600">Field is currently empty</span>}
                                     </div>
                                 </div>
@@ -1635,7 +1635,7 @@ const ContractGenerator = () => {
                                         value={refinementPrompt}
                                         onChange={(e) => setRefinementPrompt(e.target.value)}
                                         placeholder="Tell AI how to refine this text (e.g., 'make it more formal', 'clarify payment deadlines', 'shorten to 1 sentence')..."
-                                        className="w-full h-28 bg-black/40 border border-white/5 focus:border-[#A855F7]/50 focus:shadow-[0_0_20px_rgba(168,85,247,0.1)] rounded-2xl p-4 text-[12px] font-medium text-white placeholder-gray-600 focus:outline-none transition-all resize-none"
+                                        className="w-full h-28 bg-white dark:bg-black/40 border border-black/10 dark:border-white/5 focus:border-[#A855F7]/50 focus:shadow-[0_0_20px_rgba(168,85,247,0.1)] rounded-2xl p-4 text-[12px] font-medium text-gray-900 dark:text-white placeholder-gray-600 focus:outline-none transition-all resize-none"
                                         onKeyDown={(e) => {
                                             if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
                                                 e.preventDefault();
@@ -1650,11 +1650,11 @@ const ContractGenerator = () => {
                                 </div>
                             </div>
                             
-                            <div className="p-6 border-t border-white/5 bg-black/20 flex justify-end gap-3">
+                            <div className="p-6 border-t border-black/10 dark:border-white/5 bg-white dark:bg-black/20 flex justify-end gap-3">
                                 <Button 
                                     variant="ghost" 
                                     onClick={() => setRefinementContext(null)}
-                                    className="px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-white/5 animate-none"
+                                    className="px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-black/5 dark:hover:bg-white/5 animate-none"
                                 >
                                     Cancel
                                 </Button>
@@ -1703,7 +1703,7 @@ const ContractGenerator = () => {
 
             {/* Floating AI Chat Pop-up Overlay */}
             {activeTab !== 'ai' && isFloatingChatOpen && (
-                <div className="fixed bottom-40 right-6 lg:bottom-24 lg:right-8 w-[92vw] sm:w-[420px] md:w-[460px] h-[550px] md:h-[600px] bg-zinc-950/90 backdrop-blur-2xl border border-white/10 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.6)] overflow-hidden flex flex-col p-4 z-[120] animate-fade-in">
+                <div className="fixed bottom-40 right-6 lg:bottom-24 lg:right-8 w-[92vw] sm:w-[420px] md:w-[460px] h-[550px] md:h-[600px] bg-gray-100 dark:bg-zinc-950/90 backdrop-blur-2xl border border-black/10 dark:border-white/10 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.6)] overflow-hidden flex flex-col p-4 z-[120] animate-fade-in">
                     {renderChatbot(true)}
                 </div>
             )}

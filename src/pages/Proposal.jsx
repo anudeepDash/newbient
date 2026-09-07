@@ -455,7 +455,7 @@ const Proposal = () => {
 
     if (loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-[#020202] text-white">
+            <div className="min-h-screen flex items-center justify-center bg-[#020202] text-gray-900 dark:text-white">
                 <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-neon-green"></div>
             </div>
         );
@@ -724,7 +724,7 @@ const Proposal = () => {
 
             // Horizontal Line
             if (line.match(/^[-*_]{3,}$/)) {
-                elements.push(<div key={`hr-${i}`} className="h-[1.5px] bg-black/10 my-8 w-full" />);
+                elements.push(<div key={`hr-${i}`} className="h-[1.5px] bg-white dark:bg-black/10 my-8 w-full" />);
                 i++;
                 continue;
             }
@@ -777,7 +777,7 @@ const Proposal = () => {
                     <div key={`ol-${i}`} className="pl-4 space-y-2 my-4">
                         {items.map((item, j) => (
                             <div key={j} className="flex items-start gap-3">
-                                <span className="text-[11px] font-black text-gray-400 mt-0.5 w-6 shrink-0">{item.num}.</span>
+                                <span className="text-[11px] font-black text-gray-600 dark:text-gray-400 mt-0.5 w-6 shrink-0">{item.num}.</span>
                                 <span className={baseClass} dangerouslySetInnerHTML={{ __html: inlineFmt(item.text) }} />
                             </div>
                         ))}
@@ -1021,7 +1021,7 @@ const Proposal = () => {
     const paginatedPages = getPaginatedPages();
 
     return (
-        <div className="min-h-screen bg-[#050505] text-white selection:bg-neon-green selection:text-black font-['Outfit']">
+        <div className="min-h-screen bg-[#050505] text-gray-900 dark:text-white selection:bg-neon-green selection:text-black font-['Outfit']">
             <style dangerouslySetInnerHTML={{ __html: `
                 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap');
                 @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400..700&display=swap');
@@ -1035,10 +1035,10 @@ const Proposal = () => {
             `}} />
 
             {!isExporting && (
-                <nav className="fixed top-0 left-0 right-0 z-50 bg-black/60 backdrop-blur-3xl border-b border-white/5 h-20 flex items-center px-6 no-print">
+                <nav className="fixed top-0 left-0 right-0 z-50 bg-white dark:bg-black/60 backdrop-blur-3xl border-b border-black/10 dark:border-white/5 h-20 flex items-center px-6 no-print">
                     <div className="max-w-[1400px] mx-auto w-full flex items-center justify-between">
                         <div className="flex items-center gap-3 sm:gap-6">
-                            <Link to={isAdmin ? "/admin/proposals" : "/"} className="p-2.5 sm:p-3 bg-white/5 rounded-2xl hover:bg-white/10 transition-all border border-white/5"><ArrowLeft size={16} /></Link>
+                            <Link to={isAdmin ? "/admin/proposals" : "/"} className="p-2.5 sm:p-3 bg-black/5 dark:bg-white/5 rounded-2xl hover:bg-black/10 dark:hover:bg-white/10 transition-all border border-black/10 dark:border-white/5"><ArrowLeft size={16} /></Link>
                             <div className="min-w-0 max-w-[120px] xs:max-w-[180px] sm:max-w-none">
                                 <p className="text-[9px] sm:text-[10px] font-black text-neon-green uppercase tracking-widest leading-none mb-1 truncate">
                                     {displayProposal.clientName ? `${displayProposal.clientName} (${displayProposal.proposalNumber || displayProposal.id})` : 'Strategic Quote'}
@@ -1060,8 +1060,8 @@ const Proposal = () => {
                                     <span className="text-[9px] font-black tracking-widest font-mono">{(displayProposal.attachments || []).length}</span>
                                 </button>
                             )}
-                            <button onClick={handleShare} className="p-2.5 sm:p-3 bg-white/5 rounded-2xl hover:bg-white/10 border border-white/5 text-gray-400 hover:text-neon-blue transition-all"><Share2 size={16} /></button>
-                            <button onClick={() => window.print()} className="p-3 bg-white/5 rounded-2xl hover:bg-white/10 border border-white/5 hidden sm:block"><Printer size={18} /></button>
+                            <button onClick={handleShare} className="p-2.5 sm:p-3 bg-black/5 dark:bg-white/5 rounded-2xl hover:bg-black/10 dark:hover:bg-white/10 border border-black/10 dark:border-white/5 text-gray-600 dark:text-gray-400 hover:text-neon-blue transition-all"><Share2 size={16} /></button>
+                            <button onClick={() => window.print()} className="p-3 bg-black/5 dark:bg-white/5 rounded-2xl hover:bg-black/10 dark:hover:bg-white/10 border border-black/10 dark:border-white/5 hidden sm:block"><Printer size={18} /></button>
                             <Button onClick={handleDownloadPDF} className="bg-neon-green text-black font-black uppercase tracking-widest text-[9px] sm:text-[10px] h-10 sm:h-12 px-4 sm:px-8 rounded-xl sm:rounded-2xl shadow-[0_10px_30px_rgba(57,255,20,0.3)]">
                                 <Download size={14} className="sm:mr-2" /> <span className="hidden sm:inline">Export PDF</span><span className="sm:hidden">Export</span>
                             </Button>
@@ -1082,7 +1082,7 @@ const Proposal = () => {
                                 <div className="text-right space-y-3">
                                     <div><h4 className={cn("text-[10px] font-black uppercase text-black tracking-[0.4em] mb-0", idx > 0 && "text-[7px]")}>Quotation</h4><p className={cn("text-lg font-black text-black tracking-widest font-mono", idx > 0 && "text-sm")}>{displayProposal.proposalNumber}</p></div>
                                     {idx === 0 && (
-                                        <div className="space-y-0.5"><p className="text-[8px] font-black text-gray-400 uppercase">Issue Date</p><p className="text-[10px] font-black text-black">{new Date(displayProposal.createdAt || Date.now()).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</p></div>
+                                        <div className="space-y-0.5"><p className="text-[8px] font-black text-gray-600 dark:text-gray-400 uppercase">Issue Date</p><p className="text-[10px] font-black text-black">{new Date(displayProposal.createdAt || Date.now()).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</p></div>
                                     )}
                                 </div>
                             </div>
@@ -1091,11 +1091,11 @@ const Proposal = () => {
                                     {page.type === 'cover' && (
                                     <div className="h-full flex flex-col justify-start space-y-20 py-8">
                                         <div className="grid grid-cols-2 gap-10">
-                                            <div className="space-y-6 min-w-0"><p className="text-[10px] font-black uppercase text-gray-400 tracking-widest border-b border-gray-100 pb-2">Client Entity</p><div className="space-y-2"><h2 className="text-lg font-black uppercase text-black leading-snug break-words">{displayProposal.clientName || 'Valued Partner'}</h2>{!isHidden('clientAddress') && <p className="text-[12px] font-medium text-gray-500 whitespace-pre-line leading-relaxed">{displayProposal.clientAddress || 'Client Address'}</p>}</div></div>
-                                            <div className="space-y-6 text-right min-w-0"><p className="text-[10px] font-black uppercase text-gray-400 tracking-widest border-b border-gray-100 pb-2">Engagement Mission</p><div className="space-y-2"><h2 className="text-lg font-black uppercase text-black leading-snug italic break-words">{displayProposal.campaignName || 'Mission Title'}</h2><p className="text-[12px] font-black text-neon-green bg-black px-3 py-1 inline-block uppercase tracking-widest">Period: {displayProposal.campaignDuration || 'TBD'}</p></div></div>
+                                            <div className="space-y-6 min-w-0"><p className="text-[10px] font-black uppercase text-gray-600 dark:text-gray-400 tracking-widest border-b border-gray-100 pb-2">Client Entity</p><div className="space-y-2"><h2 className="text-lg font-black uppercase text-black leading-snug break-words">{displayProposal.clientName || 'Valued Partner'}</h2>{!isHidden('clientAddress') && <p className="text-[12px] font-medium text-gray-500 whitespace-pre-line leading-relaxed">{displayProposal.clientAddress || 'Client Address'}</p>}</div></div>
+                                            <div className="space-y-6 text-right min-w-0"><p className="text-[10px] font-black uppercase text-gray-600 dark:text-gray-400 tracking-widest border-b border-gray-100 pb-2">Engagement Mission</p><div className="space-y-2"><h2 className="text-lg font-black uppercase text-black leading-snug italic break-words">{displayProposal.campaignName || 'Mission Title'}</h2><p className="text-[12px] font-black text-neon-green bg-white dark:bg-black px-3 py-1 inline-block uppercase tracking-widest">Period: {displayProposal.campaignDuration || 'TBD'}</p></div></div>
                                         </div>
-                                        <div className="pt-16 space-y-10"><div className="flex items-center gap-4"><div className="w-12 h-1 bg-black" /><p className="text-[11px] font-black uppercase tracking-[0.6em]">Strategic Project Memorandum</p></div>{!isHidden('coverDescription') && <div className="text-lg font-medium text-gray-700 leading-relaxed max-w-2xl text-justify">{renderContent(displayProposal.coverDescription || 'Cover description pending...')}</div>}</div>
-                                        <div className="mt-auto grid grid-cols-2 gap-10 pt-10 border-t border-gray-100"><div><p className="text-[9px] font-black text-gray-400 uppercase mb-2">Quote Reference</p><p className="text-[11px] font-black text-black">{displayProposal.proposalNumber}</p></div><div className="text-right"><p className="text-[9px] font-black text-gray-400 uppercase mb-2">Classification</p><p className="text-[11px] font-black text-black italic">Strategic Commercial</p></div></div>
+                                        <div className="pt-16 space-y-10"><div className="flex items-center gap-4"><div className="w-12 h-1 bg-white dark:bg-black" /><p className="text-[11px] font-black uppercase tracking-[0.6em]">Strategic Project Memorandum</p></div>{!isHidden('coverDescription') && <div className="text-lg font-medium text-gray-700 leading-relaxed max-w-2xl text-justify">{renderContent(displayProposal.coverDescription || 'Cover description pending...')}</div>}</div>
+                                        <div className="mt-auto grid grid-cols-2 gap-10 pt-10 border-t border-gray-100"><div><p className="text-[9px] font-black text-gray-600 dark:text-gray-400 uppercase mb-2">Quote Reference</p><p className="text-[11px] font-black text-black">{displayProposal.proposalNumber}</p></div><div className="text-right"><p className="text-[9px] font-black text-gray-600 dark:text-gray-400 uppercase mb-2">Classification</p><p className="text-[11px] font-black text-black italic">Strategic Commercial</p></div></div>
                                     </div>
                                     )}
                                     {page.type === 'strategy' && (
@@ -1105,7 +1105,7 @@ const Proposal = () => {
                                                 {displayProposal.strategyTitle ?? 'EXECUTIVE SUMMARY'}
                                             </h3>
                                             <div className="w-20 h-1.5 bg-neon-green" />
-                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">
+                                            <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-[0.35em] mt-3">
                                                 {displayProposal.strategySub ?? 'STRATEGIC OUTLINE'}
                                             </p>
                                         </div>
@@ -1113,7 +1113,7 @@ const Proposal = () => {
                                         {page.primaryGoalText && !isHtmlEmpty(page.primaryGoalText) && (
                                             <div className="pt-12">
                                                 <div className="p-12 border-2 border-black rounded-[2.5rem] space-y-6">
-                                                    <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest">Primary Objective</p>
+                                                    <p className="text-[11px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest">Primary Objective</p>
                                                     <div className="text-lg font-black text-black leading-relaxed">{renderContent(page.primaryGoalText)}</div>
                                                 </div>
                                             </div>
@@ -1128,7 +1128,7 @@ const Proposal = () => {
                                                 {displayProposal.scopeTitle ?? 'SCOPE OF WORK'}
                                             </h3>
                                             <div className="w-20 h-1.5 bg-neon-green" />
-                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">
+                                            <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-[0.35em] mt-3">
                                                 {displayProposal.scopeSub ?? 'RESOURCE DELIVERABLES'}
                                             </p>
                                         </div>
@@ -1139,9 +1139,9 @@ const Proposal = () => {
                                          <>
                                              <div className="mt-auto pt-12 flex flex-col gap-8 border-t border-gray-100">
                                                  <div className="flex items-center gap-4">
-                                                     <div className="w-10 h-10 bg-black flex items-center justify-center shrink-0"><span className="text-[8px] font-black text-neon-green">NB</span></div>
+                                                     <div className="w-10 h-10 bg-white dark:bg-black flex items-center justify-center shrink-0"><span className="text-[8px] font-black text-neon-green">NB</span></div>
                                                      <div className="flex-1">
-                                                         <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-4">Official Authorization</label>
+                                                         <label className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest block mb-4">Official Authorization</label>
                                                          <div className="relative group">
                                                              {displayProposal.showSignatures ? (
                                                                  displayProposal.status === 'Accepted' ? (
@@ -1166,7 +1166,7 @@ const Proposal = () => {
                                                                  )
                                                              ) : (
                                                                  <div className="w-full bg-gray-50 border-2 border-dashed border-gray-200 h-24 sm:h-32 flex items-center justify-center rounded-2xl">
-                                                                     <p className="text-xs font-black text-gray-400 uppercase tracking-widest">Seal Only Authorization Mode</p>
+                                                                     <p className="text-xs font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest">Seal Only Authorization Mode</p>
                                                                  </div>
                                                              )}
                                                          </div>
@@ -1181,12 +1181,12 @@ const Proposal = () => {
                                                              </div>
                                                          )}
                                                      </div>
-                                                     <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest text-center mt-4">By signing, you confirm that you have read and agreed to the terms of engagement.</p>
+                                                     <p className="text-[9px] font-bold text-gray-600 dark:text-gray-400 uppercase tracking-widest text-center mt-4">By signing, you confirm that you have read and agreed to the terms of engagement.</p>
                                                  </div>
                                                  <Button 
                                                      onClick={handleApproveProposal} 
                                                      disabled={isSubmitting || (displayProposal.showSignatures && !signatureName.trim()) || displayProposal.status === 'Accepted'} 
-                                                     className="w-full h-16 sm:h-20 bg-black text-white font-black uppercase tracking-[0.3em] text-[10px] sm:text-xs rounded-2xl hover:bg-neon-green hover:text-black transition-all group overflow-visible relative shadow-2xl disabled:opacity-50 px-8"
+                                                     className="w-full h-16 sm:h-20 bg-white dark:bg-black text-gray-900 dark:text-white font-black uppercase tracking-[0.3em] text-[10px] sm:text-xs rounded-2xl hover:bg-neon-green hover:text-black transition-all group overflow-visible relative shadow-2xl disabled:opacity-50 px-8"
                                                  >
                                                      {displayProposal.status === 'Accepted' ? (
                                                          <span className="flex items-center gap-3"><ShieldCheck className="text-neon-green" /> Document Locked & Authorized</span>
@@ -1210,7 +1210,7 @@ const Proposal = () => {
                                                 {displayProposal.proposalTitle ?? 'DELIVERABLES'}
                                             </h3>
                                             <div className="w-20 h-1.5 bg-neon-green" />
-                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">
+                                            <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-[0.35em] mt-3">
                                                 {displayProposal.proposalSub ?? 'PROJECT INVENTORY'}
                                             </p>
                                         </div>
@@ -1218,10 +1218,10 @@ const Proposal = () => {
                                             <div className="space-y-6">
                                                 <table className="w-full text-left border-collapse border border-black">
                                                     <thead>
-                                                        <tr className="bg-black text-[9px] font-black uppercase text-white tracking-[0.3em]">
-                                                            <th className="p-4 w-12 text-center border-r border-white/20">#</th>
-                                                            <th className="p-4 border-r border-white/20">Deliverable</th>
-                                                            <th className="p-4 text-center w-28 border-r border-white/20">Qty / Unit</th>
+                                                        <tr className="bg-white dark:bg-black text-[9px] font-black uppercase text-gray-900 dark:text-white tracking-[0.3em]">
+                                                            <th className="p-4 w-12 text-center border-r border-black/20 dark:border-white/20">#</th>
+                                                            <th className="p-4 border-r border-black/20 dark:border-white/20">Deliverable</th>
+                                                            <th className="p-4 text-center w-28 border-r border-black/20 dark:border-white/20">Qty / Unit</th>
                                                             <th className="p-4 text-right w-40">Timeline</th>
                                                         </tr>
                                                     </thead>
@@ -1242,11 +1242,11 @@ const Proposal = () => {
                                         )}
                                         {page.clientRequirements?.length > 0 && (
                                             <div className="space-y-6 pt-4">
-                                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mb-6">Requirements From Client</p>
+                                                <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-[0.35em] mb-6">Requirements From Client</p>
                                                 <div className="p-8 border-2 border-gray-200 space-y-0">
                                                     {page.clientRequirements.map((r, i) => (
                                                         <div key={r.id || i} className={cn("flex items-start gap-4 py-4", i > 0 && "border-t border-gray-100")}>
-                                                            <div className="w-8 h-8 bg-black flex items-center justify-center shrink-0 mt-0.5"><span className="text-[9px] font-black text-white">{String(i + 1).padStart(2, '0')}</span></div>
+                                                            <div className="w-8 h-8 bg-white dark:bg-black flex items-center justify-center shrink-0 mt-0.5"><span className="text-[9px] font-black text-gray-900 dark:text-white">{String(i + 1).padStart(2, '0')}</span></div>
                                                             <p className="text-[12px] font-bold text-black leading-relaxed">{r.description}</p>
                                                         </div>
                                                     ))}
@@ -1263,7 +1263,7 @@ const Proposal = () => {
                                                  {displayProposal.inventoryTitle ?? 'RESOURCE INVENTORY'}
                                              </h3>
                                              <div className="w-20 h-1.5 bg-neon-green" />
-                                             <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">
+                                             <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-[0.35em] mt-3">
                                                  {page.tablePageIdx > 1 
                                                      ? `${displayProposal.inventorySub ?? 'COMMERCIALS BREAKDOWN'} — Part ${page.tablePageIdx}` 
                                                      : (displayProposal.inventorySub ?? 'COMMERCIALS BREAKDOWN')}
@@ -1271,7 +1271,7 @@ const Proposal = () => {
                                          </div>
                                          <table className="w-full text-left border-collapse border border-black">
                                           <thead>
-                                              <tr className="bg-black text-[9px] font-black uppercase text-white tracking-[0.3em]">
+                                              <tr className="bg-white dark:bg-black text-[9px] font-black uppercase text-gray-900 dark:text-white tracking-[0.3em]">
                                                   {(displayProposal?.tableColumns || defaultColumns).map((col, cIdx, arr) => {
                                                       const colType = col.type || (col.key === 'price' ? 'amount' : (col.key === 'qty' ? 'number' : 'text'));
                                                       return (
@@ -1279,7 +1279,7 @@ const Proposal = () => {
                                                               key={col.key} 
                                                               className={cn(
                                                                   "p-4",
-                                                                  cIdx < arr.length - 1 && "border-r border-white/20",
+                                                                  cIdx < arr.length - 1 && "border-r border-black/20 dark:border-white/20",
                                                                   colType === 'number' && "text-center w-24",
                                                                   colType === 'amount' && "text-right w-48"
                                                               )}
@@ -1330,7 +1330,7 @@ const Proposal = () => {
                                                 {page.title ? page.title.toUpperCase() : "CUSTOM PAGE"}
                                             </h3>
                                             <div className="w-20 h-1.5 bg-neon-green" />
-                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">
+                                            <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-[0.35em] mt-3">
                                                 {(displayProposal.customPages?.[page.pageIndex]?.subtitle || "Additional Specifications").toUpperCase()}
                                             </p>
                                         </div>
@@ -1347,7 +1347,7 @@ const Proposal = () => {
                                                 GENERAL TERMS.
                                             </h3>
                                             <div className="w-20 h-1.5 bg-neon-green" />
-                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">Part {page.termsPageIdx}</p>
+                                            <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-[0.35em] mt-3">Part {page.termsPageIdx}</p>
                                         </div>
                                         <div className="text-[12px] font-semibold text-gray-600 leading-relaxed space-y-3">
                                             {renderContent(page.termsText)}
@@ -1363,7 +1363,7 @@ const Proposal = () => {
                                                     {displayProposal.commercialsTitle ?? 'COMMERCIAL TERMS'}
                                                 </h3>
                                                 <div className="w-20 h-1.5 bg-neon-green" />
-                                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">
+                                                <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-[0.35em] mt-3">
                                                     {displayProposal.commercialsSub ?? 'SETTLEMENT & SIGN-OFF'}
                                                 </p>
                                             </div>                  
@@ -1379,7 +1379,7 @@ const Proposal = () => {
 
                                                         <div className="p-6 bg-gray-50 border border-gray-150 rounded-2xl space-y-2">
 
-                                                            <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Settlement Details</p>
+                                                            <p className="text-[9px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest">Settlement Details</p>
 
                                                             <div className="text-[11px] font-mono font-bold text-black whitespace-pre-line leading-relaxed">{page.paymentDetailsText}</div>
 
@@ -1390,25 +1390,25 @@ const Proposal = () => {
                                                 {!displayProposal.hideTotalColumn && (<div className="space-y-4">
                                                     <div className="bg-gray-50/50 border border-gray-250/60 rounded-[2rem] p-8 space-y-6">
                                                         <div className="flex justify-between items-center pb-4 border-b border-gray-200/60">
-                                                            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Subtotal</span>
+                                                            <span className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest">Subtotal</span>
                                                             <span className="text-base font-bold text-black font-mono">₹{subtotal.toLocaleString()}</span>
                                                         </div>
                                                         {displayProposal.showGst && (
                                                             <div className="flex justify-between items-center pb-4 border-b border-gray-200/60">
-                                                                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">GST ({displayProposal.gstRate}%)</span>
+                                                                <span className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest">GST ({displayProposal.gstRate}%)</span>
                                                                 <span className="text-base font-bold text-black font-mono">₹{gstAmount.toLocaleString()}</span>
                                                             </div>
                                                         )}
-                                                        <div className="p-8 bg-black text-right relative overflow-hidden rounded-[1.5rem] shadow-xl">
-                                                            <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-3">Total Estimated Cost</p>
-                                                            <h2 className="text-3xl font-black tracking-widest text-white font-mono leading-none">₹{totalAmount.toLocaleString()}</h2>
+                                                        <div className="p-8 bg-white dark:bg-black text-right relative overflow-hidden rounded-[1.5rem] shadow-xl">
+                                                            <p className="text-[9px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest mb-3">Total Estimated Cost</p>
+                                                            <h2 className="text-3xl font-black tracking-widest text-gray-900 dark:text-white font-mono leading-none">₹{totalAmount.toLocaleString()}</h2>
                                                             <div className="absolute top-0 right-0 w-1.5 h-full bg-neon-green" />
                                                         </div>
                                                         {displayProposal.advanceRequested > 0 && (
                                                             <div className="p-6 bg-neon-green/5 border border-neon-green/20 rounded-[1.5rem] flex justify-between items-center">
                                                                 <div>
                                                                     <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest block">Advance Fee ({displayProposal.advanceRequested}%)</span>
-                                                                    <span className="text-[7px] font-bold text-gray-400 uppercase tracking-wider block">Due upon signature</span>
+                                                                    <span className="text-[7px] font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider block">Due upon signature</span>
                                                                 </div>
                                                                 <span className="text-xl font-black text-black font-mono">₹{(totalAmount * displayProposal.advanceRequested / 100).toLocaleString()}</span>
                                                             </div>
@@ -1444,7 +1444,7 @@ const Proposal = () => {
                                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 relative z-20">
                                                                 {/* Provider Side */}
                                                                 <div className="space-y-4">
-                                                                    <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">For {currentLogo.label}</p>
+                                                                    <p className="text-[9px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest">For {currentLogo.label}</p>
                                                                     <div className="h-24 flex items-end">
                                                                         {displayProposal.providerSignature ? (
                                                                             <img src={displayProposal.providerSignature} className="h-full object-contain grayscale mix-blend-multiply" alt="Provider Signature" crossOrigin="anonymous" />
@@ -1454,27 +1454,27 @@ const Proposal = () => {
                                                                     </div>
                                                                     <div className="space-y-1">
                                                                         <p className="text-[11px] font-black uppercase text-black">{displayProposal.senderName || currentLogo.label}</p>
-                                                                        <p className="text-[8px] font-bold text-gray-400 uppercase tracking-widest italic">{displayProposal.senderDesignation || 'Service Provider'}</p>
+                                                                        <p className="text-[8px] font-bold text-gray-600 dark:text-gray-400 uppercase tracking-widest italic">{displayProposal.senderDesignation || 'Service Provider'}</p>
                                                                     </div>
                                                                 </div>
  
                                                                 {/* Client Signature Area */}
                                                                 <div className="space-y-6">
-                                                                    <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Client Signature Block</p>
+                                                                    <p className="text-[9px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest">Client Signature Block</p>
                                                                     <div 
                                                                         onClick={() => setIsSignatureModalOpen(true)}
-                                                                        className="relative h-24 bg-black/5 rounded-[20px] border-2 border-dashed border-gray-200 flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-black/10 hover:border-neon-green/40 transition-all group overflow-hidden"
+                                                                        className="relative h-24 bg-white dark:bg-black/5 rounded-[20px] border-2 border-dashed border-gray-200 flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-white dark:hover:bg-black/10 hover:border-neon-green/40 transition-all group overflow-hidden"
                                                                     >
                                                                         {clientSignature ? (
                                                                             <div className="relative group w-full h-full flex items-center justify-center p-4">
                                                                                 <img src={clientSignature} alt="Client Signature" className="max-h-full object-contain grayscale mix-blend-multiply" crossOrigin="anonymous" />
-                                                                                <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center">
+                                                                                <div className="absolute inset-0 bg-white dark:bg-black/5 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center">
                                                                                     <RefreshCw size={16} className="text-black" />
                                                                                 </div>
                                                                             </div>
                                                                         ) : (
                                                                             <>
-                                                                                <PenTool size={20} className="text-gray-400 group-hover:text-neon-green" />
+                                                                                <PenTool size={20} className="text-gray-600 dark:text-gray-400 group-hover:text-neon-green" />
                                                                                 <p className="text-[9px] font-black text-gray-700 uppercase tracking-widest">Click to sign</p>
                                                                             </>
                                                                         )}
@@ -1507,7 +1507,7 @@ const Proposal = () => {
                                                             <div className="grid grid-cols-2 gap-10">
                                                                 <div className="space-y-8 border-r border-gray-100 pr-10">
                                                                     <div className="space-y-4">
-                                                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em] border-b border-gray-100 pb-2">Provider Authorization</p>
+                                                                        <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-[0.3em] border-b border-gray-100 pb-2">Provider Authorization</p>
                                                                         <div className="h-20 flex items-end">
                                                                             {displayProposal.providerSignature ? (
                                                                                 <img src={displayProposal.providerSignature} className="h-full object-contain grayscale mix-blend-multiply" alt="Provider Signature" crossOrigin="anonymous" />
@@ -1517,12 +1517,12 @@ const Proposal = () => {
                                                                         </div>
                                                                         <div className="space-y-1">
                                                                             <p className="text-[11px] font-black uppercase text-black">{displayProposal.senderName || currentLogo.label}</p>
-                                                                            <p className="text-[8px] font-bold text-gray-400 uppercase tracking-widest italic">{displayProposal.senderDesignation || 'Service Provider'}</p>
+                                                                            <p className="text-[8px] font-bold text-gray-600 dark:text-gray-400 uppercase tracking-widest italic">{displayProposal.senderDesignation || 'Service Provider'}</p>
                                                                         </div>
                                                                     </div>
  
                                                                     <div className="space-y-4">
-                                                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em] border-b border-gray-100 pb-2">Client Authorization</p>
+                                                                        <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-[0.3em] border-b border-gray-100 pb-2">Client Authorization</p>
                                                                         <div className="h-20 flex items-end">
                                                                             {displayProposal.approvalMetadata?.clientSignature ? (
                                                                                 <img src={displayProposal.approvalMetadata?.clientSignature} className="h-full object-contain grayscale mix-blend-multiply" alt="Client Signature" crossOrigin="anonymous" />
@@ -1532,14 +1532,14 @@ const Proposal = () => {
                                                                         </div>
                                                                         <div className="space-y-1">
                                                                             <p className="text-[11px] font-black uppercase text-black">{displayProposal.approvalMetadata?.signedBy || 'Authorized Signatory'}</p>
-                                                                            <p className="text-[8px] font-bold text-gray-400 uppercase tracking-widest italic">Authorized Signatory</p>
-                                                                            <p className="text-[7px] text-gray-400 mt-1 uppercase tracking-tighter font-black">IP: {displayProposal.approvalMetadata?.ip || 'N/A'} | Signed: {displayProposal.approvalMetadata?.signedAt ? new Date(displayProposal.approvalMetadata.signedAt).toLocaleString() : 'N/A'}</p>
+                                                                            <p className="text-[8px] font-bold text-gray-600 dark:text-gray-400 uppercase tracking-widest italic">Authorized Signatory</p>
+                                                                            <p className="text-[7px] text-gray-600 dark:text-gray-400 mt-1 uppercase tracking-tighter font-black">IP: {displayProposal.approvalMetadata?.ip || 'N/A'} | Signed: {displayProposal.approvalMetadata?.signedAt ? new Date(displayProposal.approvalMetadata.signedAt).toLocaleString() : 'N/A'}</p>
                                                                         </div>
                                                                     </div>
                                                                 </div>
                                                                 
                                                                 <div className="space-y-6">
-                                                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em] border-b border-gray-100 pb-2 text-right">Digital Footprints</p>
+                                                                    <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-[0.3em] border-b border-gray-100 pb-2 text-right">Digital Footprints</p>
                                                                     <div className="space-y-2 text-[8px] font-black uppercase tracking-widest text-gray-500 text-right">
                                                                         <div className="flex justify-end gap-2"><span>IP Address:</span><span className="text-black">{displayProposal.approvalMetadata?.ip || 'N/A'}</span></div>
                                                                         <div className="flex justify-end gap-2"><span>Verified Email:</span><span className="text-black">{displayProposal.approvalMetadata?.email || 'N/A'}</span></div>
@@ -1571,7 +1571,7 @@ const Proposal = () => {
                                                     APPENDIX / ATTACHMENTS.
                                                 </h3>
                                                 <div className="w-20 h-1.5 bg-neon-green" />
-                                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">
+                                                <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-[0.35em] mt-3">
                                                     SUPPORTING INSTRUMENTS & DOCUMENTATION
                                                 </p>
                                             </div>
@@ -1587,7 +1587,7 @@ const Proposal = () => {
                                                         return (
                                                             <div key={idx} className="w-full relative rounded-2xl overflow-hidden border border-gray-200">
                                                                 <img src={attachment.url} alt={attachment.name} className="w-full h-auto object-contain" />
-                                                                <div className="absolute top-4 left-4 bg-black/80 backdrop-blur-md px-4 py-2 rounded-full text-white text-[10px] font-black uppercase tracking-wider">
+                                                                <div className="absolute top-4 left-4 bg-white dark:bg-black/80 backdrop-blur-md px-4 py-2 rounded-full text-gray-900 dark:text-white text-[10px] font-black uppercase tracking-wider">
                                                                     {attachment.name}
                                                                 </div>
                                                             </div>
@@ -1598,7 +1598,7 @@ const Proposal = () => {
                                                         return (
                                                             <div key={idx} className="w-full h-[600px] relative rounded-2xl overflow-hidden border border-gray-200">
                                                                 <iframe src={attachment.url} title={attachment.name} className="w-full h-full border-none bg-gray-50" />
-                                                                <div className="absolute top-4 left-4 bg-black/80 backdrop-blur-md px-4 py-2 rounded-full text-white text-[10px] font-black uppercase tracking-wider pointer-events-none">
+                                                                <div className="absolute top-4 left-4 bg-white dark:bg-black/80 backdrop-blur-md px-4 py-2 rounded-full text-gray-900 dark:text-white text-[10px] font-black uppercase tracking-wider pointer-events-none">
                                                                     {attachment.name}
                                                                 </div>
                                                             </div>
@@ -1612,7 +1612,7 @@ const Proposal = () => {
                                                                     <h4 className="text-xs font-black text-black uppercase tracking-wider truncate" title={attachment.name}>
                                                                         {attachment.name}
                                                                     </h4>
-                                                                    <p className="text-[8px] font-bold text-gray-400 uppercase tracking-widest mt-1">
+                                                                    <p className="text-[8px] font-bold text-gray-600 dark:text-gray-400 uppercase tracking-widest mt-1">
                                                                         {attachment.type === 'file' ? 'Uploaded Storage File' : 'Linked URL'}
                                                                     </p>
                                                                 </div>
@@ -1623,7 +1623,7 @@ const Proposal = () => {
                                                                     href={attachment.url} 
                                                                     target="_blank" 
                                                                     rel="noopener noreferrer" 
-                                                                    className="text-[9px] font-black uppercase tracking-widest text-neon-green bg-black hover:bg-zinc-800 transition-colors px-3 py-1.5 rounded-xl inline-block"
+                                                                    className="text-[9px] font-black uppercase tracking-widest text-neon-green bg-white dark:bg-black hover:bg-zinc-800 transition-colors px-3 py-1.5 rounded-xl inline-block"
                                                                 >
                                                                     View Document &rarr;
                                                                 </a>
@@ -1641,7 +1641,7 @@ const Proposal = () => {
                                 )}
                                 </div>
                             </div>
-                            <div className="mt-auto pt-8 pb-10 border-t border-gray-100 flex justify-between items-center text-[9px] font-black text-gray-400 uppercase tracking-[0.4em]">
+                            <div className="mt-auto pt-8 pb-10 border-t border-gray-100 flex justify-between items-center text-[9px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-[0.4em]">
                                 <p className="w-1/3 text-left">© NEWBI ENTERTAINMENT & MARKETING LLP</p>
                                 <p className="w-1/3 text-center text-gray-600 truncate px-2"></p>
                                 <p className="w-1/3 text-right text-black">Page {idx + 1} of {paginatedPages.length}</p>
@@ -1662,7 +1662,7 @@ const Proposal = () => {
                             <div className="text-right space-y-3">
                                 <div><h4 className={cn("text-[10px] font-black uppercase text-black tracking-[0.4em] mb-0", idx > 0 && "text-[7px]")}>Quotation</h4><p className={cn("text-lg font-black text-black tracking-widest font-mono", idx > 0 && "text-sm")}>{displayProposal.proposalNumber}</p></div>
                                 {idx === 0 && (
-                                    <div className="space-y-0.5"><p className="text-[8px] font-black text-gray-400 uppercase">Issue Date</p><p className="text-[10px] font-black text-black">{new Date(displayProposal.createdAt || Date.now()).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</p></div>
+                                    <div className="space-y-0.5"><p className="text-[8px] font-black text-gray-600 dark:text-gray-400 uppercase">Issue Date</p><p className="text-[10px] font-black text-black">{new Date(displayProposal.createdAt || Date.now()).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</p></div>
                                 )}
                             </div>
                         </div>
@@ -1672,11 +1672,11 @@ const Proposal = () => {
                             {page.type === 'cover' && (
                                 <div className="h-full flex flex-col justify-start space-y-20 py-8">
                                     <div className="grid grid-cols-2 gap-10">
-                                        <div className="space-y-6 min-w-0"><p className="text-[10px] font-black uppercase text-gray-400 tracking-widest border-b border-gray-100 pb-2">Client Entity</p><div className="space-y-2"><h2 className="text-lg font-black uppercase text-black leading-snug break-words">{displayProposal.clientName || 'Valued Partner'}</h2>{!isHidden('clientAddress') && <p className="text-[12px] font-medium text-gray-500 whitespace-pre-line leading-relaxed">{displayProposal.clientAddress || 'Client Address'}</p>}</div></div>
-                                        <div className="space-y-6 text-right min-w-0"><p className="text-[10px] font-black uppercase text-gray-400 tracking-widest border-b border-gray-100 pb-2">Project Specification</p><div className="space-y-2"><h2 className="text-lg font-black uppercase text-black leading-snug italic break-words">{displayProposal.campaignName || 'Project Title'}</h2><p className="text-[12px] font-black text-neon-green bg-black px-3 py-1 inline-block uppercase tracking-widest">Duration: {displayProposal.campaignDuration || 'TBD'}</p></div></div>
+                                        <div className="space-y-6 min-w-0"><p className="text-[10px] font-black uppercase text-gray-600 dark:text-gray-400 tracking-widest border-b border-gray-100 pb-2">Client Entity</p><div className="space-y-2"><h2 className="text-lg font-black uppercase text-black leading-snug break-words">{displayProposal.clientName || 'Valued Partner'}</h2>{!isHidden('clientAddress') && <p className="text-[12px] font-medium text-gray-500 whitespace-pre-line leading-relaxed">{displayProposal.clientAddress || 'Client Address'}</p>}</div></div>
+                                        <div className="space-y-6 text-right min-w-0"><p className="text-[10px] font-black uppercase text-gray-600 dark:text-gray-400 tracking-widest border-b border-gray-100 pb-2">Project Specification</p><div className="space-y-2"><h2 className="text-lg font-black uppercase text-black leading-snug italic break-words">{displayProposal.campaignName || 'Project Title'}</h2><p className="text-[12px] font-black text-neon-green bg-white dark:bg-black px-3 py-1 inline-block uppercase tracking-widest">Duration: {displayProposal.campaignDuration || 'TBD'}</p></div></div>
                                     </div>
-                                    <div className="pt-16 space-y-10"><div className="flex items-center gap-4"><div className="w-12 h-1 bg-black" /><p className="text-[11px] font-black uppercase tracking-[0.6em]">Official Strategic Quotation</p></div>{!isHidden('coverDescription') && <div className="text-lg font-medium text-gray-700 leading-relaxed max-w-2xl text-justify">{renderContent(displayProposal.coverDescription || 'Cover description pending...')}</div>}</div>
-                                    <div className="mt-auto grid grid-cols-2 gap-10 pt-10 border-t border-gray-100"><div><p className="text-[9px] font-black text-gray-400 uppercase mb-2">Quote Reference</p><p className="text-[11px] font-black text-black">{displayProposal.proposalNumber}</p></div><div className="text-right"><p className="text-[9px] font-black text-gray-400 uppercase mb-2">Classification</p><p className="text-[11px] font-black text-black italic">Strategic Commercial</p></div></div>
+                                    <div className="pt-16 space-y-10"><div className="flex items-center gap-4"><div className="w-12 h-1 bg-white dark:bg-black" /><p className="text-[11px] font-black uppercase tracking-[0.6em]">Official Strategic Quotation</p></div>{!isHidden('coverDescription') && <div className="text-lg font-medium text-gray-700 leading-relaxed max-w-2xl text-justify">{renderContent(displayProposal.coverDescription || 'Cover description pending...')}</div>}</div>
+                                    <div className="mt-auto grid grid-cols-2 gap-10 pt-10 border-t border-gray-100"><div><p className="text-[9px] font-black text-gray-600 dark:text-gray-400 uppercase mb-2">Quote Reference</p><p className="text-[11px] font-black text-black">{displayProposal.proposalNumber}</p></div><div className="text-right"><p className="text-[9px] font-black text-gray-600 dark:text-gray-400 uppercase mb-2">Classification</p><p className="text-[11px] font-black text-black italic">Strategic Commercial</p></div></div>
                                 </div>
                             )}
 
@@ -1687,7 +1687,7 @@ const Proposal = () => {
                                              {displayProposal.strategyTitle ?? 'EXECUTIVE SUMMARY'}
                                         </h3>
                                         <div className="w-20 h-1.5 bg-neon-green" />
-                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">
+                                        <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-[0.35em] mt-3">
                                             {displayProposal.strategySub ?? 'STRATEGIC OUTLINE'}
                                         </p>
                                     </div>
@@ -1695,7 +1695,7 @@ const Proposal = () => {
                                     {page.primaryGoalText && !isHtmlEmpty(page.primaryGoalText) && (
                                         <div className="pt-12">
                                             <div className="p-12 border-2 border-black rounded-[2.5rem] space-y-6">
-                                                <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest">Primary Objective</p>
+                                                <p className="text-[11px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest">Primary Objective</p>
                                                 <div className="text-lg font-black text-black leading-relaxed">{renderContent(page.primaryGoalText)}</div>
                                             </div>
                                         </div>
@@ -1710,7 +1710,7 @@ const Proposal = () => {
                                             {displayProposal.scopeTitle ?? 'SCOPE OF WORK'}
                                         </h3>
                                         <div className="w-20 h-1.5 bg-neon-green" />
-                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">
+                                        <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-[0.35em] mt-3">
                                             {displayProposal.scopeSub ?? 'RESOURCE DELIVERABLES'}
                                         </p>
                                     </div>
@@ -1719,11 +1719,11 @@ const Proposal = () => {
 </div>
                                     {idx === paginatedPages.length - 1 && !isHidden('signatures') && (displayProposal.showSignatures || displayProposal.showSeal) && (
                                         <div className="mt-auto pt-12 flex items-center gap-4 border-t border-gray-100">
-                                            <div className="w-10 h-10 bg-black flex items-center justify-center shrink-0"><span className="text-[8px] font-black text-neon-green">NB</span></div>
+                                            <div className="w-10 h-10 bg-white dark:bg-black flex items-center justify-center shrink-0"><span className="text-[8px] font-black text-neon-green">NB</span></div>
                                             <div className="flex-1 relative">
                                                 {displayProposal.showSignatures && (
                                                     <div className="space-y-4">
-                                                        <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Official Authorization</p>
+                                                        <p className="text-[9px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest">Official Authorization</p>
                                                         <div className="h-20 border-2 border-dashed border-gray-100 rounded-xl flex items-center justify-center overflow-hidden bg-gray-50">
                                                             {displayProposal.status === 'Accepted' ? (
                                                                 displayProposal.approvalMetadata?.clientSignature ? (
@@ -1735,7 +1735,7 @@ const Proposal = () => {
                                                                 displayProposal.approvalMetadata?.clientSignature || clientSignature ? (
                                                                     <img src={displayProposal.approvalMetadata?.clientSignature || clientSignature} className="max-h-full object-contain grayscale mix-blend-multiply" alt="Client Signature" crossOrigin="anonymous" />
                                                                 ) : (
-                                                                    <span className="text-2xl font-signature text-gray-300">{signatureName || 'Signature Required'}</span>
+                                                                    <span className="text-2xl font-signature text-gray-700 dark:text-gray-300">{signatureName || 'Signature Required'}</span>
                                                                 )
                                                             )}
                                                         </div>
@@ -1759,7 +1759,7 @@ const Proposal = () => {
                                             {displayProposal.proposalTitle ?? 'DELIVERABLES'}
                                         </h3>
                                         <div className="w-20 h-1.5 bg-neon-green" />
-                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">
+                                        <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-[0.35em] mt-3">
                                             {displayProposal.proposalSub ?? 'PROJECT INVENTORY'}
                                         </p>
                                     </div>
@@ -1767,10 +1767,10 @@ const Proposal = () => {
                                         <div className="space-y-6">
                                             <table className="w-full text-left border-collapse border border-black">
                                                 <thead>
-                                                    <tr className="bg-black text-[9px] font-black uppercase text-white tracking-[0.3em]">
-                                                        <th className="p-4 w-12 text-center border-r border-white/20">#</th>
-                                                        <th className="p-4 border-r border-white/20">Deliverable</th>
-                                                        <th className="p-4 text-center w-28 border-r border-white/20">Qty / Unit</th>
+                                                    <tr className="bg-white dark:bg-black text-[9px] font-black uppercase text-gray-900 dark:text-white tracking-[0.3em]">
+                                                        <th className="p-4 w-12 text-center border-r border-black/20 dark:border-white/20">#</th>
+                                                        <th className="p-4 border-r border-black/20 dark:border-white/20">Deliverable</th>
+                                                        <th className="p-4 text-center w-28 border-r border-black/20 dark:border-white/20">Qty / Unit</th>
                                                         <th className="p-4 text-right w-40">Timeline</th>
                                                     </tr>
                                                 </thead>
@@ -1791,11 +1791,11 @@ const Proposal = () => {
                                     )}
                                     {page.clientRequirements?.length > 0 && (
                                         <div className="space-y-6 pt-4">
-                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mb-6">Requirements From Client</p>
+                                            <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-[0.35em] mb-6">Requirements From Client</p>
                                             <div className="p-8 border-2 border-gray-200 space-y-0">
                                                 {page.clientRequirements.map((r, i) => (
                                                     <div key={r.id || i} className={cn("flex items-start gap-4 py-4", i > 0 && "border-t border-gray-100")}>
-                                                        <div className="w-8 h-8 bg-black flex items-center justify-center shrink-0 mt-0.5"><span className="text-[9px] font-black text-white">{String(i + 1).padStart(2, '0')}</span></div>
+                                                        <div className="w-8 h-8 bg-white dark:bg-black flex items-center justify-center shrink-0 mt-0.5"><span className="text-[9px] font-black text-gray-900 dark:text-white">{String(i + 1).padStart(2, '0')}</span></div>
                                                         <p className="text-[12px] font-bold text-black leading-relaxed">{r.description}</p>
                                                     </div>
                                                 ))}
@@ -1812,7 +1812,7 @@ const Proposal = () => {
                                              {displayProposal.inventoryTitle ?? 'RESOURCE INVENTORY'}
                                          </h3>
                                          <div className="w-20 h-1.5 bg-neon-green" />
-                                         <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">
+                                         <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-[0.35em] mt-3">
                                              {page.tablePageIdx > 1 
                                                  ? `${displayProposal.inventorySub ?? 'COMMERCIALS BREAKDOWN'} — Part ${page.tablePageIdx}` 
                                                  : (displayProposal.inventorySub ?? 'COMMERCIALS BREAKDOWN')}
@@ -1820,7 +1820,7 @@ const Proposal = () => {
                                      </div>
                                      <table className="w-full text-left border-collapse border border-black">
                                           <thead>
-                                              <tr className="bg-black text-[9px] font-black uppercase text-white tracking-[0.3em]">
+                                              <tr className="bg-white dark:bg-black text-[9px] font-black uppercase text-gray-900 dark:text-white tracking-[0.3em]">
                                                   {(displayProposal?.tableColumns || defaultColumns).map((col, cIdx, arr) => {
                                                       const colType = col.type || (col.key === 'price' ? 'amount' : (col.key === 'qty' ? 'number' : 'text'));
                                                       return (
@@ -1828,7 +1828,7 @@ const Proposal = () => {
                                                               key={col.key} 
                                                               className={cn(
                                                                   "p-4",
-                                                                  cIdx < arr.length - 1 && "border-r border-white/20",
+                                                                  cIdx < arr.length - 1 && "border-r border-black/20 dark:border-white/20",
                                                                   colType === 'number' && "text-center w-24",
                                                                   colType === 'amount' && "text-right w-48"
                                                               )}
@@ -1879,7 +1879,7 @@ const Proposal = () => {
                                              {page.title ? page.title.toUpperCase() : "CUSTOM PAGE"}
                                          </h3>
                                          <div className="w-20 h-1.5 bg-neon-green" />
-                                         <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">
+                                         <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-[0.35em] mt-3">
                                              {(displayProposal.customPages?.[page.pageIndex]?.subtitle || "Additional Specifications").toUpperCase()}
                                          </p>
                                      </div>
@@ -1896,7 +1896,7 @@ const Proposal = () => {
                                              GENERAL TERMS.
                                          </h3>
                                          <div className="w-20 h-1.5 bg-neon-green" />
-                                         <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">Part {page.termsPageIdx}</p>
+                                         <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-[0.35em] mt-3">Part {page.termsPageIdx}</p>
                                      </div>
                                      <div className="text-[12px] font-semibold text-gray-600 leading-relaxed space-y-3">
                                          {renderContent(page.termsText)}
@@ -1912,7 +1912,7 @@ const Proposal = () => {
                                                   {displayProposal.commercialsTitle ?? 'COMMERCIAL TERMS'}
                                               </h3>
                                               <div className="w-20 h-1.5 bg-neon-green" />
-                                              <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">
+                                              <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-[0.35em] mt-3">
                                                   {displayProposal.commercialsSub ?? 'SETTLEMENT & SIGN-OFF'}
                                               </p>
                                           </div>                                   
@@ -1928,7 +1928,7 @@ const Proposal = () => {
 
                                                      <div className="p-6 bg-gray-50 border border-gray-150 rounded-2xl space-y-2">
 
-                                                         <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Settlement Details</p>
+                                                         <p className="text-[9px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest">Settlement Details</p>
 
                                                          <div className="text-[11px] font-mono font-bold text-black whitespace-pre-line leading-relaxed">{page.paymentDetailsText}</div>
 
@@ -1939,25 +1939,25 @@ const Proposal = () => {
                                              {!displayProposal.hideTotalColumn && (<div className="space-y-4">
                                                  <div className="bg-gray-50/50 border border-gray-250/60 rounded-[2rem] p-8 space-y-6">
                                                      <div className="flex justify-between items-center pb-4 border-b border-gray-200/60">
-                                                         <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Subtotal</span>
+                                                         <span className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest">Subtotal</span>
                                                          <span className="text-base font-bold text-black font-mono">₹{subtotal.toLocaleString()}</span>
                                                      </div>
                                                      {displayProposal.showGst && (
                                                          <div className="flex justify-between items-center pb-4 border-b border-gray-200/60">
-                                                             <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">GST ({displayProposal.gstRate}%)</span>
+                                                             <span className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest">GST ({displayProposal.gstRate}%)</span>
                                                              <span className="text-base font-bold text-black font-mono">₹{gstAmount.toLocaleString()}</span>
                                                          </div>
                                                      )}
-                                                     <div className="p-8 bg-black text-right relative overflow-hidden rounded-[1.5rem] shadow-xl">
-                                                         <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-3">Total Estimated Cost</p>
-                                                         <h2 className="text-3xl font-black tracking-widest text-white font-mono leading-none">₹{totalAmount.toLocaleString()}</h2>
+                                                     <div className="p-8 bg-white dark:bg-black text-right relative overflow-hidden rounded-[1.5rem] shadow-xl">
+                                                         <p className="text-[9px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest mb-3">Total Estimated Cost</p>
+                                                         <h2 className="text-3xl font-black tracking-widest text-gray-900 dark:text-white font-mono leading-none">₹{totalAmount.toLocaleString()}</h2>
                                                          <div className="absolute top-0 right-0 w-1.5 h-full bg-neon-green" />
                                                      </div>
                                                      {displayProposal.advanceRequested > 0 && (
                                                          <div className="p-6 bg-neon-green/5 border border-neon-green/20 rounded-[1.5rem] flex justify-between items-center">
                                                              <div>
                                                                  <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest block">Advance Fee ({displayProposal.advanceRequested}%)</span>
-                                                                 <span className="text-[7px] font-bold text-gray-400 uppercase tracking-wider block">Due upon signature</span>
+                                                                 <span className="text-[7px] font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider block">Due upon signature</span>
                                                              </div>
                                                              <span className="text-xl font-black text-black font-mono">₹{(totalAmount * displayProposal.advanceRequested / 100).toLocaleString()}</span>
                                                          </div>
@@ -1975,7 +1975,7 @@ const Proposal = () => {
                                                     {/* Provider Side */}
                                                     {displayProposal.showSignatures ? (
                                                         <div className="space-y-4 text-left">
-                                                            <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">For {currentLogo.label}</p>
+                                                            <p className="text-[9px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest">For {currentLogo.label}</p>
                                                             <div className="h-16 flex items-end">
                                                                 {displayProposal.providerSignature ? (
                                                                     <img src={displayProposal.providerSignature} className="h-full object-contain grayscale mix-blend-multiply" alt="Provider Signature" crossOrigin="anonymous" />
@@ -1985,12 +1985,12 @@ const Proposal = () => {
                                                             </div>
                                                             <div className="space-y-0.5">
                                                                 <p className="text-[10px] font-black uppercase text-black">{displayProposal.senderName || 'Authorized Signatory'}</p>
-                                                                <p className="text-[8px] font-bold text-gray-400 uppercase tracking-widest italic">{displayProposal.senderDesignation || 'Director of Operations'}</p>
+                                                                <p className="text-[8px] font-bold text-gray-600 dark:text-gray-400 uppercase tracking-widest italic">{displayProposal.senderDesignation || 'Director of Operations'}</p>
                                                             </div>
                                                         </div>
                                                     ) : (
                                                         <div className="space-y-1 text-left flex flex-col justify-end">
-                                                            <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">For {currentLogo.label}</p>
+                                                            <p className="text-[9px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest">For {currentLogo.label}</p>
                                                             <p className="text-[10px] font-black text-black">{displayProposal.senderName || currentLogo.label}</p>
                                                         </div>
                                                     )}
@@ -1998,7 +1998,7 @@ const Proposal = () => {
                                                     {/* Client/Receiver Side */}
                                                     {displayProposal.showSignatures ? (
                                                         <div className="space-y-4 text-right">
-                                                            <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">For {displayProposal.clientName || 'Valued Partner'}</p>
+                                                            <p className="text-[9px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest">For {displayProposal.clientName || 'Valued Partner'}</p>
                                                             <div className="h-16 flex items-end justify-end">
                                                                 {displayProposal.approvalMetadata?.clientSignature ? (
                                                                     <img src={displayProposal.approvalMetadata?.clientSignature} className="h-full object-contain grayscale mix-blend-multiply" alt="Client Signature" crossOrigin="anonymous" />
@@ -2008,12 +2008,12 @@ const Proposal = () => {
                                                             </div>
                                                             <div className="space-y-0.5">
                                                                 <p className="text-[10px] font-black uppercase text-black">{displayProposal.approvalMetadata?.signedBy || signatureName || 'Authorized Signatory'}</p>
-                                                                <p className="text-[8px] font-bold text-gray-400 uppercase tracking-widest italic">Authorized Signatory</p>
+                                                                <p className="text-[8px] font-bold text-gray-600 dark:text-gray-400 uppercase tracking-widest italic">Authorized Signatory</p>
                                                             </div>
                                                         </div>
                                                     ) : (
                                                         <div className="space-y-1 text-right flex flex-col justify-end">
-                                                            <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">For {displayProposal.clientName || 'Valued Partner'}</p>
+                                                            <p className="text-[9px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest">For {displayProposal.clientName || 'Valued Partner'}</p>
                                                             <p className="text-[10px] font-black text-black">{displayProposal.approvalMetadata?.signedBy || signatureName || 'Authorized Signatory'}</p>
                                                         </div>
                                                     )}
@@ -2052,7 +2052,7 @@ const Proposal = () => {
                                                 APPENDIX / ATTACHMENTS.
                                             </h3>
                                             <div className="w-20 h-1.5 bg-neon-green" />
-                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">
+                                            <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-[0.35em] mt-3">
                                                 SUPPORTING INSTRUMENTS & DOCUMENTATION
                                             </p>
                                         </div>
@@ -2068,7 +2068,7 @@ const Proposal = () => {
                                                     return (
                                                         <div key={idx} className="w-full relative rounded-2xl overflow-hidden border border-gray-200">
                                                             <img src={attachment.url} alt={attachment.name} className="w-full h-auto object-contain" />
-                                                            <div className="absolute top-4 left-4 bg-black/80 backdrop-blur-md px-4 py-2 rounded-full text-white text-[10px] font-black uppercase tracking-wider">
+                                                            <div className="absolute top-4 left-4 bg-white dark:bg-black/80 backdrop-blur-md px-4 py-2 rounded-full text-gray-900 dark:text-white text-[10px] font-black uppercase tracking-wider">
                                                                 {attachment.name}
                                                             </div>
                                                         </div>
@@ -2079,7 +2079,7 @@ const Proposal = () => {
                                                     return (
                                                         <div key={idx} className="w-full h-[600px] relative rounded-2xl overflow-hidden border border-gray-200">
                                                             <iframe src={attachment.url} title={attachment.name} className="w-full h-full border-none bg-gray-50" />
-                                                            <div className="absolute top-4 left-4 bg-black/80 backdrop-blur-md px-4 py-2 rounded-full text-white text-[10px] font-black uppercase tracking-wider pointer-events-none">
+                                                            <div className="absolute top-4 left-4 bg-white dark:bg-black/80 backdrop-blur-md px-4 py-2 rounded-full text-gray-900 dark:text-white text-[10px] font-black uppercase tracking-wider pointer-events-none">
                                                                 {attachment.name}
                                                             </div>
                                                         </div>
@@ -2093,7 +2093,7 @@ const Proposal = () => {
                                                                 <h4 className="text-xs font-black text-black uppercase tracking-wider truncate" title={attachment.name}>
                                                                     {attachment.name}
                                                                 </h4>
-                                                                <p className="text-[8px] font-bold text-gray-400 uppercase tracking-widest mt-1">
+                                                                <p className="text-[8px] font-bold text-gray-600 dark:text-gray-400 uppercase tracking-widest mt-1">
                                                                     {attachment.type === 'file' ? 'Uploaded Storage File' : 'Linked URL'}
                                                                 </p>
                                                             </div>
@@ -2104,7 +2104,7 @@ const Proposal = () => {
                                                                 href={attachment.url} 
                                                                 target="_blank" 
                                                                 rel="noopener noreferrer" 
-                                                                className="text-[9px] font-black uppercase tracking-widest text-neon-green bg-black hover:bg-zinc-800 transition-colors px-3 py-1.5 rounded-xl inline-block"
+                                                                className="text-[9px] font-black uppercase tracking-widest text-neon-green bg-white dark:bg-black hover:bg-zinc-800 transition-colors px-3 py-1.5 rounded-xl inline-block"
                                                             >
                                                                 View Document &rarr;
                                                             </a>
@@ -2122,7 +2122,7 @@ const Proposal = () => {
                                 )}
                             </div>
                         </div>
-                        <div className="mt-auto pt-8 pb-10 border-t border-gray-100 flex justify-between items-center text-[9px] font-black text-gray-400 uppercase tracking-[0.4em]">
+                        <div className="mt-auto pt-8 pb-10 border-t border-gray-100 flex justify-between items-center text-[9px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-[0.4em]">
                             <p className="w-1/3 text-left">© NEWBI ENTERTAINMENT & MARKETING LLP</p>
                             <p className="w-1/3 text-center text-gray-600 truncate px-2"></p>
                             <p className="w-1/3 text-right text-black">Page {idx + 1} of {paginatedPages.length}</p>
@@ -2145,19 +2145,19 @@ const Proposal = () => {
             {/* Identity Verification Modal */}
             <AnimatePresence>
                 {isVerifying && (
-                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md no-print">
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-white dark:bg-black/80 backdrop-blur-md no-print">
                         <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="w-full max-w-md bg-white rounded-[2.5rem] p-10 text-black shadow-2xl relative overflow-hidden">
                             <div className="absolute top-0 right-0 p-8 opacity-5"><ShieldCheck size={120} /></div>
                             
                             <div className="space-y-6 relative z-10">
                                 <div className="space-y-2">
                                     <h3 className="text-3xl font-black uppercase tracking-tighter italic">Verify Identity.</h3>
-                                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Digital Non-Repudiation Handshake</p>
+                                    <p className="text-[10px] font-bold text-gray-600 dark:text-gray-400 uppercase tracking-widest">Digital Non-Repudiation Handshake</p>
                                 </div>
 
                                 <div className="space-y-4 pt-4">
                                     <div className="space-y-2">
-                                        <label className="text-[9px] font-black uppercase tracking-widest text-gray-400 ml-2">Professional Authorization Email</label>
+                                        <label className="text-[9px] font-black uppercase tracking-widest text-gray-600 dark:text-gray-400 ml-2">Professional Authorization Email</label>
                                         <input 
                                             type="email" 
                                             value={verificationEmail}
@@ -2168,15 +2168,15 @@ const Proposal = () => {
                                     </div>
 
                                     <div className="p-5 bg-gray-50 rounded-xl border border-gray-100 space-y-3">
-                                        <div className="flex justify-between items-center text-[8px] font-black uppercase tracking-widest text-gray-400">
+                                        <div className="flex justify-between items-center text-[8px] font-black uppercase tracking-widest text-gray-600 dark:text-gray-400">
                                             <span>Security Marker</span>
                                             <span>Active</span>
                                         </div>
                                         <div className="flex items-center gap-3">
-                                            <div className="w-8 h-8 rounded-lg bg-black flex items-center justify-center text-neon-green"><Globe size={14} /></div>
+                                            <div className="w-8 h-8 rounded-lg bg-white dark:bg-black flex items-center justify-center text-neon-green"><Globe size={14} /></div>
                                             <div>
                                                 <p className="text-[10px] font-black uppercase tracking-widest text-black">{ipAddress}</p>
-                                                <p className="text-[8px] font-bold text-gray-400 uppercase tracking-widest">Network Signature Captured</p>
+                                                <p className="text-[8px] font-bold text-gray-600 dark:text-gray-400 uppercase tracking-widest">Network Signature Captured</p>
                                             </div>
                                         </div>
                                     </div>
@@ -2187,13 +2187,13 @@ const Proposal = () => {
                                     <Button 
                                         onClick={handleApproveProposal}
                                         disabled={isSubmitting || !verificationEmail.includes('@')}
-                                        className="h-14 bg-black text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-neon-green hover:text-black transition-all"
+                                        className="h-14 bg-white dark:bg-black text-gray-900 dark:text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-neon-green hover:text-black transition-all"
                                     >
                                         {isSubmitting ? 'Securing...' : 'Verify & Sign'}
                                     </Button>
                                 </div>
 
-                                <p className="text-[8px] font-bold text-gray-300 text-center uppercase tracking-widest mt-4">This digital signature is binding and non-repudiable.</p>
+                                <p className="text-[8px] font-bold text-gray-700 dark:text-gray-300 text-center uppercase tracking-widest mt-4">This digital signature is binding and non-repudiable.</p>
                             </div>
                         </motion.div>
                     </div>
@@ -2206,7 +2206,7 @@ const Proposal = () => {
                     <>
                         {/* Backdrop */}
                         <div 
-                            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[80] no-print"
+                            className="fixed inset-0 bg-white dark:bg-black/60 backdrop-blur-sm z-[80] no-print"
                             onClick={() => setIsAttachmentDrawerOpen(false)}
                         />
                         
@@ -2216,11 +2216,11 @@ const Proposal = () => {
                             animate={{ x: 0 }}
                             exit={{ x: '100%' }}
                             transition={{ type: 'spring', damping: 25, stiffness: 250 }}
-                            className="fixed right-0 top-0 bottom-0 w-full max-w-md bg-zinc-950/95 backdrop-blur-3xl border-l border-white/10 z-[90] p-8 flex flex-col justify-between shadow-[0_0_50px_rgba(0,0,0,0.8)] no-print"
+                            className="fixed right-0 top-0 bottom-0 w-full max-w-md bg-gray-100 dark:bg-zinc-950/95 backdrop-blur-3xl border-l border-black/10 dark:border-white/10 z-[90] p-8 flex flex-col justify-between shadow-[0_0_50px_rgba(0,0,0,0.8)] no-print"
                         >
                             <div className="space-y-8 flex-1 overflow-y-auto scrollbar-hide">
                                 {/* Header */}
-                                <div className="flex items-center justify-between border-b border-white/5 pb-6">
+                                <div className="flex items-center justify-between border-b border-black/10 dark:border-white/5 pb-6">
                                     <div className="flex items-center gap-3">
                                         <div className="w-10 h-10 rounded-2xl bg-neon-green/10 flex items-center justify-center border border-neon-green/20">
                                             <Paperclip className="text-neon-green" size={18} />
@@ -2232,7 +2232,7 @@ const Proposal = () => {
                                     </div>
                                     <button 
                                         onClick={() => setIsAttachmentDrawerOpen(false)}
-                                        className="p-2.5 bg-white/5 rounded-xl hover:bg-white/10 border border-white/5 transition-all"
+                                        className="p-2.5 bg-black/5 dark:bg-white/5 rounded-xl hover:bg-black/10 dark:hover:bg-white/10 border border-black/10 dark:border-white/5 transition-all"
                                     >
                                         <X size={14} />
                                     </button>
@@ -2247,7 +2247,7 @@ const Proposal = () => {
                                         return (
                                             <div 
                                                 key={attachment.id || idx} 
-                                                className="p-4 rounded-3xl bg-white/[0.02] border border-white/5 hover:border-neon-green/30 transition-all flex items-center justify-between group"
+                                                className="p-4 rounded-3xl bg-white/[0.02] border border-black/10 dark:border-white/5 hover:border-neon-green/30 transition-all flex items-center justify-between group"
                                             >
                                                 <div className="flex items-center gap-4 min-w-0 flex-1">
                                                     <div className={cn(
@@ -2265,7 +2265,7 @@ const Proposal = () => {
                                                         )}
                                                     </div>
                                                     <div className="min-w-0 flex-1">
-                                                        <h4 className="text-xs font-black text-white truncate">{attachment.name}</h4>
+                                                        <h4 className="text-xs font-black text-gray-900 dark:text-white truncate">{attachment.name}</h4>
                                                         <p className="text-[8px] font-bold text-gray-500 uppercase tracking-widest mt-0.5">
                                                             {attachment.type === 'file' ? 'Uploaded Storage File' : 'External Web URL'}
                                                         </p>
@@ -2289,7 +2289,7 @@ const Proposal = () => {
                                 </div>
                             </div>
                             
-                            <div className="pt-6 border-t border-white/5">
+                            <div className="pt-6 border-t border-black/10 dark:border-white/5">
                                 <p className="text-[8px] text-gray-600 font-bold uppercase tracking-widest text-center">
                                     Newbi Document Verification System
                                 </p>
@@ -2302,9 +2302,9 @@ const Proposal = () => {
             {/* Inline Preview Modal */}
             <AnimatePresence>
                 {previewingAttachment && (
-                    <div className="fixed inset-0 bg-black/95 z-[100] flex flex-col p-6 no-print">
+                    <div className="fixed inset-0 bg-white dark:bg-black/95 z-[100] flex flex-col p-6 no-print">
                         {/* Header */}
-                        <div className="flex items-center justify-between pb-4 border-b border-white/10 mb-6 shrink-0">
+                        <div className="flex items-center justify-between pb-4 border-b border-black/10 dark:border-white/10 mb-6 shrink-0">
                             <div className="flex items-center gap-3">
                                 <span className={cn(
                                     "text-[9px] font-black uppercase tracking-wider px-2 py-1 rounded-lg border",
@@ -2314,7 +2314,7 @@ const Proposal = () => {
                                 )}>
                                     {previewingAttachment.fileType?.toUpperCase() || 'Attachment'}
                                 </span>
-                                <h3 className="text-sm font-black text-white truncate max-w-md sm:max-w-xl">{previewingAttachment.name}</h3>
+                                <h3 className="text-sm font-black text-gray-900 dark:text-white truncate max-w-md sm:max-w-xl">{previewingAttachment.name}</h3>
                             </div>
                             <div className="flex items-center gap-3">
                                 <a 
@@ -2322,7 +2322,7 @@ const Proposal = () => {
                                     download 
                                     target="_blank" 
                                     rel="noopener noreferrer" 
-                                    className="px-4 py-2 bg-white/5 hover:bg-white/10 text-white border border-white/10 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all"
+                                    className="px-4 py-2 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-gray-900 dark:text-white border border-black/10 dark:border-white/10 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all"
                                 >
                                     Open Direct Link
                                 </a>
@@ -2336,7 +2336,7 @@ const Proposal = () => {
                         </div>
 
                         {/* Content Area */}
-                        <div className="flex-1 min-h-0 bg-white/5 rounded-3xl overflow-hidden relative border border-white/5">
+                        <div className="flex-1 min-h-0 bg-black/5 dark:bg-white/5 rounded-3xl overflow-hidden relative border border-black/10 dark:border-white/5">
                             {previewingAttachment.fileType === 'spreadsheet' || previewingAttachment.fileType === 'pdf' ? (
                                 <iframe 
                                     src={`https://docs.google.com/viewer?url=${encodeURIComponent(previewingAttachment.url)}&embedded=true`} 
@@ -2350,12 +2350,12 @@ const Proposal = () => {
                                     title="Google Sheet Preview"
                                 />
                             ) : (
-                                <div className="w-full h-full flex flex-col items-center justify-center gap-6 p-8 text-center bg-zinc-950">
-                                    <div className="w-16 h-16 rounded-3xl bg-white/5 border border-white/10 flex items-center justify-center text-neon-green">
+                                <div className="w-full h-full flex flex-col items-center justify-center gap-6 p-8 text-center bg-gray-100 dark:bg-zinc-950">
+                                    <div className="w-16 h-16 rounded-3xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 flex items-center justify-center text-neon-green">
                                         <LinkIcon size={28} />
                                     </div>
                                     <div className="space-y-2 max-w-md">
-                                        <h4 className="text-base font-black uppercase tracking-tight text-white">External Document Hub.</h4>
+                                        <h4 className="text-base font-black uppercase tracking-tight text-gray-900 dark:text-white">External Document Hub.</h4>
                                         <p className="text-xs text-gray-500 leading-relaxed font-sans">
                                             This attachment is hosted on an external platform. Click below to view the interactive dashboard in a new tab.
                                         </p>

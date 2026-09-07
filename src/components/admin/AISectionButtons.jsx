@@ -17,7 +17,7 @@ const AISectionButtons = ({ onImprove, onRegenerate, isProcessing, className }) 
             <button 
                 onClick={onRegenerate}
                 disabled={isProcessing}
-                className="group flex items-center gap-2 px-3 py-1.5 rounded-lg border border-white/10 bg-white/5 text-gray-500 hover:text-white hover:bg-white/10 transition-all disabled:opacity-50"
+                className="group flex items-center gap-2 px-3 py-1.5 rounded-lg border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-black/10 dark:hover:bg-white/10 transition-all disabled:opacity-50"
                 title="Regenerate Section"
             >
                 {isProcessing ? <RefreshCw size={10} className="animate-spin" /> : <RefreshCw size={10} />}

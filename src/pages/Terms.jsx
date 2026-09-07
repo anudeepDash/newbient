@@ -31,7 +31,7 @@ const Terms = () => {
             content: "The Referral Program is designed for genuine creators. Any manipulation of referrals—including registering duplicate accounts, using bot networks, or presenting invalid social handles (Instagram/LinkedIn)—will result in disqualification from the leaderboard and the removal of referral rewards."
         },
         {
-            icon: <FileText size={22} className="text-white" />,
+            icon: <FileText size={22} className="text-gray-900 dark:text-white" />,
             title: "4. Intellectual Property Rights",
             color: "white",
             bgGlow: "rgba(255,255,255,0.03)",
@@ -59,7 +59,7 @@ const Terms = () => {
             content: "Our services might redirect you to external payment processors, social sites, or map coordinates. We are not responsible for the privacy practices, content, or transaction compliance of these external portals."
         },
         {
-            icon: <RefreshCw size={22} className="text-white" />,
+            icon: <RefreshCw size={22} className="text-gray-900 dark:text-white" />,
             title: "8. Refunds & Cancellations",
             color: "white",
             bgGlow: "rgba(255,255,255,0.03)",
@@ -90,7 +90,7 @@ const Terms = () => {
     };
 
     return (
-        <div className="min-h-screen bg-black pt-32 pb-24 px-6 md:px-12 relative overflow-hidden">
+        <div className="min-h-screen bg-white dark:bg-black pt-32 pb-24 px-6 md:px-12 relative overflow-hidden">
             {/* Background Ambient Glows */}
             <div className="absolute top-0 right-1/4 w-[500px] h-[500px] bg-neon-blue/5 blur-[150px] pointer-events-none rounded-full" />
             <div className="absolute bottom-0 left-1/4 w-[600px] h-[600px] bg-neon-green/5 blur-[180px] pointer-events-none rounded-full" />
@@ -102,12 +102,12 @@ const Terms = () => {
                     animate={{ opacity: 1, y: 0 }}
                     className="text-center space-y-6"
                 >
-                    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-[9px] font-black uppercase tracking-widest text-zinc-400">
+                    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-[9px] font-black uppercase tracking-widest text-zinc-400">
                         <Scale size={10} className="text-neon-blue" />
                         <span>LEGALLY BINDING AGREEMENT</span>
                     </div>
                     
-                    <h1 className="text-4xl sm:text-6xl md:text-7xl font-black font-heading tracking-tight text-white leading-none">
+                    <h1 className="text-4xl sm:text-6xl md:text-7xl font-black font-heading tracking-tight text-gray-900 dark:text-white leading-none">
                         Terms & <span className="text-neon-blue">Conditions</span>
                     </h1>
                     
@@ -115,24 +115,24 @@ const Terms = () => {
                         Last Updated: June 10, 2026
                     </p>
 
-                    <div className="mt-8 p-6 bg-zinc-950/50 border border-white/[0.08] backdrop-blur-3xl rounded-[2rem] max-w-2xl mx-auto text-left shadow-2xl relative overflow-hidden">
+                    <div className="mt-8 p-6 bg-gray-100 dark:bg-zinc-950/50 border border-black/10 dark:border-white/[0.08] backdrop-blur-3xl rounded-[2rem] max-w-2xl mx-auto text-left shadow-2xl relative overflow-hidden">
                         <div className="absolute top-0 right-0 w-24 h-24 bg-neon-blue/5 blur-2xl" />
-                        <p className="text-gray-400 text-xs sm:text-sm leading-relaxed">
-                            These Terms and Conditions, along with the privacy policy, constitute a binding agreement between <span className="text-white font-bold">Newbi Entertainment & Marketing LLP</span> (“Website Owner”, “we”, “us”, “our”) and you (“you”, “your”) regarding your access to services, tickets, and panels.
+                        <p className="text-gray-600 dark:text-gray-400 text-xs sm:text-sm leading-relaxed">
+                            These Terms and Conditions, along with the privacy policy, constitute a binding agreement between <span className="text-gray-900 dark:text-white font-bold">Newbi Entertainment & Marketing LLP</span> (“Website Owner”, “we”, “us”, “our”) and you (“you”, “your”) regarding your access to services, tickets, and panels.
                         </p>
                     </div>
                 </motion.div>
 
                 {/* Quick Navigation Pills */}
-                <div className="flex flex-wrap justify-center gap-2.5 pb-4 border-b border-white/5 select-none">
+                <div className="flex flex-wrap justify-center gap-2.5 pb-4 border-b border-black/10 dark:border-white/5 select-none">
                     {termsList.map((term, idx) => (
                         <button
                             key={idx}
                             onClick={() => scrollToSection(idx)}
                             className={`px-3 py-1.5 rounded-xl text-[9px] font-bold uppercase tracking-wider transition-all border ${
                                 activeSection === idx 
-                                    ? "bg-white text-black border-white" 
-                                    : "bg-white/5 text-zinc-400 border-white/5 hover:border-white/10 hover:text-white"
+                                    ? "bg-black text-white border-black dark:bg-white dark:text-black dark:border-white shadow-md" 
+                                    : "bg-black/5 dark:bg-white/5 text-zinc-400 border-black/10 dark:border-white/5 hover:border-black/20 dark:hover:border-white/10 hover:text-gray-900 dark:hover:text-white"
                             }`}
                         >
                             {term.title.split('. ')[1]}
@@ -144,8 +144,8 @@ const Terms = () => {
                 <div className="p-8 bg-neon-blue/5 border border-neon-blue/20 rounded-[2.5rem] backdrop-blur-xl flex items-start gap-4">
                     <AlertCircle size={24} className="text-neon-blue shrink-0 mt-0.5" />
                     <div className="space-y-1">
-                        <h4 className="text-sm font-bold text-white uppercase tracking-wider">Please Read Carefully</h4>
-                        <p className="text-gray-400 text-xs sm:text-sm leading-relaxed">
+                        <h4 className="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider">Please Read Carefully</h4>
+                        <p className="text-gray-600 dark:text-gray-400 text-xs sm:text-sm leading-relaxed">
                             By continuing to access our website and using the services, you acknowledge that you accept all sections of these Terms. We reserve the right to revise these terms without assigning reason. Periodic reviews are recommended.
                         </p>
                     </div>
@@ -162,7 +162,7 @@ const Terms = () => {
                             viewport={{ once: true, margin: '-100px' }}
                             transition={{ duration: 0.6, delay: idx * 0.05 }}
                             onViewportEnter={() => setActiveSection(idx)}
-                            className="bg-zinc-950/45 border border-white/[0.08] backdrop-blur-3xl rounded-[2.5rem] p-8 md:p-10 shadow-2xl relative overflow-hidden group hover:border-white/15 transition-all duration-500"
+                            className="bg-gray-100 dark:bg-zinc-950/45 border border-black/10 dark:border-white/[0.08] backdrop-blur-3xl rounded-[2.5rem] p-8 md:p-10 shadow-2xl relative overflow-hidden group hover:border-black/20 dark:hover:border-white/15 transition-all duration-500"
                         >
                             {/* Decorative Radial Glow */}
                             <div 
@@ -171,15 +171,15 @@ const Terms = () => {
                             />
                             
                             <div className="flex items-center gap-4 mb-6">
-                                <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center group-hover:scale-105 transition-transform duration-500">
+                                <div className="w-12 h-12 rounded-2xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 flex items-center justify-center group-hover:scale-105 transition-transform duration-500">
                                     {term.icon}
                                 </div>
-                                <h2 className="text-xl md:text-2xl font-extrabold font-heading text-white tracking-tight">
+                                <h2 className="text-xl md:text-2xl font-extrabold font-heading text-gray-900 dark:text-white tracking-tight">
                                     {term.title}
                                 </h2>
                             </div>
 
-                            <p className="text-gray-400 font-medium text-xs sm:text-sm leading-relaxed relative z-10">
+                            <p className="text-gray-600 dark:text-gray-400 font-medium text-xs sm:text-sm leading-relaxed relative z-10">
                                 {term.content}
                             </p>
                         </motion.section>
@@ -190,7 +190,7 @@ const Terms = () => {
                 <motion.div 
                     initial={{ opacity: 0 }}
                     whileInView={{ opacity: 1 }}
-                    className="mt-20 text-center border-t border-white/5 pt-12"
+                    className="mt-20 text-center border-t border-black/10 dark:border-white/5 pt-12"
                 >
                     <div className="inline-flex flex-col items-center gap-4">
                         <p className="text-zinc-500 text-[10px] font-black uppercase tracking-[0.25em]">
@@ -198,7 +198,7 @@ const Terms = () => {
                         </p>
                         <a 
                             href="mailto:legal@newbi.live" 
-                            className="px-6 py-3 rounded-xl bg-white/5 hover:bg-white hover:text-black border border-white/10 text-xs font-bold text-white transition-all shadow-xl"
+                            className="px-6 py-3 rounded-xl bg-black/5 dark:bg-white/5 hover:bg-white hover:text-black border border-black/10 dark:border-white/10 text-xs font-bold text-gray-900 dark:text-white transition-all shadow-xl"
                         >
                             legal@newbi.live
                         </a>

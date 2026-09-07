@@ -54,7 +54,7 @@ const getPageNumbers = (currentPage, totalPages) => {
 };
 
 const ActiveUsers = () => {
-    const { user, blockUser, creators = [], artists = [], campusProfiles = [] } = useStore();
+    const { user, blockUser, creators = [], artists = [] } = useStore();
     const { activeMembers, totalCount } = useConsolidatedMembers();
 
     const [searchTerm, setSearchTerm] = useState('');
@@ -73,12 +73,11 @@ const ActiveUsers = () => {
             if (activeFilter === 'tribe') return m.hasJoinedTribe;
             if (activeFilter === 'creators') return m.isCreator || creators.some(c => c.uid === m.id || c.email === m.email);
             if (activeFilter === 'artists') return m.isArtist || artists.some(a => (a.uid === m.id || a.email === m.email) && a.profileStatus === 'approved');
-            if (activeFilter === 'campus') return m.isCampus || campusProfiles.some(cp => cp.uid === m.id || cp.email === m.email);
             if (activeFilter === 'tickets') return m.isTicketHolder;
 
             return true;
         });
-    }, [activeMembers, searchTerm, activeFilter, creators, artists, campusProfiles]);
+    }, [activeMembers, searchTerm, activeFilter, creators, artists]);
 
     useEffect(() => {
         setCurrentPage(1);
@@ -115,10 +114,10 @@ const ActiveUsers = () => {
 
     if (user?.role !== 'super_admin' && user?.role !== 'developer' && user?.role !== 'founder' && user?.role !== 'content_admin') {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-[#020202]">
-                <div className="text-center p-12 bg-zinc-900/40 backdrop-blur-3xl border border-white/5 rounded-[3rem] max-w-md mx-auto">
+            <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-[#020202]">
+                <div className="text-center p-12 bg-white dark:bg-zinc-900/40 backdrop-blur-3xl border border-gray-200 dark:border-white/5 rounded-[3rem] max-w-md mx-auto shadow-xl">
                     <ShieldAlert size={48} className="mx-auto mb-6 text-red-500" />
-                    <h1 className="text-3xl font-black uppercase tracking-tighter italic text-white text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-white">ACCESS DENIED</h1>
+                    <h1 className="text-3xl font-black uppercase tracking-tighter italic text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-black dark:to-white">ACCESS DENIED</h1>
                     <p className="text-gray-500 mt-4 text-sm font-medium">You don't have permission to view this page.</p>
                     <Link to="/admin" className="text-neon-blue mt-8 inline-block font-black uppercase text-[10px] tracking-widest hover:underline">Return to Admin Dashboard</Link>
                 </div>
@@ -139,7 +138,7 @@ const ActiveUsers = () => {
             action={
                 <Link
                     to="/admin/manage-admins"
-                    className="w-full md:w-auto flex items-center justify-center gap-3 h-12 md:h-14 px-8 rounded-xl md:rounded-2xl bg-white/5 hover:bg-white/10 text-white border border-white/10 font-black uppercase text-[10px] tracking-widest transition-all duration-300"
+                    className="w-full md:w-auto flex items-center justify-center gap-3 h-12 md:h-14 px-8 rounded-xl md:rounded-2xl bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-gray-900 dark:text-white border border-black/10 dark:border-white/10 font-black uppercase text-[10px] tracking-widest transition-all duration-300"
                 >
                     <Users size={14} className="text-neon-blue" />
                     View All Registered Members ({totalCount})
@@ -160,7 +159,7 @@ const ActiveUsers = () => {
                     },
                     { 
                         label: 'Active Tribe & Creators', 
-                        count: activeMembers.filter(m => m.hasJoinedTribe || m.isCreator || m.isArtist || m.isCampus).length, 
+                        count: activeMembers.filter(m => m.hasJoinedTribe || m.isCreator || m.isArtist).length, 
                         detail: 'Verified Active Members', 
                         color: 'text-neon-pink', 
                         bgGlow: 'bg-neon-pink',
@@ -199,7 +198,7 @@ const ActiveUsers = () => {
                         )} />
                         
                         <div className={cn(
-                            "relative z-10 p-6 md:p-8 h-full bg-zinc-950/35 backdrop-blur-3xl border border-white/[0.08] shadow-[0_20px_50px_rgba(0,0,0,0.5)] rounded-3xl transition-all duration-500 flex flex-col justify-between group-hover:-translate-y-1",
+                            "relative z-10 p-6 md:p-8 h-full bg-gray-100 dark:bg-zinc-950/35 backdrop-blur-3xl border border-white/[0.08] shadow-[0_20px_50px_rgba(0,0,0,0.5)] rounded-3xl transition-all duration-500 flex flex-col justify-between group-hover:-translate-y-1",
                             stat.hoverBorder
                         )}>
                             <div className={cn("absolute top-0 left-0 w-full h-[2.5px] bg-gradient-to-r rounded-t-3xl", stat.topGradient)} />
@@ -214,10 +213,10 @@ const ActiveUsers = () => {
             </div>
 
             {/* Combined Search & Filters Bar */}
-            <div className="bg-zinc-950/60 border border-white/10 rounded-[2rem] xl:rounded-full p-2 mb-8 md:mb-12 backdrop-blur-3xl flex flex-col xl:flex-row items-center gap-2 md:gap-4 shadow-2xl">
+            <div className="bg-gray-100 dark:bg-zinc-950/60 border border-black/10 dark:border-white/10 rounded-[2rem] xl:rounded-full p-2 mb-8 md:mb-12 backdrop-blur-3xl flex flex-col xl:flex-row items-center gap-2 md:gap-4 shadow-2xl">
                 {/* Search Input */}
                 <div className="relative flex-1 w-full group">
-                    <Search className="absolute left-6 md:left-8 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-neon-green transition-colors" size={18} />
+                    <Search className="absolute left-6 md:left-8 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-emerald-600 dark:group-focus-within:text-neon-green transition-colors" size={18} />
                     <input 
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
@@ -227,7 +226,7 @@ const ActiveUsers = () => {
                     {searchTerm && (
                         <button 
                             onClick={() => setSearchTerm('')} 
-                            className="absolute right-6 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white transition-colors"
+                            className="absolute right-6 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors"
                         >
                             <X size={14} />
                         </button>
@@ -236,14 +235,13 @@ const ActiveUsers = () => {
 
                 {/* Sub-Filters & Layout Switcher */}
                 <div className="flex flex-col sm:flex-row items-center gap-3 w-full xl:w-auto">
-                    <div className="flex items-center bg-black/40 p-1.5 rounded-full border border-white/10 w-full md:w-auto overflow-x-auto no-scrollbar">
+                    <div className="flex items-center bg-white dark:bg-black/40 p-1.5 rounded-full border border-black/10 dark:border-white/10 w-full md:w-auto overflow-x-auto no-scrollbar">
                         <div className="flex items-center gap-1 w-full">
                             {[
                                 { id: 'all', label: 'All Active' },
                                 { id: 'tribe', label: 'Tribe' },
                                 { id: 'creators', label: 'Creators' },
                                 { id: 'artists', label: 'Artists' },
-                                { id: 'campus', label: 'Campus' },
                                 { id: 'tickets', label: 'Ticket Holders' }
                             ].map((filter) => (
                                 <button
@@ -253,7 +251,7 @@ const ActiveUsers = () => {
                                         "flex-1 px-4 sm:px-6 py-3.5 rounded-full text-[8px] sm:text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-300 min-w-[70px] sm:min-w-[90px] md:min-w-[110px] flex items-center justify-center text-center leading-none border",
                                         activeFilter === filter.id 
                                             ? "bg-neon-green/10 text-neon-green border-neon-green/20 font-extrabold scale-[1.02]" 
-                                            : "text-gray-500 hover:text-white hover:bg-white/5 border-transparent"
+                                            : "text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 border-transparent"
                                     )}
                                 >
                                     {filter.label}
@@ -263,12 +261,12 @@ const ActiveUsers = () => {
                     </div>
 
                     {/* View Mode Toggle */}
-                    <div className="flex items-center bg-black/40 p-1.5 rounded-full border border-white/10 gap-1 shrink-0">
+                    <div className="flex items-center bg-white dark:bg-black/40 p-1.5 rounded-full border border-black/10 dark:border-white/10 gap-1 shrink-0">
                         <button
                             onClick={() => setViewMode('grid')}
                             className={cn(
                                 "p-3 rounded-full transition-all duration-300",
-                                viewMode === 'grid' ? "bg-neon-green/10 text-neon-green border border-neon-green/20" : "text-gray-500 hover:text-white"
+                                viewMode === 'grid' ? "bg-neon-green/10 text-neon-green border border-neon-green/20" : "text-gray-500 hover:text-gray-900 dark:hover:text-white"
                             )}
                             title="Grid View"
                         >
@@ -278,7 +276,7 @@ const ActiveUsers = () => {
                             onClick={() => setViewMode('table')}
                             className={cn(
                                 "p-3 rounded-full transition-all duration-300",
-                                viewMode === 'table' ? "bg-neon-green/10 text-neon-green border border-neon-green/20" : "text-gray-500 hover:text-white"
+                                viewMode === 'table' ? "bg-neon-green/10 text-neon-green border border-neon-green/20" : "text-gray-500 hover:text-gray-900 dark:hover:text-white"
                             )}
                             title="Table View"
                         >
@@ -299,7 +297,7 @@ const ActiveUsers = () => {
                     className="space-y-8"
                 >
                     {filteredActiveUsers.length === 0 ? (
-                        <div className="py-24 text-center bg-white/[0.01] border border-white/5 rounded-[2rem]">
+                        <div className="py-24 text-center bg-white/[0.01] border border-black/10 dark:border-white/5 rounded-[2rem]">
                             <UserCheck size={32} className="mx-auto text-gray-700 mb-4 animate-pulse" />
                             <p className="text-xs font-black text-gray-500 uppercase tracking-widest">No matching active personnel found</p>
                         </div>
@@ -310,7 +308,6 @@ const ActiveUsers = () => {
                                     const isTribe = member.hasJoinedTribe;
                                     const isCreator = member.isCreator || creators?.some(c => c.uid === member.id || c.email === member.email);
                                     const isArtist = member.isArtist || artists?.some(a => (a.uid === member.id || a.email === member.email) && a.profileStatus === 'approved');
-                                    const isCampus = member.isCampus || campusProfiles?.some(cp => cp.uid === member.id || cp.email === member.email);
 
                                     return (
                                         <motion.div
@@ -323,8 +320,8 @@ const ActiveUsers = () => {
                                             {/* Hover Glow */}
                                             <div className="absolute inset-0 rounded-[2.5rem] opacity-0 group-hover:opacity-10 transition-opacity blur-2xl duration-700 pointer-events-none bg-gradient-to-br from-neon-green/30 to-neon-blue/30" />
                                             
-                                            <Card className="relative p-6 sm:p-8 bg-zinc-950/60 group-hover:bg-zinc-900/40 hover:border-white/10 border-white/5 backdrop-blur-3xl rounded-[2.5rem] transition-all duration-500 shadow-xl flex flex-col justify-between h-full min-h-[380px] overflow-hidden border hover:-translate-y-1.5 hover:shadow-[0_20px_50px_rgba(0,0,0,0.8)] gap-6">
-                                                <div className="absolute inset-0 bg-gradient-to-br from-white/[0.01] via-transparent to-transparent opacity-100 pointer-events-none" />
+                                            <Card className="relative p-6 sm:p-8 bg-gray-100 dark:bg-zinc-950/60 group-hover:bg-gray-100 dark:group-hover:bg-zinc-900/40 hover:border-black/10 dark:hover:border-white/10 border-black/10 dark:border-white/5 backdrop-blur-3xl rounded-[2.5rem] transition-all duration-500 shadow-xl flex flex-col justify-between h-full min-h-[380px] overflow-hidden border hover:-translate-y-1.5 hover:shadow-[0_20px_50px_rgba(0,0,0,0.8)] gap-6">
+                                                <div className="absolute inset-0 bg-gradient-to-br from-gray-900 dark:from-white/[0.01] via-transparent to-transparent opacity-100 pointer-events-none" />
                                                 
                                                 {/* Header Section */}
                                                 <div>
@@ -333,11 +330,10 @@ const ActiveUsers = () => {
                                                             "px-3 py-1 rounded-full border font-black uppercase tracking-widest text-[8px]",
                                                             isArtist ? "bg-[#FF6B6B]/10 border-[#FF6B6B]/20 text-[#FF6B6B]" :
                                                             isCreator ? "bg-neon-pink/10 border-neon-pink/20 text-neon-pink" :
-                                                            isCampus ? "bg-yellow-400/10 border-yellow-400/20 text-yellow-400" :
                                                             isTribe ? "bg-neon-blue/10 border-neon-blue/20 text-neon-blue" :
-                                                            "bg-white/5 border-white/5 text-gray-500"
+                                                            "bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/5 text-gray-500"
                                                         )}>
-                                                            {isArtist ? "Artist" : isCreator ? "Creator" : isCampus ? "Campus" : isTribe ? "Tribe" : "Standard"}
+                                                            {isArtist ? "Artist" : isCreator ? "Creator" : isTribe ? "Tribe" : "Standard"}
                                                         </span>
                                                         
                                                         <span className="px-3 py-1 bg-neon-green/10 text-neon-green border border-neon-green/20 rounded-full text-[8px] font-black uppercase tracking-widest flex items-center gap-1.5">
@@ -348,7 +344,7 @@ const ActiveUsers = () => {
 
                                                     {/* Display Name */}
                                                     <div className="space-y-1">
-                                                        <h3 className="font-heading font-black text-2xl sm:text-3xl text-white group-hover:text-neon-green transition-colors duration-500 uppercase italic tracking-tighter leading-[0.95] line-clamp-2 pr-4">
+                                                        <h3 className="font-heading font-black text-2xl sm:text-3xl text-gray-900 dark:text-white group-hover:text-neon-green transition-colors duration-500 uppercase italic tracking-tighter leading-[0.95] line-clamp-2 pr-4">
                                                             {member.displayName || 'UNNAMED_SUBJECT'}
                                                         </h3>
                                                         <p className="text-[10px] text-gray-500 font-mono select-all leading-relaxed break-all">{member.email}</p>
@@ -360,18 +356,18 @@ const ActiveUsers = () => {
 
                                                 {/* Metadata Pods */}
                                                 <div className="space-y-2.5 mt-auto">
-                                                    <div className="flex items-center gap-2 text-gray-500 text-[9px] font-black uppercase tracking-[0.2em] bg-white/[0.02] px-4 py-2.5 rounded-2xl border border-white/5 shadow-inner w-fit">
+                                                    <div className="flex items-center gap-2 text-gray-500 text-[9px] font-black uppercase tracking-[0.2em] bg-white/[0.02] px-4 py-2.5 rounded-2xl border border-black/10 dark:border-white/5 shadow-inner w-fit">
                                                         <span className="text-gray-600">REGISTERED:</span>
-                                                        <span className="text-gray-400 font-mono">{member.createdAt ? new Date(member.createdAt).toLocaleDateString(undefined, { dateStyle: 'medium' }) : 'N/A'}</span>
+                                                        <span className="text-gray-600 dark:text-gray-400 font-mono">{member.createdAt ? new Date(member.createdAt).toLocaleDateString(undefined, { dateStyle: 'medium' }) : 'N/A'}</span>
                                                     </div>
-                                                    <div className="flex items-center gap-2 text-gray-500 text-[9px] font-black uppercase tracking-[0.2em] bg-white/[0.02] px-4 py-2.5 rounded-2xl border border-white/5 shadow-inner w-fit">
+                                                    <div className="flex items-center gap-2 text-gray-500 text-[9px] font-black uppercase tracking-[0.2em] bg-white/[0.02] px-4 py-2.5 rounded-2xl border border-black/10 dark:border-white/5 shadow-inner w-fit">
                                                         <span className="text-gray-600">STATUS:</span>
                                                         <span className="text-neon-green font-mono">AUTHORIZED ONLINE</span>
                                                     </div>
                                                 </div>
 
                                                 {/* Actions */}
-                                                <div className="pt-4 border-t border-white/5 w-full mt-auto flex flex-col gap-2">
+                                                <div className="pt-4 border-t border-black/10 dark:border-white/5 w-full mt-auto flex flex-col gap-2">
                                                     <button 
                                                         onClick={() => handleBlockUser(member)} 
                                                         className="w-full h-12 bg-red-500/10 hover:bg-red-500 hover:text-black text-red-500 font-black uppercase tracking-widest text-[9px] rounded-xl border border-red-500/20 transition-all flex items-center justify-center gap-2 duration-300 active:scale-95"
@@ -380,7 +376,7 @@ const ActiveUsers = () => {
                                                     </button>
                                                     <button 
                                                         onClick={() => handleRevokeSessions(member)}
-                                                        className="w-full h-12 bg-white/5 hover:bg-red-500/15 text-gray-400 hover:text-red-500 font-black uppercase tracking-widest text-[9px] rounded-xl border border-white/5 hover:border-red-500/20 transition-all flex items-center justify-center gap-2 duration-300 active:scale-95"
+                                                        className="w-full h-12 bg-black/5 dark:bg-white/5 hover:bg-red-500/15 text-gray-600 dark:text-gray-400 hover:text-red-500 font-black uppercase tracking-widest text-[9px] rounded-xl border border-black/10 dark:border-white/5 hover:border-red-500/20 transition-all flex items-center justify-center gap-2 duration-300 active:scale-95"
                                                     >
                                                         <LogOut size={12} /> Log out all devices
                                                     </button>
@@ -392,10 +388,10 @@ const ActiveUsers = () => {
                             </div>
                         ) : (
                             <div className="overflow-x-auto scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0 pb-36 -mb-36">
-                                <Card className="min-w-[800px] bg-zinc-900/40 backdrop-blur-3xl border-white/5 rounded-[2rem] md:rounded-[2.5rem] p-0 border">
+                                <Card className="min-w-[800px] bg-gray-100 dark:bg-zinc-900/40 backdrop-blur-3xl border-black/10 dark:border-white/5 rounded-[2rem] md:rounded-[2.5rem] p-0 border">
                                     <table className="w-full text-left">
                                         <thead>
-                                            <tr className="border-b border-white/5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">
+                                            <tr className="border-b border-black/10 dark:border-white/5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">
                                                 <th className="p-6 md:p-8">Active Personnel</th>
                                                 <th className="p-6 md:p-8">Clearance</th>
                                                 <th className="p-6 md:p-8">Affiliation</th>
@@ -408,7 +404,6 @@ const ActiveUsers = () => {
                                                 const isTribe = member.hasJoinedTribe;
                                                 const isCreator = member.isCreator || creators?.some(c => c.uid === member.id || c.email === member.email);
                                                 const isArtist = member.isArtist || artists?.some(a => (a.uid === member.id || a.email === member.email) && a.profileStatus === 'approved');
-                                                const isCampus = member.isCampus || campusProfiles?.some(cp => cp.uid === member.id || cp.email === member.email);
 
                                                 return (
                                                     <tr key={member.id || member.email} className="group hover:bg-white/[0.02] transition-colors">
@@ -418,7 +413,7 @@ const ActiveUsers = () => {
                                                                     {member.displayName?.charAt(0) || 'U'}
                                                                 </div>
                                                                 <div>
-                                                                    <p className="font-heading font-black text-white group-hover:text-neon-green transition-colors uppercase italic text-sm">
+                                                                    <p className="font-heading font-black text-gray-900 dark:text-white group-hover:text-neon-green transition-colors uppercase italic text-sm">
                                                                         {member.displayName || 'UNNAMED_SUBJECT'}
                                                                     </p>
                                                                     <p className="text-[10px] text-gray-500 font-mono">{member.email}</p>
@@ -433,14 +428,13 @@ const ActiveUsers = () => {
                                                                 "px-3 py-1 rounded-full border font-black uppercase tracking-widest text-[8px]",
                                                                 isArtist ? "bg-[#FF6B6B]/10 border-[#FF6B6B]/20 text-[#FF6B6B]" :
                                                                 isCreator ? "bg-neon-pink/10 border-neon-pink/20 text-neon-pink" :
-                                                                isCampus ? "bg-yellow-400/10 border-yellow-400/20 text-yellow-400" :
                                                                 isTribe ? "bg-neon-blue/10 border-neon-blue/20 text-neon-blue" :
-                                                                "bg-white/5 border-white/5 text-gray-500"
+                                                                "bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/5 text-gray-500"
                                                             )}>
-                                                                {isArtist ? "Artist" : isCreator ? "Creator" : isCampus ? "Campus" : isTribe ? "Tribe" : "Standard"}
+                                                                {isArtist ? "Artist" : isCreator ? "Creator" : isTribe ? "Tribe" : "Standard"}
                                                             </span>
                                                         </td>
-                                                        <td className="p-6 md:p-8 text-[10px] font-mono text-gray-400">
+                                                        <td className="p-6 md:p-8 text-[10px] font-mono text-gray-600 dark:text-gray-400">
                                                             {member.createdAt ? new Date(member.createdAt).toLocaleDateString(undefined, { dateStyle: 'medium' }) : 'N/A'}
                                                         </td>
                                                         <td className="p-6 md:p-8 text-right space-x-2">
@@ -463,7 +457,7 @@ const ActiveUsers = () => {
 
                     {/* Pagination Bar */}
                     {totalPages > 1 && (
-                        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-6 border-t border-white/5">
+                        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-6 border-t border-black/10 dark:border-white/5">
                             <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">
                                 Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, filteredActiveUsers.length)} of {filteredActiveUsers.length} active personnel
                             </p>
@@ -471,7 +465,7 @@ const ActiveUsers = () => {
                                 <button
                                     disabled={currentPage === 1}
                                     onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                                    className="p-3 bg-white/5 hover:bg-white/10 disabled:opacity-30 disabled:hover:bg-white/5 text-white rounded-xl transition-all"
+                                    className="p-3 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 disabled:opacity-30 disabled:hover:bg-black/5 dark:disabled:hover:bg-white/5 text-gray-900 dark:text-white rounded-xl transition-all"
                                 >
                                     <ChevronLeft size={16} />
                                 </button>
@@ -482,7 +476,7 @@ const ActiveUsers = () => {
                                         disabled={typeof p !== 'number'}
                                         className={cn(
                                             "min-w-[40px] h-10 px-3 rounded-xl text-[10px] font-black font-mono transition-all",
-                                            currentPage === p ? "bg-neon-green text-black font-extrabold" : "bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white"
+                                            currentPage === p ? "bg-neon-green text-black font-extrabold" : "bg-black/5 dark:bg-white/5 text-gray-600 dark:text-gray-400 hover:bg-black/10 dark:hover:bg-white/10 hover:text-gray-900 dark:hover:text-white"
                                         )}
                                     >
                                         {p}
@@ -491,7 +485,7 @@ const ActiveUsers = () => {
                                 <button
                                     disabled={currentPage === totalPages}
                                     onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                                    className="p-3 bg-white/5 hover:bg-white/10 disabled:opacity-30 disabled:hover:bg-white/5 text-white rounded-xl transition-all"
+                                    className="p-3 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 disabled:opacity-30 disabled:hover:bg-black/5 dark:disabled:hover:bg-white/5 text-gray-900 dark:text-white rounded-xl transition-all"
                                 >
                                     <ChevronRight size={16} />
                                 </button>

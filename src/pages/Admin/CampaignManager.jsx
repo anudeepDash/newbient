@@ -122,7 +122,7 @@ const StatCard = ({ icon, label, value, color, description, compact = false }) =
             <div className={cn("relative z-10 flex h-full", compact ? "flex-row items-center gap-4" : "flex-col justify-between gap-8")}>
                 <div className="flex items-start justify-between">
                     <div className={cn(
-                        "rounded-2xl flex items-center justify-center shadow-inner border border-white/5 shrink-0", 
+                        "rounded-2xl flex items-center justify-center shadow-inner border border-black/10 dark:border-white/5 shrink-0", 
                         compact ? "w-10 h-10 md:w-12 md:h-12" : "w-16 h-16",
                         theme.bg, theme.text
                     )}>
@@ -131,13 +131,13 @@ const StatCard = ({ icon, label, value, color, description, compact = false }) =
                     {!compact && (
                         <div className="text-right">
                             <TrendingUp size={16} className={cn("inline-block mr-2", theme.text)} />
-                            <span className="text-[10px] font-black text-white/40 uppercase tracking-widest">+15%</span>
+                            <span className="text-[10px] font-black text-gray-900 dark:text-white/40 uppercase tracking-widest">+15%</span>
                         </div>
                     )}
                 </div>
                 <div className={cn("space-y-1", compact ? "flex-1" : "")}>
                     <p className={cn("font-black uppercase tracking-[0.4em] leading-tight text-gray-500", compact ? "text-[8px]" : "text-[10px]")}>{label}</p>
-                    <h3 className={cn("font-black text-white tracking-tighter tabular-nums leading-none", compact ? "text-2xl" : "text-6xl")}>{value}</h3>
+                    <h3 className={cn("font-black text-gray-900 dark:text-white tracking-tighter tabular-nums leading-none", compact ? "text-2xl" : "text-6xl")}>{value}</h3>
                     {!compact && description && (
                         <p className="text-[10px] font-bold text-gray-700 uppercase tracking-widest mt-2">{description}</p>
                     )}
@@ -154,17 +154,17 @@ const CampaignBadgeCard = ({ campaign, onSelect, onEdit, onDelete, updateCampaig
     <motion.div 
         layout
         onClick={onSelect}
-        className="group relative bg-[#0A0A0A] border border-white/5 hover:border-neon-blue/40 rounded-[2.5rem] p-4 md:p-8 cursor-pointer overflow-hidden transition-all duration-700 hover:-translate-y-2 hover:shadow-[0_40px_100px_rgba(0,0,0,0.9)] flex flex-col h-auto min-h-[510px]"
+        className="group relative bg-[#0A0A0A] border border-black/10 dark:border-white/5 hover:border-neon-blue/40 rounded-[2.5rem] p-4 md:p-8 cursor-pointer overflow-hidden transition-all duration-700 hover:-translate-y-2 hover:shadow-[0_40px_100px_rgba(0,0,0,0.9)] flex flex-col h-auto min-h-[510px]"
     >
         <div className="absolute inset-0 bg-gradient-to-br from-neon-blue/5 via-transparent to-neon-pink/5 opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
         
         <div className="relative mb-6 group-hover:scale-[1.01] transition-transform duration-700">
-            <div className="aspect-video rounded-[1.5rem] overflow-hidden bg-black border border-white/5 relative flex items-center justify-center">
+            <div className="aspect-video rounded-[1.5rem] overflow-hidden bg-white dark:bg-black border border-black/10 dark:border-white/5 relative flex items-center justify-center">
                 {campaign.thumbnail ? (
                     <img src={campaign.thumbnail} alt={campaign.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000" />
                 ) : (
-                    <div className="absolute inset-0 flex items-center justify-center bg-zinc-900/50 backdrop-blur-sm">
-                    <div className="text-2xl font-black text-white/5 uppercase italic select-none tracking-[0.2em]">
+                    <div className="absolute inset-0 flex items-center justify-center bg-gray-100 dark:bg-zinc-900/50 backdrop-blur-sm">
+                    <div className="text-2xl font-black text-gray-900 dark:text-white/5 uppercase italic select-none tracking-[0.2em]">
                             CAMPAIGN IMAGE
                         </div>
                     </div>
@@ -178,13 +178,13 @@ const CampaignBadgeCard = ({ campaign, onSelect, onEdit, onDelete, updateCampaig
         <div className="flex-1 flex flex-col px-1">
             <div className="mb-6">
                 <p className="text-[9px] font-black text-neon-blue uppercase tracking-[0.4em] mb-2 opacity-60">CAMPAIGN</p>
-                <h3 className="text-2xl font-black text-white tracking-tighter uppercase italic leading-[0.9] group-hover:text-neon-blue transition-colors duration-500 line-clamp-2">
+                <h3 className="text-2xl font-black text-gray-900 dark:text-white tracking-tighter uppercase italic leading-[0.9] group-hover:text-neon-blue transition-colors duration-500 line-clamp-2">
                     {campaign.title}
                 </h3>
             </div>
 
             <div className="flex flex-wrap gap-3 mb-8">
-                <div className="flex items-center gap-3 text-gray-500 text-[10px] font-black uppercase tracking-[0.2em] bg-white/[0.03] px-4 py-2.5 rounded-2xl border border-white/5 shadow-inner w-fit">
+                <div className="flex items-center gap-3 text-gray-500 text-[10px] font-black uppercase tracking-[0.2em] bg-white/[0.03] px-4 py-2.5 rounded-2xl border border-black/10 dark:border-white/5 shadow-inner w-fit">
                     <MapPin size={12} className="text-neon-pink animate-pulse" />
                     <span>{campaign.targetCity || 'GLOBAL'}</span>
                 </div>
@@ -200,7 +200,7 @@ const CampaignBadgeCard = ({ campaign, onSelect, onEdit, onDelete, updateCampaig
                 </div>
             </div>
 
-            <div className="mt-auto pt-6 border-t border-white/5 flex flex-col gap-4">
+            <div className="mt-auto pt-6 border-t border-black/10 dark:border-white/5 flex flex-col gap-4">
                 <div className="flex items-center justify-between gap-4">
                     <div className="min-w-0 flex-1 pr-2">
                         <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest mb-1">REWARDS</p>
@@ -219,7 +219,7 @@ const CampaignBadgeCard = ({ campaign, onSelect, onEdit, onDelete, updateCampaig
                     </button>
                 </div>
 
-                <div className="flex items-center justify-between gap-1.5 pt-4 border-t border-white/5 bg-white/[0.01] -mx-2 px-2 py-2 rounded-2xl">
+                <div className="flex items-center justify-between gap-1.5 pt-4 border-t border-black/10 dark:border-white/5 bg-white/[0.01] -mx-2 px-2 py-2 rounded-2xl">
                     <div className="flex items-center gap-1.5">
                         <button 
                             disabled={isUpdating}
@@ -230,7 +230,7 @@ const CampaignBadgeCard = ({ campaign, onSelect, onEdit, onDelete, updateCampaig
                                     onDelete(campaign.id);
                                 }
                             }}
-                            className="w-11 h-11 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 hover:bg-red-500 hover:text-white transition-all flex items-center justify-center shadow-xl backdrop-blur-3xl disabled:opacity-50"
+                            className="w-11 h-11 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 hover:bg-red-500 hover:text-gray-900 dark:hover:text-white transition-all flex items-center justify-center shadow-xl backdrop-blur-3xl disabled:opacity-50"
                             title="Delete Campaign"
                         >
                             <Trash2 size={16} />
@@ -240,7 +240,7 @@ const CampaignBadgeCard = ({ campaign, onSelect, onEdit, onDelete, updateCampaig
                                 e.stopPropagation();
                                 onCopyLink();
                             }}
-                            className="w-11 h-11 rounded-xl bg-white/5 border border-white/10 text-white/40 hover:text-neon-blue hover:border-neon-blue/30 hover:bg-neon-blue/10 transition-all flex items-center justify-center shadow-xl backdrop-blur-3xl"
+                            className="w-11 h-11 rounded-xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-gray-900 dark:text-white/40 hover:text-neon-blue hover:border-neon-blue/30 hover:bg-neon-blue/10 transition-all flex items-center justify-center shadow-xl backdrop-blur-3xl"
                             title="Share Campaign"
                         >
                             <Share2 size={16} />
@@ -250,7 +250,7 @@ const CampaignBadgeCard = ({ campaign, onSelect, onEdit, onDelete, updateCampaig
                                 e.stopPropagation();
                                 onEdit(campaign);
                             }}
-                            className="w-11 h-11 rounded-xl bg-white/5 border border-white/10 text-white/40 hover:text-neon-blue hover:border-neon-blue/30 hover:bg-neon-blue/10 transition-all flex items-center justify-center shadow-xl backdrop-blur-3xl"
+                            className="w-11 h-11 rounded-xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-gray-900 dark:text-white/40 hover:text-neon-blue hover:border-neon-blue/30 hover:bg-neon-blue/10 transition-all flex items-center justify-center shadow-xl backdrop-blur-3xl"
                             title="Edit Campaign"
                         >
                             <Edit size={16} />
@@ -266,7 +266,7 @@ const CampaignBadgeCard = ({ campaign, onSelect, onEdit, onDelete, updateCampaig
                         }}
                         className={cn(
                             "px-4 h-11 rounded-xl border transition-all flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest shadow-xl backdrop-blur-3xl disabled:opacity-50",
-                            campaign.status === 'Open' ? "bg-neon-green/10 border-neon-green/20 text-neon-green hover:bg-neon-green hover:text-black" : "bg-red-500/10 border-red-500/20 text-red-500 hover:bg-red-50 hover:text-white"
+                            campaign.status === 'Open' ? "bg-neon-green/10 border-neon-green/20 text-neon-green hover:bg-neon-green hover:text-black" : "bg-red-500/10 border-red-500/20 text-red-500 hover:bg-red-50 hover:text-gray-900 dark:hover:text-white"
                         )}
                         title={campaign.status === 'Open' ? "Close Campaign" : "Open Campaign"}
                     >
@@ -286,46 +286,46 @@ const CampaignListItem = ({ campaign, idx, onSelect, onEdit, onDelete, updateCam
         animate={{ opacity: 1, x: 0 }}
         transition={{ delay: idx * 0.03 }}
         onClick={onSelect}
-        className="group flex flex-col sm:flex-row items-start sm:items-center p-5 sm:px-8 sm:py-5 bg-[#080808]/40 backdrop-blur-xl border border-white/5 hover:border-white/10 hover:bg-[#0A0A0A]/80 rounded-[2rem] cursor-pointer transition-all duration-300 gap-4 sm:gap-6"
+        className="group flex flex-col sm:flex-row items-start sm:items-center p-5 sm:px-8 sm:py-5 bg-[#080808]/40 backdrop-blur-xl border border-black/10 dark:border-white/5 hover:border-black/10 dark:hover:border-white/10 hover:bg-[#0A0A0A]/80 rounded-[2rem] cursor-pointer transition-all duration-300 gap-4 sm:gap-6"
     >
         <div className="w-16">
-            <div className="w-14 h-14 bg-black border border-white/10 rounded-2xl flex items-center justify-center font-black text-white group-hover:border-neon-blue/40 overflow-hidden transition-colors group-hover:scale-105 transition-transform">
+            <div className="w-14 h-14 bg-white dark:bg-black border border-black/10 dark:border-white/10 rounded-2xl flex items-center justify-center font-black text-gray-900 dark:text-white group-hover:border-neon-blue/40 overflow-hidden transition-colors group-hover:scale-105 transition-transform">
                 {campaign.thumbnail ? (
                     <img src={campaign.thumbnail} alt={campaign.title} className="w-full h-full object-cover" />
                 ) : (
-                    <Target size={20} className="text-white/10" />
+                    <Target size={20} className="text-gray-900 dark:text-white/10" />
                 )}
             </div>
         </div>
         
         <div className="flex-1 w-full sm:w-auto">
-            <h4 className="text-lg font-black text-white uppercase italic tracking-tight group-hover:text-neon-blue transition-colors truncate mb-1">{campaign.title}</h4>
+            <h4 className="text-lg font-black text-gray-900 dark:text-white uppercase italic tracking-tight group-hover:text-neon-blue transition-colors truncate mb-1">{campaign.title}</h4>
             <div className="flex flex-wrap items-center gap-3">
                 <p className="text-[9px] text-gray-600 font-black tracking-[0.2em] flex items-center gap-1.5 uppercase">
                     <MapPin size={10} className="text-neon-pink" /> {campaign.targetCity}
                 </p>
                 {campaign.targetCollege && campaign.targetCollege !== 'Any' && (
                     <>
-                        <div className="w-1 h-1 rounded-full bg-white/10" />
+                        <div className="w-1 h-1 rounded-full bg-black/10 dark:bg-white/10" />
                         <p className="text-[9px] text-neon-blue font-black tracking-[0.2em] flex items-center gap-1.5 uppercase">
                             <Layers size={10} /> {campaign.targetCollege}
                         </p>
                     </>
                 )}
-                <div className="w-1 h-1 rounded-full bg-white/10" />
+                <div className="w-1 h-1 rounded-full bg-black/10 dark:bg-white/10" />
                 <p className="text-[9px] text-neon-pink font-black uppercase tracking-widest">{campaign.reward}</p>
             </div>
         </div>
 
         <div className="w-48 hidden md:block">
-            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-400 bg-white/5 border border-white/5 px-4 py-2 rounded-xl group-hover:bg-white/10 transition-colors">
+            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-600 dark:text-gray-400 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/5 px-4 py-2 rounded-xl group-hover:bg-black/10 dark:group-hover:bg-white/10 transition-colors">
                 CAMPAIGN
             </span>
         </div>
 
         <div className="w-40 hidden lg:block text-right pr-10">
             <p className="text-[8px] font-black text-gray-700 uppercase tracking-widest mb-1">TASKS</p>
-            <p className="text-lg font-black text-white font-mono">{campaign.tasks?.length || 0}</p>
+            <p className="text-lg font-black text-gray-900 dark:text-white font-mono">{campaign.tasks?.length || 0}</p>
         </div>
 
         <div className="hidden sm:flex w-48 items-center justify-end gap-3">
@@ -339,7 +339,7 @@ const CampaignListItem = ({ campaign, idx, onSelect, onEdit, onDelete, updateCam
                             onDelete(campaign.id);
                         }
                     }}
-                    className="w-11 h-11 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 hover:bg-red-500 hover:text-white transition-all flex items-center justify-center disabled:opacity-50"
+                    className="w-11 h-11 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 hover:bg-red-500 hover:text-gray-900 dark:hover:text-white transition-all flex items-center justify-center disabled:opacity-50"
                     title="Delete Campaign"
                 >
                     <Trash2 size={16} />
@@ -349,7 +349,7 @@ const CampaignListItem = ({ campaign, idx, onSelect, onEdit, onDelete, updateCam
                         e.stopPropagation();
                         onCopyLink();
                     }}
-                    className="w-11 h-11 rounded-xl bg-white/5 border border-white/10 text-white/40 hover:text-neon-blue hover:border-neon-blue/30 hover:bg-neon-blue/10 transition-all flex items-center justify-center"
+                    className="w-11 h-11 rounded-xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-gray-900 dark:text-white/40 hover:text-neon-blue hover:border-neon-blue/30 hover:bg-neon-blue/10 transition-all flex items-center justify-center"
                     title="Share Campaign"
                 >
                     <Share2 size={16} />
@@ -359,7 +359,7 @@ const CampaignListItem = ({ campaign, idx, onSelect, onEdit, onDelete, updateCam
                         e.stopPropagation();
                         onEdit(campaign);
                     }}
-                    className="w-11 h-11 rounded-xl bg-white/5 border border-white/10 text-white/40 hover:text-neon-blue hover:border-neon-blue/30 hover:bg-neon-blue/10 transition-all flex items-center justify-center"
+                    className="w-11 h-11 rounded-xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-gray-900 dark:text-white/40 hover:text-neon-blue hover:border-neon-blue/30 hover:bg-neon-blue/10 transition-all flex items-center justify-center"
                     title="Edit Campaign"
                 >
                     <Edit size={16} />
@@ -374,7 +374,7 @@ const CampaignListItem = ({ campaign, idx, onSelect, onEdit, onDelete, updateCam
                     }}
                     className={cn(
                         "w-11 h-11 rounded-xl border transition-all flex items-center justify-center disabled:opacity-50",
-                        campaign.status === 'Open' ? "bg-neon-green/10 border-neon-green/20 text-neon-green hover:bg-neon-green hover:text-black" : "bg-red-500/10 border-red-500/20 text-red-500 hover:bg-red-50 hover:text-white"
+                        campaign.status === 'Open' ? "bg-neon-green/10 border-neon-green/20 text-neon-green hover:bg-neon-green hover:text-black" : "bg-red-500/10 border-red-500/20 text-red-500 hover:bg-red-50 hover:text-gray-900 dark:hover:text-white"
                     )}
                     title={campaign.status === 'Open' ? "Close Campaign" : "Open Campaign"}
                 >
@@ -389,7 +389,7 @@ const CampaignListItem = ({ campaign, idx, onSelect, onEdit, onDelete, updateCam
                 e.stopPropagation();
                 onSelect();
             }}
-            className="hidden sm:flex w-12 h-12 rounded-2xl bg-white/5 border border-white/5 items-center justify-center group-hover:bg-white group-hover:text-black transition-all group-hover:scale-110"
+            className="hidden sm:flex w-12 h-12 rounded-2xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/5 items-center justify-center group-hover:bg-white group-hover:text-black transition-all group-hover:scale-110"
             title="View Campaign Page"
         >
             <ChevronRight size={20} />
@@ -817,28 +817,28 @@ const CampaignManager = () => {
             <div className={cn("pt-0", !(isCreating || expandedCampaignId) ? "px-4 md:px-12" : "")}>
                 {/* Control Panel */}
                 {!isCreating && !expandedCampaignId && (
-                    <div className="relative z-50 bg-[#0A0A0A]/80 backdrop-blur-3xl border border-white/10 rounded-[1.5rem] md:rounded-[2rem] p-1.5 md:p-2.5 md:pr-6 mb-8 md:mb-16 shadow-[0_30px_100px_rgba(0,0,0,0.8)] flex flex-col xl:flex-row xl:items-center gap-2 md:gap-3">
+                    <div className="relative z-50 bg-[#0A0A0A]/80 backdrop-blur-3xl border border-black/10 dark:border-white/10 rounded-[1.5rem] md:rounded-[2rem] p-1.5 md:p-2.5 md:pr-6 mb-8 md:mb-16 shadow-[0_30px_100px_rgba(0,0,0,0.8)] flex flex-col xl:flex-row xl:items-center gap-2 md:gap-3">
                         
                         {/* Search Engine */}
                         <div className="relative flex-1 min-w-[280px] group">
                             <div className="absolute inset-0 bg-gradient-to-r from-neon-blue/10 to-transparent opacity-0 group-focus-within:opacity-100 transition-opacity rounded-full pointer-events-none" />
-                            <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-neon-blue transition-colors" size={16} />
+                            <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-600 dark:text-gray-400 group-focus-within:text-blue-600 dark:group-focus-within:text-neon-blue transition-colors" size={16} />
                             <input
                                 type="text"
                                 placeholder="SEARCH CAMPAIGNS..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
-                                className="w-full h-14 pl-14 pr-6 bg-black/60 border border-white/10 group-hover:border-white/20 focus:border-neon-blue/60 rounded-full text-[10px] font-black uppercase tracking-[0.2em] outline-none transition-all placeholder:text-gray-700 text-white min-w-0"
+                                className="w-full h-14 pl-14 pr-6 bg-white dark:bg-black/60 border border-black/10 dark:border-white/10 group-hover:border-black/20 dark:group-hover:border-white/20 focus:border-neon-blue/60 rounded-full text-[10px] font-black uppercase tracking-[0.2em] outline-none transition-all placeholder:text-gray-700 text-gray-900 dark:text-white min-w-0"
                             />
                         </div>
 
                         {/* View Switcher */}
-                        <div className="hidden md:flex bg-black/60 p-1 rounded-full border border-white/10 shrink-0">
+                        <div className="hidden md:flex bg-white dark:bg-black/60 p-1 rounded-full border border-black/10 dark:border-white/10 shrink-0">
                             <button 
                                 onClick={() => setViewMode('grid')} 
                                 className={cn(
                                     "w-11 h-11 rounded-full flex items-center justify-center transition-all", 
-                                    viewMode === 'grid' ? "bg-white text-black shadow-xl" : "text-gray-500 hover:text-white"
+                                    viewMode === 'grid' ? "bg-white text-black shadow-xl" : "text-gray-500 hover:text-gray-900 dark:hover:text-white"
                                 )}
                             >
                                 <LayoutGrid size={16} />
@@ -847,7 +847,7 @@ const CampaignManager = () => {
                                 onClick={() => setViewMode('list')} 
                                 className={cn(
                                     "w-11 h-11 rounded-full flex items-center justify-center transition-all", 
-                                    viewMode === 'list' ? "bg-white text-black shadow-xl" : "text-gray-500 hover:text-white"
+                                    viewMode === 'list' ? "bg-white text-black shadow-xl" : "text-gray-500 hover:text-gray-900 dark:hover:text-white"
                                 )}
                             >
                                 <FileSpreadsheet size={16} />
@@ -859,7 +859,7 @@ const CampaignManager = () => {
                             className="group relative h-12 md:h-14 px-4 md:px-8 bg-white text-black rounded-xl md:rounded-full font-black uppercase tracking-[0.2em] text-[9px] md:text-[10px] overflow-hidden hover:scale-[1.02] active:scale-95 transition-all shadow-[0_15px_40px_rgba(255,255,255,0.1)] flex items-center justify-center gap-3 w-full xl:w-auto shrink-0"
                         >
                             <div className="absolute inset-0 bg-gradient-to-r from-neon-blue via-neon-pink to-purple-500 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                            <div className="relative z-10 flex items-center gap-3 group-hover:text-white transition-colors duration-500">
+                            <div className="relative z-10 flex items-center gap-3 group-hover:text-gray-900 dark:group-hover:text-white transition-colors duration-500">
                                 <Plus size={16} />
                                 NEW CAMPAIGN
                             </div>
@@ -880,15 +880,15 @@ const CampaignManager = () => {
                             >
                                 <div className="flex justify-between items-center mb-10">
                                     <div className="flex items-center gap-6">
-                                        <button onClick={resetForm} className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white hover:text-black transition-all">
+                                        <button onClick={resetForm} className="w-12 h-12 rounded-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 flex items-center justify-center hover:bg-white hover:text-black transition-all">
                                             <ArrowLeft size={20} />
                                         </button>
-                                        <h2 className="text-3xl font-black uppercase italic tracking-tighter text-white">
+                                        <h2 className="text-3xl font-black uppercase italic tracking-tighter text-gray-900 dark:text-white">
                                             {editingId ? 'EDIT' : 'NEW'} <span className="text-neon-blue">CAMPAIGN DETAILS</span>
                                         </h2>
                                     </div>
-                                    <div className="fixed md:relative bottom-0 left-0 right-0 z-50 flex items-center justify-center md:justify-end gap-4 bg-[#0A0A0A]/95 md:bg-transparent backdrop-blur-2xl md:backdrop-blur-none border-t border-white/10 md:border-none p-4 md:p-0 shadow-[0_-20px_40px_rgba(0,0,0,0.8)] md:shadow-none">
-                                        <button onClick={resetForm} className="text-[10px] font-black text-gray-500 hover:text-white uppercase tracking-widest transition-colors">Discard</button>
+                                    <div className="fixed md:relative bottom-0 left-0 right-0 z-50 flex items-center justify-center md:justify-end gap-4 bg-[#0A0A0A]/95 md:bg-transparent backdrop-blur-2xl md:backdrop-blur-none border-t border-black/10 dark:border-white/10 md:border-none p-4 md:p-0 shadow-[0_-20px_40px_rgba(0,0,0,0.8)] md:shadow-none">
+                                        <button onClick={resetForm} className="text-[10px] font-black text-gray-500 hover:text-gray-900 dark:hover:text-white uppercase tracking-widest transition-colors">Discard</button>
                                         <button 
                                             onClick={handleSubmit} 
                                             disabled={isDeploying || isUploading}
@@ -901,11 +901,11 @@ const CampaignManager = () => {
 
                                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
                                     <div className="lg:col-span-7 space-y-8">
-                                        <Card className="p-4 md:p-8 bg-[#0A0A0A]/60 backdrop-blur-3xl border-white/5 rounded-[2.5rem] shadow-2xl space-y-8">
+                                        <Card className="p-4 md:p-8 bg-[#0A0A0A]/60 backdrop-blur-3xl border-black/10 dark:border-white/5 rounded-[2.5rem] shadow-2xl space-y-8">
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                                 <div className="space-y-2">
                                                     <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">TITLE</label>
-                                                    <Input required value={formData.title} onChange={e => setFormData({ ...formData, title: e.target.value })} placeholder="e.g. Summer Brand Rush" className="h-14 bg-black/50 border-white/10 rounded-2xl" />
+                                                    <Input required value={formData.title} onChange={e => setFormData({ ...formData, title: e.target.value })} placeholder="e.g. Summer Brand Rush" className="h-14 bg-white dark:bg-black/50 border-black/10 dark:border-white/10 rounded-2xl" />
                                                 </div>
                                                 <div className="space-y-2">
                                                     <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Target Location</label>
@@ -924,14 +924,14 @@ const CampaignManager = () => {
 
                                             <div className="space-y-2">
                                                 <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Target College / University</label>
-                                                <Input value={formData.targetCollege} onChange={e => setFormData({ ...formData, targetCollege: e.target.value })} placeholder="e.g. Delhi University, IIT (or 'Any' for all colleges)" className="h-14 bg-black/50 border-white/10 rounded-2xl" />
+                                                <Input value={formData.targetCollege} onChange={e => setFormData({ ...formData, targetCollege: e.target.value })} placeholder="e.g. Delhi University, IIT (or 'Any' for all colleges)" className="h-14 bg-white dark:bg-black/50 border-black/10 dark:border-white/10 rounded-2xl" />
                                             </div>
 
                                             <div className="space-y-2">
                                                 <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">CAMPAIGN IMAGE (OR CTRL+V)</label>
                                                 <div className="flex gap-4 items-center">
                                                     {formData.thumbnail && (
-                                                        <div className="w-20 h-20 rounded-2xl overflow-hidden border border-white/10 shrink-0">
+                                                        <div className="w-20 h-20 rounded-2xl overflow-hidden border border-black/10 dark:border-white/10 shrink-0">
                                                             <img src={formData.thumbnail} alt="Preview" className="w-full h-full object-cover" />
                                                         </div>
                                                     )}
@@ -941,9 +941,9 @@ const CampaignManager = () => {
                                                             onChange={e => setFormData({ ...formData, thumbnail: e.target.value })} 
                                                             onPaste={handlePaste}
                                                             placeholder="ASSET URL OR PASTE IMAGE" 
-                                                            className="flex-1 h-14 bg-black/50 border-white/10 rounded-2xl" 
+                                                            className="flex-1 h-14 bg-white dark:bg-black/50 border-black/10 dark:border-white/10 rounded-2xl" 
                                                         />
-                                                        <label className="w-20 h-14 bg-black/30 border-2 border-dashed border-white/10 hover:border-neon-blue/30 rounded-2xl transition-all cursor-pointer flex flex-col items-center justify-center group shrink-0">
+                                                        <label className="w-20 h-14 bg-white dark:bg-black/30 border-2 border-dashed border-black/10 dark:border-white/10 hover:border-neon-blue/30 rounded-2xl transition-all cursor-pointer flex flex-col items-center justify-center group shrink-0">
                                                             <input type="file" className="hidden" onChange={handleFileChange} accept="image/*" />
                                                             <ImageIcon size={18} className="text-gray-500 group-hover:text-neon-blue transition-colors" />
                                                         </label>
@@ -963,38 +963,38 @@ const CampaignManager = () => {
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                                 <div className="space-y-2">
                                                     <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">REWARDS</label>
-                                                    <Input required value={formData.reward} onChange={e => setFormData({ ...formData, reward: e.target.value })} placeholder="e.g. ₹5,000 + Products" className="h-14 bg-black/50 border-white/10 rounded-2xl" />
+                                                    <Input required value={formData.reward} onChange={e => setFormData({ ...formData, reward: e.target.value })} placeholder="e.g. ₹5,000 + Products" className="h-14 bg-white dark:bg-black/50 border-black/10 dark:border-white/10 rounded-2xl" />
                                                 </div>
                                                 <div className="space-y-2">
                                                     <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">MINIMUM FOLLOWERS</label>
-                                                    <Input type="number" required value={formData.minInstagramFollowers} onChange={e => setFormData({ ...formData, minInstagramFollowers: parseInt(e.target.value) })} placeholder="e.g. 5000" className="h-14 bg-black/50 border-white/10 rounded-2xl" />
+                                                    <Input type="number" required value={formData.minInstagramFollowers} onChange={e => setFormData({ ...formData, minInstagramFollowers: parseInt(e.target.value) })} placeholder="e.g. 5000" className="h-14 bg-white dark:bg-black/50 border-black/10 dark:border-white/10 rounded-2xl" />
                                                 </div>
                                             </div>
 
                                             <div className="space-y-2">
                                                 <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">WHATSAPP GROUP LINK</label>
-                                                <Input value={formData.whatsappLink} onChange={e => setFormData({ ...formData, whatsappLink: e.target.value })} placeholder="https://chat.whatsapp.com/..." className="h-14 bg-black/50 border-white/10 rounded-2xl" />
+                                                <Input value={formData.whatsappLink} onChange={e => setFormData({ ...formData, whatsappLink: e.target.value })} placeholder="https://chat.whatsapp.com/..." className="h-14 bg-white dark:bg-black/50 border-black/10 dark:border-white/10 rounded-2xl" />
                                             </div>
 
                                             <div className={cn(
                                                 "p-8 rounded-[2rem] border flex items-center justify-between transition-all duration-500", 
-                                                formData.isPinned ? "bg-neon-blue/10 border-neon-blue/40 shadow-[0_0_40px_rgba(46,191,255,0.05)]" : "bg-black/40 border-white/5"
+                                                formData.isPinned ? "bg-neon-blue/10 border-neon-blue/40 shadow-[0_0_40px_rgba(46,191,255,0.05)]" : "bg-white dark:bg-black/40 border-black/10 dark:border-white/5"
                                             )}>
                                                 <div className="flex items-center gap-8">
-                                                    <div className={cn("w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-500 shadow-xl", formData.isPinned ? "bg-neon-blue text-black" : "bg-white/5 text-gray-600")}>
+                                                    <div className={cn("w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-500 shadow-xl", formData.isPinned ? "bg-neon-blue text-black" : "bg-black/5 dark:bg-white/5 text-gray-600")}>
                                                         <Star size={24} className={cn(formData.isPinned && "fill-current")} />
                                                     </div>
                                                     <div>
-                                                        <h4 className="text-white text-sm font-black uppercase tracking-widest italic leading-tight">PIN TO TOP</h4>
+                                                        <h4 className="text-gray-900 dark:text-white text-sm font-black uppercase tracking-widest italic leading-tight">PIN TO TOP</h4>
                                                         <p className="text-[10px] text-gray-600 mt-1 uppercase font-bold tracking-[0.1em]">SHOW AT THE TOP OF THE LIST</p>
                                                     </div>
                                                 </div>
                                                 <button 
                                                     type="button" 
                                                     onClick={() => setFormData({ ...formData, isPinned: !formData.isPinned })} 
-                                                    className={cn("w-14 h-8 rounded-full relative transition-all border-2", formData.isPinned ? "bg-neon-blue border-neon-blue" : "bg-black/60 border-white/10")}
+                                                    className={cn("w-14 h-8 rounded-full relative transition-all border-2", formData.isPinned ? "bg-neon-blue border-neon-blue" : "bg-white dark:bg-black/60 border-black/10 dark:border-white/10")}
                                                 >
-                                                    <div className={cn("absolute top-1 w-5 h-5 rounded-full transition-all shadow-lg", formData.isPinned ? "right-1 bg-black" : "left-1 bg-gray-600")} />
+                                                    <div className={cn("absolute top-1 w-5 h-5 rounded-full transition-all shadow-lg", formData.isPinned ? "right-1 bg-white dark:bg-black" : "left-1 bg-gray-600")} />
                                                 </button>
                                             </div>
                                         </Card>
@@ -1002,12 +1002,12 @@ const CampaignManager = () => {
 
                                     <div className="lg:col-span-5 space-y-8 lg:sticky lg:top-32 h-fit">
                                         <LivePreview type="campaign" data={formData} />
-                                        <Card className="p-4 md:p-8 bg-[#0A0A0A]/60 backdrop-blur-3xl border-white/5 rounded-[2.5rem] shadow-2xl">
+                                        <Card className="p-4 md:p-8 bg-[#0A0A0A]/60 backdrop-blur-3xl border-black/10 dark:border-white/5 rounded-[2.5rem] shadow-2xl">
                                             <div className="flex items-center justify-between mb-8">
-                                                <h3 className="text-sm font-black text-white uppercase tracking-[0.3em] flex items-center gap-3">
+                                                <h3 className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-[0.3em] flex items-center gap-3">
                                                     <Zap size={18} className="text-neon-blue" /> TASKS
                                                 </h3>
-                                                <button type="button" onClick={() => setFormData({ ...formData, tasks: [...formData.tasks, { id: Date.now().toString(), title: '', description: '', taskType: 'custom', platform: 'instagram', priority: 'required', creativeAssets: [], creativeLinks: [], submissions: {} }] })} className="h-10 px-5 rounded-xl border border-white/10 text-[9px] font-black uppercase tracking-widest hover:bg-white hover:text-black transition-all">
+                                                <button type="button" onClick={() => setFormData({ ...formData, tasks: [...formData.tasks, { id: Date.now().toString(), title: '', description: '', taskType: 'custom', platform: 'instagram', priority: 'required', creativeAssets: [], creativeLinks: [], submissions: {} }] })} className="h-10 px-5 rounded-xl border border-black/10 dark:border-white/10 text-[9px] font-black uppercase tracking-widest hover:bg-white hover:text-black transition-all">
                                                     + Add Task
                                                 </button>
                                             </div>
@@ -1055,9 +1055,9 @@ const CampaignManager = () => {
                         ) : campaigns.length === 0 ? (
                             <motion.div 
                                 initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                                className="py-40 text-center bg-[#050505]/40 rounded-[4rem] border border-white/5 flex flex-col items-center gap-8 shadow-inner"
+                                className="py-40 text-center bg-[#050505]/40 rounded-[4rem] border border-black/10 dark:border-white/5 flex flex-col items-center gap-8 shadow-inner"
                             >
-                                <div className="w-32 h-32 bg-white/5 rounded-full flex items-center justify-center border border-white/10 animate-pulse">
+                                <div className="w-32 h-32 bg-black/5 dark:bg-white/5 rounded-full flex items-center justify-center border border-black/10 dark:border-white/10 animate-pulse">
                                     <Target size={48} className="text-gray-700" />
                                 </div>
                                 <div className="space-y-2">
@@ -1077,12 +1077,12 @@ const CampaignManager = () => {
                                     <div className="relative group/carousel">
                                         {/* Scroll Indicators */}
                                         <div className="absolute -left-4 top-1/2 -translate-y-1/2 z-20 hidden md:flex opacity-0 group-hover/carousel:opacity-100 transition-opacity pointer-events-none">
-                                            <button onClick={() => scrollContainer('campaign-grid', 'left')} className="w-12 h-12 rounded-2xl bg-black/80 backdrop-blur-xl border border-white/10 flex items-center justify-center text-white pointer-events-auto hover:bg-white hover:text-black transition-all shadow-2xl">
+                                            <button onClick={() => scrollContainer('campaign-grid', 'left')} className="w-12 h-12 rounded-2xl bg-white dark:bg-black/80 backdrop-blur-xl border border-black/10 dark:border-white/10 flex items-center justify-center text-gray-900 dark:text-white pointer-events-auto hover:bg-white hover:text-black transition-all shadow-2xl">
                                                 <ChevronRight className="rotate-180" size={24} />
                                             </button>
                                         </div>
                                         <div className="absolute -right-4 top-1/2 -translate-y-1/2 z-20 hidden md:flex opacity-0 group-hover/carousel:opacity-100 transition-opacity pointer-events-none">
-                                            <button onClick={() => scrollContainer('campaign-grid', 'right')} className="w-12 h-12 rounded-2xl bg-black/80 backdrop-blur-xl border border-white/10 flex items-center justify-center text-white pointer-events-auto hover:bg-white hover:text-black transition-all shadow-2xl">
+                                            <button onClick={() => scrollContainer('campaign-grid', 'right')} className="w-12 h-12 rounded-2xl bg-white dark:bg-black/80 backdrop-blur-xl border border-black/10 dark:border-white/10 flex items-center justify-center text-gray-900 dark:text-white pointer-events-auto hover:bg-white hover:text-black transition-all shadow-2xl">
                                                 <ChevronRight size={24} />
                                             </button>
                                         </div>
@@ -1115,7 +1115,7 @@ const CampaignManager = () => {
                                     </div>
                                 ) : (
                                     <div className="flex flex-col gap-3">
-                                        <div className="flex items-center gap-6 px-10 py-6 text-[10px] font-black text-gray-600 uppercase tracking-[0.4em] border-b border-white/5">
+                                        <div className="flex items-center gap-6 px-10 py-6 text-[10px] font-black text-gray-600 uppercase tracking-[0.4em] border-b border-black/10 dark:border-white/5">
                                             <div className="w-16 shrink-0">Asset</div>
                                             <div className="flex-1 pl-1">Campaign Brief</div>
                                             <div className="w-48 hidden md:block">Status</div>
@@ -1142,7 +1142,7 @@ const CampaignManager = () => {
                                 {/* Pagination */}
                                 {totalPages > 1 && (
                                     <div className="flex items-center justify-center gap-3 mt-16 pb-12">
-                                        <button disabled={currentPage === 1} onClick={() => setCurrentPage(p => Math.max(1, p - 1))} className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white disabled:opacity-20 hover:bg-white hover:text-black transition-all">
+                                        <button disabled={currentPage === 1} onClick={() => setCurrentPage(p => Math.max(1, p - 1))} className="w-12 h-12 rounded-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 flex items-center justify-center text-gray-900 dark:text-white disabled:opacity-20 hover:bg-white hover:text-black transition-all">
                                             <ChevronLeft size={20} />
                                         </button>
                                         <div className="flex items-center gap-2">
@@ -1165,7 +1165,7 @@ const CampaignManager = () => {
                                                             "w-12 h-12 rounded-full font-black text-xs transition-all border flex items-center justify-center",
                                                             currentPage === page 
                                                                 ? "bg-white text-black border-white shadow-[0_0_20px_rgba(255,255,255,0.3)]" 
-                                                                : "bg-white/5 text-gray-500 border-white/10 hover:border-white/30"
+                                                                : "bg-black/5 dark:bg-white/5 text-gray-500 border-black/10 dark:border-white/10 hover:border-white/30"
                                                         )}
                                                     >
                                                         {page}
@@ -1173,7 +1173,7 @@ const CampaignManager = () => {
                                                 );
                                             })}
                                         </div>
-                                        <button disabled={currentPage === totalPages} onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white disabled:opacity-20 hover:bg-white hover:text-black transition-all">
+                                        <button disabled={currentPage === totalPages} onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} className="w-12 h-12 rounded-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 flex items-center justify-center text-gray-900 dark:text-white disabled:opacity-20 hover:bg-white hover:text-black transition-all">
                                             <ChevronRight size={20} />
                                         </button>
                                     </div>
@@ -1240,16 +1240,16 @@ const CampaignManager = () => {
             <AnimatePresence>
                 {rejectionModal && (
                     <div className="fixed inset-0 z-[300] flex items-center justify-center p-4">
-                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/90 backdrop-blur-md" />
-                        <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="relative bg-[#0A0A0A] border border-white/10 rounded-[2.5rem] p-10 max-w-lg w-full shadow-2xl">
-                            <h3 className="text-xl font-black uppercase italic tracking-tighter text-white mb-6">REJECTION FEEDBACK</h3>
-                            <textarea value={rejectionReason} onChange={(e) => setRejectionReason(e.target.value)} placeholder="Provide specific reasons for rejection..." className="w-full h-40 bg-black border border-white/10 rounded-2xl p-6 text-sm text-white focus:border-red-500/50 outline-none transition-all resize-none mb-6" />
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-white dark:bg-black/90 backdrop-blur-md" />
+                        <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="relative bg-[#0A0A0A] border border-black/10 dark:border-white/10 rounded-[2.5rem] p-10 max-w-lg w-full shadow-2xl">
+                            <h3 className="text-xl font-black uppercase italic tracking-tighter text-gray-900 dark:text-white mb-6">REJECTION FEEDBACK</h3>
+                            <textarea value={rejectionReason} onChange={(e) => setRejectionReason(e.target.value)} placeholder="Provide specific reasons for rejection..." className="w-full h-40 bg-white dark:bg-black border border-black/10 dark:border-white/10 rounded-2xl p-6 text-sm text-gray-900 dark:text-white focus:border-red-500/50 outline-none transition-all resize-none mb-6" />
                             <div className="flex gap-4">
-                                <button onClick={() => setRejectionModal(null)} className="flex-1 h-14 rounded-xl border border-white/10 text-[10px] font-black uppercase tracking-widest hover:bg-white/5 transition-all">Cancel</button>
+                                <button onClick={() => setRejectionModal(null)} className="flex-1 h-14 rounded-xl border border-black/10 dark:border-white/10 text-[10px] font-black uppercase tracking-widest hover:bg-black/5 dark:hover:bg-white/5 transition-all">Cancel</button>
                                 <button 
                                     onClick={confirmRejection} 
                                     disabled={isReviewing}
-                                    className="flex-1 h-14 rounded-xl bg-red-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-red-700 transition-all flex items-center justify-center gap-3"
+                                    className="flex-1 h-14 rounded-xl bg-red-600 text-gray-900 dark:text-white text-[10px] font-black uppercase tracking-widest hover:bg-red-700 transition-all flex items-center justify-center gap-3"
                                 >
                                     {isReviewing ? <LoadingSpinner size="xs" color="white" /> : 'Confirm Rejection'}
                                 </button>
@@ -1280,10 +1280,10 @@ const CampaignDetailView = ({ campaignId, onClose, onEdit, onToggleShortlist, on
             className="w-full space-y-8 pb-20 pt-4"
         >
             {/* Back Navigation Bar */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/5 pb-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-black/10 dark:border-white/5 pb-6">
                 <button 
                     onClick={onClose} 
-                    className="group flex items-center gap-3 px-6 py-3.5 rounded-full bg-white/5 border border-white/10 hover:bg-white hover:text-black transition-all text-xs font-black uppercase tracking-[0.2em] text-gray-400 hover:text-black shadow-lg backdrop-blur-xl w-fit"
+                    className="group flex items-center gap-3 px-6 py-3.5 rounded-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 hover:bg-white hover:text-black transition-all text-xs font-black uppercase tracking-[0.2em] text-gray-600 dark:text-gray-400 hover:text-black shadow-lg backdrop-blur-xl w-fit"
                 >
                     <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
                     BACK TO CAMPAIGNS
@@ -1297,7 +1297,7 @@ const CampaignDetailView = ({ campaignId, onClose, onEdit, onToggleShortlist, on
                         }}
                         className={cn(
                             "h-12 px-6 border rounded-full text-xs font-black uppercase tracking-widest transition-all flex items-center gap-2 shadow-xl backdrop-blur-xl",
-                            campaign.status === 'Open' ? "bg-neon-green/10 border-neon-green/20 text-neon-green hover:bg-neon-green hover:text-black" : "bg-red-500/10 border-red-500/20 text-red-500 hover:bg-red-500 hover:text-white"
+                            campaign.status === 'Open' ? "bg-neon-green/10 border-neon-green/20 text-neon-green hover:bg-neon-green hover:text-black" : "bg-red-500/10 border-red-500/20 text-red-500 hover:bg-red-500 hover:text-gray-900 dark:hover:text-white"
                         )}
                     >
                         {campaign.status === 'Open' ? <Unlock size={14} /> : <Lock size={14} />}
@@ -1305,20 +1305,20 @@ const CampaignDetailView = ({ campaignId, onClose, onEdit, onToggleShortlist, on
                     </button>
                     <button 
                         onClick={onCopyLink} 
-                        className="w-12 h-12 rounded-full bg-white/5 border border-white/10 text-white flex items-center justify-center hover:bg-white hover:text-black transition-all shadow-xl backdrop-blur-xl"
+                        className="w-12 h-12 rounded-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-gray-900 dark:text-white flex items-center justify-center hover:bg-white hover:text-black transition-all shadow-xl backdrop-blur-xl"
                         title="Share Campaign"
                     >
                         <Share2 size={18} />
                     </button>
                     <button 
                         onClick={() => onEdit(campaign)} 
-                        className="h-12 px-6 bg-white/10 border border-white/20 text-white font-black uppercase tracking-widest rounded-full hover:bg-white hover:text-black transition-all text-xs flex items-center gap-2 shadow-xl backdrop-blur-xl"
+                        className="h-12 px-6 bg-black/10 dark:bg-white/10 border border-black/20 dark:border-white/20 text-gray-900 dark:text-white font-black uppercase tracking-widest rounded-full hover:bg-white hover:text-black transition-all text-xs flex items-center gap-2 shadow-xl backdrop-blur-xl"
                     >
                         <Edit size={14} /> EDIT BRIEF
                     </button>
                     <button 
                         onClick={() => onDelete(campaign.id)} 
-                        className="w-12 h-12 rounded-full bg-red-500/10 border border-red-500/20 text-red-500 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all shadow-xl backdrop-blur-xl"
+                        className="w-12 h-12 rounded-full bg-red-500/10 border border-red-500/20 text-red-500 flex items-center justify-center hover:bg-red-500 hover:text-gray-900 dark:hover:text-white transition-all shadow-xl backdrop-blur-xl"
                         title="Delete Campaign"
                     >
                         <Trash2 size={18} />
@@ -1327,12 +1327,12 @@ const CampaignDetailView = ({ campaignId, onClose, onEdit, onToggleShortlist, on
             </div>
 
             {/* Campaign Hero Card */}
-            <div className="relative bg-[#0A0A0A]/80 backdrop-blur-3xl border border-white/10 rounded-[2.5rem] p-8 md:p-12 shadow-[0_30px_100px_rgba(0,0,0,0.8)] overflow-hidden">
+            <div className="relative bg-[#0A0A0A]/80 backdrop-blur-3xl border border-black/10 dark:border-white/10 rounded-[2.5rem] p-8 md:p-12 shadow-[0_30px_100px_rgba(0,0,0,0.8)] overflow-hidden">
                 <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-neon-blue/10 via-neon-pink/10 to-purple-500/10 blur-[120px] pointer-events-none" />
                 
                 <div className="relative z-10 flex flex-col lg:flex-row gap-8 items-start lg:items-center justify-between">
                     <div className="flex flex-col sm:flex-row items-start sm:items-center gap-8 w-full lg:w-auto">
-                        <div className="w-32 h-32 sm:w-40 sm:h-40 rounded-[2rem] bg-black border border-white/10 overflow-hidden shrink-0 shadow-2xl group relative flex items-center justify-center font-black text-white/20 text-xs tracking-widest">
+                        <div className="w-32 h-32 sm:w-40 sm:h-40 rounded-[2rem] bg-white dark:bg-black border border-black/10 dark:border-white/10 overflow-hidden shrink-0 shadow-2xl group relative flex items-center justify-center font-black text-gray-900 dark:text-white/20 text-xs tracking-widest">
                             {campaign.thumbnail ? (
                                 <img src={campaign.thumbnail} alt={campaign.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
                             ) : (
@@ -1348,13 +1348,13 @@ const CampaignDetailView = ({ campaignId, onClose, onEdit, onToggleShortlist, on
                                 <div className="flex items-center gap-3 text-neon-blue font-black tracking-[0.4em] text-[10px] uppercase mb-2">
                                     <Target size={14} /> CAMPAIGN BRIEF
                                 </div>
-                                <h1 className="text-3xl sm:text-5xl font-black text-white uppercase italic tracking-tighter leading-tight">
+                                <h1 className="text-3xl sm:text-5xl font-black text-gray-900 dark:text-white uppercase italic tracking-tighter leading-tight">
                                     {campaign.title}
                                 </h1>
                             </div>
 
                             <div className="flex flex-wrap items-center gap-3 text-xs font-black uppercase tracking-widest">
-                                <span className="flex items-center gap-2 bg-white/5 border border-white/10 px-4 py-2 rounded-xl text-gray-300 shadow-inner">
+                                <span className="flex items-center gap-2 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 px-4 py-2 rounded-xl text-gray-700 dark:text-gray-300 shadow-inner">
                                     <MapPin size={14} className="text-neon-pink" /> {campaign.targetCity || 'GLOBAL'}
                                 </span>
                                 {campaign.targetCollege && campaign.targetCollege !== 'Any' && (
@@ -1386,20 +1386,20 @@ const CampaignDetailView = ({ campaignId, onClose, onEdit, onToggleShortlist, on
                 </div>
 
                 {campaign.description && (
-                    <div className="mt-8 pt-8 border-t border-white/5 text-gray-400 text-sm leading-relaxed prose prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: campaign.description }} />
+                    <div className="mt-8 pt-8 border-t border-black/10 dark:border-white/5 text-gray-600 dark:text-gray-400 text-sm leading-relaxed prose prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: campaign.description }} />
                 )}
             </div>
 
             {/* Tabs & Content */}
             <div className="space-y-8">
-                <div className="flex gap-4 border-b border-white/5 pb-4">
+                <div className="flex gap-4 border-b border-black/10 dark:border-white/5 pb-4">
                     {['applicants', 'tasks'].map(tab => (
                         <button 
                             key={tab}
                             onClick={() => setActiveTab(tab)}
                             className={cn(
                                 "relative px-8 py-4 rounded-2xl text-xs font-black uppercase tracking-[0.3em] transition-all",
-                                activeTab === tab ? "bg-white text-black shadow-xl" : "bg-white/5 text-gray-500 hover:text-white border border-white/5"
+                                activeTab === tab ? "bg-white text-black shadow-xl" : "bg-black/5 dark:bg-white/5 text-gray-500 hover:text-gray-900 dark:hover:text-white border border-black/10 dark:border-white/5"
                             )}
                         >
                             {tab === 'applicants' ? `APPLICATIONS (${appliedCreators.length})` : `CAMPAIGN TASKS (${campaign.tasks?.length || 0})`}
@@ -1418,10 +1418,10 @@ const CampaignDetailView = ({ campaignId, onClose, onEdit, onToggleShortlist, on
                         {activeTab === 'applicants' ? (
                             <div className="space-y-6">
                                 {appliedCreators.length === 0 ? (
-                                    <div className="py-24 text-center bg-[#0A0A0A]/40 border border-white/5 rounded-[2.5rem] flex flex-col items-center gap-6 opacity-60">
+                                    <div className="py-24 text-center bg-[#0A0A0A]/40 border border-black/10 dark:border-white/5 rounded-[2.5rem] flex flex-col items-center gap-6 opacity-60">
                                         <Users size={48} className="text-gray-600" />
                                         <div className="space-y-1">
-                                            <p className="text-lg font-black uppercase tracking-tighter text-white">No Applications Received Yet</p>
+                                            <p className="text-lg font-black uppercase tracking-tighter text-gray-900 dark:text-white">No Applications Received Yet</p>
                                             <p className="text-xs font-bold text-gray-500 uppercase tracking-widest">Creators who apply will appear here for shortlisting</p>
                                         </div>
                                     </div>
@@ -1430,21 +1430,21 @@ const CampaignDetailView = ({ campaignId, onClose, onEdit, onToggleShortlist, on
                                         {appliedCreators.map(creator => {
                                             const isShortlisted = (creator.shortlistedCampaigns || []).includes(campaign.id);
                                             return (
-                                                <div key={creator.uid} className={cn("p-8 rounded-[2.5rem] border transition-all duration-500 group relative overflow-hidden backdrop-blur-xl", isShortlisted ? "bg-neon-blue/10 border-neon-blue/30 shadow-[0_10px_30px_rgba(46,191,255,0.1)]" : "bg-[#0A0A0A]/60 border-white/5 hover:border-white/20")}>
+                                                <div key={creator.uid} className={cn("p-8 rounded-[2.5rem] border transition-all duration-500 group relative overflow-hidden backdrop-blur-xl", isShortlisted ? "bg-neon-blue/10 border-neon-blue/30 shadow-[0_10px_30px_rgba(46,191,255,0.1)]" : "bg-[#0A0A0A]/60 border-black/10 dark:border-white/5 hover:border-black/20 dark:hover:border-white/20")}>
                                                     <div className="flex items-start justify-between mb-8">
-                                                        <div className="w-16 h-16 rounded-2xl bg-black border border-white/10 flex items-center justify-center text-xl font-black italic text-white shadow-inner">{creator.name.charAt(0)}</div>
+                                                        <div className="w-16 h-16 rounded-2xl bg-white dark:bg-black border border-black/10 dark:border-white/10 flex items-center justify-center text-xl font-black italic text-gray-900 dark:text-white shadow-inner">{creator.name.charAt(0)}</div>
                                                         <button 
                                                             onClick={() => onToggleShortlist(creator.uid, campaign.id)}
                                                             className={cn(
                                                                 "px-6 py-2.5 rounded-full text-[9px] font-black uppercase tracking-widest border transition-all shadow-lg",
-                                                                isShortlisted ? "bg-neon-blue text-black border-neon-blue font-black" : "bg-white/5 text-gray-400 border-white/10 hover:bg-white hover:text-black hover:border-white"
+                                                                isShortlisted ? "bg-neon-blue text-black border-neon-blue font-black" : "bg-black/5 dark:bg-white/5 text-gray-600 dark:text-gray-400 border-black/10 dark:border-white/10 hover:bg-white hover:text-black hover:border-white"
                                                             )}
                                                         >
                                                             {isShortlisted ? '✓ SHORTLISTED' : '+ SHORTLIST'}
                                                         </button>
                                                     </div>
-                                                    <h4 className="text-xl font-black text-white uppercase italic tracking-tight mb-3 group-hover:text-neon-blue transition-colors">{creator.name}</h4>
-                                                    <div className="flex items-center gap-4 text-[10px] font-black text-gray-400 uppercase tracking-widest bg-white/5 border border-white/5 px-4 py-2 rounded-xl w-fit">
+                                                    <h4 className="text-xl font-black text-gray-900 dark:text-white uppercase italic tracking-tight mb-3 group-hover:text-neon-blue transition-colors">{creator.name}</h4>
+                                                    <div className="flex items-center gap-4 text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/5 px-4 py-2 rounded-xl w-fit">
                                                         <Instagram size={14} className="text-neon-pink" /> {Number(creator.instagramFollowers || 0).toLocaleString()} FOLLOWERS
                                                     </div>
                                                 </div>
@@ -1456,20 +1456,20 @@ const CampaignDetailView = ({ campaignId, onClose, onEdit, onToggleShortlist, on
                         ) : (
                             <div className="space-y-12">
                                 {(campaign.tasks || []).length === 0 ? (
-                                    <div className="py-24 text-center bg-[#0A0A0A]/40 border border-white/5 rounded-[2.5rem] flex flex-col items-center gap-6 opacity-60">
+                                    <div className="py-24 text-center bg-[#0A0A0A]/40 border border-black/10 dark:border-white/5 rounded-[2.5rem] flex flex-col items-center gap-6 opacity-60">
                                         <Target size={48} className="text-gray-600" />
                                         <div className="space-y-1">
-                                            <p className="text-lg font-black uppercase tracking-tighter text-white">No Tasks Configured</p>
+                                            <p className="text-lg font-black uppercase tracking-tighter text-gray-900 dark:text-white">No Tasks Configured</p>
                                             <p className="text-xs font-bold text-gray-500 uppercase tracking-widest">Edit the campaign brief to add tasks for creators</p>
                                         </div>
                                     </div>
                                 ) : (campaign.tasks || []).map((task, idx) => (
-                                    <div key={task.id} className="space-y-6 bg-[#0A0A0A]/60 backdrop-blur-3xl border border-white/10 rounded-[2.5rem] p-4 md:p-8 shadow-xl">
-                                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/5 pb-6">
+                                    <div key={task.id} className="space-y-6 bg-[#0A0A0A]/60 backdrop-blur-3xl border border-black/10 dark:border-white/10 rounded-[2.5rem] p-4 md:p-8 shadow-xl">
+                                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-black/10 dark:border-white/5 pb-6">
                                             <div className="flex items-center gap-6">
                                                 <div className="w-14 h-14 rounded-2xl bg-neon-blue/10 border border-neon-blue/20 flex items-center justify-center font-black text-neon-blue text-lg shadow-inner">{idx + 1}</div>
                                                 <div>
-                                                    <h4 className="text-2xl font-black text-white uppercase italic tracking-tighter mb-1">{task.title}</h4>
+                                                    <h4 className="text-2xl font-black text-gray-900 dark:text-white uppercase italic tracking-tighter mb-1">{task.title}</h4>
                                                     <div className="flex items-center gap-3">
                                                         <p className="text-[10px] font-black text-gray-500 uppercase tracking-[0.4em]">{task.platform} TASK</p>
                                                         {task.deadline && (
@@ -1482,7 +1482,7 @@ const CampaignDetailView = ({ campaignId, onClose, onEdit, onToggleShortlist, on
                                             </div>
                                             <button 
                                                 onClick={() => onCopyTaskLink(task.id)}
-                                                className="flex items-center gap-2 px-5 py-3 rounded-xl bg-white/5 border border-white/10 text-gray-400 hover:text-white hover:bg-white/10 transition-all text-[10px] font-black uppercase tracking-widest w-fit"
+                                                className="flex items-center gap-2 px-5 py-3 rounded-xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-black/10 dark:hover:bg-white/10 transition-all text-[10px] font-black uppercase tracking-widest w-fit"
                                                 title="Share Task Link"
                                             >
                                                 <Share2 size={14} /> SHARE TASK
@@ -1490,7 +1490,7 @@ const CampaignDetailView = ({ campaignId, onClose, onEdit, onToggleShortlist, on
                                         </div>
 
                                         {task.description && (
-                                            <div className="text-gray-400 text-xs leading-relaxed prose prose-invert max-w-none bg-black/40 p-6 rounded-2xl border border-white/5" dangerouslySetInnerHTML={{ __html: task.description }} />
+                                            <div className="text-gray-600 dark:text-gray-400 text-xs leading-relaxed prose prose-invert max-w-none bg-white dark:bg-black/40 p-6 rounded-2xl border border-black/10 dark:border-white/5" dangerouslySetInnerHTML={{ __html: task.description }} />
                                         )}
 
                                         {/* Task Verification Dashboard */}
@@ -1506,7 +1506,7 @@ const CampaignDetailView = ({ campaignId, onClose, onEdit, onToggleShortlist, on
 
                                             <div className="space-y-4">
                                                 {approvedCreators.length === 0 ? (
-                                                    <div className="p-8 text-center bg-black/40 rounded-[2rem] border border-white/5 text-gray-600 text-[10px] font-black uppercase tracking-widest italic">
+                                                    <div className="p-8 text-center bg-white dark:bg-black/40 rounded-[2rem] border border-black/10 dark:border-white/5 text-gray-600 text-[10px] font-black uppercase tracking-widest italic">
                                                         No shortlisted creators assigned to this campaign yet.
                                                     </div>
                                                 ) : approvedCreators.map(creator => {
@@ -1514,15 +1514,15 @@ const CampaignDetailView = ({ campaignId, onClose, onEdit, onToggleShortlist, on
                                                     const status = sub?.status || 'not_started';
                                                     
                                                     return (
-                                                        <div key={creator.uid} className="flex flex-col sm:flex-row sm:items-center justify-between p-6 bg-black/60 rounded-[2rem] border border-white/5 group hover:border-white/10 transition-all gap-4 shadow-lg backdrop-blur-xl">
+                                                        <div key={creator.uid} className="flex flex-col sm:flex-row sm:items-center justify-between p-6 bg-white dark:bg-black/60 rounded-[2rem] border border-black/10 dark:border-white/5 group hover:border-black/10 dark:hover:border-white/10 transition-all gap-4 shadow-lg backdrop-blur-xl">
                                                             <div className="flex items-center gap-6">
-                                                                <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center font-black italic text-white shadow-inner">{creator.name.charAt(0)}</div>
+                                                                <div className="w-12 h-12 rounded-2xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 flex items-center justify-center font-black italic text-gray-900 dark:text-white shadow-inner">{creator.name.charAt(0)}</div>
                                                                 <div>
-                                                                    <p className="text-base font-black text-white uppercase italic tracking-tight mb-1">{creator.name}</p>
+                                                                    <p className="text-base font-black text-gray-900 dark:text-white uppercase italic tracking-tight mb-1">{creator.name}</p>
                                                                     <span className={cn("px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-[0.2em] border", 
                                                                         status === 'approved' ? "bg-neon-green/10 text-neon-green border-neon-green/30" : 
                                                                         status === 'submitted' ? "bg-neon-blue/10 text-neon-blue border-neon-blue/30 animate-pulse" : 
-                                                                        status === 'rejected' ? "bg-red-500/10 text-red-500 border-red-500/30" : "bg-white/5 text-gray-500 border-white/10"
+                                                                        status === 'rejected' ? "bg-red-500/10 text-red-500 border-red-500/30" : "bg-black/5 dark:bg-white/5 text-gray-500 border-black/10 dark:border-white/10"
                                                                     )}>
                                                                         {status.replace('_', ' ')}
                                                                     </span>
@@ -1531,7 +1531,7 @@ const CampaignDetailView = ({ campaignId, onClose, onEdit, onToggleShortlist, on
 
                                                             <div className="flex flex-wrap items-center gap-3">
                                                                 {sub?.submissionUrl && (
-                                                                    <a href={sub.submissionUrl} target="_blank" rel="noreferrer" className="h-11 px-6 bg-white/5 border border-white/10 rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center gap-2 hover:bg-white hover:text-black transition-all shadow-md">
+                                                                    <a href={sub.submissionUrl} target="_blank" rel="noreferrer" className="h-11 px-6 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center gap-2 hover:bg-white hover:text-black transition-all shadow-md">
                                                                         <ExternalLink size={14} /> VIEW SUBMISSION
                                                                     </a>
                                                                 )}
@@ -1548,7 +1548,7 @@ const CampaignDetailView = ({ campaignId, onClose, onEdit, onToggleShortlist, on
                                                                         <button 
                                                                             onClick={() => onReviewSubmission(campaign.id, task.id, creator.uid, 'rejected')} 
                                                                             disabled={isReviewing}
-                                                                            className="h-11 px-6 rounded-xl bg-red-500/20 text-red-500 border border-red-500/30 flex items-center gap-2 hover:bg-red-50 hover:text-white transition-all text-[9px] font-black uppercase tracking-widest shadow-md"
+                                                                            className="h-11 px-6 rounded-xl bg-red-500/20 text-red-500 border border-red-500/30 flex items-center gap-2 hover:bg-red-50 hover:text-gray-900 dark:hover:text-white transition-all text-[9px] font-black uppercase tracking-widest shadow-md"
                                                                             title="Reject Submission"
                                                                         >
                                                                             {isReviewing ? <LoadingSpinner size="xs" color="red" /> : <X size={16} />} REJECT
@@ -1586,15 +1586,15 @@ const TaskEditorCard = React.memo(({ task, index, totalTasks, onUpdate, onRemove
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95 }}
             layout
-            className="bg-black/60 border border-white/10 rounded-[2rem] relative group overflow-hidden shadow-xl"
+            className="bg-white dark:bg-black/60 border border-black/10 dark:border-white/10 rounded-[2rem] relative group overflow-hidden shadow-xl"
         >
-            <div className={cn("absolute top-0 left-0 w-full h-1", task.priority === 'required' ? 'bg-neon-blue shadow-[0_0_10px_rgba(46,191,255,0.3)]' : 'bg-white/10')} />
+            <div className={cn("absolute top-0 left-0 w-full h-1", task.priority === 'required' ? 'bg-neon-blue shadow-[0_0_10px_rgba(46,191,255,0.3)]' : 'bg-black/10 dark:bg-white/10')} />
 
             <div className="flex items-center gap-4 flex-wrap p-4 md:p-8 cursor-pointer hover:bg-white/[0.02] transition-colors" onClick={() => setIsExpanded(!isExpanded)}>
                 <div className="flex items-center gap-3 shrink-0">
                     <div className="flex flex-col gap-1">
-                        <button type="button" onClick={e => { e.stopPropagation(); onMoveUp(index); }} disabled={index === 0} className="text-gray-700 hover:text-white disabled:opacity-20 transition-colors"><ArrowUp size={12} /></button>
-                        <button type="button" onClick={e => { e.stopPropagation(); onMoveDown(index); }} disabled={index === totalTasks - 1} className="text-gray-700 hover:text-white disabled:opacity-20 transition-colors"><ArrowDown size={12} /></button>
+                        <button type="button" onClick={e => { e.stopPropagation(); onMoveUp(index); }} disabled={index === 0} className="text-gray-700 hover:text-gray-900 dark:hover:text-white disabled:opacity-20 transition-colors"><ArrowUp size={12} /></button>
+                        <button type="button" onClick={e => { e.stopPropagation(); onMoveDown(index); }} disabled={index === totalTasks - 1} className="text-gray-700 hover:text-gray-900 dark:hover:text-white disabled:opacity-20 transition-colors"><ArrowDown size={12} /></button>
                     </div>
                     <div className="w-12 h-12 rounded-2xl bg-neon-blue/10 border border-neon-blue/20 flex items-center justify-center">
                         <TaskTypeIcon size={20} className="text-neon-blue" />
@@ -1603,7 +1603,7 @@ const TaskEditorCard = React.memo(({ task, index, totalTasks, onUpdate, onRemove
 
                 <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-3">
-                        <p className="text-[13px] font-black text-white uppercase tracking-tight truncate">{task.title || `Task ${index + 1}`}</p>
+                        <p className="text-[13px] font-black text-gray-900 dark:text-white uppercase tracking-tight truncate">{task.title || `Task ${index + 1}`}</p>
                         {task.priority === 'required' && <span className="px-3 py-1 bg-neon-blue/10 border border-neon-blue/20 rounded-full text-[7px] font-black uppercase tracking-widest text-neon-blue">MANDATORY</span>}
                     </div>
                     <div className="flex items-center gap-3 mt-1.5">
@@ -1613,7 +1613,7 @@ const TaskEditorCard = React.memo(({ task, index, totalTasks, onUpdate, onRemove
                 </div>
 
                 <div className="flex items-center gap-3 shrink-0" onClick={e => e.stopPropagation()}>
-                    <button type="button" onClick={() => onRemove(index)} className="w-11 h-11 rounded-xl bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all flex items-center justify-center"><Trash2 size={16} /></button>
+                    <button type="button" onClick={() => onRemove(index)} className="w-11 h-11 rounded-xl bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-gray-900 dark:hover:text-white transition-all flex items-center justify-center"><Trash2 size={16} /></button>
                     <ChevronDown size={20} className={cn("text-gray-600 transition-transform duration-500", isExpanded && "rotate-180")} />
                 </div>
             </div>
@@ -1621,11 +1621,11 @@ const TaskEditorCard = React.memo(({ task, index, totalTasks, onUpdate, onRemove
             <AnimatePresence>
                 {isExpanded && (
                     <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
-                        <div className="px-6 pb-8 space-y-6 border-t border-white/5 pt-8">
+                        <div className="px-6 pb-8 space-y-6 border-t border-black/10 dark:border-white/5 pt-8">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                     <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest pl-1">Task Title</label>
-                                    <Input required value={task.title} onChange={e => onUpdate(index, 'title', e.target.value)} placeholder="e.g. Instagram Reel" className="h-12 bg-black/40 border-white/10 rounded-xl" />
+                                    <Input required value={task.title} onChange={e => onUpdate(index, 'title', e.target.value)} placeholder="e.g. Instagram Reel" className="h-12 bg-white dark:bg-black/40 border-black/10 dark:border-white/10 rounded-xl" />
                                 </div>
                                 <div className="space-y-2">
                                     <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest pl-1">Platform</label>
@@ -1636,7 +1636,7 @@ const TaskEditorCard = React.memo(({ task, index, totalTasks, onUpdate, onRemove
                                     <StudioDatePicker 
                                         value={task.deadline} 
                                         onChange={val => onUpdate(index, 'deadline', val)} 
-                                        className="h-12 bg-black/40 border-white/10 rounded-xl"
+                                        className="h-12 bg-white dark:bg-black/40 border-black/10 dark:border-white/10 rounded-xl"
                                         placeholder="Set deadline"
                                     />
                                 </div>
@@ -1649,7 +1649,7 @@ const TaskEditorCard = React.memo(({ task, index, totalTasks, onUpdate, onRemove
                                     <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest pl-1">Target Priority</label>
                                     <div className="flex gap-2">
                                         {['required', 'optional'].map(p => (
-                                            <button key={p} type="button" onClick={() => onUpdate(index, 'priority', p)} className={cn("flex-1 h-12 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all", task.priority === p ? "bg-neon-blue text-black border-neon-blue" : "bg-black/40 border-white/10 text-gray-600 hover:text-white")}>{p}</button>
+                                            <button key={p} type="button" onClick={() => onUpdate(index, 'priority', p)} className={cn("flex-1 h-12 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all", task.priority === p ? "bg-neon-blue text-black border-neon-blue" : "bg-white dark:bg-black/40 border-black/10 dark:border-white/10 text-gray-600 hover:text-gray-900 dark:hover:text-white")}>{p}</button>
                                         ))}
                                     </div>
                                 </div>
@@ -1657,12 +1657,12 @@ const TaskEditorCard = React.memo(({ task, index, totalTasks, onUpdate, onRemove
                                     <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest pl-1">Asset Delivery (Optional)</label>
                                     <div className="flex flex-wrap gap-2">
                                         {(task.creativeAssets || []).map((url, i) => (
-                                            <div key={i} className="relative w-12 h-12 rounded-lg overflow-hidden border border-white/10">
+                                            <div key={i} className="relative w-12 h-12 rounded-lg overflow-hidden border border-black/10 dark:border-white/10">
                                                 <img src={url} alt="" className="w-full h-full object-cover" />
-                                                <button type="button" onClick={() => { const na = [...task.creativeAssets]; na.splice(i,1); onUpdate(index, 'creativeAssets', na); }} className="absolute inset-0 bg-black/60 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center text-red-500"><XCircle size={14} /></button>
+                                                <button type="button" onClick={() => { const na = [...task.creativeAssets]; na.splice(i,1); onUpdate(index, 'creativeAssets', na); }} className="absolute inset-0 bg-white dark:bg-black/60 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center text-red-500"><XCircle size={14} /></button>
                                             </div>
                                         ))}
-                                        <label className="w-12 h-12 rounded-lg border-2 border-dashed border-white/10 flex items-center justify-center cursor-pointer hover:border-neon-blue/40 transition-all">
+                                        <label className="w-12 h-12 rounded-lg border-2 border-dashed border-black/10 dark:border-white/10 flex items-center justify-center cursor-pointer hover:border-neon-blue/40 transition-all">
                                             <input type="file" className="hidden" onChange={e => onUploadCreative(index, e)} />
                                             <Plus size={14} className="text-gray-600" />
                                         </label>

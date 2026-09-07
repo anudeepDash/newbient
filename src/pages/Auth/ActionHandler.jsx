@@ -97,21 +97,21 @@ const ActionHandler = () => {
 
     if (status === 'loading') {
         return (
-            <div className="min-h-screen flex items-center justify-center px-4 bg-black">
+            <div className="min-h-screen flex items-center justify-center px-4 bg-white dark:bg-black">
                 <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-neon-blue"></div>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen flex items-center justify-center px-4 bg-black relative overflow-hidden">
+        <div className="min-h-screen flex items-center justify-center px-4 bg-white dark:bg-black relative overflow-hidden">
             {/* Background Effects */}
             <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0">
                 <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-neon-purple/20 rounded-full blur-[100px]" />
                 <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-neon-blue/20 rounded-full blur-[100px]" />
             </div>
 
-            <Card className="w-full max-w-md p-8 border-white/10 bg-black/80 backdrop-blur-xl relative z-10 shadow-[0_0_50px_rgba(0,0,0,0.5)]">
+            <Card className="w-full max-w-md p-8 border-black/10 dark:border-white/10 bg-white dark:bg-black/80 backdrop-blur-xl relative z-10 shadow-[0_0_50px_rgba(0,0,0,0.5)]">
                 <div className="text-center mb-8">
                     {status === 'success' ? (
                         <div className="mx-auto w-16 h-16 bg-neon-green/20 rounded-full flex items-center justify-center mb-4 border border-neon-green/50 shadow-[0_0_15px_rgba(34,197,94,0.3)]">
@@ -127,14 +127,14 @@ const ActionHandler = () => {
                         </div>
                     )}
 
-                    <h1 className="text-2xl font-black text-white uppercase tracking-wider mb-2">
+                    <h1 className="text-2xl font-black text-gray-900 dark:text-white uppercase tracking-wider mb-2">
                         {mode === 'resetPassword' ? 'Reset Password' :
                             mode === 'verifyEmail' ? 'Verify Email' :
                                 mode === 'recoverEmail' ? 'Restore Email' : 'Authentication'}
                     </h1>
 
                     {(status === 'success' || status === 'error') && (
-                        <p className={`text-sm ${status === 'error' ? 'text-red-400' : 'text-gray-400'}`}>
+                        <p className={`text-sm ${status === 'error' ? 'text-red-400' : 'text-gray-600 dark:text-gray-400'}`}>
                             {message}
                         </p>
                     )}
@@ -142,9 +142,9 @@ const ActionHandler = () => {
 
                 {status === 'input' && mode === 'resetPassword' && (
                     <form onSubmit={handlePasswordSubmit} className="space-y-4">
-                        <div className="p-4 rounded-lg bg-white/5 border border-white/10 mb-6">
-                            <p className="text-sm text-gray-400 mb-1">Resetting password for:</p>
-                            <p className="font-bold text-white tracking-wide">{verifiedEmail}</p>
+                        <div className="p-4 rounded-lg bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 mb-6">
+                            <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Resetting password for:</p>
+                            <p className="font-bold text-gray-900 dark:text-white tracking-wide">{verifiedEmail}</p>
                         </div>
 
                         <div>
@@ -189,7 +189,7 @@ const ActionHandler = () => {
                     <Button
                         onClick={() => navigate('/admin')}
                         variant="outline"
-                        className="w-full mt-6 border-white/20 hover:bg-white hover:text-black transition-colors"
+                        className="w-full mt-6 border-black/20 dark:border-white/20 hover:bg-white hover:text-black transition-colors"
                     >
                         Return to Login
                     </Button>

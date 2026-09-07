@@ -22,8 +22,8 @@ const AdSenseSlot = ({
 
     if (!adClient) {
         return (
-            <div className={cn('relative group bg-white/[0.01] border border-dashed border-white/5 rounded-2xl flex items-center justify-center text-gray-800 text-[8px] font-black uppercase tracking-[0.4em] overflow-hidden min-h-[96px]', className)}>
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.02] to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-[1500ms]" />
+            <div className={cn('relative group bg-white/[0.01] border border-dashed border-black/10 dark:border-white/5 rounded-2xl flex items-center justify-center text-gray-800 text-[8px] font-black uppercase tracking-[0.4em] overflow-hidden min-h-[96px]', className)}>
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-gray-900 dark:via-white/[0.02] to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-[1500ms]" />
                 <span className="relative z-10 opacity-30 group-hover:opacity-60 transition-opacity italic">// AD REVENUE SYSTEM DISCONNECTED //</span>
             </div>
         );

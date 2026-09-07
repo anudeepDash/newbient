@@ -2,27 +2,41 @@ import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Menu, X, Zap, Star, Users, LogOut, Settings, Home, Music, Image as ImageIcon, User as UserIcon, PlusCircle, LayoutGrid, Mic2, Search, ChevronRight, GraduationCap, Sun, Moon } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { cn } from '../lib/utils';
+import { cn, normalizePhoneNumber } from '../lib/utils';
 import NotificationBell from './NotificationBell';
 import ProfilePanel from './ProfilePanel';
 import { useStore } from '../lib/store';
 import logo from '../assets/logo.png';
+import logoLight from '../assets/logo_light.png';
 import { useTheme } from '../hooks/useTheme';
 
 const Navbar = () => {
-    const { maintenanceState, user, siteSettings, creators, artists, announcements } = useStore();
+    const { maintenanceState, user, siteSettings, creators, artists, announcements, isProfilePanelOpen } = useStore();
     const pinnedAnnouncement = announcements?.find(a => a.isPinned);
     const [isOpen, setIsOpen] = useState(false);
     const [isProfileOpen, setIsProfileOpen] = useState(false);
     const location = useLocation();
     const { isDark, toggleTheme } = useTheme();
 
+    const userPhoneNorm = user?.phoneNumber ? normalizePhoneNumber(user.phoneNumber) : null;
+    const userEmailNorm = user?.email ? user.email.toLowerCase() : null;
+    const isCreator = Boolean(creators?.some(c => 
+        c.uid === user?.uid || 
+        (userEmailNorm && c.email && c.email.toLowerCase() === userEmailNorm) ||
+        (userPhoneNorm && c.phone && normalizePhoneNumber(c.phone) === userPhoneNorm)
+    ));
+
     const allLinks = [
         { name: 'HOME', path: '/', icon: Home },
         { name: 'ARTISTANT', path: 'https://artistant.in', isExternal: true, icon: Mic2 },
         { name: 'COMMUNITY', path: '/community', featureId: 'community', icon: Users },
-
-        { name: 'CREATOR', path: '/creator', matchPaths: ['/creator-dashboard', '/creator'], featureId: 'influencer', icon: Zap },
+        { 
+            name: 'CREATOR', 
+            path: isCreator ? '/creator-dashboard' : '/creator', 
+            matchPaths: ['/creator-dashboard', '/creator', '/campaigns'], 
+            featureId: 'influencer', 
+            icon: Zap 
+        },
         { name: 'CONCERT ZONE', path: '/concertzone', featureId: 'concerts', icon: Music },
         { name: 'CONTACT', path: '/contact', featureId: 'contact', icon: LayoutGrid },
     ];
@@ -32,8 +46,13 @@ const Navbar = () => {
     const mobilePrimaryLinks = [
         { name: 'HOME', path: '/', icon: Home },
         { name: 'ARTISTANT', path: 'https://artistant.in', isExternal: true, icon: Mic2 },
-
-        { name: 'CREATOR', path: '/creator', matchPaths: ['/creator-dashboard', '/creator'], featureId: 'influencer', icon: Zap },
+        { 
+            name: isCreator ? 'CREATOR' : 'CREATOR', 
+            path: isCreator ? '/creator-dashboard' : '/creator', 
+            matchPaths: ['/creator-dashboard', '/creator', '/campaigns'], 
+            featureId: 'influencer', 
+            icon: Zap 
+        },
         { name: 'MORE', action: () => setIsOpen(true), icon: Menu },
     ];
 
@@ -50,7 +69,7 @@ const Navbar = () => {
         <>
             {/* Global Maintenance Bypass Banner for Developer */}
             {(maintenanceState.global && user?.role === 'developer') && (
-                <div className="fixed top-0 left-0 right-0 z-[60] bg-red-600 text-white text-[10px] font-black uppercase tracking-[0.2em] py-1 text-center ">
+                <div className="fixed top-0 left-0 right-0 z-[60] bg-red-600 text-gray-900 dark:text-white text-[10px] font-black uppercase tracking-[0.2em] py-1 text-center ">
                     ⚠️ Global Maintenance Active - Bypassing as {user.role?.replace('_', ' ')} ⚠️
                 </div>
             )}
@@ -103,7 +122,8 @@ const Navbar = () => {
                     {/* Left: Logo */}
                     <div className="flex items-center gap-3">
                         <Link to="/" className="flex items-center gap-3 group">
-                            <img src={logo} alt="Newbi Entertainments" className="h-6 w-auto" />
+                            <img src={logo} alt="Newbi Entertainments" className="h-6 w-auto hidden dark:block" />
+                            <img src={logoLight} alt="Newbi Entertainments" className="h-6 w-auto block dark:hidden" />
                         </Link>
                     </div>
 
@@ -164,7 +184,7 @@ const Navbar = () => {
                         {/* Desktop Only Settings & Admin links */}
                         <div className="hidden md:flex items-center gap-3">
                             {user && ['developer', 'super_admin', 'founder'].includes(user.role) && (
-                                <Link to="/admin/system-command" className="p-1.5 rounded-full hover:bg-white/10 text-gray-400 hover:text-white transition-all">
+                                <Link to="/admin/system-command" className="p-1.5 rounded-full hover:bg-black/10 dark:hover:bg-white/10 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all">
                                     <Settings size={14} />
                                 </Link>
                             )}
@@ -233,7 +253,7 @@ const Navbar = () => {
                         ) : (
                             <button
                                 onClick={() => useStore.getState().setAuthModal(true)}
-                                className="h-10 px-5 rounded-xl bg-gray-900 dark:bg-white text-white dark:text-black text-[9px] font-black uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-lg shrink-0"
+                                className="h-10 px-5 rounded-xl bg-black text-white hover:bg-neutral-800 dark:bg-white dark:text-black dark:hover:bg-neutral-100 text-[9px] font-black uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-lg shrink-0"
                             >
                                 Login
                             </button>
@@ -263,14 +283,14 @@ const Navbar = () => {
                                         transition={{ type: "spring", stiffness: 400, damping: 17 }}
                                         className="relative"
                                     >
-                                        <Icon size={22} className={isActive ? "text-neon-green drop-shadow-[0_0_8px_rgba(57,255,20,0.6)]" : "text-gray-400 dark:text-zinc-400"} />
+                                        <Icon size={22} className={isActive ? "text-neon-green drop-shadow-[0_0_8px_rgba(57,255,20,0.6)]" : "text-gray-600 dark:text-zinc-400"} />
                                         {isUnderMaintenance && (
                                             <div className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white dark:border-black" />
                                         )}
                                     </motion.div>
                                     <span className={cn(
                                         "text-[9px] font-bold mt-1 tracking-wide",
-                                        isActive ? "text-gray-800 dark:text-white" : "text-gray-400 dark:text-zinc-500"
+                                        isActive ? "text-gray-800 dark:text-white" : "text-gray-600 dark:text-zinc-500"
                                     )}>
                                         {link.name}
                                     </span>
@@ -337,7 +357,7 @@ const Navbar = () => {
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
                             onClick={() => setIsOpen(false)}
-                            className="fixed inset-0 z-[90] bg-black/40 dark:bg-black/60 backdrop-blur-sm md:hidden"
+                            className="fixed inset-0 z-[90] bg-black/30 dark:bg-black/60 backdrop-blur-sm md:hidden"
                         />
                         <motion.div
                             initial={{ y: "100%" }}
@@ -364,12 +384,12 @@ const Navbar = () => {
                                 {/* Search Bar */}
                                 <div className="relative mb-6">
                                     <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
-                                        <Search size={18} className="text-gray-400 dark:text-zinc-500" />
+                                        <Search size={18} className="text-gray-600 dark:text-gray-400 dark:text-zinc-500" />
                                     </div>
                                     <input 
                                         type="text"
                                         placeholder="Search anything..."
-                                        className="w-full h-12 bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-2xl pl-12 pr-4 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-zinc-500 focus:outline-none focus:border-neon-green/50 focus:ring-1 focus:ring-neon-green/50 transition-all text-sm"
+                                        className="w-full h-12 bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-2xl pl-12 pr-4 text-gray-900 dark:text-white placeholder:text-gray-600 dark:placeholder:text-gray-400 dark:placeholder:text-zinc-500 focus:outline-none focus:border-neon-green/50 focus:ring-1 focus:ring-neon-green/50 transition-all text-sm"
                                     />
                                 </div>
 
@@ -401,7 +421,7 @@ const Navbar = () => {
                                 {/* Menu List Sections */}
                                 <div className="space-y-6">
                                     <div>
-                                        <p className="text-[11px] font-black text-gray-400 dark:text-zinc-500 uppercase tracking-widest mb-3 pl-2">Explore</p>
+                                        <p className="text-[11px] font-black text-gray-600 dark:text-gray-400 dark:text-zinc-500 uppercase tracking-widest mb-3 pl-2">Explore</p>
                                         <div className="bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-3xl overflow-hidden">
                                             {allLinks.map((link, idx) => {
                                                 const Icon = link.icon;
@@ -432,7 +452,7 @@ const Navbar = () => {
                                                             {isUnderMaintenance ? (
                                                                 <span className="text-[9px] font-bold uppercase text-red-500 tracking-widest bg-red-500/10 px-2 py-1 rounded-md">Offline</span>
                                                             ) : (
-                                                                <ChevronRight size={18} className="text-gray-400 dark:text-zinc-600" />
+                                                                <ChevronRight size={18} className="text-gray-600 dark:text-gray-400 dark:text-zinc-600" />
                                                             )}
                                                         </a>
                                                     );
@@ -465,7 +485,7 @@ const Navbar = () => {
                                                         {isUnderMaintenance ? (
                                                             <span className="text-[9px] font-bold uppercase text-red-500 tracking-widest bg-red-500/10 px-2 py-1 rounded-md">Offline</span>
                                                         ) : (
-                                                            <ChevronRight size={18} className="text-gray-400 dark:text-zinc-600" />
+                                                            <ChevronRight size={18} className="text-gray-600 dark:text-gray-400 dark:text-zinc-600" />
                                                         )}
                                                     </Link>
                                                 );
@@ -475,12 +495,12 @@ const Navbar = () => {
 
                                     {/* Account Section */}
                                     <div>
-                                        <p className="text-[11px] font-black text-gray-400 dark:text-zinc-500 uppercase tracking-widest mb-3 pl-2">Account</p>
+                                        <p className="text-[11px] font-black text-gray-600 dark:text-gray-400 dark:text-zinc-500 uppercase tracking-widest mb-3 pl-2">Account</p>
                                         {user ? (
                                             <div className="bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-3xl overflow-hidden">
                                                 <div 
                                                     className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-white/5 cursor-pointer hover:bg-gray-200/50 dark:hover:bg-white/5 transition-all"
-                                                    onClick={() => { setIsProfileOpen(true); setIsOpen(false); }}
+                                                    onClick={() => { useStore.getState().openProfilePanel('overview'); setIsOpen(false); }}
                                                 >
                                                     <div className="flex items-center gap-4">
                                                         <div className="w-10 h-10 rounded-xl bg-neon-green/10 border border-neon-blue/20 flex items-center justify-center text-neon-green">
@@ -488,11 +508,29 @@ const Navbar = () => {
                                                         </div>
                                                         <div className="flex flex-col">
                                                             <span className="text-sm font-bold text-gray-800 dark:text-white capitalize">{user.displayName || 'Tribe Member'}</span>
-                                                            <span className="text-[10px] text-gray-400 dark:text-zinc-500 uppercase tracking-widest">Profile & Settings</span>
+                                                            <span className="text-[10px] text-gray-600 dark:text-gray-400 dark:text-zinc-500 uppercase tracking-widest">Profile & Settings</span>
                                                         </div>
                                                     </div>
-                                                    <ChevronRight size={18} className="text-gray-400 dark:text-zinc-600" />
+                                                    <ChevronRight size={18} className="text-gray-600 dark:text-gray-400 dark:text-zinc-600" />
                                                 </div>
+
+                                                {isCreator && (
+                                                    <div 
+                                                        className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-white/5 cursor-pointer hover:bg-neon-green/10 transition-all text-neon-green"
+                                                        onClick={() => { useStore.getState().openProfilePanel('creator'); setIsOpen(false); }}
+                                                    >
+                                                        <div className="flex items-center gap-4">
+                                                            <div className="w-10 h-10 rounded-xl bg-neon-green/10 border border-neon-green/30 flex items-center justify-center text-neon-green">
+                                                                <Zap size={20} />
+                                                            </div>
+                                                            <div className="flex flex-col">
+                                                                <span className="text-sm font-bold text-gray-800 dark:text-white">Creator Hub</span>
+                                                                <span className="text-[10px] text-neon-green uppercase tracking-widest font-black">Studio & Dossier</span>
+                                                            </div>
+                                                        </div>
+                                                        <ChevronRight size={18} className="text-neon-green" />
+                                                    </div>
+                                                )}
 
                                                 {['developer', 'super_admin', 'editor', 'admin', 'founder', 'content_admin', 'gate_manager', 'scanner', 'blog_writer'].includes(user.role) && (
                                                     <Link 
@@ -506,7 +544,7 @@ const Navbar = () => {
                                                             </div>
                                                             <span className="text-sm font-bold text-gray-800 dark:text-white">Admin Dashboard</span>
                                                         </div>
-                                                        <ChevronRight size={18} className="text-gray-400 dark:text-zinc-600" />
+                                                        <ChevronRight size={18} className="text-gray-600 dark:text-gray-400 dark:text-zinc-600" />
                                                     </Link>
                                                 )}
 
@@ -541,8 +579,11 @@ const Navbar = () => {
                 )}
             </AnimatePresence>
             <ProfilePanel 
-                isOpen={isProfileOpen} 
-                onClose={() => setIsProfileOpen(false)} 
+                isOpen={Boolean(isProfileOpen || isProfilePanelOpen)} 
+                onClose={() => {
+                    setIsProfileOpen(false);
+                    useStore.getState().closeProfilePanel();
+                }} 
             />
         </>
     );

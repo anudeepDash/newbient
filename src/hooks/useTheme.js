@@ -44,12 +44,12 @@ export function useTheme() {
     }
   }, []);
 
-  // On mount: apply initial theme + listen for OS changes
+  // On mount: apply initial theme + listen for OS changes and cross-instance theme changes
   useEffect(() => {
     applyTheme(theme);
 
     const mq = window.matchMedia('(prefers-color-scheme: light)');
-    const handler = (e) => {
+    const osHandler = (e) => {
       const newSystemTheme = e.matches ? 'light' : 'dark';
       setSystemTheme(newSystemTheme);
 
@@ -60,8 +60,29 @@ export function useTheme() {
       }
     };
 
-    mq.addEventListener('change', handler);
-    return () => mq.removeEventListener('change', handler);
+    const handleCustomThemeChange = (e) => {
+      const newTheme = e.detail?.theme || resolveTheme();
+      setThemeState(newTheme);
+      applyTheme(newTheme);
+    };
+
+    const handleStorage = (e) => {
+      if (e.key === THEME_KEY) {
+        const newTheme = resolveTheme();
+        setThemeState(newTheme);
+        applyTheme(newTheme);
+      }
+    };
+
+    mq.addEventListener('change', osHandler);
+    window.addEventListener('nb_theme_change', handleCustomThemeChange);
+    window.addEventListener('storage', handleStorage);
+
+    return () => {
+      mq.removeEventListener('change', osHandler);
+      window.removeEventListener('nb_theme_change', handleCustomThemeChange);
+      window.removeEventListener('storage', handleStorage);
+    };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Keep <html> class in sync whenever theme state changes
@@ -70,16 +91,29 @@ export function useTheme() {
   }, [theme, applyTheme]);
 
   const toggleTheme = useCallback((explicit) => {
-    const next = explicit || (theme === 'dark' ? 'light' : 'dark');
+    let next;
+    if (typeof explicit === 'string') {
+        next = explicit;
+    } else {
+        next = theme === 'dark' ? 'light' : 'dark';
+    }
     safeLocalStorage.setItem(THEME_KEY, next);
     setThemeState(next);
-  }, [theme]);
+    applyTheme(next);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('nb_theme_change', { detail: { theme: next } }));
+    }
+  }, [theme, applyTheme]);
 
   const clearOverride = useCallback(() => {
     safeLocalStorage.removeItem(THEME_KEY);
     const sys = getSystemTheme();
     setThemeState(sys);
-  }, []);
+    applyTheme(sys);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('nb_theme_change', { detail: { theme: sys } }));
+    }
+  }, [applyTheme]);
 
   return {
     theme,

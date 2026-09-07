@@ -10,7 +10,7 @@ const Team = () => {
     ];
 
     return (
-        <section className="py-16 md:py-32 bg-dark relative">
+        <section className="py-16 md:py-32 bg-gray-50 dark:bg-dark transition-colors duration-300 relative">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
                 <motion.h2
                     initial={{ opacity: 0, y: 20 }}
@@ -33,19 +33,19 @@ const Team = () => {
                         >
                             <div className="absolute inset-0 bg-neon-green/20 blur-xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
-                            <div className="relative bg-white/5 border border-white/10 p-6 rounded-2xl backdrop-blur-sm hover:-translate-y-2 transition-transform duration-300">
+                            <div className="relative bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 p-6 rounded-2xl backdrop-blur-sm hover:-translate-y-2 transition-transform duration-300">
                                 <div className="w-32 h-32 mx-auto mb-4 rounded-full overflow-hidden border-2 border-neon-green/30 group-hover:border-neon-green transition-colors">
                                     <img src={member.image} alt={member.name} className="w-full h-full object-cover" />
                                 </div>
 
-                                <h3 className="text-2xl font-heading font-bold text-white mb-1">{member.name}</h3>
+                                <h3 className="text-2xl font-heading font-bold text-gray-900 dark:text-white mb-1">{member.name}</h3>
                                 <p className="text-neon-green font-medium mb-4">{member.role}</p>
 
                                 <div className="flex justify-center space-x-4">
-                                    <button className="text-gray-400 hover:text-neon-green transition-colors">
+                                    <button className="text-gray-600 dark:text-gray-400 hover:text-neon-green transition-colors">
                                         <Linkedin size={20} />
                                     </button>
-                                    <button className="text-gray-400 hover:text-neon-green transition-colors">
+                                    <button className="text-gray-600 dark:text-gray-400 hover:text-neon-green transition-colors">
                                         <Mail size={20} />
                                     </button>
                                 </div>

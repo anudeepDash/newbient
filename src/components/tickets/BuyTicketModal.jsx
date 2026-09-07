@@ -125,32 +125,32 @@ const BuyTicketModal = ({ event, isOpen, onClose }) => {
 
     return (
         <AnimatePresence>
-            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-8 bg-black/90 backdrop-blur-md overflow-y-auto">
+            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-8 bg-white dark:bg-black/90 backdrop-blur-md overflow-y-auto">
                 <motion.div
                     initial={{ opacity: 0, scale: 0.95, y: 20 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                    className="bg-zinc-900 border border-white/10 rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl relative flex flex-col max-h-[90vh] shrink-0"
+                    className="bg-gray-100 dark:bg-zinc-900 border border-black/10 dark:border-white/10 rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl relative flex flex-col max-h-[90vh] shrink-0"
                 >
                     {/* Progress Bar */}
-                    <div className="h-1 bg-white/5 w-full flex">
+                    <div className="h-1 bg-black/5 dark:bg-white/5 w-full flex">
                         <div className={`h-full bg-neon-green transition-all duration-500`} style={{ width: `${(step / 4) * 100}%` }}></div>
                     </div>
 
                     {/* Header */}
                     <div className="flex justify-between items-start p-6 pb-2">
                         <div>
-                            <h2 className="text-xl font-bold font-heading text-white leading-tight">
+                            <h2 className="text-xl font-bold font-heading text-gray-900 dark:text-white leading-tight">
                                 {step === 4 ? 'Order Place Successfully!' : event.title}
                             </h2>
-                            {step < 4 && <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-1">
+                            {step < 4 && <p className="text-xs text-gray-600 dark:text-gray-400 font-bold uppercase tracking-widest mt-1">
                                 {step === 0 && 'Venue Layout'}
                                 {step === 1 && 'Select Tickets'}
                                 {step === 2 && 'Your Details'}
                                 {step === 3 && 'Payment'}
                             </p>}
                         </div>
-                        <button onClick={onClose} className="p-2 bg-white/5 rounded-full text-gray-400 hover:text-white hover:bg-white/10 transition-colors">
+                        <button onClick={onClose} className="p-2 bg-black/5 dark:bg-white/5 rounded-full text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-black/10 dark:hover:bg-white/10 transition-colors">
                             <X size={20} />
                         </button>
                     </div>
@@ -160,10 +160,10 @@ const BuyTicketModal = ({ event, isOpen, onClose }) => {
                         {/* Step 0: Venue Layout */}
                         {step === 0 && hasLayout && (
                             <div className="flex flex-col h-full">
-                                <div className="flex-1 bg-black rounded-xl overflow-hidden border border-white/10 relative group">
+                                <div className="flex-1 bg-white dark:bg-black rounded-xl overflow-hidden border border-black/10 dark:border-white/10 relative group">
                                     <img src={event.venueLayout} alt="Venue Map" className="w-full h-full object-contain" />
-                                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
-                                        <p className="text-white font-bold"><MapIcon className="inline mr-2" />Venue Map</p>
+                                    <div className="absolute inset-0 bg-white dark:bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+                                        <p className="text-gray-900 dark:text-white font-bold"><MapIcon className="inline mr-2" />Venue Map</p>
                                     </div>
                                 </div>
                                 <Button onClick={handleNext} className="w-full mt-6 bg-white text-black hover:bg-gray-200">
@@ -178,23 +178,23 @@ const BuyTicketModal = ({ event, isOpen, onClose }) => {
                                 <div className="flex-1 space-y-4 overflow-y-auto max-h-[50vh] pr-2 custom-scrollbar">
                                     {hasCategories ? (
                                         event.ticketCategories.map(cat => (
-                                            <div key={cat.id} className="bg-white/5 p-4 rounded-xl border border-white/10 flex justify-between items-center">
+                                            <div key={cat.id} className="bg-black/5 dark:bg-white/5 p-4 rounded-xl border border-black/10 dark:border-white/10 flex justify-between items-center">
                                                 <div>
-                                                    <h3 className="font-bold text-white capitalize">{cat.name}</h3>
-                                                    {cat.description && <p className="text-xs text-gray-400 max-w-[150px]">{cat.description}</p>}
+                                                    <h3 className="font-bold text-gray-900 dark:text-white capitalize">{cat.name}</h3>
+                                                    {cat.description && <p className="text-xs text-gray-600 dark:text-gray-400 max-w-[150px]">{cat.description}</p>}
                                                     <p className="text-neon-green font-bold mt-1">₹{cat.price}</p>
                                                 </div>
-                                                <div className="flex items-center gap-3 bg-black rounded-lg p-1 border border-white/10">
+                                                <div className="flex items-center gap-3 bg-white dark:bg-black rounded-lg p-1 border border-black/10 dark:border-white/10">
                                                     <button
                                                         onClick={() => updateCart(cat.id, -1)}
-                                                        className="w-8 h-8 flex items-center justify-center rounded bg-white/5 text-gray-400 hover:text-white hover:bg-white/10"
+                                                        className="w-8 h-8 flex items-center justify-center rounded bg-black/5 dark:bg-white/5 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-black/10 dark:hover:bg-white/10"
                                                     >
                                                         <Minus size={14} />
                                                     </button>
                                                     <span className="w-6 text-center font-bold">{cart[cat.id] || 0}</span>
                                                     <button
                                                         onClick={() => updateCart(cat.id, 1)}
-                                                        className="w-8 h-8 flex items-center justify-center rounded bg-white/10 text-white hover:bg-white/20"
+                                                        className="w-8 h-8 flex items-center justify-center rounded bg-black/10 dark:bg-white/10 text-gray-900 dark:text-white hover:bg-black/20 dark:hover:bg-white/20"
                                                     >
                                                         <Plus size={14} />
                                                     </button>
@@ -202,7 +202,7 @@ const BuyTicketModal = ({ event, isOpen, onClose }) => {
                                             </div>
                                         ))
                                     ) : (
-                                        <div className="bg-white/5 p-6 rounded-xl border border-white/10 text-center relative overflow-hidden">
+                                        <div className="bg-black/5 dark:bg-white/5 p-6 rounded-xl border border-black/10 dark:border-white/10 text-center relative overflow-hidden">
                                             {isCustomPriceActive && (
                                                 <div className="absolute top-0 inset-x-0 bg-neon-blue text-black text-[10px] font-black uppercase tracking-widest py-1">
                                                     Custom Offer Applied
@@ -214,7 +214,7 @@ const BuyTicketModal = ({ event, isOpen, onClose }) => {
                                             <div className="flex items-center justify-center gap-6">
                                                 <button
                                                     onClick={() => setFormData(p => ({ ...p, count: Math.max(1, p.count - 1) }))}
-                                                    className="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center hover:bg-white/10 border border-white/10"
+                                                    className="w-12 h-12 rounded-xl bg-black/5 dark:bg-white/5 flex items-center justify-center hover:bg-black/10 dark:hover:bg-white/10 border border-black/10 dark:border-white/10"
                                                 >
                                                     <Minus />
                                                 </button>
@@ -226,15 +226,15 @@ const BuyTicketModal = ({ event, isOpen, onClose }) => {
                                                     <Plus />
                                                 </button>
                                             </div>
-                                            <p className="text-gray-400 mt-4 text-sm">Price per ticket: <span className={cn("font-bold", isCustomPriceActive ? "text-neon-blue" : "text-white")}>₹{baseTicketPrice}</span></p>
+                                            <p className="text-gray-600 dark:text-gray-400 mt-4 text-sm">Price per ticket: <span className={cn("font-bold", isCustomPriceActive ? "text-neon-blue" : "text-gray-900 dark:text-white")}>₹{baseTicketPrice}</span></p>
                                             {isCustomPriceActive && <p className="text-[10px] text-gray-500 line-through mt-1">Standard: ₹{event.ticketPrice}</p>}
                                         </div>
                                     )}
                                 </div>
 
-                                <div className="mt-6 pt-6 border-t border-white/10">
+                                <div className="mt-6 pt-6 border-t border-black/10 dark:border-white/10">
                                     <div className="flex justify-between items-center mb-4">
-                                        <span className="text-gray-400">Total ({cartTotalCount} tickets)</span>
+                                        <span className="text-gray-600 dark:text-gray-400">Total ({cartTotalCount} tickets)</span>
                                         <span className="text-2xl font-bold text-neon-green">₹{totalAmount}</span>
                                     </div>
                                     <Button
@@ -245,7 +245,7 @@ const BuyTicketModal = ({ event, isOpen, onClose }) => {
                                         Enter Details <ArrowRight size={16} className="ml-2" />
                                     </Button>
                                     {hasLayout && (
-                                        <button onClick={() => setStep(0)} className="w-full text-center text-xs text-gray-500 mt-3 hover:text-white">
+                                        <button onClick={() => setStep(0)} className="w-full text-center text-xs text-gray-500 mt-3 hover:text-gray-900 dark:hover:text-white">
                                             View Venue Layout
                                         </button>
                                     )}
@@ -273,7 +273,7 @@ const BuyTicketModal = ({ event, isOpen, onClose }) => {
                                     <Button type="submit" className="w-full bg-white text-black hover:bg-gray-200">
                                         Proceed to Pay ₹{totalAmount}
                                     </Button>
-                                    <button type="button" onClick={() => setStep(1)} className="w-full text-center text-xs text-gray-500 mt-3 hover:text-white">
+                                    <button type="button" onClick={() => setStep(1)} className="w-full text-center text-xs text-gray-500 mt-3 hover:text-gray-900 dark:hover:text-white">
                                         Back curb selection
                                     </button>
                                 </div>
@@ -295,9 +295,9 @@ const BuyTicketModal = ({ event, isOpen, onClose }) => {
                                                 Proceed to Secure Checkout
                                             </a>
                                             <div className="relative flex py-2 items-center w-full">
-                                                <div className="flex-grow border-t border-white/10"></div>
+                                                <div className="flex-grow border-t border-black/10 dark:border-white/10"></div>
                                                 <span className="flex-shrink mx-4 text-gray-500 text-[9px] font-black uppercase tracking-widest">Or Pay Manually via UPI</span>
-                                                <div className="flex-grow border-t border-white/10"></div>
+                                                <div className="flex-grow border-t border-black/10 dark:border-white/10"></div>
                                             </div>
                                         </div>
                                     )}
@@ -313,10 +313,10 @@ const BuyTicketModal = ({ event, isOpen, onClose }) => {
                                                 />
                                             </div>
                                         ) : (
-                                            <div className="h-48 flex items-center justify-center text-gray-400 text-sm bg-gray-100 rounded-lg">UPI ID Config Missing</div>
+                                            <div className="h-48 flex items-center justify-center text-gray-600 dark:text-gray-400 text-sm bg-gray-100 rounded-lg">UPI ID Config Missing</div>
                                         )}
                                         <div className="mt-4">
-                                            <p className="text-[10px] uppercase font-bold text-gray-400 mb-1">UPI ID</p>
+                                            <p className="text-[10px] uppercase font-bold text-gray-600 dark:text-gray-400 mb-1">UPI ID</p>
                                             <p className="font-mono text-xs font-bold text-gray-800 select-all bg-gray-100 py-2 rounded-lg border border-gray-200">{event?.upiId || event?.paymentDetails?.upiId || paymentDetails?.upiId || 'newbi@upi'}</p>
                                         </div>
                                         
@@ -338,34 +338,34 @@ const BuyTicketModal = ({ event, isOpen, onClose }) => {
                                                 value={paymentRef}
                                                 onChange={e => setPaymentRef(e.target.value)}
                                                 placeholder="e.g. 458210339582"
-                                                className="text-center font-mono tracking-widest bg-white/5 border-neon-blue/30 focus:border-neon-blue"
+                                                className="text-center font-mono tracking-widest bg-black/5 dark:bg-white/5 border-neon-blue/30 focus:border-neon-blue"
                                             />
                                         </div>
 
-                                        <div className="border border-white/10 rounded-xl overflow-hidden">
+                                        <div className="border border-black/10 dark:border-white/10 rounded-xl overflow-hidden">
                                             <button
                                                 onClick={() => setShowHelp(!showHelp)}
-                                                className="w-full flex justify-between items-center p-4 bg-white/5 hover:bg-white/10 transition-colors"
+                                                className="w-full flex justify-between items-center p-4 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
                                             >
                                                 <span className="text-xs font-bold flex items-center gap-2"><Info size={14} /> How to find Transaction ID?</span>
                                                 {showHelp ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                                             </button>
                                             {showHelp && (
-                                                <div className="p-4 bg-black/50 text-xs text-gray-400 space-y-2">
-                                                    <p><strong className="text-white">GPay:</strong> Open transaction → Look for "UPI Transaction ID".</p>
-                                                    <p><strong className="text-white">PhonePe:</strong> Open history → Tap transaction → Copy "UTR" or "Transaction ID".</p>
-                                                    <p><strong className="text-white">Paytm:</strong> Check "UPI Ref No" under payment details.</p>
+                                                <div className="p-4 bg-white dark:bg-black/50 text-xs text-gray-600 dark:text-gray-400 space-y-2">
+                                                    <p><strong className="text-gray-900 dark:text-white">GPay:</strong> Open transaction → Look for "UPI Transaction ID".</p>
+                                                    <p><strong className="text-gray-900 dark:text-white">PhonePe:</strong> Open history → Tap transaction → Copy "UTR" or "Transaction ID".</p>
+                                                    <p><strong className="text-gray-900 dark:text-white">Paytm:</strong> Check "UPI Ref No" under payment details.</p>
                                                 </div>
                                             )}
                                         </div>
                                     </div>
                                 </div>
 
-                                <div className="mt-4 pt-4 border-t border-white/10">
+                                <div className="mt-4 pt-4 border-t border-black/10 dark:border-white/10">
                                     <Button onClick={handleSubmit} disabled={loading || !paymentRef} className="w-full bg-neon-blue text-black hover:bg-white">
                                         {loading ? <Loader className="animate-spin" /> : 'Confirm Payment'}
                                     </Button>
-                                    <button onClick={() => setStep(2)} className="w-full text-center text-xs text-gray-500 mt-3 hover:text-white">Back</button>
+                                    <button onClick={() => setStep(2)} className="w-full text-center text-xs text-gray-500 mt-3 hover:text-gray-900 dark:hover:text-white">Back</button>
                                 </div>
                             </div>
                         )}
@@ -380,11 +380,11 @@ const BuyTicketModal = ({ event, isOpen, onClose }) => {
                                 >
                                     <CheckCircle size={48} />
                                 </motion.div>
-                                <h3 className="text-3xl font-bold text-white mb-2 font-heading">You're In!</h3>
-                                <p className="text-gray-400 mb-8 max-w-xs">
+                                <h3 className="text-3xl font-bold text-gray-900 dark:text-white mb-2 font-heading">You're In!</h3>
+                                <p className="text-gray-600 dark:text-gray-400 mb-8 max-w-xs">
                                     Your order has been placed. We will verify your payment and email your tickets shortly.
                                 </p>
-                                <div className="bg-white/5 rounded-xl p-4 w-full mb-8">
+                                <div className="bg-black/5 dark:bg-white/5 rounded-xl p-4 w-full mb-8">
                                     <p className="text-xs text-gray-500 uppercase tracking-widest mb-1">Total Paid</p>
                                     <p className="text-2xl font-bold text-neon-green">₹{totalAmount}</p>
                                 </div>

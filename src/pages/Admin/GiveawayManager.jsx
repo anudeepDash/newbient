@@ -276,7 +276,7 @@ const GiveawayManager = () => {
                         });
                         setIsCreating(true);
                     }} 
-                    className="h-14 px-10 rounded-2xl bg-purple-500 text-white text-xs font-black uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-[0_10px_30px_rgba(168,85,247,0.2)] border-none"
+                    className="h-14 px-10 rounded-2xl bg-purple-500 text-gray-900 dark:text-white text-xs font-black uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-[0_10px_30px_rgba(168,85,247,0.2)] border-none"
                 >
                     <Plus className="mr-2 h-4 w-4" /> New Giveaway
                 </Button>
@@ -284,7 +284,7 @@ const GiveawayManager = () => {
         >
 
                 {/* Combined Search & Filters Bar - Matching Invoice Style */}
-                <div className="bg-zinc-900/40 border border-white/5 rounded-[2.5rem] p-2 mb-12 backdrop-blur-3xl flex flex-col md:flex-row items-center gap-4">
+                <div className="bg-gray-100 dark:bg-zinc-900/40 border border-black/10 dark:border-white/5 rounded-[2.5rem] p-2 mb-12 backdrop-blur-3xl flex flex-col md:flex-row items-center gap-4">
                     <div className="relative flex-1 w-full group">
                         <Search className="absolute left-8 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-purple-500 transition-colors" size={20} />
                         <input 
@@ -294,7 +294,7 @@ const GiveawayManager = () => {
                             className="w-full bg-transparent h-16 pl-20 pr-8 rounded-2xl text-[11px] font-black uppercase tracking-widest outline-none transition-all placeholder:text-gray-600"
                         />
                     </div>
-                    <div className="flex bg-black/40 p-1.5 rounded-[1.5rem] border border-white/5 w-full md:w-auto mr-1">
+                    <div className="flex bg-white dark:bg-black/40 p-1.5 rounded-[1.5rem] border border-black/10 dark:border-white/5 w-full md:w-auto mr-1">
                         {['ALL', 'ACTIVE', 'PAST'].map((s) => (
                             <button
                                 key={s}
@@ -302,8 +302,8 @@ const GiveawayManager = () => {
                                 className={cn(
                                     "px-10 py-3.5 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-300 min-w-[120px]",
                                     filter === s.toLowerCase() 
-                                        ? "bg-purple-500 text-white shadow-[0_10px_25px_rgba(168,85,247,0.3)] scale-[1.02]" 
-                                        : "text-gray-500 hover:text-white hover:bg-white/5"
+                                        ? "bg-purple-500 text-gray-900 dark:text-white shadow-[0_10px_25px_rgba(168,85,247,0.3)] scale-[1.02]" 
+                                        : "text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5"
                                 )}
                             >
                                 {s}
@@ -312,7 +312,7 @@ const GiveawayManager = () => {
                     </div>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
-                    <Card className="p-6 bg-zinc-900/40 border-white/5 backdrop-blur-3xl rounded-3xl">
+                    <Card className="p-6 bg-gray-100 dark:bg-zinc-900/40 border-black/10 dark:border-white/5 backdrop-blur-3xl rounded-3xl">
                         <div className="flex items-center gap-4">
                             <div className="w-12 h-12 rounded-2xl bg-purple-500/10 flex items-center justify-center text-purple-500">
                                 <Gift size={24} />
@@ -323,7 +323,7 @@ const GiveawayManager = () => {
                             </div>
                         </div>
                     </Card>
-                    <Card className="p-6 bg-zinc-900/40 border-white/5 backdrop-blur-3xl rounded-3xl">
+                    <Card className="p-6 bg-gray-100 dark:bg-zinc-900/40 border-black/10 dark:border-white/5 backdrop-blur-3xl rounded-3xl">
                         <div className="flex items-center gap-4">
                             <div className="w-12 h-12 rounded-2xl bg-neon-blue/10 flex items-center justify-center text-neon-blue">
                                 <Users size={24} />
@@ -334,7 +334,7 @@ const GiveawayManager = () => {
                             </div>
                         </div>
                     </Card>
-                    <Card className="p-6 bg-zinc-900/40 border-white/5 backdrop-blur-3xl rounded-3xl md:col-span-2">
+                    <Card className="p-6 bg-gray-100 dark:bg-zinc-900/40 border-black/10 dark:border-white/5 backdrop-blur-3xl rounded-3xl md:col-span-2">
                         <div className="flex items-center gap-4">
                             <div className="w-12 h-12 rounded-2xl bg-neon-green/10 flex items-center justify-center text-neon-green">
                                 <BarChart3 size={24} />
@@ -358,7 +358,7 @@ const GiveawayManager = () => {
                             layout
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
-                            className="min-w-[85vw] md:min-w-0 snap-center bg-zinc-900/40 backdrop-blur-3xl border border-white/5 rounded-[2.5rem] p-8 flex flex-col h-full relative group hover:border-purple-500/30 transition-all duration-500 hover:shadow-[0_20px_40px_rgba(168,85,247,0.05)]" 
+                            className="min-w-[85vw] md:min-w-0 snap-center bg-gray-100 dark:bg-zinc-900/40 backdrop-blur-3xl border border-black/10 dark:border-white/5 rounded-[2.5rem] p-8 flex flex-col h-full relative group hover:border-purple-500/30 transition-all duration-500 hover:shadow-[0_20px_40px_rgba(168,85,247,0.05)]" 
                         >
                             <div className="flex items-start justify-between mb-8">
                                 <div className={cn(
@@ -385,8 +385,8 @@ const GiveawayManager = () => {
                                     >
                                         <Sparkles size={16} />
                                     </button>
-                                    <button onClick={() => handleEdit(giveaway)} className="p-2.5 bg-white/5 rounded-xl text-gray-500 hover:text-purple-500 transition-colors"><Edit size={16} /></button>
-                                    <button onClick={() => handleDelete(giveaway.id)} className="p-2.5 bg-white/5 rounded-xl text-gray-500 hover:text-red-500 transition-colors"><Trash2 size={16} /></button>
+                                    <button onClick={() => handleEdit(giveaway)} className="p-2.5 bg-black/5 dark:bg-white/5 rounded-xl text-gray-500 hover:text-purple-500 transition-colors"><Edit size={16} /></button>
+                                    <button onClick={() => handleDelete(giveaway.id)} className="p-2.5 bg-black/5 dark:bg-white/5 rounded-xl text-gray-500 hover:text-red-500 transition-colors"><Trash2 size={16} /></button>
                                 </div>
                             </div>
 
@@ -400,30 +400,30 @@ const GiveawayManager = () => {
                                     <button 
                                         onClick={() => handlePickWinner(giveaway.id, giveaway.name)} 
                                         disabled={giveaway.status === 'Closed'}
-                                        className="flex-1 h-10 px-4 flex items-center justify-center bg-purple-600/10 border border-purple-500/20 text-purple-500 text-[9px] font-black uppercase tracking-widest rounded-xl hover:bg-purple-600 hover:text-white transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                                        className="flex-1 h-10 px-4 flex items-center justify-center bg-purple-600/10 border border-purple-500/20 text-purple-500 text-[9px] font-black uppercase tracking-widest rounded-xl hover:bg-purple-600 hover:text-gray-900 dark:hover:text-white transition-all disabled:opacity-30 disabled:cursor-not-allowed"
                                     >
                                         <Trophy size={14} className="mr-2" /> Winner
                                     </button>
                                     <button 
                                         onClick={() => handleExportCSV(giveaway.id, giveaway.name)} 
-                                        className="h-10 w-12 bg-zinc-800 border border-white/10 flex items-center justify-center rounded-xl hover:bg-zinc-700 transition-all"
+                                        className="h-10 w-12 bg-zinc-800 border border-black/10 dark:border-white/10 flex items-center justify-center rounded-xl hover:bg-zinc-700 transition-all"
                                     >
-                                        <Download size={18} className="text-white" strokeWidth={2} />
+                                        <Download size={18} className="text-gray-900 dark:text-white" strokeWidth={2} />
                                     </button>
                                     {giveaway.status !== 'Closed' && (
                                         <button 
                                             onClick={() => handleCloseGiveaway(giveaway.id)} 
                                             className="h-10 w-12 bg-red-900/30 border border-red-500/40 flex items-center justify-center rounded-xl hover:bg-red-600 transition-all"
                                         >
-                                            <X size={18} className="text-red-500 hover:text-white transition-colors" strokeWidth={2} />
+                                            <X size={18} className="text-red-500 hover:text-gray-900 dark:hover:text-white transition-colors" strokeWidth={2} />
                                         </button>
                                     )}
                                 </div>
 
-                                <p className="text-gray-400 text-sm font-medium line-clamp-3 mb-10 leading-relaxed border-l-2 border-white/5 pl-4">{giveaway.description}</p>
+                                <p className="text-gray-600 dark:text-gray-400 text-sm font-medium line-clamp-3 mb-10 leading-relaxed border-l-2 border-black/10 dark:border-white/5 pl-4">{giveaway.description}</p>
                                 
-                                <div className="mt-auto pt-8 border-t border-white/5 flex items-center justify-between">
-                                    <Link to={`/admin/giveaways/${giveaway.id}/participants`} className="flex items-center gap-3 text-[10px] font-black text-gray-500 uppercase tracking-widest hover:text-white transition-colors">
+                                <div className="mt-auto pt-8 border-t border-black/10 dark:border-white/5 flex items-center justify-between">
+                                    <Link to={`/admin/giveaways/${giveaway.id}/participants`} className="flex items-center gap-3 text-[10px] font-black text-gray-500 uppercase tracking-widest hover:text-gray-900 dark:hover:text-white transition-colors">
                                         VIEW PARTICIPANTS <ChevronRight size={14} />
                                     </Link>
                                     <div className="flex items-center gap-2 text-[9px] text-gray-600 font-black uppercase tracking-widest">
@@ -436,15 +436,15 @@ const GiveawayManager = () => {
                 </div>
 
                 {(giveaways || []).length === 0 && !isCreating && (
-                    <div className="py-32 text-center bg-zinc-900/20 rounded-[3rem] border-2 border-dashed border-white/5 flex flex-col items-center gap-6">
-                        <div className="w-20 h-20 rounded-full bg-white/5 flex items-center justify-center text-gray-700">
+                    <div className="py-32 text-center bg-gray-100 dark:bg-zinc-900/20 rounded-[3rem] border-2 border-dashed border-black/10 dark:border-white/5 flex flex-col items-center gap-6">
+                        <div className="w-20 h-20 rounded-full bg-black/5 dark:bg-white/5 flex items-center justify-center text-gray-700">
                             <Gift size={40} />
                         </div>
                         <div className="space-y-2">
                             <h3 className="text-xl font-black uppercase tracking-tighter text-gray-500 italic">No giveaways active.</h3>
                             <p className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-600">Start by creating a new rewards campaign.</p>
                         </div>
-                        <Button onClick={() => setIsCreating(true)} className="h-14 px-8 bg-purple-600 text-white font-black uppercase tracking-widest rounded-2xl mt-4">
+                        <Button onClick={() => setIsCreating(true)} className="h-14 px-8 bg-purple-600 text-gray-900 dark:text-white font-black uppercase tracking-widest rounded-2xl mt-4">
                             CREATE GIVEAWAY
                         </Button>
                     </div>
@@ -458,7 +458,7 @@ const GiveawayManager = () => {
                             animate={{ opacity: 1 }} 
                             exit={{ opacity: 0 }} 
                             onClick={() => setIsCreating(false)} 
-                            className="fixed inset-0 bg-black/90 backdrop-blur-sm" 
+                            className="fixed inset-0 bg-white dark:bg-black/90 backdrop-blur-sm" 
                         />
                         
                         <motion.div 
@@ -466,16 +466,16 @@ const GiveawayManager = () => {
                             animate={{ scale: 1, opacity: 1, y: 0 }}
                             exit={{ scale: 0.9, opacity: 0, y: 30 }}
                             transition={{ type: "spring", damping: 30, stiffness: 300 }}
-                            className="relative w-full max-w-5xl max-h-[90vh] bg-zinc-900 border border-white/10 rounded-[2.5rem] overflow-hidden flex flex-col shadow-[0_30px_100px_rgba(0,0,0,0.8)]"
+                            className="relative w-full max-w-5xl max-h-[90vh] bg-gray-100 dark:bg-zinc-900 border border-black/10 dark:border-white/10 rounded-[2.5rem] overflow-hidden flex flex-col shadow-[0_30px_100px_rgba(0,0,0,0.8)]"
                         >
-                            <div className="flex items-center justify-between p-8 border-b border-white/5">
+                            <div className="flex items-center justify-between p-8 border-b border-black/10 dark:border-white/5">
                                 <div className="space-y-1">
-                                    <h2 className="text-3xl font-black font-heading tracking-tight uppercase italic text-white text-4xl">
+                                    <h2 className="text-3xl font-black font-heading tracking-tight uppercase italic text-gray-900 dark:text-white text-4xl">
                                         {editingId ? 'EDIT' : 'CREATE'} <span className="text-purple-500">GIVEAWAY.</span>
                                     </h2>
                                     <p className="text-[9px] font-black uppercase tracking-[0.2em] text-gray-500">CONFIGURE GIVEAWAY PARAMETERS</p>
                                 </div>
-                                <button onClick={() => setIsCreating(false)} className="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center hover:bg-white hover:text-black transition-all">
+                                <button onClick={() => setIsCreating(false)} className="w-12 h-12 rounded-xl bg-black/5 dark:bg-white/5 flex items-center justify-center hover:bg-white hover:text-black transition-all">
                                     <X size={20} />
                                 </button>
                             </div>
@@ -486,11 +486,11 @@ const GiveawayManager = () => {
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                         <div className="space-y-3">
                                             <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest pl-1">Campaign Title</label>
-                                            <Input required value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} placeholder="e.g. UN40 Music Festival" className="h-12 bg-black/50 border-white/5 rounded-xl text-sm font-bold" />
+                                            <Input required value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} placeholder="e.g. UN40 Music Festival" className="h-12 bg-white dark:bg-black/50 border-black/10 dark:border-white/5 rounded-xl text-sm font-bold" />
                                         </div>
                                         <div className="space-y-3">
                                             <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest pl-1">Slug</label>
-                                            <Input required value={formData.slug} onChange={e => setFormData({ ...formData, slug: e.target.value.toLowerCase().replace(/\s+/g, '-') })} placeholder="un40-giveaway" className="h-12 bg-black/50 border-white/5 rounded-xl" />
+                                            <Input required value={formData.slug} onChange={e => setFormData({ ...formData, slug: e.target.value.toLowerCase().replace(/\s+/g, '-') })} placeholder="un40-giveaway" className="h-12 bg-white dark:bg-black/50 border-black/10 dark:border-white/5 rounded-xl" />
                                         </div>
                                     </div>
 
@@ -504,14 +504,14 @@ const GiveawayManager = () => {
                                                         onChange={e => setFormData({ ...formData, posterUrl: e.target.value })} 
                                                         onPaste={(e) => handlePaste(e, 'poster')}
                                                         placeholder="Cloudinary Link or Paste" 
-                                                        className="h-12 bg-black/50 border-white/5 rounded-xl text-sm font-bold" 
+                                                        className="h-12 bg-white dark:bg-black/50 border-black/10 dark:border-white/5 rounded-xl text-sm font-bold" 
                                                     />
                                                 </div>
                                                 <div className="relative group">
                                                     <input type="file" onChange={(e) => setSelectedFile(e.target.files[0])} className="absolute inset-0 opacity-0 cursor-pointer z-10" />
-                                                    <div className={cn("h-12 border-2 border-dashed border-white/5 rounded-xl flex items-center justify-center gap-3 bg-black/20 group-hover:border-purple-500/30 transition-all", selectedFile && "border-purple-500/50 bg-purple-500/5")}>
+                                                    <div className={cn("h-12 border-2 border-dashed border-black/10 dark:border-white/5 rounded-xl flex items-center justify-center gap-3 bg-white dark:bg-black/20 group-hover:border-purple-500/30 transition-all", selectedFile && "border-purple-500/50 bg-purple-500/5")}>
                                                         <Sparkles className={cn("text-gray-500 group-hover:text-purple-500", selectedFile && "text-purple-500")} size={14} />
-                                                        <span className="text-[8px] font-black text-gray-500 group-hover:text-white uppercase tracking-widest">{selectedFile ? 'READY' : 'UPLOAD'}</span>
+                                                        <span className="text-[8px] font-black text-gray-500 group-hover:text-gray-900 dark:group-hover:text-white uppercase tracking-widest">{selectedFile ? 'READY' : 'UPLOAD'}</span>
                                                     </div>
                                                 </div>
                                             </div>
@@ -521,7 +521,7 @@ const GiveawayManager = () => {
                                             <select 
                                                 value={formData.giveawayType} 
                                                 onChange={e => setFormData({ ...formData, giveawayType: e.target.value })}
-                                                className="w-full h-12 bg-black/50 border border-white/5 rounded-xl px-4 text-[9px] font-black uppercase tracking-widest text-white appearance-none"
+                                                className="w-full h-12 bg-white dark:bg-black/50 border border-black/10 dark:border-white/5 rounded-xl px-4 text-[9px] font-black uppercase tracking-widest text-gray-900 dark:text-white appearance-none"
                                             >
                                                 <option value="Standard">Standard Registration</option>
                                             </select>
@@ -535,7 +535,7 @@ const GiveawayManager = () => {
                                             required
                                             value={formData.description}
                                             onChange={e => setFormData({ ...formData, description: e.target.value })}
-                                            className="w-full bg-black/50 border border-white/5 rounded-2xl p-6 text-sm font-medium text-gray-300 focus:outline-none focus:border-purple-500 transition-all h-32 resize-none"
+                                            className="w-full bg-white dark:bg-black/50 border border-black/10 dark:border-white/5 rounded-2xl p-6 text-sm font-medium text-gray-700 dark:text-gray-300 focus:outline-none focus:border-purple-500 transition-all h-32 resize-none"
                                             placeholder="DESCRIBE THE GIVEAWAY..."
                                         />
                                     </div>
@@ -544,11 +544,11 @@ const GiveawayManager = () => {
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                                         <div className="space-y-3">
                                             <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest pl-1">Tickets</label>
-                                            <Input type="number" required value={formData.ticketsAvailable} onChange={e => setFormData({ ...formData, ticketsAvailable: parseInt(e.target.value) })} className="h-12 bg-black/50 border-white/5 rounded-xl font-bold" />
+                                            <Input type="number" required value={formData.ticketsAvailable} onChange={e => setFormData({ ...formData, ticketsAvailable: parseInt(e.target.value) })} className="h-12 bg-white dark:bg-black/50 border-black/10 dark:border-white/5 rounded-xl font-bold" />
                                         </div>
                                         <div className="md:col-span-2 space-y-3">
                                             <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest pl-1">Announcement Date</label>
-                                            <Input type="date" required value={formData.winnerAnnouncementDate} onChange={e => setFormData({ ...formData, winnerAnnouncementDate: e.target.value })} className="h-12 bg-black/50 border-white/5 rounded-xl" />
+                                            <Input type="date" required value={formData.winnerAnnouncementDate} onChange={e => setFormData({ ...formData, winnerAnnouncementDate: e.target.value })} className="h-12 bg-white dark:bg-black/50 border-black/10 dark:border-white/5 rounded-xl" />
                                         </div>
                                     </div>
 
@@ -565,7 +565,7 @@ const GiveawayManager = () => {
                                                     const id = Math.random().toString(36).substr(2, 9);
                                                     setFormData({ ...formData, tasks: [...formData.tasks, { id, type: 'custom', label: 'New Custom Task', entryScore: 1, config: { url: '' } }] });
                                                 }}
-                                                className="h-10 px-6 bg-purple-600/10 border border-purple-500/20 text-purple-500 text-[9px] font-black uppercase tracking-widest hover:bg-purple-600 hover:text-white transition-all rounded-xl"
+                                                className="h-10 px-6 bg-purple-600/10 border border-purple-500/20 text-purple-500 text-[9px] font-black uppercase tracking-widest hover:bg-purple-600 hover:text-gray-900 dark:hover:text-white transition-all rounded-xl"
                                             >
                                                 <Plus size={14} className="mr-2" /> ADD CUSTOM
                                             </Button>
@@ -608,7 +608,7 @@ const GiveawayManager = () => {
                                                         });
                                                     }}
                                                     className={cn(
-                                                        "flex flex-col items-center justify-center gap-2 p-3 rounded-2xl bg-black/40 border border-white/5 transition-all group",
+                                                        "flex flex-col items-center justify-center gap-2 p-3 rounded-2xl bg-white dark:bg-black/40 border border-black/10 dark:border-white/5 transition-all group",
                                                         preset.color
                                                     )}
                                                 >
@@ -627,12 +627,12 @@ const GiveawayManager = () => {
                                                     key={task.id} 
                                                     initial={{ opacity: 0, x: -10 }}
                                                     animate={{ opacity: 1, x: 0 }}
-                                                    className="p-6 bg-black/40 border border-white/5 rounded-3xl grid grid-cols-1 md:grid-cols-12 gap-6 items-center relative overflow-hidden group min-w-[85vw] md:min-w-0 snap-center"
+                                                    className="p-6 bg-white dark:bg-black/40 border border-black/10 dark:border-white/5 rounded-3xl grid grid-cols-1 md:grid-cols-12 gap-6 items-center relative overflow-hidden group min-w-[85vw] md:min-w-0 snap-center"
                                                 >
                                                     <div className="absolute top-0 left-0 w-1 h-full bg-purple-500/20 group-hover:bg-purple-500 transition-colors" />
                                                     
                                                     <div className="md:col-span-1 flex justify-center">
-                                                        <div className="w-10 h-10 rounded-xl bg-zinc-900 flex items-center justify-center text-gray-500">
+                                                        <div className="w-10 h-10 rounded-xl bg-gray-100 dark:bg-zinc-900 flex items-center justify-center text-gray-500">
                                                             {task.type === 'instagram' && <Instagram size={18} />}
                                                             {task.type === 'instagram_like_comment' && <Instagram size={18} className="text-pink-400" />}
                                                             {task.type === 'twitter' && <Twitter size={18} />}
@@ -655,7 +655,7 @@ const GiveawayManager = () => {
                                                                 newTasks[index].label = e.target.value;
                                                                 setFormData({ ...formData, tasks: newTasks });
                                                             }}
-                                                            className="w-full h-10 bg-transparent border-b border-white/10 text-xs font-bold text-white focus:border-purple-500 outline-none transition-all" 
+                                                            className="w-full h-10 bg-transparent border-b border-black/10 dark:border-white/10 text-xs font-bold text-gray-900 dark:text-white focus:border-purple-500 outline-none transition-all" 
                                                             placeholder="Follow on X..." 
                                                         />
                                                     </div>
@@ -669,7 +669,7 @@ const GiveawayManager = () => {
                                                                 newTasks[index].config = { ...newTasks[index].config, url: e.target.value };
                                                                 setFormData({ ...formData, tasks: newTasks });
                                                             }}
-                                                            className="w-full h-10 bg-transparent border-b border-white/10 text-xs font-bold text-gray-400 focus:border-purple-500 outline-none transition-all font-mono" 
+                                                            className="w-full h-10 bg-transparent border-b border-black/10 dark:border-white/10 text-xs font-bold text-gray-600 dark:text-gray-400 focus:border-purple-500 outline-none transition-all font-mono" 
                                                             placeholder="https://..." 
                                                         />
                                                     </div>
@@ -685,7 +685,7 @@ const GiveawayManager = () => {
                                                                     newTasks[index].entryScore = parseInt(e.target.value) || 0;
                                                                     setFormData({ ...formData, tasks: newTasks });
                                                                 }}
-                                                                className="w-full h-10 bg-zinc-900 border border-white/5 rounded-xl px-4 text-xs font-black text-white outline-none" 
+                                                                className="w-full h-10 bg-gray-100 dark:bg-zinc-900 border border-black/10 dark:border-white/5 rounded-xl px-4 text-xs font-black text-gray-900 dark:text-white outline-none" 
                                                             />
                                                         </div>
                                                     </div>
@@ -694,7 +694,7 @@ const GiveawayManager = () => {
                                                         <button 
                                                             type="button"
                                                             onClick={() => setFormData({ ...formData, tasks: formData.tasks.filter((_, i) => i !== index) })}
-                                                            className="w-10 h-10 rounded-xl bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all flex items-center justify-center border border-red-500/20"
+                                                            className="w-10 h-10 rounded-xl bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-gray-900 dark:hover:text-white transition-all flex items-center justify-center border border-red-500/20"
                                                         >
                                                             <Trash2 size={16} />
                                                         </button>
@@ -703,7 +703,7 @@ const GiveawayManager = () => {
                                             ))}
                                             
                                             {formData.tasks.length === 0 && (
-                                                <div className="flex flex-col items-center justify-center p-12 border-2 border-dashed border-white/5 rounded-[3rem] text-gray-600 space-y-4">
+                                                <div className="flex flex-col items-center justify-center p-12 border-2 border-dashed border-black/10 dark:border-white/5 rounded-[3rem] text-gray-600 space-y-4">
                                                     <Plus size={48} className="opacity-20" />
                                                     <p className="text-[10px] font-black uppercase tracking-widest">No Tasks Configured</p>
                                                 </div>
@@ -713,9 +713,9 @@ const GiveawayManager = () => {
                                 </div>
                             </form>
 
-                            <div className="p-8 bg-zinc-900 border-t border-white/5 flex gap-4">
-                                <Button type="button" variant="outline" onClick={() => setIsCreating(false)} className="flex-1 h-12 rounded-xl border-white/5 text-[10px] font-black tracking-widest">CANCEL</Button>
-                                <Button onClick={handleSubmit} className="flex-1 h-12 bg-purple-600 text-white font-black uppercase tracking-widest rounded-xl shadow-lg">
+                            <div className="p-8 bg-gray-100 dark:bg-zinc-900 border-t border-black/10 dark:border-white/5 flex gap-4">
+                                <Button type="button" variant="outline" onClick={() => setIsCreating(false)} className="flex-1 h-12 rounded-xl border-black/10 dark:border-white/5 text-[10px] font-black tracking-widest">CANCEL</Button>
+                                <Button onClick={handleSubmit} className="flex-1 h-12 bg-purple-600 text-gray-900 dark:text-white font-black uppercase tracking-widest rounded-xl shadow-lg">
                                     {editingId ? 'UPDATE' : 'CREATE'}
                                 </Button>
                             </div>

@@ -213,9 +213,9 @@ const ProposalManagement = () => {
         >
             <div className="relative z-10">
                 {/* Combined Search & Filters Bar - Matching Invoice Style */}
-                <div className="bg-zinc-900/40 border border-white/5 rounded-2xl md:rounded-[2.5rem] p-1.5 md:p-2 mb-8 md:mb-12 backdrop-blur-3xl flex flex-col xl:flex-row items-center gap-2 md:gap-4">
+                <div className="bg-gray-100 dark:bg-zinc-900/40 border border-black/10 dark:border-white/5 rounded-2xl md:rounded-[2.5rem] p-1.5 md:p-2 mb-8 md:mb-12 backdrop-blur-3xl flex flex-col xl:flex-row items-center gap-2 md:gap-4">
                     <div className="relative flex-1 w-full group">
-                        <Search className="absolute left-6 md:left-8 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-neon-green transition-colors" size={18} />
+                        <Search className="absolute left-6 md:left-8 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-emerald-600 dark:group-focus-within:text-neon-green transition-colors" size={18} />
                         <input 
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
@@ -224,7 +224,7 @@ const ProposalManagement = () => {
                         />
                     </div>
                     <div className="flex flex-col sm:flex-row items-center gap-2 w-full xl:w-auto">
-                        <div className="flex bg-black/40 p-1 rounded-xl md:rounded-[1.5rem] border border-white/5 w-full md:w-auto overflow-x-auto no-scrollbar">
+                        <div className="flex bg-white dark:bg-black/40 p-1 rounded-xl md:rounded-[1.5rem] border border-black/10 dark:border-white/5 w-full md:w-auto overflow-x-auto no-scrollbar">
                             <div className="flex flex-1">
                                 {['All', 'Draft', 'Sent', 'Accepted'].map((s) => (
                                     <button
@@ -234,7 +234,7 @@ const ProposalManagement = () => {
                                             "flex-1 px-3 sm:px-6 md:px-10 py-2.5 sm:py-3 rounded-lg md:rounded-xl text-[8px] sm:text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-300 min-w-[70px] sm:min-w-[100px] md:min-w-[120px]",
                                             statusFilter === s 
                                                 ? "bg-neon-green text-black shadow-[0_10px_25px_rgba(57,255,20,0.5)] scale-[1.02]" 
-                                                : "text-gray-500 hover:text-white hover:bg-white/5"
+                                                : "text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5"
                                         )}
                                     >
                                         {s}
@@ -244,12 +244,12 @@ const ProposalManagement = () => {
                         </div>
 
                         {/* View Mode Toggle */}
-                        <div className="flex bg-black/40 p-1 rounded-xl md:rounded-[1.5rem] border border-white/5 w-full sm:w-auto justify-center">
+                        <div className="flex bg-white dark:bg-black/40 p-1 rounded-xl md:rounded-[1.5rem] border border-black/10 dark:border-white/5 w-full sm:w-auto justify-center">
                             <button
                                 onClick={() => setViewMode('grid')}
                                 className={cn(
                                     "flex-1 sm:flex-none p-3 rounded-lg md:rounded-xl transition-all duration-300 flex justify-center",
-                                    viewMode === 'grid' ? "bg-neon-green text-black shadow-[0_10px_25px_rgba(57,255,20,0.4)]" : "text-gray-500 hover:text-white"
+                                    viewMode === 'grid' ? "bg-neon-green text-black shadow-[0_10px_25px_rgba(57,255,20,0.4)]" : "text-gray-500 hover:text-gray-900 dark:hover:text-white"
                                 )}
                             >
                                 <LayoutGrid size={16} />
@@ -258,7 +258,7 @@ const ProposalManagement = () => {
                                 onClick={() => setViewMode('table')}
                                 className={cn(
                                     "flex-1 sm:flex-none p-3 rounded-lg md:rounded-xl transition-all duration-300 flex justify-center",
-                                    viewMode === 'table' ? "bg-neon-green text-black shadow-[0_10px_25px_rgba(57,255,20,0.4)]" : "text-gray-500 hover:text-white"
+                                    viewMode === 'table' ? "bg-neon-green text-black shadow-[0_10px_25px_rgba(57,255,20,0.4)]" : "text-gray-500 hover:text-gray-900 dark:hover:text-white"
                                 )}
                             >
                                 <FileText size={16} />
@@ -286,7 +286,7 @@ const ProposalManagement = () => {
                                     transition={{ delay: i * 0.05 }}
                                     className="min-w-[85vw] md:min-w-0 snap-center h-full flex flex-col"
                                 >
-                                    <Card className="group relative p-6 md:p-8 bg-zinc-900/40 backdrop-blur-3xl border-white/5 hover:border-white/10 transition-all rounded-[2.5rem] h-full flex flex-col justify-between overflow-hidden border">
+                                    <Card className="group relative p-6 md:p-8 bg-gray-100 dark:bg-zinc-900/40 backdrop-blur-3xl border-black/10 dark:border-white/5 hover:border-black/10 dark:hover:border-white/10 transition-all rounded-[2.5rem] h-full flex flex-col justify-between overflow-hidden border">
                                         <div className="absolute top-0 right-0 p-6 md:p-8 opacity-[0.03] group-hover:scale-110 transition-transform duration-700 pointer-events-none">
                                             <FileSpreadsheet size={100} />
                                         </div>
@@ -307,7 +307,7 @@ const ProposalManagement = () => {
                                                 <div className="flex items-center gap-2">
                                                     <button 
                                                         onClick={() => handleDuplicate(proposal.id)}
-                                                        className="p-2.5 bg-white/5 hover:bg-white/10 text-gray-500 rounded-xl transition-all border border-white/5"
+                                                        className="p-2.5 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-gray-500 rounded-xl transition-all border border-black/10 dark:border-white/5"
                                                         title="Duplicate Proposal"
                                                     >
                                                         <History size={14} />
@@ -316,14 +316,14 @@ const ProposalManagement = () => {
                                                         <>
                                                             <button 
                                                                 onClick={() => setSelectedAnalytics(proposal)}
-                                                                className="p-2.5 bg-white/5 hover:bg-neon-green/20 hover:text-neon-green text-gray-500 rounded-xl transition-all border border-white/5"
+                                                                className="p-2.5 bg-black/5 dark:bg-white/5 hover:bg-neon-green/20 hover:text-neon-green text-gray-500 rounded-xl transition-all border border-black/10 dark:border-white/5"
                                                                 title="View Analytics"
                                                             >
                                                                 <Activity size={14} />
                                                             </button>
                                                             <button 
                                                                 onClick={() => handleDelete(proposal.id)}
-                                                                className="p-2.5 bg-white/5 hover:bg-red-500/20 hover:text-red-500 text-gray-500 rounded-xl transition-all border border-white/5"
+                                                                className="p-2.5 bg-black/5 dark:bg-white/5 hover:bg-red-500/20 hover:text-red-500 text-gray-500 rounded-xl transition-all border border-black/10 dark:border-white/5"
                                                                 title="Delete Proposal"
                                                             >
                                                                 <Trash2 size={14} />
@@ -333,7 +333,7 @@ const ProposalManagement = () => {
                                                 </div>
                                             </div>
 
-                                            <h3 className="text-xl md:text-2xl font-black font-heading tracking-tighter uppercase italic text-white mb-2 leading-none">
+                                            <h3 className="text-xl md:text-2xl font-black font-heading tracking-tighter uppercase italic text-gray-900 dark:text-white mb-2 leading-none">
                                                 {proposal.clientName}
                                             </h3>
                                             <p className="text-gray-500 text-[10px] font-bold uppercase tracking-widest flex items-center gap-2 mb-8">
@@ -341,9 +341,9 @@ const ProposalManagement = () => {
                                             </p>
                                         </div>
 
-                                        <div className="flex flex-wrap items-center gap-2 pt-6 border-t border-white/5">
+                                        <div className="flex flex-wrap items-center gap-2 pt-6 border-t border-black/10 dark:border-white/5">
                                              <Link to={`/admin/edit-proposal/${proposal.id}`} className="flex-1 min-w-[25%]">
-                                                 <button className="w-full py-3 bg-white/5 hover:bg-white/10 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all border border-white/5">
+                                                 <button className="w-full py-3 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all border border-black/10 dark:border-white/5">
                                                      Edit
                                                  </button>
                                              </Link>
@@ -355,14 +355,14 @@ const ProposalManagement = () => {
                                              </button>
                                              <button
                                                  onClick={() => setEmailModalProposal(proposal)}
-                                                 className="h-12 w-12 bg-white/5 hover:bg-neon-green/20 hover:text-neon-green text-gray-500 rounded-xl transition-all border border-white/5 flex items-center justify-center"
+                                                 className="h-12 w-12 bg-black/5 dark:bg-white/5 hover:bg-neon-green/20 hover:text-neon-green text-gray-500 rounded-xl transition-all border border-black/10 dark:border-white/5 flex items-center justify-center"
                                                  title="Email Proposal"
                                              >
                                                  <Mail size={16} />
                                              </button>
                                              <Link 
                                                  to={`/proposal/${proposal.id}`} 
-                                                 className="p-3 bg-white/5 hover:bg-neon-green/20 hover:text-neon-green text-gray-500 rounded-xl transition-all border border-white/5 flex items-center justify-center"
+                                                 className="p-3 bg-black/5 dark:bg-white/5 hover:bg-neon-green/20 hover:text-neon-green text-gray-500 rounded-xl transition-all border border-black/10 dark:border-white/5 flex items-center justify-center"
                                              >
                                                  <Eye size={16} />
                                              </Link>
@@ -371,7 +371,7 @@ const ProposalManagement = () => {
                                 </motion.div>
                             ))}
                             {filteredProposals.length === 0 && (
-                                <div className="col-span-full py-20 text-center border-2 border-dashed border-white/5 rounded-[3rem]">
+                                <div className="col-span-full py-20 text-center border-2 border-dashed border-black/10 dark:border-white/5 rounded-[3rem]">
                                     <FileSpreadsheet className="mx-auto text-gray-800 mb-6" size={64} />
                                     <h3 className="text-xl font-black font-heading text-gray-600 uppercase italic">No Proposals Found</h3>
                                     <p className="text-gray-700 text-xs font-bold uppercase tracking-widest mt-2">Start by generating your first quotation.</p>
@@ -386,10 +386,10 @@ const ProposalManagement = () => {
                             exit={{ opacity: 0, y: -20 }}
                             className="overflow-x-auto scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0"
                         >
-                            <Card className="md:min-w-[800px] bg-zinc-900/40 backdrop-blur-3xl border-white/5 rounded-[2rem] md:rounded-[2.5rem] p-0 border overflow-hidden">
+                            <Card className="md:min-w-[800px] bg-gray-100 dark:bg-zinc-900/40 backdrop-blur-3xl border-black/10 dark:border-white/5 rounded-[2rem] md:rounded-[2.5rem] p-0 border overflow-hidden">
                                 <table className="w-full text-left hidden md:table">
                                     <thead>
-                                        <tr className="border-b border-white/5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">
+                                        <tr className="border-b border-black/10 dark:border-white/5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">
                                             <th className="p-6 md:p-8">Document</th>
                                             <th className="p-6 md:p-8">Client</th>
                                             <th className="p-6 md:p-8">Created</th>
@@ -406,13 +406,13 @@ const ProposalManagement = () => {
                                                             <FileSpreadsheet size={20} />
                                                         </div>
                                                         <div>
-                                                            <div className="text-xs font-black uppercase tracking-widest text-white">{proposal.proposalNumber || 'NEWBI-PROP'}</div>
+                                                            <div className="text-xs font-black uppercase tracking-widest text-gray-900 dark:text-white">{proposal.proposalNumber || 'NEWBI-PROP'}</div>
                                                             <div className="text-[10px] font-bold text-gray-500 uppercase mt-0.5">STRATEGIC QUOTE</div>
                                                         </div>
                                                     </div>
                                                 </td>
                                                 <td className="p-6 md:p-8">
-                                                    <div className="text-sm font-black uppercase tracking-tight text-white">{proposal.clientName}</div>
+                                                    <div className="text-sm font-black uppercase tracking-tight text-gray-900 dark:text-white">{proposal.clientName}</div>
                                                 </td>
                                                 <td className="p-6 md:p-8">
                                                     <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">
@@ -431,7 +431,7 @@ const ProposalManagement = () => {
                                                 </td>
                                                 <td className="p-6 md:p-8">
                                                      <div className="flex justify-end gap-2">
-                                                         <Link to={`/proposal/${proposal.id}`} className="p-2 text-gray-500 hover:text-white transition-colors"><Eye size={18} /></Link>
+                                                         <Link to={`/proposal/${proposal.id}`} className="p-2 text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors"><Eye size={18} /></Link>
                                                          <button onClick={() => setEmailModalProposal(proposal)} className="p-2 text-gray-500 hover:text-neon-green transition-colors" title="Email Proposal"><Mail size={18} /></button>
                                                          {user?.role !== 'editor' && user?.role !== 'content_admin' && (
                                                              <>
@@ -439,9 +439,9 @@ const ProposalManagement = () => {
                                                                  <button onClick={() => handleDelete(proposal.id)} className="p-2 text-gray-500 hover:text-red-500 transition-colors"><Trash2 size={18} /></button>
                                                              </>
                                                          )}
-                                                         <button onClick={() => handleDuplicate(proposal.id)} className="p-2 text-gray-500 hover:text-white transition-colors"><History size={18} /></button>
+                                                         <button onClick={() => handleDuplicate(proposal.id)} className="p-2 text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors"><History size={18} /></button>
                                                          <button onClick={() => handleNativeShare(proposal)} className="p-2 text-gray-500 hover:text-neon-green transition-colors"><Share2 size={18} /></button>
-                                                         <Link to={`/admin/edit-proposal/${proposal.id}`} className="p-2 text-gray-500 hover:text-white transition-colors"><Edit size={18} /></Link>
+                                                         <Link to={`/admin/edit-proposal/${proposal.id}`} className="p-2 text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors"><Edit size={18} /></Link>
                                                      </div>
                                                 </td>
                                             </tr>
@@ -452,14 +452,14 @@ const ProposalManagement = () => {
                                 {/* Mobile Stacked Cards */}
                                 <div className="flex md:hidden flex-col gap-4 p-4">
                                     {filteredProposals.map((proposal) => (
-                                        <div key={proposal.id} className="bg-white/[0.02] border border-white/5 rounded-2xl p-4 flex flex-col gap-4">
+                                        <div key={proposal.id} className="bg-white/[0.02] border border-black/10 dark:border-white/5 rounded-2xl p-4 flex flex-col gap-4">
                                             <div className="flex justify-between items-start">
                                                 <div className="flex items-center gap-3">
                                                     <div className="w-10 h-10 rounded-xl bg-neon-green/10 flex items-center justify-center text-neon-green">
                                                         <FileSpreadsheet size={20} />
                                                     </div>
                                                     <div>
-                                                        <div className="text-xs font-black uppercase tracking-widest text-white">{proposal.proposalNumber || 'NEWBI-PROP'}</div>
+                                                        <div className="text-xs font-black uppercase tracking-widest text-gray-900 dark:text-white">{proposal.proposalNumber || 'NEWBI-PROP'}</div>
                                                         <div className="text-[10px] font-bold text-gray-500 uppercase mt-0.5">STRATEGIC QUOTE</div>
                                                     </div>
                                                 </div>
@@ -470,8 +470,8 @@ const ProposalManagement = () => {
                                                 </div>
                                             </div>
                                             
-                                            <div className="flex justify-between items-center bg-white/5 rounded-xl p-3">
-                                                <div className="text-xs font-black uppercase tracking-tight text-white">{proposal.clientName}</div>
+                                            <div className="flex justify-between items-center bg-black/5 dark:bg-white/5 rounded-xl p-3">
+                                                <div className="text-xs font-black uppercase tracking-tight text-gray-900 dark:text-white">{proposal.clientName}</div>
                                                 <div className={cn(
                                                     "inline-flex px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-[0.2em]",
                                                     proposal.status === 'Accepted' ? 'bg-neon-green/10 text-neon-green' : 
@@ -482,18 +482,18 @@ const ProposalManagement = () => {
                                                 </div>
                                             </div>
 
-                                            <div className="flex flex-wrap justify-end gap-2 pt-2 border-t border-white/5">
-                                                <Link to={`/proposal/${proposal.id}`} className="p-2 bg-white/5 rounded-lg text-gray-400 hover:text-white transition-colors"><Eye size={16} /></Link>
-                                                <button onClick={() => setEmailModalProposal(proposal)} className="p-2 bg-white/5 rounded-lg text-gray-400 hover:text-neon-green transition-colors" title="Email Proposal"><Mail size={16} /></button>
+                                            <div className="flex flex-wrap justify-end gap-2 pt-2 border-t border-black/10 dark:border-white/5">
+                                                <Link to={`/proposal/${proposal.id}`} className="p-2 bg-black/5 dark:bg-white/5 rounded-lg text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"><Eye size={16} /></Link>
+                                                <button onClick={() => setEmailModalProposal(proposal)} className="p-2 bg-black/5 dark:bg-white/5 rounded-lg text-gray-600 dark:text-gray-400 hover:text-neon-green transition-colors" title="Email Proposal"><Mail size={16} /></button>
                                                 {user?.role !== 'editor' && user?.role !== 'content_admin' && (
                                                     <>
-                                                        <button onClick={() => setSelectedAnalytics(proposal)} className="p-2 bg-white/5 rounded-lg text-gray-400 hover:text-neon-green transition-colors"><Activity size={16} /></button>
-                                                        <button onClick={() => handleDelete(proposal.id)} className="p-2 bg-white/5 rounded-lg text-gray-400 hover:text-red-500 transition-colors"><Trash2 size={16} /></button>
+                                                        <button onClick={() => setSelectedAnalytics(proposal)} className="p-2 bg-black/5 dark:bg-white/5 rounded-lg text-gray-600 dark:text-gray-400 hover:text-neon-green transition-colors"><Activity size={16} /></button>
+                                                        <button onClick={() => handleDelete(proposal.id)} className="p-2 bg-black/5 dark:bg-white/5 rounded-lg text-gray-600 dark:text-gray-400 hover:text-red-500 transition-colors"><Trash2 size={16} /></button>
                                                     </>
                                                 )}
-                                                <button onClick={() => handleDuplicate(proposal.id)} className="p-2 bg-white/5 rounded-lg text-gray-400 hover:text-white transition-colors"><History size={16} /></button>
-                                                <button onClick={() => handleNativeShare(proposal)} className="p-2 bg-white/5 rounded-lg text-gray-400 hover:text-neon-green transition-colors"><Share2 size={16} /></button>
-                                                <Link to={`/admin/edit-proposal/${proposal.id}`} className="p-2 bg-white/5 rounded-lg text-gray-400 hover:text-white transition-colors"><Edit size={16} /></Link>
+                                                <button onClick={() => handleDuplicate(proposal.id)} className="p-2 bg-black/5 dark:bg-white/5 rounded-lg text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"><History size={16} /></button>
+                                                <button onClick={() => handleNativeShare(proposal)} className="p-2 bg-black/5 dark:bg-white/5 rounded-lg text-gray-600 dark:text-gray-400 hover:text-neon-green transition-colors"><Share2 size={16} /></button>
+                                                <Link to={`/admin/edit-proposal/${proposal.id}`} className="p-2 bg-black/5 dark:bg-white/5 rounded-lg text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"><Edit size={16} /></Link>
                                             </div>
                                         </div>
                                     ))}
@@ -513,14 +513,14 @@ const ProposalManagement = () => {
                 <AnimatePresence>
                     {selectedAnalytics && (
                         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setSelectedAnalytics(null)} className="absolute inset-0 bg-black/90 backdrop-blur-sm" />
-                            <motion.div initial={{ opacity: 0, scale: 0.9, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: 20 }} className="relative w-full max-w-2xl bg-zinc-900 border border-white/10 rounded-[2rem] md:rounded-[2.5rem] overflow-hidden max-h-[90vh] flex flex-col">
-                                <div className="p-6 md:p-8 border-b border-white/5 flex justify-between items-center shrink-0">
+                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setSelectedAnalytics(null)} className="absolute inset-0 bg-white dark:bg-black/90 backdrop-blur-sm" />
+                            <motion.div initial={{ opacity: 0, scale: 0.9, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: 20 }} className="relative w-full max-w-2xl bg-gray-100 dark:bg-zinc-900 border border-black/10 dark:border-white/10 rounded-[2rem] md:rounded-[2.5rem] overflow-hidden max-h-[90vh] flex flex-col">
+                                <div className="p-6 md:p-8 border-b border-black/10 dark:border-white/5 flex justify-between items-center shrink-0">
                                     <div>
                                         <h3 className="text-xl md:text-2xl font-black uppercase tracking-tighter italic">Strategic Analytics.</h3>
                                         <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-1">{selectedAnalytics.clientName}</p>
                                     </div>
-                                    <button onClick={() => setSelectedAnalytics(null)} className="p-2 md:p-3 hover:bg-white/5 rounded-full transition-colors"><X size={18} /></button>
+                                    <button onClick={() => setSelectedAnalytics(null)} className="p-2 md:p-3 hover:bg-black/5 dark:hover:bg-white/5 rounded-full transition-colors"><X size={18} /></button>
                                 </div>
                                 <div className="p-6 md:p-8 overflow-y-auto space-y-6 scrollbar-hide">
                                     {selectedAnalytics.status === 'Accepted' && selectedAnalytics.approvalMetadata && (
@@ -529,7 +529,7 @@ const ProposalManagement = () => {
                                                 <ShieldCheck className="text-neon-green shrink-0" size={20} />
                                                 <div>
                                                     <p className="text-[9px] md:text-[10px] font-black text-neon-green uppercase tracking-widest mb-1">Authorization Details</p>
-                                                    <p className="text-[11px] md:text-sm font-bold text-white mb-2">Signed by {selectedAnalytics.approvalMetadata.signedBy}</p>
+                                                    <p className="text-[11px] md:text-sm font-bold text-gray-900 dark:text-white mb-2">Signed by {selectedAnalytics.approvalMetadata.signedBy}</p>
                                                     <div className="flex flex-wrap gap-2 md:gap-4 text-[8px] md:text-[9px] font-bold text-gray-500 uppercase tracking-widest">
                                                         <span className="flex items-center gap-1"><Calendar size={10} /> {new Date(selectedAnalytics.approvalMetadata.signedAt).toLocaleString()}</span>
                                                         <span className="flex items-center gap-1"><Globe size={10} /> {selectedAnalytics.approvalMetadata.ip}</span>
@@ -550,7 +550,7 @@ const ProposalManagement = () => {
                                                 <X className="text-red-500 shrink-0" size={24} />
                                                 <div>
                                                     <p className="text-[10px] font-black text-red-500 uppercase tracking-widest mb-1">Refusal Context</p>
-                                                    <p className="text-sm font-bold text-white mb-2">{selectedAnalytics.rejectionMetadata.reason}</p>
+                                                    <p className="text-sm font-bold text-gray-900 dark:text-white mb-2">{selectedAnalytics.rejectionMetadata.reason}</p>
                                                     <p className="text-[9px] font-bold text-gray-500 uppercase tracking-widest flex items-center gap-1">
                                                         <Calendar size={10} /> {new Date(selectedAnalytics.rejectionMetadata.rejectedAt).toLocaleString()}
                                                     </p>
@@ -558,7 +558,7 @@ const ProposalManagement = () => {
                                             </div>
                                             <button 
                                                 onClick={() => handleRevokeSignature(selectedAnalytics.id)}
-                                                className="w-full py-4 bg-white/5 hover:bg-white/10 text-gray-400 text-[10px] font-black uppercase tracking-widest rounded-2xl border border-white/5 transition-all"
+                                                className="w-full py-4 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-gray-600 dark:text-gray-400 text-[10px] font-black uppercase tracking-widest rounded-2xl border border-black/10 dark:border-white/5 transition-all"
                                             >
                                                 Reset to Active
                                             </button>
@@ -566,16 +566,16 @@ const ProposalManagement = () => {
                                     )}
 
                                     <div className="space-y-4">
-                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Recent Access Events</p>
+                                        <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest">Recent Access Events</p>
                                         
-                                        <div className="flex border-b border-white/10">
+                                        <div className="flex border-b border-black/10 dark:border-white/10">
                                             <button 
                                                 onClick={() => setActiveAnalyticsTab('email')}
                                                 className={cn(
                                                     "flex-1 py-3 text-[10px] font-black uppercase tracking-widest transition-all border-b-2",
                                                     activeAnalyticsTab === 'email' 
                                                         ? "border-neon-green text-neon-green bg-neon-green/5" 
-                                                        : "border-transparent text-gray-400 hover:text-white"
+                                                        : "border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
                                                 )}
                                             >
                                                 Email Opens (Personalized)
@@ -586,7 +586,7 @@ const ProposalManagement = () => {
                                                     "flex-1 py-3 text-[10px] font-black uppercase tracking-widest transition-all border-b-2",
                                                     activeAnalyticsTab === 'general' 
                                                         ? "border-neon-green text-neon-green bg-neon-green/5" 
-                                                        : "border-transparent text-gray-400 hover:text-white"
+                                                        : "border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
                                                 )}
                                             >
                                                 Direct / Link Opens
@@ -605,28 +605,28 @@ const ProposalManagement = () => {
                                                         {[...activeLogs].reverse().map((log, i) => {
                                                             const browserName = getBrowserName(log.userAgent);
                                                             return (
-                                                                <div key={i} className="p-4 bg-white/[0.02] border border-white/5 rounded-xl space-y-3 group hover:bg-white/[0.05] transition-all">
+                                                                <div key={i} className="p-4 bg-white/[0.02] border border-black/10 dark:border-white/5 rounded-xl space-y-3 group hover:bg-white/[0.05] transition-all">
                                                                     <div className="flex items-start justify-between">
                                                                         <div className="flex items-center gap-3">
-                                                                            <div className="p-2 bg-white/5 rounded-lg text-gray-400">
+                                                                            <div className="p-2 bg-black/5 dark:bg-white/5 rounded-lg text-gray-600 dark:text-gray-400">
                                                                                 {activeAnalyticsTab === 'email' ? <Mail size={14} /> : <Globe size={14} />}
                                                                             </div>
                                                                             <div>
                                                                                 {activeAnalyticsTab === 'email' ? (
                                                                                     <>
-                                                                                        <p className="text-[11px] font-bold text-white">
+                                                                                        <p className="text-[11px] font-bold text-gray-900 dark:text-white">
                                                                                             {log.shareName || 'Anonymous Email Recipient'}
                                                                                         </p>
-                                                                                        <p className="text-[9px] font-semibold text-gray-400 mt-0.5">
+                                                                                        <p className="text-[9px] font-semibold text-gray-600 dark:text-gray-400 mt-0.5">
                                                                                             {log.shareEmail || 'No email log'}
                                                                                         </p>
                                                                                     </>
                                                                                 ) : (
                                                                                     <>
-                                                                                        <p className="text-[11px] font-bold text-white">
+                                                                                        <p className="text-[11px] font-bold text-gray-900 dark:text-white">
                                                                                             {log.via === 'whatsapp' ? 'WhatsApp Link Share' : log.via === 'link' ? 'Direct Copy Link' : log.via === 'share' ? 'Native Device Share' : 'General Link Access'}
                                                                                         </p>
-                                                                                        <p className="text-[9px] font-semibold text-gray-400 mt-0.5">
+                                                                                        <p className="text-[9px] font-semibold text-gray-600 dark:text-gray-400 mt-0.5">
                                                                                             Anonymous Client View
                                                                                         </p>
                                                                                     </>
@@ -642,10 +642,10 @@ const ProposalManagement = () => {
                                                                             </p>
                                                                         </div>
                                                                     </div>
-                                                                    <div className="grid grid-cols-2 gap-2 pt-2 border-t border-white/5 text-[9px] text-gray-400 font-semibold uppercase tracking-wider">
+                                                                    <div className="grid grid-cols-2 gap-2 pt-2 border-t border-black/10 dark:border-white/5 text-[9px] text-gray-600 dark:text-gray-400 font-semibold uppercase tracking-wider">
                                                                         <div>
                                                                             <span className="text-gray-600 font-bold block text-[8px]">IP ADDRESS</span>
-                                                                            <span className="text-white font-mono">{log.ip || 'Protected'}</span>
+                                                                            <span className="text-gray-900 dark:text-white font-mono">{log.ip || 'Protected'}</span>
                                                                         </div>
                                                                         <div>
                                                                             <span className="text-gray-600 font-bold block text-[8px]">DEVICE / RESOLUTION</span>
@@ -659,7 +659,7 @@ const ProposalManagement = () => {
                                                 );
                                             } else {
                                                 return (
-                                                    <div className="py-12 text-center border border-dashed border-white/10 rounded-2xl">
+                                                    <div className="py-12 text-center border border-dashed border-black/10 dark:border-white/10 rounded-2xl">
                                                         <p className="text-[10px] font-black text-gray-600 uppercase tracking-widest">
                                                             {activeAnalyticsTab === 'email' ? 'No email opens recorded.' : 'No general link views recorded.'}
                                                         </p>
@@ -678,9 +678,9 @@ const ProposalManagement = () => {
                 <AnimatePresence>
                     {sharingProposal && (
                         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setSharingProposal(null)} className="absolute inset-0 bg-black/90 backdrop-blur-sm" />
-                            <motion.div initial={{ opacity: 0, scale: 0.9, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: 20 }} className="relative w-full max-w-sm bg-zinc-900 border border-white/10 rounded-[3rem] overflow-hidden">
-                                <div className="p-8 text-center space-y-1 border-b border-white/5">
+                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setSharingProposal(null)} className="absolute inset-0 bg-white dark:bg-black/90 backdrop-blur-sm" />
+                            <motion.div initial={{ opacity: 0, scale: 0.9, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: 20 }} className="relative w-full max-w-sm bg-gray-100 dark:bg-zinc-900 border border-black/10 dark:border-white/10 rounded-[3rem] overflow-hidden">
+                                <div className="p-8 text-center space-y-1 border-b border-black/10 dark:border-white/5">
                                     <h3 className="text-2xl font-black uppercase tracking-[0.2em] italic">SHARE</h3>
                                     <p className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">{sharingProposal.clientName}</p>
                                 </div>
@@ -688,7 +688,7 @@ const ProposalManagement = () => {
                                 <div className="p-8 grid grid-cols-1 gap-3">
                                     <button 
                                         onClick={() => { handleCopyLink(sharingProposal.id); setSharingProposal(null); }}
-                                        className="p-4 bg-white/5 hover:bg-white/10 border border-white/5 rounded-2xl flex items-center gap-4 transition-all group"
+                                        className="p-4 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 border border-black/10 dark:border-white/5 rounded-2xl flex items-center gap-4 transition-all group"
                                     >
                                         <div className="w-10 h-10 rounded-xl bg-neon-green/10 flex items-center justify-center text-neon-green group-hover:scale-110 transition-transform"><Copy size={16} /></div>
                                         <div className="text-left">
@@ -698,7 +698,7 @@ const ProposalManagement = () => {
 
                                     <button 
                                         onClick={() => { handleWhatsAppShare(sharingProposal); setSharingProposal(null); }}
-                                        className="p-4 bg-white/5 hover:bg-[#25D366]/10 border border-white/5 rounded-2xl flex items-center gap-4 transition-all group"
+                                        className="p-4 bg-black/5 dark:bg-white/5 hover:bg-[#25D366]/10 border border-black/10 dark:border-white/5 rounded-2xl flex items-center gap-4 transition-all group"
                                     >
                                         <div className="w-10 h-10 rounded-xl bg-[#25D366]/10 flex items-center justify-center text-[#25D366] group-hover:scale-110 transition-transform"><MessageCircle size={16} /></div>
                                         <div className="text-left">
@@ -708,7 +708,7 @@ const ProposalManagement = () => {
 
                                     <button 
                                         onClick={() => { handleSendEmail(sharingProposal); setSharingProposal(null); }}
-                                        className="p-4 bg-white/5 hover:bg-neon-green/10 border border-white/5 rounded-2xl flex items-center gap-4 transition-all group"
+                                        className="p-4 bg-black/5 dark:bg-white/5 hover:bg-neon-green/10 border border-black/10 dark:border-white/5 rounded-2xl flex items-center gap-4 transition-all group"
                                     >
                                         <div className="w-10 h-10 rounded-xl bg-neon-green/10 flex items-center justify-center text-neon-green group-hover:scale-110 transition-transform"><Send size={16} /></div>
                                         <div className="text-left">
@@ -717,7 +717,7 @@ const ProposalManagement = () => {
                                     </button>
                                 </div>
 
-                                <button onClick={() => setSharingProposal(null)} className="w-full py-5 text-[9px] font-black uppercase tracking-[0.4em] text-gray-600 hover:text-white transition-colors bg-white/[0.02]">
+                                <button onClick={() => setSharingProposal(null)} className="w-full py-5 text-[9px] font-black uppercase tracking-[0.4em] text-gray-600 hover:text-gray-900 dark:hover:text-white transition-colors bg-white/[0.02]">
                                     Cancel
                                 </button>
                             </motion.div>

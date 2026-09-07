@@ -33,7 +33,7 @@ const CreatorHub = () => {
             hideTabs={true}
             accentColor={activeTab === 'creators' ? 'neon-pink' : 'neon-blue'}
             action={
-                <div className="bg-black/40 backdrop-blur-3xl border border-white/10 p-1.5 rounded-full flex items-center gap-1 shadow-[0_20px_50px_rgba(0,0,0,0.5)] overflow-x-auto no-scrollbar max-w-[calc(100vw-2rem)] sm:max-w-none">
+                <div className="bg-white dark:bg-black/40 backdrop-blur-3xl border border-black/10 dark:border-white/10 p-1.5 rounded-full flex items-center gap-1 shadow-[0_20px_50px_rgba(0,0,0,0.5)] overflow-x-auto no-scrollbar max-w-[calc(100vw-2rem)] sm:max-w-none">
                     {tabs.map(tab => (
                         <button
                             key={tab.id}
@@ -41,8 +41,8 @@ const CreatorHub = () => {
                             className={cn(
                                 "group relative px-6 sm:px-8 py-3 rounded-full transition-all duration-500 flex items-center gap-2.5 sm:gap-3 overflow-hidden shrink-0",
                                 activeTab === tab.id 
-                                    ? "text-white" 
-                                    : "text-gray-500 hover:text-white/80"
+                                    ? "text-gray-900 dark:text-white" 
+                                    : "text-gray-500 hover:text-gray-900 dark:hover:text-white/80"
                             )}
                         >
                             {activeTab === tab.id && (

@@ -39,14 +39,14 @@ const NewbiToast = () => {
                                 {toast.type === 'error' ? "System Error" : 
                                  toast.type === 'success' ? "Operation Success" :
                                  "System Notification"}
-                                {toast.code && <span className="px-1.5 py-0.5 bg-white/10 rounded-md text-[8px] font-black">{toast.code}</span>}
+                                {toast.code && <span className="px-1.5 py-0.5 bg-black/10 dark:bg-white/10 rounded-md text-[8px] font-black">{toast.code}</span>}
                             </p>
                             <p className="text-[13px] font-bold leading-tight">{toast.message}</p>
                         </div>
 
                         <button 
                             onClick={() => removeToast(toast.id)}
-                            className="p-2 hover:bg-white/5 rounded-lg transition-colors opacity-50 hover:opacity-100"
+                            className="p-2 hover:bg-black/5 dark:hover:bg-white/5 rounded-lg transition-colors opacity-50 hover:opacity-100"
                         >
                             <X size={16} />
                         </button>

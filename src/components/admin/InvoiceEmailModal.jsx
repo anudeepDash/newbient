@@ -127,7 +127,7 @@ const InvoiceEmailModal = ({ isOpen, onClose, invoice, onSend }) => {
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 onClick={onClose}
-                className="absolute inset-0 bg-black/90 backdrop-blur-sm"
+                className="absolute inset-0 bg-white dark:bg-black/90 backdrop-blur-sm"
             />
             <motion.div
                 initial={{ scale: 0.9, opacity: 0, y: 20 }}
@@ -136,15 +136,15 @@ const InvoiceEmailModal = ({ isOpen, onClose, invoice, onSend }) => {
                 transition={{ type: 'spring', damping: 25, stiffness: 200 }}
                 className="relative w-full max-w-7xl max-h-[90vh] overflow-hidden"
             >
-                <Card className="bg-zinc-950 border-white/10 rounded-[2.5rem] shadow-[0_30px_60px_rgba(0,0,0,0.8)] overflow-hidden">
+                <Card className="bg-gray-100 dark:bg-zinc-950 border-black/10 dark:border-white/10 rounded-[2.5rem] shadow-[0_30px_60px_rgba(0,0,0,0.8)] overflow-hidden">
                     {/* Header */}
-                    <div className="flex items-center justify-between p-6 md:p-8 border-b border-white/5">
+                    <div className="flex items-center justify-between p-6 md:p-8 border-b border-black/10 dark:border-white/5">
                         <div className="flex items-center gap-4">
                             <div className="w-12 h-12 rounded-2xl bg-neon-blue/10 border border-neon-blue/20 flex items-center justify-center text-neon-blue">
                                 <Mail size={22} />
                             </div>
                             <div>
-                                <h2 className="text-xl md:text-2xl font-black font-heading tracking-tighter uppercase italic text-white">
+                                <h2 className="text-xl md:text-2xl font-black font-heading tracking-tighter uppercase italic text-gray-900 dark:text-white">
                                     Send <span className="text-neon-blue">Invoice.</span>
                                 </h2>
                                 <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest mt-1">
@@ -154,7 +154,7 @@ const InvoiceEmailModal = ({ isOpen, onClose, invoice, onSend }) => {
                         </div>
                         <button
                             onClick={onClose}
-                            className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white hover:text-black transition-all text-gray-400"
+                            className="w-10 h-10 rounded-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 flex items-center justify-center hover:bg-white hover:text-black transition-all text-gray-600 dark:text-gray-400"
                         >
                             <X size={18} />
                         </button>
@@ -163,7 +163,7 @@ const InvoiceEmailModal = ({ isOpen, onClose, invoice, onSend }) => {
                     {/* Body: Composer + Preview */}
                     <div className="grid grid-cols-1 lg:grid-cols-2 max-h-[calc(90vh-120px)] overflow-hidden">
                         {/* LEFT: Composer */}
-                        <div className="p-6 md:p-8 overflow-y-auto max-h-[calc(90vh-120px)] border-r border-white/5 custom-scrollbar">
+                        <div className="p-6 md:p-8 overflow-y-auto max-h-[calc(90vh-120px)] border-r border-black/10 dark:border-white/5 custom-scrollbar">
                             <form onSubmit={handleSend} className="space-y-6">
                                 {/* Recipient */}
                                 <div className="space-y-3">
@@ -175,7 +175,7 @@ const InvoiceEmailModal = ({ isOpen, onClose, invoice, onSend }) => {
                                         value={emailData.to}
                                         onChange={(e) => setEmailData({ ...emailData, to: e.target.value })}
                                         placeholder="client@example.com, partner@example.com"
-                                        className="h-14 bg-black/50 border-white/5 rounded-2xl text-sm font-bold focus:border-neon-blue/30"
+                                        className="h-14 bg-white dark:bg-black/50 border-black/10 dark:border-white/5 rounded-2xl text-sm font-bold focus:border-neon-blue/30"
                                         required
                                     />
                                 </div>
@@ -191,7 +191,7 @@ const InvoiceEmailModal = ({ isOpen, onClose, invoice, onSend }) => {
                                             value={emailData.cc}
                                             onChange={(e) => setEmailData({ ...emailData, cc: e.target.value })}
                                             placeholder="cc@example.com"
-                                            className="h-14 bg-black/50 border-white/5 rounded-2xl text-sm font-bold focus:border-neon-blue/30"
+                                            className="h-14 bg-white dark:bg-black/50 border-black/10 dark:border-white/5 rounded-2xl text-sm font-bold focus:border-neon-blue/30"
                                         />
                                     </div>
                                     <div className="space-y-3">
@@ -203,7 +203,7 @@ const InvoiceEmailModal = ({ isOpen, onClose, invoice, onSend }) => {
                                             value={emailData.bcc}
                                             onChange={(e) => setEmailData({ ...emailData, bcc: e.target.value })}
                                             placeholder="bcc@example.com"
-                                            className="h-14 bg-black/50 border-white/5 rounded-2xl text-sm font-bold focus:border-neon-blue/30"
+                                            className="h-14 bg-white dark:bg-black/50 border-black/10 dark:border-white/5 rounded-2xl text-sm font-bold focus:border-neon-blue/30"
                                         />
                                     </div>
                                 </div>
@@ -217,7 +217,7 @@ const InvoiceEmailModal = ({ isOpen, onClose, invoice, onSend }) => {
                                         value={emailData.subject}
                                         onChange={(e) => setEmailData({ ...emailData, subject: e.target.value })}
                                         placeholder="Invoice Ready: INV-001"
-                                        className="h-14 bg-black/50 border-white/5 rounded-2xl text-[11px] font-black uppercase tracking-widest focus:border-white/20"
+                                        className="h-14 bg-white dark:bg-black/50 border-black/10 dark:border-white/5 rounded-2xl text-[11px] font-black uppercase tracking-widest focus:border-black/20 dark:focus:border-white/20"
                                         required
                                     />
                                 </div>
@@ -231,7 +231,7 @@ const InvoiceEmailModal = ({ isOpen, onClose, invoice, onSend }) => {
                                         value={emailData.headerText}
                                         onChange={(e) => setEmailData({ ...emailData, headerText: e.target.value })}
                                         placeholder="Your Invoice is Ready"
-                                        className="h-14 bg-black/50 border-white/5 rounded-2xl text-[11px] font-black uppercase tracking-widest focus:border-white/20"
+                                        className="h-14 bg-white dark:bg-black/50 border-black/10 dark:border-white/5 rounded-2xl text-[11px] font-black uppercase tracking-widest focus:border-black/20 dark:focus:border-white/20"
                                     />
                                 </div>
 
@@ -252,13 +252,13 @@ const InvoiceEmailModal = ({ isOpen, onClose, invoice, onSend }) => {
                                     <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">
                                         Email Theme
                                     </label>
-                                    <div className="flex gap-3 h-12 bg-black/40 p-1.5 rounded-2xl border border-white/5">
+                                    <div className="flex gap-3 h-12 bg-white dark:bg-black/40 p-1.5 rounded-2xl border border-black/10 dark:border-white/5">
                                         <button
                                             type="button"
                                             onClick={() => setEmailData({ ...emailData, theme: 'light' })}
                                             className={cn(
                                                 "flex-1 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all",
-                                                emailData.theme === 'light' ? "bg-white text-black shadow-lg" : "text-gray-500 hover:text-white"
+                                                emailData.theme === 'light' ? "bg-white text-black shadow-lg" : "text-gray-500 hover:text-gray-900 dark:hover:text-white"
                                             )}
                                         >
                                             Light
@@ -268,7 +268,7 @@ const InvoiceEmailModal = ({ isOpen, onClose, invoice, onSend }) => {
                                             onClick={() => setEmailData({ ...emailData, theme: 'dark' })}
                                             className={cn(
                                                 "flex-1 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all",
-                                                emailData.theme === 'dark' ? "bg-zinc-800 text-white shadow-lg" : "text-gray-500 hover:text-white"
+                                                emailData.theme === 'dark' ? "bg-zinc-800 text-gray-900 dark:text-white shadow-lg" : "text-gray-500 hover:text-gray-900 dark:hover:text-white"
                                             )}
                                         >
                                             Dark
@@ -287,15 +287,15 @@ const InvoiceEmailModal = ({ isOpen, onClose, invoice, onSend }) => {
                                     <div className="grid grid-cols-2 gap-3 text-[10px]">
                                         <div>
                                             <span className="text-gray-500 font-bold uppercase tracking-widest">Number</span>
-                                            <p className="text-white font-black mt-0.5">{invoice?.invoiceNumber || 'N/A'}</p>
+                                            <p className="text-gray-900 dark:text-white font-black mt-0.5">{invoice?.invoiceNumber || 'N/A'}</p>
                                         </div>
                                         <div>
                                             <span className="text-gray-500 font-bold uppercase tracking-widest">Amount</span>
-                                            <p className="text-white font-black mt-0.5">₹{(invoice?.total || invoice?.amount || 0).toLocaleString()}</p>
+                                            <p className="text-gray-900 dark:text-white font-black mt-0.5">₹{(invoice?.total || invoice?.amount || 0).toLocaleString()}</p>
                                         </div>
                                         <div>
                                             <span className="text-gray-500 font-bold uppercase tracking-widest">Client</span>
-                                            <p className="text-white font-black mt-0.5 truncate">{invoice?.clientName || 'N/A'}</p>
+                                            <p className="text-gray-900 dark:text-white font-black mt-0.5 truncate">{invoice?.clientName || 'N/A'}</p>
                                         </div>
                                         <div>
                                             <span className="text-gray-500 font-bold uppercase tracking-widest">Link</span>
@@ -315,7 +315,7 @@ const InvoiceEmailModal = ({ isOpen, onClose, invoice, onSend }) => {
                                                 "p-4 rounded-2xl border text-[10px] font-black uppercase tracking-widest flex items-center gap-3",
                                                 status.type === 'success' ? "bg-neon-green/10 border-neon-green/20 text-neon-green" :
                                                 status.type === 'error' ? "bg-red-500/10 border-red-500/20 text-red-500" :
-                                                "bg-white/5 border-white/10 text-gray-400"
+                                                "bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-gray-600 dark:text-gray-400"
                                             )}
                                         >
                                             {status.type === 'success' ? <CheckCircle size={14} /> : <Zap size={14} />}
@@ -346,22 +346,22 @@ const InvoiceEmailModal = ({ isOpen, onClose, invoice, onSend }) => {
                         </div>
 
                         {/* RIGHT: Live Preview */}
-                        <div className="hidden lg:flex flex-col bg-zinc-900/40 max-h-[calc(90vh-120px)]">
+                        <div className="hidden lg:flex flex-col bg-gray-100 dark:bg-zinc-900/40 max-h-[calc(90vh-120px)]">
                             {/* Preview Header */}
-                            <div className="flex items-center justify-between p-5 border-b border-white/5 shrink-0">
+                            <div className="flex items-center justify-between p-5 border-b border-black/10 dark:border-white/5 shrink-0">
                                 <h3 className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em] flex items-center gap-2">
                                     <Mail size={12} className="text-neon-blue" /> Live Preview
                                 </h3>
-                                <div className="flex bg-black/40 p-1 rounded-xl border border-white/5">
+                                <div className="flex bg-white dark:bg-black/40 p-1 rounded-xl border border-black/10 dark:border-white/5">
                                     <button
                                         onClick={() => setViewMode('desktop')}
-                                        className={cn("p-2 rounded-lg transition-all", viewMode === 'desktop' ? "bg-white text-black" : "text-gray-500 hover:text-white")}
+                                        className={cn("p-2 rounded-lg transition-all", viewMode === 'desktop' ? "bg-white text-black" : "text-gray-500 hover:text-gray-900 dark:hover:text-white")}
                                     >
                                         <Monitor size={14} />
                                     </button>
                                     <button
                                         onClick={() => setViewMode('mobile')}
-                                        className={cn("p-2 rounded-lg transition-all", viewMode === 'mobile' ? "bg-white text-black" : "text-gray-500 hover:text-white")}
+                                        className={cn("p-2 rounded-lg transition-all", viewMode === 'mobile' ? "bg-white text-black" : "text-gray-500 hover:text-gray-900 dark:hover:text-white")}
                                     >
                                         <Smartphone size={14} />
                                     </button>
@@ -371,9 +371,9 @@ const InvoiceEmailModal = ({ isOpen, onClose, invoice, onSend }) => {
                             {/* Preview Content */}
                             <div className="flex-1 overflow-y-auto p-5 custom-scrollbar flex justify-center">
                                 <div className={cn(
-                                    "transition-all duration-500 rounded-[2rem] overflow-hidden border border-white/5 shadow-2xl h-fit",
+                                    "transition-all duration-500 rounded-[2rem] overflow-hidden border border-black/10 dark:border-white/5 shadow-2xl h-fit",
                                     viewMode === 'mobile' ? "w-[360px]" : "w-full",
-                                    emailData.theme === 'dark' ? "bg-black" : "bg-white"
+                                    emailData.theme === 'dark' ? "bg-white dark:bg-black" : "bg-white"
                                 )}>
                                     <EmailPreviewIframe html={previewHtml} />
                                 </div>

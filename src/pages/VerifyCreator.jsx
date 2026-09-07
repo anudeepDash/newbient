@@ -87,7 +87,7 @@ const VerifyCreator = () => {
     }, [id, token]);
 
     return (
-        <div className="min-h-screen bg-[#09090b] text-white pt-36 pb-24 px-4 flex items-center justify-center relative overflow-hidden selection:bg-emerald-500 selection:text-black">
+        <div className="min-h-screen bg-gray-50 dark:bg-[#09090b] text-gray-900 dark:text-white pt-36 pb-24 px-4 flex items-center justify-center relative overflow-hidden selection:bg-emerald-500 selection:text-black transition-colors duration-300">
             {/* Ambient Lighting */}
             <div className="fixed inset-0 z-0 pointer-events-none">
                 <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl" />
@@ -96,7 +96,7 @@ const VerifyCreator = () => {
             <motion.div
                 initial={{ opacity: 0, scale: 0.95, y: 20 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
-                className="max-w-lg w-full p-8 sm:p-12 bg-zinc-900/90 border border-zinc-800 rounded-3xl text-center shadow-2xl relative z-10"
+                className="max-w-lg w-full p-8 sm:p-12 bg-white dark:bg-zinc-900/90 border border-gray-200 dark:border-zinc-800 rounded-3xl text-center shadow-xl dark:shadow-2xl relative z-10"
             >
                 {status === 'verifying' && (
                     <div className="space-y-6 py-8">
@@ -104,7 +104,7 @@ const VerifyCreator = () => {
                             <LoadingSpinner size="md" color="emerald" />
                         </div>
                         <div>
-                            <h2 className="text-2xl font-bold text-white mb-2">Verifying Contact & Profile...</h2>
+                            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Verifying Contact & Profile...</h2>
                             <p className="text-zinc-400 text-sm">Please wait while we automatically confirm your creator account.</p>
                         </div>
                     </div>
@@ -120,23 +120,23 @@ const VerifyCreator = () => {
                                 <Sparkles size={12} />
                                 <span>Verified Creator</span>
                             </div>
-                            <h2 className="text-3xl font-extrabold tracking-tight text-white mb-2">
+                            <h2 className="text-3xl font-extrabold tracking-tight text-gray-900 dark:text-white mb-2">
                                 Phone & Profile Verified!
                             </h2>
                             <p className="text-zinc-400 text-sm leading-relaxed">
-                                Welcome aboard, <span className="text-white font-semibold">{creatorData?.displayName || creatorData?.name || 'Creator'}</span>! Your contact number has been automatically verified. You are now prioritized for live brand briefs and campaigns.
+                                Welcome aboard, <span className="text-gray-900 dark:text-white font-semibold">{creatorData?.displayName || creatorData?.name || 'Creator'}</span>! Your contact number has been automatically verified. You are now prioritized for live brand briefs and campaigns.
                             </p>
                         </div>
 
                         {creatorData && (
-                            <div className="p-4 bg-zinc-950/60 border border-zinc-800/80 rounded-2xl text-left text-xs text-zinc-300 space-y-2">
+                            <div className="p-4 bg-gray-100 dark:bg-zinc-950/60 border border-zinc-800/80 rounded-2xl text-left text-xs text-zinc-300 space-y-2">
                                 <div className="flex justify-between py-1 border-b border-zinc-800/60">
                                     <span className="text-zinc-500">Instagram Handle</span>
-                                    <span className="font-semibold text-white">@{creatorData.instagram}</span>
+                                    <span className="font-semibold text-gray-900 dark:text-white">@{creatorData.instagram}</span>
                                 </div>
                                 <div className="flex justify-between py-1 border-b border-zinc-800/60">
                                     <span className="text-zinc-500">Operating City</span>
-                                    <span className="font-semibold text-white">{creatorData.city}</span>
+                                    <span className="font-semibold text-gray-900 dark:text-white">{creatorData.city}</span>
                                 </div>
                                 <div className="flex justify-between py-1">
                                     <span className="text-zinc-500">Status</span>
@@ -157,7 +157,7 @@ const VerifyCreator = () => {
                             </Link>
                             <Link
                                 to="/creator-dashboard"
-                                className="flex-1 h-12 bg-zinc-800 hover:bg-zinc-700 text-white font-semibold rounded-xl flex items-center justify-center text-sm transition-all"
+                                className="flex-1 h-12 bg-zinc-800 hover:bg-zinc-700 text-gray-900 dark:text-white font-semibold rounded-xl flex items-center justify-center text-sm transition-all"
                             >
                                 Open Workspace
                             </Link>
@@ -171,7 +171,7 @@ const VerifyCreator = () => {
                             <ShieldCheck size={42} />
                         </div>
                         <div>
-                            <h2 className="text-2xl font-bold text-white mb-2">Already Verified!</h2>
+                            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Already Verified!</h2>
                             <p className="text-zinc-400 text-sm leading-relaxed">
                                 Your Newbi Creator Profile is already active and verified. You're all set to apply for brand campaigns.
                             </p>
@@ -192,7 +192,7 @@ const VerifyCreator = () => {
                             <AlertTriangle size={36} />
                         </div>
                         <div>
-                            <h2 className="text-2xl font-bold text-white mb-2">Verification Failed</h2>
+                            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Verification Failed</h2>
                             <p className="text-zinc-400 text-sm leading-relaxed mb-4">
                                 {errorMessage}
                             </p>
@@ -206,7 +206,7 @@ const VerifyCreator = () => {
                             </Link>
                             <Link
                                 to="/contact"
-                                className="flex-1 h-12 bg-zinc-800 hover:bg-zinc-700 text-white font-semibold rounded-xl flex items-center justify-center text-sm transition-all"
+                                className="flex-1 h-12 bg-zinc-800 hover:bg-zinc-700 text-gray-900 dark:text-white font-semibold rounded-xl flex items-center justify-center text-sm transition-all"
                             >
                                 Contact Support
                             </Link>

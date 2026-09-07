@@ -238,8 +238,8 @@ const SpendsManagement = () => {
     const renderPrinterSlot = (statusText, statusColorClass) => (
         <div className="w-full max-w-[300px] relative select-none">
             {/* Printer Back Chassis - z-10 (behind paper) */}
-            <div className="relative z-10 bg-gradient-to-b from-zinc-800 to-zinc-900 border border-white/10 rounded-t-3xl pt-5 px-5 pb-4 shadow-[inset_0_4px_12px_rgba(255,255,255,0.05),0_10px_25px_rgba(0,0,0,0.8)] flex flex-col items-center">
-                <div className="flex justify-between items-center w-full px-2 mb-3 text-[8px] font-black uppercase tracking-widest text-gray-400 font-mono">
+            <div className="relative z-10 bg-gradient-to-b from-zinc-800 to-zinc-900 border border-black/10 dark:border-white/10 rounded-t-3xl pt-5 px-5 pb-4 shadow-[inset_0_4px_12px_rgba(255,255,255,0.05),0_10px_25px_rgba(0,0,0,0.8)] flex flex-col items-center">
+                <div className="flex justify-between items-center w-full px-2 mb-3 text-[8px] font-black uppercase tracking-widest text-gray-600 dark:text-gray-400 font-mono">
                     <span>NEWBI DISBURSEMENT TERMINAL</span>
                     <span className={`flex items-center gap-1.5 ${statusColorClass} font-mono`}>
                         <span className={`w-1.5 h-1.5 rounded-full ${statusColorClass.includes('green') ? 'bg-[#39ff14] shadow-[0_0_8px_#39ff14]' : 'bg-amber-500 animate-ping'}`} />
@@ -248,7 +248,7 @@ const SpendsManagement = () => {
                 </div>
                 
                 {/* Dark slot opening - the gap where paper comes out */}
-                <div className="w-full h-4 bg-black rounded-full border border-zinc-800 relative shadow-[inset_0_4px_12px_rgba(0,0,0,1)]" />
+                <div className="w-full h-4 bg-white dark:bg-black rounded-full border border-zinc-800 relative shadow-[inset_0_4px_12px_rgba(0,0,0,1)]" />
             </div>
 
             {/* Front Lip / Cutter Bar Overlay - z-30 (in front of paper, clips over paper top edge) */}
@@ -268,15 +268,15 @@ const SpendsManagement = () => {
         return (
             <div 
                 id="thermal-receipt-body"
-                className="w-[260px] bg-transparent text-white flex flex-col relative select-none"
+                className="w-[260px] bg-transparent text-gray-900 dark:text-white flex flex-col relative select-none"
                 style={{
                     fontFamily: "Outfit, Inter, system-ui, sans-serif"
                 }}
             >
                 {/* Top Header Card */}
-                <div className="bg-gradient-to-br from-[#06120a] via-[#0b2416] to-[#070b09] p-4 text-center text-white rounded-t-none relative overflow-hidden border-b border-[#39ff14]/25">
+                <div className="bg-gradient-to-br from-[#06120a] via-[#0b2416] to-[#070b09] p-4 text-center text-gray-900 dark:text-white rounded-t-none relative overflow-hidden border-b border-[#39ff14]/25">
                     {/* Ambient gloss shimmer */}
-                    <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/10 to-white/0 -translate-x-full animate-[shimmer_2.5s_infinite]" />
+                    <div className="absolute inset-0 bg-gradient-to-tr from-gray-900 dark:from-white/0 via-gray-900 dark:via-white/10 to-gray-900 dark:to-white/0 -translate-x-full animate-[shimmer_2.5s_infinite]" />
                     
                     <img 
                         src="/logo_full.png" 
@@ -284,39 +284,39 @@ const SpendsManagement = () => {
                         className="h-5 object-contain mx-auto mb-1.5 filter brightness-0 invert"
                     />
                     <p className="text-[7px] font-black uppercase tracking-[0.3em] text-[#39ff14]">Disbursement Voucher</p>
-                    <h4 className="text-xl font-black tracking-tight text-white mt-1.5 mb-0.5 drop-shadow-[0_2px_8px_rgba(57,255,20,0.35)]">
+                    <h4 className="text-xl font-black tracking-tight text-gray-900 dark:text-white mt-1.5 mb-0.5 drop-shadow-[0_2px_8px_rgba(57,255,20,0.35)]">
                         ₹{Number(data.amount).toLocaleString('en-IN')}
                     </h4>
-                    <p className="text-[7px] font-mono text-white/70 tracking-wider">REF: {finalUTR}</p>
+                    <p className="text-[7px] font-mono text-gray-900 dark:text-white/70 tracking-wider">REF: {finalUTR}</p>
                 </div>
 
                 {/* Details Card Body */}
-                <div className="bg-[#070b09] text-white px-5 pt-3 pb-2 flex flex-col relative border-x border-[#39ff14]/10">
-                    <div className="space-y-2 text-[9px] uppercase font-bold text-gray-300">
+                <div className="bg-[#070b09] text-gray-900 dark:text-white px-5 pt-3 pb-2 flex flex-col relative border-x border-[#39ff14]/10">
+                    <div className="space-y-2 text-[9px] uppercase font-bold text-gray-700 dark:text-gray-300">
                         <div className="flex justify-between items-center py-0.5">
                             <span className="text-gray-500 font-extrabold text-[7.5px] tracking-wider">Date</span>
-                            <span className="text-white font-bold">{data.date}</span>
+                            <span className="text-gray-900 dark:text-white font-bold">{data.date}</span>
                         </div>
-                        <div className="flex justify-between items-center py-0.5 border-t border-white/5 pt-1.5">
+                        <div className="flex justify-between items-center py-0.5 border-t border-black/10 dark:border-white/5 pt-1.5">
                             <span className="text-gray-500 font-extrabold text-[7.5px] tracking-wider">Payee</span>
                             <span className="text-[#39ff14] font-bold">{data.receiverName}</span>
                         </div>
-                        <div className="flex justify-between items-center py-0.5 border-t border-white/5 pt-1.5">
+                        <div className="flex justify-between items-center py-0.5 border-t border-black/10 dark:border-white/5 pt-1.5">
                             <span className="text-gray-500 font-extrabold text-[7.5px] tracking-wider">Method</span>
                             <span className="text-[#39ff14] font-bold border border-[#39ff14]/20 bg-[#39ff14]/5 px-1.5 py-0.5 rounded text-[7.5px]">
                                 {data.paymentMode}
                             </span>
                         </div>
-                        <div className="flex justify-between items-center py-0.5 border-t border-white/5 pt-1.5 font-mono">
+                        <div className="flex justify-between items-center py-0.5 border-t border-black/10 dark:border-white/5 pt-1.5 font-mono">
                             <span className="text-gray-500 font-extrabold text-[7.5px] tracking-wider font-sans uppercase">Txn ID / UTR</span>
-                            <span className="text-white font-bold select-all tracking-normal text-right truncate max-w-[140px]">{finalUTR}</span>
+                            <span className="text-gray-900 dark:text-white font-bold select-all tracking-normal text-right truncate max-w-[140px]">{finalUTR}</span>
                         </div>
                     </div>
 
                     <div className="border-t border-dashed border-[#39ff14]/20 my-2.5" />
 
                     {/* Verification QR Code pointing to functional verification URL */}
-                    <div className="flex flex-col items-center justify-center p-1.5 bg-white rounded-xl border border-white/10 w-fit mx-auto shadow-inner mb-2.5">
+                    <div className="flex flex-col items-center justify-center p-1.5 bg-white rounded-xl border border-black/10 dark:border-white/10 w-fit mx-auto shadow-inner mb-2.5">
                         <img 
                             src={`https://api.qrserver.com/v1/create-qr-code/?size=80x80&color=020202&data=${encodeURIComponent(
                                 `https://newbi.live/verify-payout?ref=${finalUTR}&amt=${data.amount}&payee=${encodeURIComponent(data.receiverName)}&date=${encodeURIComponent(data.date)}&mode=${encodeURIComponent(data.paymentMode)}${(data.receiptUrl || data.proofUrl) ? `&proof=${encodeURIComponent(data.receiptUrl || data.proofUrl)}` : ''}`
@@ -867,13 +867,13 @@ const SpendsManagement = () => {
                 <div className="flex flex-wrap items-center gap-2 md:gap-3 w-full md:w-auto">
                     <button
                         onClick={() => { resetBulkForm(); setShowBulkModal(true); }}
-                        className="flex-1 md:flex-none h-11 md:h-12 px-4 md:px-6 bg-white/5 hover:bg-white/10 text-neon-blue hover:text-white font-black uppercase tracking-widest text-[8px] md:text-[9px] rounded-xl border border-neon-blue/20 hover:border-neon-blue/40 transition-all flex items-center justify-center gap-2"
+                        className="flex-1 md:flex-none h-11 md:h-12 px-4 md:px-6 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-neon-blue hover:text-gray-900 dark:hover:text-white font-black uppercase tracking-widest text-[8px] md:text-[9px] rounded-xl border border-neon-blue/20 hover:border-neon-blue/40 transition-all flex items-center justify-center gap-2"
                     >
                         <Layers size={14} /> Bulk Payout
                     </button>
                     <button
                         onClick={handleExportCSV}
-                        className="flex-1 md:flex-none h-11 md:h-12 px-4 md:px-6 bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white font-black uppercase tracking-widest text-[8px] md:text-[9px] rounded-xl border border-white/5 transition-all flex items-center justify-center gap-2"
+                        className="flex-1 md:flex-none h-11 md:h-12 px-4 md:px-6 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white font-black uppercase tracking-widest text-[8px] md:text-[9px] rounded-xl border border-black/10 dark:border-white/5 transition-all flex items-center justify-center gap-2"
                     >
                         <Download size={14} /> Export CSV
                     </button>
@@ -896,10 +896,10 @@ const SpendsManagement = () => {
                                     "flex items-center gap-2 px-5 py-2.5 rounded-full border text-[10px] font-black uppercase tracking-widest transition-all duration-300 group",
                                     pill.isActive 
                                         ? "bg-neon-pink text-white border-neon-pink shadow-[0_0_15px_rgba(255,79,139,0.3)]" 
-                                        : "bg-white/[0.03] text-zinc-400 border-white/10 hover:border-white/30 hover:text-white hover:bg-white/[0.05]"
+                                        : "bg-white/[0.03] text-zinc-400 border-black/10 dark:border-white/10 hover:border-white/30 hover:text-gray-900 dark:hover:text-white hover:bg-white/[0.05]"
                                 )}
                             >
-                                <Icon size={14} className={cn("transition-transform group-hover:scale-110", pill.isActive ? "text-white" : "text-neon-pink")} />
+                                <Icon size={14} className={cn("transition-transform group-hover:scale-110", pill.isActive ? "text-gray-900 dark:text-white" : "text-neon-pink")} />
                                 {pill.name}
                             </Link>
                         )
@@ -908,54 +908,54 @@ const SpendsManagement = () => {
 
                 {/* Stats Panel Overhaul */}
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-                    className="bg-zinc-950/35 backdrop-blur-xl border border-white/10 rounded-3xl overflow-hidden flex flex-col md:flex-row">
+                    className="bg-gray-100 dark:bg-zinc-950/35 backdrop-blur-xl border border-black/10 dark:border-white/10 rounded-3xl overflow-hidden flex flex-col md:flex-row">
                     {/* Card 1: Cleared Outflow */}
-                    <div className="flex-1 p-5 border-b md:border-b-0 md:border-r border-white/10 hover:bg-white/[0.04] transition-colors">
+                    <div className="flex-1 p-5 border-b md:border-b-0 md:border-r border-black/10 dark:border-white/10 hover:bg-white/[0.04] transition-colors">
                         <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest block mb-2">Cleared Debits</span>
-                        <div className="text-2xl font-mono font-black text-white">₹{stats.totalCleared.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</div>
+                        <div className="text-2xl font-mono font-black text-gray-900 dark:text-white">₹{stats.totalCleared.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</div>
                         <p className="text-[9px] font-black text-zinc-500 uppercase tracking-widest mt-1">{stats.countCleared} cleared records</p>
                     </div>
                     {/* Card 2: Pending Outflow */}
-                    <div className="flex-1 p-5 border-b md:border-b-0 md:border-r border-white/10 hover:bg-white/[0.04] transition-colors">
+                    <div className="flex-1 p-5 border-b md:border-b-0 md:border-r border-black/10 dark:border-white/10 hover:bg-white/[0.04] transition-colors">
                         <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest block mb-2">Pending Outflow</span>
                         <div className="text-2xl font-mono font-black text-amber-500">₹{stats.totalPending.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</div>
                         <p className="text-[9px] font-black text-zinc-500 uppercase tracking-widest mt-1">{stats.countPending} payouts outstanding</p>
                     </div>
                     {/* Card 3: Avg Transaction */}
-                    <div className="flex-1 p-5 border-b md:border-b-0 md:border-r border-white/10 hover:bg-white/[0.04] transition-colors">
+                    <div className="flex-1 p-5 border-b md:border-b-0 md:border-r border-black/10 dark:border-white/10 hover:bg-white/[0.04] transition-colors">
                         <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest block mb-2">Average Outlay</span>
-                        <div className="text-2xl font-mono font-black text-white">₹{Math.round(stats.avgOutlay).toLocaleString('en-IN', { maximumFractionDigits: 0 })}</div>
+                        <div className="text-2xl font-mono font-black text-gray-900 dark:text-white">₹{Math.round(stats.avgOutlay).toLocaleString('en-IN', { maximumFractionDigits: 0 })}</div>
                         <p className="text-[9px] font-black text-zinc-500 uppercase tracking-widest mt-1">Per filtered entry</p>
                     </div>
                     {/* Card 4: Top Category */}
                     <div className="flex-1 p-5 hover:bg-white/[0.04] transition-colors">
                         <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest block mb-2">Primary Channel</span>
-                        <div className="text-xl font-mono font-black text-white uppercase truncate">{stats.topCat}</div>
+                        <div className="text-xl font-mono font-black text-gray-900 dark:text-white uppercase truncate">{stats.topCat}</div>
                         <p className="text-[9px] font-black text-zinc-500 uppercase tracking-widest mt-1">₹{stats.maxCatVal.toLocaleString('en-IN', { maximumFractionDigits: 0 })} Outlay</p>
                     </div>
                 </motion.div>
 
                 {/* Advanced Command Filter Panel */}
-                <div className="bg-white/[0.03] backdrop-blur-xl border border-white/10 rounded-2xl p-6 space-y-4">
+                <div className="bg-white/[0.03] backdrop-blur-xl border border-black/10 dark:border-white/10 rounded-2xl p-6 space-y-4">
                     {/* First Row: Search & View modes */}
                     <div className="flex flex-col xl:flex-row items-center gap-4">
                         <div className="relative flex-1 w-full group">
-                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-neon-pink transition-colors" size={16} />
+                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-pink-600 dark:group-focus-within:text-neon-pink transition-colors" size={16} />
                             <input 
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                                 placeholder="Search by recipient name, vendor, note or title..."
-                                className="w-full bg-zinc-950/40 border border-white/10 rounded-xl text-[10px] font-extrabold uppercase tracking-widest text-white h-12 pl-12 pr-6 outline-none focus:border-neon-pink transition-all placeholder:text-gray-600"
+                                className="w-full bg-gray-100 dark:bg-zinc-950/40 border border-black/10 dark:border-white/10 rounded-xl text-[10px] font-extrabold uppercase tracking-widest text-gray-900 dark:text-white h-12 pl-12 pr-6 outline-none focus:border-neon-pink transition-all placeholder:text-gray-600"
                             />
                         </div>
 
                         {/* View Mode Toggle */}
-                        <div className="flex bg-black/40 p-1 rounded-xl border border-white/5 w-full xl:w-auto justify-center shrink-0">
+                        <div className="flex bg-white dark:bg-black/40 p-1 rounded-xl border border-black/10 dark:border-white/5 w-full xl:w-auto justify-center shrink-0">
                             <button
                                 onClick={() => setViewMode('grid')}
                                 className={cn(
                                     "flex-1 xl:flex-none px-6 py-2.5 rounded-lg transition-all flex justify-center gap-2 text-[9px] font-black uppercase tracking-widest",
-                                    viewMode === 'grid' ? "bg-white text-black shadow-lg" : "text-gray-500 hover:text-white"
+                                    viewMode === 'grid' ? "bg-white text-black shadow-lg" : "text-gray-500 hover:text-gray-900 dark:hover:text-white"
                                 )}
                             >
                                 <LayoutGrid size={14} /> Grid
@@ -964,7 +964,7 @@ const SpendsManagement = () => {
                                 onClick={() => setViewMode('table')}
                                 className={cn(
                                     "flex-1 xl:flex-none px-6 py-2.5 rounded-lg transition-all flex justify-center gap-2 text-[9px] font-black uppercase tracking-widest",
-                                    viewMode === 'table' ? "bg-white text-black shadow-lg" : "text-gray-500 hover:text-white"
+                                    viewMode === 'table' ? "bg-white text-black shadow-lg" : "text-gray-500 hover:text-gray-900 dark:hover:text-white"
                                 )}
                             >
                                 <FileText size={14} /> Table
@@ -973,16 +973,16 @@ const SpendsManagement = () => {
                     </div>
 
                     {/* Second Row: Detailed filtration toggles */}
-                    <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-[9px] font-black uppercase tracking-[0.2em] text-gray-400">
+                    <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-[9px] font-black uppercase tracking-[0.2em] text-gray-600 dark:text-gray-400">
                         {/* Month selection */}
                         <div className="space-y-1.5">
                             <span className="text-[8px] text-gray-500 tracking-widest">Select Month</span>
                             <select 
                                 value={monthFilter} 
                                 onChange={(e) => setMonthFilter(e.target.value)}
-                                className="w-full bg-zinc-950/40 border border-white/10 h-10 rounded-xl px-3 text-white outline-none focus:border-neon-pink transition-all font-bold font-mono"
+                                className="w-full bg-gray-100 dark:bg-zinc-950/40 border border-black/10 dark:border-white/10 h-10 rounded-xl px-3 text-gray-900 dark:text-white outline-none focus:border-neon-pink transition-all font-bold font-mono"
                             >
-                                {monthOptions.map(m => <option key={m} value={m} className="bg-zinc-950">{m}</option>)}
+                                {monthOptions.map(m => <option key={m} value={m} className="bg-gray-100 dark:bg-zinc-950">{m}</option>)}
                             </select>
                         </div>
 
@@ -992,10 +992,10 @@ const SpendsManagement = () => {
                             <select 
                                 value={payoutTypeFilter} 
                                 onChange={(e) => setPayoutTypeFilter(e.target.value)}
-                                className="w-full bg-zinc-950/40 border border-white/10 h-10 rounded-xl px-3 text-white outline-none focus:border-neon-pink transition-all font-bold"
+                                className="w-full bg-gray-100 dark:bg-zinc-950/40 border border-black/10 dark:border-white/10 h-10 rounded-xl px-3 text-gray-900 dark:text-white outline-none focus:border-neon-pink transition-all font-bold"
                             >
-                                <option value="All" className="bg-zinc-950 font-bold">All Types</option>
-                                {payoutTypes.map(pt => <option key={pt} value={pt} className="bg-zinc-950">{pt}</option>)}
+                                <option value="All" className="bg-gray-100 dark:bg-zinc-950 font-bold">All Types</option>
+                                {payoutTypes.map(pt => <option key={pt} value={pt} className="bg-gray-100 dark:bg-zinc-950">{pt}</option>)}
                             </select>
                         </div>
 
@@ -1005,11 +1005,11 @@ const SpendsManagement = () => {
                             <select 
                                 value={accountFilter} 
                                 onChange={(e) => setAccountFilter(e.target.value)}
-                                className="w-full bg-zinc-950/40 border border-white/10 h-10 rounded-xl px-3 text-white outline-none focus:border-neon-pink transition-all font-bold"
+                                className="w-full bg-gray-100 dark:bg-zinc-950/40 border border-black/10 dark:border-white/10 h-10 rounded-xl px-3 text-gray-900 dark:text-white outline-none focus:border-neon-pink transition-all font-bold"
                             >
-                                <option value="All" className="bg-zinc-950">All Accounts</option>
-                                <option value="newbi" className="bg-zinc-950">Newbi Official</option>
-                                <option value="personal" className="bg-zinc-950">Personal Account</option>
+                                <option value="All" className="bg-gray-100 dark:bg-zinc-950">All Accounts</option>
+                                <option value="newbi" className="bg-gray-100 dark:bg-zinc-950">Newbi Official</option>
+                                <option value="personal" className="bg-gray-100 dark:bg-zinc-950">Personal Account</option>
                             </select>
                         </div>
 
@@ -1019,11 +1019,11 @@ const SpendsManagement = () => {
                             <select 
                                 value={statusFilter} 
                                 onChange={(e) => setStatusFilter(e.target.value)}
-                                className="w-full bg-zinc-950/40 border border-white/10 h-10 rounded-xl px-3 text-white outline-none focus:border-neon-pink transition-all font-bold"
+                                className="w-full bg-gray-100 dark:bg-zinc-950/40 border border-black/10 dark:border-white/10 h-10 rounded-xl px-3 text-gray-900 dark:text-white outline-none focus:border-neon-pink transition-all font-bold"
                             >
-                                <option value="All" className="bg-zinc-950">All Status</option>
-                                <option value="Paid" className="bg-zinc-950">Paid / Cleared</option>
-                                <option value="Pending" className="bg-zinc-950">Pending / Unpaid</option>
+                                <option value="All" className="bg-gray-100 dark:bg-zinc-950">All Status</option>
+                                <option value="Paid" className="bg-gray-100 dark:bg-zinc-950">Paid / Cleared</option>
+                                <option value="Pending" className="bg-gray-100 dark:bg-zinc-950">Pending / Unpaid</option>
                             </select>
                         </div>
 
@@ -1037,7 +1037,7 @@ const SpendsManagement = () => {
                                     setStatusFilter('All');
                                     setAccountFilter('All');
                                 }}
-                                className="w-full h-10 bg-white/5 hover:bg-white/10 text-white rounded-xl transition-all border border-white/5 flex items-center justify-center gap-2 font-black tracking-widest uppercase text-[9px]"
+                                className="w-full h-10 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-gray-900 dark:text-white rounded-xl transition-all border border-black/10 dark:border-white/5 flex items-center justify-center gap-2 font-black tracking-widest uppercase text-[9px]"
                             >
                                 <X size={12} /> Clear Filters
                             </button>
@@ -1051,7 +1051,7 @@ const SpendsManagement = () => {
                         <motion.div key="grid" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                             {filteredSpends.map((sp, i) => (
                                 <motion.div key={sp.id} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: i * 0.05 }} className="h-full flex flex-col">
-                                    <div className="group relative p-6 bg-white/[0.03] backdrop-blur-xl border border-white/10 shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)] rounded-[2.5rem] flex flex-col justify-between h-full overflow-hidden hover:border-white/20 duration-500 hover:-translate-y-1 hover:shadow-[0_15px_40px_rgba(255,46,144,0.06)]">
+                                    <div className="group relative p-6 bg-white/[0.03] backdrop-blur-xl border border-black/10 dark:border-white/10 shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)] rounded-[2.5rem] flex flex-col justify-between h-full overflow-hidden hover:border-black/20 dark:hover:border-white/20 duration-500 hover:-translate-y-1 hover:shadow-[0_15px_40px_rgba(255,46,144,0.06)]">
                                         <div className="absolute top-0 right-0 p-8 opacity-[0.03] group-hover:scale-110 transition-transform pointer-events-none"><IndianRupee size={100} /></div>
                                         <div>
                                             {/* Top badges */}
@@ -1063,28 +1063,28 @@ const SpendsManagement = () => {
                                                     <div className={cn("w-2 h-2 rounded-full animate-pulse shadow-[0_0_8px_currentColor]", sp.status === 'Paid' ? 'text-neon-green bg-neon-green' : 'text-yellow-500 bg-yellow-500')} />
                                                 </div>
                                                 <div className="flex items-center gap-1.5">
-                                                    <button onClick={() => openEdit(sp)} className="p-2 bg-white/5 hover:bg-white/10 text-gray-500 rounded-xl transition-all border border-white/5 hover:text-white" title="Edit Payout"><Edit size={14} /></button>
+                                                    <button onClick={() => openEdit(sp)} className="p-2 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-gray-500 rounded-xl transition-all border border-black/10 dark:border-white/5 hover:text-gray-900 dark:hover:text-white" title="Edit Payout"><Edit size={14} /></button>
                                                     {user?.role !== 'editor' && user?.role !== 'content_admin' && (
-                                                        <button onClick={() => handleDeleteSpend(sp.id)} className="p-2 bg-white/5 hover:bg-red-500/20 hover:text-red-500 text-gray-500 rounded-xl transition-all border border-white/5" title="Purge Record"><Trash2 size={14} /></button>
+                                                        <button onClick={() => handleDeleteSpend(sp.id)} className="p-2 bg-black/5 dark:bg-white/5 hover:bg-red-500/20 hover:text-red-500 text-gray-500 rounded-xl transition-all border border-black/10 dark:border-white/5" title="Purge Record"><Trash2 size={14} /></button>
                                                     )}
                                                 </div>
                                             </div>
 
                                             {/* Details section based on payout type */}
-                                            <h3 className="text-xl font-black font-heading tracking-tighter uppercase italic text-white mb-2 leading-tight line-clamp-2">{sp.title}</h3>
+                                            <h3 className="text-xl font-black font-heading tracking-tighter uppercase italic text-gray-900 dark:text-white mb-2 leading-tight line-clamp-2">{sp.title}</h3>
                                             
-                                            <div className="space-y-2 mt-5 p-4 bg-black/40 border border-white/5 rounded-2xl text-[9px] text-gray-500 font-bold uppercase tracking-wider">
+                                            <div className="space-y-2 mt-5 p-4 bg-white dark:bg-black/40 border border-black/10 dark:border-white/5 rounded-2xl text-[9px] text-gray-500 font-bold uppercase tracking-wider">
                                                 {/* Payout Specific Card Information */}
                                                 {sp.payoutType === 'Salary' && (
                                                     <>
-                                                        <div className="flex justify-between"><span className="text-gray-600">Period:</span> <span className="text-white font-mono">{sp.salaryPeriod || 'N/A'}</span></div>
-                                                        <div className="flex justify-between"><span className="text-gray-600">Designation:</span> <span className="text-white">{sp.designation || 'Core Team'}</span></div>
+                                                        <div className="flex justify-between"><span className="text-gray-600">Period:</span> <span className="text-gray-900 dark:text-white font-mono">{sp.salaryPeriod || 'N/A'}</span></div>
+                                                        <div className="flex justify-between"><span className="text-gray-600">Designation:</span> <span className="text-gray-900 dark:text-white">{sp.designation || 'Core Team'}</span></div>
                                                     </>
                                                 )}
 
                                                 {sp.payoutType === 'Volunteer Payout' && (
                                                     <>
-                                                        <div className="flex justify-between"><span className="text-gray-600">Volunteer Phone:</span> <span className="text-white font-mono select-all">{sp.volunteerPhone || 'N/A'}</span></div>
+                                                        <div className="flex justify-between"><span className="text-gray-600">Volunteer Phone:</span> <span className="text-gray-900 dark:text-white font-mono select-all">{sp.volunteerPhone || 'N/A'}</span></div>
                                                         <div className="flex justify-between"><span className="text-gray-600">Gig Reference:</span> <span className="text-neon-pink truncate max-w-[140px]">{sp.linkedGig || 'General Support'}</span></div>
                                                         {/* All registered gigs for this payee */}
                                                         {(() => {
@@ -1104,7 +1104,7 @@ const SpendsManagement = () => {
                                                                                 "text-[7px] px-2 py-0.5 rounded-full border font-black uppercase tracking-wider",
                                                                                 g === sp.linkedGig
                                                                                     ? "bg-neon-green/10 text-neon-green border-neon-green/20"
-                                                                                    : "bg-white/5 text-gray-400 border-white/10"
+                                                                                    : "bg-black/5 dark:bg-white/5 text-gray-600 dark:text-gray-400 border-black/10 dark:border-white/10"
                                                                             )}>
                                                                                 {g}
                                                                             </span>
@@ -1121,39 +1121,39 @@ const SpendsManagement = () => {
 
                                                 {sp.payoutType === 'Vendor Payout' && (
                                                     <>
-                                                        <div className="flex justify-between"><span className="text-gray-600">Vendor Entity:</span> <span className="text-white">{sp.paidTo || 'N/A'}</span></div>
-                                                        <div className="flex justify-between"><span className="text-gray-600">Invoice Ref:</span> <span className="text-white font-mono">{sp.invoiceRef || 'N/A'}</span></div>
+                                                        <div className="flex justify-between"><span className="text-gray-600">Vendor Entity:</span> <span className="text-gray-900 dark:text-white">{sp.paidTo || 'N/A'}</span></div>
+                                                        <div className="flex justify-between"><span className="text-gray-600">Invoice Ref:</span> <span className="text-gray-900 dark:text-white font-mono">{sp.invoiceRef || 'N/A'}</span></div>
                                                     </>
                                                 )}
 
                                                 {sp.payoutType === 'Artist Fee' && (
                                                     <>
-                                                        <div className="flex justify-between"><span className="text-gray-600">Artist Entity:</span> <span className="text-white">{sp.receiverName || 'N/A'}</span></div>
+                                                        <div className="flex justify-between"><span className="text-gray-600">Artist Entity:</span> <span className="text-gray-900 dark:text-white">{sp.receiverName || 'N/A'}</span></div>
                                                     </>
                                                 )}
 
                                                 {sp.payoutType === 'General Expense' && (
                                                     <>
-                                                        <div className="flex justify-between"><span className="text-gray-600">Payee:</span> <span className="text-white">{sp.receiverName || sp.paidTo || 'N/A'}</span></div>
-                                                        {sp.designation && <div className="flex justify-between"><span className="text-gray-600">Category:</span> <span className="text-white">{sp.designation}</span></div>}
+                                                        <div className="flex justify-between"><span className="text-gray-600">Payee:</span> <span className="text-gray-900 dark:text-white">{sp.receiverName || sp.paidTo || 'N/A'}</span></div>
+                                                        {sp.designation && <div className="flex justify-between"><span className="text-gray-600">Category:</span> <span className="text-gray-900 dark:text-white">{sp.designation}</span></div>}
                                                     </>
                                                 )}
 
-                                                <div className="flex justify-between pt-2 border-t border-white/5"><span className="text-gray-600">Account:</span> <span className="text-white">{sp.accountType === 'personal' ? `Personal (${sp.receiverName || sp.paidBy})` : 'Newbi Official'}</span></div>
-                                                <div className="flex justify-between"><span className="text-gray-600">Mode:</span> <span className="text-white">{sp.paymentMode}</span></div>
-                                                <div className="flex justify-between"><span className="text-gray-600">Date:</span> <span className="text-gray-400 font-mono">{new Date(sp.date).toLocaleDateString()}</span></div>
+                                                <div className="flex justify-between pt-2 border-t border-black/10 dark:border-white/5"><span className="text-gray-600">Account:</span> <span className="text-gray-900 dark:text-white">{sp.accountType === 'personal' ? `Personal (${sp.receiverName || sp.paidBy})` : 'Newbi Official'}</span></div>
+                                                <div className="flex justify-between"><span className="text-gray-600">Mode:</span> <span className="text-gray-900 dark:text-white">{sp.paymentMode}</span></div>
+                                                <div className="flex justify-between"><span className="text-gray-600">Date:</span> <span className="text-gray-600 dark:text-gray-400 font-mono">{new Date(sp.date).toLocaleDateString()}</span></div>
                                             </div>
 
                                             {/* Destination UPI / Bank block with quick copy */}
                                             {sp.destinationDetails && (
-                                                <div className="mt-4 p-3 bg-white/[0.02] border border-white/5 rounded-xl flex items-center justify-between gap-3 text-[8px] font-black uppercase tracking-widest">
+                                                <div className="mt-4 p-3 bg-white/[0.02] border border-black/10 dark:border-white/5 rounded-xl flex items-center justify-between gap-3 text-[8px] font-black uppercase tracking-widest">
                                                     <div className="truncate flex-1">
                                                         <span className="text-gray-600 block text-[6px]">Payout Destination</span>
-                                                        <span className="text-white font-mono select-all truncate block mt-0.5">{sp.destinationDetails}</span>
+                                                        <span className="text-gray-900 dark:text-white font-mono select-all truncate block mt-0.5">{sp.destinationDetails}</span>
                                                     </div>
                                                     <button 
                                                         onClick={() => copyToClipboard(sp.destinationDetails)}
-                                                        className="p-2 hover:bg-white/10 text-gray-400 hover:text-white rounded-lg border border-white/5 transition-all shrink-0"
+                                                        className="p-2 hover:bg-black/10 dark:hover:bg-white/10 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white rounded-lg border border-black/10 dark:border-white/5 transition-all shrink-0"
                                                         title="Copy Details"
                                                     >
                                                         <Copy size={12} />
@@ -1163,8 +1163,8 @@ const SpendsManagement = () => {
                                         </div>
 
                                         {/* Bottom metrics and Action toggles */}
-                                        <div className="flex items-center justify-between pt-6 mt-6 border-t border-white/5 shrink-0 relative z-10">
-                                            <div className="text-xl font-black text-white tabular-nums flex items-center gap-0.5 leading-none">
+                                        <div className="flex items-center justify-between pt-6 mt-6 border-t border-black/10 dark:border-white/5 shrink-0 relative z-10">
+                                            <div className="text-xl font-black text-gray-900 dark:text-white tabular-nums flex items-center gap-0.5 leading-none">
                                                 <IndianRupee className="size-4 stroke-[2] text-[#FF2E90]" />
                                                 {sp.amount?.toLocaleString()}
                                             </div>
@@ -1172,7 +1172,7 @@ const SpendsManagement = () => {
                                                 {sp.status === 'Paid' && (
                                                     <button
                                                         onClick={() => handleViewReceiptSlip(sp)}
-                                                        className="h-10 w-10 bg-white/5 hover:bg-neon-pink hover:text-black text-gray-400 rounded-xl border border-white/5 transition-all flex items-center justify-center"
+                                                        className="h-10 w-10 bg-black/5 dark:bg-white/5 hover:bg-neon-pink hover:text-black text-gray-600 dark:text-gray-400 rounded-xl border border-black/10 dark:border-white/5 transition-all flex items-center justify-center"
                                                         title="Print Payout Slip"
                                                     >
                                                         <Printer size={12} />
@@ -1183,7 +1183,7 @@ const SpendsManagement = () => {
                                                         href={sp.receiptUrl} 
                                                         target="_blank" 
                                                         rel="noopener noreferrer" 
-                                                        className="h-10 px-3 bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white rounded-xl border border-white/5 flex items-center justify-center gap-1 text-[9px] font-black uppercase tracking-widest transition-all"
+                                                        className="h-10 px-3 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white rounded-xl border border-black/10 dark:border-white/5 flex items-center justify-center gap-1 text-[9px] font-black uppercase tracking-widest transition-all"
                                                     >
                                                         <Eye size={12} /> Proof
                                                     </a>
@@ -1209,10 +1209,10 @@ const SpendsManagement = () => {
                         </motion.div>
                     ) : (
                         <motion.div key="table" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="overflow-x-auto scrollbar-hide">
-                            <div className="md:min-w-[1000px] bg-zinc-900/40 border-white/5 rounded-3xl p-0 border overflow-hidden">
+                            <div className="md:min-w-[1000px] bg-gray-100 dark:bg-zinc-900/40 border-black/10 dark:border-white/5 rounded-3xl p-0 border overflow-hidden">
                                 <table className="w-full text-left hidden md:table">
                                     <thead>
-                                        <tr className="border-b border-white/5 text-[9px] font-black uppercase tracking-[0.2em] text-gray-500">
+                                        <tr className="border-b border-black/10 dark:border-white/5 text-[9px] font-black uppercase tracking-[0.2em] text-gray-500">
                                             <th className="p-6">Spend Item</th>
                                             <th className="p-6">Amount</th>
                                             <th className="p-6">Payout Type</th>
@@ -1228,31 +1228,31 @@ const SpendsManagement = () => {
                                         {filteredSpends.map((sp) => (
                                             <tr key={sp.id} className="hover:bg-white/[0.01] transition-colors group">
                                                 <td className="p-6">
-                                                    <div className="text-xs font-black text-white">{sp.title}</div>
+                                                    <div className="text-xs font-black text-gray-900 dark:text-white">{sp.title}</div>
                                                     {sp.notes && <div className="text-[8px] text-gray-600 tracking-wide mt-1 lowercase normal-case">{sp.notes}</div>}
                                                 </td>
-                                                <td className="p-6 text-white font-black tabular-nums">
+                                                <td className="p-6 text-gray-900 dark:text-white font-black tabular-nums">
                                                     <div className="flex items-center gap-0.5">₹{sp.amount?.toLocaleString()}</div>
                                                 </td>
                                                 <td className="p-6 text-neon-pink font-black text-[9px]">{sp.payoutType || 'General Expense'}</td>
-                                                <td className="p-6 text-gray-400">
+                                                <td className="p-6 text-gray-600 dark:text-gray-400">
                                                     {sp.accountType === 'personal' ? `Personal (${sp.receiverName || sp.paidBy})` : 'Newbi Official'}
                                                 </td>
-                                                <td className="p-6 text-gray-400">
-                                                    <div className="text-xs font-black text-white">{sp.receiverName || sp.paidTo || 'N/A'}</div>
+                                                <td className="p-6 text-gray-600 dark:text-gray-400">
+                                                    <div className="text-xs font-black text-gray-900 dark:text-white">{sp.receiverName || sp.paidTo || 'N/A'}</div>
                                                     {sp.payoutType === 'Salary' && sp.designation && <div className="text-[8px] text-gray-600 mt-0.5">{sp.designation}</div>}
                                                     {sp.payoutType === 'General Expense' && sp.designation && <div className="text-[8px] text-gray-600 mt-0.5">{sp.designation}</div>}
                                                     {sp.payoutType === 'Volunteer Payout' && sp.volunteerPhone && <div className="text-[8px] text-gray-600 font-mono mt-0.5">{sp.volunteerPhone}</div>}
                                                     {sp.linkedGig && <div className="text-[8px] text-neon-pink font-black mt-0.5">🎤 {sp.linkedGig}</div>}
                                                     {sp.linkedInvoiceNumber && <div className="text-[8px] text-neon-blue font-black font-mono mt-0.5">Inv: #{sp.linkedInvoiceNumber}</div>}
                                                 </td>
-                                                <td className="p-6 text-gray-400">
+                                                <td className="p-6 text-gray-600 dark:text-gray-400">
                                                     {sp.destinationDetails ? (
                                                         <div className="flex items-center gap-2 max-w-[200px]">
-                                                            <span className="font-mono text-[9px] truncate text-white select-all">{sp.destinationDetails}</span>
+                                                            <span className="font-mono text-[9px] truncate text-gray-900 dark:text-white select-all">{sp.destinationDetails}</span>
                                                             <button 
                                                                 onClick={() => copyToClipboard(sp.destinationDetails)}
-                                                                className="p-1.5 hover:bg-white/10 text-gray-500 rounded hover:text-white transition-all shrink-0"
+                                                                className="p-1.5 hover:bg-black/10 dark:hover:bg-white/10 text-gray-500 rounded hover:text-gray-900 dark:hover:text-white transition-all shrink-0"
                                                                 title="Copy Payout Address"
                                                             >
                                                                 <Copy size={10} />
@@ -1282,9 +1282,9 @@ const SpendsManagement = () => {
                                                             <button onClick={() => handleViewReceiptSlip(sp)} className="p-2 text-gray-500 hover:text-neon-pink transition-colors" title="Print Payout Slip"><Printer size={16} /></button>
                                                         )}
                                                         {sp.receiptUrl && (
-                                                            <a href={sp.receiptUrl} target="_blank" rel="noopener noreferrer" className="p-2 text-gray-500 hover:text-white transition-colors"><Eye size={16} /></a>
+                                                            <a href={sp.receiptUrl} target="_blank" rel="noopener noreferrer" className="p-2 text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors"><Eye size={16} /></a>
                                                         )}
-                                                        <button onClick={() => openEdit(sp)} className="p-2 text-gray-500 hover:text-white transition-colors"><Edit size={16} /></button>
+                                                        <button onClick={() => openEdit(sp)} className="p-2 text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors"><Edit size={16} /></button>
                                                         {user?.role !== 'editor' && user?.role !== 'content_admin' && (
                                                             <button onClick={() => handleDeleteSpend(sp.id)} className="p-2 text-gray-500 hover:text-red-500 transition-colors"><Trash2 size={16} /></button>
                                                         )}
@@ -1298,26 +1298,26 @@ const SpendsManagement = () => {
                                 {/* Mobile Stacked Cards for Spends */}
                                 <div className="flex md:hidden flex-col gap-4 p-4">
                                     {filteredSpends.map((sp) => (
-                                        <div key={sp.id} className="bg-white/[0.02] border border-white/5 rounded-2xl p-4 flex flex-col gap-4">
+                                        <div key={sp.id} className="bg-white/[0.02] border border-black/10 dark:border-white/5 rounded-2xl p-4 flex flex-col gap-4">
                                             <div className="flex justify-between items-start">
                                                 <div className="flex items-center gap-3">
                                                     <div className="w-10 h-10 rounded-xl bg-neon-pink/10 flex items-center justify-center text-neon-pink">
                                                         <CreditCard size={20} />
                                                     </div>
                                                     <div>
-                                                        <div className="text-xs font-black text-white">{sp.title}</div>
+                                                        <div className="text-xs font-black text-gray-900 dark:text-white">{sp.title}</div>
                                                         {sp.notes && <div className="text-[8px] text-gray-600 tracking-wide mt-1 lowercase normal-case">{sp.notes}</div>}
                                                     </div>
                                                 </div>
                                                 <div className="text-right">
-                                                    <div className="text-sm font-black text-white tabular-nums">₹{sp.amount?.toLocaleString()}</div>
+                                                    <div className="text-sm font-black text-gray-900 dark:text-white tabular-nums">₹{sp.amount?.toLocaleString()}</div>
                                                     <div className="text-[10px] text-gray-500 font-mono mt-0.5">{new Date(sp.date).toLocaleDateString()}</div>
                                                 </div>
                                             </div>
                                             
-                                            <div className="flex justify-between items-center bg-white/5 rounded-xl p-3">
+                                            <div className="flex justify-between items-center bg-black/5 dark:bg-white/5 rounded-xl p-3">
                                                 <div>
-                                                    <div className="text-xs font-black text-white">{sp.receiverName || sp.paidTo || 'N/A'}</div>
+                                                    <div className="text-xs font-black text-gray-900 dark:text-white">{sp.receiverName || sp.paidTo || 'N/A'}</div>
                                                     <div className="text-[8px] font-bold text-neon-pink uppercase mt-0.5">{sp.payoutType || 'General Expense'}</div>
                                                 </div>
                                                 <button 
@@ -1333,16 +1333,16 @@ const SpendsManagement = () => {
                                                 </button>
                                             </div>
 
-                                            <div className="flex flex-wrap justify-end gap-2 pt-2 border-t border-white/5">
+                                            <div className="flex flex-wrap justify-end gap-2 pt-2 border-t border-black/10 dark:border-white/5">
                                                 {sp.status === 'Paid' && (
-                                                    <button onClick={() => handleViewReceiptSlip(sp)} className="p-2 bg-white/5 rounded-lg text-gray-400 hover:text-neon-pink transition-colors" title="Print Payout Slip"><Printer size={16} /></button>
+                                                    <button onClick={() => handleViewReceiptSlip(sp)} className="p-2 bg-black/5 dark:bg-white/5 rounded-lg text-gray-600 dark:text-gray-400 hover:text-neon-pink transition-colors" title="Print Payout Slip"><Printer size={16} /></button>
                                                 )}
                                                 {sp.receiptUrl && (
-                                                    <a href={sp.receiptUrl} target="_blank" rel="noopener noreferrer" className="p-2 bg-white/5 rounded-lg text-gray-400 hover:text-white transition-colors"><Eye size={16} /></a>
+                                                    <a href={sp.receiptUrl} target="_blank" rel="noopener noreferrer" className="p-2 bg-black/5 dark:bg-white/5 rounded-lg text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"><Eye size={16} /></a>
                                                 )}
-                                                <button onClick={() => openEdit(sp)} className="p-2 bg-white/5 rounded-lg text-gray-400 hover:text-white transition-colors"><Edit size={16} /></button>
+                                                <button onClick={() => openEdit(sp)} className="p-2 bg-black/5 dark:bg-white/5 rounded-lg text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"><Edit size={16} /></button>
                                                 {user?.role !== 'editor' && user?.role !== 'content_admin' && (
-                                                    <button onClick={() => handleDeleteSpend(sp.id)} className="p-2 bg-white/5 rounded-lg text-gray-400 hover:text-red-500 transition-colors"><Trash2 size={16} /></button>
+                                                    <button onClick={() => handleDeleteSpend(sp.id)} className="p-2 bg-black/5 dark:bg-white/5 rounded-lg text-gray-600 dark:text-gray-400 hover:text-red-500 transition-colors"><Trash2 size={16} /></button>
                                                 )}
                                             </div>
                                         </div>
@@ -1359,27 +1359,27 @@ const SpendsManagement = () => {
             <AnimatePresence>
                 {showAddModal && (
                     <>
-                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowAddModal(false)} className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100]" />
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowAddModal(false)} className="fixed inset-0 bg-white dark:bg-black/60 backdrop-blur-sm z-[100]" />
                         <motion.div 
                             initial={{ x: '100%' }} 
                             animate={{ x: 0 }} 
                             exit={{ x: '100%' }}
                             transition={{ type: "spring", damping: 30, stiffness: 300 }}
-                            className="fixed top-0 right-0 h-full w-full max-w-xl bg-zinc-950/95 backdrop-blur-3xl border-l border-white/10 z-[101] flex flex-col text-white"
+                            className="fixed top-0 right-0 h-full w-full max-w-xl bg-gray-100 dark:bg-zinc-950/95 backdrop-blur-3xl border-l border-black/10 dark:border-white/10 z-[101] flex flex-col text-gray-900 dark:text-white"
                         >
-                            <div className="p-6 border-b border-white/5 flex items-center justify-between">
+                            <div className="p-6 border-b border-black/10 dark:border-white/5 flex items-center justify-between">
                                 <div>
-                                    <h2 className="text-xl font-black font-heading tracking-tighter uppercase italic text-white">LOG <span className="text-neon-pink">PAYOUT.</span></h2>
+                                    <h2 className="text-xl font-black font-heading tracking-tighter uppercase italic text-gray-900 dark:text-white">LOG <span className="text-neon-pink">PAYOUT.</span></h2>
                                     <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest mt-1">Central Expense & Payout Registration Console</p>
                                 </div>
-                                <button type="button" onClick={() => setShowAddModal(false)} className="w-8 h-8 rounded-full bg-zinc-900/50 border border-white/10 flex items-center justify-center hover:bg-white hover:text-black transition-all"><X size={14} /></button>
+                                <button type="button" onClick={() => setShowAddModal(false)} className="w-8 h-8 rounded-full bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 flex items-center justify-center hover:bg-white hover:text-black transition-all"><X size={14} /></button>
                             </div>
                             
                             <form onSubmit={handleCreateSpend} className="flex-1 flex flex-col overflow-hidden">
                                 <div className="flex-1 overflow-y-auto p-6 space-y-5 custom-scrollbar pb-24">
                                 {/* Quick Fill Selection */}
                                 {financePayees && financePayees.length > 0 && (
-                                    <div className="space-y-1.5 p-4 bg-white/[0.02] border border-white/5 rounded-2xl">
+                                    <div className="space-y-1.5 p-4 bg-white/[0.02] border border-black/10 dark:border-white/5 rounded-2xl">
                                         <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest text-neon-pink">Quick Fill from Registered Payee</label>
                                         <select 
                                             onChange={(e) => {
@@ -1410,12 +1410,12 @@ const SpendsManagement = () => {
                                                     useStore.getState().addToast(`Pre-filled details for ${payee.name}!`, 'success');
                                                 }
                                             }}
-                                            className="w-full bg-black/40 border border-white/5 h-12 rounded-xl text-xs font-bold px-4 text-white outline-none focus:border-neon-pink focus:ring-1 focus:ring-neon-pink transition-all"
+                                            className="w-full bg-white dark:bg-black/40 border border-black/10 dark:border-white/5 h-12 rounded-xl text-xs font-bold px-4 text-gray-900 dark:text-white outline-none focus:border-neon-pink focus:ring-1 focus:ring-neon-pink transition-all"
                                             defaultValue=""
                                         >
-                                            <option value="" className="bg-zinc-950 text-gray-400">-- Select a Registered Payee to Autofill --</option>
+                                            <option value="" className="bg-gray-100 dark:bg-zinc-950 text-gray-600 dark:text-gray-400">-- Select a Registered Payee to Autofill --</option>
                                             {financePayees.map(payee => (
-                                                <option key={payee.id} value={payee.id} className="bg-zinc-950 text-white">
+                                                <option key={payee.id} value={payee.id} className="bg-gray-100 dark:bg-zinc-950 text-gray-900 dark:text-white">
                                                     {payee.name} ({payee.type} - {payee.paymentMode})
                                                 </option>
                                             ))}
@@ -1438,25 +1438,25 @@ const SpendsManagement = () => {
                                                 else if (e.target.value === 'Artist Fee') setTitle('Artist Clearance');
                                                 else setTitle('');
                                             }} 
-                                            className="w-full bg-zinc-900/50 border border-white/10 h-12 rounded-xl text-xs font-bold px-4 text-white outline-none focus:border-neon-pink focus:ring-1 focus:ring-neon-pink transition-all"
+                                            className="w-full bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 h-12 rounded-xl text-xs font-bold px-4 text-gray-900 dark:text-white outline-none focus:border-neon-pink focus:ring-1 focus:ring-neon-pink transition-all"
                                         >
-                                            {payoutTypes.map(pt => <option key={pt} value={pt} className="bg-zinc-950 text-white">{pt}</option>)}
+                                            {payoutTypes.map(pt => <option key={pt} value={pt} className="bg-gray-100 dark:bg-zinc-950 text-gray-900 dark:text-white">{pt}</option>)}
                                         </select>
                                     </div>
                                     <div className="space-y-1.5">
                                         <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Amount (INR) *</label>
-                                        <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="Enter amount to pay" className="h-12 bg-zinc-900/50 border border-white/10 rounded-xl text-white focus:border-neon-pink" required />
+                                        <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="Enter amount to pay" className="h-12 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl text-gray-900 dark:text-white focus:border-neon-pink" required />
                                     </div>
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="space-y-1.5">
                                         <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Transaction Label / Title *</label>
-                                        <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Graphic design monthly retainer" className="h-12 bg-zinc-900/50 border border-white/10 rounded-xl text-white focus:border-neon-pink" required />
+                                        <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Graphic design monthly retainer" className="h-12 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl text-gray-900 dark:text-white focus:border-neon-pink" required />
                                     </div>
                                     <div className="space-y-1.5">
                                         <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Value Date *</label>
-                                        <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="h-12 bg-zinc-900/50 border border-white/10 rounded-xl text-white focus:border-neon-pink" required />
+                                        <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="h-12 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl text-gray-900 dark:text-white focus:border-neon-pink" required />
                                     </div>
                                 </div>
 
@@ -1471,36 +1471,36 @@ const SpendsManagement = () => {
                                     >
                                         {/* SALARY SPECIFIC */}
                                         {payoutType === 'Salary' && (
-                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-5 bg-white/[0.02] border border-white/5 rounded-2xl">
+                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-5 bg-white/[0.02] border border-black/10 dark:border-white/5 rounded-2xl">
                                                 <div className="space-y-1.5">
                                                     <label className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Core Member Name *</label>
-                                                    <input value={receiverName} onChange={(e) => setReceiverName(e.target.value)} placeholder="Recipient name" className="h-11 bg-zinc-900/50 border border-white/10 rounded-xl text-white focus:border-neon-pink" required />
+                                                    <input value={receiverName} onChange={(e) => setReceiverName(e.target.value)} placeholder="Recipient name" className="h-11 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl text-gray-900 dark:text-white focus:border-neon-pink" required />
                                                 </div>
                                                 <div className="space-y-1.5">
                                                     <label className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Designation/Role *</label>
-                                                    <input value={designation} onChange={(e) => setDesignation(e.target.value)} placeholder="e.g. Creative Director" className="h-11 bg-zinc-900/50 border border-white/10 rounded-xl text-white focus:border-neon-pink" required />
+                                                    <input value={designation} onChange={(e) => setDesignation(e.target.value)} placeholder="e.g. Creative Director" className="h-11 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl text-gray-900 dark:text-white focus:border-neon-pink" required />
                                                 </div>
                                                 <div className="space-y-1.5">
                                                     <label className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Salary Month *</label>
-                                                    <input value={salaryPeriod} onChange={(e) => setSalaryPeriod(e.target.value)} placeholder="e.g. May 2026" className="h-11 bg-zinc-900/50 border border-white/10 rounded-xl text-white focus:border-neon-pink" required />
+                                                    <input value={salaryPeriod} onChange={(e) => setSalaryPeriod(e.target.value)} placeholder="e.g. May 2026" className="h-11 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl text-gray-900 dark:text-white focus:border-neon-pink" required />
                                                 </div>
                                             </div>
                                         )}
 
                                         {/* VOLUNTEER SPECIFIC */}
                                         {payoutType === 'Volunteer Payout' && (
-                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-5 bg-white/[0.02] border border-white/5 rounded-2xl">
+                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-5 bg-white/[0.02] border border-black/10 dark:border-white/5 rounded-2xl">
                                                 <div className="space-y-1.5">
                                                     <label className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Volunteer Name *</label>
-                                                    <input value={receiverName} onChange={(e) => setReceiverName(e.target.value)} placeholder="Volunteer full name" className="h-11 bg-zinc-900/50 border border-white/10 rounded-xl text-white focus:border-neon-pink" required />
+                                                    <input value={receiverName} onChange={(e) => setReceiverName(e.target.value)} placeholder="Volunteer full name" className="h-11 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl text-gray-900 dark:text-white focus:border-neon-pink" required />
                                                 </div>
                                                 <div className="space-y-1.5">
                                                     <label className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Volunteer Phone</label>
-                                                    <input value={volunteerPhone} onChange={(e) => setVolunteerPhone(e.target.value)} placeholder="Phone number" className="h-11 bg-zinc-900/50 border border-white/10 rounded-xl text-white focus:border-neon-pink" />
+                                                    <input value={volunteerPhone} onChange={(e) => setVolunteerPhone(e.target.value)} placeholder="Phone number" className="h-11 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl text-gray-900 dark:text-white focus:border-neon-pink" />
                                                 </div>
                                                 <div className="space-y-1.5">
                                                     <label className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Gig Title / Link</label>
-                                                    <input value={linkedGig} onChange={(e) => setLinkedGig(e.target.value)} placeholder="e.g. Arena Concert Gate" className="h-11 bg-zinc-900/50 border border-white/10 rounded-xl text-white focus:border-neon-pink" />
+                                                    <input value={linkedGig} onChange={(e) => setLinkedGig(e.target.value)} placeholder="e.g. Arena Concert Gate" className="h-11 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl text-gray-900 dark:text-white focus:border-neon-pink" />
                                                 </div>
                                                 {invoices && invoices.length > 0 && (
                                                     <div className="space-y-1.5 col-span-full pt-2">
@@ -1513,11 +1513,11 @@ const SpendsManagement = () => {
                                                                 const inv = invoices.find(i => i.id === invId);
                                                                 setLinkedInvoiceNumber(inv ? (inv.invoiceNumber || inv.id) : '');
                                                             }}
-                                                            className="w-full bg-black/40 border border-white/5 h-11 rounded-xl text-xs font-bold px-4 text-white outline-none focus:border-neon-pink focus:ring-1 focus:ring-neon-pink transition-all"
+                                                            className="w-full bg-white dark:bg-black/40 border border-black/10 dark:border-white/5 h-11 rounded-xl text-xs font-bold px-4 text-gray-900 dark:text-white outline-none focus:border-neon-pink focus:ring-1 focus:ring-neon-pink transition-all"
                                                         >
-                                                            <option value="" className="bg-zinc-950 text-gray-400">-- No Invoice Linked --</option>
+                                                            <option value="" className="bg-gray-100 dark:bg-zinc-950 text-gray-600 dark:text-gray-400">-- No Invoice Linked --</option>
                                                             {invoices.map(inv => (
-                                                                <option key={inv.id} value={inv.id} className="bg-zinc-950 text-white">
+                                                                <option key={inv.id} value={inv.id} className="bg-gray-100 dark:bg-zinc-950 text-gray-900 dark:text-white">
                                                                     {inv.invoiceNumber || 'INV'} - {inv.clientName} (₹{inv.amount?.toLocaleString()})
                                                                 </option>
                                                             ))}
@@ -1529,41 +1529,41 @@ const SpendsManagement = () => {
 
                                         {/* VENDOR SPECIFIC */}
                                         {payoutType === 'Vendor Payout' && (
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-5 bg-white/[0.02] border border-white/5 rounded-2xl">
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-5 bg-white/[0.02] border border-black/10 dark:border-white/5 rounded-2xl">
                                                 <div className="space-y-1.5">
                                                     <label className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Vendor Entity Name *</label>
-                                                    <input value={paidTo} onChange={(e) => setPaidTo(e.target.value)} placeholder="e.g. Sound Rentals Ltd." className="h-11 bg-zinc-900/50 border border-white/10 rounded-xl text-white focus:border-neon-pink" required />
+                                                    <input value={paidTo} onChange={(e) => setPaidTo(e.target.value)} placeholder="e.g. Sound Rentals Ltd." className="h-11 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl text-gray-900 dark:text-white focus:border-neon-pink" required />
                                                 </div>
                                                 <div className="space-y-1.5">
                                                     <label className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Invoice Reference #</label>
-                                                    <input value={invoiceRef} onChange={(e) => setInvoiceRef(e.target.value)} placeholder="e.g. INV-10023" className="h-11 bg-zinc-900/50 border border-white/10 rounded-xl text-white focus:border-neon-pink" />
+                                                    <input value={invoiceRef} onChange={(e) => setInvoiceRef(e.target.value)} placeholder="e.g. INV-10023" className="h-11 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl text-gray-900 dark:text-white focus:border-neon-pink" />
                                                 </div>
                                             </div>
                                         )}
 
                                         {/* ARTIST SPECIFIC */}
                                         {payoutType === 'Artist Fee' && (
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-5 bg-white/[0.02] border border-white/5 rounded-2xl">
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-5 bg-white/[0.02] border border-black/10 dark:border-white/5 rounded-2xl">
                                                 <div className="space-y-1.5">
                                                     <label className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Artist / DJ Name *</label>
-                                                    <input value={receiverName} onChange={(e) => setReceiverName(e.target.value)} placeholder="Artist name" className="h-11 bg-zinc-900/50 border border-white/10 rounded-xl text-white focus:border-neon-pink" required />
+                                                    <input value={receiverName} onChange={(e) => setReceiverName(e.target.value)} placeholder="Artist name" className="h-11 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl text-gray-900 dark:text-white focus:border-neon-pink" required />
                                                 </div>
                                                 <div className="space-y-1.5">
                                                     <label className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Event Reference</label>
-                                                    <input value={linkedGig} onChange={(e) => setLinkedGig(e.target.value)} placeholder="e.g. Sunburn Stage" className="h-11 bg-zinc-900/50 border border-white/10 rounded-xl text-white focus:border-neon-pink" />
+                                                    <input value={linkedGig} onChange={(e) => setLinkedGig(e.target.value)} placeholder="e.g. Sunburn Stage" className="h-11 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl text-gray-900 dark:text-white focus:border-neon-pink" />
                                                 </div>
                                             </div>
                                         )}
 
                                         {payoutType === 'General Expense' && (
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-5 bg-white/[0.02] border border-white/5 rounded-2xl">
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-5 bg-white/[0.02] border border-black/10 dark:border-white/5 rounded-2xl">
                                                 <div className="space-y-1.5">
                                                     <label className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Recipient / Payee Name *</label>
-                                                    <input value={receiverName} onChange={(e) => { setReceiverName(e.target.value); setPaidTo(e.target.value); }} placeholder="e.g. Amazon Office Supplies" className="h-11 bg-zinc-900/50 border border-white/10 rounded-xl text-white focus:border-neon-pink" required />
+                                                    <input value={receiverName} onChange={(e) => { setReceiverName(e.target.value); setPaidTo(e.target.value); }} placeholder="e.g. Amazon Office Supplies" className="h-11 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl text-gray-900 dark:text-white focus:border-neon-pink" required />
                                                 </div>
                                                 <div className="space-y-1.5">
                                                     <label className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Expense Category</label>
-                                                    <input value={designation} onChange={(e) => setDesignation(e.target.value)} placeholder="e.g. Office Operations / Travel / F&B" className="h-11 bg-zinc-900/50 border border-white/10 rounded-xl text-white focus:border-neon-pink" />
+                                                    <input value={designation} onChange={(e) => setDesignation(e.target.value)} placeholder="e.g. Office Operations / Travel / F&B" className="h-11 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl text-gray-900 dark:text-white focus:border-neon-pink" />
                                                 </div>
                                             </div>
                                         )}
@@ -1573,16 +1573,16 @@ const SpendsManagement = () => {
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="space-y-1.5">
                                         <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Source Account *</label>
-                                        <select value={accountType} onChange={(e) => setAccountType(e.target.value)} className="w-full bg-zinc-900/50 border border-white/10 h-12 rounded-xl text-xs font-bold px-4 text-white outline-none focus:border-neon-pink focus:ring-1 focus:ring-neon-pink transition-all">
-                                            <option value="newbi" className="bg-zinc-950 text-white">Official Newbi Account</option>
-                                            <option value="personal" className="bg-zinc-950 text-white">Personal Account (Core Member Reimbursement)</option>
+                                        <select value={accountType} onChange={(e) => setAccountType(e.target.value)} className="w-full bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 h-12 rounded-xl text-xs font-bold px-4 text-gray-900 dark:text-white outline-none focus:border-neon-pink focus:ring-1 focus:ring-neon-pink transition-all">
+                                            <option value="newbi" className="bg-gray-100 dark:bg-zinc-950 text-gray-900 dark:text-white">Official Newbi Account</option>
+                                            <option value="personal" className="bg-gray-100 dark:bg-zinc-950 text-gray-900 dark:text-white">Personal Account (Core Member Reimbursement)</option>
                                         </select>
                                     </div>
                                     
                                     {accountType === 'personal' && (
                                         <div className="space-y-1.5">
                                             <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Payer Name (Team Member) *</label>
-                                            <input value={receiverName} onChange={(e) => setReceiverName(e.target.value)} placeholder="Name of member paying" className="h-12 bg-zinc-900/50 border border-white/10 rounded-xl text-white focus:border-neon-pink" required />
+                                            <input value={receiverName} onChange={(e) => setReceiverName(e.target.value)} placeholder="Name of member paying" className="h-12 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl text-gray-900 dark:text-white focus:border-neon-pink" required />
                                         </div>
                                     )}
                                 </div>
@@ -1590,15 +1590,15 @@ const SpendsManagement = () => {
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="space-y-1.5">
                                         <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Payment Method</label>
-                                        <select value={paymentMode} onChange={(e) => setPaymentMode(e.target.value)} className="w-full bg-zinc-900/50 border border-white/10 h-12 rounded-xl text-xs font-bold px-4 text-white outline-none focus:border-neon-pink focus:ring-1 focus:ring-neon-pink transition-all">
-                                            {paymentModes.map(m => <option key={m} value={m} className="bg-zinc-950 text-white">{m}</option>)}
+                                        <select value={paymentMode} onChange={(e) => setPaymentMode(e.target.value)} className="w-full bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 h-12 rounded-xl text-xs font-bold px-4 text-gray-900 dark:text-white outline-none focus:border-neon-pink focus:ring-1 focus:ring-neon-pink transition-all">
+                                            {paymentModes.map(m => <option key={m} value={m} className="bg-gray-100 dark:bg-zinc-950 text-gray-900 dark:text-white">{m}</option>)}
                                         </select>
                                     </div>
                                     <div className="space-y-1.5">
                                         <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Cleared / Paid Status</label>
-                                        <select value={status} onChange={(e) => setStatus(e.target.value)} className="w-full bg-zinc-900/50 border border-white/10 h-12 rounded-xl text-xs font-bold px-4 text-white outline-none focus:border-neon-pink focus:ring-1 focus:ring-neon-pink transition-all">
-                                            <option value="Paid" className="bg-zinc-950 text-white">Cleared / Settled</option>
-                                            <option value="Pending" className="bg-zinc-950 text-white">Pending / Unpaid</option>
+                                        <select value={status} onChange={(e) => setStatus(e.target.value)} className="w-full bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 h-12 rounded-xl text-xs font-bold px-4 text-gray-900 dark:text-white outline-none focus:border-neon-pink focus:ring-1 focus:ring-neon-pink transition-all">
+                                            <option value="Paid" className="bg-gray-100 dark:bg-zinc-950 text-gray-900 dark:text-white">Cleared / Settled</option>
+                                            <option value="Pending" className="bg-gray-100 dark:bg-zinc-950 text-gray-900 dark:text-white">Pending / Unpaid</option>
                                         </select>
                                     </div>
                                 </div>
@@ -1610,29 +1610,29 @@ const SpendsManagement = () => {
                                             value={customUTR} 
                                             onChange={(e) => setCustomUTR(e.target.value)} 
                                             placeholder="Enter UPI UTR, Bank Ref ID, or receipt number" 
-                                            className="h-12 bg-zinc-900/50 border border-white/10 rounded-xl text-white focus:border-neon-pink font-mono"
+                                            className="h-12 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl text-gray-900 dark:text-white focus:border-neon-pink font-mono"
                                         />
                                     </div>
                                 )}
 
                                 <div className="space-y-1.5">
                                     <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Payout Destination Details (UPI ID / Bank details to copy)</label>
-                                    <input value={destinationDetails} onChange={(e) => setDestinationDetails(e.target.value)} placeholder="e.g. UPI: name@okaxis or Bank transfer details" className="h-12 bg-zinc-900/50 border border-white/10 rounded-xl text-white focus:border-neon-pink" />
+                                    <input value={destinationDetails} onChange={(e) => setDestinationDetails(e.target.value)} placeholder="e.g. UPI: name@okaxis or Bank transfer details" className="h-12 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl text-gray-900 dark:text-white focus:border-neon-pink" />
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="space-y-1.5 md:col-span-2">
                                         <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Payout Slip / Receipt Attachment</label>
-                                        <div className="relative group cursor-pointer h-12 border border-dashed border-white/10 rounded-xl flex items-center justify-center gap-3 bg-white/5 hover:border-neon-pink/40 transition-all">
+                                        <div className="relative group cursor-pointer h-12 border border-dashed border-black/10 dark:border-white/10 rounded-xl flex items-center justify-center gap-3 bg-black/5 dark:bg-white/5 hover:border-neon-pink/40 transition-all">
                                             <input type="file" onChange={(e) => handleReceiptUpload(e, setReceiptUrl)} className="absolute inset-0 opacity-0 cursor-pointer z-10" />
                                             <Upload className="text-gray-500 group-hover:text-neon-pink" size={16} />
-                                            <span className="text-[10px] font-black text-gray-500 group-hover:text-white uppercase tracking-widest">
+                                            <span className="text-[10px] font-black text-gray-500 group-hover:text-gray-900 dark:group-hover:text-white uppercase tracking-widest">
                                                 {uploadingReceipt ? 'UPLOADING...' : (receiptUrl ? 'CHANGE ATTACHMENT' : 'CHOOSE RECEIPT FILE')}
                                             </span>
                                         </div>
                                         {receiptUrl && (
                                             <div className="text-[8px] text-neon-green font-bold uppercase tracking-wider mt-1 truncate">
-                                                File linked: <a href={receiptUrl} target="_blank" rel="noopener noreferrer" className="underline hover:text-white">View Attachment</a>
+                                                File linked: <a href={receiptUrl} target="_blank" rel="noopener noreferrer" className="underline hover:text-gray-900 dark:hover:text-white">View Attachment</a>
                                             </div>
                                         )}
                                     </div>
@@ -1640,11 +1640,11 @@ const SpendsManagement = () => {
 
                                 <div className="space-y-1.5">
                                     <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Internal Operational Notes</label>
-                                    <textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Add transaction notes or descriptions..." className="w-full bg-zinc-900/50 border border-white/10 h-20 rounded-xl text-xs font-semibold p-4 text-white outline-none focus:border-neon-pink placeholder:text-white/20 transition-all" />
+                                    <textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Add transaction notes or descriptions..." className="w-full bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 h-20 rounded-xl text-xs font-semibold p-4 text-gray-900 dark:text-white outline-none focus:border-neon-pink placeholder:text-gray-900 dark:placeholder:text-white/20 transition-all" />
                                 </div>
 
                                 {paymentMode === 'UPI' && destinationDetails.includes('@') ? (
-                                    <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-5 space-y-4 pt-4 mt-2">
+                                    <div className="bg-white/[0.02] border border-black/10 dark:border-white/5 rounded-2xl p-5 space-y-4 pt-4 mt-2">
                                         <span className="text-[10px] font-black text-neon-pink uppercase tracking-widest block">UPI Direct Checkout</span>
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                             <button
@@ -1658,21 +1658,21 @@ const SpendsManagement = () => {
                                                     window.open(upiLink, '_blank');
                                                     setShowUPIFlow(true);
                                                 }}
-                                                className="h-12 bg-neon-pink hover:bg-neon-pink/90 text-white text-[9px] font-black uppercase tracking-widest rounded-xl transition-all flex items-center justify-center gap-2 shadow-[0_4px_12px_rgba(255,79,139,0.2)]"
+                                                className="h-12 bg-neon-pink hover:bg-neon-pink/90 text-gray-900 dark:text-white text-[9px] font-black uppercase tracking-widest rounded-xl transition-all flex items-center justify-center gap-2 shadow-[0_4px_12px_rgba(255,79,139,0.2)]"
                                             >
                                                 <Smartphone size={14} /> Pay via UPI App
                                             </button>
                                             <button
                                                 type="submit"
                                                 onClick={() => setStatus('Paid')}
-                                                className="h-12 bg-white/5 hover:bg-white/10 border border-white/10 text-white text-[9px] font-black uppercase tracking-widest rounded-xl transition-all"
+                                                className="h-12 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 border border-black/10 dark:border-white/10 text-gray-900 dark:text-white text-[9px] font-black uppercase tracking-widest rounded-xl transition-all"
                                             >
                                                 Mark as Already Paid
                                             </button>
                                         </div>
 
                                         {showUPIFlow && (
-                                            <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="pt-4 border-t border-white/5 space-y-4">
+                                            <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="pt-4 border-t border-black/10 dark:border-white/5 space-y-4">
                                                 <div className="flex flex-col items-center gap-3">
                                                     <div className="p-3 bg-white rounded-2xl shadow-xl">
                                                         <img 
@@ -1692,7 +1692,7 @@ const SpendsManagement = () => {
                                                             value={customUTR} 
                                                             onChange={(e) => setCustomUTR(e.target.value)} 
                                                             placeholder="Enter 12-digit UPI UTR / Ref Number" 
-                                                            className="h-11 bg-zinc-900/50 border border-white/10 rounded-xl text-white focus:border-neon-pink font-mono"
+                                                            className="h-11 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl text-gray-900 dark:text-white focus:border-neon-pink font-mono"
                                                         />
                                                         <button
                                                             type="button"
@@ -1718,7 +1718,7 @@ const SpendsManagement = () => {
                                     </div>
                                 ) : (
                                     <div className="pt-4 flex gap-3">
-                                        <button type="button" onClick={() => setShowAddModal(false)} className="flex-1 h-12 bg-white/5 hover:bg-white/10 text-white font-black uppercase tracking-widest text-[9px] rounded-xl border border-white/10 transition-all font-bold">
+                                        <button type="button" onClick={() => setShowAddModal(false)} className="flex-1 h-12 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-gray-900 dark:text-white font-black uppercase tracking-widest text-[9px] rounded-xl border border-black/10 dark:border-white/10 transition-all font-bold">
                                             Cancel
                                         </button>
                                         <button type="submit" className="flex-1 h-12 bg-neon-pink text-white font-black uppercase tracking-[0.2em] text-[9px] rounded-xl shadow-[0_4px_15px_rgba(255,79,139,0.2)] hover:scale-[1.01]" disabled={uploadingReceipt}>
@@ -1737,27 +1737,27 @@ const SpendsManagement = () => {
             <AnimatePresence>
                 {showEditModal && (
                     <>
-                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowEditModal(null)} className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100]" />
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowEditModal(null)} className="fixed inset-0 bg-white dark:bg-black/60 backdrop-blur-sm z-[100]" />
                         <motion.div 
                             initial={{ x: '100%' }} 
                             animate={{ x: 0 }} 
                             exit={{ x: '100%' }}
                             transition={{ type: "spring", damping: 30, stiffness: 300 }}
-                            className="fixed top-0 right-0 h-full w-full max-w-xl bg-zinc-950/95 backdrop-blur-3xl border-l border-white/10 z-[101] flex flex-col text-white"
+                            className="fixed top-0 right-0 h-full w-full max-w-xl bg-gray-100 dark:bg-zinc-950/95 backdrop-blur-3xl border-l border-black/10 dark:border-white/10 z-[101] flex flex-col text-gray-900 dark:text-white"
                         >
-                            <div className="p-6 border-b border-white/5 flex items-center justify-between">
+                            <div className="p-6 border-b border-black/10 dark:border-white/5 flex items-center justify-between">
                                 <div>
-                                    <h2 className="text-xl font-black font-heading tracking-tighter uppercase italic text-white">EDIT <span className="text-neon-pink">PAYOUT.</span></h2>
+                                    <h2 className="text-xl font-black font-heading tracking-tighter uppercase italic text-gray-900 dark:text-white">EDIT <span className="text-neon-pink">PAYOUT.</span></h2>
                                     <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest mt-1">Update Payout Record #{showEditModal.id?.substring(0, 8)}</p>
                                 </div>
-                                <button type="button" onClick={() => setShowEditModal(null)} className="w-8 h-8 rounded-full bg-zinc-900/50 border border-white/10 flex items-center justify-center hover:bg-white hover:text-black transition-all"><X size={14} /></button>
+                                <button type="button" onClick={() => setShowEditModal(null)} className="w-8 h-8 rounded-full bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 flex items-center justify-center hover:bg-white hover:text-black transition-all"><X size={14} /></button>
                             </div>
                             
                             <form onSubmit={handleUpdateSpend} className="flex-1 flex flex-col overflow-hidden">
                                 <div className="flex-1 overflow-y-auto p-6 space-y-5 custom-scrollbar pb-24">
                                 {/* Quick Fill Selection */}
                                 {financePayees && financePayees.length > 0 && (
-                                    <div className="space-y-1.5 p-4 bg-white/[0.02] border border-white/5 rounded-2xl">
+                                    <div className="space-y-1.5 p-4 bg-white/[0.02] border border-black/10 dark:border-white/5 rounded-2xl">
                                         <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest text-neon-pink">Quick Fill from Registered Payee</label>
                                         <select 
                                             onChange={(e) => {
@@ -1788,12 +1788,12 @@ const SpendsManagement = () => {
                                                     useStore.getState().addToast(`Pre-filled details for ${payee.name}!`, 'success');
                                                 }
                                             }}
-                                            className="w-full bg-black/40 border border-white/5 h-12 rounded-xl text-xs font-bold px-4 text-white outline-none focus:border-neon-pink focus:ring-1 focus:ring-neon-pink transition-all"
+                                            className="w-full bg-white dark:bg-black/40 border border-black/10 dark:border-white/5 h-12 rounded-xl text-xs font-bold px-4 text-gray-900 dark:text-white outline-none focus:border-neon-pink focus:ring-1 focus:ring-neon-pink transition-all"
                                             defaultValue=""
                                         >
-                                            <option value="" className="bg-zinc-950 text-gray-400">-- Select a Registered Payee to Autofill --</option>
+                                            <option value="" className="bg-gray-100 dark:bg-zinc-950 text-gray-600 dark:text-gray-400">-- Select a Registered Payee to Autofill --</option>
                                             {financePayees.map(payee => (
-                                                <option key={payee.id} value={payee.id} className="bg-zinc-950 text-white">
+                                                <option key={payee.id} value={payee.id} className="bg-gray-100 dark:bg-zinc-950 text-gray-900 dark:text-white">
                                                     {payee.name} ({payee.type} - {payee.paymentMode})
                                                 </option>
                                             ))}
@@ -1804,59 +1804,59 @@ const SpendsManagement = () => {
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="space-y-1.5">
                                         <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Payout Classification *</label>
-                                        <select value={payoutType} onChange={(e) => setPayoutType(e.target.value)} className="w-full bg-zinc-900/50 border border-white/10 h-12 rounded-xl text-xs font-bold px-4 text-white outline-none focus:border-neon-pink focus:ring-1 focus:ring-neon-pink transition-all">
-                                            {payoutTypes.map(pt => <option key={pt} value={pt} className="bg-zinc-950 text-white">{pt}</option>)}
+                                        <select value={payoutType} onChange={(e) => setPayoutType(e.target.value)} className="w-full bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 h-12 rounded-xl text-xs font-bold px-4 text-gray-900 dark:text-white outline-none focus:border-neon-pink focus:ring-1 focus:ring-neon-pink transition-all">
+                                            {payoutTypes.map(pt => <option key={pt} value={pt} className="bg-gray-100 dark:bg-zinc-950 text-gray-900 dark:text-white">{pt}</option>)}
                                         </select>
                                     </div>
                                     <div className="space-y-1.5">
                                         <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Amount (INR) *</label>
-                                        <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="Enter amount to pay" className="h-12 bg-zinc-900/50 border border-white/10 rounded-xl text-white focus:border-neon-pink" required />
+                                        <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="Enter amount to pay" className="h-12 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl text-gray-900 dark:text-white focus:border-neon-pink" required />
                                     </div>
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="space-y-1.5">
                                         <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Transaction Label / Title *</label>
-                                        <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Monthly salary retainer" className="h-12 bg-zinc-900/50 border border-white/10 rounded-xl text-white focus:border-neon-pink" required />
+                                        <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Monthly salary retainer" className="h-12 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl text-gray-900 dark:text-white focus:border-neon-pink" required />
                                     </div>
                                     <div className="space-y-1.5">
                                         <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Value Date *</label>
-                                        <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="h-12 bg-zinc-900/50 border border-white/10 rounded-xl text-white focus:border-neon-pink" required />
+                                        <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="h-12 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl text-gray-900 dark:text-white focus:border-neon-pink" required />
                                     </div>
                                 </div>
 
                                 {/* Dynamic Edit Payout Fields */}
                                 <div className="space-y-5">
                                     {payoutType === 'Salary' && (
-                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-5 bg-white/[0.02] border border-white/5 rounded-2xl">
+                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-5 bg-white/[0.02] border border-black/10 dark:border-white/5 rounded-2xl">
                                             <div className="space-y-1.5">
                                                 <label className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Core Member Name *</label>
-                                                <input value={receiverName} onChange={(e) => setReceiverName(e.target.value)} placeholder="Recipient name" className="h-11 bg-zinc-900/50 border border-white/10 rounded-xl text-white focus:border-neon-pink" required />
+                                                <input value={receiverName} onChange={(e) => setReceiverName(e.target.value)} placeholder="Recipient name" className="h-11 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl text-gray-900 dark:text-white focus:border-neon-pink" required />
                                             </div>
                                             <div className="space-y-1.5">
                                                 <label className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Designation/Role *</label>
-                                                <input value={designation} onChange={(e) => setDesignation(e.target.value)} placeholder="e.g. Creative Director" className="h-11 bg-zinc-900/50 border border-white/10 rounded-xl text-white focus:border-neon-pink" required />
+                                                <input value={designation} onChange={(e) => setDesignation(e.target.value)} placeholder="e.g. Creative Director" className="h-11 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl text-gray-900 dark:text-white focus:border-neon-pink" required />
                                             </div>
                                             <div className="space-y-1.5">
                                                 <label className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Salary Month *</label>
-                                                <input value={salaryPeriod} onChange={(e) => setSalaryPeriod(e.target.value)} placeholder="e.g. May 2026" className="h-11 bg-zinc-900/50 border border-white/10 rounded-xl text-white focus:border-neon-pink" required />
+                                                <input value={salaryPeriod} onChange={(e) => setSalaryPeriod(e.target.value)} placeholder="e.g. May 2026" className="h-11 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl text-gray-900 dark:text-white focus:border-neon-pink" required />
                                             </div>
                                         </div>
                                     )}
 
                                     {payoutType === 'Volunteer Payout' && (
-                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-5 bg-white/[0.02] border border-white/5 rounded-2xl">
+                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-5 bg-white/[0.02] border border-black/10 dark:border-white/5 rounded-2xl">
                                             <div className="space-y-1.5">
                                                 <label className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Volunteer Name *</label>
-                                                <input value={receiverName} onChange={(e) => setReceiverName(e.target.value)} placeholder="Volunteer full name" className="h-11 bg-zinc-900/50 border border-white/10 rounded-xl text-white focus:border-neon-pink" required />
+                                                <input value={receiverName} onChange={(e) => setReceiverName(e.target.value)} placeholder="Volunteer full name" className="h-11 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl text-gray-900 dark:text-white focus:border-neon-pink" required />
                                             </div>
                                             <div className="space-y-1.5">
                                                 <label className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Volunteer Phone</label>
-                                                <input value={volunteerPhone} onChange={(e) => setVolunteerPhone(e.target.value)} placeholder="Phone number" className="h-11 bg-zinc-900/50 border border-white/10 rounded-xl text-white focus:border-neon-pink" />
+                                                <input value={volunteerPhone} onChange={(e) => setVolunteerPhone(e.target.value)} placeholder="Phone number" className="h-11 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl text-gray-900 dark:text-white focus:border-neon-pink" />
                                             </div>
                                             <div className="space-y-1.5">
                                                 <label className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Gig Title / Link</label>
-                                                <input value={linkedGig} onChange={(e) => setLinkedGig(e.target.value)} placeholder="e.g. Arena Concert Gate" className="h-11 bg-zinc-900/50 border border-white/10 rounded-xl text-white focus:border-neon-pink" />
+                                                <input value={linkedGig} onChange={(e) => setLinkedGig(e.target.value)} placeholder="e.g. Arena Concert Gate" className="h-11 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl text-gray-900 dark:text-white focus:border-neon-pink" />
                                             </div>
                                             {invoices && invoices.length > 0 && (
                                                 <div className="space-y-1.5 col-span-full pt-2">
@@ -1869,11 +1869,11 @@ const SpendsManagement = () => {
                                                             const inv = invoices.find(i => i.id === invId);
                                                             setLinkedInvoiceNumber(inv ? (inv.invoiceNumber || inv.id) : '');
                                                         }}
-                                                        className="w-full bg-black/40 border border-white/5 h-11 rounded-xl text-xs font-bold px-4 text-white outline-none focus:border-neon-pink focus:ring-1 focus:ring-neon-pink transition-all"
+                                                        className="w-full bg-white dark:bg-black/40 border border-black/10 dark:border-white/5 h-11 rounded-xl text-xs font-bold px-4 text-gray-900 dark:text-white outline-none focus:border-neon-pink focus:ring-1 focus:ring-neon-pink transition-all"
                                                     >
-                                                        <option value="" className="bg-zinc-950 text-gray-400">-- No Invoice Linked --</option>
+                                                        <option value="" className="bg-gray-100 dark:bg-zinc-950 text-gray-600 dark:text-gray-400">-- No Invoice Linked --</option>
                                                         {invoices.map(inv => (
-                                                            <option key={inv.id} value={inv.id} className="bg-zinc-950 text-white">
+                                                            <option key={inv.id} value={inv.id} className="bg-gray-100 dark:bg-zinc-950 text-gray-900 dark:text-white">
                                                                 {inv.invoiceNumber || 'INV'} - {inv.clientName} (₹{inv.amount?.toLocaleString()})
                                                             </option>
                                                         ))}
@@ -1884,40 +1884,40 @@ const SpendsManagement = () => {
                                     )}
 
                                     {payoutType === 'Vendor Payout' && (
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-5 bg-white/[0.02] border border-white/5 rounded-2xl">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-5 bg-white/[0.02] border border-black/10 dark:border-white/5 rounded-2xl">
                                             <div className="space-y-1.5">
                                                 <label className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Vendor Entity Name *</label>
-                                                <input value={paidTo} onChange={(e) => setPaidTo(e.target.value)} placeholder="e.g. Sound Rentals Ltd." className="h-11 bg-zinc-900/50 border border-white/10 rounded-xl text-white focus:border-neon-pink" required />
+                                                <input value={paidTo} onChange={(e) => setPaidTo(e.target.value)} placeholder="e.g. Sound Rentals Ltd." className="h-11 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl text-gray-900 dark:text-white focus:border-neon-pink" required />
                                             </div>
                                             <div className="space-y-1.5">
                                                 <label className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Invoice Reference #</label>
-                                                <input value={invoiceRef} onChange={(e) => setInvoiceRef(e.target.value)} placeholder="e.g. INV-10023" className="h-11 bg-zinc-900/50 border border-white/10 rounded-xl text-white focus:border-neon-pink" />
+                                                <input value={invoiceRef} onChange={(e) => setInvoiceRef(e.target.value)} placeholder="e.g. INV-10023" className="h-11 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl text-gray-900 dark:text-white focus:border-neon-pink" />
                                             </div>
                                         </div>
                                     )}
 
                                     {payoutType === 'Artist Fee' && (
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-5 bg-white/[0.02] border border-white/5 rounded-2xl">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-5 bg-white/[0.02] border border-black/10 dark:border-white/5 rounded-2xl">
                                             <div className="space-y-1.5">
                                                 <label className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Artist / DJ Name *</label>
-                                                <input value={receiverName} onChange={(e) => setReceiverName(e.target.value)} placeholder="Artist name" className="h-11 bg-zinc-900/50 border border-white/10 rounded-xl text-white focus:border-neon-pink" required />
+                                                <input value={receiverName} onChange={(e) => setReceiverName(e.target.value)} placeholder="Artist name" className="h-11 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl text-gray-900 dark:text-white focus:border-neon-pink" required />
                                             </div>
                                             <div className="space-y-1.5">
                                                 <label className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Event Reference</label>
-                                                <input value={linkedGig} onChange={(e) => setLinkedGig(e.target.value)} placeholder="e.g. Stage 1 VIP" className="h-11 bg-zinc-900/50 border border-white/10 rounded-xl text-white focus:border-neon-pink" />
+                                                <input value={linkedGig} onChange={(e) => setLinkedGig(e.target.value)} placeholder="e.g. Stage 1 VIP" className="h-11 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl text-gray-900 dark:text-white focus:border-neon-pink" />
                                             </div>
                                         </div>
                                     )}
 
                                     {payoutType === 'General Expense' && (
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-5 bg-white/[0.02] border border-white/5 rounded-2xl">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-5 bg-white/[0.02] border border-black/10 dark:border-white/5 rounded-2xl">
                                             <div className="space-y-1.5">
                                                 <label className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Recipient / Payee Name *</label>
-                                                <input value={receiverName} onChange={(e) => { setReceiverName(e.target.value); setPaidTo(e.target.value); }} placeholder="e.g. Amazon Office Supplies" className="h-11 bg-zinc-900/50 border border-white/10 rounded-xl text-white focus:border-neon-pink" required />
+                                                <input value={receiverName} onChange={(e) => { setReceiverName(e.target.value); setPaidTo(e.target.value); }} placeholder="e.g. Amazon Office Supplies" className="h-11 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl text-gray-900 dark:text-white focus:border-neon-pink" required />
                                             </div>
                                             <div className="space-y-1.5">
                                                 <label className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Expense Category</label>
-                                                <input value={designation} onChange={(e) => setDesignation(e.target.value)} placeholder="e.g. Office Operations / Travel / F&B" className="h-11 bg-zinc-900/50 border border-white/10 rounded-xl text-white focus:border-neon-pink" />
+                                                <input value={designation} onChange={(e) => setDesignation(e.target.value)} placeholder="e.g. Office Operations / Travel / F&B" className="h-11 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl text-gray-900 dark:text-white focus:border-neon-pink" />
                                             </div>
                                         </div>
                                     )}
@@ -1926,16 +1926,16 @@ const SpendsManagement = () => {
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="space-y-1.5">
                                         <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Source Account *</label>
-                                        <select value={accountType} onChange={(e) => setAccountType(e.target.value)} className="w-full bg-zinc-900/50 border border-white/10 h-12 rounded-xl text-xs font-bold px-4 text-white outline-none focus:border-neon-pink focus:ring-1 focus:ring-neon-pink transition-all">
-                                            <option value="newbi" className="bg-zinc-950 text-white">Official Newbi Account</option>
-                                            <option value="personal" className="bg-zinc-950 text-white">Personal Account (Core Member Reimbursement)</option>
+                                        <select value={accountType} onChange={(e) => setAccountType(e.target.value)} className="w-full bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 h-12 rounded-xl text-xs font-bold px-4 text-gray-900 dark:text-white outline-none focus:border-neon-pink focus:ring-1 focus:ring-neon-pink transition-all">
+                                            <option value="newbi" className="bg-gray-100 dark:bg-zinc-950 text-gray-900 dark:text-white">Official Newbi Account</option>
+                                            <option value="personal" className="bg-gray-100 dark:bg-zinc-950 text-gray-900 dark:text-white">Personal Account (Core Member Reimbursement)</option>
                                         </select>
                                     </div>
                                     
                                     {accountType === 'personal' && (
                                         <div className="space-y-1.5">
                                             <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Payer Name (Team Member) *</label>
-                                            <input value={receiverName} onChange={(e) => setReceiverName(e.target.value)} placeholder="Name of member paying" className="h-12 bg-zinc-900/50 border border-white/10 rounded-xl text-white focus:border-neon-pink" required />
+                                            <input value={receiverName} onChange={(e) => setReceiverName(e.target.value)} placeholder="Name of member paying" className="h-12 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl text-gray-900 dark:text-white focus:border-neon-pink" required />
                                         </div>
                                     )}
                                 </div>
@@ -1943,15 +1943,15 @@ const SpendsManagement = () => {
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="space-y-1.5">
                                         <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Payment Method</label>
-                                        <select value={paymentMode} onChange={(e) => setPaymentMode(e.target.value)} className="w-full bg-zinc-900/50 border border-white/10 h-12 rounded-xl text-xs font-bold px-4 text-white outline-none focus:border-neon-pink focus:ring-1 focus:ring-neon-pink transition-all">
-                                            {paymentModes.map(m => <option key={m} value={m} className="bg-zinc-950 text-white">{m}</option>)}
+                                        <select value={paymentMode} onChange={(e) => setPaymentMode(e.target.value)} className="w-full bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 h-12 rounded-xl text-xs font-bold px-4 text-gray-900 dark:text-white outline-none focus:border-neon-pink focus:ring-1 focus:ring-neon-pink transition-all">
+                                            {paymentModes.map(m => <option key={m} value={m} className="bg-gray-100 dark:bg-zinc-950 text-gray-900 dark:text-white">{m}</option>)}
                                         </select>
                                     </div>
                                     <div className="space-y-1.5">
                                         <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Cleared / Paid Status</label>
-                                        <select value={status} onChange={(e) => setStatus(e.target.value)} className="w-full bg-zinc-900/50 border border-white/10 h-12 rounded-xl text-xs font-bold px-4 text-white outline-none focus:border-[#FF2E90] focus:ring-1 focus:ring-[#FF2E90] transition-all">
-                                            <option value="Paid" className="bg-zinc-950 text-white">Cleared / Settled</option>
-                                            <option value="Pending" className="bg-zinc-950 text-white">Pending / Unpaid</option>
+                                        <select value={status} onChange={(e) => setStatus(e.target.value)} className="w-full bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 h-12 rounded-xl text-xs font-bold px-4 text-gray-900 dark:text-white outline-none focus:border-[#FF2E90] focus:ring-1 focus:ring-[#FF2E90] transition-all">
+                                            <option value="Paid" className="bg-gray-100 dark:bg-zinc-950 text-gray-900 dark:text-white">Cleared / Settled</option>
+                                            <option value="Pending" className="bg-gray-100 dark:bg-zinc-950 text-gray-900 dark:text-white">Pending / Unpaid</option>
                                         </select>
                                     </div>
                                 </div>
@@ -1963,29 +1963,29 @@ const SpendsManagement = () => {
                                             value={customUTR} 
                                             onChange={(e) => setCustomUTR(e.target.value)} 
                                             placeholder="Enter UPI UTR, Bank Ref ID, or receipt number" 
-                                            className="h-12 bg-zinc-900/50 border border-white/10 rounded-xl text-white focus:border-[#FF2E90] font-mono"
+                                            className="h-12 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl text-gray-900 dark:text-white focus:border-[#FF2E90] font-mono"
                                         />
                                     </div>
                                 )}
 
                                 <div className="space-y-1.5">
                                     <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Payout Destination Details (UPI ID / Bank details to copy)</label>
-                                    <input value={destinationDetails} onChange={(e) => setDestinationDetails(e.target.value)} placeholder="e.g. UPI: name@okaxis or Bank transfer details" className="h-12 bg-zinc-900/50 border border-white/10 rounded-xl text-white focus:border-neon-pink" />
+                                    <input value={destinationDetails} onChange={(e) => setDestinationDetails(e.target.value)} placeholder="e.g. UPI: name@okaxis or Bank transfer details" className="h-12 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl text-gray-900 dark:text-white focus:border-neon-pink" />
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="space-y-1.5 md:col-span-2">
                                         <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Payout Slip / Receipt Attachment</label>
-                                        <div className="relative group cursor-pointer h-12 border border-dashed border-white/10 rounded-xl flex items-center justify-center gap-3 bg-white/5 hover:border-neon-pink/40 transition-all">
+                                        <div className="relative group cursor-pointer h-12 border border-dashed border-black/10 dark:border-white/10 rounded-xl flex items-center justify-center gap-3 bg-black/5 dark:bg-white/5 hover:border-neon-pink/40 transition-all">
                                             <input type="file" onChange={(e) => handleReceiptUpload(e, setReceiptUrl)} className="absolute inset-0 opacity-0 cursor-pointer z-10" />
                                             <Upload className="text-gray-500 group-hover:text-neon-pink" size={16} />
-                                            <span className="text-[10px] font-black text-gray-500 group-hover:text-white uppercase tracking-widest">
+                                            <span className="text-[10px] font-black text-gray-500 group-hover:text-gray-900 dark:group-hover:text-white uppercase tracking-widest">
                                                 {uploadingReceipt ? 'UPLOADING...' : (receiptUrl ? 'CHANGE ATTACHMENT' : 'CHOOSE RECEIPT FILE')}
                                             </span>
                                         </div>
                                         {receiptUrl && (
                                             <div className="text-[8px] text-neon-green font-bold uppercase tracking-wider mt-1 truncate">
-                                                File linked: <a href={receiptUrl} target="_blank" rel="noopener noreferrer" className="underline hover:text-white">View Attachment</a>
+                                                File linked: <a href={receiptUrl} target="_blank" rel="noopener noreferrer" className="underline hover:text-gray-900 dark:hover:text-white">View Attachment</a>
                                             </div>
                                         )}
                                     </div>
@@ -1993,11 +1993,11 @@ const SpendsManagement = () => {
 
                                 <div className="space-y-1.5">
                                     <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Internal Notes</label>
-                                    <textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Add transaction notes or descriptions..." className="w-full bg-zinc-900/50 border border-white/10 h-20 rounded-xl text-xs font-semibold p-4 text-white outline-none focus:border-neon-pink placeholder:text-white/20 transition-all" />
+                                    <textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Add transaction notes or descriptions..." className="w-full bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 h-20 rounded-xl text-xs font-semibold p-4 text-gray-900 dark:text-white outline-none focus:border-neon-pink placeholder:text-gray-900 dark:placeholder:text-white/20 transition-all" />
                                 </div>
 
                                 <div className="pt-4 flex gap-3">
-                                    <button type="button" onClick={() => setShowEditModal(null)} className="flex-1 h-12 bg-white/5 hover:bg-white/10 text-white font-black uppercase tracking-widest text-[9px] rounded-xl border border-white/10 transition-all font-bold">
+                                    <button type="button" onClick={() => setShowEditModal(null)} className="flex-1 h-12 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-gray-900 dark:text-white font-black uppercase tracking-widest text-[9px] rounded-xl border border-black/10 dark:border-white/10 transition-all font-bold">
                                         Cancel
                                     </button>
                                     <button type="submit" className="flex-1 h-12 bg-neon-pink text-white font-black uppercase tracking-[0.2em] text-[9px] rounded-xl shadow-[0_4px_15px_rgba(255,79,139,0.2)] hover:scale-[1.01]" disabled={uploadingReceipt}>
@@ -2015,20 +2015,20 @@ const SpendsManagement = () => {
             <AnimatePresence>
                 {showBulkModal && (
                     <>
-                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowBulkModal(false)} className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100]" />
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowBulkModal(false)} className="fixed inset-0 bg-white dark:bg-black/60 backdrop-blur-sm z-[100]" />
                         <motion.div 
                             initial={{ x: '100%' }} 
                             animate={{ x: 0 }} 
                             exit={{ x: '100%' }}
                             transition={{ type: "spring", damping: 30, stiffness: 300 }}
-                            className="fixed top-0 right-0 h-full w-full max-w-xl bg-zinc-950/95 backdrop-blur-3xl border-l border-white/10 z-[101] flex flex-col text-white"
+                            className="fixed top-0 right-0 h-full w-full max-w-xl bg-gray-100 dark:bg-zinc-950/95 backdrop-blur-3xl border-l border-black/10 dark:border-white/10 z-[101] flex flex-col text-gray-900 dark:text-white"
                         >
-                            <div className="p-6 border-b border-white/5 flex items-center justify-between">
+                            <div className="p-6 border-b border-black/10 dark:border-white/5 flex items-center justify-between">
                                 <div>
-                                    <h2 className="text-xl font-black font-heading tracking-tighter uppercase italic text-white">BULK <span className="text-neon-pink">PAYOUTS.</span></h2>
+                                    <h2 className="text-xl font-black font-heading tracking-tighter uppercase italic text-gray-900 dark:text-white">BULK <span className="text-neon-pink">PAYOUTS.</span></h2>
                                     <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest mt-1">Disburse payments to registered event volunteers in batches</p>
                                 </div>
-                                <button type="button" onClick={() => setShowBulkModal(false)} className="w-8 h-8 rounded-full bg-zinc-900/50 border border-white/10 flex items-center justify-center hover:bg-white hover:text-black transition-all"><X size={14} /></button>
+                                <button type="button" onClick={() => setShowBulkModal(false)} className="w-8 h-8 rounded-full bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 flex items-center justify-center hover:bg-white hover:text-black transition-all"><X size={14} /></button>
                             </div>
                             
                             <div className="flex-1 overflow-y-auto p-6 space-y-5 custom-scrollbar pb-24">
@@ -2041,11 +2041,11 @@ const SpendsManagement = () => {
                                             <select 
                                                 value={selectedBulkEvent} 
                                                 onChange={(e) => setSelectedBulkEvent(e.target.value)} 
-                                                className="w-full bg-zinc-900/50 border border-white/10 h-12 rounded-xl text-xs font-bold px-4 text-white outline-none focus:border-neon-blue focus:ring-1 focus:ring-neon-blue transition-all"
+                                                className="w-full bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 h-12 rounded-xl text-xs font-bold px-4 text-gray-900 dark:text-white outline-none focus:border-neon-blue focus:ring-1 focus:ring-neon-blue transition-all"
                                             >
-                                                <option value="" className="bg-zinc-950 text-gray-400">-- Choose an Event --</option>
+                                                <option value="" className="bg-gray-100 dark:bg-zinc-950 text-gray-600 dark:text-gray-400">-- Choose an Event --</option>
                                                 {upcomingEvents && upcomingEvents.map(evt => (
-                                                    <option key={evt.id || evt.title} value={evt.title} className="bg-zinc-950 text-white">{evt.title}</option>
+                                                    <option key={evt.id || evt.title} value={evt.title} className="bg-gray-100 dark:bg-zinc-950 text-gray-900 dark:text-white">{evt.title}</option>
                                                 ))}
                                             </select>
                                             {/* Create New Event inline */}
@@ -2054,7 +2054,7 @@ const SpendsManagement = () => {
                                                     placeholder="Or type a new event name..." 
                                                     value={bulkNewEventName || ''} 
                                                     onChange={(e) => setBulkNewEventName(e.target.value)}
-                                                    className="h-9 text-[10px] bg-zinc-900/50 border border-white/10 rounded-xl text-white focus:border-neon-blue flex-1"
+                                                    className="h-9 text-[10px] bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl text-gray-900 dark:text-white focus:border-neon-blue flex-1"
                                                 />
                                                 <button
                                                     type="button"
@@ -2094,14 +2094,14 @@ const SpendsManagement = () => {
                                         </div>
                                         <div className="space-y-1.5">
                                             <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Default Payout Rate (INR) *</label>
-                                            <input type="number" value={bulkPayoutAmount} onChange={(e) => setBulkPayoutAmount(e.target.value)} className="h-12 bg-zinc-900/50 border border-white/10 rounded-xl text-white focus:border-neon-blue" required />
+                                            <input type="number" value={bulkPayoutAmount} onChange={(e) => setBulkPayoutAmount(e.target.value)} className="h-12 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl text-gray-900 dark:text-white focus:border-neon-blue" required />
                                         </div>
                                     </div>
 
                                     {/* Volunteer Selector List */}
                                     {selectedBulkEvent && (
-                                        <div className="space-y-3 p-5 bg-white/[0.02] border border-white/5 rounded-2xl">
-                                            <div className="flex justify-between items-center pb-2 border-b border-white/5">
+                                        <div className="space-y-3 p-5 bg-white/[0.02] border border-black/10 dark:border-white/5 rounded-2xl">
+                                            <div className="flex justify-between items-center pb-2 border-b border-black/10 dark:border-white/5">
                                                 <span className="text-[10px] font-black text-neon-blue uppercase tracking-widest">Registered Volunteers ({bulkVolunteers.length})</span>
                                                 <button 
                                                     type="button" 
@@ -2112,7 +2112,7 @@ const SpendsManagement = () => {
                                                             setSelectedVolunteerIds(bulkVolunteers.map(v => v.id));
                                                         }
                                                     }}
-                                                    className="text-[8px] font-black text-gray-400 hover:text-white uppercase tracking-widest"
+                                                    className="text-[8px] font-black text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white uppercase tracking-widest"
                                                 >
                                                     Toggle All
                                                 </button>
@@ -2127,7 +2127,7 @@ const SpendsManagement = () => {
                                                         return (
                                                             <div key={vol.id} className={cn(
                                                                 "flex items-center justify-between p-3 rounded-xl border transition-all",
-                                                                isSelected ? "bg-neon-blue/5 border-neon-blue/20" : "bg-white/[0.01] border-white/5 opacity-60"
+                                                                isSelected ? "bg-neon-blue/5 border-neon-blue/20" : "bg-white/[0.01] border-black/10 dark:border-white/5 opacity-60"
                                                             )}>
                                                                 <div className="flex items-center gap-3">
                                                                     <input 
@@ -2140,10 +2140,10 @@ const SpendsManagement = () => {
                                                                                 setSelectedVolunteerIds(prev => [...prev, vol.id]);
                                                                             }
                                                                         }}
-                                                                        className="rounded bg-zinc-900/50 border border-white/10 rounded-xl text-white text-neon-blue focus:ring-0 w-4 h-4 cursor-pointer"
+                                                                        className="rounded bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl text-gray-900 dark:text-white text-neon-blue focus:ring-0 w-4 h-4 cursor-pointer"
                                                                     />
                                                                     <div>
-                                                                        <span className="text-xs font-bold text-white block">{vol.name}</span>
+                                                                        <span className="text-xs font-bold text-gray-900 dark:text-white block">{vol.name}</span>
                                                                         <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest">{vol.upiId || vol.phone || 'No Info'}</span>
                                                                     </div>
                                                                 </div>
@@ -2156,7 +2156,7 @@ const SpendsManagement = () => {
                                                                             const val = e.target.value;
                                                                             setBulkVolunteers(prev => prev.map((v, i) => i === index ? { ...v, amount: val } : v));
                                                                         }}
-                                                                        className="w-20 h-8 bg-black/40 border border-white/5 rounded-lg text-xs font-bold text-right px-2 text-white outline-none focus:border-neon-blue font-mono"
+                                                                        className="w-20 h-8 bg-white dark:bg-black/40 border border-black/10 dark:border-white/5 rounded-lg text-xs font-bold text-right px-2 text-gray-900 dark:text-white outline-none focus:border-neon-blue font-mono"
                                                                     />
                                                                 </div>
                                                             </div>
@@ -2171,20 +2171,20 @@ const SpendsManagement = () => {
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                         <div className="space-y-1.5">
                                             <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Payment Method</label>
-                                            <select value={bulkPaymentMode} onChange={(e) => setBulkPaymentMode(e.target.value)} className="w-full bg-zinc-900/50 border border-white/10 h-12 rounded-xl text-xs font-bold px-4 text-white outline-none focus:border-neon-blue focus:ring-1 focus:ring-neon-blue transition-all">
-                                                {paymentModes.map(m => <option key={m} value={m} className="bg-zinc-950 text-white">{m}</option>)}
+                                            <select value={bulkPaymentMode} onChange={(e) => setBulkPaymentMode(e.target.value)} className="w-full bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 h-12 rounded-xl text-xs font-bold px-4 text-gray-900 dark:text-white outline-none focus:border-neon-blue focus:ring-1 focus:ring-neon-blue transition-all">
+                                                {paymentModes.map(m => <option key={m} value={m} className="bg-gray-100 dark:bg-zinc-950 text-gray-900 dark:text-white">{m}</option>)}
                                             </select>
                                         </div>
                                         <div className="space-y-1.5">
                                             <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Source Account</label>
-                                            <select value={bulkAccountType} onChange={(e) => setBulkAccountType(e.target.value)} className="w-full bg-zinc-900/50 border border-white/10 h-12 rounded-xl text-xs font-bold px-4 text-white outline-none focus:border-neon-blue focus:ring-1 focus:ring-neon-blue transition-all">
-                                                <option value="newbi" className="bg-zinc-950 text-white">Official Newbi Account</option>
-                                                <option value="personal" className="bg-zinc-950 text-white">Personal Account</option>
+                                            <select value={bulkAccountType} onChange={(e) => setBulkAccountType(e.target.value)} className="w-full bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 h-12 rounded-xl text-xs font-bold px-4 text-gray-900 dark:text-white outline-none focus:border-neon-blue focus:ring-1 focus:ring-neon-blue transition-all">
+                                                <option value="newbi" className="bg-gray-100 dark:bg-zinc-950 text-gray-900 dark:text-white">Official Newbi Account</option>
+                                                <option value="personal" className="bg-gray-100 dark:bg-zinc-950 text-gray-900 dark:text-white">Personal Account</option>
                                             </select>
                                         </div>
                                         <div className="space-y-1.5">
                                             <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Value Date</label>
-                                            <input type="date" value={bulkDate} onChange={(e) => setBulkDate(e.target.value)} className="h-12 bg-zinc-900/50 border border-white/10 rounded-xl text-white focus:border-neon-blue" required />
+                                            <input type="date" value={bulkDate} onChange={(e) => setBulkDate(e.target.value)} className="h-12 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl text-gray-900 dark:text-white focus:border-neon-blue" required />
                                         </div>
                                     </div>
 
@@ -2200,11 +2200,11 @@ const SpendsManagement = () => {
                                                     const inv = invoices.find(i => i.id === invId);
                                                     setBulkLinkedInvoiceNumber(inv ? (inv.invoiceNumber || inv.id) : '');
                                                 }}
-                                                className="w-full bg-zinc-900/50 border border-white/10 h-12 rounded-xl text-xs font-bold px-4 text-white outline-none focus:border-neon-blue focus:ring-1 focus:ring-neon-blue transition-all"
+                                                className="w-full bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 h-12 rounded-xl text-xs font-bold px-4 text-gray-900 dark:text-white outline-none focus:border-neon-blue focus:ring-1 focus:ring-neon-blue transition-all"
                                             >
-                                                <option value="" className="bg-zinc-950 text-gray-400">-- Select Client Invoice --</option>
+                                                <option value="" className="bg-gray-100 dark:bg-zinc-950 text-gray-600 dark:text-gray-400">-- Select Client Invoice --</option>
                                                 {invoices.map(inv => (
-                                                    <option key={inv.id} value={inv.id} className="bg-zinc-950 text-white">
+                                                    <option key={inv.id} value={inv.id} className="bg-gray-100 dark:bg-zinc-950 text-gray-900 dark:text-white">
                                                         {inv.invoiceNumber || 'INV'} - {inv.clientName} (₹{inv.amount?.toLocaleString()})
                                                     </option>
                                                 ))}
@@ -2214,7 +2214,7 @@ const SpendsManagement = () => {
 
                                     <div className="space-y-1.5">
                                         <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Notes</label>
-                                        <textarea value={bulkNotes} onChange={(e) => setBulkNotes(e.target.value)} placeholder="Add bulk notes..." className="w-full bg-zinc-900/50 border border-white/10 h-20 rounded-xl text-xs font-semibold p-4 text-white outline-none focus:border-neon-blue placeholder:text-white/20 transition-all" />
+                                        <textarea value={bulkNotes} onChange={(e) => setBulkNotes(e.target.value)} placeholder="Add bulk notes..." className="w-full bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 h-20 rounded-xl text-xs font-semibold p-4 text-gray-900 dark:text-white outline-none focus:border-neon-blue placeholder:text-gray-900 dark:placeholder:text-white/20 transition-all" />
                                     </div>
 
                                     <button
@@ -2227,7 +2227,7 @@ const SpendsManagement = () => {
                                                 handleCreateBulkPayout();
                                             }
                                         }}
-                                        className="w-full h-14 bg-neon-blue hover:bg-blue-600 disabled:bg-white/5 disabled:text-gray-500 disabled:scale-100 disabled:shadow-none text-white font-black uppercase tracking-[0.2em] text-[10px] sm:text-xs rounded-xl shadow-[0_8px_30px_rgba(59,130,246,0.3)] hover:scale-[1.01] transition-all flex items-center justify-center gap-2"
+                                        className="w-full h-14 bg-neon-blue hover:bg-blue-600 disabled:bg-black/5 dark:disabled:bg-white/5 disabled:text-gray-500 disabled:scale-100 disabled:shadow-none text-gray-900 dark:text-white font-black uppercase tracking-[0.2em] text-[10px] sm:text-xs rounded-xl shadow-[0_8px_30px_rgba(59,130,246,0.3)] hover:scale-[1.01] transition-all flex items-center justify-center gap-2"
                                     >
                                         {bulkPaymentMode === 'UPI' ? 'Proceed to UPI payments' : 'Confirm Bulk log'}
                                     </button>
@@ -2238,11 +2238,11 @@ const SpendsManagement = () => {
                                     <div className="p-4 bg-neon-blue/5 border border-neon-blue/10 rounded-2xl flex items-center justify-between">
                                         <div>
                                             <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest block">Linked Gig Event</span>
-                                            <span className="text-xs font-bold text-white">{selectedBulkEvent}</span>
+                                            <span className="text-xs font-bold text-gray-900 dark:text-white">{selectedBulkEvent}</span>
                                         </div>
                                         <div className="text-right">
                                             <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest block">Total Selected Payees</span>
-                                            <span className="text-xs font-bold text-white">{selectedVolunteerIds.length} Volunteers</span>
+                                            <span className="text-xs font-bold text-gray-900 dark:text-white">{selectedVolunteerIds.length} Volunteers</span>
                                         </div>
                                     </div>
 
@@ -2254,17 +2254,17 @@ const SpendsManagement = () => {
                                                 return (
                                                     <div key={vol.id} className={cn(
                                                         "flex items-center justify-between p-4 rounded-xl border transition-all",
-                                                        isPaid ? "bg-neon-green/5 border-neon-green/20" : "bg-white/[0.02] border-white/5"
+                                                        isPaid ? "bg-neon-green/5 border-neon-green/20" : "bg-white/[0.02] border-black/10 dark:border-white/5"
                                                     )}>
                                                         <div>
                                                             <div className="flex items-center gap-2">
-                                                                <span className="text-xs font-bold text-white">{vol.name}</span>
+                                                                <span className="text-xs font-bold text-gray-900 dark:text-white">{vol.name}</span>
                                                                 {isPaid && <span className="px-1.5 py-0.5 rounded bg-neon-green/10 border border-neon-green/20 text-[6px] font-black uppercase text-neon-green">Ready</span>}
                                                             </div>
                                                             <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest block font-mono">{vol.upiId || 'No UPI Address'}</span>
                                                         </div>
                                                         <div className="flex items-center gap-3">
-                                                            <span className="text-xs font-bold text-white font-mono">₹{vol.amount || bulkPayoutAmount}</span>
+                                                            <span className="text-xs font-bold text-gray-900 dark:text-white font-mono">₹{vol.amount || bulkPayoutAmount}</span>
                                                             <button
                                                                 type="button"
                                                                 onClick={() => {
@@ -2276,7 +2276,7 @@ const SpendsManagement = () => {
                                                                     window.open(deepLink, '_blank');
                                                                     setCompletedPayments(prev => ({ ...prev, [vol.id]: true }));
                                                                 }}
-                                                                className="h-9 px-3 bg-neon-blue/10 hover:bg-neon-blue text-neon-blue hover:text-white border border-neon-blue/20 hover:border-transparent text-[8px] font-black uppercase tracking-widest rounded-lg transition-all flex items-center gap-1.5"
+                                                                className="h-9 px-3 bg-neon-blue/10 hover:bg-neon-blue text-neon-blue hover:text-gray-900 dark:hover:text-white border border-neon-blue/20 hover:border-transparent text-[8px] font-black uppercase tracking-widest rounded-lg transition-all flex items-center gap-1.5"
                                                             >
                                                                 <Smartphone size={10} /> Pay Now
                                                             </button>
@@ -2286,7 +2286,7 @@ const SpendsManagement = () => {
                                                                 onChange={(e) => {
                                                                     setCompletedPayments(prev => ({ ...prev, [vol.id]: e.target.checked }));
                                                                 }}
-                                                                className="rounded bg-zinc-900/50 border border-white/10 rounded-xl text-white text-neon-green focus:ring-0 w-4 h-4 cursor-pointer"
+                                                                className="rounded bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl text-gray-900 dark:text-white text-neon-green focus:ring-0 w-4 h-4 cursor-pointer"
                                                             />
                                                         </div>
                                                     </div>
@@ -2295,11 +2295,11 @@ const SpendsManagement = () => {
                                         </div>
                                     </div>
 
-                                    <div className="flex items-center justify-between gap-4 pt-4 border-t border-white/5">
+                                    <div className="flex items-center justify-between gap-4 pt-4 border-t border-black/10 dark:border-white/5">
                                         <button
                                             type="button"
                                             onClick={() => setBulkStep(1)}
-                                            className="h-12 px-6 bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white font-black uppercase tracking-widest text-[9px] rounded-xl border border-white/5 transition-all"
+                                            className="h-12 px-6 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white font-black uppercase tracking-widest text-[9px] rounded-xl border border-black/10 dark:border-white/5 transition-all"
                                         >
                                             Back to Settings
                                         </button>
@@ -2322,14 +2322,14 @@ const SpendsManagement = () => {
             <AnimatePresence>
                 {showPrinterModal && activeSlipData && (
                     <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
-                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowPrinterModal(false)} className="absolute inset-0 bg-black/85 backdrop-blur-xl" />
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowPrinterModal(false)} className="absolute inset-0 bg-white dark:bg-black/85 backdrop-blur-xl" />
                         
                         <motion.div 
                             initial={{ scale: 0.95, opacity: 0, y: 40 }}
                             animate={{ scale: 1, opacity: 1, y: 0 }}
                             exit={{ scale: 0.95, opacity: 0, y: 40 }}
                             transition={{ type: "spring", stiffness: 260, damping: 22 }}
-                            className={`relative w-full z-10 bg-zinc-950/95 backdrop-blur-3xl border border-white/10 rounded-3xl p-4 sm:p-6 md:p-8 shadow-2xl overflow-y-auto max-h-[90vh] custom-scrollbar transition-all duration-300 ${
+                            className={`relative w-full z-10 bg-gray-100 dark:bg-zinc-950/95 backdrop-blur-3xl border border-black/10 dark:border-white/10 rounded-3xl p-4 sm:p-6 md:p-8 shadow-2xl overflow-y-auto max-h-[90vh] custom-scrollbar transition-all duration-300 ${
                                 printerStage === 'verify' && (activeSlipData.status === 'Pending' || activeSlipData.status === 'Unpaid') 
                                     ? 'max-w-3xl' 
                                     : 'max-w-md'
@@ -2338,7 +2338,7 @@ const SpendsManagement = () => {
                             {/* Close Button */}
                             <button 
                                 onClick={() => setShowPrinterModal(false)}
-                                className="absolute top-6 right-6 p-2 rounded-full text-gray-500 hover:text-white bg-white/5 hover:bg-white/10 transition-all z-[30]"
+                                className="absolute top-6 right-6 p-2 rounded-full text-gray-500 hover:text-gray-900 dark:hover:text-white bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 transition-all z-[30]"
                                 title="Close"
                             >
                                 <X size={16} />
@@ -2350,13 +2350,13 @@ const SpendsManagement = () => {
                                         /* 2-Column Layout for Pending Payouts */
                                         <div className="grid grid-cols-1 md:grid-cols-12 gap-6 md:gap-8 pt-4">
                                             {/* Left Column: Printer Slot & Load Status */}
-                                            <div className="md:col-span-5 flex flex-col items-center justify-center border-b md:border-b-0 md:border-r border-white/5 pb-6 md:pb-0 pr-0 md:pr-6 space-y-4">
+                                            <div className="md:col-span-5 flex flex-col items-center justify-center border-b md:border-b-0 md:border-r border-black/10 dark:border-white/5 pb-6 md:pb-0 pr-0 md:pr-6 space-y-4">
                                                 <div className="flex flex-col items-center w-full relative">
                                                     {renderPrinterSlot('READY', 'text-neon-green')}
                                                     
                                                     {/* Short piece of blank paper representing loaded state - z-20 (in front of printer back, behind front lip) */}
-                                                    <div className="w-[260px] h-[35px] overflow-hidden bg-zinc-950/20 border-x border-b border-white/5 rounded-b-xl relative z-20 flex flex-col justify-start -mt-5 pt-0 shadow-[inset_0_4px_8px_rgba(0,0,0,0.6)] px-2">
-                                                        <div className="w-full bg-gradient-to-br from-[#021f0b] to-[#39ff14] h-full rounded-t-md flex items-center justify-center text-white border-x border-t border-[#39ff14]/20">
+                                                    <div className="w-[260px] h-[35px] overflow-hidden bg-gray-100 dark:bg-zinc-950/20 border-x border-b border-black/10 dark:border-white/5 rounded-b-xl relative z-20 flex flex-col justify-start -mt-5 pt-0 shadow-[inset_0_4px_8px_rgba(0,0,0,0.6)] px-2">
+                                                        <div className="w-full bg-gradient-to-br from-[#021f0b] to-[#39ff14] h-full rounded-t-md flex items-center justify-center text-gray-900 dark:text-white border-x border-t border-[#39ff14]/20">
                                                             <span className="text-[6.5px] font-black uppercase tracking-widest text-[#39ff14]">READY</span>
                                                         </div>
                                                     </div>
@@ -2368,32 +2368,32 @@ const SpendsManagement = () => {
                                             <div className="md:col-span-7 flex flex-col justify-between space-y-5">
                                                 <div className="space-y-4">
                                                     <div>
-                                                        <h3 className="text-base font-black font-heading uppercase italic tracking-wider text-white">Payment Clearance</h3>
+                                                        <h3 className="text-base font-black font-heading uppercase italic tracking-wider text-gray-900 dark:text-white">Payment Clearance</h3>
                                                         <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest mt-1">Settle disbursement and enter transaction reference</p>
                                                     </div>
 
                                                     {/* Payout Metadata Panel */}
-                                                    <div className="p-4 bg-white/[0.02] border border-white/5 rounded-2xl space-y-2.5 text-[10px]">
+                                                    <div className="p-4 bg-white/[0.02] border border-black/10 dark:border-white/5 rounded-2xl space-y-2.5 text-[10px]">
                                                         <div className="flex justify-between items-center">
                                                             <span className="text-gray-500 font-extrabold uppercase text-[8px] tracking-wider">Recipient</span>
-                                                            <span className="text-white font-bold">{activeSlipData.receiverName}</span>
+                                                            <span className="text-gray-900 dark:text-white font-bold">{activeSlipData.receiverName}</span>
                                                         </div>
-                                                        <div className="flex justify-between items-center border-t border-white/5 pt-2">
+                                                        <div className="flex justify-between items-center border-t border-black/10 dark:border-white/5 pt-2">
                                                             <span className="text-gray-500 font-extrabold uppercase text-[8px] tracking-wider">Amount</span>
                                                             <span className="text-neon-green font-heading italic font-black text-sm">₹{Number(activeSlipData.amount).toLocaleString('en-IN')}</span>
                                                         </div>
-                                                        <div className="flex justify-between items-center border-t border-white/5 pt-2">
+                                                        <div className="flex justify-between items-center border-t border-black/10 dark:border-white/5 pt-2">
                                                             <span className="text-gray-500 font-extrabold uppercase text-[8px] tracking-wider">Mode</span>
-                                                            <span className="text-white font-bold border border-[#39ff14]/20 bg-[#39ff14]/5 px-2 py-0.5 rounded text-[8px]">{activeSlipData.paymentMode}</span>
+                                                            <span className="text-gray-900 dark:text-white font-bold border border-[#39ff14]/20 bg-[#39ff14]/5 px-2 py-0.5 rounded text-[8px]">{activeSlipData.paymentMode}</span>
                                                         </div>
-                                                        <div className="flex justify-between items-center border-t border-white/5 pt-2">
+                                                        <div className="flex justify-between items-center border-t border-black/10 dark:border-white/5 pt-2">
                                                             <span className="text-gray-500 font-extrabold uppercase text-[8px] tracking-wider">Payout Type</span>
-                                                            <span className="text-white font-bold">{activeSlipData.payoutType}</span>
+                                                            <span className="text-gray-900 dark:text-white font-bold">{activeSlipData.payoutType}</span>
                                                         </div>
                                                         {activeSlipData.linkedGig && (
-                                                            <div className="flex justify-between items-center border-t border-white/5 pt-2">
+                                                            <div className="flex justify-between items-center border-t border-black/10 dark:border-white/5 pt-2">
                                                                 <span className="text-gray-500 font-extrabold uppercase text-[8px] tracking-wider">Gig Ref</span>
-                                                                <span className="text-white font-bold truncate max-w-[60%] text-right">{activeSlipData.linkedGig}</span>
+                                                                <span className="text-gray-900 dark:text-white font-bold truncate max-w-[60%] text-right">{activeSlipData.linkedGig}</span>
                                                             </div>
                                                         )}
                                                     </div>
@@ -2419,7 +2419,7 @@ const SpendsManagement = () => {
                                                                 <button
                                                                     type="button"
                                                                     onClick={() => setShowQR(!showQR)}
-                                                                    className="flex items-center justify-center gap-2 h-12 bg-white/5 hover:bg-white/10 text-white font-black uppercase tracking-widest text-[9px] rounded-xl border border-white/10 transition-all font-bold"
+                                                                    className="flex items-center justify-center gap-2 h-12 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-gray-900 dark:text-white font-black uppercase tracking-widest text-[9px] rounded-xl border border-black/10 dark:border-white/10 transition-all font-bold"
                                                                 >
                                                                     <Smartphone size={14} /> {showQR ? 'Hide QR Code' : 'Show QR Code'}
                                                                 </button>
@@ -2446,8 +2446,8 @@ const SpendsManagement = () => {
 
                                                     {/* Bank details copy options */}
                                                     {activeSlipData.paymentMode === 'Bank Transfer' && (
-                                                        <div className="space-y-3 bg-white/[0.01] border border-white/5 p-4 rounded-2xl">
-                                                            <h4 className="text-[9px] font-black text-gray-500 uppercase tracking-widest border-b border-white/5 pb-2">Beneficiary Bank Credentials</h4>
+                                                        <div className="space-y-3 bg-white/[0.01] border border-black/10 dark:border-white/5 p-4 rounded-2xl">
+                                                            <h4 className="text-[9px] font-black text-gray-500 uppercase tracking-widest border-b border-black/10 dark:border-white/5 pb-2">Beneficiary Bank Credentials</h4>
                                                             {(() => {
                                                                 const b = getBankDetails();
                                                                 if (!b) return <p className="text-[9px] font-black text-gray-600 uppercase py-2">No bank details stored. Please transfer manually.</p>;
@@ -2456,30 +2456,30 @@ const SpendsManagement = () => {
                                                                         <div className="flex justify-between items-center text-xs">
                                                                             <div className="flex flex-col">
                                                                                 <span className="text-[8px] text-gray-500 uppercase font-black">Account Name</span>
-                                                                                <span className="text-white text-[10px] uppercase font-bold tracking-wide">{activeSlipData.receiverName}</span>
+                                                                                <span className="text-gray-900 dark:text-white text-[10px] uppercase font-bold tracking-wide">{activeSlipData.receiverName}</span>
                                                                             </div>
-                                                                            <button type="button" onClick={() => handleCopy(activeSlipData.receiverName, 'Account Name')} className="p-2 bg-white/5 hover:bg-white/10 rounded-lg text-gray-400 hover:text-white transition-colors"><Copy size={12} /></button>
+                                                                            <button type="button" onClick={() => handleCopy(activeSlipData.receiverName, 'Account Name')} className="p-2 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 rounded-lg text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"><Copy size={12} /></button>
                                                                         </div>
-                                                                        <div className="flex justify-between items-center text-xs border-t border-white/5 pt-2">
+                                                                        <div className="flex justify-between items-center text-xs border-t border-black/10 dark:border-white/5 pt-2">
                                                                             <div className="flex flex-col">
                                                                                 <span className="text-[8px] text-gray-500 uppercase font-black">Bank Name</span>
-                                                                                <span className="text-white text-[10px] uppercase font-bold tracking-wide">{b.bankName}</span>
+                                                                                <span className="text-gray-900 dark:text-white text-[10px] uppercase font-bold tracking-wide">{b.bankName}</span>
                                                                             </div>
-                                                                            <button type="button" onClick={() => handleCopy(b.bankName, 'Bank Name')} className="p-2 bg-white/5 hover:bg-white/10 rounded-lg text-gray-400 hover:text-white transition-colors"><Copy size={12} /></button>
+                                                                            <button type="button" onClick={() => handleCopy(b.bankName, 'Bank Name')} className="p-2 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 rounded-lg text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"><Copy size={12} /></button>
                                                                         </div>
-                                                                        <div className="flex justify-between items-center text-xs border-t border-white/5 pt-2">
+                                                                        <div className="flex justify-between items-center text-xs border-t border-black/10 dark:border-white/5 pt-2">
                                                                             <div className="flex flex-col">
                                                                                 <span className="text-[8px] text-gray-500 uppercase font-black">Account Number</span>
                                                                                 <span className="text-neon-blue font-mono text-[11px] font-bold tracking-wider">{b.accountNumber}</span>
                                                                             </div>
-                                                                            <button type="button" onClick={() => handleCopy(b.accountNumber, 'Account Number')} className="p-2 bg-white/5 hover:bg-white/10 rounded-lg text-gray-400 hover:text-white transition-colors"><Copy size={12} /></button>
+                                                                            <button type="button" onClick={() => handleCopy(b.accountNumber, 'Account Number')} className="p-2 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 rounded-lg text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"><Copy size={12} /></button>
                                                                         </div>
-                                                                        <div className="flex justify-between items-center text-xs border-t border-white/5 pt-2">
+                                                                        <div className="flex justify-between items-center text-xs border-t border-black/10 dark:border-white/5 pt-2">
                                                                             <div className="flex flex-col">
                                                                                 <span className="text-[8px] text-gray-500 uppercase font-black">IFSC Code</span>
                                                                                 <span className="text-neon-pink font-mono text-[11px] font-bold tracking-wider">{b.ifscCode}</span>
                                                                             </div>
-                                                                            <button type="button" onClick={() => handleCopy(b.ifscCode, 'IFSC Code')} className="p-2 bg-white/5 hover:bg-white/10 rounded-lg text-gray-400 hover:text-white transition-colors"><Copy size={12} /></button>
+                                                                            <button type="button" onClick={() => handleCopy(b.ifscCode, 'IFSC Code')} className="p-2 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 rounded-lg text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"><Copy size={12} /></button>
                                                                         </div>
                                                                     </div>
                                                                 );
@@ -2489,13 +2489,13 @@ const SpendsManagement = () => {
 
                                                     {/* Bulk Beneficiaries breakdown list shown here, NOT on receipt! */}
                                                     {activeSlipData.isBulk && activeSlipData.volunteers && activeSlipData.volunteers.length > 0 && (
-                                                        <div className="space-y-3 bg-white/[0.01] border border-white/5 p-4 rounded-2xl">
-                                                            <h4 className="text-[9px] font-black text-gray-500 uppercase tracking-widest border-b border-white/5 pb-2">Beneficiaries Breakdown</h4>
+                                                        <div className="space-y-3 bg-white/[0.01] border border-black/10 dark:border-white/5 p-4 rounded-2xl">
+                                                            <h4 className="text-[9px] font-black text-gray-500 uppercase tracking-widest border-b border-black/10 dark:border-white/5 pb-2">Beneficiaries Breakdown</h4>
                                                             <div className="max-h-28 overflow-y-auto space-y-1.5 scrollbar-hide pr-1">
                                                                 {activeSlipData.volunteers.map((vol, idx) => (
                                                                     <div key={idx} className="flex justify-between text-[10px]">
-                                                                        <span className="text-gray-400 truncate max-w-[150px] uppercase font-bold">{vol.name}</span>
-                                                                        <span className="text-white font-mono font-bold">₹{Number(vol.amount).toLocaleString('en-IN')}</span>
+                                                                        <span className="text-gray-600 dark:text-gray-400 truncate max-w-[150px] uppercase font-bold">{vol.name}</span>
+                                                                        <span className="text-gray-900 dark:text-white font-mono font-bold">₹{Number(vol.amount).toLocaleString('en-IN')}</span>
                                                                     </div>
                                                                 ))}
                                                             </div>
@@ -2509,7 +2509,7 @@ const SpendsManagement = () => {
                                                             value={verificationUTR}
                                                             onChange={(e) => setVerificationUTR(e.target.value)}
                                                             placeholder="Enter UPI UTR or Bank Ref ID"
-                                                            className="h-12 bg-zinc-900/50 border border-white/10 rounded-xl text-white focus:border-[#39ff14] font-mono tracking-widest text-center text-white"
+                                                            className="h-12 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl text-gray-900 dark:text-white focus:border-[#39ff14] font-mono tracking-widest text-center text-gray-900 dark:text-white"
                                                         />
                                                     </div>
 
@@ -2518,19 +2518,19 @@ const SpendsManagement = () => {
                                                         <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Payment Proof (Screenshot / PDF)</label>
                                                         <div className="relative">
                                                             <input type="file" onChange={(e) => handleReceiptUpload(e, setVerificationReceiptUrl)} className="absolute inset-0 opacity-0 cursor-pointer z-10" />
-                                                            <div className="h-10 bg-white/5 hover:bg-white/10 border border-dashed border-white/10 rounded-xl flex items-center justify-center gap-2 text-[9px] font-black text-gray-400 uppercase tracking-widest transition-all cursor-pointer">
+                                                            <div className="h-10 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 border border-dashed border-black/10 dark:border-white/10 rounded-xl flex items-center justify-center gap-2 text-[9px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest transition-all cursor-pointer">
                                                                 {uploadingReceipt ? 'UPLOADING...' : (verificationReceiptUrl ? '✓ PROOF ATTACHED — TAP TO CHANGE' : 'ATTACH PAYMENT PROOF')}
                                                             </div>
                                                         </div>
                                                         {verificationReceiptUrl && (
                                                             <p className="text-[8px] text-[#39ff14] font-bold pl-1">
-                                                                Proof linked: <a href={verificationReceiptUrl} target="_blank" rel="noopener noreferrer" className="underline hover:text-white">View Attachment</a>
+                                                                Proof linked: <a href={verificationReceiptUrl} target="_blank" rel="noopener noreferrer" className="underline hover:text-gray-900 dark:hover:text-white">View Attachment</a>
                                                             </p>
                                                         )}
                                                     </div>
                                                 </div>
 
-                                                <div className="flex gap-3 pt-4 border-t border-white/5">
+                                                <div className="flex gap-3 pt-4 border-t border-black/10 dark:border-white/5">
                                                     <button
                                                         type="button"
                                                         onClick={async () => {
@@ -2553,7 +2553,7 @@ const SpendsManagement = () => {
                                                             }
                                                             setPrinterStage('printing');
                                                         }}
-                                                        className="flex-1 h-12 bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white font-black uppercase tracking-widest text-[9px] rounded-xl border border-white/5 transition-all font-bold"
+                                                        className="flex-1 h-12 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white font-black uppercase tracking-widest text-[9px] rounded-xl border border-black/10 dark:border-white/5 transition-all font-bold"
                                                     >
                                                         Skip UTR
                                                     </button>
@@ -2593,26 +2593,26 @@ const SpendsManagement = () => {
                                                 {renderPrinterSlot('READY', 'text-neon-green')}
                                                 
                                                 {/* Short piece of blank paper representing loaded state - z-20 */}
-                                                <div className="w-[260px] h-[35px] overflow-hidden bg-zinc-950/20 border-x border-b border-white/5 rounded-b-xl relative z-20 flex flex-col justify-start -mt-5 pt-0 shadow-[inset_0_4px_8px_rgba(0,0,0,0.6)] px-2">
-                                                    <div className="w-full bg-gradient-to-br from-[#021f0b] to-[#39ff14] h-full rounded-t-md flex items-center justify-center text-white border-x border-t border-[#39ff14]/20">
+                                                <div className="w-[260px] h-[35px] overflow-hidden bg-gray-100 dark:bg-zinc-950/20 border-x border-b border-black/10 dark:border-white/5 rounded-b-xl relative z-20 flex flex-col justify-start -mt-5 pt-0 shadow-[inset_0_4px_8px_rgba(0,0,0,0.6)] px-2">
+                                                    <div className="w-full bg-gradient-to-br from-[#021f0b] to-[#39ff14] h-full rounded-t-md flex items-center justify-center text-gray-900 dark:text-white border-x border-t border-[#39ff14]/20">
                                                         <span className="text-[6.5px] font-black uppercase tracking-widest text-[#39ff14]">READY</span>
                                                     </div>
                                                 </div>
                                             </div>
 
                                             <div className="w-full space-y-4">
-                                                <div className="p-4 bg-white/[0.02] border border-white/5 rounded-2xl space-y-2 text-[10px]">
+                                                <div className="p-4 bg-white/[0.02] border border-black/10 dark:border-white/5 rounded-2xl space-y-2 text-[10px]">
                                                     <div className="flex justify-between items-center">
                                                         <span className="text-gray-500 font-extrabold uppercase text-[8px] tracking-wider">Recipient</span>
-                                                        <span className="text-white font-bold">{activeSlipData.receiverName}</span>
+                                                        <span className="text-gray-900 dark:text-white font-bold">{activeSlipData.receiverName}</span>
                                                     </div>
-                                                    <div className="flex justify-between items-center border-t border-white/5 pt-2">
+                                                    <div className="flex justify-between items-center border-t border-black/10 dark:border-white/5 pt-2">
                                                         <span className="text-gray-500 font-extrabold uppercase text-[8px] tracking-wider">Amount</span>
                                                         <span className="text-neon-green font-heading italic font-black text-sm">₹{Number(activeSlipData.amount).toLocaleString('en-IN')}</span>
                                                     </div>
-                                                    <div className="flex justify-between items-center border-t border-white/5 pt-2">
+                                                    <div className="flex justify-between items-center border-t border-black/10 dark:border-white/5 pt-2">
                                                         <span className="text-gray-500 font-extrabold uppercase text-[8px] tracking-wider">Mode</span>
-                                                        <span className="text-white font-bold border border-[#39ff14]/20 bg-[#39ff14]/5 px-2 py-0.5 rounded text-[8px]">{activeSlipData.paymentMode}</span>
+                                                        <span className="text-gray-900 dark:text-white font-bold border border-[#39ff14]/20 bg-[#39ff14]/5 px-2 py-0.5 rounded text-[8px]">{activeSlipData.paymentMode}</span>
                                                     </div>
                                                 </div>
 
@@ -2623,7 +2623,7 @@ const SpendsManagement = () => {
                                                         value={verificationUTR}
                                                         onChange={(e) => setVerificationUTR(e.target.value)}
                                                         placeholder="Enter UPI UTR or Bank Ref ID"
-                                                        className="h-12 bg-zinc-900/50 border border-white/10 rounded-xl text-white focus:border-[#39ff14] font-mono tracking-widest text-center text-white"
+                                                        className="h-12 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl text-gray-900 dark:text-white focus:border-[#39ff14] font-mono tracking-widest text-center text-gray-900 dark:text-white"
                                                     />
                                                 </div>
 
@@ -2632,13 +2632,13 @@ const SpendsManagement = () => {
                                                     <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Payment Proof (Screenshot / PDF)</label>
                                                     <div className="relative">
                                                         <input type="file" onChange={(e) => handleReceiptUpload(e, setVerificationReceiptUrl)} className="absolute inset-0 opacity-0 cursor-pointer z-10" />
-                                                        <div className="h-10 bg-white/5 hover:bg-white/10 border border-dashed border-white/10 rounded-xl flex items-center justify-center gap-2 text-[9px] font-black text-gray-400 uppercase tracking-widest transition-all cursor-pointer">
+                                                        <div className="h-10 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 border border-dashed border-black/10 dark:border-white/10 rounded-xl flex items-center justify-center gap-2 text-[9px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest transition-all cursor-pointer">
                                                             {uploadingReceipt ? 'UPLOADING...' : (verificationReceiptUrl ? '✓ PROOF ATTACHED — TAP TO CHANGE' : 'ATTACH PAYMENT PROOF')}
                                                         </div>
                                                     </div>
                                                     {verificationReceiptUrl && (
                                                         <p className="text-[8px] text-[#39ff14] font-bold pl-1">
-                                                            Proof linked: <a href={verificationReceiptUrl} target="_blank" rel="noopener noreferrer" className="underline hover:text-white">View Attachment</a>
+                                                            Proof linked: <a href={verificationReceiptUrl} target="_blank" rel="noopener noreferrer" className="underline hover:text-gray-900 dark:hover:text-white">View Attachment</a>
                                                         </p>
                                                     )}
                                                 </div>
@@ -2717,33 +2717,33 @@ const SpendsManagement = () => {
                                     </div>
 
                                     {/* Other Details Panel shown on printer screen below receipt */}
-                                    <div className="w-full max-w-[300px] p-4 bg-white/[0.02] border border-white/5 rounded-2xl space-y-2 text-[9px] uppercase font-bold text-gray-400">
+                                    <div className="w-full max-w-[300px] p-4 bg-white/[0.02] border border-black/10 dark:border-white/5 rounded-2xl space-y-2 text-[9px] uppercase font-bold text-gray-600 dark:text-gray-400">
                                         <div className="flex justify-between items-center">
                                             <span className="text-gray-500 font-extrabold text-[8px] tracking-wider">Payout Type</span>
-                                            <span className="text-white font-bold">{activeSlipData.payoutType}</span>
+                                            <span className="text-gray-900 dark:text-white font-bold">{activeSlipData.payoutType}</span>
                                         </div>
                                         {activeSlipData.linkedGig && (
-                                            <div className="flex justify-between items-center border-t border-white/5 pt-2">
+                                            <div className="flex justify-between items-center border-t border-black/10 dark:border-white/5 pt-2">
                                                 <span className="text-gray-500 font-extrabold text-[8px] tracking-wider">Gig Ref</span>
-                                                <span className="text-white font-bold truncate max-w-[60%] text-right">{activeSlipData.linkedGig}</span>
+                                                <span className="text-gray-900 dark:text-white font-bold truncate max-w-[60%] text-right">{activeSlipData.linkedGig}</span>
                                             </div>
                                         )}
                                         {activeSlipData.destinationDetails && (
-                                            <div className="flex flex-col gap-1 border-t border-white/5 pt-2 mt-1">
+                                            <div className="flex flex-col gap-1 border-t border-black/10 dark:border-white/5 pt-2 mt-1">
                                                 <span className="text-gray-500 font-extrabold text-[8px] tracking-wider">Destination</span>
-                                                <span className="text-white font-mono text-[9px] break-all tracking-normal lowercase">{activeSlipData.destinationDetails.replace('UPI:', '').replace('Bank:', '').trim()}</span>
+                                                <span className="text-gray-900 dark:text-white font-mono text-[9px] break-all tracking-normal lowercase">{activeSlipData.destinationDetails.replace('UPI:', '').replace('Bank:', '').trim()}</span>
                                             </div>
                                         )}
 
                                         {/* Bulk Beneficiaries breakdown list shown here, NOT on receipt! */}
                                         {activeSlipData.isBulk && activeSlipData.volunteers && activeSlipData.volunteers.length > 0 && (
-                                            <div className="border-t border-white/5 pt-2 mt-1">
+                                            <div className="border-t border-black/10 dark:border-white/5 pt-2 mt-1">
                                                 <span className="block text-gray-500 font-extrabold text-[8px] tracking-wider mb-2">Beneficiaries Breakdown</span>
                                                 <div className="max-h-24 overflow-y-auto space-y-1.5 scrollbar-hide pr-1">
                                                     {activeSlipData.volunteers.map((vol, idx) => (
                                                         <div key={idx} className="flex justify-between text-[8px]">
-                                                            <span className="text-gray-400 truncate max-w-[130px]">{vol.name}</span>
-                                                            <span className="text-white font-mono">₹{Number(vol.amount).toLocaleString('en-IN')}</span>
+                                                            <span className="text-gray-600 dark:text-gray-400 truncate max-w-[130px]">{vol.name}</span>
+                                                            <span className="text-gray-900 dark:text-white font-mono">₹{Number(vol.amount).toLocaleString('en-IN')}</span>
                                                         </div>
                                                     ))}
                                                 </div>
@@ -2761,7 +2761,7 @@ const SpendsManagement = () => {
                                         </button>
                                         <button
                                             onClick={handleShareReceiptText}
-                                            className="h-11 w-11 bg-white/5 hover:bg-white/10 text-white rounded-xl border border-white/10 transition-all flex items-center justify-center active:scale-95"
+                                            className="h-11 w-11 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-gray-900 dark:text-white rounded-xl border border-black/10 dark:border-white/10 transition-all flex items-center justify-center active:scale-95"
                                             title="Share Receipt"
                                         >
                                             <Share2 size={15} />
@@ -2782,7 +2782,7 @@ const SpendsManagement = () => {
                                         </button>
                                         <button
                                             onClick={() => setShowPrinterModal(false)}
-                                            className="h-11 px-5 bg-white/5 hover:bg-white/10 text-white font-black uppercase tracking-widest text-[8px] rounded-xl border border-white/10 transition-all active:scale-95"
+                                            className="h-11 px-5 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-gray-900 dark:text-white font-black uppercase tracking-widest text-[8px] rounded-xl border border-black/10 dark:border-white/10 transition-all active:scale-95"
                                         >
                                             Done
                                         </button>

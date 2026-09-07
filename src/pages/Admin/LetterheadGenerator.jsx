@@ -107,7 +107,7 @@ const LetterheadGenerator = () => {
     }, []);
 
     return (
-        <div className="min-h-screen bg-[#0B0F17] text-white selection:bg-neon-green selection:text-black font-['Outfit'] overflow-x-hidden flex flex-col no-print admin-hub-content-container">
+        <div className="min-h-screen bg-gray-50 dark:bg-[#0B0F17] text-gray-900 dark:text-white selection:bg-neon-green selection:text-black font-['Outfit'] overflow-x-hidden flex flex-col no-print admin-hub-content-container">
 
             <style dangerouslySetInnerHTML={{ __html: `
                 @media print {
@@ -137,16 +137,16 @@ const LetterheadGenerator = () => {
             `}} />
 
             {/* Top Bar Nav */}
-            <header className="h-20 border-b border-white/5 bg-black/60 backdrop-blur-2xl flex items-center justify-between px-8 sticky top-0 z-[100] no-print">
+            <header className="h-20 border-b border-black/10 dark:border-white/5 bg-white dark:bg-black/60 backdrop-blur-2xl flex items-center justify-between px-8 sticky top-0 z-[100] no-print">
                 <div className="flex items-center gap-6">
                     <button 
                         onClick={() => navigate('/admin')}
-                        className="p-3 bg-white/5 rounded-2xl border border-white/5 text-gray-400 hover:text-white transition-all hover:scale-105"
+                        className="p-3 bg-black/5 dark:bg-white/5 rounded-2xl border border-black/10 dark:border-white/5 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all hover:scale-105"
                     >
                         <ArrowLeft size={16} />
                     </button>
                     <div>
-                        <h1 className="text-lg font-extrabold tracking-tight text-white">Letterhead Gen.</h1>
+                        <h1 className="text-lg font-extrabold tracking-tight text-gray-900 dark:text-white">Letterhead Gen.</h1>
                         <p className="text-[10px] font-bold text-neon-green uppercase tracking-[0.3em]">Official Document Generator</p>
                     </div>
                 </div>
@@ -154,7 +154,7 @@ const LetterheadGenerator = () => {
                 <div className="flex items-center gap-4">
                     <button 
                         onClick={() => setRefId(`NBL-${Math.floor(1000 + Math.random() * 9000)}`)}
-                        className="p-3 bg-white/5 rounded-2xl border border-white/5 text-gray-400 hover:text-white transition-all"
+                        className="p-3 bg-black/5 dark:bg-white/5 rounded-2xl border border-black/10 dark:border-white/5 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all"
                         title="Regenerate Reference ID"
                     >
                         <RefreshCw size={16} />
@@ -171,7 +171,7 @@ const LetterheadGenerator = () => {
             {/* Split Content Area */}
             <div className="flex-1 flex flex-col lg:flex-row overflow-hidden relative">
                 {/* Left Side: Controls Panel */}
-                <aside className="w-full lg:w-[450px] border-r border-white/5 bg-zinc-950/40 p-8 space-y-8 overflow-y-auto shrink-0 no-print">
+                <aside className="w-full lg:w-[450px] border-r border-black/10 dark:border-white/5 bg-gray-100 dark:bg-zinc-950/40 p-8 space-y-8 overflow-y-auto shrink-0 no-print">
                     
                     {/* Templates Selector */}
                     <div className="space-y-4">
@@ -181,10 +181,10 @@ const LetterheadGenerator = () => {
                                 <button
                                     key={tpl.id}
                                     onClick={() => handleLoadTemplate(tpl)}
-                                    className="p-4 bg-white/[0.02] border border-white/5 hover:border-neon-green/30 hover:bg-white/[0.04] rounded-2xl text-left transition-all group"
+                                    className="p-4 bg-white dark:bg-white/[0.02] border border-black/10 dark:border-white/5 hover:border-neon-green/30 hover:bg-gray-50 dark:hover:bg-white/[0.04] rounded-2xl text-left transition-all group shadow-sm"
                                 >
                                     <FileText size={18} className="text-gray-500 group-hover:text-neon-green mb-2 transition-colors" />
-                                    <p className="text-[11px] font-black text-white leading-tight uppercase truncate">{tpl.name}</p>
+                                    <p className="text-[11px] font-black text-gray-900 dark:text-white leading-tight uppercase truncate">{tpl.name}</p>
                                 </button>
                             ))}
                         </div>
@@ -201,7 +201,7 @@ const LetterheadGenerator = () => {
                                     value={docTitle} 
                                     onChange={e => setDocTitle(e.target.value.toUpperCase())}
                                     placeholder="e.g. CERTIFICATE OF COMPLIANCE" 
-                                    className="h-12 w-full bg-black/60 border border-white/5 focus:border-neon-green/50 rounded-xl text-xs font-black px-4 text-white outline-none" 
+                                    className="h-12 w-full bg-white dark:bg-black/60 border border-black/10 dark:border-white/5 focus:border-neon-green/50 rounded-xl text-xs font-black px-4 text-gray-900 dark:text-white outline-none" 
                                 />
                             </div>
 
@@ -211,7 +211,7 @@ const LetterheadGenerator = () => {
                                     <input 
                                         value={refId} 
                                         onChange={e => setRefId(e.target.value)}
-                                        className="h-12 w-full bg-black/60 border border-white/5 focus:border-neon-green/50 rounded-xl text-xs font-mono font-bold px-4 text-white outline-none" 
+                                        className="h-12 w-full bg-white dark:bg-black/60 border border-black/10 dark:border-white/5 focus:border-neon-green/50 rounded-xl text-xs font-mono font-bold px-4 text-gray-900 dark:text-white outline-none" 
                                     />
                                 </div>
                                 <div className="space-y-2">
@@ -220,7 +220,7 @@ const LetterheadGenerator = () => {
                                         type="date"
                                         value={docDate} 
                                         onChange={e => setDocDate(e.target.value)}
-                                        className="h-12 w-full bg-black/60 border border-white/5 focus:border-neon-green/50 rounded-xl text-xs font-black px-4 text-white outline-none" 
+                                        className="h-12 w-full bg-white dark:bg-black/60 border border-black/10 dark:border-white/5 focus:border-neon-green/50 rounded-xl text-xs font-black px-4 text-gray-900 dark:text-white outline-none" 
                                     />
                                 </div>
                             </div>
@@ -232,7 +232,7 @@ const LetterheadGenerator = () => {
                                         value={senderName} 
                                         onChange={e => setSenderName(e.target.value)}
                                         placeholder="Full Legal Name"
-                                        className="h-12 w-full bg-black/60 border border-white/5 focus:border-neon-green/50 rounded-xl text-xs font-black px-4 text-white outline-none" 
+                                        className="h-12 w-full bg-white dark:bg-black/60 border border-black/10 dark:border-white/5 focus:border-neon-green/50 rounded-xl text-xs font-black px-4 text-gray-900 dark:text-white outline-none" 
                                     />
                                 </div>
                                 <div className="space-y-2">
@@ -241,7 +241,7 @@ const LetterheadGenerator = () => {
                                         value={senderDesignation} 
                                         onChange={e => setSenderDesignation(e.target.value)}
                                         placeholder="e.g. COO"
-                                        className="h-12 w-full bg-black/60 border border-white/5 focus:border-neon-green/50 rounded-xl text-xs font-black px-4 text-white outline-none" 
+                                        className="h-12 w-full bg-white dark:bg-black/60 border border-black/10 dark:border-white/5 focus:border-neon-green/50 rounded-xl text-xs font-black px-4 text-gray-900 dark:text-white outline-none" 
                                     />
                                 </div>
                             </div>
@@ -262,7 +262,7 @@ const LetterheadGenerator = () => {
                 </aside>
 
                 {/* Right Side: Mock A4 Document Canvas Preview */}
-                <main className="flex-1 bg-[#050505] flex flex-col items-center justify-start p-10 overflow-y-auto overflow-x-hidden relative scrollbar-hide">
+                <main className="flex-1 bg-gray-200/70 dark:bg-[#050505] flex flex-col items-center justify-start p-10 overflow-y-auto overflow-x-hidden relative scrollbar-hide">
                     {/* View Scale indicator */}
                     <div className="absolute top-4 right-8 text-[10px] font-black text-gray-600 uppercase tracking-widest select-none no-print">
                         A4 Live View Scale: {Math.round(scale * 100)}%
@@ -293,11 +293,11 @@ const LetterheadGenerator = () => {
                             </div>
                             <div className="text-right space-y-4">
                                 <div className="space-y-0.5">
-                                    <h4 className="text-[9px] font-black uppercase tracking-[0.3em] text-gray-400">Ref ID</h4>
+                                    <h4 className="text-[9px] font-black uppercase tracking-[0.3em] text-gray-600 dark:text-gray-400">Ref ID</h4>
                                     <p className="text-sm font-black font-mono tracking-wider">{refId}</p>
                                 </div>
                                 <div className="space-y-0.5">
-                                    <h4 className="text-[9px] font-black uppercase tracking-[0.3em] text-gray-400">Date</h4>
+                                    <h4 className="text-[9px] font-black uppercase tracking-[0.3em] text-gray-600 dark:text-gray-400">Date</h4>
                                     <p className="text-[11px] font-black">{new Date(docDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
                                 </div>
                             </div>
@@ -325,11 +325,11 @@ const LetterheadGenerator = () => {
                                     </div>
                                     <div className="space-y-0.5">
                                         <p className="text-[11px] font-black uppercase text-black">{senderName}</p>
-                                        <p className="text-[8px] font-bold text-gray-400 uppercase tracking-widest">{senderDesignation}</p>
+                                        <p className="text-[8px] font-bold text-gray-600 dark:text-gray-400 uppercase tracking-widest">{senderDesignation}</p>
                                     </div>
                                 </div>
                                 <div className="text-right">
-                                    <div className="w-20 h-20 border-2 border-dashed border-gray-200 rounded-full flex items-center justify-center text-[7px] font-black uppercase text-gray-300 tracking-wider select-none">
+                                    <div className="w-20 h-20 border-2 border-dashed border-gray-200 rounded-full flex items-center justify-center text-[7px] font-black uppercase text-gray-700 dark:text-gray-300 tracking-wider select-none">
                                         Corporate Seal
                                     </div>
                                 </div>
@@ -337,7 +337,7 @@ const LetterheadGenerator = () => {
                         </div>
 
                         {/* Official Letterhead Footer */}
-                        <div className="mt-auto pt-8 border-t border-gray-100 flex justify-between items-center text-[8px] font-bold text-gray-400 uppercase tracking-[0.2em]">
+                        <div className="mt-auto pt-8 border-t border-gray-100 flex justify-between items-center text-[8px] font-bold text-gray-600 dark:text-gray-400 uppercase tracking-[0.2em]">
                             <p>CONFIDENTIAL • OFFICIAL CORRESPONDENCE</p>
                             <p>Page 1 of 1</p>
                         </div>

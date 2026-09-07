@@ -221,7 +221,7 @@ const CommunityJoin = () => {
     ].filter(s => s.show);
 
     return (
-        <div className="min-h-screen bg-dark text-white pt-32 pb-20 relative overflow-hidden">
+        <div className="min-h-screen bg-gray-50 dark:bg-dark text-gray-900 dark:text-white pt-32 pb-20 relative overflow-hidden">
             {/* Background Atmosphere */}
             <div className="fixed inset-0 z-0 pointer-events-none">
                 <div className="absolute top-[20%] left-[-10%] w-[50%] h-[50%] bg-neon-blue/5 rounded-full blur-[150px] opacity-20" />
@@ -237,7 +237,7 @@ const CommunityJoin = () => {
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.2 }}
-                        className="text-5xl sm:text-7xl md:text-8xl font-extrabold font-heading text-transparent bg-clip-text bg-gradient-to-r from-white via-white to-gray-400 mb-4 md:mb-6 tracking-tight leading-tight text-center px-10 overflow-visible"
+                        className="text-5xl sm:text-7xl md:text-8xl font-extrabold font-heading text-transparent bg-clip-text bg-gradient-to-r from-gray-950 via-gray-800 to-gray-500 dark:from-white dark:via-white to-gray-400 mb-4 md:mb-6 tracking-tight leading-tight text-center px-10 overflow-visible"
                     >
                         {user ? (
                             <>Hello, {user.displayName?.split(' ')[0]}</>
@@ -250,7 +250,7 @@ const CommunityJoin = () => {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         transition={{ delay: 0.3 }}
-                        className="text-gray-400 max-w-xl mx-auto text-sm md:text-lg font-semibold leading-relaxed tracking-wide px-4"
+                        className="text-gray-600 dark:text-gray-400 max-w-xl mx-auto text-sm md:text-lg font-semibold leading-relaxed tracking-wide px-4"
                     >
                         {user ? "Exclusive opportunities await." : "Join India's most disruptive youth community."}
                     </motion.p>
@@ -262,7 +262,7 @@ const CommunityJoin = () => {
                             initial={{ opacity: 0, y: 30 }}
                             whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: true }}
-                            className="p-8 md:p-20 bg-slate-900/30 border border-white/5 rounded-[2.5rem] md:rounded-[3rem] backdrop-blur-3xl text-center max-w-2xl shadow-2xl relative overflow-hidden group hover:border-white/10 transition-all duration-300"
+                            className="p-8 md:p-20 bg-gray-100 dark:bg-slate-900/30 border border-black/10 dark:border-white/5 rounded-[2.5rem] md:rounded-[3rem] backdrop-blur-3xl text-center max-w-2xl shadow-2xl relative overflow-hidden group hover:border-black/10 dark:hover:border-white/10 transition-all duration-300"
                         >
                             <div className="absolute inset-0 bg-gradient-to-br from-neon-blue/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                             <Users className="w-16 h-16 md:w-24 md:h-24 text-neon-blue mx-auto mb-8 md:mb-12 relative z-10" />
@@ -281,12 +281,12 @@ const CommunityJoin = () => {
                         <div className="max-w-5xl mx-auto">
                             <div className="flex items-center gap-6 mb-16">
                                 <div className="w-16 h-16 rounded-2xl bg-neon-blue text-black flex items-center justify-center font-extrabold text-2xl shadow-[0_0_30px_rgba(0,255,255,0.3)]">01</div>
-                                <h2 className="text-3xl md:text-4xl font-extrabold font-heading tracking-tight text-white">Registration.</h2>
+                                <h2 className="text-3xl md:text-4xl font-extrabold font-heading tracking-tight text-gray-900 dark:text-white">Registration.</h2>
                             </div>
 
                             <div className="relative group">
                                 <div className="absolute -inset-2 bg-gradient-to-r from-neon-pink via-neon-blue to-neon-green rounded-[2.5rem] md:rounded-[3.5rem] blur-2xl opacity-10 group-hover:opacity-30 transition duration-1000" />
-                                <div className="relative w-full aspect-[4/5] md:aspect-[3/2] bg-slate-950 rounded-[2rem] md:rounded-[3rem] overflow-hidden border border-white/5 shadow-2xl">
+                                <div className="relative w-full aspect-[4/5] md:aspect-[3/2] bg-gray-100 dark:bg-slate-950 rounded-[2rem] md:rounded-[3rem] overflow-hidden border border-black/10 dark:border-white/5 shadow-2xl">
                                     <iframe
                                         src="https://docs.google.com/forms/d/e/1FAIpQLScQv55cT-hPBqTtw7PFqOZND6QfPkmjzT8_4Sf4G53_UYwSQg/viewform?embedded=true"
                                         className="w-full h-full border-0"
@@ -296,10 +296,10 @@ const CommunityJoin = () => {
                                 </div>
                             </div>
 
-                            <div className="mt-12 md:mt-20 p-8 md:p-12 bg-slate-900/40 border border-white/5 rounded-[2rem] md:rounded-[2.5rem] backdrop-blur-3xl text-center relative overflow-hidden shadow-2xl">
+                            <div className="mt-12 md:mt-20 p-8 md:p-12 bg-gray-100 dark:bg-slate-900/40 border border-black/10 dark:border-white/5 rounded-[2rem] md:rounded-[2.5rem] backdrop-blur-3xl text-center relative overflow-hidden shadow-2xl">
                                 <div className="absolute -bottom-20 -left-20 w-40 h-40 bg-neon-green blur-[80px] opacity-10" />
-                                <h3 className="text-2xl md:text-3xl font-extrabold font-heading text-white mb-4">Submitted the form?</h3>
-                                <p className="text-gray-400 mb-8 md:mb-10 max-w-sm mx-auto font-medium tracking-tight text-sm">Click below to finalize your entry and unlock the hub.</p>
+                                <h3 className="text-2xl md:text-3xl font-extrabold font-heading text-gray-900 dark:text-white mb-4">Submitted the form?</h3>
+                                <p className="text-gray-600 dark:text-gray-400 mb-8 md:mb-10 max-w-sm mx-auto font-medium tracking-tight text-sm">Click below to finalize your entry and unlock the hub.</p>
                                 <Button
                                     onClick={handleJoinedConfirm}
                                     disabled={confirming}
@@ -337,7 +337,7 @@ const CommunityJoin = () => {
                                               <Star size={32} className="fill-black" />
                                           </div>
                                           <div>
-                                              <h2 className="text-4xl md:text-6xl font-extrabold font-heading tracking-tight text-white leading-none">
+                                              <h2 className="text-4xl md:text-6xl font-extrabold font-heading tracking-tight text-gray-900 dark:text-white leading-none">
                                                   Featured
                                               </h2>
                                               <div className="flex items-center gap-3 mt-2">
@@ -352,12 +352,12 @@ const CommunityJoin = () => {
                                       <div className="relative group/carousel">
                                           {/* Navigation Arrows */}
                                           <div className="absolute -left-4 top-1/2 -translate-y-1/2 z-20 flex opacity-0 group-hover/carousel:opacity-100 transition-opacity pointer-events-none">
-                                              <button onClick={(e) => { e.stopPropagation(); scrollContainer('featured-scroll', 'left'); }} className="w-10 h-10 rounded-xl bg-black/80 border border-white/10 flex items-center justify-center text-white pointer-events-auto shadow-2xl">
+                                              <button onClick={(e) => { e.stopPropagation(); scrollContainer('featured-scroll', 'left'); }} className="w-10 h-10 rounded-xl bg-white dark:bg-black/80 border border-black/10 dark:border-white/10 flex items-center justify-center text-gray-900 dark:text-white pointer-events-auto shadow-2xl">
                                                   <ChevronRight className="rotate-180" size={20} />
                                               </button>
                                           </div>
                                           <div className="absolute -right-4 top-1/2 -translate-y-1/2 z-20 flex opacity-0 group-hover/carousel:opacity-100 transition-opacity pointer-events-none">
-                                              <button onClick={(e) => { e.stopPropagation(); scrollContainer('featured-scroll', 'right'); }} className="w-10 h-10 rounded-xl bg-black/80 border border-white/10 flex items-center justify-center text-white pointer-events-auto shadow-2xl">
+                                              <button onClick={(e) => { e.stopPropagation(); scrollContainer('featured-scroll', 'right'); }} className="w-10 h-10 rounded-xl bg-white dark:bg-black/80 border border-black/10 dark:border-white/10 flex items-center justify-center text-gray-900 dark:text-white pointer-events-auto shadow-2xl">
                                                   <ChevronRight size={20} />
                                               </button>
                                           </div>
@@ -389,14 +389,14 @@ const CommunityJoin = () => {
                           {/* 1. Status UI & Quick Join */}
                           {!user?.hasJoinedWhatsapp && (
                               <section className="max-w-6xl">
-                                  <div className="bg-slate-900/30 border border-white/5 rounded-[3rem] p-6 lg:p-10 md:p-16 flex flex-col md:flex-row items-center gap-10 relative overflow-hidden group backdrop-blur-3xl shadow-2xl hover:border-white/10 transition-all duration-300">
+                                  <div className="bg-gray-100 dark:bg-slate-900/30 border border-black/10 dark:border-white/5 rounded-[3rem] p-6 lg:p-10 md:p-16 flex flex-col md:flex-row items-center gap-10 relative overflow-hidden group backdrop-blur-3xl shadow-2xl hover:border-black/10 dark:hover:border-white/10 transition-all duration-300">
                                      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-neon-green/5 blur-[100px] pointer-events-none" />
                                      <div className="w-24 h-24 bg-neon-green rounded-[2rem] flex items-center justify-center text-black shadow-[0_0_50px_rgba(57,255,20,0.3)] shrink-0">
                                          <CheckCircle2 size={40} />
                                      </div>
                                      <div className="flex-1 text-center md:text-left relative z-10 mx-auto max-w-[95%]">
-                                          <h3 className="text-2xl md:text-3xl font-extrabold font-heading text-white mb-4 leading-tight pr-4">Your Tribe Access is Active.</h3>
-                                         <p className="text-gray-400 text-sm md:text-base font-medium leading-relaxed tracking-tight">Join the primary communication channel below for instant updates.</p>
+                                          <h3 className="text-2xl md:text-3xl font-extrabold font-heading text-gray-900 dark:text-white mb-4 leading-tight pr-4">Your Tribe Access is Active.</h3>
+                                         <p className="text-gray-600 dark:text-gray-400 text-sm md:text-base font-medium leading-relaxed tracking-tight">Join the primary communication channel below for instant updates.</p>
                                      </div>
                                      {!clickedWhatsApp ? (
                                          <a 
@@ -433,21 +433,21 @@ const CommunityJoin = () => {
                                          className="group relative block overflow-hidden rounded-[3rem] border border-purple-500/15 bg-purple-600/[0.04] p-1 md:p-2 backdrop-blur-3xl shadow-2xl shadow-purple-500/5 hover:border-purple-500/25 transition-all duration-300"
                                      >
                                          <Link to={`/giveaway/${activeGiveaway.slug}`} className="flex flex-col md:flex-row items-center gap-10 p-8 md:p-14">
-                                             <div className="w-24 h-24 rounded-[2rem] bg-purple-600 flex items-center justify-center text-white shadow-2xl shadow-purple-500/40 group-hover:scale-110 group-hover:rotate-12 transition-all duration-500">
+                                             <div className="w-24 h-24 rounded-[2rem] bg-purple-600 flex items-center justify-center text-gray-900 dark:text-white shadow-2xl shadow-purple-500/40 group-hover:scale-110 group-hover:rotate-12 transition-all duration-500">
                                                  <Gift size={48} />
                                              </div>
                                              <div className="flex-1 text-center md:text-left space-y-4">
                                                  <div className="inline-flex px-4 py-1.5 rounded-lg bg-purple-500/20 text-purple-400 text-[9px] font-bold uppercase tracking-[0.15em] border border-purple-500/20">
                                                      LIMITED OPPORTUNITY
                                                  </div>
-                                                  <h3 className="text-3xl md:text-4xl font-extrabold font-heading tracking-tight text-white leading-tight">
-                                                      Win <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-purple-500">{activeGiveaway.name}</span>
+                                                  <h3 className="text-3xl md:text-4xl font-extrabold font-heading tracking-tight text-gray-900 dark:text-white leading-tight">
+                                                      Win <span className="text-transparent bg-clip-text bg-gradient-to-r from-gray-900 dark:from-white to-purple-500">{activeGiveaway.name}</span>
                                                   </h3>
-                                                 <p className="text-sm md:text-base font-medium text-gray-400 max-w-2xl tracking-tight leading-relaxed">
+                                                 <p className="text-sm md:text-base font-medium text-gray-600 dark:text-gray-400 max-w-2xl tracking-tight leading-relaxed">
                                                      Exclusive rewarding for the Tribe. Participate, refer, and win.
                                                  </p>
                                              </div>
-                                             <div className="w-full md:w-auto h-16 flex justify-center items-center gap-4 px-6 md:px-10 bg-purple-600 text-white rounded-xl font-bold tracking-wider text-xs md:text-sm shadow-2xl group-hover:gap-8 transition-all shrink-0">
+                                             <div className="w-full md:w-auto h-16 flex justify-center items-center gap-4 px-6 md:px-10 bg-purple-600 text-gray-900 dark:text-white rounded-xl font-bold tracking-wider text-xs md:text-sm shadow-2xl group-hover:gap-8 transition-all shrink-0">
                                                  Participate Now <ArrowRight size={20} />
                                              </div>
                                          </Link>
@@ -483,7 +483,7 @@ const CommunityJoin = () => {
                                                  )}
                                              </div>
                                              <div>
-                                                  <h2 className="text-3xl md:text-4xl font-extrabold font-heading tracking-tight text-white leading-none pb-2 pr-4">
+                                                  <h2 className="text-3xl md:text-4xl font-extrabold font-heading tracking-tight text-gray-900 dark:text-white leading-none pb-2 pr-4">
                                                       {section.title}
                                                   </h2>
                                                  <p className="text-xs font-bold text-gray-500 uppercase tracking-[0.2em] pl-1">
@@ -496,12 +496,12 @@ const CommunityJoin = () => {
                                      <div className="relative group/section-carousel">
                                           {/* Navigation Arrows */}
                                           <div className="absolute -left-4 top-1/2 -translate-y-1/2 z-20 flex opacity-0 group-hover/section-carousel:opacity-100 transition-opacity pointer-events-none">
-                                              <button onClick={(e) => { e.stopPropagation(); scrollContainer(`scroll-${section.id}`, 'left'); }} className="w-10 h-10 rounded-xl bg-black/80 border border-white/10 flex items-center justify-center text-white pointer-events-auto shadow-2xl">
+                                              <button onClick={(e) => { e.stopPropagation(); scrollContainer(`scroll-${section.id}`, 'left'); }} className="w-10 h-10 rounded-xl bg-white dark:bg-black/80 border border-black/10 dark:border-white/10 flex items-center justify-center text-gray-900 dark:text-white pointer-events-auto shadow-2xl">
                                                   <ChevronRight className="rotate-180" size={20} />
                                               </button>
                                           </div>
                                           <div className="absolute -right-4 top-1/2 -translate-y-1/2 z-20 flex opacity-0 group-hover/section-carousel:opacity-100 transition-opacity pointer-events-none">
-                                              <button onClick={(e) => { e.stopPropagation(); scrollContainer(`scroll-${section.id}`, 'right'); }} className="w-10 h-10 rounded-xl bg-black/80 border border-white/10 flex items-center justify-center text-white pointer-events-auto shadow-2xl">
+                                              <button onClick={(e) => { e.stopPropagation(); scrollContainer(`scroll-${section.id}`, 'right'); }} className="w-10 h-10 rounded-xl bg-white dark:bg-black/80 border border-black/10 dark:border-white/10 flex items-center justify-center text-gray-900 dark:text-white pointer-events-auto shadow-2xl">
                                                   <ChevronRight size={20} />
                                               </button>
                                           </div>
@@ -527,8 +527,8 @@ const CommunityJoin = () => {
                                                   ))}
                                               </div>
                                           ) : (
-                                              <div className="py-24 bg-slate-900/10 rounded-3xl border border-dashed border-white/5 text-center flex flex-col items-center gap-6">
-                                                  <div className="w-16 h-16 rounded-2xl bg-white/5 flex items-center justify-center text-gray-700">
+                                              <div className="py-24 bg-gray-100 dark:bg-slate-900/10 rounded-3xl border border-dashed border-black/10 dark:border-white/5 text-center flex flex-col items-center gap-6">
+                                                  <div className="w-16 h-16 rounded-2xl bg-black/5 dark:bg-white/5 flex items-center justify-center text-gray-700">
                                                       <section.icon size={30} />
                                                   </div>
                                                   <p className="text-gray-600 font-bold uppercase tracking-widest text-xs">No active {section.title.toLowerCase()} at the moment.</p>
@@ -558,10 +558,10 @@ const CommunityJoin = () => {
                         initial={{ opacity: 0, y: 50 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95 }}
-                        className="fixed bottom-12 inset-x-0 mx-auto w-fit z-[100] px-8 py-4 bg-slate-950/80 border border-white/5 rounded-2xl shadow-2xl flex items-center gap-4 backdrop-blur-3xl"
+                        className="fixed bottom-12 inset-x-0 mx-auto w-fit z-[100] px-8 py-4 bg-gray-100 dark:bg-slate-950/80 border border-black/10 dark:border-white/5 rounded-2xl shadow-2xl flex items-center gap-4 backdrop-blur-3xl"
                     >
                         <div className="w-2 h-2 rounded-full bg-neon-green" />
-                        <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-white">Access Link Copied</span>
+                        <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-gray-900 dark:text-white">Access Link Copied</span>
                     </motion.div>
                 )}
             </AnimatePresence>

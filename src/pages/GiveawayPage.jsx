@@ -174,7 +174,7 @@ const GiveawayPage = () => {
     };
 
     if (!giveaway) return (
-        <div className="min-h-screen bg-[#020202] flex items-center justify-center font-black uppercase tracking-widest text-gray-600">
+        <div className="min-h-screen bg-gray-50 dark:bg-[#020202] flex items-center justify-center font-black uppercase tracking-widest text-gray-500">
             Loading...
         </div>
     );
@@ -195,12 +195,12 @@ const GiveawayPage = () => {
     };
 
     return (
-        <div className="min-h-screen bg-[#020202] text-white">
+        <div className="min-h-screen bg-gray-50 dark:bg-[#020202] text-gray-900 dark:text-white transition-colors duration-300">
             {/* Background atmosphere */}
             <div className="fixed inset-0 z-0 pointer-events-none">
                 <div className="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] bg-purple-600/8 rounded-full blur-[200px]" />
                 <div className="absolute bottom-[10%] right-[-10%] w-[50%] h-[50%] bg-neon-blue/8 rounded-full blur-[200px]" />
-                <div className="absolute inset-0 opacity-[0.025]" style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,1) 1px, transparent 1px)', backgroundSize: '60px 60px' }} />
+                <div className="absolute inset-0 opacity-[0.025]" style={{ backgroundImage: 'linear-gradient(rgba(128,128,128,1) 1px, transparent 1px), linear-gradient(90deg, rgba(128,128,128,1) 1px, transparent 1px)', backgroundSize: '60px 60px' }} />
             </div>
 
             {/* ─── HERO BANNER ─── */}
@@ -209,7 +209,7 @@ const GiveawayPage = () => {
                     {giveaway.posterUrl ? (
                         <>
                             <img src={giveaway.posterUrl} alt={giveaway.name} className="w-full h-full object-cover scale-105" />
-                            <div className="absolute inset-0 bg-[#020202]/70 backdrop-blur-[2px]" />
+                            <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px]" />
                         </>
                     ) : (
                         <div className="w-full h-full bg-gradient-to-br from-purple-900/50 via-[#020202] to-neon-blue/20">
@@ -224,21 +224,21 @@ const GiveawayPage = () => {
                 <div className="absolute bottom-0 left-0 w-full p-6 md:p-16 z-10">
                     <div className="max-w-7xl mx-auto">
                         <div className="space-y-4 md:space-y-6">
-                            <h1 className="text-4xl md:text-8xl font-black font-heading tracking-tighter uppercase italic leading-[0.9] text-white max-w-5xl">
+                            <h1 className="text-4xl md:text-8xl font-black font-heading tracking-tighter uppercase italic leading-[0.9] text-gray-900 dark:text-white max-w-5xl">
                                 {giveaway.name}
                             </h1>
-                            <div className="flex flex-wrap items-center gap-4 md:gap-8 text-[10px] font-black uppercase tracking-widest text-gray-400">
+                            <div className="flex flex-wrap items-center gap-4 md:gap-8 text-[10px] font-black uppercase tracking-widest text-gray-600 dark:text-gray-400">
                                 <span className="flex items-center gap-2">
                                     <Ticket size={14} className="text-purple-400" />
                                     {giveaway.ticketsAvailable} Available
                                 </span>
                                 <div className="flex flex-col sm:flex-row items-center gap-2">
-                                    <div className="flex items-center gap-2 bg-white/5 border border-white/10 px-4 py-2 rounded-xl backdrop-blur-md text-white">
+                                    <div className="flex items-center gap-2 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 px-4 py-2 rounded-xl backdrop-blur-md text-gray-900 dark:text-white">
                                         <Clock size={12} className="text-neon-blue" />
                                         <span>Ends: <span className="text-neon-blue ml-1">{timeLeft}</span></span>
                                     </div>
                                     {giveaway.winnerAnnouncementDate && (
-                                        <div className="flex items-center gap-2 bg-white/5 border border-white/10 px-4 py-2 rounded-xl backdrop-blur-md text-white">
+                                        <div className="flex items-center gap-2 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 px-4 py-2 rounded-xl backdrop-blur-md text-gray-900 dark:text-white">
                                             <Trophy size={12} className="text-yellow-500" />
                                             <span>Winners: <span className="text-yellow-500 ml-1">{new Date(giveaway.winnerAnnouncementDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span></span>
                                         </div>
@@ -252,21 +252,21 @@ const GiveawayPage = () => {
 
             {/* Winner full-screen overlay */}
             {winner && giveaway.status === 'Closed' && (
-                <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/85 backdrop-blur-2xl">
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-white dark:bg-black/85 backdrop-blur-2xl">
                     <motion.div
                         initial={{ scale: 0.8, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
                         transition={{ type: 'spring', damping: 18, stiffness: 200 }}
-                        className="bg-black/80 backdrop-blur-3xl border border-yellow-500/30 p-10 md:p-20 rounded-[3rem] text-center shadow-[0_0_120px_rgba(234,179,8,0.2)] relative mx-4 w-full max-w-2xl"
+                        className="bg-white dark:bg-black/80 backdrop-blur-3xl border border-yellow-500/30 p-10 md:p-20 rounded-[3rem] text-center shadow-[0_0_120px_rgba(234,179,8,0.2)] relative mx-4 w-full max-w-2xl"
                     >
                         <div className="absolute -top-12 left-1/2 -translate-x-1/2 w-24 h-24 bg-yellow-500 rounded-[2rem] flex items-center justify-center shadow-[0_0_60px_rgba(234,179,8,0.4)]">
                             <Trophy size={44} className="text-black" />
                         </div>
                         <p className="text-yellow-500 font-black uppercase tracking-[0.4em] text-[10px] mb-6 mt-4">We Have a Winner</p>
-                        <h1 className="text-4xl md:text-8xl font-black font-heading text-white uppercase italic tracking-tighter leading-none mb-4">
+                        <h1 className="text-4xl md:text-8xl font-black font-heading text-gray-900 dark:text-white uppercase italic tracking-tighter leading-none mb-4">
                             {winner.name}
                         </h1>
-                        <div className="flex items-center justify-center gap-2 text-gray-400 text-[10px] font-black uppercase tracking-widest">
+                        <div className="flex items-center justify-center gap-2 text-gray-600 dark:text-gray-400 text-[10px] font-black uppercase tracking-widest">
                             <Star size={12} className="text-yellow-500" />
                             CONGRATULATIONS
                             <Star size={12} className="text-yellow-500" />
@@ -284,21 +284,21 @@ const GiveawayPage = () => {
                         <div className="h-14 w-1.5 rounded-full bg-purple-500" />
                         <div>
                             <p className="text-[10px] font-black uppercase tracking-[0.5em] text-purple-400 mb-1">About This Drop</p>
-                            <h2 className="text-4xl md:text-6xl font-black font-heading tracking-tighter text-white uppercase">THE BRIEF.</h2>
+                            <h2 className="text-4xl md:text-6xl font-black font-heading tracking-tighter text-gray-900 dark:text-white uppercase">THE BRIEF.</h2>
                         </div>
                     </div>
                     <div className="max-w-4xl relative group">
                         <div className="absolute -inset-[1px] bg-gradient-to-br from-purple-600/30 via-transparent to-neon-blue/20 rounded-[2.5rem] opacity-0 group-hover:opacity-100 transition-all duration-700" />
-                        <div className="relative bg-zinc-900/50 backdrop-blur-3xl border border-white/8 rounded-[2.5rem] overflow-hidden">
+                        <div className="relative bg-gray-100 dark:bg-zinc-900/50 backdrop-blur-3xl border border-white/8 rounded-[2.5rem] overflow-hidden">
                             {/* Header accent */}
-                            <div className="px-8 md:px-12 pt-8 md:pt-10 pb-6 border-b border-white/5 flex items-center gap-3">
+                            <div className="px-8 md:px-12 pt-8 md:pt-10 pb-6 border-b border-black/10 dark:border-white/5 flex items-center gap-3">
                                 <div className="w-8 h-8 rounded-xl bg-purple-500/20 border border-purple-500/30 flex items-center justify-center">
                                     <Star size={14} className="text-purple-400" />
                                 </div>
                                 <span className="text-[9px] font-black uppercase tracking-[0.4em] text-purple-400">Campaign Details</span>
                             </div>
                             <div className="px-8 md:px-12 py-8 md:py-10">
-                                <p className="text-gray-300 leading-[1.9] text-base md:text-lg font-medium">{giveaway.description}</p>
+                                <p className="text-gray-700 dark:text-gray-300 leading-[1.9] text-base md:text-lg font-medium">{giveaway.description}</p>
                             </div>
                         </div>
                     </div>
@@ -311,7 +311,7 @@ const GiveawayPage = () => {
                             <div className="h-14 w-1.5 rounded-full bg-neon-blue" />
                             <div>
                                 <p className="text-[10px] font-black uppercase tracking-[0.5em] text-neon-blue mb-1">Step 01</p>
-                                <h2 className="text-4xl md:text-6xl font-black font-heading tracking-tighter text-white uppercase">SECURE YOUR ENTRY.</h2>
+                                <h2 className="text-4xl md:text-6xl font-black font-heading tracking-tighter text-gray-900 dark:text-white uppercase">SECURE YOUR ENTRY.</h2>
                             </div>
                         </div>
 
@@ -329,7 +329,7 @@ const GiveawayPage = () => {
                                                 placeholder={f.placeholder}
                                                 value={formData[f.key]}
                                                 onChange={e => setFormData({ ...formData, [f.key]: e.target.value })}
-                                                className="h-14 bg-white/5 border-white/5 rounded-2xl text-xs font-black uppercase tracking-wider focus:border-purple-500/50"
+                                                className="h-14 bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/5 rounded-2xl text-xs font-black uppercase tracking-wider focus:border-purple-500/50"
                                             />
                                         </div>
                                     ))}
@@ -340,7 +340,7 @@ const GiveawayPage = () => {
                                         placeholder="WHERE DO YOU STUDY?"
                                         value={formData.college}
                                         onChange={e => setFormData({ ...formData, college: e.target.value })}
-                                        className="h-14 bg-white/5 border-white/5 rounded-2xl text-xs font-black uppercase tracking-wider focus:border-purple-500/50"
+                                        className="h-14 bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/5 rounded-2xl text-xs font-black uppercase tracking-wider focus:border-purple-500/50"
                                     />
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -354,7 +354,7 @@ const GiveawayPage = () => {
                                                 placeholder={f.placeholder}
                                                 value={formData[f.key]}
                                                 onChange={e => setFormData({ ...formData, [f.key]: e.target.value })}
-                                                className="h-14 bg-white/5 border-white/5 rounded-2xl text-xs font-black uppercase tracking-wider focus:border-purple-500/50"
+                                                className="h-14 bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/5 rounded-2xl text-xs font-black uppercase tracking-wider focus:border-purple-500/50"
                                             />
                                         </div>
                                     ))}
@@ -365,7 +365,7 @@ const GiveawayPage = () => {
                                         placeholder="TELL US WHY YOU DESERVE TO WIN..."
                                         value={formData.answer}
                                         onChange={e => setFormData({ ...formData, answer: e.target.value })}
-                                        className="w-full h-20 bg-white/5 border border-white/5 rounded-2xl px-5 py-4 text-xs font-black uppercase tracking-wider focus:border-purple-500/50 outline-none text-white resize-none placeholder:text-gray-700"
+                                        className="w-full h-20 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/5 rounded-2xl px-5 py-4 text-xs font-black uppercase tracking-wider focus:border-purple-500/50 outline-none text-gray-900 dark:text-white resize-none placeholder:text-gray-700"
                                     />
                                 </div>
                                 <Button
@@ -378,12 +378,12 @@ const GiveawayPage = () => {
                             </div>
 
                             {/* Trust card */}
-                            <div className="lg:col-span-2 bg-zinc-900/40 border border-white/5 rounded-[2.5rem] p-8 md:p-10 flex flex-col justify-center items-center text-center gap-6">
+                            <div className="lg:col-span-2 bg-gray-100 dark:bg-zinc-900/40 border border-black/10 dark:border-white/5 rounded-[2.5rem] p-8 md:p-10 flex flex-col justify-center items-center text-center gap-6">
                                 <div className="w-20 h-20 rounded-[1.5rem] bg-neon-blue/10 border border-neon-blue/20 flex items-center justify-center text-neon-blue shadow-[0_0_30px_rgba(0,255,255,0.1)]">
                                     <CheckCircle2 size={36} />
                                 </div>
                                 <div className="space-y-3">
-                                    <h4 className="text-xl font-black font-heading uppercase italic tracking-tight text-white">Verified Entry</h4>
+                                    <h4 className="text-xl font-black font-heading uppercase italic tracking-tight text-gray-900 dark:text-white">Verified Entry</h4>
                                     <p className="text-[10px] font-bold uppercase tracking-widest text-gray-500 leading-relaxed max-w-xs">
                                         Data is protected. Only used for winner verification. Multi-account farming is detected and disqualified.
                                     </p>
@@ -400,11 +400,11 @@ const GiveawayPage = () => {
                         <section>
                             <div className="relative group">
                                 <div className="absolute -inset-1 bg-gradient-to-r from-purple-600 to-neon-blue rounded-[3rem] blur opacity-15 group-hover:opacity-25 transition duration-700" />
-                                <div className="relative bg-zinc-900/60 border border-white/10 rounded-[2.5rem] p-8 md:p-12 backdrop-blur-3xl overflow-hidden">
+                                <div className="relative bg-gray-100 dark:bg-zinc-900/60 border border-black/10 dark:border-white/10 rounded-[2.5rem] p-8 md:p-12 backdrop-blur-3xl overflow-hidden">
                                     <div className="absolute inset-0 bg-gradient-to-br from-purple-600/10 to-neon-blue/5" />
                                     <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8">
                                         <div className="space-y-4 text-center md:text-left">
-                                            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[9px] font-black text-purple-400 uppercase tracking-widest">
+                                            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-[9px] font-black text-purple-400 uppercase tracking-widest">
                                                 <Users size={12} /> PARTICIPANT PASSPORT
                                             </div>
                                             <h3 className="text-3xl md:text-6xl font-black font-heading tracking-tighter uppercase italic leading-none">
@@ -414,9 +414,9 @@ const GiveawayPage = () => {
                                                 Every mission completed boosts your ranking. Complete all tasks to maximize your winning probability.
                                             </p>
                                         </div>
-                                        <div className="flex flex-col items-center justify-center w-40 h-40 md:w-52 md:h-52 rounded-full border-[10px] border-white/5 relative shrink-0">
+                                        <div className="flex flex-col items-center justify-center w-40 h-40 md:w-52 md:h-52 rounded-full border-[10px] border-black/10 dark:border-white/5 relative shrink-0">
                                             <div className="absolute inset-0 rounded-full border-[10px] border-purple-500 border-t-transparent border-r-transparent animate-spin-slow opacity-30" />
-                                            <span className="text-5xl md:text-6xl font-black font-heading text-white tracking-tighter italic leading-none">
+                                            <span className="text-5xl md:text-6xl font-black font-heading text-gray-900 dark:text-white tracking-tighter italic leading-none">
                                                 {userEntry.entryScore || 0}
                                             </span>
                                             <span className="text-[9px] font-black text-purple-400 uppercase tracking-[0.3em] mt-2">POINTS</span>
@@ -433,10 +433,10 @@ const GiveawayPage = () => {
                                     <div className="h-14 w-1.5 rounded-full bg-neon-blue" />
                                     <div>
                                         <p className="text-[10px] font-black uppercase tracking-[0.5em] text-neon-blue mb-1">Earn Points</p>
-                                        <h2 className="text-4xl md:text-6xl font-black font-heading tracking-tighter text-white uppercase">AVAILABLE MISSIONS.</h2>
+                                        <h2 className="text-4xl md:text-6xl font-black font-heading tracking-tighter text-gray-900 dark:text-white uppercase">AVAILABLE MISSIONS.</h2>
                                     </div>
                                 </div>
-                                <div className="px-4 py-2 rounded-full bg-white/5 border border-white/10 text-[9px] font-black uppercase tracking-widest text-gray-500">
+                                <div className="px-4 py-2 rounded-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-[9px] font-black uppercase tracking-widest text-gray-500">
                                     Multiple entries allowed
                                 </div>
                             </div>
@@ -452,13 +452,13 @@ const GiveawayPage = () => {
                                             key={task.id}
                                             whileHover={!done ? { y: -4 } : {}}
                                             className={cn(
-                                                "relative bg-zinc-900/40 backdrop-blur-3xl border rounded-[2.5rem] overflow-hidden flex flex-col group transition-all duration-500",
-                                                done ? "border-neon-green/30 shadow-[0_0_40px_rgba(57,255,20,0.05)]" : "border-white/5 hover:border-white/20"
+                                                "relative bg-white dark:bg-zinc-900/40 backdrop-blur-3xl border rounded-[2.5rem] overflow-hidden flex flex-col group transition-all duration-500 shadow-sm dark:shadow-none",
+                                                done ? "border-neon-green/30 shadow-[0_0_40px_rgba(57,255,20,0.05)]" : "border-gray-200 dark:border-white/5 hover:border-gray-300 dark:hover:border-white/20"
                                             )}
                                         >
                                             {/* Ticket perforations */}
-                                            <div className="absolute top-1/2 -left-3 w-6 h-6 bg-[#020202] rounded-full z-20 border border-white/5" />
-                                            <div className="absolute top-1/2 -right-3 w-6 h-6 bg-[#020202] rounded-full z-20 border border-white/5" />
+                                            <div className="absolute top-1/2 -left-3 w-6 h-6 bg-gray-50 dark:bg-[#020202] rounded-full z-20 border border-gray-200 dark:border-white/5" />
+                                            <div className="absolute top-1/2 -right-3 w-6 h-6 bg-gray-50 dark:bg-[#020202] rounded-full z-20 border border-gray-200 dark:border-white/5" />
 
                                             <div className="w-full flex flex-col md:flex-row items-center justify-between gap-12">
                                                 {/* Main content */}
@@ -468,16 +468,16 @@ const GiveawayPage = () => {
                                                             "p-3 rounded-2xl border transition-all duration-500",
                                                             done
                                                                 ? "bg-neon-green/10 border-neon-green/20 text-neon-green shadow-[0_0_20px_rgba(57,255,20,0.15)]"
-                                                                : "bg-white/5 border-white/10 text-gray-400 group-hover:text-white group-hover:border-white/20 group-hover:shadow-lg"
+                                                                : "bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-gray-600 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white group-hover:border-black/20 dark:group-hover:border-white/20 group-hover:shadow-lg"
                                                         )}>
                                                             <TaskIcon size={24} />
                                                         </div>
-                                                        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/5 border border-white/5">
+                                                        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/5">
                                                             <Trophy size={10} className="text-purple-400" />
-                                                            <span className="text-[9px] font-black uppercase text-gray-300">+{task.entryScore} PTS</span>
+                                                            <span className="text-[9px] font-black uppercase text-gray-700 dark:text-gray-300">+{task.entryScore} PTS</span>
                                                         </div>
                                                     </div>
-                                                    <h3 className="text-lg font-black font-heading text-white tracking-tight leading-tight mb-2 group-hover:translate-x-1 transition-transform uppercase">
+                                                    <h3 className="text-lg font-black font-heading text-gray-900 dark:text-white tracking-tight leading-tight mb-2 group-hover:translate-x-1 transition-transform uppercase">
                                                         {task.label}
                                                     </h3>
                                                     {task.type === 'instagram' && !done && (
@@ -486,7 +486,7 @@ const GiveawayPage = () => {
                                                             placeholder="@HANDLE"
                                                             value={instaUsername}
                                                             onChange={e => setInstaUsername(e.target.value)}
-                                                            className="mt-3 h-10 px-4 bg-black/40 border border-white/10 rounded-xl text-[10px] font-black uppercase tracking-widest focus:border-purple-500 outline-none text-white text-center placeholder:text-gray-700 w-full"
+                                                            className="mt-3 h-10 px-4 bg-white dark:bg-black/40 border border-black/10 dark:border-white/10 rounded-xl text-[10px] font-black uppercase tracking-widest focus:border-purple-500 outline-none text-gray-900 dark:text-white text-center placeholder:text-gray-700 w-full"
                                                         />
                                                     )}
                                                 </div>
@@ -499,7 +499,7 @@ const GiveawayPage = () => {
                                                         "w-20 flex flex-col justify-center items-center gap-3 border-l border-dashed transition-all",
                                                         done
                                                             ? "bg-neon-green/5 border-neon-green/20 cursor-default"
-                                                            : "bg-white/5 border-white/10 hover:bg-white/10"
+                                                            : "bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 hover:bg-black/10 dark:hover:bg-white/10"
                                                     )}
                                                 >
                                                     {verifying ? (
@@ -511,7 +511,7 @@ const GiveawayPage = () => {
                                                         </>
                                                     ) : (
                                                         <>
-                                                            <ArrowRight size={20} className="text-white" />
+                                                            <ArrowRight size={20} className="text-gray-900 dark:text-white" />
                                                             <span className="text-[8px] font-black text-gray-500 uppercase tracking-[0.2em] rotate-90 whitespace-nowrap">CLAIM</span>
                                                         </>
                                                     )}
@@ -524,28 +524,28 @@ const GiveawayPage = () => {
                                 {/* Referral card */}
                                 <motion.div
                                     whileHover={{ y: -4 }}
-                                    className="relative bg-zinc-900/40 backdrop-blur-3xl border border-white/5 hover:border-white/20 rounded-[2.5rem] flex group transition-all duration-500 min-h-[220px]"
+                                    className="relative bg-white dark:bg-zinc-900/40 backdrop-blur-3xl border border-gray-200 dark:border-white/5 hover:border-gray-300 dark:hover:border-white/20 rounded-[2.5rem] flex group transition-all duration-500 min-h-[220px] shadow-sm dark:shadow-none"
                                 >
-                                    <div className="absolute top-1/2 -left-3 w-6 h-6 bg-[#020202] rounded-full z-20 border border-white/5" />
-                                    <div className="absolute top-1/2 -right-3 w-6 h-6 bg-[#020202] rounded-full z-20 border border-white/5" />
+                                    <div className="absolute top-1/2 -left-3 w-6 h-6 bg-gray-50 dark:bg-[#020202] rounded-full z-20 border border-gray-200 dark:border-white/5" />
+                                    <div className="absolute top-1/2 -right-3 w-6 h-6 bg-gray-50 dark:bg-[#020202] rounded-full z-20 border border-gray-200 dark:border-white/5" />
                                     
                                     <div className="flex-1 p-8 flex flex-col">
                                         <div className="flex items-center justify-between mb-6">
-                                            <div className="p-3 rounded-2xl bg-white/5 border border-white/10 text-gray-400 group-hover:text-white group-hover:border-white/20 transition-all">
+                                            <div className="p-3 rounded-2xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-gray-600 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white group-hover:border-black/20 dark:group-hover:border-white/20 transition-all">
                                                 <Share2 size={24} />
                                             </div>
-                                            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/5 border border-white/5">
+                                            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/5">
                                                 <Trophy size={10} className="text-purple-400" />
-                                                <span className="text-[9px] font-black uppercase text-gray-300">+3 PTS/REF</span>
+                                                <span className="text-[9px] font-black uppercase text-gray-700 dark:text-gray-300">+3 PTS/REF</span>
                                             </div>
                                         </div>
-                                        <h3 className="text-lg font-black font-heading text-white leading-tight mb-4 group-hover:translate-x-1 transition-transform">
+                                        <h3 className="text-lg font-black font-heading text-gray-900 dark:text-white leading-tight mb-4 group-hover:translate-x-1 transition-transform">
                                             REFERRAL SYSTEM
                                         </h3>
                                         <div className="flex gap-2 mt-auto">
                                             <Button
                                                 onClick={copyReferralLink}
-                                                className="flex-1 h-10 rounded-xl text-[9px] font-black uppercase tracking-widest bg-white/10 border border-white/10 text-white hover:bg-white/20 transition-all"
+                                                className="flex-1 h-10 rounded-xl text-[9px] font-black uppercase tracking-widest bg-black/10 dark:bg-white/10 border border-black/10 dark:border-white/10 text-gray-900 dark:text-white hover:bg-black/20 dark:hover:bg-white/20 transition-all"
                                             >
                                                 {copySuccess ? 'COPIED!' : 'COPY'}
                                             </Button>
@@ -578,10 +578,10 @@ const GiveawayPage = () => {
                                     <div className="h-14 w-1.5 rounded-full bg-neon-pink" />
                                     <div>
                                         <p className="text-[10px] font-black uppercase tracking-[0.5em] text-neon-pink mb-1">Bonus Round</p>
-                                        <h2 className="text-4xl md:text-6xl font-black font-heading tracking-tighter text-white uppercase">SPIN THE WHEEL.</h2>
+                                        <h2 className="text-4xl md:text-6xl font-black font-heading tracking-tighter text-gray-900 dark:text-white uppercase">SPIN THE WHEEL.</h2>
                                     </div>
                                 </div>
-                                <div className="bg-zinc-900/40 border border-white/5 rounded-[2.5rem] p-8 md:p-16 backdrop-blur-3xl flex flex-col items-center text-center relative overflow-hidden">
+                                <div className="bg-gray-100 dark:bg-zinc-900/40 border border-black/10 dark:border-white/5 rounded-[2.5rem] p-8 md:p-16 backdrop-blur-3xl flex flex-col items-center text-center relative overflow-hidden">
                                     <div className="absolute inset-0 bg-gradient-to-t from-purple-600/5 to-transparent" />
                                     <p className="text-gray-500 text-[10px] font-black uppercase tracking-widest mb-12 relative z-10">
                                         One spin per user · Unlock extra points or instant prizes
@@ -604,16 +604,16 @@ const GiveawayPage = () => {
                                     <div className="h-14 w-1.5 rounded-full bg-yellow-500" />
                                     <div>
                                         <p className="text-[10px] font-black uppercase tracking-[0.5em] text-yellow-500 mb-1">Rankings</p>
-                                        <h2 className="text-4xl md:text-6xl font-black font-heading tracking-tighter text-white uppercase">POINTS LEADERBOARD.</h2>
+                                        <h2 className="text-4xl md:text-6xl font-black font-heading tracking-tighter text-gray-900 dark:text-white uppercase">POINTS LEADERBOARD.</h2>
                                     </div>
                                 </div>
-                                <div className="px-4 py-2 rounded-xl bg-white/5 border border-white/10 flex items-center gap-2 shrink-0">
+                                <div className="px-4 py-2 rounded-xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 flex items-center gap-2 shrink-0">
                                     <Users size={14} className="text-neon-blue" />
                                     <span className="text-[10px] font-black uppercase tracking-widest">{campaignEntries.length} Active</span>
                                 </div>
                             </div>
 
-                            <div className="bg-zinc-900/40 border border-white/5 rounded-[2.5rem] overflow-hidden backdrop-blur-3xl">
+                            <div className="bg-gray-100 dark:bg-zinc-900/40 border border-black/10 dark:border-white/5 rounded-[2.5rem] overflow-hidden backdrop-blur-3xl">
                                 {leaderboard.length === 0 ? (
                                     <div className="p-16 text-center">
                                         <p className="text-xs font-black text-gray-600 uppercase tracking-widest">No points recorded yet. Be the first!</p>
@@ -630,18 +630,18 @@ const GiveawayPage = () => {
                                                         "w-12 h-12 rounded-2xl flex items-center justify-center font-black text-sm italic font-heading border",
                                                         i === 0 ? "bg-yellow-500 text-black border-yellow-400 shadow-[0_0_20px_rgba(234,179,8,0.3)]" :
                                                         i === 1 ? "bg-zinc-300 text-black border-zinc-200 shadow-[0_0_20px_rgba(255,255,255,0.1)]" :
-                                                        i === 2 ? "bg-amber-700 text-white border-amber-600" :
-                                                        "bg-zinc-800/80 text-gray-400 border-white/5"
+                                                        i === 2 ? "bg-amber-700 text-gray-900 dark:text-white border-amber-600" :
+                                                        "bg-zinc-800/80 text-gray-600 dark:text-gray-400 border-black/10 dark:border-white/5"
                                                     )}>
                                                         #{i + 1}
                                                     </div>
                                                     <div>
-                                                        <p className="text-sm font-black uppercase text-white tracking-tight truncate max-w-[140px] md:max-w-[300px]">{p.name}</p>
+                                                        <p className="text-sm font-black uppercase text-gray-900 dark:text-white tracking-tight truncate max-w-[140px] md:max-w-[300px]">{p.name}</p>
                                                         <p className="text-[9px] font-bold text-gray-600 uppercase tracking-widest">Participant</p>
                                                     </div>
                                                 </div>
                                                 <div className="text-right">
-                                                    <p className="text-2xl font-black font-heading italic text-white leading-none">{p.entryScore || 0}</p>
+                                                    <p className="text-2xl font-black font-heading italic text-gray-900 dark:text-white leading-none">{p.entryScore || 0}</p>
                                                     <p className="text-[8px] font-black text-neon-blue uppercase tracking-widest mt-1">POINTS</p>
                                                 </div>
                                             </div>

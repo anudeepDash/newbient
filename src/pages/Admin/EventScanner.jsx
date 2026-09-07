@@ -166,7 +166,7 @@ const EventScanner = () => {
     };
 
     return (
-        <div className="fixed inset-0 bg-[#0B0F17] text-white font-['Outfit'] overflow-hidden flex flex-col z-[9999]">
+        <div className="fixed inset-0 bg-[#0B0F17] text-gray-900 dark:text-white font-['Outfit'] overflow-hidden flex flex-col z-[9999]">
             {/* Ambient Background Glows */}
             <div className={cn(
                 "absolute inset-0 opacity-30 blur-[200px] transition-all duration-1000 pointer-events-none",
@@ -177,8 +177,8 @@ const EventScanner = () => {
             )} />
 
             {/* Header */}
-            <div className="h-16 md:h-24 bg-black/40 backdrop-blur-3xl border-b border-white/10 flex items-center justify-between px-4 md:px-10 shrink-0 z-50">
-                <button onClick={handleBack} className="flex items-center gap-2 md:gap-3 px-3 md:px-5 py-2 md:py-2.5 bg-white/5 hover:bg-white/10 rounded-xl md:rounded-2xl border border-white/10 text-gray-300 hover:text-white transition-all group">
+            <div className="h-16 md:h-24 bg-white dark:bg-black/40 backdrop-blur-3xl border-b border-black/10 dark:border-white/10 flex items-center justify-between px-4 md:px-10 shrink-0 z-50">
+                <button onClick={handleBack} className="flex items-center gap-2 md:gap-3 px-3 md:px-5 py-2 md:py-2.5 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 rounded-xl md:rounded-2xl border border-black/10 dark:border-white/10 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-all group">
                     <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" /> 
                     <span className="text-[9px] md:text-[10px] font-black uppercase tracking-widest">Back</span>
                 </button>
@@ -191,12 +191,12 @@ const EventScanner = () => {
                             Change Event
                         </button>
                     )}
-                    <div className="flex items-center gap-2 md:gap-4 bg-black/60 px-4 md:px-6 py-2 md:py-3 rounded-xl md:rounded-2xl border border-white/10 shadow-2xl">
+                    <div className="flex items-center gap-2 md:gap-4 bg-white dark:bg-black/60 px-4 md:px-6 py-2 md:py-3 rounded-xl md:rounded-2xl border border-black/10 dark:border-white/10 shadow-2xl">
                         <div className={cn(
                             "w-1.5 h-1.5 md:w-2 md:h-2 rounded-full animate-pulse",
                             isScanning ? "bg-neon-green shadow-[0_0_10px_#39FF14]" : "bg-gray-500"
                         )} />
-                        <span className="text-[9px] md:text-[11px] font-black uppercase tracking-[0.2em] md:tracking-[0.3em] text-white">Scanner</span>
+                        <span className="text-[9px] md:text-[11px] font-black uppercase tracking-[0.2em] md:tracking-[0.3em] text-gray-900 dark:text-white">Scanner</span>
                     </div>
                 </div>
             </div>
@@ -204,7 +204,7 @@ const EventScanner = () => {
             <div className="flex-1 flex flex-col md:flex-row overflow-hidden relative z-10">
                 {/* Configuration Sidebar */}
                 <div className={cn(
-                    "w-full md:w-96 bg-black/60 backdrop-blur-2xl border-r border-white/10 p-4 md:p-8 flex-col gap-6 shrink-0 overflow-y-auto custom-scrollbar z-20",
+                    "w-full md:w-96 bg-white dark:bg-black/60 backdrop-blur-2xl border-r border-black/10 dark:border-white/10 p-4 md:p-8 flex-col gap-6 shrink-0 overflow-y-auto custom-scrollbar z-20",
                     selectedEventId ? "hidden md:flex" : "flex"
                 )}>
                     
@@ -218,7 +218,7 @@ const EventScanner = () => {
                                     <div className="w-1.5 h-1.5 rounded-full bg-neon-blue animate-pulse" /> Active Protocol
                                 </h4>
                                 <p className="text-2xl font-extrabold tracking-tight leading-none">{activeEvent.title}</p>
-                                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-2">{new Date(activeEvent.date).toLocaleDateString()}</p>
+                                <p className="text-[10px] text-gray-600 dark:text-gray-400 font-bold uppercase tracking-widest mt-2">{new Date(activeEvent.date).toLocaleDateString()}</p>
                             </div>
                         </div>
                     )}
@@ -234,14 +234,14 @@ const EventScanner = () => {
                                     className={cn(
                                         "p-4 rounded-2xl border text-left transition-all relative overflow-hidden",
                                         selectedEventId === e.id 
-                                            ? "bg-white/10 border-white/20 shadow-xl" 
-                                            : "bg-white/5 border-white/5 hover:bg-white/10"
+                                            ? "bg-black/10 dark:bg-white/10 border-black/20 dark:border-white/20 shadow-xl" 
+                                            : "bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/5 hover:bg-black/10 dark:hover:bg-white/10"
                                     )}
                                 >
                                     <div className="flex items-center justify-between gap-2">
                                         <h4 className={cn(
                                             "text-sm font-extrabold tracking-tight truncate",
-                                            selectedEventId === e.id ? "text-white" : "text-gray-400"
+                                            selectedEventId === e.id ? "text-gray-900 dark:text-white" : "text-gray-600 dark:text-gray-400"
                                         )}>{e.title}</h4>
                                         {e.date && new Date(e.date) < new Date() && (
                                             <span className="shrink-0 text-[7px] font-black uppercase tracking-widest text-red-500 bg-red-500/10 px-2 py-0.5 rounded-full border border-red-500/20">Past</span>
@@ -262,7 +262,7 @@ const EventScanner = () => {
                 <div className="flex-1 flex flex-col items-center justify-center p-6 md:p-12 relative overflow-hidden">
                     {!selectedEventId ? (
                         <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="text-center space-y-6 max-w-sm">
-                            <div className="w-32 h-32 mx-auto bg-white/5 rounded-full border border-white/10 flex items-center justify-center relative">
+                            <div className="w-32 h-32 mx-auto bg-black/5 dark:bg-white/5 rounded-full border border-black/10 dark:border-white/10 flex items-center justify-center relative">
                                 <div className="absolute inset-0 border-2 border-dashed border-gray-600 rounded-full animate-[spin_20s_linear_infinite]" />
                                 <ScanLine size={48} className="text-gray-500" />
                             </div>
@@ -272,14 +272,14 @@ const EventScanner = () => {
                     ) : (
                         <div className="w-full max-w-sm md:max-w-lg flex flex-col items-center gap-6 relative z-10 h-full justify-center">
                             {/* Visual Scanner Frame */}
-                            <div className="w-full aspect-[4/5] md:aspect-square bg-black/80 backdrop-blur-xl border border-white/10 rounded-[2.5rem] md:rounded-[3rem] overflow-hidden relative shadow-[0_0_100px_rgba(0,0,0,0.8)] shrink-0">
+                            <div className="w-full aspect-[4/5] md:aspect-square bg-white dark:bg-black/80 backdrop-blur-xl border border-black/10 dark:border-white/10 rounded-[2.5rem] md:rounded-[3rem] overflow-hidden relative shadow-[0_0_100px_rgba(0,0,0,0.8)] shrink-0">
                                 {isScanning ? (
                                     <>
-                                        <div className="absolute inset-0 bg-black overflow-hidden">
+                                        <div className="absolute inset-0 bg-white dark:bg-black overflow-hidden">
                                             <div id="reader" className="w-full h-full" />
                                         </div>
                                         {/* HUD Overlay */}
-                                        <div className="absolute inset-0 border-[2px] border-white/10 z-50 pointer-events-none rounded-[2.5rem] md:rounded-[3rem]">
+                                        <div className="absolute inset-0 border-[2px] border-black/10 dark:border-white/10 z-50 pointer-events-none rounded-[2.5rem] md:rounded-[3rem]">
                                             {/* Corner Reticles */}
                                             <div className="absolute top-4 left-4 md:top-6 md:left-6 w-12 h-12 md:w-16 md:h-16 border-t-[4px] border-l-[4px] md:border-t-[6px] md:border-l-[6px] border-neon-green rounded-tl-[1.5rem] opacity-80" />
                                             <div className="absolute top-4 right-4 md:top-6 md:right-6 w-12 h-12 md:w-16 md:h-16 border-t-[4px] border-r-[4px] md:border-t-[6px] md:border-r-[6px] border-neon-green rounded-tr-[1.5rem] opacity-80" />
@@ -292,23 +292,23 @@ const EventScanner = () => {
                                             <div className="absolute bottom-4 md:bottom-8 left-0 right-0 flex flex-col items-center gap-4 pointer-events-auto">
                                                 <button 
                                                     onClick={toggleCamera} 
-                                                    className="flex items-center gap-2 bg-black/60 hover:bg-black/80 backdrop-blur-xl border border-white/20 px-5 py-3 rounded-full text-white text-[10px] font-black uppercase tracking-widest transition-all shadow-xl"
+                                                    className="flex items-center gap-2 bg-white dark:bg-black/60 hover:bg-white dark:hover:bg-black/80 backdrop-blur-xl border border-black/20 dark:border-white/20 px-5 py-3 rounded-full text-gray-900 dark:text-white text-[10px] font-black uppercase tracking-widest transition-all shadow-xl"
                                                 >
                                                     <RefreshCw size={14} className={facingMode === "user" ? "rotate-180 transition-transform" : "transition-transform"} /> 
                                                     Swap Camera
                                                 </button>
-                                                <span className="bg-black/60 backdrop-blur-md px-4 py-2 rounded-full text-[9px] md:text-[10px] font-black uppercase tracking-widest text-white/80">Scanning Pass...</span>
+                                                <span className="bg-white dark:bg-black/60 backdrop-blur-md px-4 py-2 rounded-full text-[9px] md:text-[10px] font-black uppercase tracking-widest text-gray-900 dark:text-white/80">Scanning Pass...</span>
                                             </div>
                                         </div>
                                     </>
                                 ) : (
-                                    <div className="flex-1 flex flex-col items-center justify-center gap-8 p-8 text-center bg-zinc-900/40 relative">
+                                    <div className="flex-1 flex flex-col items-center justify-center gap-8 p-8 text-center bg-gray-100 dark:bg-zinc-900/40 relative">
                                         <div className="absolute inset-0 bg-gradient-to-t from-black to-transparent opacity-80" />
-                                        <div className="relative z-10 w-24 h-24 bg-white/5 rounded-3xl flex items-center justify-center border border-white/10 group-hover:scale-105 transition-transform">
-                                            <ScanLine size={40} className="text-gray-400 group-hover:text-neon-green transition-colors" />
+                                        <div className="relative z-10 w-24 h-24 bg-black/5 dark:bg-white/5 rounded-3xl flex items-center justify-center border border-black/10 dark:border-white/10 group-hover:scale-105 transition-transform">
+                                            <ScanLine size={40} className="text-gray-600 dark:text-gray-400 group-hover:text-neon-green transition-colors" />
                                         </div>
                                         <div className="relative z-10">
-                                            <h3 className="text-xl font-extrabold tracking-tight mb-2 text-white">Camera Inactive</h3>
+                                            <h3 className="text-xl font-extrabold tracking-tight mb-2 text-gray-900 dark:text-white">Camera Inactive</h3>
                                             <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Initialize optical sensor to begin verification</p>
                                         </div>
                                         <Button onClick={() => { setIsScanning(true); setScanResult(null); }} className="relative z-10 h-16 px-10 bg-white text-black font-black uppercase tracking-[0.2em] rounded-2xl hover:scale-105 shadow-[0_10px_40px_rgba(255,255,255,0.2)]">
@@ -320,14 +320,14 @@ const EventScanner = () => {
 
                             {/* Manual Entry Console */}
                             <form onSubmit={handleManualSubmit} className="w-full max-w-md flex gap-3 relative">
-                                <div className="absolute inset-0 bg-white/5 rounded-2xl blur-xl" />
+                                <div className="absolute inset-0 bg-black/5 dark:bg-white/5 rounded-2xl blur-xl" />
                                 <Input 
                                     value={manualCode} 
                                     onChange={e => setManualCode(e.target.value)} 
                                     placeholder="TICKET CODE" 
-                                    className="flex-1 h-16 bg-black/80 backdrop-blur border-white/10 rounded-2xl text-center font-mono font-black tracking-[0.3em] uppercase focus:border-neon-blue relative z-10"
+                                    className="flex-1 h-16 bg-white dark:bg-black/80 backdrop-blur border-black/10 dark:border-white/10 rounded-2xl text-center font-mono font-black tracking-[0.3em] uppercase focus:border-neon-blue relative z-10"
                                 />
-                                <Button type="submit" className="h-16 px-8 bg-white/10 hover:bg-white/20 rounded-2xl border border-white/10 relative z-10"><Search size={20}/></Button>
+                                <Button type="submit" className="h-16 px-8 bg-black/10 dark:bg-white/10 hover:bg-black/20 dark:hover:bg-white/20 rounded-2xl border border-black/10 dark:border-white/10 relative z-10"><Search size={20}/></Button>
                             </form>
                         </div>
                     )}
@@ -343,9 +343,9 @@ const EventScanner = () => {
                             >
                                 <div className={cn(
                                     "p-6 md:p-10 rounded-[2rem] md:rounded-[3rem] border backdrop-blur-3xl text-center relative overflow-hidden shadow-2xl",
-                                    scanResult.status === 'GREEN' && "bg-black/90 border-neon-green/50 shadow-[0_30px_100px_rgba(57,255,20,0.2)]",
-                                    scanResult.status === 'RED' && "bg-black/90 border-red-500/50 shadow-[0_30px_100px_rgba(239,68,68,0.2)]",
-                                    scanResult.status === 'YELLOW' && "bg-black/90 border-yellow-500/50 shadow-[0_30px_100px_rgba(234,179,8,0.2)]"
+                                    scanResult.status === 'GREEN' && "bg-white dark:bg-black/90 border-neon-green/50 shadow-[0_30px_100px_rgba(57,255,20,0.2)]",
+                                    scanResult.status === 'RED' && "bg-white dark:bg-black/90 border-red-500/50 shadow-[0_30px_100px_rgba(239,68,68,0.2)]",
+                                    scanResult.status === 'YELLOW' && "bg-white dark:bg-black/90 border-yellow-500/50 shadow-[0_30px_100px_rgba(234,179,8,0.2)]"
                                 )}>
                                     <div className={cn(
                                         "absolute inset-0 opacity-10",
@@ -380,16 +380,16 @@ const EventScanner = () => {
                                         </h3>
                                         
                                         {scanResult.data && (
-                                            <div className="bg-white/5 border border-white/10 rounded-2xl p-6 text-left space-y-3">
-                                                <div className="flex justify-between items-center border-b border-white/5 pb-3">
+                                            <div className="bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-2xl p-6 text-left space-y-3">
+                                                <div className="flex justify-between items-center border-b border-black/10 dark:border-white/5 pb-3">
                                                     <span className="text-[9px] font-black uppercase tracking-widest text-gray-500">Holder</span>
-                                                    <span className="text-xs font-black uppercase tracking-widest text-white">{scanResult.data.name}</span>
+                                                    <span className="text-xs font-black uppercase tracking-widest text-gray-900 dark:text-white">{scanResult.data.name}</span>
                                                 </div>
-                                                <div className="flex justify-between items-center border-b border-white/5 pb-3">
+                                                <div className="flex justify-between items-center border-b border-black/10 dark:border-white/5 pb-3">
                                                     <span className="text-[9px] font-black uppercase tracking-widest text-gray-500">Pass Type</span>
-                                                    <span className="text-xs font-black uppercase tracking-widest text-white">{scanResult.data.type}</span>
+                                                    <span className="text-xs font-black uppercase tracking-widest text-gray-900 dark:text-white">{scanResult.data.type}</span>
                                                 </div>
-                                                <div className="flex justify-between items-center border-b border-white/5 pb-3">
+                                                <div className="flex justify-between items-center border-b border-black/10 dark:border-white/5 pb-3">
                                                     <span className="text-[9px] font-black uppercase tracking-widest text-gray-500">Access Granted</span>
                                                     <span className="text-xs font-black uppercase tracking-widest text-neon-green text-right flex flex-col items-end">
                                                         {scanResult.data.items ? (
@@ -405,7 +405,7 @@ const EventScanner = () => {
                                                 </div>
                                                 <div className="flex justify-between items-center pt-1">
                                                     <span className="text-[9px] font-black uppercase tracking-widest text-gray-500">Identifier</span>
-                                                    <span className="text-[10px] font-mono font-bold text-gray-300">{scanResult.data.code}</span>
+                                                    <span className="text-[10px] font-mono font-bold text-gray-700 dark:text-gray-300">{scanResult.data.code}</span>
                                                 </div>
                                             </div>
                                         )}

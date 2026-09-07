@@ -158,7 +158,7 @@ const AIPromptBox = ({ onGenerate, isGenerating, type = 'document', forceClear =
                         isGenerating ? `${accent.bg} text-black animate-pulse ${accent.glow}` : `bg-white/[0.04] ${accent.text} border border-white/[0.06]`
                     )}>
                         <Zap size={18} fill={isGenerating ? "currentColor" : "none"} className="relative z-10" />
-                        {isGenerating && <div className="absolute inset-0 bg-white/20 animate-ping rounded-xl" />}
+                        {isGenerating && <div className="absolute inset-0 bg-black/20 dark:bg-white/20 animate-ping rounded-xl" />}
                     </div>
                     
                     <div className="flex-1 min-w-0 relative">
@@ -168,7 +168,7 @@ const AIPromptBox = ({ onGenerate, isGenerating, type = 'document', forceClear =
                             onChange={(e) => setPrompt(e.target.value)}
                             onFocus={() => !prompt.trim() && setShowSuggestions(true)}
                             placeholder={`Describe the ${type} you need — be specific for best results...`}
-                            className="w-full bg-transparent border-none text-[14px] font-medium text-white placeholder:text-zinc-600 outline-none min-h-[40px] py-2.5 resize-none leading-relaxed"
+                            className="w-full bg-transparent border-none text-[14px] font-medium text-gray-900 dark:text-white placeholder:text-zinc-600 outline-none min-h-[40px] py-2.5 resize-none leading-relaxed"
                             disabled={isGenerating}
                             rows={1}
                             onKeyDown={(e) => {
@@ -184,7 +184,7 @@ const AIPromptBox = ({ onGenerate, isGenerating, type = 'document', forceClear =
                         {prompt && !isGenerating && (
                             <button 
                                 onClick={() => setPrompt('')}
-                                className="absolute right-0 top-3 p-1 text-zinc-600 hover:text-white transition-colors"
+                                className="absolute right-0 top-3 p-1 text-zinc-600 hover:text-gray-900 dark:hover:text-white transition-colors"
                             >
                                 <X size={14} />
                             </button>
@@ -197,7 +197,7 @@ const AIPromptBox = ({ onGenerate, isGenerating, type = 'document', forceClear =
                             onClick={() => setShowSuggestions(!showSuggestions)}
                             className={cn(
                                 "h-10 w-10 rounded-xl flex items-center justify-center transition-all border",
-                                showSuggestions ? `${accent.bgLight} ${accent.border} ${accent.text}` : "bg-white/[0.03] border-white/[0.06] text-zinc-500 hover:text-white hover:bg-white/[0.06]"
+                                showSuggestions ? `${accent.bgLight} ${accent.border} ${accent.text}` : "bg-white/[0.03] border-white/[0.06] text-zinc-500 hover:text-gray-900 dark:hover:text-white hover:bg-white/[0.06]"
                             )}
                             disabled={isGenerating}
                             title="Show prompt suggestions"
@@ -212,7 +212,7 @@ const AIPromptBox = ({ onGenerate, isGenerating, type = 'document', forceClear =
                             className={cn(
                                 "h-10 px-5 rounded-xl font-black uppercase tracking-tighter text-[10px] transition-all flex items-center gap-2 overflow-hidden relative shrink-0",
                                 isGenerating 
-                                    ? "bg-white/5 text-zinc-500 cursor-wait" 
+                                    ? "bg-black/5 dark:bg-white/5 text-zinc-500 cursor-wait" 
                                     : `${accent.bg} text-black hover:scale-[1.03] active:scale-95 ${accent.shadow} disabled:opacity-30 disabled:scale-100 disabled:cursor-not-allowed`
                             )}
                         >
@@ -276,13 +276,13 @@ const AIPromptBox = ({ onGenerate, isGenerating, type = 'document', forceClear =
                                         {STAGE_MESSAGES.map((_, i) => (
                                             <div key={i} className={cn(
                                                 "w-1.5 h-1.5 rounded-full transition-all duration-500",
-                                                i <= stage ? accent.bg : "bg-white/10"
+                                                i <= stage ? accent.bg : "bg-black/10 dark:bg-white/10"
                                             )} />
                                         ))}
                                     </div>
                                 </div>
                                 {/* Progress bar */}
-                                <div className="mt-2 h-0.5 bg-white/5 rounded-full overflow-hidden">
+                                <div className="mt-2 h-0.5 bg-black/5 dark:bg-white/5 rounded-full overflow-hidden">
                                     <motion.div 
                                         className={cn("h-full rounded-full", accent.bg)}
                                         initial={{ width: '0%' }}
@@ -315,7 +315,7 @@ const AIPromptBox = ({ onGenerate, isGenerating, type = 'document', forceClear =
                                             e.stopPropagation();
                                             setSuggestionCategory(prev => (prev + 1) % 3);
                                         }}
-                                        className="p-1.5 hover:bg-white/10 rounded-lg text-gray-500 hover:text-white transition-all"
+                                        className="p-1.5 hover:bg-black/10 dark:hover:bg-white/10 rounded-lg text-gray-500 hover:text-gray-900 dark:hover:text-white transition-all"
                                     >
                                         <RefreshCw size={12} className={cn(suggestionCategory > 0 && "rotate-180 transition-transform")} />
                                     </button>
@@ -325,7 +325,7 @@ const AIPromptBox = ({ onGenerate, isGenerating, type = 'document', forceClear =
                                         <button
                                             key={i}
                                             onClick={() => useSuggestion(s)}
-                                            className="w-full flex items-start text-left px-4 py-2.5 rounded-xl text-[12px] font-medium text-zinc-400 hover:text-white hover:bg-white/[0.04] transition-all leading-relaxed group/s gap-3"
+                                            className="w-full flex items-start text-left px-4 py-2.5 rounded-xl text-[12px] font-medium text-zinc-400 hover:text-gray-900 dark:hover:text-white hover:bg-white/[0.04] transition-all leading-relaxed group/s gap-3"
                                         >
                                             <span className={cn("opacity-0 group-hover/s:opacity-100 transition-opacity shrink-0", accent.text)}>→</span>
                                             <span className="flex-1">{s}</span>
@@ -353,7 +353,7 @@ const AIPromptBox = ({ onGenerate, isGenerating, type = 'document', forceClear =
                                     </div>
                                     <span className="text-[10px] font-bold text-red-400 uppercase tracking-wider leading-relaxed break-words">{error}</span>
                                 </div>
-                                <button onClick={() => setError(null)} className="p-1.5 hover:bg-white/5 rounded-lg text-gray-500 transition-colors shrink-0">
+                                <button onClick={() => setError(null)} className="p-1.5 hover:bg-black/5 dark:hover:bg-white/5 rounded-lg text-gray-500 transition-colors shrink-0">
                                     <X size={14} />
                                 </button>
                             </div>
@@ -371,7 +371,7 @@ const AIPromptBox = ({ onGenerate, isGenerating, type = 'document', forceClear =
                     </div>
                     <span className="text-[9px] font-black text-zinc-500 uppercase tracking-[0.3em]">Newbi Agent Active</span>
                 </div>
-                <div className="h-[1px] flex-1 bg-gradient-to-r from-white/[0.05] via-white/[0.08] to-transparent" />
+                <div className="h-[1px] flex-1 bg-gradient-to-r from-gray-900 dark:from-white/[0.05] via-gray-900 dark:via-white/[0.08] to-transparent" />
             </div>
         </div>
     );

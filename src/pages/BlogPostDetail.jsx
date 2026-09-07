@@ -135,7 +135,7 @@ const BlogPostDetail = () => {
 
     if (!post) {
         return (
-            <div className="min-h-screen bg-black flex flex-col items-center justify-center p-6 text-center">
+            <div className="min-h-screen bg-white dark:bg-black flex flex-col items-center justify-center p-6 text-center">
                 <motion.h1 
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
@@ -171,7 +171,7 @@ const BlogPostDetail = () => {
     };
 
     return (
-        <div className="min-h-screen bg-black text-white pb-32 selection:bg-neon-blue selection:text-black">
+        <div className="min-h-screen bg-white dark:bg-black text-gray-900 dark:text-white pb-32 selection:bg-neon-blue selection:text-black">
             {/* Immersive Background Atmos (Newbi Feel) */}
             <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
                 <div 
@@ -196,31 +196,31 @@ const BlogPostDetail = () => {
                 animate={{ y: 0, opacity: 1 }}
                 className="fixed top-0 left-0 right-0 z-[250] px-4 py-4 md:py-6 md:px-24 md:top-8"
             >
-                <div className="bg-black/60 backdrop-blur-3xl border border-white/10 rounded-2xl md:rounded-3xl p-1.5 md:p-3 flex items-center justify-between gap-3 shadow-[0_30px_60px_rgba(0,0,0,0.5)]">
+                <div className="bg-white dark:bg-black/60 backdrop-blur-3xl border border-black/10 dark:border-white/10 rounded-2xl md:rounded-3xl p-1.5 md:p-3 flex items-center justify-between gap-3 shadow-[0_30px_60px_rgba(0,0,0,0.5)]">
                     <button 
                         onClick={() => navigate('/concertzone')}
-                        className="flex items-center gap-2 h-9 md:h-10 px-3 md:px-6 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition-all group shrink-0"
+                        className="flex items-center gap-2 h-9 md:h-10 px-3 md:px-6 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 border border-black/10 dark:border-white/10 rounded-xl transition-all group shrink-0"
                     >
                         <ArrowLeft size={14} style={{ color: accentColor }} className="group-hover:-translate-x-1 transition-transform" />
-                        <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 group-hover:text-white hidden xs:block">BACK</span>
+                        <span className="text-[10px] font-black uppercase tracking-widest text-gray-600 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white hidden xs:block">BACK</span>
                     </button>
 
-                    <div className="w-[1px] h-5 bg-white/10 hidden sm:block" />
+                    <div className="w-[1px] h-5 bg-black/10 dark:bg-white/10 hidden sm:block" />
 
                     <div className="flex items-center gap-3 md:gap-6 shrink-0 overflow-hidden">
                         <span className="text-[9px] font-black uppercase tracking-[0.2em] truncate max-w-[80px] xs:max-w-none" style={{ color: accentColor }}>{post.category}</span>
-                        <div className="h-px w-6 md:w-16 bg-white/20 hidden md:block" />
-                        <span className="text-[9px] font-black uppercase tracking-[0.3em] text-white/40 italic whitespace-nowrap hidden lg:block">Reading Now</span>
+                        <div className="h-px w-6 md:w-16 bg-black/20 dark:bg-white/20 hidden md:block" />
+                        <span className="text-[9px] font-black uppercase tracking-[0.3em] text-gray-900 dark:text-white/40 italic whitespace-nowrap hidden lg:block">Reading Now</span>
                     </div>
 
-                    <div className="hidden xl:block w-[1px] h-6 bg-white/10" />
+                    <div className="hidden xl:block w-[1px] h-6 bg-black/10 dark:bg-white/10" />
 
                     <div className="flex-1 min-w-0 hidden md:block">
-                        <h4 className="text-[10px] font-black uppercase tracking-widest text-white truncate italic opacity-80">{post.title}</h4>
+                        <h4 className="text-[10px] font-black uppercase tracking-widest text-gray-900 dark:text-white truncate italic opacity-80">{post.title}</h4>
                     </div>
 
                     <div className="flex items-center gap-3 md:gap-6 shrink-0">
-                        <div className="relative w-12 md:w-24 h-[2px] bg-white/10 rounded-full overflow-hidden hidden sm:block">
+                        <div className="relative w-12 md:w-24 h-[2px] bg-black/10 dark:bg-white/10 rounded-full overflow-hidden hidden sm:block">
                             <motion.div 
                                 className="absolute inset-0 origin-left" 
                                 style={{ scaleX, backgroundColor: accentColor }} 
@@ -277,7 +277,7 @@ const BlogPostDetail = () => {
                         />
                     )}
                     <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
-                    <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]" />
+                    <div className="absolute inset-0 bg-white dark:bg-black/40 backdrop-blur-[2px]" />
                 </motion.div>
 
                 <div className="relative z-10 max-w-[1800px] mx-auto px-8 md:px-24 pb-24 md:pb-32 w-full">
@@ -295,38 +295,38 @@ const BlogPostDetail = () => {
                             >
                                 {post.category}
                             </motion.span>
-                            <div className="h-px w-12 md:w-24 bg-white/20" />
-                            <span className="text-[9px] md:text-[11px] font-black uppercase tracking-[0.4em] text-white/40 whitespace-nowrap">Reading Now</span>
+                            <div className="h-px w-12 md:w-24 bg-black/20 dark:bg-white/20" />
+                            <span className="text-[9px] md:text-[11px] font-black uppercase tracking-[0.4em] text-gray-900 dark:text-white/40 whitespace-nowrap">Reading Now</span>
                         </div>
                         <h1 className="text-4xl md:text-6xl lg:text-7xl font-black font-heading uppercase leading-[1.1] tracking-tight mb-12 md:mb-16 italic drop-shadow-[0_20px_50px_rgba(0,0,0,0.5)] break-words pr-4 md:pr-16 pb-4">
                             {post.title.split(' ').map((word, i) => (
                                 <span key={i} 
-                                    className={i % 2 === 1 ? "text-transparent bg-clip-text not-italic" : "text-white"}
+                                    className={i % 2 === 1 ? "text-transparent bg-clip-text not-italic" : "text-gray-900 dark:text-white"}
                                     style={i % 2 === 1 ? { backgroundImage: `linear-gradient(to right, ${accentColor}, white, ${accentColor})` } : {}}
                                 >
                                     {word}{' '}
                                 </span>
                             ))}
                         </h1>
-                        <div className="flex flex-wrap items-center gap-8 md:gap-16 text-[11px] md:text-[13px] font-black uppercase tracking-[0.4em] text-white/50">
+                        <div className="flex flex-wrap items-center gap-8 md:gap-16 text-[11px] md:text-[13px] font-black uppercase tracking-[0.4em] text-gray-900 dark:text-white/50">
                             <div className="flex items-center gap-4 md:gap-5">
-                                <div className="w-12 h-12 md:w-16 md:h-16 rounded-2xl md:rounded-[1.5rem] bg-white/5 border border-white/10 flex items-center justify-center group overflow-hidden">
+                                <div className="w-12 h-12 md:w-16 md:h-16 rounded-2xl md:rounded-[1.5rem] bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 flex items-center justify-center group overflow-hidden">
                                     <User size={20} className="group-hover:text-neon-blue transition-colors md:size-[24px]" />
                                 </div>
                                 <div className="flex flex-col">
                                     <span className="text-[8px] md:text-[10px] text-gray-600 mb-0.5 md:mb-1 tracking-widest">AUTHOR</span>
-                                    <span className="text-white text-xs md:text-sm">{post.author || 'NEWBI TEAM'}</span>
+                                    <span className="text-gray-900 dark:text-white text-xs md:text-sm">{post.author || 'NEWBI TEAM'}</span>
                                 </div>
                             </div>
-                            <div className="hidden xs:block w-[1px] h-10 md:h-12 bg-white/10" />
+                            <div className="hidden xs:block w-[1px] h-10 md:h-12 bg-black/10 dark:bg-white/10" />
                             <div className="flex flex-col">
                                 <span className="text-[8px] md:text-[10px] text-gray-600 mb-0.5 md:mb-1 tracking-widest">PUBLISHED</span>
-                                <span className="text-white text-xs md:text-sm">{new Date(post.publishDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                                <span className="text-gray-900 dark:text-white text-xs md:text-sm">{new Date(post.publishDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</span>
                             </div>
-                            <div className="hidden xs:block w-[1px] h-10 md:h-12 bg-white/10" />
+                            <div className="hidden xs:block w-[1px] h-10 md:h-12 bg-black/10 dark:bg-white/10" />
                             <div className="flex flex-col">
                                 <span className="text-[8px] md:text-[10px] text-gray-600 mb-0.5 md:mb-1 tracking-widest">VIEWS</span>
-                                <span className="text-white text-xs md:text-sm flex items-center gap-2">
+                                <span className="text-gray-900 dark:text-white text-xs md:text-sm flex items-center gap-2">
                                     <Eye size={14} style={{ color: accentColor }} /> {post.viewCount || 0}
                                 </span>
                             </div>
@@ -340,7 +340,7 @@ const BlogPostDetail = () => {
                     transition={{ repeat: Infinity, duration: 2 }}
                     className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-3 opacity-30"
                 >
-                    <div className="w-[1px] h-12 bg-gradient-to-b from-white to-transparent" />
+                    <div className="w-[1px] h-12 bg-gradient-to-b from-gray-900 dark:from-white to-transparent" />
                     <span className="text-[9px] font-black uppercase tracking-widest">Scroll</span>
                 </motion.div>
             </header>
@@ -354,7 +354,7 @@ const BlogPostDetail = () => {
                             onClick={() => setIsLiked(!isLiked)}
                             className={cn(
                                 "w-20 h-20 rounded-[2rem] flex flex-col items-center justify-center transition-all border group",
-                                isLiked ? "bg-neon-pink border-neon-pink text-white shadow-[0_15px_40px_rgba(255,0,85,0.4)]" : "bg-white/5 border-white/10 text-gray-600 hover:text-white hover:border-white/20"
+                                isLiked ? "bg-neon-pink border-neon-pink text-gray-900 dark:text-white shadow-[0_15px_40px_rgba(255,0,85,0.4)]" : "bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-gray-600 hover:text-gray-900 dark:hover:text-white hover:border-black/20 dark:hover:border-white/20"
                             )}
                         >
                             <Heart size={24} fill={isLiked ? "currentColor" : "none"} className={isLiked ? "scale-110" : "group-hover:scale-110 transition-transform"} />
@@ -362,7 +362,7 @@ const BlogPostDetail = () => {
                         </button>
                         <button 
                             onClick={() => setIsShareOpen(true)}
-                            className="w-20 h-20 rounded-[2rem] bg-white/5 border border-white/10 text-gray-600 hover:text-white hover:border-white/20 flex flex-col items-center justify-center transition-all group"
+                            className="w-20 h-20 rounded-[2rem] bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-gray-600 hover:text-gray-900 dark:hover:text-white hover:border-black/20 dark:hover:border-white/20 flex flex-col items-center justify-center transition-all group"
                         >
                             <Share2 size={24} className="group-hover:scale-110 transition-transform" />
                             <span className="text-[8px] font-black mt-2 tracking-widest">SHARE</span>
@@ -382,7 +382,7 @@ const BlogPostDetail = () => {
                             initial={{ opacity: 0, y: 20 }}
                             whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: true }}
-                            className="mt-20 p-10 md:p-16 rounded-[3rem] md:rounded-[4rem] bg-white/[0.02] border border-white/10 relative overflow-hidden group"
+                            className="mt-20 p-10 md:p-16 rounded-[3rem] md:rounded-[4rem] bg-white/[0.02] border border-black/10 dark:border-white/10 relative overflow-hidden group"
                         >
                             <div className="absolute inset-0 bg-gradient-to-br from-neon-blue/5 via-transparent to-transparent pointer-events-none" />
                             <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-10">
@@ -390,7 +390,7 @@ const BlogPostDetail = () => {
                                     <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-neon-blue/10 border border-neon-blue/20 text-neon-blue text-[10px] font-black uppercase tracking-widest">
                                         <Zap size={14} /> LIVE EVENT ACCESS
                                     </div>
-                                    <h3 className="text-3xl md:text-5xl font-black font-heading uppercase italic tracking-tighter text-white leading-tight">
+                                    <h3 className="text-3xl md:text-5xl font-black font-heading uppercase italic tracking-tighter text-gray-900 dark:text-white leading-tight">
                                         Experience this <br /> Narrative Live.
                                     </h3>
                                 </div>
@@ -413,7 +413,7 @@ const BlogPostDetail = () => {
                             {post.tags.map((tag, idx) => {
                                 const label = typeof tag === 'string' ? tag : (tag?.name || tag?.label || String(tag));
                                 return (
-                                    <span key={label || idx} className="px-6 py-3 rounded-2xl bg-white/5 border border-white/5 text-[10px] font-black uppercase tracking-widest text-gray-500 hover:text-neon-blue hover:border-neon-blue/20 hover:bg-neon-blue/5 transition-all cursor-pointer">
+                                    <span key={label || idx} className="px-6 py-3 rounded-2xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/5 text-[10px] font-black uppercase tracking-widest text-gray-500 hover:text-neon-blue hover:border-neon-blue/20 hover:bg-neon-blue/5 transition-all cursor-pointer">
                                         {label}
                                     </span>
                                 );
@@ -422,7 +422,7 @@ const BlogPostDetail = () => {
                     )}
 
                     {/* Visual Separator */}
-                    <div className="h-px w-full bg-gradient-to-r from-white/5 via-white/10 to-white/5 mt-12" />
+                    <div className="h-px w-full bg-gradient-to-r from-gray-900 dark:from-white/5 via-gray-900 dark:via-white/10 to-gray-900 dark:to-white/5 mt-12" />
                     
                     {/* Editorial Ad Slot */}
                     <AdSlot className="mt-16 mb-8" format="horizontal" slot={import.meta.env.VITE_ADSENSE_SLOT_ARTICLE_FOOTER} />
@@ -432,10 +432,10 @@ const BlogPostDetail = () => {
                 <aside className="lg:col-span-3 space-y-20">
                     {/* Sponsor Slot */}
                     {post.sponsorName && (
-                        <div className="p-8 rounded-[2.5rem] bg-white/[0.02] border border-white/5 space-y-8 sticky top-48">
+                        <div className="p-8 rounded-[2.5rem] bg-white/[0.02] border border-black/10 dark:border-white/5 space-y-8 sticky top-48">
                             <div className="flex items-center gap-3">
                                 <Star size={16} className="text-neon-blue" />
-                                <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-white/40">SUPPORTED BY</h4>
+                                <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-900 dark:text-white/40">SUPPORTED BY</h4>
                             </div>
                             
                             <a 
@@ -445,12 +445,12 @@ const BlogPostDetail = () => {
                                 className="block space-y-6 group"
                             >
                                 {post.sponsorLogo && (
-                                    <div className="aspect-video rounded-2xl bg-white/5 border border-white/10 p-6 flex items-center justify-center overflow-hidden">
+                                    <div className="aspect-video rounded-2xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 p-6 flex items-center justify-center overflow-hidden">
                                         <img src={post.sponsorLogo} className="w-full h-full object-contain grayscale opacity-60 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-700" alt={post.sponsorName} />
                                     </div>
                                 )}
                                 <div className="space-y-2">
-                                    <p className="text-lg font-black font-heading uppercase italic tracking-tighter text-white group-hover:text-neon-blue transition-colors">{post.sponsorName}</p>
+                                    <p className="text-lg font-black font-heading uppercase italic tracking-tighter text-gray-900 dark:text-white group-hover:text-neon-blue transition-colors">{post.sponsorName}</p>
                                     <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-600 flex items-center gap-2">
                                         Visit Partner <ExternalLink size={12} />
                                     </p>
@@ -466,10 +466,10 @@ const BlogPostDetail = () => {
                 <div className="max-w-[1800px] mx-auto px-6 md:px-24 mb-16">
                     <div className="flex items-center gap-5 mb-10 px-4">
                         <div className="w-2 h-2 rounded-full" style={{ backgroundColor: accentColor, boxShadow: `0 0 15px ${accentColor}` }} />
-                        <h4 className="text-xs font-black uppercase tracking-[0.5em] text-white/40">
+                        <h4 className="text-xs font-black uppercase tracking-[0.5em] text-gray-900 dark:text-white/40">
                             SUGGESTED ARTICLES
                         </h4>
-                        <div className="flex-1 h-px bg-white/5 ml-10" />
+                        <div className="flex-1 h-px bg-black/5 dark:bg-white/5 ml-10" />
                     </div>
                     
                     <div className="relative group">
@@ -505,12 +505,12 @@ const BlogPostDetail = () => {
                         exit={{ opacity: 0 }}
                         className="fixed inset-0 z-[1000] flex items-center justify-center p-6"
                     >
-                        <div className="absolute inset-0 bg-black/90 backdrop-blur-3xl" onClick={() => setIsShareOpen(false)} />
+                        <div className="absolute inset-0 bg-white dark:bg-black/90 backdrop-blur-3xl" onClick={() => setIsShareOpen(false)} />
                         <motion.div 
                             initial={{ scale: 0.9, y: 20 }}
                             animate={{ scale: 1, y: 0 }}
                             exit={{ scale: 0.9, y: 20 }}
-                            className="relative w-full max-w-xl bg-zinc-900 border border-white/10 rounded-[3rem] p-12 overflow-hidden"
+                            className="relative w-full max-w-xl bg-gray-100 dark:bg-zinc-900 border border-black/10 dark:border-white/10 rounded-[3rem] p-12 overflow-hidden"
                         >
                             <div className="absolute top-0 right-0 w-64 h-64 bg-neon-blue/10 blur-[100px] -mr-32 -mt-32" />
                             
@@ -522,7 +522,7 @@ const BlogPostDetail = () => {
                                     { icon: MessageCircle, label: 'whatsapp', color: 'text-green-400', bg: 'bg-green-400/5 hover:bg-green-400/10' },
                                     { icon: Twitter, label: 'twitter', color: 'text-sky-400', bg: 'bg-sky-400/5 hover:bg-sky-400/10' },
                                     { icon: Linkedin, label: 'linkedin', color: 'text-blue-500', bg: 'bg-blue-500/5 hover:bg-blue-500/10' },
-                                    { icon: ExternalLink, label: 'copy link', color: 'text-white', bg: 'bg-white/5 hover:bg-white/10' }
+                                    { icon: ExternalLink, label: 'copy link', color: 'text-gray-900 dark:text-white', bg: 'bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10' }
                                 ].map((s, i) => (
                                     <button 
                                         key={i}
@@ -534,7 +534,7 @@ const BlogPostDetail = () => {
                                                 handleShare(s.label);
                                             }
                                         }}
-                                        className={cn("h-32 rounded-3xl flex flex-col items-center justify-center gap-4 border border-white/5 transition-all group relative overflow-hidden", s.bg)}
+                                        className={cn("h-32 rounded-3xl flex flex-col items-center justify-center gap-4 border border-black/10 dark:border-white/5 transition-all group relative overflow-hidden", s.bg)}
                                     >
                                         <s.icon size={28} className={cn(s.color, "transition-transform group-hover:scale-110 relative z-10")} />
                                         <span className="text-[10px] font-black uppercase tracking-[0.2em] opacity-40 group-hover:opacity-100 transition-opacity relative z-10">{s.label}</span>
@@ -542,7 +542,7 @@ const BlogPostDetail = () => {
                                 ))}
                             </div>
 
-                            <button onClick={() => setIsShareOpen(false)} className="w-full h-16 bg-white/5 border border-white/10 rounded-2xl text-[10px] font-black uppercase tracking-[0.4em] hover:bg-white/10 transition-all text-gray-400 hover:text-white">
+                            <button onClick={() => setIsShareOpen(false)} className="w-full h-16 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-2xl text-[10px] font-black uppercase tracking-[0.4em] hover:bg-black/10 dark:hover:bg-white/10 transition-all text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">
                                 CLOSE
                             </button>
                         </motion.div>

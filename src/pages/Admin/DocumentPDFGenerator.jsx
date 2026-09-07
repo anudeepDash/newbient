@@ -199,7 +199,7 @@ const DocumentPDFGenerator = () => {
                             <p className="text-lg font-black text-black tracking-widest font-mono">{formData.documentNumber}</p>
                         </div>
                         <div className="space-y-0.5">
-                            <p className="text-[8px] font-black text-gray-400 uppercase">Issue Date</p>
+                            <p className="text-[8px] font-black text-gray-600 dark:text-gray-400 uppercase">Issue Date</p>
                             <p className="text-[10px] font-black text-black">{new Date(formData.documentDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
                         </div>
                     </>
@@ -214,8 +214,8 @@ const DocumentPDFGenerator = () => {
 
     const renderFooter = (pageNum, totalPages) => (
         <div className="mt-auto grid grid-cols-2 gap-10 pt-4 border-t border-gray-100">
-            <div><p className="text-[8px] font-black text-gray-400 uppercase tracking-[0.2em]">CONFIDENTIAL • OFFICIAL DOCUMENT</p></div>
-            <div className="text-right"><p className="text-[8px] font-black text-gray-400 uppercase tracking-[0.2em]">Page {pageNum} of {totalPages}</p></div>
+            <div><p className="text-[8px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-[0.2em]">CONFIDENTIAL • OFFICIAL DOCUMENT</p></div>
+            <div className="text-right"><p className="text-[8px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-[0.2em]">Page {pageNum} of {totalPages}</p></div>
         </div>
     );
 
@@ -254,11 +254,11 @@ const DocumentPDFGenerator = () => {
                                         </div>
                                         <div className="space-y-0.5">
                                             <p className="text-[11px] font-black uppercase text-black">{formData.senderName}</p>
-                                            <p className="text-[8px] font-bold text-gray-400 uppercase tracking-widest">{formData.senderDesignation}</p>
+                                            <p className="text-[8px] font-bold text-gray-600 dark:text-gray-400 uppercase tracking-widest">{formData.senderDesignation}</p>
                                         </div>
                                     </div>
                                     <div className="text-right">
-                                        <div className="w-20 h-20 border-2 border-dashed border-gray-200 rounded-full flex items-center justify-center text-[7px] font-black uppercase text-gray-300 tracking-wider select-none">
+                                        <div className="w-20 h-20 border-2 border-dashed border-gray-200 rounded-full flex items-center justify-center text-[7px] font-black uppercase text-gray-700 dark:text-gray-300 tracking-wider select-none">
                                             Corporate Seal
                                         </div>
                                     </div>
@@ -274,7 +274,7 @@ const DocumentPDFGenerator = () => {
     };
 
     return (
-        <div className="min-h-screen bg-[#0B0F17] text-white selection:bg-neon-green selection:text-black font-['Outfit'] overflow-x-hidden flex flex-col">
+        <div className="min-h-screen bg-gray-50 dark:bg-[#0B0F17] text-gray-900 dark:text-white selection:bg-neon-green selection:text-black font-['Outfit'] overflow-x-hidden flex flex-col">
 
             <style dangerouslySetInnerHTML={{ __html: `
                 @media print {
@@ -292,16 +292,16 @@ const DocumentPDFGenerator = () => {
             `}} />
 
             {/* Top Bar Navigation */}
-            <header className="h-20 border-b border-white/5 bg-black/60 backdrop-blur-2xl flex items-center justify-between px-8 sticky top-0 z-[100]">
+            <header className="h-20 border-b border-black/10 dark:border-white/5 bg-white dark:bg-black/60 backdrop-blur-2xl flex items-center justify-between px-8 sticky top-0 z-[100]">
                 <div className="flex items-center gap-6">
                     <button 
                         onClick={() => navigate('/admin/gen-documents')}
-                        className="p-3 bg-white/5 rounded-2xl border border-white/5 text-gray-400 hover:text-white transition-all hover:scale-105"
+                        className="p-3 bg-black/5 dark:bg-white/5 rounded-2xl border border-black/10 dark:border-white/5 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all hover:scale-105"
                     >
                         <ArrowLeft size={16} />
                     </button>
                     <div>
-                        <h1 className="text-lg font-extrabold tracking-tight text-white flex items-center gap-2">
+                        <h1 className="text-lg font-extrabold tracking-tight text-gray-900 dark:text-white flex items-center gap-2">
                             <FileText size={20} className="text-neon-green" /> Document Generator
                         </h1>
                         <div className="flex items-center gap-2 mt-1">
@@ -309,7 +309,7 @@ const DocumentPDFGenerator = () => {
                                 {id ? 'Edit Document' : 'New Document'}
                             </span>
                             {/* Autosave Indicator */}
-                            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded border border-white/5 bg-white/5">
+                            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded border border-black/10 dark:border-white/5 bg-black/5 dark:bg-white/5">
                                 {autosaveStatus === 'saving' && <><Loader size={10} className="animate-spin text-neon-blue" /><span className="text-[9px] font-bold text-neon-blue uppercase">Saving</span></>}
                                 {autosaveStatus === 'saved' && <><Check size={10} className="text-emerald-400" /><span className="text-[9px] font-bold text-emerald-400 uppercase">Saved</span></>}
                                 {autosaveStatus === 'error' && <><AlertCircle size={10} className="text-red-400" /><span className="text-[9px] font-bold text-red-400 uppercase">Save Error</span></>}
@@ -322,7 +322,7 @@ const DocumentPDFGenerator = () => {
                 <div className="flex items-center gap-4">
                     <button 
                         onClick={regenerateDocNumber}
-                        className="p-3 bg-white/5 rounded-2xl border border-white/5 text-gray-400 hover:text-white transition-all"
+                        className="p-3 bg-black/5 dark:bg-white/5 rounded-2xl border border-black/10 dark:border-white/5 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all"
                         title="Regenerate Document Number"
                     >
                         <RefreshCw size={16} />
@@ -341,7 +341,7 @@ const DocumentPDFGenerator = () => {
             {/* Split Content Area */}
             <div className="flex-1 flex flex-col lg:flex-row overflow-hidden relative">
                 {/* Left Side: Controls Panel */}
-                <aside className="w-full lg:w-[450px] xl:w-[500px] border-r border-white/5 bg-zinc-950/40 p-8 space-y-8 overflow-y-auto shrink-0">
+                <aside className="w-full lg:w-[450px] xl:w-[500px] border-r border-black/10 dark:border-white/5 bg-gray-100 dark:bg-zinc-950/40 p-8 space-y-8 overflow-y-auto shrink-0">
                     
                     {/* Logo Selection */}
                     <div className="space-y-4">
@@ -355,13 +355,13 @@ const DocumentPDFGenerator = () => {
                                         "p-3 rounded-2xl border flex flex-col items-center gap-2 transition-all group",
                                         formData.selectedLogo === logo.id
                                             ? "bg-white/[0.05] border-white/30"
-                                            : "bg-black/60 border-white/5 hover:border-white/20"
+                                            : "bg-white dark:bg-black/60 border-black/10 dark:border-white/5 hover:border-black/20 dark:hover:border-white/20"
                                     )}
                                 >
-                                    <div className="h-8 flex items-center justify-center p-1 bg-white/5 rounded-lg w-full">
+                                    <div className="h-8 flex items-center justify-center p-1 bg-black/5 dark:bg-white/5 rounded-lg w-full">
                                         <img src={logo.path} alt={logo.label} className={cn("h-full w-auto object-contain transition-all", formData.selectedLogo === logo.id ? "" : "opacity-50 grayscale group-hover:grayscale-0 group-hover:opacity-100")} />
                                     </div>
-                                    <p className={cn("text-[9px] font-black uppercase tracking-widest text-center line-clamp-1", formData.selectedLogo === logo.id ? "text-white" : "text-gray-600")}>
+                                    <p className={cn("text-[9px] font-black uppercase tracking-widest text-center line-clamp-1", formData.selectedLogo === logo.id ? "text-gray-900 dark:text-white" : "text-gray-600")}>
                                         {logo.label.replace('Newbi ', '')}
                                     </p>
                                 </button>
@@ -380,7 +380,7 @@ const DocumentPDFGenerator = () => {
                                     value={formData.documentTitle} 
                                     onChange={e => handleChange('documentTitle', e.target.value.toUpperCase())}
                                     placeholder="e.g. PROJECT COMPLETION REPORT" 
-                                    className="h-12 w-full bg-black/60 border border-white/5 focus:border-neon-green/50 rounded-xl text-xs font-black px-4 text-white outline-none" 
+                                    className="h-12 w-full bg-white dark:bg-black/60 border border-black/10 dark:border-white/5 focus:border-neon-green/50 rounded-xl text-xs font-black px-4 text-gray-900 dark:text-white outline-none" 
                                 />
                             </div>
 
@@ -390,7 +390,7 @@ const DocumentPDFGenerator = () => {
                                     <input 
                                         value={formData.documentNumber} 
                                         onChange={e => handleChange('documentNumber', e.target.value.toUpperCase())}
-                                        className="h-12 w-full bg-black/60 border border-white/5 focus:border-neon-green/50 rounded-xl text-xs font-mono font-bold px-4 text-white outline-none" 
+                                        className="h-12 w-full bg-white dark:bg-black/60 border border-black/10 dark:border-white/5 focus:border-neon-green/50 rounded-xl text-xs font-mono font-bold px-4 text-gray-900 dark:text-white outline-none" 
                                     />
                                 </div>
                                 <div className="space-y-2">
@@ -399,7 +399,7 @@ const DocumentPDFGenerator = () => {
                                         type="date"
                                         value={formData.documentDate} 
                                         onChange={e => handleChange('documentDate', e.target.value)}
-                                        className="h-12 w-full bg-black/60 border border-white/5 focus:border-neon-green/50 rounded-xl text-xs font-black px-4 text-white outline-none" 
+                                        className="h-12 w-full bg-white dark:bg-black/60 border border-black/10 dark:border-white/5 focus:border-neon-green/50 rounded-xl text-xs font-black px-4 text-gray-900 dark:text-white outline-none" 
                                     />
                                 </div>
                             </div>
@@ -428,7 +428,7 @@ const DocumentPDFGenerator = () => {
                                     value={formData.senderName} 
                                     onChange={e => handleChange('senderName', e.target.value)}
                                     placeholder="Full Legal Name"
-                                    className="h-12 w-full bg-black/60 border border-white/5 focus:border-neon-green/50 rounded-xl text-xs font-black px-4 text-white outline-none" 
+                                    className="h-12 w-full bg-white dark:bg-black/60 border border-black/10 dark:border-white/5 focus:border-neon-green/50 rounded-xl text-xs font-black px-4 text-gray-900 dark:text-white outline-none" 
                                 />
                             </div>
                             <div className="space-y-2">
@@ -437,7 +437,7 @@ const DocumentPDFGenerator = () => {
                                     value={formData.senderDesignation} 
                                     onChange={e => handleChange('senderDesignation', e.target.value)}
                                     placeholder="e.g. Director"
-                                    className="h-12 w-full bg-black/60 border border-white/5 focus:border-neon-green/50 rounded-xl text-xs font-black px-4 text-white outline-none" 
+                                    className="h-12 w-full bg-white dark:bg-black/60 border border-black/10 dark:border-white/5 focus:border-neon-green/50 rounded-xl text-xs font-black px-4 text-gray-900 dark:text-white outline-none" 
                                 />
                             </div>
                         </div>
@@ -447,7 +447,7 @@ const DocumentPDFGenerator = () => {
                 {/* Right Side: Mock A4 Document Canvas Preview */}
                 <main 
                     ref={previewContainerRef}
-                    className="flex-1 bg-[#050505] flex flex-col items-center justify-start p-6 md:p-10 overflow-y-auto overflow-x-hidden relative scrollbar-hide"
+                    className="flex-1 bg-gray-200/70 dark:bg-[#050505] flex flex-col items-center justify-start p-6 md:p-10 overflow-y-auto overflow-x-hidden relative scrollbar-hide"
                 >
                     <div className="absolute top-4 right-8 text-[10px] font-black text-gray-600 uppercase tracking-widest select-none">
                         A4 Live View Scale: {Math.round(previewScale * 100)}%

@@ -208,20 +208,20 @@ const GateScanner = ({ eventId }) => {
             <div className="relative z-10 w-full max-w-2xl space-y-12">
                 {/* Header Context */}
                 <div className="text-center space-y-4">
-                    <div className="inline-flex items-center gap-3 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 text-gray-400 uppercase text-[10px] font-black tracking-[0.3em] backdrop-blur-md">
+                    <div className="inline-flex items-center gap-3 px-4 py-1.5 rounded-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-gray-600 dark:text-gray-400 uppercase text-[10px] font-black tracking-[0.3em] backdrop-blur-md">
                         <Sparkles size={12} className="text-neon-blue" /> ENTRANCE_TERMINAL_01
                     </div>
-                    <h1 className="text-5xl md:text-7xl font-black font-heading tracking-tighter text-white uppercase italic leading-none">
+                    <h1 className="text-5xl md:text-7xl font-black font-heading tracking-tighter text-gray-900 dark:text-white uppercase italic leading-none">
                         GATE<span className="text-neon-blue">SCANNER.</span>
                     </h1>
                 </div>
 
                 {/* Primary Scan Zone (Payment-App Style) */}
-                <div className="relative mx-auto w-full max-w-sm aspect-square bg-zinc-900/40 rounded-[4rem] border border-white/5 shadow-2xl overflow-hidden backdrop-blur-3xl group">
+                <div className="relative mx-auto w-full max-w-sm aspect-square bg-gray-100 dark:bg-zinc-900/40 rounded-[4rem] border border-black/10 dark:border-white/5 shadow-2xl overflow-hidden backdrop-blur-3xl group">
                     {isScanning ? (
                         <div id="reader" className="w-full h-full object-cover grayscale contrast-125 opacity-40 group-hover:opacity-60 transition-opacity" />
                     ) : (
-                        <div className="w-full h-full flex flex-col items-center justify-center bg-zinc-900/10">
+                        <div className="w-full h-full flex flex-col items-center justify-center bg-gray-100 dark:bg-zinc-900/10">
                             <QrCode size={48} className="text-gray-600 animate-pulse" />
                         </div>
                     )}
@@ -229,7 +229,7 @@ const GateScanner = ({ eventId }) => {
                     {/* Scanning UI Elements */}
                     <div className="absolute inset-0 pointer-events-none">
                         {/* Rounded Frame */}
-                        <div className="absolute inset-12 border-2 border-white/10 rounded-[3rem] border-dashed" />
+                        <div className="absolute inset-12 border-2 border-black/10 dark:border-white/10 rounded-[3rem] border-dashed" />
                         
                         {/* Laser Line */}
                         {isScanning && (
@@ -252,7 +252,7 @@ const GateScanner = ({ eventId }) => {
                         <div className="absolute bottom-4 left-0 right-0 flex flex-col items-center gap-2 z-30">
                             <button 
                                 onClick={toggleCamera} 
-                                className="flex items-center gap-2 bg-black/60 hover:bg-black/80 backdrop-blur-xl border border-white/10 px-4 py-2 rounded-full text-white text-[9px] font-black uppercase tracking-widest transition-all shadow-xl pointer-events-auto hover:scale-105 active:scale-95"
+                                className="flex items-center gap-2 bg-white dark:bg-black/60 hover:bg-white dark:hover:bg-black/80 backdrop-blur-xl border border-black/10 dark:border-white/10 px-4 py-2 rounded-full text-gray-900 dark:text-white text-[9px] font-black uppercase tracking-widest transition-all shadow-xl pointer-events-auto hover:scale-105 active:scale-95"
                             >
                                 <RefreshCw size={12} className={facingMode === "user" ? "rotate-180 transition-transform" : "transition-transform"} /> 
                                 Swap Camera
@@ -263,7 +263,7 @@ const GateScanner = ({ eventId }) => {
                     {/* Result Overlays */}
                     <AnimatePresence mode="wait">
                         {loading && (
-                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 z-30 bg-black/60 backdrop-blur-md flex flex-col items-center justify-center p-8 text-center">
+                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 z-30 bg-white dark:bg-black/60 backdrop-blur-md flex flex-col items-center justify-center p-8 text-center">
                                 <div className="w-16 h-16 border-4 border-neon-blue/20 border-t-neon-blue rounded-full animate-spin mb-6" />
                                 <p className="text-[10px] font-black text-neon-blue uppercase tracking-widest animate-pulse">Verifying...</p>
                             </motion.div>
@@ -275,16 +275,16 @@ const GateScanner = ({ eventId }) => {
                                 <h2 className="text-4xl font-black italic uppercase tracking-tighter leading-none mb-2">ACCESS<br />GRANTED.</h2>
                                 <p className="text-[10px] font-bold uppercase tracking-[0.2em] opacity-70 mb-8">Entry Confirmed</p>
                                 
-                                <div className="bg-black/10 backdrop-blur-md rounded-3xl p-6 w-full space-y-3">
+                                <div className="bg-white dark:bg-black/10 backdrop-blur-md rounded-3xl p-6 w-full space-y-3">
                                     <p className="text-[9px] font-black uppercase opacity-60">Verified Identity</p>
                                     <p className="text-xl font-black uppercase tracking-tight truncate w-full italic">{scanResult.data?.customerName || 'Ticket Holder'}</p>
-                                    <div className="h-px bg-black/5 w-12 mx-auto" />
+                                    <div className="h-px bg-white dark:bg-black/5 w-12 mx-auto" />
                                     <p className="text-[10px] font-bold uppercase tracking-widest">{scanResult.type === 'ticket' ? 'PREMIUM HOLDER' : 'GUESTLIST'}</p>
                                 </div>
                                 
                                 <Button 
                                     onClick={() => { setScanResult(null); setIsScanning(true); }}
-                                    className="mt-8 bg-black text-neon-green h-14 rounded-2xl px-12 border-none font-black uppercase tracking-widest text-[10px] hover:scale-105 active:scale-95 transition-all w-full"
+                                    className="mt-8 bg-white dark:bg-black text-neon-green h-14 rounded-2xl px-12 border-none font-black uppercase tracking-widest text-[10px] hover:scale-105 active:scale-95 transition-all w-full"
                                 >
                                     Proceed to Next
                                 </Button>
@@ -292,12 +292,12 @@ const GateScanner = ({ eventId }) => {
                         )}
 
                         {error && (
-                            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 1.1 }} className="absolute inset-0 z-40 bg-red-600/90 backdrop-blur-xl flex flex-col items-center justify-center p-12 text-center text-white">
+                            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 1.1 }} className="absolute inset-0 z-40 bg-red-600/90 backdrop-blur-xl flex flex-col items-center justify-center p-12 text-center text-gray-900 dark:text-white">
                                 <XCircle size={80} className="mb-6 drop-shadow-lg" />
                                 <h2 className="text-4xl font-black italic uppercase tracking-tighter leading-none mb-2">DENIED.</h2>
                                 <p className="text-[11px] font-black uppercase tracking-[0.2em] opacity-80 mb-8">Entry Not Allowed</p>
                                 
-                                <div className="bg-black/10 backdrop-blur-md rounded-3xl p-6 w-full">
+                                <div className="bg-white dark:bg-black/10 backdrop-blur-md rounded-3xl p-6 w-full">
                                     <p className="text-[10px] font-bold uppercase tracking-widest leading-relaxed">{error}</p>
                                 </div>
                                 
@@ -315,19 +315,19 @@ const GateScanner = ({ eventId }) => {
                 {/* Manual Signal Link */}
                 <div className="max-w-md mx-auto w-full space-y-6">
                     <div className="flex items-center gap-4 text-[9px] font-black text-gray-500 uppercase tracking-[0.3em] px-4">
-                        <div className="h-[2px] flex-1 bg-white/5" />
+                        <div className="h-[2px] flex-1 bg-black/5 dark:bg-white/5" />
                         Or enter code manually
-                        <div className="h-[2px] flex-1 bg-white/5" />
+                        <div className="h-[2px] flex-1 bg-black/5 dark:bg-white/5" />
                     </div>
 
                     <div className="relative group">
-                        <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-600 group-focus-within:text-neon-blue transition-colors" size={20} />
+                        <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-600 group-focus-within:text-blue-600 dark:group-focus-within:text-neon-blue transition-colors" size={20} />
                         <input 
                             value={manualCode}
                             onChange={(e) => setManualCode(e.target.value.toUpperCase())}
                             onKeyDown={(e) => e.key === 'Enter' && handleScan(manualCode)}
                             placeholder="Enter booking code..."
-                            className="w-full h-20 pl-16 pr-32 bg-zinc-900/40 border border-white/5 rounded-3xl text-sm font-black uppercase tracking-[0.2em] focus:border-neon-blue/40 focus:bg-zinc-900/60 outline-none transition-all placeholder:text-gray-800 backdrop-blur-xl"
+                            className="w-full h-20 pl-16 pr-32 bg-gray-100 dark:bg-zinc-900/40 border border-black/10 dark:border-white/5 rounded-3xl text-sm font-black uppercase tracking-[0.2em] focus:border-neon-blue/40 focus:bg-gray-100 dark:focus:bg-zinc-900/60 outline-none transition-all placeholder:text-gray-800 backdrop-blur-xl"
                         />
                         <button 
                             onClick={() => handleScan(manualCode)}

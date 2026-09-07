@@ -98,8 +98,8 @@ const getSelectAccentColor = (role) => {
 };
 
 const AdminManager = () => {
-    useStoreSubscription(['creators', 'artists', 'allUsers', 'admins', 'campusProfiles', 'subscribers']);
-    const { user, blockUser, unblockUser, creators = [], artists = [], campusProfiles = [], subscribers = [], allUsers = [], admins: storeAdmins = [] } = useStore();
+    useStoreSubscription(['creators', 'artists', 'allUsers', 'admins', 'subscribers']);
+    const { user, blockUser, unblockUser, creators = [], artists = [], subscribers = [], allUsers = [], admins: storeAdmins = [] } = useStore();
     const [activeTab, setActiveTab] = useState('members');
 
     // Admin State
@@ -148,15 +148,6 @@ const AdminManager = () => {
                 isArtist: true,
                 ...a
             })),
-            ...(campusProfiles || []).map(cp => ({
-                id: cp.uid || cp.id,
-                email: cp.email,
-                displayName: cp.fullName || cp.name || cp.displayName,
-                createdAt: cp.createdAt,
-                hasJoinedTribe: true,
-                isCampus: true,
-                ...cp
-            })),
             ...(adminList || []).map(adm => ({
                 id: adm.uid || adm.id,
                 email: adm.email,
@@ -195,7 +186,6 @@ const AdminManager = () => {
                     hasJoinedTribe: item.hasJoinedTribe || false,
                     isCreator: !!item.isCreator,
                     isArtist: !!item.isArtist,
-                    isCampus: !!item.isCampus,
                     role: item.role || 'Member',
                     ...item
                 });
@@ -211,7 +201,6 @@ const AdminManager = () => {
                     isBlocked: existing.isBlocked || item.isBlocked || false,
                     isCreator: existing.isCreator || !!item.isCreator,
                     isArtist: existing.isArtist || !!item.isArtist,
-                    isCampus: existing.isCampus || !!item.isCampus,
                     createdAt: existing.createdAt || item.createdAt || null,
                     lastActive: existing.lastActive || item.lastActive || null
                 });
@@ -220,7 +209,7 @@ const AdminManager = () => {
 
         const list = Array.from(memberMap.values());
         return list.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
-    }, [allUsers, localMembers, storeAdmins, localAdmins, creators, artists, campusProfiles, subscribers]);
+    }, [allUsers, localMembers, storeAdmins, localAdmins, creators, artists, subscribers]);
 
     const loadingMembers = (!allUsers || allUsers.length === 0) && localLoadingMembers && (!creators || creators.length === 0) && (!artists || artists.length === 0);
 
@@ -435,10 +424,10 @@ const AdminManager = () => {
 
     if (user?.role !== 'super_admin' && user?.role !== 'developer' && user?.role !== 'founder') {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-[#020202]">
-                <div className="text-center p-12 bg-zinc-900/40 backdrop-blur-3xl border border-white/5 rounded-[3rem] max-w-md mx-auto">
+            <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-[#020202]">
+                <div className="text-center p-12 bg-white dark:bg-zinc-900/40 backdrop-blur-3xl border border-gray-200 dark:border-white/5 rounded-[3rem] max-w-md mx-auto shadow-xl">
                     <ShieldAlert size={48} className="mx-auto mb-6 text-red-500" />
-                    <h1 className="text-3xl font-black uppercase tracking-tighter italic text-white text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-white">ACCESS DENIED</h1>
+                    <h1 className="text-3xl font-black uppercase tracking-tighter italic text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-black dark:to-white">ACCESS DENIED</h1>
                     <p className="text-gray-500 mt-4 text-sm font-medium">You don't have permission to view this page.</p>
                     <Link to="/admin" className="text-neon-blue mt-8 inline-block font-black uppercase text-[10px] tracking-widest hover:underline">Return to Admin Dashboard</Link>
                 </div>
@@ -535,7 +524,7 @@ const AdminManager = () => {
                         className={cn(
                             "w-full md:w-auto flex items-center justify-center gap-3 h-12 md:h-14 px-8 rounded-xl md:rounded-2xl font-black uppercase text-[10px] tracking-widest transition-all duration-300",
                             isInviteOpen 
-                                ? "bg-white/10 text-white border border-white/10 hover:bg-white/15" 
+                                ? "bg-black/10 dark:bg-white/10 text-gray-900 dark:text-white border border-black/10 dark:border-white/10 hover:bg-white/15" 
                                 : "bg-neon-green text-black hover:scale-[1.02] active:scale-95 shadow-[0_10px_20px_rgba(57,255,20,0.25)]"
                         )}
                     >
@@ -598,7 +587,7 @@ const AdminManager = () => {
                         )} />
                         
                         <div className={cn(
-                            "relative z-10 p-6 md:p-8 h-full bg-zinc-950/35 backdrop-blur-3xl border border-white/[0.08] shadow-[0_20px_50px_rgba(0,0,0,0.5)] rounded-3xl transition-all duration-500 flex flex-col justify-between group-hover:-translate-y-1",
+                            "relative z-10 p-6 md:p-8 h-full bg-gray-100 dark:bg-zinc-950/35 backdrop-blur-3xl border border-white/[0.08] shadow-[0_20px_50px_rgba(0,0,0,0.5)] rounded-3xl transition-all duration-500 flex flex-col justify-between group-hover:-translate-y-1",
                             stat.hoverBorder
                         )}>
                             <div className={cn("absolute top-0 left-0 w-full h-[2.5px] bg-gradient-to-r rounded-t-3xl", stat.topGradient)} />
@@ -613,8 +602,8 @@ const AdminManager = () => {
             </div>
 
             {/* Switcher & Filters */}
-            <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 mb-10 border-b border-white/5 pb-8">
-                <div className="flex flex-wrap sm:flex-nowrap bg-zinc-950/60 p-1.5 rounded-full border border-white/10 backdrop-blur-3xl gap-1.5 w-full lg:w-auto relative z-10 shadow-lg">
+            <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 mb-10 border-b border-black/10 dark:border-white/5 pb-8">
+                <div className="flex flex-wrap sm:flex-nowrap bg-gray-100 dark:bg-zinc-950/60 p-1.5 rounded-full border border-black/10 dark:border-white/10 backdrop-blur-3xl gap-1.5 w-full lg:w-auto relative z-10 shadow-lg">
                     {[
                         { id: 'members', label: 'Users', count: members.length, icon: Users },
                         { id: 'admins', label: 'Admins', count: admins.filter(a => a.role !== 'pending').length, icon: Shield },
@@ -630,14 +619,14 @@ const AdminManager = () => {
                                 }}
                                 className={cn(
                                     "flex items-center justify-center gap-3 px-8 py-4 rounded-full text-[10px] font-black uppercase tracking-widest transition-all duration-500 relative group shrink-0",
-                                    isActive ? "text-neon-green font-extrabold" : "text-gray-500 hover:text-white"
+                                    isActive ? "text-neon-green font-extrabold" : "text-gray-500 hover:text-gray-900 dark:hover:text-white"
                                 )}
                             >
-                                <tab.icon size={14} className={cn("transition-colors duration-500", isActive ? "text-neon-green" : "text-gray-500 group-hover:text-white")} />
+                                <tab.icon size={14} className={cn("transition-colors duration-500", isActive ? "text-neon-green" : "text-gray-500 group-hover:text-gray-900 dark:group-hover:text-white")} />
                                 <span>{tab.label}</span>
                                 <span className={cn(
                                     "px-2 py-0.5 rounded-full text-[8px] font-bold font-mono transition-colors duration-500",
-                                    isActive ? "bg-neon-green/10 text-neon-green border border-neon-green/20" : "bg-white/5 text-gray-500 group-hover:text-white"
+                                    isActive ? "bg-neon-green/10 text-neon-green border border-neon-green/20" : "bg-black/5 dark:bg-white/5 text-gray-500 group-hover:text-gray-900 dark:group-hover:text-white"
                                 )}>{tab.count}</span>
 
                                 {isActive && (
@@ -654,10 +643,10 @@ const AdminManager = () => {
             </div>
 
             {/* Combined Search & Filters Bar */}
-            <div className="bg-zinc-950/60 border border-white/10 rounded-[2rem] xl:rounded-full p-2 mb-8 md:mb-12 backdrop-blur-3xl flex flex-col xl:flex-row items-center gap-2 md:gap-4 shadow-2xl">
+            <div className="bg-gray-100 dark:bg-zinc-950/60 border border-black/10 dark:border-white/10 rounded-[2rem] xl:rounded-full p-2 mb-8 md:mb-12 backdrop-blur-3xl flex flex-col xl:flex-row items-center gap-2 md:gap-4 shadow-2xl">
                 {/* Search Input */}
                 <div className="relative flex-1 w-full group">
-                    <Search className="absolute left-6 md:left-8 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-neon-green transition-colors" size={18} />
+                    <Search className="absolute left-6 md:left-8 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-emerald-600 dark:group-focus-within:text-neon-green transition-colors" size={18} />
                     <input 
                         value={memberSearch}
                         onChange={(e) => setMemberSearch(e.target.value)}
@@ -671,7 +660,7 @@ const AdminManager = () => {
                     {memberSearch && (
                         <button 
                             onClick={() => setMemberSearch('')} 
-                            className="absolute right-6 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white transition-colors"
+                            className="absolute right-6 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors"
                         >
                             <X size={14} />
                         </button>
@@ -682,7 +671,7 @@ const AdminManager = () => {
                 <div className="flex flex-col sm:flex-row items-center gap-3 w-full xl:w-auto">
                     {/* Sub-Filters */}
                     {activeTab === 'members' && (
-                        <div className="flex items-center bg-black/40 p-1.5 rounded-full border border-white/10 w-full md:w-auto overflow-x-auto no-scrollbar">
+                        <div className="flex items-center bg-white dark:bg-black/40 p-1.5 rounded-full border border-black/10 dark:border-white/10 w-full md:w-auto overflow-x-auto no-scrollbar">
                             <div className="flex items-center gap-1 w-full">
                                 {[
                                     { id: 'all', label: 'All' },
@@ -699,7 +688,7 @@ const AdminManager = () => {
                                             "flex-1 px-4 sm:px-6 py-3.5 rounded-full text-[8px] sm:text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-300 min-w-[70px] sm:min-w-[90px] md:min-w-[110px] flex items-center justify-center text-center leading-none border",
                                             memberFilter === filter.id 
                                                 ? "bg-neon-green/10 text-neon-green border-neon-green/20 font-extrabold scale-[1.02]" 
-                                                : "text-gray-500 hover:text-white hover:bg-white/5 border-transparent"
+                                                : "text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 border-transparent"
                                         )}
                                     >
                                         {filter.label}
@@ -710,7 +699,7 @@ const AdminManager = () => {
                     )}
 
                     {activeTab === 'admins' && (
-                        <div className="flex items-center bg-black/40 p-1.5 rounded-full border border-white/10 w-full md:w-auto overflow-x-auto no-scrollbar">
+                        <div className="flex items-center bg-white dark:bg-black/40 p-1.5 rounded-full border border-black/10 dark:border-white/10 w-full md:w-auto overflow-x-auto no-scrollbar">
                             <div className="flex items-center gap-1 w-full">
                                 {[
                                     { id: 'all', label: 'All' },
@@ -728,7 +717,7 @@ const AdminManager = () => {
                                             "flex-1 px-4 sm:px-6 py-3.5 rounded-full text-[8px] sm:text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-300 min-w-[70px] sm:min-w-[90px] md:min-w-[110px] flex items-center justify-center text-center leading-none border",
                                             adminFilter === filter.id 
                                                 ? "bg-neon-green/10 text-neon-green border-neon-green/20 font-extrabold scale-[1.02]" 
-                                                : "text-gray-500 hover:text-white hover:bg-white/5 border-transparent"
+                                                : "text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 border-transparent"
                                         )}
                                     >
                                         {filter.label}
@@ -739,12 +728,12 @@ const AdminManager = () => {
                     )}
 
                     {/* View Mode Toggle */}
-                    <div className="flex items-center bg-black/40 p-1.5 rounded-full border border-white/10 w-full sm:w-auto justify-center gap-1">
+                    <div className="flex items-center bg-white dark:bg-black/40 p-1.5 rounded-full border border-black/10 dark:border-white/10 w-full sm:w-auto justify-center gap-1">
                         <button
                             onClick={() => setViewMode('grid')}
                             className={cn(
                                 "flex-1 sm:flex-none p-3.5 rounded-full transition-all duration-300 flex justify-center items-center",
-                                viewMode === 'grid' ? "bg-neon-green text-black shadow-[0_10px_25px_rgba(57,255,20,0.4)]" : "text-gray-500 hover:text-white"
+                                viewMode === 'grid' ? "bg-neon-green text-black shadow-[0_10px_25px_rgba(57,255,20,0.4)]" : "text-gray-500 hover:text-gray-900 dark:hover:text-white"
                             )}
                         >
                             <LayoutGrid size={16} />
@@ -753,7 +742,7 @@ const AdminManager = () => {
                             onClick={() => setViewMode('list')}
                             className={cn(
                                 "flex-1 sm:flex-none p-3.5 rounded-full transition-all duration-300 flex justify-center items-center",
-                                viewMode === 'list' ? "bg-neon-green text-black shadow-[0_10px_25px_rgba(57,255,20,0.4)]" : "text-gray-500 hover:text-white"
+                                viewMode === 'list' ? "bg-neon-green text-black shadow-[0_10px_25px_rgba(57,255,20,0.4)]" : "text-gray-500 hover:text-gray-900 dark:hover:text-white"
                             )}
                         >
                             <FileText size={16} />
@@ -773,14 +762,14 @@ const AdminManager = () => {
                         className="space-y-8"
                     >
                         {loadingMembers ? (
-                            <div className="py-32 text-center text-gray-500 bg-white/[0.01] rounded-[3rem] border border-white/5">
+                            <div className="py-32 text-center text-gray-500 bg-white/[0.01] rounded-[3rem] border border-black/10 dark:border-white/5">
                                 <Activity className="animate-spin mx-auto mb-4 text-neon-blue" size={32} />
                                 <p className="text-[10px] font-black uppercase tracking-widest italic">Synchronizing Registry Database...</p>
                             </div>
                         ) : (
                             <>
                                 {filteredMembers.length === 0 ? (
-                                    <div className="py-24 text-center bg-white/[0.01] border border-white/5 rounded-[2rem]">
+                                    <div className="py-24 text-center bg-white/[0.01] border border-black/10 dark:border-white/5 rounded-[2rem]">
                                         <Users size={32} className="mx-auto text-gray-700 mb-4 animate-pulse" />
                                         <p className="text-xs font-black text-gray-500 uppercase tracking-widest">No matching personnel records found</p>
                                     </div>
@@ -791,7 +780,6 @@ const AdminManager = () => {
                                                 const isTribe = member.hasJoinedTribe;
                                                 const isCreator = member.isCreator || creators?.some(c => c.uid === member.id || c.email === member.email);
                                                 const isArtist = member.isArtist || artists?.some(a => (a.uid === member.id || a.email === member.email) && a.profileStatus === 'approved');
-                                                const isCampus = member.isCampus || campusProfiles?.some(cp => cp.uid === member.id || cp.email === member.email);
                                                 
                                                 return (
                                                     <motion.div
@@ -808,10 +796,10 @@ const AdminManager = () => {
                                                         )} />
                                                         
                                                         <Card className={cn(
-                                                            "relative p-6 sm:p-8 bg-zinc-950/60 group-hover:bg-zinc-900/40 hover:border-white/10 border-white/5 backdrop-blur-3xl rounded-[2.5rem] transition-all duration-500 shadow-xl flex flex-col justify-between h-full min-h-[380px] overflow-hidden border hover:-translate-y-1.5 hover:shadow-[0_20px_50px_rgba(0,0,0,0.8)] gap-6",
+                                                            "relative p-6 sm:p-8 bg-gray-100 dark:bg-zinc-950/60 group-hover:bg-gray-100 dark:group-hover:bg-zinc-900/40 hover:border-black/10 dark:hover:border-white/10 border-black/10 dark:border-white/5 backdrop-blur-3xl rounded-[2.5rem] transition-all duration-500 shadow-xl flex flex-col justify-between h-full min-h-[380px] overflow-hidden border hover:-translate-y-1.5 hover:shadow-[0_20px_50px_rgba(0,0,0,0.8)] gap-6",
                                                             member.isBlocked && "border-red-500/10 hover:border-red-500/30"
                                                         )}>
-                                                            <div className="absolute inset-0 bg-gradient-to-br from-white/[0.01] via-transparent to-transparent opacity-100 pointer-events-none" />
+                                                            <div className="absolute inset-0 bg-gradient-to-br from-gray-900 dark:from-white/[0.01] via-transparent to-transparent opacity-100 pointer-events-none" />
                                                             
                                                             {/* Card Header section: Role text & active status capsule pill */}
                                                             <div>
@@ -821,7 +809,7 @@ const AdminManager = () => {
                                                                         isArtist ? "bg-[#FF6B6B]/10 border-[#FF6B6B]/20 text-[#FF6B6B]" :
                                                                         isCreator ? "bg-neon-pink/10 border-neon-pink/20 text-neon-pink" :
                                                                         isTribe ? "bg-neon-blue/10 border-neon-blue/20 text-neon-blue" :
-                                                                        "bg-white/5 border-white/5 text-gray-500"
+                                                                        "bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/5 text-gray-500"
                                                                     )}>
                                                                         {isArtist ? "Artist" : isCreator ? "Creator" : isTribe ? "Tribe" : "Standard"}
                                                                     </span>
@@ -835,7 +823,7 @@ const AdminManager = () => {
 
                                                                 {/* Display Name - Vertically stacked, full card width, no cutoff! */}
                                                                 <div className="space-y-1">
-                                                                    <h3 className="font-heading font-black text-2xl sm:text-3xl text-white group-hover:text-neon-green transition-colors duration-500 uppercase italic tracking-tighter leading-[0.95] line-clamp-2 pr-4">
+                                                                    <h3 className="font-heading font-black text-2xl sm:text-3xl text-gray-900 dark:text-white group-hover:text-neon-green transition-colors duration-500 uppercase italic tracking-tighter leading-[0.95] line-clamp-2 pr-4">
                                                                         {member.displayName || 'UNNAMED_SUBJECT'}
                                                                     </h3>
                                                                     <p className="text-[10px] text-gray-500 font-mono select-all leading-relaxed break-all">{member.email}</p>
@@ -844,11 +832,11 @@ const AdminManager = () => {
 
                                                             {/* Metadata block nested inside capsule pods */}
                                                             <div className="space-y-2.5 mt-auto">
-                                                                <div className="flex items-center gap-2 text-gray-500 text-[9px] font-black uppercase tracking-[0.2em] bg-white/[0.02] px-4 py-2.5 rounded-2xl border border-white/5 shadow-inner w-fit">
+                                                                <div className="flex items-center gap-2 text-gray-500 text-[9px] font-black uppercase tracking-[0.2em] bg-white/[0.02] px-4 py-2.5 rounded-2xl border border-black/10 dark:border-white/5 shadow-inner w-fit">
                                                                     <span className="text-gray-600">REGISTERED:</span>
-                                                                    <span className="text-gray-400 font-mono">{member.createdAt ? new Date(member.createdAt).toLocaleDateString(undefined, { dateStyle: 'medium' }) : 'N/A'}</span>
+                                                                    <span className="text-gray-600 dark:text-gray-400 font-mono">{member.createdAt ? new Date(member.createdAt).toLocaleDateString(undefined, { dateStyle: 'medium' }) : 'N/A'}</span>
                                                                 </div>
-                                                                <div className="flex items-center gap-2 text-gray-500 text-[9px] font-black uppercase tracking-[0.2em] bg-white/[0.02] px-4 py-2.5 rounded-2xl border border-white/5 shadow-inner w-fit">
+                                                                <div className="flex items-center gap-2 text-gray-500 text-[9px] font-black uppercase tracking-[0.2em] bg-white/[0.02] px-4 py-2.5 rounded-2xl border border-black/10 dark:border-white/5 shadow-inner w-fit">
                                                                     <span className="text-gray-600">LAST ACTIVE:</span>
                                                                     {member.lastActive ? (
                                                                         <span className="text-neon-blue font-mono">{new Date(member.lastActive).toLocaleDateString(undefined, { dateStyle: 'medium' })}</span>
@@ -859,7 +847,7 @@ const AdminManager = () => {
                                                             </div>
 
                                                             {/* Action buttons styled as premium full width button */}
-                                                            <div className="pt-4 border-t border-white/5 w-full mt-auto flex flex-col gap-2">
+                                                            <div className="pt-4 border-t border-black/10 dark:border-white/5 w-full mt-auto flex flex-col gap-2">
                                                                 {member.isBlocked ? (
                                                                     <button 
                                                                         onClick={() => handleUnblockUser(member)} 
@@ -877,7 +865,7 @@ const AdminManager = () => {
                                                                         </button>
                                                                         <button 
                                                                             onClick={() => handleRevokeMemberSessions(member)}
-                                                                            className="w-full h-12 bg-white/5 hover:bg-red-500/15 text-gray-400 hover:text-red-500 font-black uppercase tracking-widest text-[9px] rounded-xl border border-white/5 hover:border-red-500/20 transition-all flex items-center justify-center gap-2 duration-300 active:scale-95"
+                                                                            className="w-full h-12 bg-black/5 dark:bg-white/5 hover:bg-red-500/15 text-gray-600 dark:text-gray-400 hover:text-red-500 font-black uppercase tracking-widest text-[9px] rounded-xl border border-black/10 dark:border-white/5 hover:border-red-500/20 transition-all flex items-center justify-center gap-2 duration-300 active:scale-95"
                                                                         >
                                                                             <LogOut size={12} /> Log out all devices
                                                                         </button>
@@ -891,10 +879,10 @@ const AdminManager = () => {
                                         </div>
                                     ) : (
                                         <div className="overflow-x-auto scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0 pb-36 -mb-36">
-                                            <Card className="min-w-[800px] bg-zinc-900/40 backdrop-blur-3xl border-white/5 rounded-[2rem] md:rounded-[2.5rem] p-0 border">
+                                            <Card className="min-w-[800px] bg-gray-100 dark:bg-zinc-900/40 backdrop-blur-3xl border-black/10 dark:border-white/5 rounded-[2rem] md:rounded-[2.5rem] p-0 border">
                                                 <table className="w-full text-left">
                                                     <thead>
-                                                        <tr className="border-b border-white/5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">
+                                                        <tr className="border-b border-black/10 dark:border-white/5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">
                                                             <th className="p-6 md:p-8">Personnel</th>
                                                             <th className="p-6 md:p-8">Clearance</th>
                                                             <th className="p-6 md:p-8">Affiliation</th>
@@ -908,7 +896,6 @@ const AdminManager = () => {
                                                             const isTribe = member.hasJoinedTribe;
                                                             const isCreator = member.isCreator || creators?.some(c => c.uid === member.id || c.email === member.email);
                                                             const isArtist = member.isArtist || artists?.some(a => (a.uid === member.id || a.email === member.email) && a.profileStatus === 'approved');
-                                                            const isCampus = member.isCampus || campusProfiles?.some(cp => cp.uid === member.id || cp.email === member.email);
                                                             
                                                             return (
                                                                 <tr key={member.id} className="group hover:bg-white/[0.02] transition-colors">
@@ -924,12 +911,12 @@ const AdminManager = () => {
                                                                                             ? "bg-neon-pink/10 border-neon-pink/30 text-neon-pink" 
                                                                                             : (isTribe 
                                                                                                 ? "bg-neon-blue/10 border-neon-blue/30 text-neon-blue" 
-                                                                                                : "bg-white/5 border-white/10 text-white/60")))
+                                                                                                : "bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-gray-900 dark:text-white/60")))
                                                                             )}>
                                                                                 {member.displayName?.charAt(0).toUpperCase() || 'U'}
                                                                             </div>
                                                                             <div>
-                                                                                <div className="text-xs font-black uppercase tracking-tight text-white group-hover:text-neon-green transition-colors">{member.displayName || 'UNNAMED_SUBJECT'}</div>
+                                                                                <div className="text-xs font-black uppercase tracking-tight text-gray-900 dark:text-white group-hover:text-neon-green transition-colors">{member.displayName || 'UNNAMED_SUBJECT'}</div>
                                                                                 <div className="text-[10px] text-gray-500 font-mono mt-0.5">{member.email}</div>
                                                                             </div>
                                                                         </div>
@@ -953,7 +940,7 @@ const AdminManager = () => {
                                                                                 <span className="px-1.5 py-0.5 bg-[#FF6B6B]/10 text-[#FF6B6B] border border-[#FF6B6B]/20 rounded-md text-[7px] font-black uppercase tracking-wider">ARTIST</span>
                                                                             )}
                                                                             {!isTribe && !isCreator && !isArtist && (
-                                                                                <span className="px-1.5 py-0.5 bg-white/5 text-gray-500 border border-white/5 rounded-md text-[7px] font-black uppercase tracking-wider">STANDARD</span>
+                                                                                <span className="px-1.5 py-0.5 bg-black/5 dark:bg-white/5 text-gray-500 border border-black/10 dark:border-white/5 rounded-md text-[7px] font-black uppercase tracking-wider">STANDARD</span>
                                                                             )}
                                                                         </div>
                                                                     </td>
@@ -984,13 +971,13 @@ const AdminManager = () => {
                                                                                 <>
                                                                                     <button 
                                                                                         onClick={() => handleBlockUser(member)} 
-                                                                                        className="px-3 h-8 bg-red-500/5 hover:bg-red-500 text-red-500 hover:text-white border border-red-500/10 hover:border-none rounded-lg text-[8px] font-black uppercase tracking-widest transition-all duration-300 flex items-center justify-center gap-1 shadow-sm"
+                                                                                        className="px-3 h-8 bg-red-500/5 hover:bg-red-500 text-red-500 hover:text-gray-900 dark:hover:text-white border border-red-500/10 hover:border-none rounded-lg text-[8px] font-black uppercase tracking-widest transition-all duration-300 flex items-center justify-center gap-1 shadow-sm"
                                                                                     >
                                                                                         <ShieldAlert size={10} /> Suspend
                                                                                     </button>
                                                                                     <button 
                                                                                         onClick={() => handleRevokeMemberSessions(member)}
-                                                                                        className="px-3 h-8 bg-white/5 hover:bg-red-500/15 text-gray-400 hover:text-red-500 border border-white/5 hover:border-red-500/10 rounded-lg text-[8px] font-black uppercase tracking-widest transition-all duration-300 flex items-center justify-center gap-1 shadow-sm"
+                                                                                        className="px-3 h-8 bg-black/5 dark:bg-white/5 hover:bg-red-500/15 text-gray-600 dark:text-gray-400 hover:text-red-500 border border-black/10 dark:border-white/5 hover:border-red-500/10 rounded-lg text-[8px] font-black uppercase tracking-widest transition-all duration-300 flex items-center justify-center gap-1 shadow-sm"
                                                                                     >
                                                                                         <LogOut size={10} /> Logout Devices
                                                                                     </button>
@@ -1020,7 +1007,7 @@ const AdminManager = () => {
                         className="space-y-8"
                     >
                         {filteredRequests.length === 0 ? (
-                            <div className="py-32 bg-white/[0.01] rounded-[3rem] border border-dashed border-white/5 text-center">
+                            <div className="py-32 bg-white/[0.01] rounded-[3rem] border border-dashed border-black/10 dark:border-white/5 text-center">
                                 <Clock size={40} className="mx-auto text-gray-700 mb-4" />
                                 <p className="text-xs font-black text-gray-500 uppercase tracking-widest">No pending clearance dispatch queries</p>
                             </div>
@@ -1037,8 +1024,8 @@ const AdminManager = () => {
                                             className="group relative flex flex-col h-full has-[.select-open]:z-50"
                                         >
                                             <div className="absolute inset-0 rounded-[2.5rem] bg-yellow-500/5 opacity-100 blur-xl pointer-events-none duration-500" />
-                                            <Card className="relative p-6 sm:p-8 bg-zinc-950/60 group-hover:bg-zinc-900/40 border-yellow-500/10 hover:border-yellow-500/30 backdrop-blur-3xl rounded-[2.5rem] transition-all duration-500 shadow-xl flex flex-col justify-between h-full min-h-[340px] border hover:-translate-y-1.5 hover:shadow-[0_20px_50px_rgba(0,0,0,0.8)] gap-6">
-                                                <div className="absolute inset-0 bg-gradient-to-br from-white/[0.01] via-transparent to-transparent opacity-100 pointer-events-none" />
+                                            <Card className="relative p-6 sm:p-8 bg-gray-100 dark:bg-zinc-950/60 group-hover:bg-gray-100 dark:group-hover:bg-zinc-900/40 border-yellow-500/10 hover:border-yellow-500/30 backdrop-blur-3xl rounded-[2.5rem] transition-all duration-500 shadow-xl flex flex-col justify-between h-full min-h-[340px] border hover:-translate-y-1.5 hover:shadow-[0_20px_50px_rgba(0,0,0,0.8)] gap-6">
+                                                <div className="absolute inset-0 bg-gradient-to-br from-gray-900 dark:from-white/[0.01] via-transparent to-transparent opacity-100 pointer-events-none" />
                                                 
                                                 <div>
                                                     <div className="flex justify-between items-center mb-5">
@@ -1051,7 +1038,7 @@ const AdminManager = () => {
                                                     </div>
 
                                                     <div className="space-y-1">
-                                                        <h3 className="font-heading font-black text-2xl sm:text-3xl text-white group-hover:text-yellow-500 transition-colors duration-500 uppercase italic tracking-tighter leading-[0.95] line-clamp-2 pr-4 break-all">
+                                                        <h3 className="font-heading font-black text-2xl sm:text-3xl text-gray-900 dark:text-white group-hover:text-yellow-500 transition-colors duration-500 uppercase italic tracking-tighter leading-[0.95] line-clamp-2 pr-4 break-all">
                                                             {admin.email}
                                                         </h3>
                                                         <p className="text-[10px] text-gray-500 font-mono">Awaiting credentials dispatch</p>
@@ -1059,13 +1046,13 @@ const AdminManager = () => {
                                                 </div>
 
                                                 <div className="space-y-2.5 mt-auto">
-                                                    <div className="flex items-center gap-2 text-gray-500 text-[9px] font-black uppercase tracking-[0.2em] bg-white/[0.02] px-4 py-2.5 rounded-2xl border border-white/5 shadow-inner w-fit">
+                                                    <div className="flex items-center gap-2 text-gray-500 text-[9px] font-black uppercase tracking-[0.2em] bg-white/[0.02] px-4 py-2.5 rounded-2xl border border-black/10 dark:border-white/5 shadow-inner w-fit">
                                                         <span className="text-gray-600">REQUESTED:</span>
-                                                        <span className="text-gray-400 font-mono">{admin.createdAt ? new Date(admin.createdAt).toLocaleDateString(undefined, { dateStyle: 'medium' }) : 'N/A'}</span>
+                                                        <span className="text-gray-600 dark:text-gray-400 font-mono">{admin.createdAt ? new Date(admin.createdAt).toLocaleDateString(undefined, { dateStyle: 'medium' }) : 'N/A'}</span>
                                                     </div>
                                                 </div>
 
-                                                <div className="pt-4 border-t border-white/5 flex flex-col sm:flex-row gap-4 items-center justify-between w-full mt-auto relative z-30">
+                                                <div className="pt-4 border-t border-black/10 dark:border-white/5 flex flex-col sm:flex-row gap-4 items-center justify-between w-full mt-auto relative z-30">
                                                     <button 
                                                         onClick={() => handleRemoveAdmin(admin.id, admin.role)} 
                                                         className="w-full sm:w-auto px-6 h-12 bg-red-500/5 hover:bg-red-500 text-red-500 hover:text-black border border-red-500/10 hover:border-none rounded-xl text-[9px] font-black uppercase tracking-widest transition-all duration-300 flex items-center justify-center gap-1.5 shrink-0"
@@ -1090,10 +1077,10 @@ const AdminManager = () => {
                                 </div>
                             ) : (
                                 <div className="overflow-x-auto scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0 pb-36 -mb-36">
-                                    <Card className="min-w-[800px] min-h-[450px] bg-zinc-900/40 backdrop-blur-3xl border-white/5 rounded-[2rem] md:rounded-[2.5rem] p-0 border">
+                                    <Card className="min-w-[800px] min-h-[450px] bg-gray-100 dark:bg-zinc-900/40 backdrop-blur-3xl border-black/10 dark:border-white/5 rounded-[2rem] md:rounded-[2.5rem] p-0 border">
                                         <table className="w-full text-left">
                                             <thead>
-                                                <tr className="border-b border-white/5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">
+                                                <tr className="border-b border-black/10 dark:border-white/5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">
                                                     <th className="p-6 md:p-8">Endpoint / Email</th>
                                                     <th className="p-6 md:p-8">Requested On</th>
                                                     <th className="p-6 md:p-8 text-right">Clearance Level Approval</th>
@@ -1108,7 +1095,7 @@ const AdminManager = () => {
                                                                     <Clock size={16} className="animate-pulse" />
                                                                 </div>
                                                                 <div>
-                                                                    <div className="text-xs font-mono font-bold text-white">{admin.email}</div>
+                                                                    <div className="text-xs font-mono font-bold text-gray-900 dark:text-white">{admin.email}</div>
                                                                     <div className="text-[8px] font-black text-yellow-500/70 uppercase tracking-widest mt-0.5">AWAITING CLEARANCE DISPATCH</div>
                                                                 </div>
                                                             </div>
@@ -1169,11 +1156,11 @@ const AdminManager = () => {
                                     <div className="relative group p-0.5 rounded-[2.5rem] bg-gradient-to-r from-neon-green/30 via-neon-blue/20 to-purple-500/30 mb-10">
                                         <div className="absolute inset-0 bg-gradient-to-r from-neon-green/10 via-neon-blue/10 to-purple-500/10 rounded-[2.5rem] blur-xl opacity-50 pointer-events-none" />
                                         <Card className="p-8 sm:p-10 bg-[#0B0F17]/95 border-none rounded-[2.4rem] relative z-10">
-                                            <div className="flex items-center justify-between mb-8 pb-4 border-b border-white/5">
-                                                <h2 className="text-base sm:text-lg font-heading font-black italic uppercase tracking-tight flex items-center gap-3 text-white">
+                                            <div className="flex items-center justify-between mb-8 pb-4 border-b border-black/10 dark:border-white/5">
+                                                <h2 className="text-base sm:text-lg font-heading font-black italic uppercase tracking-tight flex items-center gap-3 text-gray-900 dark:text-white">
                                                     <Shield className="text-neon-green animate-pulse" size={20} /> INITIALIZE CREDENTIALS DISPATCH
                                                 </h2>
-                                                <button onClick={() => setIsInviteOpen(false)} className="p-2 bg-white/5 hover:bg-white/10 rounded-xl text-gray-400 hover:text-white transition-all">
+                                                <button onClick={() => setIsInviteOpen(false)} className="p-2 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 rounded-xl text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all">
                                                     <X size={14} />
                                                 </button>
                                             </div>
@@ -1186,7 +1173,7 @@ const AdminManager = () => {
                                                         onChange={(e) => setNewAdminEmail(e.target.value)} 
                                                         required 
                                                         placeholder="operative@newbi.live" 
-                                                        className="w-full h-14 bg-black/40 hover:bg-black/60 border border-white/5 focus:border-neon-green/30 rounded-2xl px-6 text-xs font-semibold tracking-wider text-white outline-none transition-all placeholder:text-gray-700" 
+                                                        className="w-full h-14 bg-white dark:bg-black/40 hover:bg-white dark:hover:bg-black/60 border border-black/10 dark:border-white/5 focus:border-neon-green/30 rounded-2xl px-6 text-xs font-semibold tracking-wider text-gray-900 dark:text-white outline-none transition-all placeholder:text-gray-700" 
                                                     />
                                                 </div>
                                                 <div className="md:col-span-4 space-y-2 relative z-30">
@@ -1219,7 +1206,7 @@ const AdminManager = () => {
                                     {admins.filter(a => a.role === 'pending').map((admin) => (
                                         <Card key={admin.id} className="p-6 bg-yellow-500/[0.02] border border-yellow-500/20 hover:border-yellow-500/40 rounded-[2rem] flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 backdrop-blur-md relative z-30">
                                             <div className="min-w-0 flex-1">
-                                                <h3 className="font-mono text-sm font-bold text-white truncate break-all">{admin.email}</h3>
+                                                <h3 className="font-mono text-sm font-bold text-gray-900 dark:text-white truncate break-all">{admin.email}</h3>
                                                 <p className="text-[8px] font-black text-yellow-500/50 uppercase tracking-widest mt-1 italic">Waiting for verification</p>
                                             </div>
                                             <div className="flex gap-3 shrink-0 items-center w-full sm:w-auto justify-between sm:justify-end">
@@ -1248,11 +1235,11 @@ const AdminManager = () => {
 
                         {/* Active Command Staff Clearance Registry */}
                         <section className="space-y-6">
-                            <h2 className="text-[10px] font-black text-gray-500 uppercase tracking-[0.35em] flex items-center gap-2 font-heading italic pb-2 border-b border-white/5">
+                            <h2 className="text-[10px] font-black text-gray-500 uppercase tracking-[0.35em] flex items-center gap-2 font-heading italic pb-2 border-b border-black/10 dark:border-white/5">
                                 <Shield size={14} className="text-neon-green" /> ACTIVE OPERATIONS CLEARANCE REGISTRY
                             </h2>
                             {filteredAdmins.length === 0 ? (
-                                <div className="py-24 text-center bg-white/[0.01] border border-white/5 rounded-[2rem]">
+                                <div className="py-24 text-center bg-white/[0.01] border border-black/10 dark:border-white/5 rounded-[2rem]">
                                     <Users size={32} className="mx-auto text-gray-700 mb-4 animate-pulse" />
                                     <p className="text-xs font-black text-gray-500 uppercase tracking-widest">No matching active command staff found</p>
                                 </div>
@@ -1262,7 +1249,7 @@ const AdminManager = () => {
                                         {paginatedAdmins.map((admin) => {
                                             const isSelf = admin.email === user.email;
                                             const roleColors = {
-                                                developer: { text: 'text-white', border: 'border-white/20', bg: 'bg-white/5', name: 'Developer', glow: 'from-white/30 to-zinc-500/30' },
+                                                developer: { text: 'text-gray-900 dark:text-white', border: 'border-black/20 dark:border-white/20', bg: 'bg-black/5 dark:bg-white/5', name: 'Developer', glow: 'from-gray-900 dark:from-white/30 to-zinc-500/30' },
                                                 founder: { text: 'text-[#FFD700]', border: 'border-[#FFD700]/20', bg: 'bg-[#FFD700]/5', name: 'Founder', glow: 'from-[#FFD700]/30 to-amber-500/30' },
                                                 super_admin: { text: 'text-neon-pink', border: 'border-neon-pink/20', bg: 'bg-neon-pink/5', name: 'Super Admin', glow: 'from-neon-pink/30 to-purple-500/30' },
                                                 content_admin: { text: 'text-neon-green', border: 'border-neon-green/20', bg: 'bg-neon-green/5', name: 'Content Admin', glow: 'from-neon-green/30 to-teal-500/30' },
@@ -1272,7 +1259,7 @@ const AdminManager = () => {
                                                 scanner: { text: 'text-yellow-500', border: 'border-yellow-500/20', bg: 'bg-yellow-500/5', name: 'Ticketing Admin', glow: 'from-yellow-500/30 to-orange-500/30' },
                                             };
                                             
-                                            const roleStyle = roleColors[admin.role] || { text: 'text-gray-400', border: 'border-white/5', bg: 'bg-white/5', name: admin.role, glow: 'from-white/5 to-white/5' };
+                                            const roleStyle = roleColors[admin.role] || { text: 'text-gray-600 dark:text-gray-400', border: 'border-black/10 dark:border-white/5', bg: 'bg-black/5 dark:bg-white/5', name: admin.role, glow: 'from-gray-900 dark:from-white/5 to-gray-900 dark:to-white/5' };
 
                                             return (
                                                 <motion.div
@@ -1286,8 +1273,8 @@ const AdminManager = () => {
                                                         "absolute inset-0 rounded-[2.5rem] opacity-0 group-hover:opacity-10 transition-opacity blur-2xl duration-700 pointer-events-none bg-gradient-to-br",
                                                         roleStyle.glow
                                                     )} />
-                                                    <Card className="relative p-6 sm:p-8 bg-zinc-950/60 group-hover:bg-zinc-900/40 hover:border-white/10 border-white/5 backdrop-blur-3xl rounded-[2.5rem] transition-all duration-500 shadow-xl flex flex-col justify-between h-full min-h-[380px] border hover:-translate-y-1.5 hover:shadow-[0_20px_50px_rgba(0,0,0,0.8)] gap-6">
-                                                        <div className="absolute inset-0 bg-gradient-to-br from-white/[0.01] via-transparent to-transparent opacity-100 pointer-events-none" />
+                                                    <Card className="relative p-6 sm:p-8 bg-gray-100 dark:bg-zinc-950/60 group-hover:bg-gray-100 dark:group-hover:bg-zinc-900/40 hover:border-black/10 dark:hover:border-white/10 border-black/10 dark:border-white/5 backdrop-blur-3xl rounded-[2.5rem] transition-all duration-500 shadow-xl flex flex-col justify-between h-full min-h-[380px] border hover:-translate-y-1.5 hover:shadow-[0_20px_50px_rgba(0,0,0,0.8)] gap-6">
+                                                        <div className="absolute inset-0 bg-gradient-to-br from-gray-900 dark:from-white/[0.01] via-transparent to-transparent opacity-100 pointer-events-none" />
                                                         
                                                         <div>
                                                             <div className="flex justify-between items-center mb-5">
@@ -1310,7 +1297,7 @@ const AdminManager = () => {
                                                             </div>
 
                                                             <div className="space-y-1">
-                                                                <h3 className="font-heading font-black text-2xl sm:text-3xl text-white group-hover:text-neon-green transition-colors duration-500 uppercase italic tracking-tighter leading-[0.95] line-clamp-2 pr-4 break-all">
+                                                                <h3 className="font-heading font-black text-2xl sm:text-3xl text-gray-900 dark:text-white group-hover:text-neon-green transition-colors duration-500 uppercase italic tracking-tighter leading-[0.95] line-clamp-2 pr-4 break-all">
                                                                     {admin.displayName || 'UNIDENTIFIED_OPERATIVE'}
                                                                 </h3>
                                                                 <p className="text-[10px] text-gray-500 font-mono select-all leading-relaxed break-all">{admin.email}</p>
@@ -1339,15 +1326,15 @@ const AdminManager = () => {
                                                         </div>
 
                                                         <div className="space-y-2.5 mt-auto">
-                                                            <div className="flex items-center gap-2 text-gray-500 text-[9px] font-black uppercase tracking-[0.2em] bg-white/[0.02] px-4 py-2.5 rounded-2xl border border-white/5 shadow-inner w-fit">
+                                                            <div className="flex items-center gap-2 text-gray-500 text-[9px] font-black uppercase tracking-[0.2em] bg-white/[0.02] px-4 py-2.5 rounded-2xl border border-black/10 dark:border-white/5 shadow-inner w-fit">
                                                                 <span className="text-gray-600">DISPATCHED:</span>
-                                                                <span className="text-gray-400 font-mono">
+                                                                <span className="text-gray-600 dark:text-gray-400 font-mono">
                                                                     {admin.createdAt ? new Date(admin.createdAt).toLocaleDateString(undefined, { dateStyle: 'medium' }) : 'N/A'}
                                                                 </span>
                                                             </div>
                                                         </div>
 
-                                                        <div className="pt-4 border-t border-white/5 flex flex-wrap gap-2 w-full mt-auto">
+                                                        <div className="pt-4 border-t border-black/10 dark:border-white/5 flex flex-wrap gap-2 w-full mt-auto">
                                                             {(isSelf || user.role === 'developer') && (
                                                                 <button 
                                                                     onClick={() => {
@@ -1356,7 +1343,7 @@ const AdminManager = () => {
                                                                             useStore.getState().updateAdminProfile(null, admin.email, { displayName: newName }).then(() => fetchAdmins());
                                                                         }
                                                                     }} 
-                                                                    className="flex-1 h-11 bg-white/5 hover:bg-neon-blue/15 text-gray-500 hover:text-neon-blue border border-white/5 hover:border-neon-blue/20 rounded-xl transition-all flex items-center justify-center gap-1.5 text-[9px] font-black uppercase tracking-widest shadow-sm active:scale-95 duration-300" 
+                                                                    className="flex-1 h-11 bg-black/5 dark:bg-white/5 hover:bg-neon-blue/15 text-gray-500 hover:text-neon-blue border border-black/10 dark:border-white/5 hover:border-neon-blue/20 rounded-xl transition-all flex items-center justify-center gap-1.5 text-[9px] font-black uppercase tracking-widest shadow-sm active:scale-95 duration-300" 
                                                                     title="Modify Identity"
                                                                 >
                                                                     <UserCheck size={12} /> Rename
@@ -1371,14 +1358,14 @@ const AdminManager = () => {
                                                                                 useStore.getState().addToast("Password reset email sent!", 'success');
                                                                             }
                                                                         }} 
-                                                                        className="flex-1 h-11 bg-white/5 hover:bg-neon-pink/15 text-gray-500 hover:text-neon-pink border border-white/5 hover:border-neon-pink/20 rounded-xl transition-all flex items-center justify-center gap-1.5 text-[9px] font-black uppercase tracking-widest shadow-sm active:scale-95 duration-300" 
+                                                                        className="flex-1 h-11 bg-black/5 dark:bg-white/5 hover:bg-neon-pink/15 text-gray-500 hover:text-neon-pink border border-black/10 dark:border-white/5 hover:border-neon-pink/20 rounded-xl transition-all flex items-center justify-center gap-1.5 text-[9px] font-black uppercase tracking-widest shadow-sm active:scale-95 duration-300" 
                                                                         title="Reset Credentials"
                                                                     >
                                                                         <Shield size={12} /> Reset
                                                                     </button>
                                                                     <button 
                                                                         onClick={() => handleRemoveAdmin(admin.id, admin.role)} 
-                                                                        className="flex-1 h-11 bg-white/5 hover:bg-red-500/15 text-gray-500 hover:text-red-500 border border-white/5 hover:border-red-500/20 rounded-xl transition-all flex items-center justify-center gap-1.5 text-[9px] font-black uppercase tracking-widest shadow-sm active:scale-95 duration-300" 
+                                                                        className="flex-1 h-11 bg-black/5 dark:bg-white/5 hover:bg-red-500/15 text-gray-500 hover:text-red-500 border border-black/10 dark:border-white/5 hover:border-red-500/20 rounded-xl transition-all flex items-center justify-center gap-1.5 text-[9px] font-black uppercase tracking-widest shadow-sm active:scale-95 duration-300" 
                                                                         title="Terminate Access"
                                                                     >
                                                                         <Trash2 size={12} /> Terminate
@@ -1388,7 +1375,7 @@ const AdminManager = () => {
                                                             {(!isSelf && (user?.role === 'developer' || user?.role === 'founder')) && (
                                                                 <button 
                                                                     onClick={() => handleRevokeAdminSessions(admin)}
-                                                                    className="w-full h-11 bg-white/5 hover:bg-red-500/15 text-gray-400 hover:text-red-500 border border-white/5 hover:border-red-500/20 rounded-xl transition-all flex items-center justify-center gap-1.5 text-[9px] font-black uppercase tracking-widest shadow-sm active:scale-95 duration-300"
+                                                                    className="w-full h-11 bg-black/5 dark:bg-white/5 hover:bg-red-500/15 text-gray-600 dark:text-gray-400 hover:text-red-500 border border-black/10 dark:border-white/5 hover:border-red-500/20 rounded-xl transition-all flex items-center justify-center gap-1.5 text-[9px] font-black uppercase tracking-widest shadow-sm active:scale-95 duration-300"
                                                                     title="Log out all devices"
                                                                 >
                                                                     <LogOut size={12} /> Log out all devices
@@ -1402,10 +1389,10 @@ const AdminManager = () => {
                                     </div>
                                 ) : (
                                     <div className="overflow-x-auto scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0 pb-36 -mb-36">
-                                        <Card className="min-w-[800px] min-h-[450px] bg-zinc-900/40 backdrop-blur-3xl border-white/5 rounded-[2rem] md:rounded-[2.5rem] p-0 border">
+                                        <Card className="min-w-[800px] min-h-[450px] bg-gray-100 dark:bg-zinc-900/40 backdrop-blur-3xl border-black/10 dark:border-white/5 rounded-[2rem] md:rounded-[2.5rem] p-0 border">
                                             <table className="w-full text-left">
                                                 <thead>
-                                                    <tr className="border-b border-white/5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">
+                                                    <tr className="border-b border-black/10 dark:border-white/5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">
                                                         <th className="p-6 md:p-8">Operative</th>
                                                         <th className="p-6 md:p-8">Clearance / Rank</th>
                                                         <th className="p-6 md:p-8">Dispatched On</th>
@@ -1416,7 +1403,7 @@ const AdminManager = () => {
                                                     {paginatedAdmins.map((admin) => {
                                                         const isSelf = admin.email === user.email;
                                                         const roleColors = {
-                                                            developer: { text: 'text-white', border: 'border-white/20', bg: 'bg-white/5', name: 'Developer' },
+                                                            developer: { text: 'text-gray-900 dark:text-white', border: 'border-black/20 dark:border-white/20', bg: 'bg-black/5 dark:bg-white/5', name: 'Developer' },
                                                             founder: { text: 'text-[#FFD700]', border: 'border-[#FFD700]/20', bg: 'bg-[#FFD700]/5', name: 'Founder' },
                                                             super_admin: { text: 'text-neon-pink', border: 'border-neon-pink/20', bg: 'bg-neon-pink/5', name: 'Super Admin' },
                                                             content_admin: { text: 'text-neon-green', border: 'border-neon-green/20', bg: 'bg-neon-green/5', name: 'Content Admin' },
@@ -1426,7 +1413,7 @@ const AdminManager = () => {
                                                             scanner: { text: 'text-yellow-500', border: 'border-yellow-500/20', bg: 'bg-yellow-500/5', name: 'Ticketing Admin' },
                                                         };
                                                         
-                                                        const roleStyle = roleColors[admin.role] || { text: 'text-gray-400', border: 'border-white/5', bg: 'bg-white/5', name: admin.role };
+                                                        const roleStyle = roleColors[admin.role] || { text: 'text-gray-600 dark:text-gray-400', border: 'border-black/10 dark:border-white/5', bg: 'bg-black/5 dark:bg-white/5', name: admin.role };
 
                                                         return (
                                                             <tr key={admin.id} className="group hover:bg-white/[0.02] transition-colors">
@@ -1440,7 +1427,7 @@ const AdminManager = () => {
                                                                         </div>
                                                                         <div>
                                                                             <div className="flex items-center gap-2">
-                                                                                <div className="text-xs font-black uppercase tracking-tight text-white">{admin.displayName || 'UNIDENTIFIED_OPERATIVE'}</div>
+                                                                                <div className="text-xs font-black uppercase tracking-tight text-gray-900 dark:text-white">{admin.displayName || 'UNIDENTIFIED_OPERATIVE'}</div>
                                                                                 {isSelf && <span className="bg-white text-black px-1.5 py-0.5 rounded-[4px] text-[7px] font-black uppercase leading-none select-none">Self</span>}
                                                                             </div>
                                                                             <div className="text-[10px] text-gray-500 font-mono mt-0.5">{admin.email}</div>
@@ -1483,7 +1470,7 @@ const AdminManager = () => {
                                                                                         useStore.getState().updateAdminProfile(null, admin.email, { displayName: newName }).then(() => fetchAdmins());
                                                                                     }
                                                                                 }} 
-                                                                                className="h-8 px-3 bg-white/5 hover:bg-neon-blue/15 text-gray-500 hover:text-neon-blue border border-white/5 hover:border-neon-blue/20 rounded-lg transition-all flex items-center justify-center gap-1 text-[8px] font-black uppercase tracking-widest shadow-sm" 
+                                                                                className="h-8 px-3 bg-black/5 dark:bg-white/5 hover:bg-neon-blue/15 text-gray-500 hover:text-neon-blue border border-black/10 dark:border-white/5 hover:border-neon-blue/20 rounded-lg transition-all flex items-center justify-center gap-1 text-[8px] font-black uppercase tracking-widest shadow-sm" 
                                                                             >
                                                                                 <UserCheck size={10} /> Rename
                                                                             </button>
@@ -1497,13 +1484,13 @@ const AdminManager = () => {
                                                                                             useStore.getState().addToast("Password reset email sent!", 'success');
                                                                                         }
                                                                                     }} 
-                                                                                    className="h-8 px-3 bg-white/5 hover:bg-neon-pink/15 text-gray-500 hover:text-neon-pink border border-white/5 hover:border-neon-pink/20 rounded-lg transition-all flex items-center justify-center gap-1 text-[8px] font-black uppercase tracking-widest shadow-sm" 
+                                                                                    className="h-8 px-3 bg-black/5 dark:bg-white/5 hover:bg-neon-pink/15 text-gray-500 hover:text-neon-pink border border-black/10 dark:border-white/5 hover:border-neon-pink/20 rounded-lg transition-all flex items-center justify-center gap-1 text-[8px] font-black uppercase tracking-widest shadow-sm" 
                                                                                 >
                                                                                     <Shield size={10} /> Reset
                                                                                 </button>
                                                                                 <button 
                                                                                     onClick={() => handleRemoveAdmin(admin.id, admin.role)} 
-                                                                                    className="h-8 px-3 bg-white/5 hover:bg-red-500/15 text-gray-500 hover:text-red-500 border border-white/5 hover:border-red-500/20 rounded-lg transition-all flex items-center justify-center gap-1 text-[8px] font-black uppercase tracking-widest shadow-sm" 
+                                                                                    className="h-8 px-3 bg-black/5 dark:bg-white/5 hover:bg-red-500/15 text-gray-500 hover:text-red-500 border border-black/10 dark:border-white/5 hover:border-red-500/20 rounded-lg transition-all flex items-center justify-center gap-1 text-[8px] font-black uppercase tracking-widest shadow-sm" 
                                                                                 >
                                                                                     <Trash2 size={10} /> Terminate
                                                                                 </button>
@@ -1512,7 +1499,7 @@ const AdminManager = () => {
                                                                         {(!isSelf && (user?.role === 'developer' || user?.role === 'founder')) && (
                                                                             <button 
                                                                                 onClick={() => handleRevokeAdminSessions(admin)}
-                                                                                className="h-8 px-3 bg-white/5 hover:bg-red-500/15 text-gray-400 hover:text-red-500 border border-white/5 hover:border-red-500/10 rounded-lg transition-all flex items-center justify-center gap-1 text-[8px] font-black uppercase tracking-widest shadow-sm"
+                                                                                className="h-8 px-3 bg-black/5 dark:bg-white/5 hover:bg-red-500/15 text-gray-600 dark:text-gray-400 hover:text-red-500 border border-black/10 dark:border-white/5 hover:border-red-500/10 rounded-lg transition-all flex items-center justify-center gap-1 text-[8px] font-black uppercase tracking-widest shadow-sm"
                                                                             >
                                                                                 <LogOut size={10} /> Logout Devices
                                                                             </button>
@@ -1539,7 +1526,7 @@ const AdminManager = () => {
                     <button 
                         disabled={currentPage === 1}
                         onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                        className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white disabled:opacity-20 hover:bg-white hover:text-black transition-all"
+                        className="w-12 h-12 rounded-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 flex items-center justify-center text-gray-900 dark:text-white disabled:opacity-20 hover:bg-white hover:text-black transition-all"
                     >
                         <ChevronLeft size={20} />
                     </button>
@@ -1563,7 +1550,7 @@ const AdminManager = () => {
                                         "w-12 h-12 rounded-full font-black text-xs transition-all border flex items-center justify-center",
                                         currentPage === page 
                                             ? "bg-neon-green/20 text-neon-green border-neon-green/30" 
-                                            : "bg-white/5 text-gray-500 border-white/10 hover:border-white/30"
+                                            : "bg-black/5 dark:bg-white/5 text-gray-500 border-black/10 dark:border-white/10 hover:border-white/30"
                                     )}
                                 >
                                     {page}
@@ -1574,7 +1561,7 @@ const AdminManager = () => {
                     <button 
                         disabled={currentPage === totalPages}
                         onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                        className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white disabled:opacity-20 hover:bg-white hover:text-black transition-all"
+                        className="w-12 h-12 rounded-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 flex items-center justify-center text-gray-900 dark:text-white disabled:opacity-20 hover:bg-white hover:text-black transition-all"
                     >
                         <ChevronRight size={20} />
                     </button>

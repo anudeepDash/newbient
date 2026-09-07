@@ -62,7 +62,7 @@ const SiteContentManager = () => {
                     <section>
                         <div className="flex items-center gap-4 mb-8">
                             <h2 className="text-xl font-black font-heading tracking-tight uppercase italic text-red-500">Critical Control</h2>
-                            <div className="flex-1 h-px bg-white/5" />
+                            <div className="flex-1 h-px bg-black/5 dark:bg-white/5" />
                         </div>
                         
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -88,10 +88,10 @@ const SiteContentManager = () => {
                     <section>
                         <div className="flex items-center gap-4 mb-8">
                             <h2 className="text-xl font-black font-heading tracking-tight uppercase italic text-neon-blue">Site Identity</h2>
-                            <div className="flex-1 h-px bg-white/5" />
+                            <div className="flex-1 h-px bg-black/5 dark:bg-white/5" />
                         </div>
 
-                        <Card className="p-10 bg-zinc-900/40 backdrop-blur-3xl border-white/5 rounded-[2.5rem]">
+                        <Card className="p-10 bg-gray-100 dark:bg-zinc-900/40 backdrop-blur-3xl border-black/10 dark:border-white/5 rounded-[2.5rem]">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                 <InputGroup label="Site Title" name="title" icon={Settings} value={formData.title} onChange={handleChange} placeholder="Newbi | Disrupting Marketing" />
                                 <InputGroup label="Tagline" name="tagline" icon={Sparkles} value={formData.tagline} onChange={handleChange} placeholder="The future of creator marketing" />
@@ -104,7 +104,7 @@ const SiteContentManager = () => {
                                             name="description"
                                             value={formData.description || ''}
                                             onChange={handleChange}
-                                            className="w-full bg-black/50 border border-white/5 rounded-xl p-4 pl-12 text-sm font-medium h-24 focus:border-neon-blue/50 outline-none transition-colors"
+                                            className="w-full bg-white dark:bg-black/50 border border-black/10 dark:border-white/5 rounded-xl p-4 pl-12 text-sm font-medium h-24 focus:border-neon-blue/50 outline-none transition-colors"
                                             placeholder="Write a compelling meta description for search engines..."
                                         />
                                     </div>
@@ -117,7 +117,7 @@ const SiteContentManager = () => {
                     <section>
                         <div className="flex items-center gap-4 mb-8">
                             <h2 className="text-xl font-black font-heading tracking-tight uppercase italic text-neon-green">Feature Control</h2>
-                            <div className="flex-1 h-px bg-white/5" />
+                            <div className="flex-1 h-px bg-black/5 dark:bg-white/5" />
                         </div>
                         
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -149,10 +149,10 @@ const SiteContentManager = () => {
                     <section>
                         <div className="flex items-center gap-4 mb-8">
                             <h2 className="text-xl font-black font-heading tracking-tight uppercase italic text-neon-pink">Communication Endpoint</h2>
-                            <div className="flex-1 h-px bg-white/5" />
+                            <div className="flex-1 h-px bg-black/5 dark:bg-white/5" />
                         </div>
 
-                        <Card className="p-10 bg-zinc-900/40 backdrop-blur-3xl border-white/5 rounded-[2.5rem]">
+                        <Card className="p-10 bg-gray-100 dark:bg-zinc-900/40 backdrop-blur-3xl border-black/10 dark:border-white/5 rounded-[2.5rem]">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                 <div className="md:col-span-2 space-y-3">
                                     <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">WhatsApp Community Endpoint</label>
@@ -162,7 +162,7 @@ const SiteContentManager = () => {
                                             name="whatsappCommunity"
                                             value={formData.whatsappCommunity || ''}
                                             onChange={handleChange}
-                                            className="h-12 pl-12 bg-black/50 border-white/5 rounded-xl font-medium"
+                                            className="h-12 pl-12 bg-white dark:bg-black/50 border-black/10 dark:border-white/5 rounded-xl font-medium"
                                             placeholder="https://chat.whatsapp.com/..."
                                         />
                                     </div>
@@ -181,7 +181,7 @@ const SiteContentManager = () => {
                                             name="address"
                                             value={formData.address || ''}
                                             onChange={handleChange}
-                                            className="w-full bg-black/50 border border-white/5 rounded-xl p-4 pl-12 text-sm font-medium h-24 focus:border-neon-pink/50 outline-none transition-colors"
+                                            className="w-full bg-white dark:bg-black/50 border border-black/10 dark:border-white/5 rounded-xl p-4 pl-12 text-sm font-medium h-24 focus:border-neon-pink/50 outline-none transition-colors"
                                             placeholder="Full office address..."
                                         />
                                     </div>
@@ -191,7 +191,7 @@ const SiteContentManager = () => {
                     </section>
 
                     {/* Footer Actions */}
-                    <div className="flex justify-end pt-8 border-t border-white/5">
+                    <div className="flex justify-end pt-8 border-t border-black/10 dark:border-white/5">
                         <Button type="submit" className="bg-neon-green text-black font-black font-heading uppercase tracking-widest text-xs h-16 px-16 rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-[0_10px_30px_rgba(57,255,20,0.3)]">
                             <Save className="mr-3 h-5 w-5" /> Commit Site Configuration
                         </Button>
@@ -203,18 +203,18 @@ const SiteContentManager = () => {
 
 const ToggleCard = ({ title, desc, icon: Icon, checked, onChange, variant = 'primary' }) => (
     <div className={cn(
-        "p-6 bg-zinc-900/40 backdrop-blur-3xl border border-white/5 rounded-[2rem] flex items-center justify-between group hover:border-white/10 transition-all",
+        "p-6 bg-gray-100 dark:bg-zinc-900/40 backdrop-blur-3xl border border-black/10 dark:border-white/5 rounded-[2rem] flex items-center justify-between group hover:border-black/10 dark:hover:border-white/10 transition-all",
         variant === 'danger' && "hover:border-red-500/30"
     )}>
         <div className="flex items-center gap-5">
             <div className={cn(
-                "p-3 rounded-xl bg-white/5 text-gray-500 group-hover:text-white transition-colors",
+                "p-3 rounded-xl bg-black/5 dark:bg-white/5 text-gray-500 group-hover:text-gray-900 dark:group-hover:text-white transition-colors",
                 variant === 'danger' && "group-hover:text-red-500"
             )}>
                 <Icon size={20} />
             </div>
             <div>
-                <h4 className="text-sm font-black uppercase tracking-tight text-white">{title}</h4>
+                <h4 className="text-sm font-black uppercase tracking-tight text-gray-900 dark:text-white">{title}</h4>
                 <p className="text-[10px] text-gray-500 font-bold uppercase mt-1 tracking-wider leading-relaxed">{desc}</p>
             </div>
         </div>
@@ -226,8 +226,8 @@ const ToggleCard = ({ title, desc, icon: Icon, checked, onChange, variant = 'pri
                 onChange={(e) => onChange(e.target.checked)}
             />
             <div className={cn(
-                "w-12 h-6 bg-white/5 border border-white/10 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:bg-black after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-gray-700 after:rounded-full after:h-4 after:w-4 after:transition-all",
-                variant === 'danger' ? "peer-checked:bg-red-500 peer-checked:border-red-500" : "peer-checked:bg-neon-green peer-checked:border-neon-green"
+                "w-12 h-6 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:bg-white dark:peer-checked:after:bg-black after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-gray-700 after:rounded-full after:h-4 after:w-4 after:transition-all",
+                variant === 'danger' ? "peer-checked:bg-red-500 peer-checked:border-red-500" : "peer-checked:bg-emerald-500 dark:peer-checked:bg-neon-green peer-checked:border-emerald-500 dark:peer-checked:border-neon-green"
             )}></div>
         </label>
     </div>
@@ -242,7 +242,7 @@ const InputGroup = ({ label, name, icon: Icon, value, onChange, placeholder }) =
                 name={name}
                 value={value || ''}
                 onChange={onChange}
-                className="h-12 pl-12 bg-black/50 border-white/5 rounded-xl font-medium text-sm"
+                className="h-12 pl-12 bg-white dark:bg-black/50 border-black/10 dark:border-white/5 rounded-xl font-medium text-sm"
                 placeholder={placeholder}
             />
         </div>

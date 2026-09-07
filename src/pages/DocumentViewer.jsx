@@ -23,7 +23,7 @@ const TYPE_CONFIG = {
     google_sheet: { label: 'GOOGLE SHEET', color: 'text-neon-blue', pill: 'bg-neon-blue/15 text-neon-blue border-neon-blue/20', icon: Sheet },
     google_drive: { label: 'GOOGLE DRIVE', color: 'text-neon-purple', pill: 'bg-neon-purple/15 text-neon-purple border-neon-purple/20', icon: HardDrive },
     pdf: { label: 'PDF', color: 'text-neon-pink', pill: 'bg-neon-pink/15 text-neon-pink border-neon-pink/20', icon: FileText },
-    file: { label: 'FILE', color: 'text-gray-400', pill: 'bg-gray-500/15 text-gray-400 border-gray-500/20', icon: File },
+    file: { label: 'FILE', color: 'text-gray-600 dark:text-gray-400', pill: 'bg-gray-500/15 text-gray-600 dark:text-gray-400 border-gray-500/20', icon: File },
 };
 
 const formatFileSize = (bytes) => {
@@ -96,7 +96,7 @@ const DocumentViewer = () => {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-[#020202] flex items-center justify-center">
+            <div className="min-h-screen bg-gray-50 dark:bg-[#020202] flex items-center justify-center transition-colors duration-300">
                 <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
@@ -120,21 +120,21 @@ const DocumentViewer = () => {
 
     if (error) {
         return (
-            <div className="min-h-screen bg-[#020202] flex items-center justify-center p-4">
+            <div className="min-h-screen bg-gray-50 dark:bg-[#020202] flex items-center justify-center p-4 transition-colors duration-300">
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     className="max-w-md w-full text-center"
                 >
-                    <div className="w-24 h-24 mx-auto mb-8 rounded-[2rem] bg-white/[0.03] border border-white/5 flex items-center justify-center">
+                    <div className="w-24 h-24 mx-auto mb-8 rounded-[2rem] bg-white dark:bg-white/[0.03] border border-gray-200 dark:border-white/5 shadow-sm flex items-center justify-center">
                         {error === 'private' ? (
                             <ShieldAlert size={40} className="text-amber-400" />
                         ) : (
-                            <FileX size={40} className="text-gray-600" />
+                            <FileX size={40} className="text-gray-600 dark:text-gray-400" />
                         )}
                     </div>
 
-                    <h1 className="text-3xl md:text-4xl font-black font-heading uppercase italic tracking-tighter text-white mb-4">
+                    <h1 className="text-3xl md:text-4xl font-black font-heading uppercase italic tracking-tighter text-gray-900 dark:text-white mb-4">
                         {error === 'private' ? (
                             <>ACCESS <span className="text-amber-400">RESTRICTED.</span></>
                         ) : error === 'not_found' ? (
@@ -154,7 +154,7 @@ const DocumentViewer = () => {
 
                     <Link
                         to="/"
-                        className="inline-flex items-center gap-3 px-8 py-4 bg-white/5 border border-white/10 rounded-xl text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] hover:text-white hover:bg-white/10 hover:border-white/20 transition-all"
+                        className="inline-flex items-center gap-3 px-8 py-4 bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-[0.2em] hover:text-gray-900 dark:hover:text-white hover:bg-gray-200 dark:hover:bg-white/10 transition-all shadow-sm"
                     >
                         <ArrowLeft size={14} />
                         BACK TO HOME
@@ -170,12 +170,12 @@ const DocumentViewer = () => {
 
     if (isEmbeddable) {
         return (
-            <div className="min-h-screen bg-[#020202] flex flex-col">
+            <div className="min-h-screen bg-gray-50 dark:bg-[#020202] flex flex-col transition-colors duration-300">
                 {/* Header */}
                 <motion.header
                     initial={{ opacity: 0, y: -20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="bg-zinc-950/40 backdrop-blur-2xl border-b border-white/5 px-6 py-4 flex items-center justify-between z-10 shrink-0 relative shadow-2xl"
+                    className="bg-white/80 dark:bg-zinc-950/40 backdrop-blur-2xl border-b border-gray-200 dark:border-white/5 px-6 py-4 flex items-center justify-between z-10 shrink-0 relative shadow-sm dark:shadow-2xl"
                 >
                     {/* Themed glow underline */}
                     <div 
@@ -194,25 +194,25 @@ const DocumentViewer = () => {
                         <Link
                             to="/"
                             className={cn(
-                                "w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 hover:scale-105 active:scale-95 transition-all shrink-0",
+                                "w-10 h-10 rounded-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 flex items-center justify-center text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-black/10 dark:hover:bg-white/10 hover:scale-105 active:scale-95 transition-all shrink-0",
                                 document.type === 'google_doc' && 'hover:border-emerald-500/30 hover:text-emerald-400 hover:shadow-[0_0_15px_rgba(57,255,20,0.2)]',
                                 document.type === 'google_sheet' && 'hover:border-neon-blue/30 hover:text-neon-blue hover:shadow-[0_0_15px_rgba(46,191,255,0.2)]',
                                 document.type === 'google_drive' && 'hover:border-neon-purple/30 hover:text-neon-purple hover:shadow-[0_0_15px_rgba(191,0,255,0.2)]',
                                 document.type === 'pdf' && 'hover:border-neon-pink/30 hover:text-neon-pink hover:shadow-[0_0_15px_rgba(255,79,139,0.2)]',
-                                document.type === 'file' && 'hover:border-white/20'
+                                document.type === 'file' && 'hover:border-black/20 dark:hover:border-white/20'
                             )}
                         >
                             <ArrowLeft size={16} />
                         </Link>
 
                         {/* Document type pill */}
-                        <div className={cn("flex items-center gap-2 px-3.5 py-2 rounded-xl border text-[8px] font-black uppercase tracking-[0.2em] shrink-0 bg-black/40 shadow-inner", cfg.pill)}>
+                        <div className={cn("flex items-center gap-2 px-3.5 py-2 rounded-xl border text-[8px] font-black uppercase tracking-[0.2em] shrink-0 bg-white dark:bg-black/40 shadow-inner", cfg.pill)}>
                             <Icon size={12} className="animate-pulse" />
                             {cfg.label}
                         </div>
 
                         {/* Title text */}
-                        <h1 className="text-base md:text-xl font-black font-heading uppercase italic tracking-tight text-white truncate drop-shadow-lg pr-4">
+                        <h1 className="text-base md:text-xl font-black font-heading uppercase italic tracking-tight text-gray-900 dark:text-white truncate drop-shadow-lg pr-4">
                             {document.title}
                         </h1>
                     </div>
@@ -222,20 +222,20 @@ const DocumentViewer = () => {
                         {document.tags?.length > 0 && (
                             <div className="hidden lg:flex items-center gap-2">
                                 {document.tags.slice(0, 3).map((tag, i) => (
-                                    <span key={i} className="flex items-center gap-1.5 px-3 py-1 bg-white/[0.03] border border-white/5 rounded-xl text-[8px] font-black text-gray-500 uppercase tracking-wider">
+                                    <span key={i} className="flex items-center gap-1.5 px-3 py-1 bg-white/[0.03] border border-black/10 dark:border-white/5 rounded-xl text-[8px] font-black text-gray-500 uppercase tracking-wider">
                                         <Tag size={9} />{tag}
                                     </span>
                                 ))}
                             </div>
                         )}
                         {document.createdAt && (
-                            <span className="hidden md:flex items-center gap-1.5 text-[9px] font-black text-gray-500 uppercase tracking-[0.2em] px-3 py-1 bg-white/[0.03] border border-white/5 rounded-xl">
+                            <span className="hidden md:flex items-center gap-1.5 text-[9px] font-black text-gray-500 uppercase tracking-[0.2em] px-3 py-1 bg-white/[0.03] border border-black/10 dark:border-white/5 rounded-xl">
                                 <Calendar size={10} className="text-gray-600" />
                                 {formatDate(document.createdAt)}
                             </span>
                         )}
-                        <div className="h-6 w-px bg-white/10 hidden md:block" />
-                        <span className="text-[9px] font-black uppercase text-transparent bg-clip-text bg-gradient-to-r from-white/40 to-white/90 tracking-[0.3em] font-heading pl-2">
+                        <div className="h-6 w-px bg-black/10 dark:bg-white/10 hidden md:block" />
+                        <span className="text-[9px] font-black uppercase text-transparent bg-clip-text bg-gradient-to-r from-gray-900 dark:from-white/40 to-gray-900 dark:to-white/90 tracking-[0.3em] font-heading pl-2">
                             NEWBI ENTERTAINMENT
                         </span>
                     </div>
@@ -250,7 +250,7 @@ const DocumentViewer = () => {
                 >
                     <iframe
                         src={document.sourceUrl}
-                        className="w-full h-full rounded-xl md:rounded-2xl border border-white/10 bg-white"
+                        className="w-full h-full rounded-xl md:rounded-2xl border border-black/10 dark:border-white/10 bg-white"
                         title={document.title}
                         allow="autoplay"
                         sandbox="allow-same-origin allow-scripts allow-popups allow-forms"
@@ -268,7 +268,7 @@ const DocumentViewer = () => {
             {/* Background */}
             <div className="fixed inset-0 z-0 pointer-events-none">
                 <div className="absolute top-0 right-0 w-[50%] h-[50%] bg-neon-blue/5 rounded-full blur-[120px] animate-pulse" />
-                <div className="absolute bottom-0 left-0 w-[40%] h-[40%] bg-white/5 rounded-full blur-[120px] animate-pulse delay-700" />
+                <div className="absolute bottom-0 left-0 w-[40%] h-[40%] bg-black/5 dark:bg-white/5 rounded-full blur-[120px] animate-pulse delay-700" />
             </div>
 
             <motion.div
@@ -280,7 +280,7 @@ const DocumentViewer = () => {
                 {/* Back Link */}
                 <Link
                     to="/"
-                    className="inline-flex items-center gap-2 mb-8 text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] hover:text-white transition-colors"
+                    className="inline-flex items-center gap-2 mb-8 text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] hover:text-gray-900 dark:hover:text-white transition-colors"
                 >
                     <ArrowLeft size={12} />
                     BACK TO HOME
@@ -302,7 +302,7 @@ const DocumentViewer = () => {
                 />
 
                 {/* Download Card */}
-                <div className="bg-gradient-to-br from-white/[0.04] to-white/[0.01] backdrop-blur-xl border border-white/10 border-t-white/20 rounded-2xl shadow-[inset_0_1px_1px_rgba(255,255,255,0.15),_0_8px_32px_rgba(0,0,0,0.4)] p-8 md:p-12 text-center relative overflow-hidden">
+                <div className="bg-gradient-to-br from-gray-900 dark:from-white/[0.04] to-gray-900 dark:to-white/[0.01] backdrop-blur-xl border border-black/10 dark:border-white/10 border-t-white/20 rounded-2xl shadow-[inset_0_1px_1px_rgba(255,255,255,0.15),_0_8px_32px_rgba(0,0,0,0.4)] p-8 md:p-12 text-center relative overflow-hidden">
                     <div className="absolute inset-0 bg-white/[0.01] pointer-events-none" />
                     {/* Type Badge */}
                     <div className="flex justify-center mb-8">
@@ -313,7 +313,7 @@ const DocumentViewer = () => {
                     </div>
 
                     {/* File Icon */}
-                    <div className="w-28 h-28 mx-auto mb-8 rounded-[2rem] bg-white/[0.03] border border-white/5 flex items-center justify-center">
+                    <div className="w-28 h-28 mx-auto mb-8 rounded-[2rem] bg-white/[0.03] border border-black/10 dark:border-white/5 flex items-center justify-center">
                         <motion.div
                             animate={{ y: [0, -5, 0] }}
                             transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}
@@ -323,7 +323,7 @@ const DocumentViewer = () => {
                     </div>
 
                     {/* Title */}
-                    <h1 className="text-2xl md:text-3xl font-black font-heading uppercase italic tracking-tighter text-white mb-3">
+                    <h1 className="text-2xl md:text-3xl font-black font-heading uppercase italic tracking-tighter text-gray-900 dark:text-white mb-3">
                         {document.title}
                     </h1>
 
@@ -357,7 +357,7 @@ const DocumentViewer = () => {
                     {document.tags?.length > 0 && (
                         <div className="flex items-center justify-center gap-2 flex-wrap mb-8">
                             {document.tags.map((tag, i) => (
-                                <span key={i} className="flex items-center gap-1 px-2.5 py-1 bg-white/5 border border-white/5 rounded-lg text-[8px] font-black text-gray-500 uppercase tracking-wider">
+                                <span key={i} className="flex items-center gap-1 px-2.5 py-1 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/5 rounded-lg text-[8px] font-black text-gray-500 uppercase tracking-wider">
                                     <Tag size={8} />{tag}
                                 </span>
                             ))}

@@ -503,7 +503,7 @@ const InvoiceGenerator = () => {
     };
 
     return (
-        <div className="h-screen overflow-hidden bg-[#0B0F17] text-white selection:bg-neon-blue selection:text-black font-['Outfit'] flex flex-col admin-hub-content-container">
+        <div className="h-screen overflow-hidden bg-gray-50 dark:bg-[#0B0F17] text-gray-900 dark:text-white selection:bg-neon-blue selection:text-black font-['Outfit'] flex flex-col admin-hub-content-container">
             <style dangerouslySetInnerHTML={{ __html: `
                 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap');
                 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
@@ -516,20 +516,20 @@ const InvoiceGenerator = () => {
             `}} />
 
             {/* Header */}
-            <header className="h-16 md:h-20 border-b border-white/5 bg-black/50 backdrop-blur-3xl flex items-center justify-between px-4 md:px-8 shrink-0 relative z-50">
+            <header className="h-16 md:h-20 border-b border-black/10 dark:border-white/5 bg-white dark:bg-black/50 backdrop-blur-3xl flex items-center justify-between px-4 md:px-8 shrink-0 relative z-50">
                 <div className="flex items-center gap-2 md:gap-4 min-w-0">
                     <div className="flex items-center gap-2 md:gap-3 shrink-0">
-                        <Link to="/admin/invoices" className="p-2.5 md:p-3 bg-white/5 rounded-2xl hover:bg-white/10 border border-white/5"><ArrowLeft size={16} /></Link>
+                        <Link to="/admin/invoices" className="p-2.5 md:p-3 bg-black/5 dark:bg-white/5 rounded-2xl hover:bg-black/10 dark:hover:bg-white/10 border border-black/10 dark:border-white/5 text-gray-700 dark:text-gray-300"><ArrowLeft size={16} /></Link>
                     </div>
                     <div className="min-w-0 flex flex-col justify-center">
-                        <h1 className="text-sm md:text-xl font-extrabold tracking-tight text-white truncate leading-none">Invoice <span className="text-neon-blue">Engine.</span></h1>
+                        <h1 className="text-sm md:text-xl font-extrabold tracking-tight text-gray-900 dark:text-white truncate leading-none">Invoice <span className="text-neon-blue">Engine.</span></h1>
                         <p className="text-[7px] md:text-[9px] font-bold text-gray-500 uppercase tracking-widest mt-1 truncate">Financial Summary</p>
                     </div>
                 </div>
 
                 <div className="flex items-center gap-1.5 md:gap-4 shrink-0">
                     {autosaveStatus !== 'idle' && (
-                        <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white/5 border border-white/10 select-none">
+                        <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 select-none">
                             <span className={cn(
                                 "w-1.5 h-1.5 rounded-full shrink-0",
                                 autosaveStatus === 'saving' && "bg-amber-400 animate-pulse",
@@ -543,7 +543,7 @@ const InvoiceGenerator = () => {
                             </span>
                         </div>
                     )}
-                    <button onClick={handleSave} className="hidden lg:flex h-10 md:h-12 px-3 md:px-6 bg-white/5 hover:bg-white/10 text-white border border-white/10 font-black uppercase tracking-widest text-[9px] md:text-[10px] rounded-xl transition-all items-center gap-2">
+                    <button onClick={handleSave} className="hidden lg:flex h-10 md:h-12 px-3 md:px-6 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-gray-900 dark:text-white border border-black/10 dark:border-white/10 font-black uppercase tracking-widest text-[9px] md:text-[10px] rounded-xl transition-all items-center gap-2">
                         <Save size={14} className="sm:hidden" />
                         <span className="hidden sm:inline">Save</span>
                     </button>
@@ -557,17 +557,17 @@ const InvoiceGenerator = () => {
             <main className="flex-1 flex overflow-hidden min-h-0">
                 {/* Sidebar */}
                 <aside className={cn(
-                    "hidden lg:flex w-64 shrink-0 border-r border-white/5 bg-zinc-900/20 flex-col p-6 gap-6 overflow-y-auto scrollbar-hide",
+                    "hidden lg:flex w-64 shrink-0 border-r border-black/10 dark:border-white/5 bg-gray-100 dark:bg-zinc-900/20 flex-col p-6 gap-6 overflow-y-auto scrollbar-hide",
                     isExpandedPreview && "lg:hidden"
                 )}>
                     <div className="space-y-2">
-                        <p className="text-[9px] font-black text-gray-600 uppercase tracking-widest px-4 mb-4">Navigation</p>
+                        <p className="text-[9px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest px-4 mb-4">Navigation</p>
                         {tabs.map(tab => (
-                            <button key={tab.id} onClick={() => handleTabClick(tab.id)} className={cn("w-full p-4 rounded-2xl flex items-center gap-4 transition-all text-left group", activeTab === tab.id ? "bg-white text-black shadow-xl" : "hover:bg-white/5 text-gray-500 hover:text-white")}>
-                                <div className={cn("p-2.5 rounded-xl transition-all", activeTab === tab.id ? "bg-black/20" : "bg-white/5 group-hover:bg-white/10")}><tab.icon size={18} /></div>
+                            <button key={tab.id} onClick={() => handleTabClick(tab.id)} className={cn("w-full p-4 rounded-2xl flex items-center gap-4 transition-all text-left group", activeTab === tab.id ? "bg-white dark:bg-white/10 text-black dark:text-white shadow-lg border border-black/5 dark:border-white/10" : "hover:bg-black/5 dark:hover:bg-white/5 text-gray-500 hover:text-gray-900 dark:hover:text-white")}>
+                                <div className={cn("p-2.5 rounded-xl transition-all", activeTab === tab.id ? "bg-black/5 dark:bg-white/10" : "bg-black/5 dark:bg-white/5 group-hover:bg-black/10 dark:group-hover:bg-white/10")}><tab.icon size={18} /></div>
                                 <div>
                                     <p className="text-[10px] font-black uppercase tracking-widest leading-none mb-1">{tab.label}</p>
-                                    <p className={cn("text-[9px] font-bold opacity-60 uppercase tracking-tighter", activeTab === tab.id ? "text-black" : "text-gray-600")}>{tab.desc}</p>
+                                    <p className={cn("text-[9px] font-bold opacity-60 uppercase tracking-tighter", activeTab === tab.id ? "text-gray-700 dark:text-gray-300" : "text-gray-500 dark:text-gray-400")}>{tab.desc}</p>
                                 </div>
                             </button>
                         ))}
@@ -575,7 +575,7 @@ const InvoiceGenerator = () => {
                 </aside>
                 
                 {/* Mobile Bottom Navigation */}
-                <div className="lg:hidden fixed bottom-0 left-0 right-0 h-20 bg-black/80 backdrop-blur-3xl border-t border-white/10 z-[100] px-4 flex items-center justify-around no-scrollbar">
+                <div className="lg:hidden fixed bottom-0 left-0 right-0 h-20 bg-white dark:bg-black/80 backdrop-blur-3xl border-t border-black/10 dark:border-white/10 z-[100] px-4 flex items-center justify-around no-scrollbar">
                     {tabs.map(tab => (
                         <button key={tab.id} onClick={() => handleTabClick(tab.id)} className={cn("flex flex-col items-center justify-center min-w-[64px] h-full transition-all gap-1", activeTab === tab.id ? "text-neon-blue" : "text-gray-500")}>
                             <tab.icon size={20} />
@@ -595,7 +595,7 @@ const InvoiceGenerator = () => {
                             <Eye size={14} />
                             <span className="text-[9px] font-black uppercase tracking-widest">Preview</span>
                         </button>
-                        <button onClick={handleSave} className="h-10 px-3 flex-1 bg-white/5 text-white border border-white/10 font-black uppercase tracking-widest text-[9px] rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg backdrop-blur-md">
+                        <button onClick={handleSave} className="h-10 px-3 flex-1 bg-black/5 dark:bg-white/5 text-gray-900 dark:text-white border border-black/10 dark:border-white/10 font-black uppercase tracking-widest text-[9px] rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg backdrop-blur-md">
                             <Save size={14} />
                             <span>Save</span>
                         </button>
@@ -607,16 +607,14 @@ const InvoiceGenerator = () => {
                 </div>
 
                 {/* Editor */}
-                <section className={cn("flex-1 overflow-y-auto p-6 md:p-12 scrollbar-hide bg-[#050505] pb-32", isExpandedPreview && "hidden")}>
+                <section className={cn("flex-1 overflow-y-auto p-6 md:p-12 scrollbar-hide bg-white dark:bg-[#050505] pb-32 transition-colors duration-300", isExpandedPreview && "hidden")}>
                     <div className="max-w-7xl mx-auto">
 
-
                         <div className="mb-12">
-                            <h2 className="text-3xl font-extrabold tracking-tight text-white mb-1">{currentTab?.label}.</h2>
-                            <p className="text-[10px] font-black text-gray-500 uppercase tracking-[0.4em] mb-6">{currentTab?.desc}</p>
-                            <div className="w-16 h-1.5 bg-neon-blue" />
+                            <h2 className="text-3xl font-extrabold tracking-tight text-gray-900 dark:text-white mb-1">{currentTab?.label}.</h2>
+                            <p className="text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-[0.4em] mb-6">{currentTab?.desc}</p>
+                            <div className="w-16 h-1.5 bg-neon-blue rounded-full" />
                         </div>
-                        
 
                         <AnimatePresence mode="wait">
                             <motion.div key={activeTab} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.2 }} className="space-y-12">
@@ -624,10 +622,9 @@ const InvoiceGenerator = () => {
                                     <div className="space-y-12">
                                         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 md:gap-4">
                                             {logoOptions.map(logo => (
-                                                <button key={logo.id} onClick={() => setFormData({...formData, selectedLogo: logo.id})} className={cn("p-4 rounded-2xl border transition-all text-[10px] font-black uppercase tracking-widest flex flex-col items-center gap-2 overflow-hidden relative group/btn", formData.selectedLogo === logo.id ? "bg-neon-blue border-neon-blue text-black scale-105 shadow-xl" : "bg-zinc-900 border-white/5 text-gray-500 hover:text-white")}>
-                                                    <div className="w-full aspect-[4/3] rounded-xl bg-white flex items-center justify-center p-2 relative overflow-hidden">
+                                                <button key={logo.id} onClick={() => setFormData({...formData, selectedLogo: logo.id})} className={cn("p-4 rounded-2xl border transition-all text-[10px] font-black uppercase tracking-widest flex flex-col items-center gap-2 overflow-hidden relative group/btn", formData.selectedLogo === logo.id ? "bg-neon-blue border-neon-blue text-black scale-105 shadow-xl" : "bg-gray-50 dark:bg-zinc-900/60 border-black/10 dark:border-white/5 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:border-black/20 dark:hover:border-white/20")}>
+                                                    <div className="w-full aspect-[4/3] rounded-xl bg-white dark:bg-black/40 border border-black/5 dark:border-white/10 flex items-center justify-center p-3 relative overflow-hidden shadow-sm">
                                                         <img src={logo.path} alt={logo.label} className="w-full h-full object-contain" />
-                                                        <div className="absolute inset-0 bg-black/5" />
                                                     </div>
                                                     <span className="text-[8px] sm:text-[10px] font-black uppercase tracking-widest relative z-10 leading-tight">{logo.label}</span>
                                                 </button>
@@ -636,49 +633,49 @@ const InvoiceGenerator = () => {
                                         
                                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                             <div className="space-y-4">
-                                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest px-2">Invoice ID</label>
-                                                <input value={formData.invoiceNumber} onChange={e => setFormData({...formData, invoiceNumber: e.target.value})} className="w-full bg-zinc-900 border border-white/10 h-16 px-6 rounded-2xl font-bold text-sm outline-none focus:border-neon-blue/40 transition-all" />
+                                                <label className="text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest px-2">Invoice ID</label>
+                                                <input value={formData.invoiceNumber} onChange={e => setFormData({...formData, invoiceNumber: e.target.value})} className="w-full bg-gray-50 dark:bg-zinc-900 border border-black/10 dark:border-white/10 h-16 px-6 rounded-2xl font-bold text-sm text-gray-900 dark:text-white outline-none focus:border-neon-blue/60 transition-all" />
                                             </div>
                                             <div className="space-y-4">
-                                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest px-2">Issue Date</label>
+                                                <label className="text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest px-2">Issue Date</label>
                                                 <StudioDatePicker value={formData.invoiceDate} onChange={val => setFormData({...formData, invoiceDate: val})} className="h-16" />
                                             </div>
                                             <div className="space-y-4">
-                                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest px-2">Due Date</label>
+                                                <label className="text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest px-2">Due Date</label>
                                                 <StudioDatePicker value={formData.dueDate} onChange={val => setFormData({...formData, dueDate: val})} className="h-16" />
                                             </div>
                                         </div>
                                         <div className="space-y-6">
                                             <div className="flex justify-between items-center px-4">
-                                                <h4 className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Invoiced By (Sender)</h4>
+                                                <h4 className="text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest">Invoiced By (Sender)</h4>
                                             </div>
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 md:p-8 bg-zinc-900/40 border border-white/5 rounded-[2.5rem]">
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 md:p-8 bg-gray-50 dark:bg-zinc-900/40 border border-black/10 dark:border-white/5 rounded-[2.5rem]">
                                                 <div className="space-y-4">
-                                                    <label className="text-[10px] font-black text-gray-600 uppercase tracking-widest px-2">Entity Name</label>
-                                                    <input value={formData.senderName} onChange={e => setFormData({...formData, senderName: e.target.value})} className="w-full bg-black/40 border border-white/10 h-14 px-6 rounded-2xl font-bold text-sm outline-none focus:border-neon-blue/40" />
+                                                    <label className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest px-2">Entity Name</label>
+                                                    <input value={formData.senderName} onChange={e => setFormData({...formData, senderName: e.target.value})} className="w-full bg-white dark:bg-black/40 border border-black/10 dark:border-white/10 h-14 px-6 rounded-2xl font-bold text-sm text-gray-900 dark:text-white outline-none focus:border-neon-blue/60" />
                                                 </div>
                                                 <div className="space-y-4">
-                                                    <label className="text-[10px] font-black text-gray-600 uppercase tracking-widest px-2">GSTIN / TAX ID</label>
-                                                    <input value={formData.senderGst} onChange={e => setFormData({...formData, senderGst: e.target.value})} className="w-full bg-black/40 border border-white/10 h-14 px-6 rounded-2xl font-bold text-sm outline-none focus:border-neon-blue/40" />
+                                                    <label className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest px-2">GSTIN / TAX ID</label>
+                                                    <input value={formData.senderGst} onChange={e => setFormData({...formData, senderGst: e.target.value})} className="w-full bg-white dark:bg-black/40 border border-black/10 dark:border-white/10 h-14 px-6 rounded-2xl font-bold text-sm text-gray-900 dark:text-white outline-none focus:border-neon-blue/60" />
                                                 </div>
                                                 <div className="space-y-4">
-                                                    <label className="text-[10px] font-black text-gray-600 uppercase tracking-widest px-2">Contact Details</label>
-                                                    <input value={formData.senderContact} onChange={e => setFormData({...formData, senderContact: e.target.value})} className="w-full bg-black/40 border border-white/10 h-14 px-6 rounded-2xl font-bold text-sm outline-none focus:border-neon-blue/40" />
+                                                    <label className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest px-2">Contact Details</label>
+                                                    <input value={formData.senderContact} onChange={e => setFormData({...formData, senderContact: e.target.value})} className="w-full bg-white dark:bg-black/40 border border-black/10 dark:border-white/10 h-14 px-6 rounded-2xl font-bold text-sm text-gray-900 dark:text-white outline-none focus:border-neon-blue/60" />
                                                 </div>
                                                 <div className="space-y-4">
-                                                    <label className="text-[10px] font-black text-gray-600 uppercase tracking-widest px-2">Corporate Email</label>
-                                                    <input value={formData.senderEmail} onChange={e => setFormData({...formData, senderEmail: e.target.value})} className="w-full bg-black/40 border border-white/10 h-14 px-6 rounded-2xl font-bold text-sm outline-none focus:border-neon-blue/40" />
+                                                    <label className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest px-2">Corporate Email</label>
+                                                    <input value={formData.senderEmail} onChange={e => setFormData({...formData, senderEmail: e.target.value})} className="w-full bg-white dark:bg-black/40 border border-black/10 dark:border-white/10 h-14 px-6 rounded-2xl font-bold text-sm text-gray-900 dark:text-white outline-none focus:border-neon-blue/60" />
                                                 </div>
                                             </div>
                                         </div>
 
-                                        <div className="space-y-4 pt-4 border-t border-white/5">
+                                        <div className="space-y-4 pt-4 border-t border-black/10 dark:border-white/5">
                                             <div className="flex justify-between items-center px-4 mb-4">
-                                                <h4 className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Invoiced To (Client)</h4>
+                                                <h4 className="text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest">Invoiced To (Client)</h4>
                                             </div>
-                                            <input value={formData.clientName} onChange={e => setFormData({...formData, clientName: e.target.value})} className="w-full bg-zinc-900 border border-white/10 h-16 px-6 rounded-2xl font-bold text-sm outline-none focus:border-neon-blue/40 transition-all" placeholder="Organization Name" />
-                                            <textarea value={formData.clientAddress} onChange={e => setFormData({...formData, clientAddress: e.target.value})} className="w-full bg-zinc-900 border border-white/10 p-6 rounded-2xl font-bold text-sm outline-none focus:border-neon-blue/40 transition-all min-h-[100px]" placeholder="Client Address / Billing Location" />
-                                            <input value={formData.clientGst} onChange={e => setFormData({...formData, clientGst: e.target.value})} className="w-full bg-zinc-900 border border-white/10 h-16 px-6 rounded-2xl font-bold text-sm outline-none focus:border-neon-blue/40 transition-all" placeholder="Client GSTIN (Optional)" />
+                                            <input value={formData.clientName} onChange={e => setFormData({...formData, clientName: e.target.value})} className="w-full bg-gray-50 dark:bg-zinc-900 border border-black/10 dark:border-white/10 h-16 px-6 rounded-2xl font-bold text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-600 outline-none focus:border-neon-blue/60 transition-all" placeholder="Organization Name" />
+                                            <textarea value={formData.clientAddress} onChange={e => setFormData({...formData, clientAddress: e.target.value})} className="w-full bg-gray-50 dark:bg-zinc-900 border border-black/10 dark:border-white/10 p-6 rounded-2xl font-bold text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-600 outline-none focus:border-neon-blue/60 transition-all min-h-[100px]" placeholder="Client Address / Billing Location" />
+                                            <input value={formData.clientGst} onChange={e => setFormData({...formData, clientGst: e.target.value})} className="w-full bg-gray-50 dark:bg-zinc-900 border border-black/10 dark:border-white/10 h-16 px-6 rounded-2xl font-bold text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-600 outline-none focus:border-neon-blue/60 transition-all" placeholder="Client GSTIN (Optional)" />
                                         </div>
                                     </div>
                                 )}
@@ -687,7 +684,7 @@ const InvoiceGenerator = () => {
                                     <div className="space-y-8">
                                         <div className="flex justify-between items-center px-4">
                                             <div className="flex flex-col">
-                                                <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Billing Table</h4>
+                                                <h4 className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest">Billing Table</h4>
                                                 <div className="flex flex-wrap items-center gap-3 mt-4">
                                                     {customColumns.map(col => (
                                                         <span key={col.id} className="h-9 px-4 bg-neon-blue/10 border border-neon-blue/20 rounded-full text-[9px] font-black text-neon-blue uppercase flex items-center gap-3 animate-in zoom-in-95 duration-300">
@@ -701,10 +698,10 @@ const InvoiceGenerator = () => {
                                                             value={newColumnName} 
                                                             onChange={e => setNewColumnName(e.target.value)} 
                                                             onKeyPress={e => e.key === 'Enter' && handleAddColumn()} 
-                                                            className="w-32 bg-zinc-900 border border-white/10 h-9 px-4 rounded-full text-[9px] font-black uppercase outline-none focus:border-neon-blue/40 text-white placeholder:text-gray-600 transition-all focus:w-48 relative z-10" 
+                                                            className="w-32 bg-gray-50 dark:bg-zinc-900 border border-black/10 dark:border-white/10 h-9 px-4 rounded-full text-[9px] font-black uppercase outline-none focus:border-neon-blue/40 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-600 transition-all focus:w-48 relative z-10" 
                                                             placeholder="+ Add Column..." 
                                                         />
-                                                        <button onClick={handleAddColumn} className="p-2 bg-white/5 hover:bg-white/10 rounded-full border border-white/10 text-gray-400 hover:text-white transition-all"><Plus size={14} /></button>
+                                                        <button onClick={handleAddColumn} className="p-2 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 rounded-full border border-black/10 dark:border-white/10 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all"><Plus size={14} /></button>
                                                     </div>
                                                 </div>
                                             </div>
@@ -712,23 +709,23 @@ const InvoiceGenerator = () => {
                                         </div>
                                         <div className="space-y-4">
                                             {items.map((item, idx) => (
-                                                <div key={item.id} className="flex flex-col bg-zinc-900/40 p-6 rounded-3xl border border-white/5 group transition-all hover:bg-zinc-900/60 gap-4">
+                                                <div key={item.id} className="flex flex-col bg-gray-50 dark:bg-zinc-900/40 p-6 rounded-3xl border border-black/10 dark:border-white/5 group transition-all hover:bg-gray-100 dark:hover:bg-zinc-900/60 gap-4">
                                                     <div className="flex flex-col md:flex-row md:items-start gap-4 md:gap-6">
                                                         <div className="flex-1 space-y-3 w-full">
-                                                            <input value={item.name} onChange={e => { const newItems = [...items]; newItems[idx].name = e.target.value; setItems(newItems); }} className="w-full bg-transparent border-b border-white/10 pb-2 text-sm font-black uppercase italic outline-none focus:border-neon-blue/40 transition-all text-white placeholder:text-gray-600" placeholder="Service Name (e.g. Brand Activation)" />
-                                                            <textarea value={item.description} onChange={e => { const newItems = [...items]; newItems[idx].description = e.target.value; setItems(newItems); }} rows={1} className="w-full bg-transparent border-none p-0 text-[10px] font-bold uppercase tracking-widest outline-none resize-none scrollbar-hide text-gray-400 placeholder:text-gray-700" placeholder="Detailed description..." />
+                                                            <input value={item.name} onChange={e => { const newItems = [...items]; newItems[idx].name = e.target.value; setItems(newItems); }} className="w-full bg-transparent border-b border-black/10 dark:border-white/10 pb-2 text-sm font-black uppercase italic outline-none focus:border-neon-blue/40 transition-all text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-600" placeholder="Service Name (e.g. Brand Activation)" />
+                                                            <textarea value={item.description} onChange={e => { const newItems = [...items]; newItems[idx].description = e.target.value; setItems(newItems); }} rows={1} className="w-full bg-transparent border-none p-0 text-[10px] font-bold uppercase tracking-widest outline-none resize-none scrollbar-hide text-gray-600 dark:text-gray-400 placeholder:text-gray-400 dark:placeholder:text-gray-600" placeholder="Detailed description..." />
                                                         </div>
                                                         <div className="flex flex-wrap items-center gap-4 md:gap-6 w-full md:w-auto">
-                                                            <div className="flex flex-col items-center"><span className="text-[8px] font-black text-gray-500 uppercase tracking-widest mb-1.5">Qty</span><input type="number" value={item.qty} onChange={e => { const newItems = [...items]; newItems[idx].qty = Number(e.target.value); setItems(newItems); }} className="w-16 bg-black/40 border border-white/10 h-10 rounded-lg text-center text-xs font-black outline-none focus:border-neon-blue/50" /></div>
-                                                            <div className="flex flex-col items-end"><span className="text-[8px] font-black text-gray-500 uppercase tracking-widest mb-1.5 pr-2">Price</span><div className="relative"><span className="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] font-black text-neon-blue">₹</span><input type="number" value={item.price} onChange={e => { const newItems = [...items]; newItems[idx].price = Number(e.target.value); setItems(newItems); }} className="w-32 bg-black/40 border border-white/10 h-10 pl-7 pr-4 rounded-lg text-right text-xs font-black text-neon-blue outline-none focus:border-neon-blue/50" /></div></div>
-                                                            <button onClick={() => setItems(items.filter(i => i.id !== item.id))} className="p-2.5 text-gray-600 hover:text-red-500 transition-colors hover:bg-red-500/10 rounded-lg"><Trash2 size={16} /></button>
+                                                            <div className="flex flex-col items-center"><span className="text-[8px] font-black text-gray-500 uppercase tracking-widest mb-1.5">Qty</span><input type="number" value={item.qty} onChange={e => { const newItems = [...items]; newItems[idx].qty = Number(e.target.value); setItems(newItems); }} className="w-16 bg-white dark:bg-black/40 border border-black/10 dark:border-white/10 h-10 rounded-lg text-center text-xs font-black text-gray-900 dark:text-white outline-none focus:border-neon-blue/50" /></div>
+                                                            <div className="flex flex-col items-end"><span className="text-[8px] font-black text-gray-500 uppercase tracking-widest mb-1.5 pr-2">Price</span><div className="relative"><span className="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] font-black text-neon-blue">₹</span><input type="number" value={item.price} onChange={e => { const newItems = [...items]; newItems[idx].price = Number(e.target.value); setItems(newItems); }} className="w-32 bg-white dark:bg-black/40 border border-black/10 dark:border-white/10 h-10 pl-7 pr-4 rounded-lg text-right text-xs font-black text-neon-blue outline-none focus:border-neon-blue/50" /></div></div>
+                                                            <button onClick={() => setItems(items.filter(i => i.id !== item.id))} className="p-2.5 text-gray-400 hover:text-red-500 transition-colors hover:bg-red-500/10 rounded-lg"><Trash2 size={16} /></button>
                                                         </div>
                                                     </div>
                                                     {customColumns.length > 0 && (
-                                                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-4 border-t border-white/5">
+                                                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-4 border-t border-black/10 dark:border-white/5">
                                                             {customColumns.map(col => (
-                                                                <div key={col.id} className="space-y-1.5">
-                                                                    <label className="text-[8px] font-black text-gray-600 uppercase tracking-widest px-1">{col.label}</label>
+                                                                 <div key={col.id} className="space-y-1.5">
+                                                                    <label className="text-[8px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest px-1">{col.label}</label>
                                                                     <input 
                                                                         value={item.customValues?.[col.id] || ''} 
                                                                         onChange={e => {
@@ -736,7 +733,7 @@ const InvoiceGenerator = () => {
                                                                             newItems[idx].customValues = { ...newItems[idx].customValues, [col.id]: e.target.value };
                                                                             setItems(newItems);
                                                                         }}
-                                                                        className="w-full bg-black/20 border border-white/5 h-8 px-3 rounded-lg text-[10px] font-bold outline-none focus:border-neon-blue/30 text-white"
+                                                                        className="w-full bg-white dark:bg-black/20 border border-black/10 dark:border-white/5 h-8 px-3 rounded-lg text-[10px] font-bold outline-none focus:border-neon-blue/30 text-gray-900 dark:text-white"
                                                                         placeholder={`Value...`}
                                                                     />
                                                                 </div>
@@ -754,20 +751,20 @@ const InvoiceGenerator = () => {
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                             <div className="space-y-4">
                                                 <div className="flex justify-between items-center px-2">
-                                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">GST Rate (%)</label>
+                                                    <label className="text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest">GST Rate (%)</label>
                                                     <button onClick={() => setFormData({...formData, showGst: !formData.showGst})} className={cn("text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded border transition-all", formData.showGst ? "bg-neon-blue/10 text-neon-blue border-neon-blue/20" : "bg-red-500/10 text-red-500 border-red-500/20")}>{formData.showGst ? 'Enabled' : 'Disabled'}</button>
                                                 </div>
-                                                <input type="number" value={formData.gstPercentage} onChange={e => setFormData({...formData, gstPercentage: Number(e.target.value)})} className="w-full bg-zinc-900 border border-white/10 h-16 px-6 rounded-2xl font-bold text-sm outline-none focus:border-neon-blue/40 transition-all" />
+                                                <input type="number" value={formData.gstPercentage} onChange={e => setFormData({...formData, gstPercentage: Number(e.target.value)})} className="w-full bg-gray-50 dark:bg-zinc-900 border border-black/10 dark:border-white/10 h-16 px-6 rounded-2xl font-bold text-sm text-gray-900 dark:text-white outline-none focus:border-neon-blue/40 transition-all" />
                                             </div>
                                             <div className="space-y-4">
-                                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest px-2">Advance Received (₹)</label>
-                                                <input type="number" value={formData.advancePaid} onChange={e => setFormData({...formData, advancePaid: Number(e.target.value)})} className="w-full bg-zinc-900 border border-white/10 h-16 px-6 rounded-2xl font-bold text-sm outline-none focus:border-neon-blue/40 transition-all text-neon-blue" />
+                                                <label className="text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest px-2">Advance Received (₹)</label>
+                                                <input type="number" value={formData.advancePaid} onChange={e => setFormData({...formData, advancePaid: Number(e.target.value)})} className="w-full bg-gray-50 dark:bg-zinc-900 border border-black/10 dark:border-white/10 h-16 px-6 rounded-2xl font-bold text-sm outline-none focus:border-neon-blue/40 transition-all text-neon-blue font-mono" />
                                             </div>
                                         </div>
 
                                         <div className={cn("space-y-4", !formData.showPaymentDetails && "opacity-30")}>
                                             <div className="flex justify-between items-center px-2">
-                                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Settlement Account Details</label>
+                                                <label className="text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest">Settlement Account Details</label>
                                                 <button type="button" onClick={() => setFormData({...formData, showPaymentDetails: formData.showPaymentDetails === false ? true : false})} className={cn("text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded border transition-all", formData.showPaymentDetails !== false ? "bg-neon-blue/10 text-neon-blue border-neon-blue/20" : "bg-red-500/10 text-red-500 border-red-500/20")}>
                                                     {formData.showPaymentDetails !== false ? 'Enabled' : 'Disabled'}
                                                 </button>
@@ -775,38 +772,38 @@ const InvoiceGenerator = () => {
                                             <textarea 
                                                 value={formData.paymentDetails} 
                                                 onChange={e => setFormData({...formData, paymentDetails: e.target.value})} 
-                                                className="w-full bg-zinc-900 border border-white/10 p-6 rounded-2xl font-mono font-bold text-sm outline-none focus:border-neon-blue/40 transition-all min-h-[160px]" 
+                                                className="w-full bg-gray-50 dark:bg-zinc-900 border border-black/10 dark:border-white/10 p-6 rounded-2xl font-mono font-bold text-sm text-gray-900 dark:text-white outline-none focus:border-neon-blue/40 transition-all min-h-[160px]" 
                                                 placeholder="Account Name, Number, IFSC, etc..." 
                                             />
                                         </div>
 
                                         {/* UPI QR */}
-                                        <div className="space-y-8 pt-8 border-t border-white/5">
+                                        <div className="space-y-8 pt-8 border-t border-black/10 dark:border-white/5">
                                             <div className="flex items-center justify-between px-2">
-                                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Digital Payment QR</label>
-                                                <button onClick={() => setFormData({...formData, showUPI: !formData.showUPI})} className={cn("text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-xl border transition-all", formData.showUPI ? "bg-neon-blue text-black border-neon-blue" : "bg-white/5 text-gray-500 border-white/5")}>{formData.showUPI ? 'QR Enabled' : 'QR Disabled'}</button>
+                                                <label className="text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest">Digital Payment QR</label>
+                                                <button onClick={() => setFormData({...formData, showUPI: !formData.showUPI})} className={cn("text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-xl border transition-all", formData.showUPI ? "bg-neon-blue text-black border-neon-blue" : "bg-black/5 dark:bg-white/5 text-gray-500 border-black/10 dark:border-white/5")}>{formData.showUPI ? 'QR Enabled' : 'QR Disabled'}</button>
                                             </div>
                                             {formData.showUPI && (
                                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 animate-in fade-in slide-in-from-top-2">
                                                     <div className="space-y-4">
-                                                        <label className="text-[10px] font-black text-gray-600 uppercase tracking-widest pl-2">QR Source</label>
-                                                        <div className="flex bg-black/40 p-1.5 rounded-2xl border border-white/5">
+                                                        <label className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest pl-2">QR Source</label>
+                                                        <div className="flex bg-gray-100 dark:bg-black/40 p-1.5 rounded-2xl border border-black/10 dark:border-white/5">
                                                             {['auto', 'custom'].map(type => (
-                                                                <button key={type} onClick={() => setFormData({...formData, qrType: type})} className={cn("flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all", formData.qrType === type ? "bg-white text-black" : "text-gray-500")}>{type === 'auto' ? 'Dynamic UPI' : 'Custom Image'}</button>
+                                                                <button key={type} onClick={() => setFormData({...formData, qrType: type})} className={cn("flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all", formData.qrType === type ? "bg-white text-black shadow-sm" : "text-gray-500 hover:text-gray-900 dark:hover:text-white")}>{type === 'auto' ? 'Dynamic UPI' : 'Custom Image'}</button>
                                                             ))}
                                                         </div>
                                                     </div>
                                                     {formData.qrType === 'auto' ? (
                                                         <div className="space-y-4">
-                                                            <label className="text-[10px] font-black text-gray-600 uppercase tracking-widest pl-2">Merchant UPI ID</label>
-                                                            <input value={formData.upiId} onChange={e => setFormData({...formData, upiId: e.target.value})} className="w-full bg-zinc-900 border border-white/10 h-14 px-6 rounded-2xl font-bold text-sm outline-none focus:border-neon-blue/40 transition-all" />
+                                                            <label className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest pl-2">Merchant UPI ID</label>
+                                                            <input value={formData.upiId} onChange={e => setFormData({...formData, upiId: e.target.value})} className="w-full bg-gray-50 dark:bg-zinc-900 border border-black/10 dark:border-white/10 h-14 px-6 rounded-2xl font-bold text-sm text-gray-900 dark:text-white outline-none focus:border-neon-blue/40 transition-all" />
                                                         </div>
                                                     ) : (
                                                         <div className="space-y-4">
-                                                            <label className="text-[10px] font-black text-gray-600 uppercase tracking-widest pl-2">Custom QR Asset</label>
+                                                            <label className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest pl-2">Custom QR Asset</label>
                                                             <div className="relative group h-14">
                                                                 <input type="file" accept="image/*" onChange={e => { const f = e.target.files[0]; if(f) { const r = new FileReader(); r.onload = (ex) => setFormData({...formData, customQrImage: ex.target.result}); r.readAsDataURL(f); } }} className="absolute inset-0 opacity-0 cursor-pointer z-10" />
-                                                                <div className="h-full border border-dashed border-white/10 rounded-2xl bg-black/30 flex items-center justify-center gap-3 group-hover:border-neon-blue/40 transition-all">
+                                                                <div className="h-full border border-dashed border-black/10 dark:border-white/10 rounded-2xl bg-gray-50 dark:bg-black/30 flex items-center justify-center gap-3 group-hover:border-neon-blue/40 transition-all">
                                                                     <ImageIcon size={16} className="text-gray-500" />
                                                                     <span className="text-[10px] font-black text-gray-500 uppercase">{formData.customQrImage ? 'Replace Image' : 'Select QR Image'}</span>
                                                                 </div>
@@ -829,14 +826,14 @@ const InvoiceGenerator = () => {
                                             </div>
 
                                         {/* PayU Gateway */}
-                                        <div className="p-4 md:p-8 bg-zinc-900 border border-white/10 rounded-[2.5rem] space-y-8 mt-8">
-                                            <div className="flex items-center justify-between border-b border-white/5 pb-4">
+                                        <div className="p-4 md:p-8 bg-gray-50 dark:bg-zinc-900 border border-black/10 dark:border-white/10 rounded-[2.5rem] space-y-8 mt-8">
+                                            <div className="flex items-center justify-between border-b border-black/10 dark:border-white/5 pb-4">
                                                 <div>
                                                     <h4 className="text-[10px] font-black text-neon-blue uppercase tracking-widest mb-1">PayU Checkout Gateway</h4>
                                                     <p className="text-[8px] font-bold text-gray-500 uppercase tracking-widest leading-relaxed">Automatic Payment Generation</p>
                                                 </div>
-                                                <button onClick={() => setFormData({...formData, showPaymentButton: !formData.showPaymentButton})} className={cn("w-14 h-8 rounded-full transition-all relative border", formData.showPaymentButton ? "bg-neon-blue border-neon-blue" : "bg-black/40 border-white/10")}>
-                                                    <div className={cn("absolute top-1 w-6 h-6 rounded-full transition-all", formData.showPaymentButton ? "left-7 bg-black" : "left-1 bg-gray-600")} />
+                                                <button onClick={() => setFormData({...formData, showPaymentButton: !formData.showPaymentButton})} className={cn("w-14 h-8 rounded-full transition-all relative border", formData.showPaymentButton ? "bg-neon-blue border-neon-blue" : "bg-white dark:bg-black/40 border-black/10 dark:border-white/10")}>
+                                                    <div className={cn("absolute top-1 w-6 h-6 rounded-full transition-all", formData.showPaymentButton ? "left-7 bg-white dark:bg-black" : "left-1 bg-gray-600")} />
                                                 </button>
                                             </div>
                                             {formData.showPaymentButton && (
@@ -848,13 +845,13 @@ const InvoiceGenerator = () => {
                                                                 const link = `https://pmny.in/payu/checkout?invoice=${formData.invoiceNumber}&amount=${amount}&merchant=NEWBI`;
                                                                 setFormData({...formData, paymentLink: link});
                                                             }}
-                                                            className="flex-1 h-16 bg-white text-black rounded-2xl font-black uppercase tracking-widest text-[10px] hover:scale-[1.02] transition-all flex items-center justify-center gap-3"
+                                                            className="flex-1 h-16 bg-black text-white hover:bg-neutral-800 dark:bg-white dark:text-black dark:hover:bg-neon-blue dark:hover:text-black rounded-2xl font-black uppercase tracking-widest text-[10px] hover:scale-[1.02] transition-all flex items-center justify-center gap-3 shadow-md"
                                                         >
                                                             <Zap size={14} /> Generate PayU Link
                                                         </button>
                                                         <button 
                                                             onClick={() => setFormData({...formData, paymentLink: ''})}
-                                                            className="h-16 px-6 bg-red-500/10 text-red-500 border border-red-500/20 rounded-2xl hover:bg-red-500/20 transition-all"
+                                                            className="h-16 px-6 bg-red-500/10 text-red-500 border border-red-500/20 rounded-2xl hover:bg-red-500/20 transition-all font-bold text-xs"
                                                         >
                                                             Clear
                                                         </button>
@@ -863,7 +860,7 @@ const InvoiceGenerator = () => {
                                                         <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest px-2">Final Checkout URL</label>
                                                         <div className="relative group">
                                                             <div className="absolute inset-0 bg-neon-blue/5 rounded-2xl blur-xl opacity-0 group-focus-within:opacity-100 transition-opacity" />
-                                                            <input value={formData.paymentLink} onChange={e => setFormData({...formData, paymentLink: e.target.value})} className="w-full bg-black/40 border border-white/10 h-16 px-6 rounded-2xl font-mono text-[10px] outline-none focus:border-neon-blue/40 relative z-10 text-white" placeholder="PayU or Custom Gateway URL..." />
+                                                            <input value={formData.paymentLink} onChange={e => setFormData({...formData, paymentLink: e.target.value})} className="w-full bg-white dark:bg-black/40 border border-black/10 dark:border-white/10 h-16 px-6 rounded-2xl font-mono text-[10px] outline-none focus:border-neon-blue/40 relative z-10 text-gray-900 dark:text-white" placeholder="PayU or Custom Gateway URL..." />
                                                         </div>
                                                     </div>
                                                 </div>
@@ -875,9 +872,9 @@ const InvoiceGenerator = () => {
                                 {activeTab === '4' && (
                                     <div className="space-y-12">
                                         {/* Document Settings Section */}
-                                        <div className="p-10 bg-zinc-900/40 border border-white/5 rounded-[40px] space-y-8">
+                                        <div className="p-10 bg-gray-50 dark:bg-zinc-900/40 border border-black/10 dark:border-white/5 rounded-[40px] space-y-8">
                                             <div className="space-y-2">
-                                                <h3 className="text-xl font-black uppercase tracking-tighter italic">Document Settings</h3>
+                                                <h3 className="text-xl font-black uppercase tracking-tighter italic text-gray-900 dark:text-white">Document Settings</h3>
                                                 <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Global authentication preferences</p>
                                             </div>
                                             
@@ -886,11 +883,11 @@ const InvoiceGenerator = () => {
                                                     onClick={() => setFormData({...formData, showSeal: !formData.showSeal})} 
                                                     className={cn(
                                                         "p-6 rounded-[32px] border transition-all flex flex-col items-center justify-center gap-4 text-center group",
-                                                        formData.showSeal ? "bg-white text-black border-white shadow-[0_0_40px_rgba(255,255,255,0.1)]" : "bg-white/5 border-white/10 text-white/40 hover:border-white/20"
+                                                        formData.showSeal ? "bg-black text-white border-black dark:bg-white dark:text-black dark:border-white shadow-lg" : "bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-gray-700 dark:text-white/60 hover:border-black/20 dark:hover:border-white/20"
                                                     )}
                                                 >
                                                     <div className="flex items-center gap-2">
-                                                        <Eye size={14} className={cn(formData.showSeal ? "text-black" : "text-white/20")} />
+                                                        <Eye size={14} className={cn(formData.showSeal ? "text-white dark:text-black" : "text-gray-500 dark:text-white/40")} />
                                                         <span className="text-[10px] font-black uppercase tracking-widest text-center">Official Seal</span>
                                                     </div>
                                                 </button>
@@ -899,18 +896,18 @@ const InvoiceGenerator = () => {
                                                     onClick={() => setFormData({...formData, showSignatures: !formData.showSignatures})} 
                                                     className={cn(
                                                         "p-6 rounded-[32px] border transition-all flex flex-col items-center justify-center gap-4 text-center group",
-                                                        formData.showSignatures ? "bg-white text-black border-white shadow-[0_0_40px_rgba(255,255,255,0.1)]" : "bg-white/5 border-white/10 text-white/40 hover:border-white/20"
+                                                        formData.showSignatures ? "bg-black text-white border-black dark:bg-white dark:text-black dark:border-white shadow-lg" : "bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-gray-700 dark:text-white/60 hover:border-black/20 dark:hover:border-white/20"
                                                     )}
                                                 >
                                                     <div className="flex items-center gap-2">
-                                                        <Eye size={14} className={cn(formData.showSignatures ? "text-black" : "text-white/20")} />
-                                                        <span className="text-[10px] font-black uppercase tracking-widest text-center text-center">Digital Signatures</span>
+                                                        <Eye size={14} className={cn(formData.showSignatures ? "text-white dark:text-black" : "text-gray-500 dark:text-white/40")} />
+                                                        <span className="text-[10px] font-black uppercase tracking-widest text-center">Digital Signatures</span>
                                                     </div>
                                                 </button>
                                             </div>
 
                                             {formData.showSeal && (
-                                                <div className="flex justify-center p-12 bg-black/40 rounded-[32px] border border-white/5 overflow-hidden">
+                                                <div className="flex justify-center p-12 bg-white dark:bg-black/40 rounded-[32px] border border-black/10 dark:border-white/5 overflow-hidden">
                                                     <DocumentSeal className="scale-75 origin-center" />
                                                 </div>
                                             )}
@@ -920,16 +917,16 @@ const InvoiceGenerator = () => {
                                         {formData.showSignatures && (
                                             <div className="space-y-6">
                                                 {/* Provider Authorization (Newbi) */}
-                                                <div className="p-10 bg-zinc-900/40 border border-white/5 rounded-[40px] space-y-8">
+                                                <div className="p-10 bg-gray-50 dark:bg-zinc-900/40 border border-black/10 dark:border-white/5 rounded-[40px] space-y-8">
                                                     <div className="flex items-center justify-between">
                                                         <div className="space-y-1">
-                                                            <h3 className="text-xl font-black uppercase tracking-tighter italic">Provider Authorization</h3>
+                                                            <h3 className="text-xl font-black uppercase tracking-tighter italic text-gray-900 dark:text-white">Provider Authorization</h3>
                                                             <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Sign on behalf of Newbi Entertainment</p>
                                                         </div>
                                                         <div className="flex gap-2">
                                                             <button 
                                                                 onClick={() => document.getElementById('provider-sig-upload-inv').click()}
-                                                                className="px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-white/10 transition-all flex items-center gap-2"
+                                                                className="px-4 py-2 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-black/10 dark:hover:bg-white/10 transition-all flex items-center gap-2 text-gray-700 dark:text-gray-300"
                                                             >
                                                                 <Upload size={12} /> Upload Sign
                                                             </button>
@@ -950,10 +947,10 @@ const InvoiceGenerator = () => {
                                                         </div>
                                                     </div>
                                                     
-                                                    <div className="relative h-48 bg-black/40 rounded-[32px] border border-white/5 flex items-center justify-center group overflow-hidden">
+                                                    <div className="relative h-48 bg-white dark:bg-black/40 rounded-[32px] border border-black/10 dark:border-white/5 flex items-center justify-center group overflow-hidden">
                                                         {formData.providerSignature ? (
                                                             <div className="relative group w-full h-full flex items-center justify-center p-4 md:p-8">
-                                                                <img src={formData.providerSignature} alt="Provider Signature" className="max-h-full object-contain invert brightness-200" />
+                                                                <img src={formData.providerSignature} alt="Provider Signature" className="max-h-full object-contain grayscale mix-blend-multiply dark:invert dark:brightness-200" />
                                                                 <button 
                                                                     onClick={() => setFormData({...formData, providerSignature: ''})}
                                                                     className="absolute top-4 right-4 p-2 bg-red-500/10 text-red-500 rounded-lg opacity-0 group-hover:opacity-100 transition-all"
@@ -962,10 +959,10 @@ const InvoiceGenerator = () => {
                                                                 </button>
                                                             </div>
                                                         ) : (
-                                                            <span className="text-[10px] font-black text-white/10 uppercase tracking-[0.5em]">Upload Signature</span>
+                                                            <span className="text-[10px] font-black text-gray-400 dark:text-white/20 uppercase tracking-[0.5em]">Upload Signature</span>
                                                         )}
                                                     </div>
-                                                    </div>
+                                                </div>
                                             </div>
                                         )}
                                     </div>
@@ -975,14 +972,14 @@ const InvoiceGenerator = () => {
                         </AnimatePresence>
 
                         {/* Section Navigation Footer */}
-                        <div className="mt-20 pt-8 border-t border-white/5 flex items-center justify-between pb-12">
+                        <div className="mt-20 pt-8 border-t border-black/10 dark:border-white/5 flex items-center justify-between pb-12">
                             <button 
                                 onClick={() => {
                                     const idx = tabs.findIndex(t => t.id === activeTab);
                                     if (idx > 0) setActiveTab(tabs[idx - 1].id);
                                 }}
                                 disabled={activeTab === tabs[0].id}
-                                className="flex items-center gap-2 px-6 py-3 rounded-xl bg-white/5 text-gray-400 hover:text-white hover:bg-white/10 transition-all disabled:opacity-0 disabled:pointer-events-none"
+                                className="flex items-center gap-2 px-6 py-3 rounded-xl bg-black/5 dark:bg-white/5 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-black/10 dark:hover:bg-white/10 transition-all disabled:opacity-0 disabled:pointer-events-none"
                             >
                                 <ChevronLeft size={16} />
                                 <span className="text-[10px] font-black uppercase tracking-widest">Previous</span>
@@ -996,7 +993,7 @@ const InvoiceGenerator = () => {
                                 className={cn(
                                     "flex items-center gap-2 px-8 py-3 rounded-xl font-black uppercase tracking-widest text-[10px] transition-all",
                                     activeTab === tabs[tabs.length - 1].id 
-                                        ? "bg-white/5 text-gray-500 cursor-not-allowed opacity-50" 
+                                        ? "bg-black/5 dark:bg-white/5 text-gray-500 cursor-not-allowed opacity-50" 
                                         : "bg-neon-blue text-black hover:scale-105 shadow-[0_0_20px_rgba(0,209,255,0.2)]"
                                 )}
                             >
@@ -1009,16 +1006,16 @@ const InvoiceGenerator = () => {
 
                 {/* Doc Preview */}
                 <section className={cn(
-                    "lg:static lg:flex fixed inset-0 z-[60] lg:z-0 bg-[#050505] lg:bg-zinc-900/10 flex-col overflow-hidden shrink-0 transition-transform duration-500 lg:translate-x-0",
-                    isExpandedPreview ? "w-full lg:w-full border-l-0" : "w-full lg:w-[400px] 2xl:w-[600px] border-l border-white/5",
+                    "lg:static lg:flex fixed inset-0 z-[60] lg:z-0 bg-gray-100 dark:bg-[#050505] flex-col overflow-hidden shrink-0 transition-transform duration-500 lg:translate-x-0",
+                    isExpandedPreview ? "w-full lg:w-full border-l-0" : "w-full lg:w-[400px] 2xl:w-[600px] border-l border-black/10 dark:border-white/5",
                     showPreviewMobile ? "translate-x-0" : "translate-x-full lg:translate-x-0"
                 )}>
-                    <div className="h-20 lg:h-16 flex items-center justify-between px-8 border-b border-white/5 bg-black/20 shrink-0">
+                    <div className="h-20 lg:h-16 flex items-center justify-between px-8 border-b border-black/10 dark:border-white/5 bg-white dark:bg-black/20 shrink-0">
                         <div className="flex items-center gap-4">
-                            <button onClick={() => setShowPreviewMobile(false)} className="lg:hidden p-3 bg-white/5 rounded-xl border border-white/5"><ArrowLeft size={18} /></button>
+                            <button onClick={() => setShowPreviewMobile(false)} className="lg:hidden p-3 bg-black/5 dark:bg-white/5 rounded-xl border border-black/10 dark:border-white/5"><ArrowLeft size={18} /></button>
                             <button 
                                 onClick={() => setIsExpandedPreview(!isExpandedPreview)} 
-                                className="hidden lg:flex p-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-gray-400 hover:text-white transition-all items-center gap-2 text-[9px] font-black uppercase tracking-wider h-10 px-3"
+                                className="hidden lg:flex p-2 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 border border-black/10 dark:border-white/10 rounded-xl text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all items-center gap-2 text-[9px] font-black uppercase tracking-wider h-10 px-3"
                                 title={isExpandedPreview ? "Exit Fullscreen Preview" : "Fullscreen Preview"}
                             >
                                 {isExpandedPreview ? <Minimize2 size={12} /> : <Maximize2 size={12} />}
@@ -1027,20 +1024,20 @@ const InvoiceGenerator = () => {
                             <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Document Live View</p>
                         </div>
                         <div className="flex items-center gap-4">
-                            <div className="flex items-center bg-black/40 rounded-lg p-1 border border-white/5">
-                                <button onClick={() => setUserZoom(Math.max(0.5, userZoom - 0.1))} className="p-1.5 hover:bg-white/5 rounded text-gray-400 transition-colors"><Minus size={12} /></button>
+                            <div className="flex items-center bg-white dark:bg-black/40 rounded-lg p-1 border border-black/10 dark:border-white/5">
+                                <button onClick={() => setUserZoom(Math.max(0.5, userZoom - 0.1))} className="p-1.5 hover:bg-black/5 dark:hover:bg-white/5 rounded text-gray-600 dark:text-gray-400 transition-colors"><Minus size={12} /></button>
                                 <span className="text-[10px] font-black text-gray-500 px-2 min-w-[40px] text-center">{Math.round(userZoom * 100)}%</span>
-                                <button onClick={() => setUserZoom(Math.min(2, userZoom + 0.1))} className="p-1.5 hover:bg-white/5 rounded text-gray-400 transition-colors"><Plus size={12} /></button>
+                                <button onClick={() => setUserZoom(Math.min(2, userZoom + 0.1))} className="p-1.5 hover:bg-black/5 dark:hover:bg-white/5 rounded text-gray-600 dark:text-gray-400 transition-colors"><Plus size={12} /></button>
                             </div>
                             <div className="flex items-center gap-3">
-                                <button onClick={() => setCurrentPreviewPage(Math.max(0, currentPreviewPage - 1))} disabled={currentPreviewPage === 0} className="p-2.5 bg-white/5 rounded-xl disabled:opacity-20 hover:bg-white/10 transition-all"><ChevronLeft size={16} /></button>
+                                <button onClick={() => setCurrentPreviewPage(Math.max(0, currentPreviewPage - 1))} disabled={currentPreviewPage === 0} className="p-2.5 bg-black/5 dark:bg-white/5 rounded-xl disabled:opacity-20 hover:bg-black/10 dark:hover:bg-white/10 transition-all"><ChevronLeft size={16} /></button>
                                 <span className="text-[10px] font-black text-neon-blue">{currentPreviewPage + 1} / {paginatedPages.length}</span>
-                                <button onClick={() => setCurrentPreviewPage(Math.min(paginatedPages.length - 1, currentPreviewPage + 1))} disabled={currentPreviewPage === paginatedPages.length - 1} className="p-2.5 bg-white/5 rounded-xl disabled:opacity-20 hover:bg-white/10 transition-all"><ChevronRight size={16} /></button>
+                                <button onClick={() => setCurrentPreviewPage(Math.min(paginatedPages.length - 1, currentPreviewPage + 1))} disabled={currentPreviewPage === paginatedPages.length - 1} className="p-2.5 bg-black/5 dark:bg-white/5 rounded-xl disabled:opacity-20 hover:bg-black/10 dark:hover:bg-white/10 transition-all"><ChevronRight size={16} /></button>
                             </div>
                         </div>
                     </div>
 
-                    <div ref={previewContainerRef} className="flex-1 bg-[#050505] flex flex-col items-center justify-start p-0 overflow-y-auto overflow-x-hidden relative scrollbar-hide">
+                    <div ref={previewContainerRef} className="flex-1 bg-gray-200/70 dark:bg-[#050505] flex flex-col items-center justify-start p-0 overflow-y-auto overflow-x-hidden relative scrollbar-hide">
                         <div style={{ 
                             width: `${794 * previewScale}px`,
                             height: `${1123 * previewScale}px`,
@@ -1065,21 +1062,21 @@ const InvoiceGenerator = () => {
                                     className="invoice-page-render w-[794px] h-[1123px] bg-[#F3F4F6] text-black relative flex flex-col p-[12mm] shadow-2xl rounded-[2px] overflow-hidden"
                                     style={{ fontFamily: "'Inter', sans-serif" }}
                                 >
-                                    {/* Header - Page 1 or summary */}
+                                     {/* Header - Page 1 or summary */}
                                     {currentPreviewPage === 0 ? (
                                         <div className="flex justify-between items-start mb-12">
                                             <div>
                                                 <img src={currentLogo.path} alt="Company Logo" className="h-20 object-contain" crossOrigin="anonymous" />
                                             </div>
                                             <div className="text-right">
-                                                <h2 className="text-4xl font-black text-gray-400 tracking-tighter uppercase mb-0">#{formData.invoiceNumber}</h2>
-                                                <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest leading-none mt-1">INVOICE ID</p>
+                                                <h2 className="text-4xl font-black text-gray-900 tracking-tighter uppercase mb-0">#{formData.invoiceNumber}</h2>
+                                                <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest leading-none mt-1">INVOICE ID</p>
                                             </div>
                                         </div>
                                     ) : (
                                         <div className="flex justify-between items-center mb-6 border-b border-gray-300 pb-4">
                                             <img src={currentLogo.path} alt="Logo" className="w-[100px] object-contain opacity-50" crossOrigin="anonymous" />
-                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Invoice #{formData.invoiceNumber} — Page {currentPreviewPage + 1}</p>
+                                            <p className="text-[10px] font-black text-gray-600 uppercase tracking-widest">Invoice #{formData.invoiceNumber} — Page {currentPreviewPage + 1}</p>
                                         </div>
                                     )}
 
@@ -1087,7 +1084,7 @@ const InvoiceGenerator = () => {
                                         {/* Info Boxes - Page 1 */}
                                         {currentPreviewPage === 0 && (
                                             <div className="grid grid-cols-2 gap-8 mb-8">
-                                                <div className="bg-white/50 border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
+                                                <div className="bg-white/80 border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
                                                     <div className="px-6 py-2" style={{ backgroundColor: `${brandColor}66` }}>
                                                         <h4 className="text-[10px] font-black uppercase tracking-widest text-black">INVOICE BY</h4>
                                                     </div>
@@ -1100,7 +1097,7 @@ const InvoiceGenerator = () => {
                                                         </div>
                                                     </div>
                                                 </div>
-                                                <div className="bg-white/50 border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
+                                                <div className="bg-white/80 border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
                                                     <div className="px-6 py-2" style={{ backgroundColor: `${brandColor}66` }}>
                                                         <h4 className="text-[10px] font-black uppercase tracking-widest text-black">INVOICE TO</h4>
                                                     </div>
@@ -1119,7 +1116,7 @@ const InvoiceGenerator = () => {
 
                                         {/* Items Table */}
                                         {paginatedPages[currentPreviewPage]?.length > 0 && (
-                                            <div className={cn("mb-8 overflow-hidden rounded-2xl border border-gray-200 shadow-sm bg-white/20", currentPreviewPage > 0 && "mt-4")}>
+                                            <div className={cn("mb-8 overflow-hidden rounded-2xl border border-gray-300 shadow-sm bg-white", currentPreviewPage > 0 && "mt-4")}>
                                             <table className="w-full">
                                                 <thead>
                                                     <tr className="text-black" style={{ backgroundColor: `${brandColor}66` }}>
@@ -1134,14 +1131,14 @@ const InvoiceGenerator = () => {
                                                 </thead>
                                                 <tbody className="divide-y divide-gray-200">
                                                     {paginatedPages[currentPreviewPage]?.map((item, idx) => (
-                                                        <tr key={idx} className="bg-white/10">
-                                                            <td className="py-3 px-6 text-[11px] font-bold uppercase border-r border-dashed border-gray-200 leading-relaxed italic">{item.description || "SERVICE"}</td>
+                                                        <tr key={idx} className="hover:bg-gray-50/50">
+                                                            <td className="py-3 px-6 text-[11px] font-bold uppercase border-r border-dashed border-gray-200 leading-relaxed italic text-gray-900">{item.description || "SERVICE"}</td>
                                                             {customColumns.map(col => (
                                                                 <td key={col.id} className="py-3 px-4 text-center text-[10px] font-semibold border-r border-dashed border-gray-200 leading-relaxed italic text-gray-500">{item.customValues?.[col.id] || "-"}</td>
                                                             ))}
-                                                            <td className="py-3 px-4 text-center text-[11px] font-black border-r border-dashed border-gray-200 leading-relaxed">{item.qty || 1}</td>
-                                                            <td className="py-3 px-4 text-center text-[11px] font-black border-r border-dashed border-gray-200 leading-relaxed">₹{(item.price || 0).toLocaleString()}</td>
-                                                            <td className="py-3 px-6 text-right text-[11px] font-black leading-relaxed">₹{( (item.qty || 1) * (item.price || 0) ).toLocaleString()}</td>
+                                                            <td className="py-3 px-4 text-center text-[11px] font-black border-r border-dashed border-gray-200 leading-relaxed text-gray-900">{item.qty || 1}</td>
+                                                            <td className="py-3 px-4 text-center text-[11px] font-black border-r border-dashed border-gray-200 leading-relaxed text-gray-900">₹{(item.price || 0).toLocaleString()}</td>
+                                                            <td className="py-3 px-6 text-right text-[11px] font-black leading-relaxed text-gray-900">₹{( (item.qty || 1) * (item.price || 0) ).toLocaleString()}</td>
                                                         </tr>
                                                     ))}
                                                     {/* Items will naturally flow */}
@@ -1157,7 +1154,7 @@ const InvoiceGenerator = () => {
                                                 <div className="flex-1 space-y-2">
                                                     {/* Payment Details */}
                                                     {formData.showPaymentDetails && formData.paymentDetails && (
-                                                        <div className="p-4 border-2 border-dashed border-gray-300 rounded-2xl text-[10px] text-left leading-relaxed text-gray-600 bg-white/40 shadow-sm w-full">
+                                                        <div className="p-4 border-2 border-dashed border-gray-300 rounded-2xl text-[10px] text-left leading-relaxed text-gray-600 bg-white/60 shadow-sm w-full">
                                                             <p className="text-[10px] font-black text-black mb-3 border-b-2 pb-1.5 inline-block uppercase tracking-widest" style={{ borderColor: brandColor }}>PAYMENT DETAILS</p>
                                                             <div className="font-mono">
                                                                 {renderContent(formData.paymentDetails)}
@@ -1166,7 +1163,7 @@ const InvoiceGenerator = () => {
                                                     )}
                                                     {/* Additional Notes */}
                                                     {formData.showNotes && (
-                                                        <div className="bg-white/40 border border-black/5 rounded-2xl overflow-hidden shadow-sm">
+                                                        <div className="bg-white/60 border border-black/5 rounded-2xl overflow-hidden shadow-sm">
                                                             <div className="px-4 py-1.5 border-b border-black/10" style={{ backgroundColor: `${brandColor}66` }}>
                                                                 <h4 className="text-[10px] font-black uppercase tracking-widest text-black">ADDITIONAL NOTE</h4>
                                                             </div>
@@ -1183,12 +1180,12 @@ const InvoiceGenerator = () => {
                                                 <div className="flex-1 flex flex-col items-end space-y-1">
                                                     {/* Totals Section */}
                                                     <div className="w-full space-y-1.5">
-                                                        <div className="flex justify-between py-2 border-b border-dashed border-gray-300 text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                                                        <div className="flex justify-between py-2 border-b border-dashed border-gray-300 text-[10px] font-black text-gray-600 uppercase tracking-widest">
                                                             <span>SUBTOTAL</span>
                                                             <span className="text-black text-[11px] font-bold italic">₹{subtotal.toLocaleString()}</span>
                                                         </div>
                                                         {formData.showGst && (
-                                                            <div className="flex justify-between py-2 border-b border-dashed border-gray-300 text-[10px] font-black text-gray-400 uppercase tracking-widest text-black">
+                                                            <div className="flex justify-between py-2 border-b border-dashed border-gray-300 text-[10px] font-black text-gray-600 uppercase tracking-widest text-black">
                                                                 <span>GST ({formData.gstPercentage}%)</span>
                                                                 <span className="text-black text-[11px] font-bold italic">₹{gstAmount.toLocaleString()}</span>
                                                             </div>
@@ -1199,7 +1196,7 @@ const InvoiceGenerator = () => {
                                                         </div>
                                                         {formData.showAdvance && formData.advancePaid > 0 && (
                                                             <>
-                                                                <div className="flex justify-between py-2 border-b border-dashed border-gray-300 text-[10px] font-black text-gray-400 uppercase tracking-widest mt-1">
+                                                                <div className="flex justify-between py-2 border-b border-dashed border-gray-300 text-[10px] font-black text-gray-600 uppercase tracking-widest mt-1">
                                                                     <span>ADVANCE PAID</span>
                                                                     <span className="text-black text-[11px] font-bold italic">₹{formData.advancePaid.toLocaleString()}</span>
                                                                 </div>
@@ -1229,7 +1226,7 @@ const InvoiceGenerator = () => {
                                                                     className="w-[70px] h-[70px] grayscale contrast-125 mx-auto"
                                                                     crossOrigin="anonymous"
                                                                 />
-                                                                <p className="text-[6px] font-black text-center mt-1 text-gray-400 tracking-widest uppercase italic font-bold">Scan to pay</p>
+                                                                <p className="text-[6px] font-black text-center mt-1 text-gray-600 tracking-widest uppercase italic font-bold">Scan to pay</p>
                                                             </div>
                                                             <a 
                                                                 href={`upi://pay?pa=${formData.upiId}&pn=NEWBI&am=${balanceDue}&cu=INR`} 
@@ -1246,7 +1243,7 @@ const InvoiceGenerator = () => {
                                                         <div className="w-full flex justify-start mt-12 pt-12 border-t-2 border-gray-100 relative">
                                                             {/* Provider Signature */}
                                                             <div className="space-y-6">
-                                                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">For Newbi Entertainment</p>
+                                                                <p className="text-[10px] font-black text-gray-600 uppercase tracking-widest">For Newbi Entertainment</p>
                                                                 <div className="h-32 flex items-center justify-start relative">
                                                                     {formData.showSignatures && formData.providerSignature ? (
                                                                         <img src={formData.providerSignature} alt="Provider Signature" className="h-full object-contain grayscale mix-blend-multiply" crossOrigin="anonymous" />
@@ -1305,14 +1302,14 @@ const InvoiceGenerator = () => {
                                     <img src={currentLogo.path} alt="Company Logo" className="h-20 object-contain" crossOrigin="anonymous" />
                                 </div>
                                 <div className="text-right">
-                                    <h2 className="text-4xl font-black text-gray-400 tracking-tighter uppercase mb-0">#{formData.invoiceNumber}</h2>
-                                    <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest leading-none mt-1">INVOICE ID</p>
+                                    <h2 className="text-4xl font-black text-gray-600 tracking-tighter uppercase mb-0">#{formData.invoiceNumber}</h2>
+                                    <p className="text-[9px] font-black text-gray-600 uppercase tracking-widest leading-none mt-1">INVOICE ID</p>
                                 </div>
                             </div>
                         ) : (
                             <div className="flex justify-between items-center mb-6 border-b border-gray-300 pb-4">
                                 <img src={currentLogo.path} alt="Logo" className="w-[100px] object-contain opacity-50" crossOrigin="anonymous" />
-                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Invoice #{formData.invoiceNumber} — Page {pageIdx + 1}</p>
+                                <p className="text-[10px] font-black text-gray-600 uppercase tracking-widest">Invoice #{formData.invoiceNumber} — Page {pageIdx + 1}</p>
                             </div>
                         )}
 
@@ -1361,7 +1358,7 @@ const InvoiceGenerator = () => {
                                     </thead>
                                     <tbody className="divide-y divide-black/5">
                                         {pageItems.map((item, idx) => (
-                                            <tr key={idx} className="group transition-colors hover:bg-black/[0.02]">
+                                            <tr key={idx} className="group transition-colors hover:bg-white/60">
                                                 <td className="px-6 py-4 text-[11px] font-bold uppercase leading-relaxed italic">{item.description || "SERVICE"}</td>
                                                 <td className="px-4 py-4 text-center text-[11px] font-black">{item.qty || 1}</td>
                                                 <td className="px-4 py-4 text-right text-[11px] font-black italic">₹{(item.price || 0).toLocaleString()}</td>
@@ -1391,16 +1388,16 @@ const InvoiceGenerator = () => {
                                         )}
                                     </div>
                                     <div className="space-y-3">
-                                        <div className="flex justify-between py-2 border-b border-dashed border-gray-300 text-[10px] font-black text-gray-400 uppercase tracking-widest"><span>SUBTOTAL</span><span className="text-black text-xs font-bold italic">₹{subtotal.toLocaleString()}</span></div>
+                                        <div className="flex justify-between py-2 border-b border-dashed border-gray-300 text-[10px] font-black text-gray-600 uppercase tracking-widest"><span>SUBTOTAL</span><span className="text-black text-xs font-bold italic">₹{subtotal.toLocaleString()}</span></div>
                                         {formData.showGst && (
-                                            <div className="flex justify-between py-2 border-b border-dashed border-gray-300 text-[10px] font-black text-gray-400 uppercase tracking-widest"><span>GST ({formData.gstPercentage}%)</span><span className="text-black text-xs font-bold italic">₹{gstAmount.toLocaleString()}</span></div>
+                                            <div className="flex justify-between py-2 border-b border-dashed border-gray-300 text-[10px] font-black text-gray-600 uppercase tracking-widest"><span>GST ({formData.gstPercentage}%)</span><span className="text-black text-xs font-bold italic">₹{gstAmount.toLocaleString()}</span></div>
                                         )}
                                         <div className="flex justify-between items-center py-3 px-4 text-black border border-black/5 mt-2 rounded-xl" style={{ backgroundColor: `${brandColor}66` }}>
                                             <span className="text-[10px] font-black uppercase tracking-[0.2em]">TOTAL AMOUNT</span>
                                             <span className="text-2xl font-black italic tracking-tighter">₹{totalAmount.toLocaleString()}</span>
                                         </div>
                                         {formData.advancePaid > 0 && (
-                                            <div className="flex justify-between py-2 border-b border-dashed border-gray-300 text-[10px] font-black text-gray-400 uppercase tracking-widest"><span>ADVANCE PAID</span><span className="text-black text-xs font-bold italic">₹{formData.advancePaid.toLocaleString()}</span></div>
+                                            <div className="flex justify-between py-2 border-b border-dashed border-gray-300 text-[10px] font-black text-gray-600 uppercase tracking-widest"><span>ADVANCE PAID</span><span className="text-black text-xs font-bold italic">₹{formData.advancePaid.toLocaleString()}</span></div>
                                         )}
                                         <div className="flex justify-between items-center py-4 px-6 text-black border border-black/5 mt-2 rounded-2xl shadow-xl" style={{ backgroundColor: `${brandColor}66` }}>
                                             <span className="text-xs font-black uppercase tracking-[0.2em]">BALANCE DUE</span>
@@ -1417,7 +1414,7 @@ const InvoiceGenerator = () => {
                                                         crossOrigin="anonymous"
                                                     />
                                                 </div>
-                                                <p className="text-[7px] font-black text-gray-400 mt-2 uppercase tracking-widest italic">Scan to pay</p>
+                                                <p className="text-[7px] font-black text-gray-600 mt-2 uppercase tracking-widest italic">Scan to pay</p>
                                             </div>
                                             {formData.showSignatures && (
                                                 <div className="flex-1 flex flex-col items-center">

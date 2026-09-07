@@ -378,7 +378,7 @@ const AuthOverlay = () => {
 
     return (
         <AnimatePresence>
-            <div className="fixed inset-0 z-[100] flex items-end md:items-center justify-center bg-black/60 md:bg-black/80 backdrop-blur-md sm:p-4">
+            <div className="fixed inset-0 z-[100] flex items-end md:items-center justify-center bg-white dark:bg-black/60 md:bg-white dark:md:bg-black/80 backdrop-blur-md sm:p-4">
                 {/* Backdrop */}
                 <motion.div
                     initial={{ opacity: 0 }}
@@ -394,29 +394,29 @@ const AuthOverlay = () => {
                     animate={{ y: 0, opacity: 1 }}
                     exit={{ y: '100%', opacity: 0 }}
                     transition={{ type: "spring", damping: 25, stiffness: 200 }}
-                    className="relative w-full max-w-4xl z-10 bg-zinc-950 md:bg-zinc-900 rounded-t-[2rem] md:rounded-3xl border-t md:border border-white/10 shadow-2xl overflow-hidden flex flex-col md:flex-row max-h-[90vh] md:max-h-[85vh]"
+                    className="relative w-full max-w-4xl z-10 bg-gray-100 dark:bg-zinc-950 md:bg-gray-100 dark:md:bg-zinc-900 rounded-t-[2rem] md:rounded-3xl border-t md:border border-black/10 dark:border-white/10 shadow-2xl overflow-hidden flex flex-col md:flex-row max-h-[90vh] md:max-h-[85vh]"
                 >
                     {/* Mobile Drag Handle */}
                     <div className="w-full flex justify-center pt-4 pb-2 md:hidden">
-                        <div className="w-12 h-1.5 bg-white/20 rounded-full" />
+                        <div className="w-12 h-1.5 bg-black/20 dark:bg-white/20 rounded-full" />
                     </div>
 
                     <button
                         onClick={onClose}
-                        className="absolute top-4 md:top-6 right-4 md:right-6 p-2 bg-black/50 hover:bg-white/10 rounded-full text-gray-400 hover:text-white transition-all z-20"
+                        className="absolute top-4 md:top-6 right-4 md:right-6 p-2 bg-white dark:bg-black/50 hover:bg-black/10 dark:hover:bg-white/10 rounded-full text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all z-20"
                     >
                         <X size={20} />
                     </button>
 
                     {/* Left Branding Column (Desktop Only) */}
-                    <div className="hidden md:flex flex-col justify-between w-1/2 p-12 relative overflow-hidden bg-gradient-to-br from-zinc-950 via-zinc-900 to-zinc-950 border-r border-white/5">
+                    <div className="hidden md:flex flex-col justify-between w-1/2 p-12 relative overflow-hidden bg-gradient-to-br from-zinc-950 via-zinc-900 to-zinc-950 border-r border-black/10 dark:border-white/5">
                         {/* Abstract Background Elements */}
                         <div className="absolute -top-24 -left-24 w-64 h-64 bg-neon-blue/20 rounded-full blur-[80px]" />
                         <div className="absolute -bottom-24 -right-24 w-64 h-64 bg-neon-pink/20 rounded-full blur-[80px]" />
                         
                         <div className="relative z-10">
-                            <h2 className="text-3xl lg:text-4xl font-black font-heading italic tracking-tighter text-white mb-2">NEWBI ENT.</h2>
-                            <p className="text-gray-400 font-medium tracking-widest text-xs uppercase">The Pulse of Youth</p>
+                            <h2 className="text-3xl lg:text-4xl font-black font-heading italic tracking-tighter text-gray-900 dark:text-white mb-2">NEWBI ENT.</h2>
+                            <p className="text-gray-600 dark:text-gray-400 font-medium tracking-widest text-xs uppercase">The Pulse of Youth</p>
                         </div>
 
                         <div className="relative z-10 mt-auto">
@@ -424,23 +424,23 @@ const AuthOverlay = () => {
                                 key={mode}
                                 initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}
-                                className="text-4xl lg:text-5xl font-black text-white leading-tight mb-4"
+                                className="text-4xl lg:text-5xl font-black text-gray-900 dark:text-white leading-tight mb-4"
                             >
                                 {mode === 'signIn' ? 'Welcome\nBack.' : mode === 'signUp' ? 'Join the\nTribe.' : mode === 'forgot' ? 'Reset\nPassword.' : 'Secure\nAccess.'}
                             </motion.h3>
-                            <p className="text-gray-400 text-sm leading-relaxed max-w-sm">
+                            <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed max-w-sm">
                                 {mode === 'signIn' ? 'Experience premium events, creator campaigns, and community perks all in one place.' : mode === 'signUp' ? 'Create an account to discover exclusive opportunities and manage your collaborations.' : 'Enter your details to securely verify your identity and manage your account.'}
                             </p>
                         </div>
                     </div>
 
                     {/* Right Form Column */}
-                    <div className="w-full md:w-1/2 bg-zinc-950 p-6 md:p-12 overflow-y-auto mobile-scrollbar-hide relative flex flex-col pb-[env(safe-area-inset-bottom)]">
+                    <div className="w-full md:w-1/2 bg-gray-100 dark:bg-zinc-950 p-6 md:p-12 overflow-y-auto mobile-scrollbar-hide relative flex flex-col pb-[env(safe-area-inset-bottom)]">
                         <div className="md:hidden text-center mb-8">
                             <h2 className="text-3xl font-black font-heading text-transparent bg-clip-text bg-gradient-to-r from-neon-pink to-neon-blue">
                                 {mode === 'signIn' ? 'Welcome Back' : mode === 'signUp' ? 'Join the Tribe' : mode === 'forgot' ? 'Reset Password' : 'Phone Sign In'}
                             </h2>
-                            <p className="text-gray-400 mt-2 text-xs">
+                            <p className="text-gray-600 dark:text-gray-400 mt-2 text-xs">
                                 {mode === 'signIn' ? 'Sign in to access exclusive perks' : mode === 'signUp' ? 'Create an account to join the community' : mode === 'forgot' ? 'Enter your email to reset' : 'Sign in using your mobile number'}
                             </p>
                         </div>
@@ -455,8 +455,8 @@ const AuthOverlay = () => {
                             {resetSent ? (
                                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center gap-4 py-6 text-center">
                                     <CheckCircle2 size={48} className="text-neon-green" />
-                                    <p className="text-base font-bold text-white">Reset link sent!</p>
-                                    <p className="text-xs text-gray-400">Check your inbox at <span className="text-neon-blue">{formData.email}</span></p>
+                                    <p className="text-base font-bold text-gray-900 dark:text-white">Reset link sent!</p>
+                                    <p className="text-xs text-gray-600 dark:text-gray-400">Check your inbox at <span className="text-neon-blue">{formData.email}</span></p>
                                     <button onClick={() => { setMode('signIn'); setResetSent(false); }} className="text-xs text-neon-pink hover:underline mt-4 tracking-widest uppercase font-bold">Back to Sign In</button>
                                 </motion.div>
                             ) : mode === 'phone' ? (
@@ -469,19 +469,19 @@ const AuthOverlay = () => {
                                                     <select 
                                                         value={countryCode} 
                                                         onChange={(e) => setCountryCode(e.target.value)}
-                                                        className="w-24 h-14 bg-zinc-900 border border-white/5 rounded-xl text-white text-sm px-2 focus:border-neon-blue focus:ring-1 focus:ring-neon-blue transition-all outline-none"
+                                                        className="w-24 h-14 bg-gray-100 dark:bg-zinc-900 border border-black/10 dark:border-white/5 rounded-xl text-gray-900 dark:text-white text-sm px-2 focus:border-neon-blue focus:ring-1 focus:ring-neon-blue transition-all outline-none"
                                                     >
-                                                        <option value="+91" className="bg-zinc-900">🇮🇳 +91</option>
-                                                        <option value="+1" className="bg-zinc-900">🇺🇸 +1</option>
-                                                        <option value="+44" className="bg-zinc-900">🇬🇧 +44</option>
-                                                        <option value="+971" className="bg-zinc-900">🇦🇪 +971</option>
+                                                        <option value="+91" className="bg-gray-100 dark:bg-zinc-900">🇮🇳 +91</option>
+                                                        <option value="+1" className="bg-gray-100 dark:bg-zinc-900">🇺🇸 +1</option>
+                                                        <option value="+44" className="bg-gray-100 dark:bg-zinc-900">🇬🇧 +44</option>
+                                                        <option value="+971" className="bg-gray-100 dark:bg-zinc-900">🇦🇪 +971</option>
                                                     </select>
                                                     <div className="relative flex-1 group">
-                                                        <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-neon-blue transition-colors" size={18} />
+                                                        <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-blue-600 dark:group-focus-within:text-neon-blue transition-colors" size={18} />
                                                         <Input
                                                             type="tel"
                                                             placeholder="99999 99999"
-                                                            className="pl-12 h-14 bg-zinc-900 border-white/5 focus:border-neon-blue transition-all"
+                                                            className="pl-12 h-14 bg-gray-100 dark:bg-zinc-900 border-black/10 dark:border-white/5 focus:border-neon-blue transition-all"
                                                             value={phone}
                                                             onChange={(e) => setPhone(e.target.value)}
                                                             required
@@ -498,7 +498,7 @@ const AuthOverlay = () => {
                                             <div className="space-y-3">
                                                 <div className="flex justify-between items-center ml-1">
                                                     <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">6-Digit Code</label>
-                                                    <span className="text-[10px] font-medium text-gray-400">
+                                                    <span className="text-[10px] font-medium text-gray-600 dark:text-gray-400">
                                                         Sent to {countryCode} {phone ? `******${phone.slice(-4)}` : ''}
                                                     </span>
                                                 </div>
@@ -533,7 +533,7 @@ const AuthOverlay = () => {
                                                                 visible: { opacity: 1, scale: 1, y: 0 }
                                                             }}
                                                             whileFocus={{ scale: 1.05 }}
-                                                            className="w-12 h-16 sm:w-14 sm:h-20 bg-zinc-900/60 backdrop-blur-md border border-white/10 rounded-2xl text-center text-2xl font-black text-white focus:border-neon-pink focus:shadow-[0_0_20px_rgba(244,63,94,0.3)] transition-all outline-none"
+                                                            className="w-12 h-16 sm:w-14 sm:h-20 bg-gray-100 dark:bg-zinc-900/60 backdrop-blur-md border border-black/10 dark:border-white/10 rounded-2xl text-center text-2xl font-black text-gray-900 dark:text-white focus:border-neon-pink focus:shadow-[0_0_20px_rgba(244,63,94,0.3)] transition-all outline-none"
                                                         />
                                                     ))}
                                                 </motion.div>
@@ -556,7 +556,7 @@ const AuthOverlay = () => {
                                                     <button 
                                                         type="button"
                                                         onClick={handleSendOTP}
-                                                        className="text-xs font-black text-neon-blue hover:text-white uppercase tracking-widest transition-colors"
+                                                        className="text-xs font-black text-neon-blue hover:text-gray-900 dark:hover:text-white uppercase tracking-widest transition-colors"
                                                     >
                                                         Resend Verification Code
                                                     </button>
@@ -565,7 +565,7 @@ const AuthOverlay = () => {
                                                 <button 
                                                     type="button" 
                                                     onClick={() => { setStep('input'); setOtpValues(['', '', '', '', '', '']); }}
-                                                    className="text-xs text-gray-500 hover:text-white transition-colors"
+                                                    className="text-xs text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors"
                                                 >
                                                     Change Phone Number
                                                 </button>
@@ -574,7 +574,7 @@ const AuthOverlay = () => {
                                     )}
                                     <button 
                                         onClick={() => setMode('signIn')}
-                                        className="w-full text-[10px] font-black text-neon-blue hover:text-white uppercase tracking-widest transition-colors py-2"
+                                        className="w-full text-[10px] font-black text-neon-blue hover:text-gray-900 dark:hover:text-white uppercase tracking-widest transition-colors py-2"
                                     >
                                         BACK TO EMAIL LOGIN
                                     </button>
@@ -584,10 +584,10 @@ const AuthOverlay = () => {
                                     <div className="space-y-2">
                                         <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Full Name</label>
                                         <div className="relative group">
-                                            <User className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-neon-blue transition-colors" size={18} />
+                                            <User className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-blue-600 dark:group-focus-within:text-neon-blue transition-colors" size={18} />
                                             <Input
                                                 placeholder="Enter your name"
-                                                className="pl-12 h-14 bg-zinc-900 border-white/5 focus:border-neon-blue transition-all"
+                                                className="pl-12 h-14 bg-gray-100 dark:bg-zinc-900 border-black/10 dark:border-white/5 focus:border-neon-blue transition-all"
                                                 value={formData.name}
                                                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                                                 required
@@ -597,11 +597,11 @@ const AuthOverlay = () => {
                                     <div className="space-y-2">
                                         <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Email Address</label>
                                         <div className="relative group">
-                                            <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-neon-blue transition-colors" size={18} />
+                                            <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-blue-600 dark:group-focus-within:text-neon-blue transition-colors" size={18} />
                                             <Input
                                                 type="email"
                                                 placeholder="email@example.com"
-                                                className="pl-12 h-14 bg-zinc-900 border-white/5 focus:border-neon-blue transition-all"
+                                                className="pl-12 h-14 bg-gray-100 dark:bg-zinc-900 border-black/10 dark:border-white/5 focus:border-neon-blue transition-all"
                                                 value={formData.email}
                                                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                                                 required
@@ -618,10 +618,10 @@ const AuthOverlay = () => {
                                     <div className="space-y-2">
                                         <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Full Name</label>
                                         <div className="relative group">
-                                            <User className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-neon-pink transition-colors" size={18} />
+                                            <User className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-pink-600 dark:group-focus-within:text-neon-pink transition-colors" size={18} />
                                             <Input
                                                 placeholder="John Doe"
-                                                className="pl-12 h-14 bg-zinc-900 border-white/5 focus:border-neon-pink transition-all"
+                                                className="pl-12 h-14 bg-gray-100 dark:bg-zinc-900 border-black/10 dark:border-white/5 focus:border-neon-pink transition-all"
                                                 value={formData.name}
                                                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                                                 required
@@ -633,11 +633,11 @@ const AuthOverlay = () => {
                                 <div className="space-y-2">
                                     <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Email Address</label>
                                     <div className="relative group">
-                                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-neon-blue transition-colors" size={18} />
+                                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-blue-600 dark:group-focus-within:text-neon-blue transition-colors" size={18} />
                                         <Input
                                             type="email"
                                             placeholder="you@example.com"
-                                            className="pl-12 h-14 bg-zinc-900 border-white/5 focus:border-neon-blue transition-all"
+                                            className="pl-12 h-14 bg-gray-100 dark:bg-zinc-900 border-black/10 dark:border-white/5 focus:border-neon-blue transition-all"
                                             value={formData.email}
                                             onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                                             required
@@ -649,11 +649,11 @@ const AuthOverlay = () => {
                                     <div className="space-y-2">
                                         <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Password</label>
                                         <div className="relative group">
-                                            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-neon-blue transition-colors" size={18} />
+                                            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-blue-600 dark:group-focus-within:text-neon-blue transition-colors" size={18} />
                                             <Input
                                                 type="password"
                                                 placeholder="••••••••"
-                                                className="pl-12 h-14 bg-zinc-900 border-white/5 focus:border-neon-blue transition-all"
+                                                className="pl-12 h-14 bg-gray-100 dark:bg-zinc-900 border-black/10 dark:border-white/5 focus:border-neon-blue transition-all"
                                                 value={formData.password}
                                                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                                                 required
@@ -667,7 +667,7 @@ const AuthOverlay = () => {
                                         <button
                                             type="button"
                                             onClick={() => setMode('forgot')}
-                                            className="text-[10px] font-bold tracking-wider text-neon-blue hover:text-white transition-colors py-1"
+                                            className="text-[10px] font-bold tracking-wider text-neon-blue hover:text-gray-900 dark:hover:text-white transition-colors py-1"
                                         >
                                             FORGOT PASSWORD?
                                         </button>
@@ -676,7 +676,7 @@ const AuthOverlay = () => {
 
                                 <Button
                                     type="submit"
-                                    className={`w-full h-14 rounded-xl text-sm tracking-widest uppercase font-bold shadow-2xl ${mode === 'signUp' ? 'bg-neon-pink hover:bg-pink-600 text-white shadow-[0_0_20px_rgba(255,79,139,0.3)]' : 'bg-white text-black hover:bg-gray-200 shadow-[0_0_20px_rgba(255,255,255,0.1)]'}`}
+                                    className={`w-full h-14 rounded-xl text-sm tracking-widest uppercase font-bold shadow-2xl ${mode === 'signUp' ? 'bg-neon-pink hover:bg-pink-600 text-gray-900 dark:text-white shadow-[0_0_20px_rgba(255,79,139,0.3)]' : 'bg-white text-black hover:bg-gray-200 shadow-[0_0_20px_rgba(255,255,255,0.1)]'}`}
                                     disabled={loading}
                                 >
                                     {loading ? <LoadingSpinner size="xs" color={mode === 'signUp' ? '#FFFFFF' : '#000000'} /> : mode === 'signIn' ? 'Sign In' : mode === 'signUp' ? 'Create Account' : 'Send Reset Link'}
@@ -685,15 +685,15 @@ const AuthOverlay = () => {
                             )}
 
                             <div className="relative my-8">
-                                <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-white/5"></div></div>
-                                <div className="relative flex justify-center text-[10px] font-bold tracking-widest uppercase"><span className="bg-zinc-950 px-4 text-gray-500">Or continue with</span></div>
+                                <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-black/10 dark:border-white/5"></div></div>
+                                <div className="relative flex justify-center text-[10px] font-bold tracking-widest uppercase"><span className="bg-gray-100 dark:bg-zinc-950 px-4 text-gray-500">Or continue with</span></div>
                             </div>
 
                             <div className="space-y-3">
                                 <button
                                     type="button"
                                     onClick={handleGoogleLogin}
-                                    className="w-full h-14 bg-zinc-900 hover:bg-zinc-800 text-white border border-white/5 hover:border-white/20 rounded-xl flex items-center justify-center gap-3 transition-all font-medium group"
+                                    className="w-full h-14 bg-gray-100 dark:bg-zinc-900 hover:bg-zinc-800 text-gray-900 dark:text-white border border-black/10 dark:border-white/5 hover:border-black/20 dark:hover:border-white/20 rounded-xl flex items-center justify-center gap-3 transition-all font-medium group"
                                     disabled={loading}
                                 >
                                     <svg className="w-5 h-5 group-hover:scale-110 transition-transform" viewBox="0 0 24 24">
@@ -721,22 +721,22 @@ const AuthOverlay = () => {
                                     <button
                                         type="button"
                                         onClick={() => setMode('phone')}
-                                        className="w-full h-14 bg-zinc-900 hover:bg-zinc-800 text-white border border-white/5 hover:border-white/20 rounded-xl flex items-center justify-center gap-3 transition-all font-medium group"
+                                        className="w-full h-14 bg-gray-100 dark:bg-zinc-900 hover:bg-zinc-800 text-gray-900 dark:text-white border border-black/10 dark:border-white/5 hover:border-black/20 dark:hover:border-white/20 rounded-xl flex items-center justify-center gap-3 transition-all font-medium group"
                                         disabled={loading}
                                     >
-                                        <Phone size={18} className="text-gray-400 group-hover:text-neon-blue group-hover:scale-110 transition-all" />
+                                        <Phone size={18} className="text-gray-600 dark:text-gray-400 group-hover:text-neon-blue group-hover:scale-110 transition-all" />
                                         <span className="text-sm tracking-wide">Phone OTP</span>
                                     </button>
                                 )}
                             </div>
 
-                            <div className="mt-8 pt-4 text-center text-xs font-medium text-gray-500 border-t border-white/5">
+                            <div className="mt-8 pt-4 text-center text-xs font-medium text-gray-500 border-t border-black/10 dark:border-white/5">
                                 {mode === 'signIn' ? (
-                                    <>Don't have an account? <button onClick={() => setMode('signUp')} className="text-neon-pink hover:text-white transition-colors ml-1 font-bold tracking-widest uppercase">Sign Up</button></>
+                                    <>Don't have an account? <button onClick={() => setMode('signUp')} className="text-neon-pink hover:text-gray-900 dark:hover:text-white transition-colors ml-1 font-bold tracking-widest uppercase">Sign Up</button></>
                                 ) : mode === 'signUp' ? (
-                                    <>Already have an account? <button onClick={() => setMode('signIn')} className="text-neon-blue hover:text-white transition-colors ml-1 font-bold tracking-widest uppercase">Sign In</button></>
+                                    <>Already have an account? <button onClick={() => setMode('signIn')} className="text-neon-blue hover:text-gray-900 dark:hover:text-white transition-colors ml-1 font-bold tracking-widest uppercase">Sign In</button></>
                                 ) : (
-                                    <button onClick={() => setMode('signIn')} className="text-gray-400 hover:text-white transition-colors font-bold tracking-widest uppercase">Back to Sign In</button>
+                                    <button onClick={() => setMode('signIn')} className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors font-bold tracking-widest uppercase">Back to Sign In</button>
                                 )}
                             </div>
                         </div>

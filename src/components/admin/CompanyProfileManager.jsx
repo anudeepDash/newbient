@@ -47,16 +47,16 @@ const CompanyProfileManager = ({ onInsert }) => {
 
     return (
         <>
-            <div className="flex items-center gap-2 mb-4 p-3 bg-white/5 border border-white/10 rounded-xl w-full">
+            <div className="flex items-center gap-2 mb-4 p-3 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-xl w-full">
                 <Building2 size={16} className="text-neon-blue shrink-0" />
                 <div className="flex-1 min-w-0">
-                    <p className="text-[10px] font-black text-white uppercase tracking-widest">Company Profile</p>
+                    <p className="text-[10px] font-black text-gray-900 dark:text-white uppercase tracking-widest">Company Profile</p>
                     <p className="text-[8px] font-medium text-gray-500 uppercase tracking-widest truncate">Global Template</p>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                     <button
                         onClick={handleOpenEdit}
-                        className="p-2 hover:bg-white/10 text-gray-400 hover:text-white rounded-lg transition-colors"
+                        className="p-2 hover:bg-black/10 dark:hover:bg-white/10 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white rounded-lg transition-colors"
                         title="Edit Company Profile Template"
                     >
                         <Settings2 size={14} />
@@ -83,27 +83,27 @@ const CompanyProfileManager = ({ onInsert }) => {
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
                             onClick={() => !isSaving && setIsEditing(false)}
-                            className="absolute inset-0 bg-black/90 backdrop-blur-sm" 
+                            className="absolute inset-0 bg-white dark:bg-black/90 backdrop-blur-sm" 
                         />
                         <motion.div
                             initial={{ scale: 0.95, y: 20 }}
                             animate={{ scale: 1, y: 0 }}
                             exit={{ scale: 0.95, y: 20 }}
-                            className="w-full max-w-4xl bg-zinc-950 border border-white/10 rounded-2xl shadow-2xl relative z-10 flex flex-col max-h-[90vh]"
+                            className="w-full max-w-4xl bg-gray-100 dark:bg-zinc-950 border border-black/10 dark:border-white/10 rounded-2xl shadow-2xl relative z-10 flex flex-col max-h-[90vh]"
                         >
-                            <div className="flex items-center justify-between p-6 border-b border-white/5 shrink-0">
+                            <div className="flex items-center justify-between p-6 border-b border-black/10 dark:border-white/5 shrink-0">
                                 <div className="flex items-center gap-3">
                                     <div className="p-2 bg-neon-blue/10 border border-neon-blue/20 rounded-xl text-neon-blue">
                                         <Building2 size={20} />
                                     </div>
                                     <div>
-                                        <h3 className="text-sm font-black text-white uppercase tracking-widest">Edit Company Profile</h3>
+                                        <h3 className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-widest">Edit Company Profile</h3>
                                         <p className="text-[10px] text-gray-500 uppercase tracking-widest">Update the global company profile template</p>
                                     </div>
                                 </div>
                                 <button
                                     onClick={() => !isSaving && setIsEditing(false)}
-                                    className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition-colors"
+                                    className="w-10 h-10 flex items-center justify-center rounded-xl bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
                                 >
                                     <X size={16} />
                                 </button>
@@ -119,10 +119,10 @@ const CompanyProfileManager = ({ onInsert }) => {
                                 />
                             </div>
 
-                            <div className="p-6 border-t border-white/5 shrink-0 flex justify-end gap-3">
+                            <div className="p-6 border-t border-black/10 dark:border-white/5 shrink-0 flex justify-end gap-3">
                                 <Button
                                     onClick={() => !isSaving && setIsEditing(false)}
-                                    className="bg-transparent border border-white/10 text-white font-black text-[10px] uppercase tracking-widest hover:bg-white/5"
+                                    className="bg-transparent border border-black/10 dark:border-white/10 text-gray-900 dark:text-white font-black text-[10px] uppercase tracking-widest hover:bg-black/5 dark:hover:bg-white/5"
                                 >
                                     Cancel
                                 </Button>

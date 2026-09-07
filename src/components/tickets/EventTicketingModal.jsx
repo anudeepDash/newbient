@@ -796,18 +796,18 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
                 animate={window.innerWidth < 768 ? { y: 0 } : { opacity: 1, scale: 1, y: 0 }}
                 exit={isEmbedded ? {} : (window.innerWidth < 768 ? { y: "100%" } : { opacity: 0, scale: 0.95, y: 20 })}
                 className={cn(
-                    "relative w-full bg-zinc-950 border border-white/10 shadow-[0_50px_100px_rgba(0,0,0,0.8)] overflow-hidden flex flex-col md:flex-row",
+                    "relative w-full bg-gray-100 dark:bg-zinc-950 border border-black/10 dark:border-white/10 shadow-[0_50px_100px_rgba(0,0,0,0.8)] overflow-hidden flex flex-col md:flex-row",
                     isEmbedded ? "h-full w-full border-0 shadow-none rounded-0" : "max-w-5xl h-[95vh] md:h-[800px] rounded-t-[2.5rem] md:rounded-[4rem]"
                 )}
             >
             {/* Main Content Area */}
-            <div className="flex-1 flex flex-col relative overflow-hidden bg-zinc-950/50 backdrop-blur-xl h-full">
+            <div className="flex-1 flex flex-col relative overflow-hidden bg-gray-100 dark:bg-zinc-950/50 backdrop-blur-xl h-full">
                 {isEmbedded ? (
-                    <div className="w-full h-16 shrink-0 border-b border-white/5 bg-zinc-950/40 px-6 md:px-12 flex items-center justify-between z-30 select-none">
+                    <div className="w-full h-16 shrink-0 border-b border-black/10 dark:border-white/5 bg-gray-100 dark:bg-zinc-950/40 px-6 md:px-12 flex items-center justify-between z-30 select-none">
                         <button 
                             type="button"
                             onClick={onClose}
-                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-[9px] font-black text-gray-300 hover:text-white uppercase tracking-widest transition-all"
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 border border-black/10 dark:border-white/10 text-[9px] font-black text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white uppercase tracking-widest transition-all"
                         >
                             <ChevronLeft size={12} className="text-neon-green" />
                             <span>Back to Event</span>
@@ -820,25 +820,25 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
                         <button 
                             type="button"
                             onClick={onClose}
-                            className="w-9 h-9 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center text-gray-400 hover:text-white transition-all"
+                            className="w-9 h-9 rounded-xl bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 border border-black/10 dark:border-white/10 flex items-center justify-center text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all"
                         >
                             <X size={16} />
                         </button>
                     </div>
                 ) : (
-                    <button onClick={onClose} className="absolute top-8 right-8 z-50 w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-gray-500 hover:text-white hover:bg-white/10 transition-all group">
+                    <button onClick={onClose} className="absolute top-8 right-8 z-50 w-12 h-12 rounded-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 flex items-center justify-center text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-black/10 dark:hover:bg-white/10 transition-all group">
                         <X size={20} className="group-hover:rotate-90 transition-transform duration-500" />
                     </button>
                 )}
 
                 {step !== 'success' && (
                     <div className="w-full px-6 md:px-12 pt-6 shrink-0">
-                        <div className="w-full h-1 bg-white/5 rounded-full overflow-hidden">
+                        <div className="w-full h-1 bg-black/5 dark:bg-white/5 rounded-full overflow-hidden">
                             <motion.div 
                                 initial={{ width: 0 }}
                                 animate={{ width: `${progressPercent}%` }}
                                 transition={{ duration: 0.3 }}
-                                className="h-full bg-gradient-to-r from-neon-green to-white"
+                                className="h-full bg-gradient-to-r from-neon-green to-gray-900 dark:to-white"
                             />
                         </div>
                     </div>
@@ -854,7 +854,7 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
                                         initial={{ scale: 0 }}
                                         animate={{ scale: 1 }}
                                         transition={{ type: 'spring', stiffness: 200, damping: 15 }}
-                                        className="w-24 h-24 rounded-2xl bg-gradient-to-br from-neon-green/20 to-white/10 border border-white/10 flex items-center justify-center shadow-[0_15px_30px_rgba(57,255,20,0.1)]"
+                                        className="w-24 h-24 rounded-2xl bg-gradient-to-br from-neon-green/20 to-gray-900 dark:to-white/10 border border-black/10 dark:border-white/10 flex items-center justify-center shadow-[0_15px_30px_rgba(57,255,20,0.1)]"
                                     >
                                         <Lock size={36} className="text-neon-green" />
                                     </motion.div>
@@ -870,7 +870,7 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
                                     initial={{ opacity: 0, y: 10 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     transition={{ delay: 0.2 }}
-                                    className="text-3xl font-extrabold font-heading text-white tracking-tight mb-4"
+                                    className="text-3xl font-extrabold font-heading text-gray-900 dark:text-white tracking-tight mb-4"
                                 >
                                     Sign In Required
                                 </motion.h3>
@@ -912,12 +912,12 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
                                         <ShieldCheck size={12} />
                                         <span className="text-[8px] font-black uppercase tracking-widest">Secure</span>
                                     </div>
-                                    <div className="w-px h-3 bg-white/10" />
+                                    <div className="w-px h-3 bg-black/10 dark:bg-white/10" />
                                     <div className="flex items-center gap-2">
                                         <Ticket size={12} />
                                         <span className="text-[8px] font-black uppercase tracking-widest">Digital Pass</span>
                                     </div>
-                                    <div className="w-px h-3 bg-white/10" />
+                                    <div className="w-px h-3 bg-black/10 dark:bg-white/10" />
                                     <div className="flex items-center gap-2">
                                         <CheckCircle2 size={12} />
                                         <span className="text-[8px] font-black uppercase tracking-widest">Verified</span>
@@ -930,23 +930,23 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
                             <motion.div key="map" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="flex-1 flex flex-col min-h-0 overflow-hidden">
                                 <div className="flex items-center justify-between gap-4 mb-6 shrink-0">
                                     <div className="space-y-1">
-                                        <h3 className="text-2xl md:text-3xl font-extrabold font-heading text-white tracking-tight">Select Tickets</h3>
+                                        <h3 className="text-2xl md:text-3xl font-extrabold font-heading text-gray-900 dark:text-white tracking-tight">Select Tickets</h3>
                                         <p className="text-[9px] md:text-xs text-gray-500 uppercase tracking-widest leading-relaxed">Choose your preferred ticket categories and quantity below.</p>
                                     </div>
                                     <button 
                                         onClick={() => setStep('selection')}
-                                        className="shrink-0 px-4 md:px-6 py-2 md:py-3 rounded-xl md:rounded-2xl bg-white/5 border border-white/10 text-[9px] md:text-xs font-black text-gray-400 hover:text-white uppercase tracking-widest transition-all"
+                                        className="shrink-0 px-4 md:px-6 py-2 md:py-3 rounded-xl md:rounded-2xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-[9px] md:text-xs font-black text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white uppercase tracking-widest transition-all"
                                     >
                                         List View
                                     </button>
                                 </div>
 
-                                <div className="flex-1 bg-black/40 rounded-3xl border border-white/10 p-0 overflow-auto scrollbar-hide relative shadow-2xl group/map mb-6 flex items-center justify-center min-h-0">
+                                <div className="flex-1 bg-white dark:bg-black/40 rounded-3xl border border-black/10 dark:border-white/10 p-0 overflow-auto scrollbar-hide relative shadow-2xl group/map mb-6 flex items-center justify-center min-h-0">
                                     {/* Instruction Badge */}
                                     <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-[60] pointer-events-none w-full px-4 flex justify-center">
-                                        <div className="px-4 py-2 bg-black/80 backdrop-blur-md border border-white/10 rounded-full flex items-center gap-2 shadow-2xl">
+                                        <div className="px-4 py-2 bg-white dark:bg-black/80 backdrop-blur-md border border-black/10 dark:border-white/10 rounded-full flex items-center gap-2 shadow-2xl">
                                             <Info size={12} className="text-neon-green" />
-                                            <span className="text-[8px] md:text-[9px] font-bold text-white uppercase tracking-widest whitespace-nowrap">
+                                            <span className="text-[8px] md:text-[9px] font-bold text-gray-900 dark:text-white uppercase tracking-widest whitespace-nowrap">
                                                 Tap zones to select • Toggle List View if needed
                                             </span>
                                         </div>
@@ -954,13 +954,13 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
 
                                     {/* Zoom Controls */}
                                     <div className="absolute top-4 right-4 flex flex-col gap-2 z-[60]">
-                                        <button onClick={handleZoomIn} className="w-10 h-10 rounded-xl bg-black/60 border border-white/10 flex items-center justify-center text-white backdrop-blur-md hover:bg-neon-green hover:text-black transition-all shadow-xl">
+                                        <button onClick={handleZoomIn} className="w-10 h-10 rounded-xl bg-white dark:bg-black/60 border border-black/10 dark:border-white/10 flex items-center justify-center text-gray-900 dark:text-white backdrop-blur-md hover:bg-neon-green hover:text-black transition-all shadow-xl">
                                             <ZoomIn size={18} />
                                         </button>
-                                        <button onClick={handleZoomOut} className="w-10 h-10 rounded-xl bg-black/60 border border-white/10 flex items-center justify-center text-white backdrop-blur-md hover:bg-neon-green hover:text-black transition-all shadow-xl">
+                                        <button onClick={handleZoomOut} className="w-10 h-10 rounded-xl bg-white dark:bg-black/60 border border-black/10 dark:border-white/10 flex items-center justify-center text-gray-900 dark:text-white backdrop-blur-md hover:bg-neon-green hover:text-black transition-all shadow-xl">
                                             <ZoomOut size={18} />
                                         </button>
-                                        <button onClick={handleReset} className="w-10 h-10 rounded-xl bg-black/60 border border-white/10 flex items-center justify-center text-white backdrop-blur-md hover:bg-neon-green hover:text-black transition-all shadow-xl">
+                                        <button onClick={handleReset} className="w-10 h-10 rounded-xl bg-white dark:bg-black/60 border border-black/10 dark:border-white/10 flex items-center justify-center text-gray-900 dark:text-white backdrop-blur-md hover:bg-neon-green hover:text-black transition-all shadow-xl">
                                             <Maximize2 size={18} />
                                         </button>
                                     </div>
@@ -997,8 +997,8 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
                                                         boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
                                                     }}
                                                 >
-                                                    <span className="text-[9px] md:text-[11px] font-black text-white uppercase truncate px-1 drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">{cat.name}</span>
-                                                    <span className="text-[11px] md:text-[13px] font-black text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">₹{cat.price}</span>
+                                                    <span className="text-[9px] md:text-[11px] font-black text-gray-900 dark:text-white uppercase truncate px-1 drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">{cat.name}</span>
+                                                    <span className="text-[11px] md:text-[13px] font-black text-gray-900 dark:text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">₹{cat.price}</span>
                                                 </button>
                                             ))}
                                         </div>
@@ -1019,15 +1019,15 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
                         {step === 'selection' && (
                             <motion.div key="selection" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="flex-1 flex flex-col min-h-0 overflow-hidden">
                                 {hasLayout && activeTab === 'tickets' && (
-                                    <button onClick={handleBack} className="flex items-center gap-2 text-[10px] font-black text-gray-500 hover:text-white uppercase tracking-widest transition-all mb-6 shrink-0">
+                                    <button onClick={handleBack} className="flex items-center gap-2 text-[10px] font-black text-gray-500 hover:text-gray-900 dark:hover:text-white uppercase tracking-widest transition-all mb-6 shrink-0">
                                         <ChevronLeft size={14} /> Back to Map
                                     </button>
                                 )}
 
                                 {hasTickets && hasGuestlist && (
-                                    <div className="flex p-1 bg-white/5 rounded-2xl border border-white/10 mb-6 w-fit mx-auto shrink-0">
-                                        <button onClick={() => setActiveTab('tickets')} className={cn("px-8 h-10 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all", activeTab === 'tickets' ? "bg-neon-green text-black" : "text-zinc-500 hover:text-white")}>TICKETS</button>
-                                        <button onClick={() => setActiveTab('guestlist')} className={cn("px-8 h-10 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all", activeTab === 'guestlist' ? "bg-white text-black" : "text-zinc-500 hover:text-white")}>GUESTLIST</button>
+                                    <div className="flex p-1 bg-black/5 dark:bg-white/5 rounded-2xl border border-black/10 dark:border-white/10 mb-6 w-fit mx-auto shrink-0">
+                                        <button onClick={() => setActiveTab('tickets')} className={cn("px-8 h-10 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all", activeTab === 'tickets' ? "bg-neon-green text-black" : "text-zinc-500 hover:text-gray-900 dark:hover:text-white")}>TICKETS</button>
+                                        <button onClick={() => setActiveTab('guestlist')} className={cn("px-8 h-10 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all", activeTab === 'guestlist' ? "bg-white text-black" : "text-zinc-500 hover:text-gray-900 dark:hover:text-white")}>GUESTLIST</button>
                                     </div>
                                 )}
 
@@ -1037,7 +1037,7 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
                                         {(event?.ticketingDescription || event?.ticketingRules) && (
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                 {event?.ticketingDescription && (
-                                                    <div className="p-6 bg-white/[0.03] border border-white/5 rounded-2xl space-y-3 group/info hover:bg-white/[0.05] transition-all cursor-default">
+                                                    <div className="p-6 bg-white/[0.03] border border-black/10 dark:border-white/5 rounded-2xl space-y-3 group/info hover:bg-white/[0.05] transition-all cursor-default">
                                                         <div className="flex items-center gap-2 text-neon-green opacity-70 group-hover/info:opacity-100 transition-all">
                                                             <Info size={14} />
                                                             <span className="text-[9px] font-bold uppercase tracking-[0.2em]">Overview</span>
@@ -1063,7 +1063,7 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
                                                     </div>
                                                 )}
                                                 {event?.ticketingRules && (
-                                                    <div className="p-6 bg-white/[0.03] border border-white/5 rounded-2xl space-y-3 group/rules hover:bg-white/[0.05] transition-all cursor-default">
+                                                    <div className="p-6 bg-white/[0.03] border border-black/10 dark:border-white/5 rounded-2xl space-y-3 group/rules hover:bg-white/[0.05] transition-all cursor-default">
                                                         <div className="flex items-center gap-2 text-neon-green opacity-70 group-hover/rules:opacity-100 transition-all">
                                                             <ShieldCheck size={14} />
                                                             <span className="text-[9px] font-bold uppercase tracking-[0.2em]">Rules & Policy</span>
@@ -1091,14 +1091,14 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
                                             </div>
                                         )}
                                         {activeTab === 'guestlist' ? (
-                                            <div className="p-8 bg-white/5 border border-white/10 rounded-3xl flex flex-col items-center gap-8">
+                                            <div className="p-8 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-3xl flex flex-col items-center gap-8">
                                                 <div className="text-center">
-                                                    <h4 className="text-xs font-bold text-white uppercase tracking-widest mb-2">Number of Guests</h4>
+                                                    <h4 className="text-xs font-bold text-gray-900 dark:text-white uppercase tracking-widest mb-2">Number of Guests</h4>
                                                     <p className="text-[10px] text-zinc-500 uppercase tracking-widest">Maximum {event?.perUserLimit || 5} per entry</p>
                                                 </div>
-                                                <span className="text-7xl font-bold tracking-tight tabular-nums text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.1)]">{guestCount}</span>
+                                                <span className="text-7xl font-bold tracking-tight tabular-nums text-gray-900 dark:text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.1)]">{guestCount}</span>
                                                 <div className="flex gap-8">
-                                                    <button onClick={() => setGuestCount(g => Math.max(1, g - 1))} className="w-16 h-16 rounded-full border border-white/10 flex items-center justify-center hover:bg-white/5 transition-all text-white"><Minus size={24}/></button>
+                                                    <button onClick={() => setGuestCount(g => Math.max(1, g - 1))} className="w-16 h-16 rounded-full border border-black/10 dark:border-white/10 flex items-center justify-center hover:bg-black/5 dark:hover:bg-white/5 transition-all text-gray-900 dark:text-white"><Minus size={24}/></button>
                                                     <button onClick={() => setGuestCount(g => Math.min(event?.perUserLimit || 5, g + 1))} className="w-16 h-16 rounded-full bg-neon-green/10 border border-neon-green/20 flex items-center justify-center text-neon-green hover:bg-neon-green hover:text-black transition-all"><Plus size={24}/></button>
                                                 </div>
                                             </div>
@@ -1107,27 +1107,27 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
                                                 !hasLayout || cartTotalCount === 0 || cart[cat.id]
                                             ).map(cat => (
                                                 <div key={cat.id} className={cn(
-                                                    "p-4 md:p-6 bg-white/5 border transition-all rounded-2xl flex items-center justify-between group",
-                                                    (selectedMapCategory === cat.id || (cart[cat.id] || 0) > 0) ? "border-neon-green bg-neon-green/5" : "border-white/10 hover:border-white/20"
+                                                    "p-4 md:p-6 bg-black/5 dark:bg-white/5 border transition-all rounded-2xl flex items-center justify-between group",
+                                                    (selectedMapCategory === cat.id || (cart[cat.id] || 0) > 0) ? "border-neon-green bg-neon-green/5" : "border-black/10 dark:border-white/10 hover:border-black/20 dark:hover:border-white/20"
                                                 )}>
                                                     <div className="flex items-center gap-3 md:gap-4">
                                                         <div className="w-3 h-3 md:w-4 md:h-4 rounded-full shrink-0" style={{ backgroundColor: cat.color || '#39FF14' }} />
                                                         <div className="text-left">
-                                                            <div className="font-bold text-white uppercase text-xs md:text-sm tracking-wider leading-none mb-1">{cat.name}</div>
+                                                            <div className="font-bold text-gray-900 dark:text-white uppercase text-xs md:text-sm tracking-wider leading-none mb-1">{cat.name}</div>
                                                             <div className="text-neon-green font-bold text-lg md:text-xl tracking-tight">₹{cat.price}</div>
                                                         </div>
                                                     </div>
-                                                    <div className="flex items-center gap-3 md:gap-4 bg-black/40 p-1.5 rounded-xl border border-white/5">
-                                                        <button onClick={() => updateCart(cat.id, -1)} className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center hover:bg-white/10 transition-colors text-white"><Minus size={14}/></button>
-                                                        <span className="w-6 text-center font-bold text-sm md:text-base tabular-nums text-white">{cart[cat.id] || 0}</span>
-                                                        <button onClick={() => updateCart(cat.id, 1)} className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center hover:bg-neon-green hover:text-black transition-all text-white"><Plus size={14}/></button>
+                                                    <div className="flex items-center gap-3 md:gap-4 bg-white dark:bg-black/40 p-1.5 rounded-xl border border-black/10 dark:border-white/5">
+                                                        <button onClick={() => updateCart(cat.id, -1)} className="w-8 h-8 rounded-lg bg-black/5 dark:bg-white/5 flex items-center justify-center hover:bg-black/10 dark:hover:bg-white/10 transition-colors text-gray-900 dark:text-white"><Minus size={14}/></button>
+                                                        <span className="w-6 text-center font-bold text-sm md:text-base tabular-nums text-gray-900 dark:text-white">{cart[cat.id] || 0}</span>
+                                                        <button onClick={() => updateCart(cat.id, 1)} className="w-8 h-8 rounded-lg bg-black/10 dark:bg-white/10 flex items-center justify-center hover:bg-neon-green hover:text-black transition-all text-gray-900 dark:text-white"><Plus size={14}/></button>
                                                     </div>
                                                 </div>
                                             )) : (
-                                                <div className="p-8 bg-white/5 border border-white/10 rounded-3xl flex flex-col items-center gap-8">
+                                                <div className="p-8 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-3xl flex flex-col items-center gap-8">
                                                     <span className="text-6xl font-bold tracking-tight tabular-nums text-neon-green drop-shadow-[0_0_15px_rgba(57,255,20,0.2)]">{ticketCount}</span>
                                                     <div className="flex gap-8">
-                                                        <button onClick={() => setTicketCount(g => Math.max(1, g - 1))} className="w-14 h-14 rounded-full border border-white/10 flex items-center justify-center text-white"><Minus size={20}/></button>
+                                                        <button onClick={() => setTicketCount(g => Math.max(1, g - 1))} className="w-14 h-14 rounded-full border border-black/10 dark:border-white/10 flex items-center justify-center text-gray-900 dark:text-white"><Minus size={20}/></button>
                                                         <button onClick={() => setTicketCount(g => Math.min(10, g + 1))} className="w-14 h-14 rounded-full bg-neon-green/20 text-neon-green flex items-center justify-center"><Plus size={20}/></button>
                                                     </div>
                                                 </div>
@@ -1136,13 +1136,13 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
                                     </div>
 
                                     {/* Checkout Bar */}
-                                    <div className="shrink-0 pt-4 border-t border-white/5 bg-zinc-950/20 rounded-t-3xl">
-                                        <div className="p-6 md:p-8 bg-zinc-900/80 border border-white/10 rounded-3xl flex flex-col lg:flex-row items-center justify-between gap-6 shadow-2xl relative">
+                                    <div className="shrink-0 pt-4 border-t border-black/10 dark:border-white/5 bg-gray-100 dark:bg-zinc-950/20 rounded-t-3xl">
+                                        <div className="p-6 md:p-8 bg-gray-100 dark:bg-zinc-900/80 border border-black/10 dark:border-white/10 rounded-3xl flex flex-col lg:flex-row items-center justify-between gap-6 shadow-2xl relative">
                                             <div className="flex flex-col sm:flex-row items-center gap-6 md:gap-12 w-full lg:w-auto text-left">
                                                 <div className="space-y-1 text-center sm:text-left shrink-0">
                                                     <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Final Total</p>
                                                     <div className="flex items-baseline gap-2">
-                                                        <p className="text-3xl md:text-4xl font-bold text-white tracking-tight tabular-nums drop-shadow-lg">
+                                                        <p className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white tracking-tight tabular-nums drop-shadow-lg">
                                                             ₹{activeTab === 'guestlist' ? '0' : Math.floor(totalAmount)}
                                                         </p>
                                                         {appliedCoupon && (
@@ -1154,7 +1154,7 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
                                                 {/* Inline Coupon Box */}
                                                 {activeTab === 'tickets' && totalAmount > 0 && (
                                                     <div className="flex-1 w-full sm:w-64 flex flex-col gap-2">
-                                                        <div className="px-5 py-3 bg-white/5 border border-white/10 rounded-2xl flex items-center gap-3 group/coupon focus-within:border-white/20 transition-all">
+                                                        <div className="px-5 py-3 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-2xl flex items-center gap-3 group/coupon focus-within:border-black/20 dark:focus-within:border-white/20 transition-all">
                                                             <div className="flex-1 min-w-0">
                                                                 <p className="text-[7px] font-bold text-zinc-500 uppercase tracking-widest leading-none mb-1">Coupon Code</p>
                                                                 <input 
@@ -1163,13 +1163,13 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
                                                                     onChange={e => setCouponInput(e.target.value.toUpperCase())}
                                                                     placeholder="ENTER CODE"
                                                                     disabled={appliedCoupon}
-                                                                    className="w-full bg-transparent border-0 text-[10px] font-bold uppercase tracking-widest text-white placeholder:text-zinc-700 outline-none p-0 h-4"
+                                                                    className="w-full bg-transparent border-0 text-[10px] font-bold uppercase tracking-widest text-gray-900 dark:text-white placeholder:text-zinc-700 outline-none p-0 h-4"
                                                                 />
                                                             </div>
                                                             {appliedCoupon ? (
                                                                 <button 
                                                                     onClick={removeCoupon}
-                                                                    className="px-3 py-1.5 rounded-lg bg-red-500/10 text-red-500 text-[8px] font-bold uppercase tracking-widest hover:bg-red-500 hover:text-white transition-all shrink-0"
+                                                                    className="px-3 py-1.5 rounded-lg bg-red-500/10 text-red-500 text-[8px] font-bold uppercase tracking-widest hover:bg-red-500 hover:text-gray-900 dark:hover:text-white transition-all shrink-0"
                                                                 >
                                                                     Remove
                                                                 </button>
@@ -1177,7 +1177,7 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
                                                                 <button 
                                                                     onClick={handleApplyCoupon}
                                                                     disabled={isValidatingCoupon || !couponInput.trim()}
-                                                                    className="px-4 py-1.5 rounded-lg bg-white/10 text-white text-[8px] font-bold uppercase tracking-widest hover:bg-white hover:text-black transition-all disabled:opacity-30 shrink-0"
+                                                                    className="px-4 py-1.5 rounded-lg bg-black/10 dark:bg-white/10 text-gray-900 dark:text-white text-[8px] font-bold uppercase tracking-widest hover:bg-white hover:text-black transition-all disabled:opacity-30 shrink-0"
                                                                 >
                                                                     {isValidatingCoupon ? <LoadingSpinner size="xs" color="#FFFFFF" /> : 'Apply'}
                                                                 </button>
@@ -1220,7 +1220,7 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
                                 <div className="space-y-6">
                                     <div className="space-y-2 text-left">
                                         <span className="text-[10px] font-bold text-neon-green uppercase tracking-[0.3em]">Step 1 of 3</span>
-                                        <h3 className="text-2xl md:text-3xl font-extrabold font-heading text-white tracking-tight leading-tight">
+                                        <h3 className="text-2xl md:text-3xl font-extrabold font-heading text-gray-900 dark:text-white tracking-tight leading-tight">
                                             What is your full name?
                                         </h3>
                                         <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Stage or Legal Name for the pass</p>
@@ -1231,18 +1231,18 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
                                             value={formData.name} 
                                             onChange={e => setFormData({ ...formData, name: e.target.value })} 
                                             placeholder="Full Name" 
-                                            className="h-14 bg-white/[0.02] border-white/10 rounded-xl text-base font-bold px-6 focus:border-neon-green" 
+                                            className="h-14 bg-white/[0.02] border-black/10 dark:border-white/10 rounded-xl text-base font-bold px-6 focus:border-neon-green" 
                                             autoFocus
                                         />
                                         <span className="absolute right-6 top-1/2 -translate-y-1/2 text-[9px] font-bold text-zinc-500 uppercase tracking-widest hidden sm:inline">press Enter ↵</span>
                                     </div>
                                 </div>
                                 
-                                <div className="flex justify-between items-center pt-8 border-t border-white/5 shrink-0 select-none">
+                                <div className="flex justify-between items-center pt-8 border-t border-black/10 dark:border-white/5 shrink-0 select-none">
                                     <button 
                                         type="button" 
                                         onClick={handleBack} 
-                                        className="text-[10px] font-bold text-zinc-500 hover:text-white uppercase tracking-[0.3em] transition-colors flex items-center gap-2"
+                                        className="text-[10px] font-bold text-zinc-500 hover:text-gray-900 dark:hover:text-white uppercase tracking-[0.3em] transition-colors flex items-center gap-2"
                                     >
                                         <ChevronLeft size={14} /> Back
                                     </button>
@@ -1275,7 +1275,7 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
                                 <div className="space-y-6">
                                     <div className="space-y-2 text-left">
                                         <span className="text-[10px] font-bold text-neon-green uppercase tracking-[0.3em]">Step 2 of 3</span>
-                                        <h3 className="text-2xl md:text-3xl font-extrabold font-heading text-white tracking-tight leading-tight">
+                                        <h3 className="text-2xl md:text-3xl font-extrabold font-heading text-gray-900 dark:text-white tracking-tight leading-tight">
                                             What is your email address?
                                         </h3>
                                         <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest">We will send your ticket confirmation here</p>
@@ -1287,18 +1287,18 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
                                             value={formData.email} 
                                             onChange={e => setFormData({ ...formData, email: e.target.value })} 
                                             placeholder="email@example.com" 
-                                            className="h-14 bg-white/[0.02] border-white/10 rounded-xl text-base font-bold px-6 focus:border-neon-green" 
+                                            className="h-14 bg-white/[0.02] border-black/10 dark:border-white/10 rounded-xl text-base font-bold px-6 focus:border-neon-green" 
                                             autoFocus
                                         />
                                         <span className="absolute right-6 top-1/2 -translate-y-1/2 text-[9px] font-bold text-zinc-500 uppercase tracking-widest hidden sm:inline">press Enter ↵</span>
                                     </div>
                                 </div>
                                 
-                                <div className="flex justify-between items-center pt-8 border-t border-white/5 shrink-0 select-none">
+                                <div className="flex justify-between items-center pt-8 border-t border-black/10 dark:border-white/5 shrink-0 select-none">
                                     <button 
                                         type="button" 
                                         onClick={handleBack} 
-                                        className="text-[10px] font-bold text-zinc-500 hover:text-white uppercase tracking-[0.3em] transition-colors flex items-center gap-2"
+                                        className="text-[10px] font-bold text-zinc-500 hover:text-gray-900 dark:hover:text-white uppercase tracking-[0.3em] transition-colors flex items-center gap-2"
                                     >
                                         <ChevronLeft size={14} /> Back
                                     </button>
@@ -1332,7 +1332,7 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
                                 <div className="space-y-6">
                                     <div className="space-y-2 text-left">
                                         <span className="text-[10px] font-bold text-neon-green uppercase tracking-[0.3em]">Step 3 of 3</span>
-                                        <h3 className="text-2xl md:text-3xl font-extrabold font-heading text-white tracking-tight leading-tight">
+                                        <h3 className="text-2xl md:text-3xl font-extrabold font-heading text-gray-900 dark:text-white tracking-tight leading-tight">
                                             {!otpSent ? "What is your contact number?" : "Verify Phone"}
                                         </h3>
                                         <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest">
@@ -1347,13 +1347,13 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
                                                     value={countryCode} 
                                                     onChange={(e) => setCountryCode(e.target.value)} 
                                                     disabled={isPhoneVerified}
-                                                    className="w-20 sm:w-36 shrink-0 h-14 bg-white/[0.02] border border-white/10 rounded-xl text-white text-sm sm:text-base font-bold px-2 sm:px-3 outline-none focus:border-neon-green transition-all disabled:opacity-50"
+                                                    className="w-20 sm:w-36 shrink-0 h-14 bg-white/[0.02] border border-black/10 dark:border-white/10 rounded-xl text-gray-900 dark:text-white text-sm sm:text-base font-bold px-2 sm:px-3 outline-none focus:border-neon-green transition-all disabled:opacity-50"
                                                 >
-                                                    <option value="+91" className="bg-zinc-900">🇮🇳 +91</option>
-                                                    <option value="+1" className="bg-zinc-900">🇺🇸 +1</option>
-                                                    <option value="+44" className="bg-zinc-900">🇬🇧 +44</option>
-                                                    <option value="+971" className="bg-zinc-900">🇦🇪 +971</option>
-                                                    <option value="+61" className="bg-zinc-900">🇦🇺 +61</option>
+                                                    <option value="+91" className="bg-gray-100 dark:bg-zinc-900">🇮🇳 +91</option>
+                                                    <option value="+1" className="bg-gray-100 dark:bg-zinc-900">🇺🇸 +1</option>
+                                                    <option value="+44" className="bg-gray-100 dark:bg-zinc-900">🇬🇧 +44</option>
+                                                    <option value="+971" className="bg-gray-100 dark:bg-zinc-900">🇦🇪 +971</option>
+                                                    <option value="+61" className="bg-gray-100 dark:bg-zinc-900">🇦🇺 +61</option>
                                                 </select>
                                                 <div className="relative flex-1 min-w-0">
                                                     <Input 
@@ -1363,7 +1363,7 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
                                                         onChange={e => setFormData({ ...formData, phone: e.target.value.replace(/\D/g, '') })} 
                                                         disabled={isPhoneVerified}
                                                         placeholder="99999 99999" 
-                                                        className="h-14 bg-white/[0.02] border-white/10 rounded-xl text-sm sm:text-base font-bold px-4 sm:px-6 focus:border-neon-green disabled:opacity-70" 
+                                                        className="h-14 bg-white/[0.02] border-black/10 dark:border-white/10 rounded-xl text-sm sm:text-base font-bold px-4 sm:px-6 focus:border-neon-green disabled:opacity-70" 
                                                         autoFocus
                                                     />
                                                     {isPhoneVerified && (
@@ -1378,17 +1378,17 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
                                                 <button
                                                     type="button"
                                                     onClick={() => setIsPhoneVerified(false)}
-                                                    className="text-xs text-gray-500 hover:text-white font-bold uppercase tracking-widest underline"
+                                                    className="text-xs text-gray-500 hover:text-gray-900 dark:hover:text-white font-bold uppercase tracking-widest underline"
                                                 >
                                                     Change Phone Number
                                                 </button>
                                             )}
                                             
-                                            <div className="flex justify-between items-center pt-8 border-t border-white/5 shrink-0 select-none">
+                                            <div className="flex justify-between items-center pt-8 border-t border-black/10 dark:border-white/5 shrink-0 select-none">
                                                 <button 
                                                     type="button" 
                                                     onClick={handleBack} 
-                                                    className="text-[10px] font-bold text-zinc-500 hover:text-white uppercase tracking-[0.3em] transition-colors flex items-center gap-2"
+                                                    className="text-[10px] font-bold text-zinc-500 hover:text-gray-900 dark:hover:text-white uppercase tracking-[0.3em] transition-colors flex items-center gap-2"
                                                 >
                                                     <ChevronLeft size={14} /> Back
                                                 </button>
@@ -1452,19 +1452,19 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
                                                                 onKeyDown={e => handleOtpKeyDown(e, idx)}
                                                                 onPaste={handleOtpPaste}
                                                                 className={cn(
-                                                                    "w-9 h-12 sm:w-14 sm:h-16 bg-white/[0.02] border border-white/10 rounded-xl text-center text-lg font-bold text-white focus:border-neon-green focus:shadow-[0_0_25px_rgba(57,255,20,0.15)] focus:outline-none transition-all",
-                                                                    verifying ? "border-neon-green/40 animate-pulse" : "border-white/10"
+                                                                    "w-9 h-12 sm:w-14 sm:h-16 bg-white/[0.02] border border-black/10 dark:border-white/10 rounded-xl text-center text-lg font-bold text-gray-900 dark:text-white focus:border-neon-green focus:shadow-[0_0_25px_rgba(57,255,20,0.15)] focus:outline-none transition-all",
+                                                                    verifying ? "border-neon-green/40 animate-pulse" : "border-black/10 dark:border-white/10"
                                                                 )}
                                                                 autoFocus={idx === 0}
                                                             />
                                                         ))}
                                                     </div>
 
-                                                    <div className="flex justify-between items-center pt-8 border-t border-white/5 shrink-0 select-none">
+                                                    <div className="flex justify-between items-center pt-8 border-t border-black/10 dark:border-white/5 shrink-0 select-none">
                                                         <button
                                                             type="button"
                                                             onClick={() => { setOtpSent(false); setOtpValues(['','','','','','']); }}
-                                                            className="text-[10px] font-bold text-zinc-500 hover:text-white uppercase tracking-[0.3em]"
+                                                            className="text-[10px] font-bold text-zinc-500 hover:text-gray-900 dark:hover:text-white uppercase tracking-[0.3em]"
                                                         >
                                                             Back / Resend
                                                         </button>
@@ -1493,7 +1493,7 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
                                 className="flex-1 flex flex-col min-h-0 overflow-hidden"
                             >
                                 <div className="text-center space-y-2 mb-6 shrink-0">
-                                    <h3 className="text-2xl md:text-3xl font-extrabold font-heading text-white tracking-tight">Payment</h3>
+                                    <h3 className="text-2xl md:text-3xl font-extrabold font-heading text-gray-900 dark:text-white tracking-tight">Payment</h3>
                                     <p className="text-[10px] md:text-xs font-bold text-zinc-500 uppercase tracking-widest leading-relaxed">Scan the QR or use the UPI app to pay, then enter Transaction ID.</p>
                                 </div>
                                 
@@ -1504,15 +1504,15 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
                                                 href={event.gatewayUrl} 
                                                 target="_blank" 
                                                 rel="noopener noreferrer"
-                                                className="w-full h-14 rounded-xl bg-gradient-to-r from-neon-green to-white text-black font-bold uppercase tracking-wider text-xs flex items-center justify-center gap-3 hover:scale-[1.02] active:scale-[0.98] transition-all shadow-[0_15px_30px_rgba(57,255,20,0.15)]"
+                                                className="w-full h-14 rounded-xl bg-gradient-to-r from-neon-green to-gray-900 dark:to-white text-black font-bold uppercase tracking-wider text-xs flex items-center justify-center gap-3 hover:scale-[1.02] active:scale-[0.98] transition-all shadow-[0_15px_30px_rgba(57,255,20,0.15)]"
                                             >
                                                 <CreditCard size={14} />
                                                 Proceed to Secure Checkout
                                             </a>
                                             <div className="relative flex py-4 items-center w-full">
-                                                <div className="flex-grow border-t border-white/10"></div>
+                                                <div className="flex-grow border-t border-black/10 dark:border-white/10"></div>
                                                 <span className="flex-shrink mx-4 text-zinc-500 text-[9px] font-bold uppercase tracking-widest">Or Pay Manually via UPI</span>
-                                                <div className="flex-grow border-t border-white/10"></div>
+                                                <div className="flex-grow border-t border-black/10 dark:border-white/10"></div>
                                             </div>
                                         </div>
                                     )}
@@ -1536,7 +1536,7 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
                                             </a>
                                         </div>
                                         <div className="flex flex-col justify-center space-y-6 text-left">
-                                            <div className="p-6 bg-white/5 border border-white/10 rounded-2xl space-y-1">
+                                            <div className="p-6 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-2xl space-y-1">
                                                 <p className="text-[8px] font-bold text-zinc-500 uppercase tracking-widest">Amount to Pay</p>
                                                 <p className="text-3xl font-bold text-neon-green tabular-nums">₹{totalAmount}</p>
                                             </div>
@@ -1561,22 +1561,22 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
                                                                 exit={{ opacity: 0, height: 0 }}
                                                                 className="overflow-hidden"
                                                             >
-                                                                <div className="p-4 bg-white/5 border border-dashed border-white/20 rounded-xl space-y-3 mb-4">
+                                                                <div className="p-4 bg-black/5 dark:bg-white/5 border border-dashed border-black/20 dark:border-white/20 rounded-xl space-y-3 mb-4">
                                                                     <div className="space-y-2">
                                                                         <div className="flex items-center gap-2">
                                                                             <div className="w-1.5 h-1.5 rounded-full bg-neon-green" />
-                                                                            <p className="text-[9px] text-white/70 font-bold uppercase"><span className="text-neon-green">GPay:</span> History &gt; Tap Payment &gt; UPI Transaction ID</p>
+                                                                            <p className="text-[9px] text-gray-900 dark:text-white/70 font-bold uppercase"><span className="text-neon-green">GPay:</span> History &gt; Tap Payment &gt; UPI Transaction ID</p>
                                                                         </div>
                                                                         <div className="flex items-center gap-2">
                                                                             <div className="w-1.5 h-1.5 rounded-full bg-zinc-400" />
-                                                                            <p className="text-[9px] text-white/70 font-bold uppercase"><span className="text-zinc-400">PhonePe:</span> History &gt; Tap Payment &gt; UTR Number</p>
+                                                                            <p className="text-[9px] text-gray-900 dark:text-white/70 font-bold uppercase"><span className="text-zinc-400">PhonePe:</span> History &gt; Tap Payment &gt; UTR Number</p>
                                                                         </div>
                                                                         <div className="flex items-center gap-2">
                                                                             <div className="w-1.5 h-1.5 rounded-full bg-neon-green" />
-                                                                            <p className="text-[9px] text-white/70 font-bold uppercase"><span className="text-neon-green">Paytm:</span> Balance &amp; History &gt; Tap Payment &gt; UPI Ref No.</p>
+                                                                            <p className="text-[9px] text-gray-900 dark:text-white/70 font-bold uppercase"><span className="text-neon-green">Paytm:</span> Balance &amp; History &gt; Tap Payment &gt; UPI Ref No.</p>
                                                                         </div>
                                                                     </div>
-                                                                    <p className="text-[8px] text-zinc-500 italic border-t border-white/5 pt-2">Note: It is always a 12-digit number.</p>
+                                                                    <p className="text-[8px] text-zinc-500 italic border-t border-black/10 dark:border-white/5 pt-2">Note: It is always a 12-digit number.</p>
                                                                 </div>
                                                             </motion.div>
                                                         )}
@@ -1587,9 +1587,9 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
                                     </div>
                                 </div>
 
-                                <div className="shrink-0 pt-4 border-t border-white/5 bg-zinc-950/20 w-full select-none">
+                                <div className="shrink-0 pt-4 border-t border-black/10 dark:border-white/5 bg-gray-100 dark:bg-zinc-950/20 w-full select-none">
                                     <div className="max-w-md mx-auto space-y-3">
-                                        <Input value={paymentRef} onChange={e => setPaymentRef(e.target.value)} className="h-14 bg-white/5 border-white/10 text-xs tracking-widest rounded-xl focus:border-neon-green" placeholder="ENTER 12-DIGIT ID" />
+                                        <Input value={paymentRef} onChange={e => setPaymentRef(e.target.value)} className="h-14 bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-xs tracking-widest rounded-xl focus:border-neon-green" placeholder="ENTER 12-DIGIT ID" />
                                         <Button onClick={submitTickets} disabled={loading || !paymentRef} className="w-full h-14 bg-white text-black font-bold uppercase tracking-wider text-xs rounded-xl shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all">
                                             {loading ? <LoadingSpinner size="xs" color="#000000" /> : 'Confirm Payment'}
                                         </Button>
@@ -1606,12 +1606,12 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
                                         <CheckCircle2 size={48} />
                                     </div>
                                     <div className="space-y-3">
-                                        <h3 className="text-3xl md:text-5xl font-extrabold font-heading text-white tracking-tight">
+                                        <h3 className="text-3xl md:text-5xl font-extrabold font-heading text-gray-900 dark:text-white tracking-tight">
                                             {isRSVPOnly ? 'RSVP Confirmed' : 'Booking Successful'}
                                         </h3>
                                         <div className="flex items-center justify-center gap-3">
                                             <span className="text-[10px] font-semibold text-gray-500 tracking-widest">Booking Reference:</span>
-                                            <span className="text-white font-mono text-sm font-bold tracking-widest px-3 py-1 bg-white/5 rounded-lg border border-white/10">{bookingRef}</span>
+                                            <span className="text-gray-900 dark:text-white font-mono text-sm font-bold tracking-widest px-3 py-1 bg-black/5 dark:bg-white/5 rounded-lg border border-black/10 dark:border-white/10">{bookingRef}</span>
                                         </div>
                                     </div>
                                     
@@ -1628,7 +1628,7 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
                                         </div>
                                     ) : totalAmount > 0 ? (
                                         <div className="p-10 bg-neon-blue/10 border border-neon-blue/20 rounded-[3rem] max-w-sm relative overflow-hidden group">
-                                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:animate-[shimmer_3s_infinite] pointer-events-none" />
+                                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-gray-900 dark:via-white/5 to-transparent -translate-x-full group-hover:animate-[shimmer_3s_infinite] pointer-events-none" />
                                             <p className="text-xs font-semibold text-neon-blue tracking-wide leading-relaxed">
                                                 Passes will be available after payment verification in the profile section.
                                             </p>
@@ -1644,33 +1644,33 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
 
                                     {!isRSVPOnly && (
                                         <div className="fixed -left-[9999px] top-0 pointer-events-none">
-                                            <div id="ticket-download-surface" className="w-[800px] bg-black p-16 flex flex-col gap-12 font-sans border-2 border-neon-blue/20">
+                                            <div id="ticket-download-surface" className="w-[800px] bg-white dark:bg-black p-16 flex flex-col gap-12 font-sans border-2 border-neon-blue/20">
                                                 <div className="flex items-center justify-between">
-                                                    <div className="text-4xl font-black italic tracking-tighter text-white uppercase">NEWBI <span className="text-neon-blue">ENT.</span></div>
+                                                    <div className="text-4xl font-black italic tracking-tighter text-gray-900 dark:text-white uppercase">NEWBI <span className="text-neon-blue">ENT.</span></div>
                                                     <div className="text-xs font-black text-gray-500 uppercase tracking-[0.5em]">{activeTab === 'tickets' ? 'OFFICIAL_TICKET' : 'GUESTLIST_PASS'}</div>
                                                 </div>
                                                 <div className="space-y-4">
-                                                    <h1 className="text-7xl font-black text-white italic uppercase tracking-tighter leading-tight bg-gradient-to-r from-white to-gray-500 bg-clip-text text-transparent">{event?.title}</h1>
+                                                    <h1 className="text-7xl font-black text-gray-900 dark:text-white italic uppercase tracking-tighter leading-tight bg-gradient-to-r from-gray-950 to-gray-600 dark:from-white dark:to-gray-400 bg-clip-text text-transparent">{event?.title}</h1>
                                                     <div className="flex gap-8">
                                                         <div className="space-y-1">
                                                             <p className="text-[10px] font-black text-gray-600 uppercase tracking-widest">DATE</p>
-                                                            <p className="text-xl font-bold text-white uppercase italic">{event?.date ? new Date(event.date).toLocaleDateString() : 'To Be Announced'}</p>
+                                                            <p className="text-xl font-bold text-gray-900 dark:text-white uppercase italic">{event?.date ? new Date(event.date).toLocaleDateString() : 'To Be Announced'}</p>
                                                         </div>
                                                         <div className="space-y-1">
                                                             <p className="text-[10px] font-black text-gray-600 uppercase tracking-widest">LOCATION</p>
-                                                            <p className="text-xl font-bold text-white uppercase italic">{event?.location || 'Special Venue'}</p>
+                                                            <p className="text-xl font-bold text-gray-900 dark:text-white uppercase italic">{event?.location || 'Special Venue'}</p>
                                                             {event?.locationUrl && <p className="text-[8px] font-black text-neon-blue uppercase tracking-widest truncate max-w-[200px]">{event.locationUrl.replace('https://', '').replace('www.', '')}</p>}
                                                         </div>
                                                     </div>
                                                 </div>
-                                                <div className="flex items-center gap-16 p-12 bg-zinc-900/50 rounded-[4rem] border border-white/5">
+                                                <div className="flex items-center gap-16 p-12 bg-gray-100 dark:bg-zinc-900/50 rounded-[4rem] border border-black/10 dark:border-white/5">
                                                     <div className="bg-white p-8 rounded-[3rem]">
                                                         <img src={`/api/qr?size=400&text=${encodeURIComponent(bookingRef)}`} alt="QR" crossOrigin="anonymous" className="w-48 h-48 mix-blend-multiply" />
                                                     </div>
                                                     <div className="space-y-6">
                                                         <div>
                                                             <p className="text-[10px] font-black text-gray-600 uppercase tracking-widest mb-1">ACCESS CODE</p>
-                                                            <p className="text-6xl font-black text-white italic tracking-tighter">{bookingRef}</p>
+                                                            <p className="text-6xl font-black text-gray-900 dark:text-white italic tracking-tighter">{bookingRef}</p>
                                                         </div>
                                                         <div className="flex gap-8">
                                                             <div>
@@ -1679,13 +1679,13 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
                                                             </div>
                                                             <div>
                                                                 <p className="text-[8px] font-black text-gray-700 uppercase tracking-widest">HOLDER</p>
-                                                                <p className="text-lg font-bold text-white uppercase italic truncate max-w-[200px]">{formData.name}</p>
+                                                                <p className="text-lg font-bold text-gray-900 dark:text-white uppercase italic truncate max-w-[200px]">{formData.name}</p>
                                                             </div>
                                                         </div>
                                                     </div>
                                                 </div>
-                                                <div className="pt-8 border-t border-white/5 flex items-center justify-between">
-                                                    <p className="text-[9px] font-black text-white/20 uppercase tracking-[0.5em] italic">NEWBI ENT.</p>
+                                                <div className="pt-8 border-t border-black/10 dark:border-white/5 flex items-center justify-between">
+                                                    <p className="text-[9px] font-black text-gray-900 dark:text-white/20 uppercase tracking-[0.5em] italic">NEWBI ENT.</p>
                                                     <p className="text-[9px] font-black text-neon-blue/50 uppercase tracking-[0.3em]">NEWBI.LIVE</p>
                                                 </div>
                                             </div>
@@ -1711,40 +1711,40 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
                                 animate={{ opacity: 1 }}
                                 exit={{ opacity: 0 }}
                                 onClick={() => setInfoPopup(null)}
-                                className="absolute inset-0 bg-black/60 backdrop-blur-md"
+                                className="absolute inset-0 bg-white dark:bg-black/60 backdrop-blur-md"
                             />
                             <motion.div 
                                 initial={{ opacity: 0, scale: 0.9, y: 20 }}
                                 animate={{ opacity: 1, scale: 1, y: 0 }}
                                 exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                                className="relative w-full max-w-lg bg-zinc-900 border border-white/10 rounded-[2.5rem] shadow-[0_50px_100px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col"
+                                className="relative w-full max-w-lg bg-gray-100 dark:bg-zinc-900 border border-black/10 dark:border-white/10 rounded-[2.5rem] shadow-[0_50px_100px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col"
                             >
-                                <div className="p-8 border-b border-white/5 flex items-center justify-between">
+                                <div className="p-8 border-b border-black/10 dark:border-white/5 flex items-center justify-between">
                                     <div className="flex items-center gap-4">
-                                        <div className={cn("w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center", infoPopup.color)}>
+                                        <div className={cn("w-12 h-12 rounded-2xl bg-black/5 dark:bg-white/5 flex items-center justify-center", infoPopup.color)}>
                                             {infoPopup.icon}
                                         </div>
                                         <div>
-                                            <h4 className="text-xl font-black text-white italic uppercase tracking-tighter">{infoPopup.title}</h4>
+                                            <h4 className="text-xl font-black text-gray-900 dark:text-white italic uppercase tracking-tighter">{infoPopup.title}</h4>
                                             <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Full Event Details</p>
                                         </div>
                                     </div>
                                     <button 
                                         onClick={() => setInfoPopup(null)}
-                                        className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-gray-500 hover:text-white transition-all"
+                                        className="w-10 h-10 rounded-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 flex items-center justify-center text-gray-500 hover:text-gray-900 dark:hover:text-white transition-all"
                                     >
                                         <X size={18} />
                                     </button>
                                 </div>
                                 <div className="p-8 overflow-y-auto max-h-[400px] scrollbar-hide">
-                                    <p className="text-sm text-gray-300 leading-relaxed italic whitespace-pre-line">
+                                    <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed italic whitespace-pre-line">
                                         {infoPopup.content}
                                     </p>
                                 </div>
-                                <div className="p-6 bg-black/20 border-t border-white/5">
+                                <div className="p-6 bg-white dark:bg-black/20 border-t border-black/10 dark:border-white/5">
                                     <Button 
                                         onClick={() => setInfoPopup(null)}
-                                        className="w-full h-14 bg-white/5 border border-white/10 text-white font-black uppercase tracking-widest text-[10px] rounded-xl hover:bg-white hover:text-black transition-all"
+                                        className="w-full h-14 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-gray-900 dark:text-white font-black uppercase tracking-widest text-[10px] rounded-xl hover:bg-white hover:text-black transition-all"
                                     >
                                         CLOSE
                                     </Button>
@@ -1767,13 +1767,13 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
                 <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 md:p-6 overflow-hidden">
                     <AnimatePresence>
                         {isDownloading && (
-                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[200] bg-black/80 backdrop-blur-2xl flex flex-col items-center justify-center gap-6">
+                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[200] bg-white dark:bg-black/80 backdrop-blur-2xl flex flex-col items-center justify-center gap-6">
                                 <LoadingSpinner size="md" color="#2bd93e" />
                                 <p className="text-[10px] font-black text-neon-green uppercase tracking-[0.4em]">GENERATING PASS...</p>
                             </motion.div>
                         )}
                     </AnimatePresence>
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} className="absolute inset-0 bg-black/90 backdrop-blur-3xl" />
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} className="absolute inset-0 bg-white dark:bg-black/90 backdrop-blur-3xl" />
                     {modalContent}
                 </div>
             )}

@@ -143,10 +143,10 @@ const GiveawayParticipants = () => {
                     >
                         <Mail className="mr-2" size={18} /> Broadcast to All
                     </Button>
-                    <Button onClick={handleRandomDraw} className="h-14 px-8 border border-purple-500/30 bg-purple-500/10 text-purple-500 font-black uppercase tracking-widest rounded-2xl hover:bg-purple-500 hover:text-white transition-all">
+                    <Button onClick={handleRandomDraw} className="h-14 px-8 border border-purple-500/30 bg-purple-500/10 text-purple-500 font-black uppercase tracking-widest rounded-2xl hover:bg-purple-500 hover:text-gray-900 dark:hover:text-white transition-all">
                         <Shuffle className="mr-2" size={18} /> Weighted Draw
                     </Button>
-                    <Button onClick={handleExport} className="h-14 px-8 bg-zinc-900 border border-white/5 text-white font-black uppercase tracking-widest rounded-2xl hover:bg-white hover:text-black transition-all">
+                    <Button onClick={handleExport} className="h-14 px-8 bg-gray-100 dark:bg-zinc-900 border border-black/10 dark:border-white/5 text-gray-900 dark:text-white font-black uppercase tracking-widest rounded-2xl hover:bg-white hover:text-black transition-all">
                         <Download className="mr-2" size={18} /> Export List
                     </Button>
                 </div>
@@ -155,15 +155,15 @@ const GiveawayParticipants = () => {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
                     {/* Sidebar: Stats & Leaderboard */}
                     <div className="space-y-10">
-                        <Card className="p-8 bg-zinc-900/40 border-white/5 rounded-[2rem] backdrop-blur-3xl">
-                            <h3 className="text-xs font-black text-gray-400 uppercase tracking-[0.4em] mb-8 flex items-center gap-3">
+                        <Card className="p-8 bg-gray-100 dark:bg-zinc-900/40 border-black/10 dark:border-white/5 rounded-[2rem] backdrop-blur-3xl">
+                            <h3 className="text-xs font-black text-gray-600 dark:text-gray-400 uppercase tracking-[0.4em] mb-8 flex items-center gap-3">
                                 <div className="w-8 h-px bg-purple-500" /> TOP REFERRERS
                             </h3>
                             <div className="space-y-6">
                                 {topReferrers.map((ref, i) => (
                                     <div key={ref.id} className="flex items-center justify-between group">
                                         <div className="flex items-center gap-4">
-                                            <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-[10px] font-black text-gray-500 group-hover:bg-purple-500/20 group-hover:text-purple-500 transition-all">
+                                            <div className="w-8 h-8 rounded-lg bg-black/5 dark:bg-white/5 flex items-center justify-center text-[10px] font-black text-gray-500 group-hover:bg-purple-500/20 group-hover:text-purple-500 transition-all">
                                                 {i + 1}
                                             </div>
                                             <div>
@@ -181,16 +181,16 @@ const GiveawayParticipants = () => {
                             </div>
                         </Card>
 
-                        <Card className="p-8 bg-zinc-900/40 border-white/5 rounded-[2rem] backdrop-blur-3xl">
-                            <h3 className="text-xs font-black text-gray-400 uppercase tracking-[0.4em] mb-8 flex items-center gap-3">
+                        <Card className="p-8 bg-gray-100 dark:bg-zinc-900/40 border-black/10 dark:border-white/5 rounded-[2rem] backdrop-blur-3xl">
+                            <h3 className="text-xs font-black text-gray-600 dark:text-gray-400 uppercase tracking-[0.4em] mb-8 flex items-center gap-3">
                                 <div className="w-8 h-px bg-neon-green" /> MISSION STATS
                             </h3>
                             <div className="grid grid-cols-2 gap-4">
-                                <div className="p-6 bg-black/40 rounded-2xl border border-white/5">
-                                    <p className="text-3xl font-black font-heading text-white">{campaignEntries.length}</p>
+                                <div className="p-6 bg-white dark:bg-black/40 rounded-2xl border border-black/10 dark:border-white/5">
+                                    <p className="text-3xl font-black font-heading text-gray-900 dark:text-white">{campaignEntries.length}</p>
                                     <p className="text-[9px] text-gray-500 font-black uppercase mt-1">Total Entries</p>
                                 </div>
-                                <div className="p-6 bg-black/40 rounded-2xl border border-white/5">
+                                <div className="p-6 bg-white dark:bg-black/40 rounded-2xl border border-black/10 dark:border-white/5">
                                     <p className="text-3xl font-black font-heading text-purple-500">{campaignEntries.reduce((acc, e) => acc + (e.entryScore || 0), 0)}</p>
                                     <p className="text-[9px] text-gray-500 font-black uppercase mt-1">Total Points</p>
                                 </div>
@@ -201,7 +201,7 @@ const GiveawayParticipants = () => {
                     {/* Main Content: Participant List */}
                     <div className="lg:col-span-2 space-y-8">
                         {/* Combined Search & Filters Bar - Matching Invoice Style */}
-                        <div className="bg-zinc-900/40 border border-white/5 rounded-[2.5rem] p-2 mb-16 backdrop-blur-3xl flex flex-col xl:flex-row items-center gap-4">
+                        <div className="bg-gray-100 dark:bg-zinc-900/40 border border-black/10 dark:border-white/5 rounded-[2.5rem] p-2 mb-16 backdrop-blur-3xl flex flex-col xl:flex-row items-center gap-4">
                             <div className="relative flex-1 w-full group">
                                 <Search className="absolute left-8 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-purple-500 transition-colors" size={20} />
                                 <input 
@@ -211,11 +211,11 @@ const GiveawayParticipants = () => {
                                     className="w-full bg-transparent h-16 pl-20 pr-8 rounded-2xl text-[11px] font-black uppercase tracking-widest outline-none transition-all placeholder:text-gray-600"
                                 />
                                 <div className="absolute right-8 top-1/2 -translate-y-1/2 flex items-center gap-3">
-                                    <div className="w-px h-6 bg-white/10" />
-                                    <Filter size={16} className="text-gray-600 hover:text-white cursor-pointer transition-colors" />
+                                    <div className="w-px h-6 bg-black/10 dark:bg-white/10" />
+                                    <Filter size={16} className="text-gray-600 hover:text-gray-900 dark:hover:text-white cursor-pointer transition-colors" />
                                 </div>
                             </div>
-                            <div className="flex bg-black/40 p-1.5 rounded-[1.5rem] border border-white/5 w-full xl:w-auto mr-1">
+                            <div className="flex bg-white dark:bg-black/40 p-1.5 rounded-[1.5rem] border border-black/10 dark:border-white/5 w-full xl:w-auto mr-1">
                                 {['all', 'winners', 'referrals'].map((f) => (
                                     <button
                                         key={f}
@@ -223,8 +223,8 @@ const GiveawayParticipants = () => {
                                         className={cn(
                                             "px-10 py-3.5 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-300 min-w-[120px]",
                                             filter === f 
-                                                ? "bg-purple-500 text-white shadow-[0_10px_25px_rgba(168,85,247,0.3)] scale-[1.02]" 
-                                                : "text-gray-500 hover:text-white hover:bg-white/5"
+                                                ? "bg-purple-500 text-gray-900 dark:text-white shadow-[0_10px_25px_rgba(168,85,247,0.3)] scale-[1.02]" 
+                                                : "text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5"
                                         )}
                                     >
                                         {f}
@@ -236,14 +236,14 @@ const GiveawayParticipants = () => {
                         <div className="space-y-4">
                             {filteredEntries.map(entry => (
                                 <Card key={entry.id} className={cn(
-                                    "p-6 bg-zinc-900/40 border hover:border-white/10 transition-all rounded-[2rem] backdrop-blur-3xl relative overflow-hidden group",
-                                    entry.isWinner ? 'border-purple-500/30 shadow-[0_0_20px_rgba(168,85,247,0.1)]' : 'border-white/5'
+                                    "p-6 bg-gray-100 dark:bg-zinc-900/40 border hover:border-black/10 dark:hover:border-white/10 transition-all rounded-[2rem] backdrop-blur-3xl relative overflow-hidden group",
+                                    entry.isWinner ? 'border-purple-500/30 shadow-[0_0_20px_rgba(168,85,247,0.1)]' : 'border-black/10 dark:border-white/5'
                                 )}>
                                     {entry.isWinner && <div className="absolute top-0 right-0 p-4 text-purple-500"><Trophy size={20} /></div>}
                                     
                                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                                         <div className="flex items-center gap-6">
-                                            <div className="w-14 h-14 rounded-2xl bg-white/5 flex items-center justify-center text-xl font-black group-hover:bg-purple-500 group-hover:text-white transition-all duration-500">
+                                            <div className="w-14 h-14 rounded-2xl bg-black/5 dark:bg-white/5 flex items-center justify-center text-xl font-black group-hover:bg-purple-500 group-hover:text-gray-900 dark:group-hover:text-white transition-all duration-500">
                                                 {entry.entryScore}
                                             </div>
                                             <div>
@@ -262,15 +262,15 @@ const GiveawayParticipants = () => {
                                         <div className="flex items-center gap-4">
                                             <div className="hidden md:block text-right mr-4">
                                                 <p className="text-[9px] text-gray-600 font-bold uppercase tracking-widest mb-1 italic">Why should win?</p>
-                                                <p className="text-[10px] text-gray-400 max-w-[200px] line-clamp-1 italic">"{entry.answer}"</p>
+                                                <p className="text-[10px] text-gray-600 dark:text-gray-400 max-w-[200px] line-clamp-1 italic">"{entry.answer}"</p>
                                             </div>
                                             <button
                                                 onClick={() => handleSelectWinner(entry.id)}
                                                 className={cn(
                                                     "h-12 px-6 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border",
                                                     entry.isWinner 
-                                                        ? 'bg-purple-500 text-white border-purple-500' 
-                                                        : 'bg-white/5 text-gray-500 border-white/5 hover:text-white hover:border-white/20'
+                                                        ? 'bg-purple-500 text-gray-900 dark:text-white border-purple-500' 
+                                                        : 'bg-black/5 dark:bg-white/5 text-gray-500 border-black/10 dark:border-white/5 hover:text-gray-900 dark:hover:text-white hover:border-black/20 dark:hover:border-white/20'
                                                 )}
                                             >
                                                 {entry.isWinner ? 'REVOKE WINNER' : 'SELECT WINNER'}
@@ -299,7 +299,7 @@ const GiveawayParticipants = () => {
                                                         deleteGiveawayEntry(entry.id);
                                                     }
                                                 }}
-                                                className="h-12 w-12 flex items-center justify-center rounded-xl bg-red-500/10 text-red-500 border border-red-500/20 hover:bg-red-500 hover:text-white transition-all"
+                                                className="h-12 w-12 flex items-center justify-center rounded-xl bg-red-500/10 text-red-500 border border-red-500/20 hover:bg-red-500 hover:text-gray-900 dark:hover:text-white transition-all"
                                                 title="Delete Participant"
                                             >
                                                 <Trash2 size={14} />
@@ -308,22 +308,22 @@ const GiveawayParticipants = () => {
                                     </div>
                                     
                                     {/* Expanded Detail (hover) */}
-                                    <div className="mt-6 pt-6 border-t border-white/5 grid grid-cols-2 md:grid-cols-6 gap-6 opacity-60 group-hover:opacity-100 transition-opacity">
+                                    <div className="mt-6 pt-6 border-t border-black/10 dark:border-white/5 grid grid-cols-2 md:grid-cols-6 gap-6 opacity-60 group-hover:opacity-100 transition-opacity">
                                         <div>
                                             <p className="text-[8px] text-gray-600 font-black uppercase tracking-widest mb-1">Email</p>
-                                            <p className="text-[10px] font-bold text-white lowercase">{entry.email}</p>
+                                            <p className="text-[10px] font-bold text-gray-900 dark:text-white lowercase">{entry.email}</p>
                                         </div>
                                         <div>
                                             <p className="text-[8px] text-gray-600 font-black uppercase tracking-widest mb-1">Phone</p>
-                                            <p className="text-[10px] font-bold text-white">{entry.phone}</p>
+                                            <p className="text-[10px] font-bold text-gray-900 dark:text-white">{entry.phone}</p>
                                         </div>
                                         <div>
                                             <p className="text-[8px] text-gray-600 font-black uppercase tracking-widest mb-1">College</p>
-                                            <p className="text-[10px] font-bold text-white uppercase truncate">{entry.college || 'N/A'}</p>
+                                            <p className="text-[10px] font-bold text-gray-900 dark:text-white uppercase truncate">{entry.college || 'N/A'}</p>
                                         </div>
                                         <div>
                                             <p className="text-[8px] text-gray-600 font-black uppercase tracking-widest mb-1">City</p>
-                                            <p className="text-[10px] font-bold text-white uppercase">{entry.city}</p>
+                                            <p className="text-[10px] font-bold text-gray-900 dark:text-white uppercase">{entry.city}</p>
                                         </div>
                                         <div>
                                             <p className="text-[8px] text-gray-600 font-black uppercase tracking-widest mb-1">Instagram</p>
@@ -331,13 +331,13 @@ const GiveawayParticipants = () => {
                                         </div>
                                         <div>
                                             <p className="text-[8px] text-gray-600 font-black uppercase tracking-widest mb-1">Why Should Win</p>
-                                            <p className="text-[10px] font-bold text-white uppercase truncate">{entry.answer || 'N/A'}</p>
+                                            <p className="text-[10px] font-bold text-gray-900 dark:text-white uppercase truncate">{entry.answer || 'N/A'}</p>
                                         </div>
                                     </div>
                                 </Card>
                             ))}
                             {filteredEntries.length === 0 && (
-                                <div className="text-center py-20 bg-zinc-900/20 rounded-[3rem] border border-dashed border-white/5">
+                                <div className="text-center py-20 bg-gray-100 dark:bg-zinc-900/20 rounded-[3rem] border border-dashed border-black/10 dark:border-white/5">
                                     <Users size={40} className="mx-auto text-gray-700 mb-4" />
                                     <p className="text-xs font-black text-gray-600 uppercase tracking-widest">No entries match your search</p>
                                 </div>

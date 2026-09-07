@@ -61,7 +61,7 @@ const FeaturedBlog = () => {
     return (
         <section
             id="featured-blog"
-            className="relative py-10 md:py-16 scroll-mt-24 bg-dark text-white overflow-hidden border-t border-white/5"
+            className="relative py-10 md:py-16 scroll-mt-24 bg-gray-50 dark:bg-dark transition-colors duration-300 text-gray-900 dark:text-white overflow-hidden border-t border-black/10 dark:border-white/5"
         >
             {/* Ambient Background Glows */}
 
@@ -73,9 +73,9 @@ const FeaturedBlog = () => {
                             initial={{ opacity: 0, y: 20 }}
                             whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: true }}
-                            className="font-heading text-4xl md:text-6xl font-extrabold tracking-tight text-white"
+                            className="font-heading text-4xl md:text-6xl font-extrabold tracking-tight text-gray-900 dark:text-white"
                         >
-                            Concert <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-neon-green">Zone</span>
+                            Concert <span className="text-transparent bg-clip-text bg-gradient-to-r from-black to-neon-green dark:from-white dark:to-neon-green">Zone</span>
                         </motion.h2>
                     </div>
 
@@ -86,7 +86,7 @@ const FeaturedBlog = () => {
                     >
                         <Link
                             to="/concertzone"
-                            className="group h-12 px-6 bg-white/5 border border-white/10 text-white font-bold uppercase tracking-wider text-[10px] hover:border-neon-green/50 hover:bg-neon-green/5 transition-all rounded-xl flex items-center gap-2"
+                            className="group h-12 px-6 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-gray-900 dark:text-white font-bold uppercase tracking-wider text-[10px] hover:border-neon-green/50 hover:bg-neon-green/5 transition-all rounded-xl flex items-center gap-2"
                         >
                             EXPLORE ALL ARTICLES
                             <ArrowRight size={12} className="group-hover:translate-x-1 transition-transform" />
@@ -101,13 +101,13 @@ const FeaturedBlog = () => {
                         <div className="hidden lg:block">
                             <button 
                                 onClick={() => scroll('left')}
-                                className="absolute -left-12 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white hover:bg-neon-green hover:text-black transition-all z-30 backdrop-blur-md opacity-0 group-hover/nav:opacity-100 -translate-x-4 group-hover/nav:translate-x-0 duration-300"
+                                className="absolute -left-12 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 flex items-center justify-center text-gray-900 dark:text-white hover:bg-neon-green hover:text-black transition-all z-30 backdrop-blur-md opacity-0 group-hover/nav:opacity-100 -translate-x-4 group-hover/nav:translate-x-0 duration-300"
                             >
                                 <ChevronLeft size={20} />
                             </button>
                             <button 
                                 onClick={() => scroll('right')}
-                                className="absolute -right-12 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white hover:bg-neon-green hover:text-black transition-all z-30 backdrop-blur-md opacity-0 group-hover/nav:opacity-100 translate-x-4 group-hover/nav:translate-x-0 duration-300"
+                                className="absolute -right-12 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 flex items-center justify-center text-gray-900 dark:text-white hover:bg-neon-green hover:text-black transition-all z-30 backdrop-blur-md opacity-0 group-hover/nav:opacity-100 translate-x-4 group-hover/nav:translate-x-0 duration-300"
                             >
                                 <ChevronRight size={20} />
                             </button>
@@ -134,13 +134,13 @@ const FeaturedBlog = () => {
                         <div className="flex md:hidden items-center justify-center gap-4 mt-4">
                             <button 
                                 onClick={() => scroll('left')}
-                                className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-white active:bg-white active:text-black transition-all"
+                                className="w-10 h-10 rounded-xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 flex items-center justify-center text-gray-900 dark:text-white active:bg-white active:text-black transition-all"
                             >
                                 <ChevronLeft size={16} />
                             </button>
                             <button 
                                 onClick={() => scroll('right')}
-                                className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-white active:bg-white active:text-black transition-all"
+                                className="w-10 h-10 rounded-xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 flex items-center justify-center text-gray-900 dark:text-white active:bg-white active:text-black transition-all"
                             >
                                 <ChevronRight size={16} />
                             </button>

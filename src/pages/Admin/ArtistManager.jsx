@@ -247,19 +247,19 @@ const ArtistManager = ({ isEmbedded = false }) => {
 
             <div className={isEmbedded ? "px-4 md:px-12 pt-12" : ""}>
                 {/* Futuristic Control Panel */}
-                <div className="relative z-50 bg-[#0A0A0A]/80 backdrop-blur-3xl border border-white/10 rounded-[1.5rem] md:rounded-[2rem] p-1.5 md:p-2.5 md:pr-6 mb-8 md:mb-16 shadow-[0_30px_100px_rgba(0,0,0,0.8)] flex flex-col xl:flex-row xl:flex-wrap xl:items-center gap-2 md:gap-3">
+                <div className="relative z-50 bg-[#0A0A0A]/80 backdrop-blur-3xl border border-black/10 dark:border-white/10 rounded-[1.5rem] md:rounded-[2rem] p-1.5 md:p-2.5 md:pr-6 mb-8 md:mb-16 shadow-[0_30px_100px_rgba(0,0,0,0.8)] flex flex-col xl:flex-row xl:flex-wrap xl:items-center gap-2 md:gap-3">
 
 
                     {/* Search Engine */}
                     <div className="relative flex-1 min-w-[200px] group">
                         <div className="absolute inset-0 bg-gradient-to-r from-neon-blue/10 to-transparent opacity-0 group-focus-within:opacity-100 transition-opacity rounded-full pointer-events-none" />
-                        <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-neon-blue transition-colors" size={16} />
+                        <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-600 dark:text-gray-400 group-focus-within:text-blue-600 dark:group-focus-within:text-neon-blue transition-colors" size={16} />
                         <input
                             type="text"
                             placeholder="SEARCH TALENT..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full h-14 pl-14 pr-6 bg-black/60 border border-white/10 group-hover:border-white/20 focus:border-neon-blue/60 rounded-full text-[10px] font-black uppercase tracking-[0.2em] outline-none transition-all placeholder:text-gray-700 text-white min-w-0"
+                            className="w-full h-14 pl-14 pr-6 bg-white dark:bg-black/60 border border-black/10 dark:border-white/10 group-hover:border-black/20 dark:group-hover:border-white/20 focus:border-neon-blue/60 rounded-full text-[10px] font-black uppercase tracking-[0.2em] outline-none transition-all placeholder:text-gray-700 text-gray-900 dark:text-white min-w-0"
 
                         />
                     </div>
@@ -271,7 +271,7 @@ const ArtistManager = ({ isEmbedded = false }) => {
                                 value={filterCategory} 
                                 options={categories.map(c => ({ value: c, label: c === 'All' ? 'CATEGORY' : c.toUpperCase() }))} 
                                 onChange={setFilterCategory} 
-                                className="h-12 md:h-14 rounded-xl md:rounded-full border-white/10 bg-black/60" 
+                                className="h-12 md:h-14 rounded-xl md:rounded-full border-black/10 dark:border-white/10 bg-white dark:bg-black/60" 
                                 accentColor="neon-pink" 
                             />
                         </div>
@@ -280,7 +280,7 @@ const ArtistManager = ({ isEmbedded = false }) => {
                                 value={filterCity} 
                                 options={cities.map(c => ({ value: c, label: c === 'All' ? 'LOCATION' : c.toUpperCase() }))} 
                                 onChange={setFilterCity} 
-                                className="h-12 md:h-14 rounded-xl md:rounded-full border-white/10 bg-black/60" 
+                                className="h-12 md:h-14 rounded-xl md:rounded-full border-black/10 dark:border-white/10 bg-white dark:bg-black/60" 
                                 accentColor="neon-blue" 
                             />
                         </div>
@@ -294,19 +294,19 @@ const ArtistManager = ({ isEmbedded = false }) => {
                                     { value: 'rejected', label: 'REJECTED' }
                                 ]} 
                                 onChange={setFilterStatus} 
-                                className="h-12 md:h-14 rounded-xl md:rounded-full border-white/10 bg-black/60" 
+                                className="h-12 md:h-14 rounded-xl md:rounded-full border-black/10 dark:border-white/10 bg-white dark:bg-black/60" 
                                 accentColor="neon-green" 
                             />
                         </div>
 
-                        <div className="w-px h-8 bg-white/5 mx-1 hidden xl:block" />
+                        <div className="w-px h-8 bg-black/5 dark:bg-white/5 mx-1 hidden xl:block" />
 
-                        <div className="hidden md:flex bg-black/60 p-1 rounded-full border border-white/10 shrink-0 h-14 items-center">
+                        <div className="hidden md:flex bg-white dark:bg-black/60 p-1 rounded-full border border-black/10 dark:border-white/10 shrink-0 h-14 items-center">
                             <button 
                                 onClick={() => setViewMode('grid')} 
                                 className={cn(
                                     "w-11 h-11 rounded-full flex items-center justify-center transition-all", 
-                                    viewMode === 'grid' ? "bg-white text-black shadow-xl" : "text-gray-500 hover:text-white"
+                                    viewMode === 'grid' ? "bg-white text-black shadow-xl" : "text-gray-500 hover:text-gray-900 dark:hover:text-white"
                                 )}
                             >
                                 <LayoutGrid size={16} />
@@ -315,7 +315,7 @@ const ArtistManager = ({ isEmbedded = false }) => {
                                 onClick={() => setViewMode('list')} 
                                 className={cn(
                                     "w-11 h-11 rounded-full flex items-center justify-center transition-all", 
-                                    viewMode === 'list' ? "bg-white text-black shadow-xl" : "text-gray-500 hover:text-white"
+                                    viewMode === 'list' ? "bg-white text-black shadow-xl" : "text-gray-500 hover:text-gray-900 dark:hover:text-white"
                                 )}
                             >
                                 <FileSpreadsheet size={16} />
@@ -324,7 +324,7 @@ const ArtistManager = ({ isEmbedded = false }) => {
 
                         <button 
                             onClick={() => setIsCastingMode(true)}
-                            className="group relative h-12 md:h-14 px-4 md:px-8 bg-zinc-900 text-white border border-white/10 rounded-xl md:rounded-full font-black uppercase tracking-[0.2em] text-[9px] md:text-[10px] overflow-hidden hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3 w-full xl:w-auto shrink-0 col-span-2 sm:col-span-3 xl:col-span-1"
+                            className="group relative h-12 md:h-14 px-4 md:px-8 bg-gray-100 dark:bg-zinc-900 text-gray-900 dark:text-white border border-black/10 dark:border-white/10 rounded-xl md:rounded-full font-black uppercase tracking-[0.2em] text-[9px] md:text-[10px] overflow-hidden hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3 w-full xl:w-auto shrink-0 col-span-2 sm:col-span-3 xl:col-span-1"
                         >
                             <div className="relative z-10 flex items-center gap-3">
                                 <Target size={16} className="text-neon-blue" />
@@ -337,7 +337,7 @@ const ArtistManager = ({ isEmbedded = false }) => {
                             className="group relative h-12 md:h-14 px-4 md:px-8 bg-white text-black rounded-xl md:rounded-full font-black uppercase tracking-[0.2em] text-[9px] md:text-[10px] overflow-hidden hover:scale-[1.02] active:scale-95 transition-all shadow-[0_15px_40px_rgba(255,255,255,0.1)] flex items-center justify-center gap-3 w-full xl:w-auto shrink-0 col-span-2 sm:col-span-3 xl:col-span-1"
                         >
                             <div className="absolute inset-0 bg-gradient-to-r from-neon-blue via-neon-pink to-purple-500 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                            <div className="relative z-10 flex items-center gap-3 group-hover:text-white transition-colors duration-500">
+                            <div className="relative z-10 flex items-center gap-3 group-hover:text-gray-900 dark:group-hover:text-white transition-colors duration-500">
                                 <Download size={16} />
                                 EXPORT CSV
                             </div>
@@ -354,9 +354,9 @@ const ArtistManager = ({ isEmbedded = false }) => {
                         {artists.length === 0 ? (
                             <motion.div 
                                 initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                                className="py-40 text-center bg-[#050505]/40 rounded-[4rem] border border-white/5 flex flex-col items-center gap-8 shadow-inner"
+                                className="py-40 text-center bg-[#050505]/40 rounded-[4rem] border border-black/10 dark:border-white/5 flex flex-col items-center gap-8 shadow-inner"
                             >
-                                <div className="w-32 h-32 bg-white/5 rounded-full flex items-center justify-center border border-white/10 animate-pulse">
+                                <div className="w-32 h-32 bg-black/5 dark:bg-white/5 rounded-full flex items-center justify-center border border-black/10 dark:border-white/10 animate-pulse">
                                     <Mic2 size={48} className="text-gray-700" />
                                 </div>
                                 <div className="space-y-2">
@@ -405,7 +405,7 @@ const ArtistManager = ({ isEmbedded = false }) => {
                                     </div>
                                 ) : (
                                     <div className="flex flex-col gap-3">
-                                        <div className="flex items-center gap-6 px-10 py-6 text-[10px] font-black text-gray-600 uppercase tracking-[0.4em] border-b border-white/5">
+                                        <div className="flex items-center gap-6 px-10 py-6 text-[10px] font-black text-gray-600 uppercase tracking-[0.4em] border-b border-black/10 dark:border-white/5">
                                             <div className="w-16 shrink-0">Identity</div>
                                             <div className="flex-1 pl-1">Profile Details</div>
                                             <div className="w-48 hidden md:block">Category</div>
@@ -433,7 +433,7 @@ const ArtistManager = ({ isEmbedded = false }) => {
                                         <button 
                                             disabled={currentPage === 1}
                                             onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                                            className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white disabled:opacity-20 hover:bg-white hover:text-black transition-all"
+                                            className="w-12 h-12 rounded-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 flex items-center justify-center text-gray-900 dark:text-white disabled:opacity-20 hover:bg-white hover:text-black transition-all"
                                         >
                                             <ChevronLeft size={20} />
                                         </button>
@@ -457,7 +457,7 @@ const ArtistManager = ({ isEmbedded = false }) => {
                                                             "w-12 h-12 rounded-full font-black text-xs transition-all border flex items-center justify-center",
                                                             currentPage === page 
                                                                 ? "bg-white text-black border-white shadow-[0_0_20px_rgba(255,255,255,0.3)]" 
-                                                                : "bg-white/5 text-gray-500 border-white/10 hover:border-white/30"
+                                                                : "bg-black/5 dark:bg-white/5 text-gray-500 border-black/10 dark:border-white/10 hover:border-white/30"
                                                         )}
                                                     >
                                                         {page}
@@ -468,7 +468,7 @@ const ArtistManager = ({ isEmbedded = false }) => {
                                         <button 
                                             disabled={currentPage === totalPages}
                                             onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                                            className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white disabled:opacity-20 hover:bg-white hover:text-black transition-all"
+                                            className="w-12 h-12 rounded-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 flex items-center justify-center text-gray-900 dark:text-white disabled:opacity-20 hover:bg-white hover:text-black transition-all"
                                         >
                                             <ChevronRight size={20} />
                                         </button>
@@ -537,16 +537,16 @@ const ArtistManager = ({ isEmbedded = false }) => {
                     />
                 )}
                 {showDeleteConfirmId && (
-                    <div className="fixed inset-0 z-[500] flex items-center justify-center p-6 backdrop-blur-3xl bg-black/80">
+                    <div className="fixed inset-0 z-[500] flex items-center justify-center p-6 backdrop-blur-3xl bg-white dark:bg-black/80">
                         <motion.div 
                             initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
-                            className="max-w-md w-full bg-zinc-900 border border-white/10 rounded-[3rem] p-12 text-center space-y-8 shadow-[0_50px_100px_rgba(0,0,0,0.5)]"
+                            className="max-w-md w-full bg-gray-100 dark:bg-zinc-900 border border-black/10 dark:border-white/10 rounded-[3rem] p-12 text-center space-y-8 shadow-[0_50px_100px_rgba(0,0,0,0.5)]"
                         >
                             <div className="w-24 h-24 rounded-full bg-red-500/20 border border-red-500/20 flex items-center justify-center mx-auto">
                                 <AlertTriangle size={44} className="text-red-500" />
                             </div>
                             <div className="space-y-3">
-                                <h3 className="text-3xl font-black font-heading uppercase italic tracking-tighter text-white">Confirm Delete</h3>
+                                <h3 className="text-3xl font-black font-heading uppercase italic tracking-tighter text-gray-900 dark:text-white">Confirm Delete</h3>
                                 <p className="text-[11px] font-bold text-gray-500 uppercase tracking-widest leading-relaxed">
                                     Are you certain you want to delete this artist profile? This action is irreversible and will remove all associated records.
                                 </p>
@@ -555,13 +555,13 @@ const ArtistManager = ({ isEmbedded = false }) => {
                                 <button 
                                     onClick={() => handleDeleteArtist(showDeleteConfirmId)}
                                     disabled={isDeleting}
-                                    className="w-full h-20 bg-red-500 text-white rounded-[1.5rem] font-black uppercase tracking-[0.2em] text-[11px] hover:bg-red-600 transition-all shadow-xl active:scale-95 flex items-center justify-center gap-3"
+                                    className="w-full h-20 bg-red-500 text-gray-900 dark:text-white rounded-[1.5rem] font-black uppercase tracking-[0.2em] text-[11px] hover:bg-red-600 transition-all shadow-xl active:scale-95 flex items-center justify-center gap-3"
                                 >
                                     {isDeleting ? <LoadingSpinner size="xs" color="white" /> : 'DELETE PROFILE'}
                                 </button>
                                 <button 
                                     onClick={() => setShowDeleteConfirmId(null)}
-                                    className="w-full h-20 bg-white/5 text-gray-400 rounded-[1.5rem] font-black uppercase tracking-[0.2em] text-[11px] hover:bg-white/10 transition-all active:scale-95"
+                                    className="w-full h-20 bg-black/5 dark:bg-white/5 text-gray-600 dark:text-gray-400 rounded-[1.5rem] font-black uppercase tracking-[0.2em] text-[11px] hover:bg-black/10 dark:hover:bg-white/10 transition-all active:scale-95"
                                 >
                                     CANCEL
                                 </button>
@@ -630,7 +630,7 @@ const StatCard = ({ icon, label, value, color, description, compact = false }) =
             <div className={cn("relative z-10 flex h-full", compact ? "flex-row items-center gap-4" : "flex-col justify-between gap-8")}>
                 <div className="flex items-start justify-between">
                 <div className={cn(
-                    "rounded-2xl flex items-center justify-center shadow-inner border border-white/5 shrink-0", 
+                    "rounded-2xl flex items-center justify-center shadow-inner border border-black/10 dark:border-white/5 shrink-0", 
                     compact ? "w-10 h-10 md:w-12 md:h-12" : "w-16 h-16",
                     theme.bg, theme.text
                 )}>
@@ -639,7 +639,7 @@ const StatCard = ({ icon, label, value, color, description, compact = false }) =
                     {!compact && (
                         <div className="text-right">
                             <TrendingUp size={16} className={cn("inline-block mr-2", theme.text)} />
-                            <span className="text-[10px] font-black text-white/40 uppercase tracking-widest">+12%</span>
+                            <span className="text-[10px] font-black text-gray-900 dark:text-white/40 uppercase tracking-widest">+12%</span>
                         </div>
                     )}
 
@@ -648,7 +648,7 @@ const StatCard = ({ icon, label, value, color, description, compact = false }) =
                 <div className={cn("space-y-1", compact ? "flex-1" : "")}>
                     <p className={cn("font-black uppercase tracking-[0.4em] leading-tight text-gray-500", compact ? "text-[8px]" : "text-[10px]")}>{label}</p>
                     <div className="flex items-baseline gap-3">
-                        <h3 className={cn("font-black text-white tracking-tighter tabular-nums leading-none", compact ? "text-2xl" : "text-6xl")}>
+                        <h3 className={cn("font-black text-gray-900 dark:text-white tracking-tighter tabular-nums leading-none", compact ? "text-2xl" : "text-6xl")}>
                             {value}
                         </h3>
                     </div>
@@ -673,18 +673,18 @@ const ArtistBadgeCard = ({ artist, onSelect }) => (
     <motion.div 
         layout
         onClick={onSelect}
-        className="group relative bg-[#0A0A0A] border border-white/5 hover:border-neon-blue/40 rounded-[2.5rem] sm:rounded-[3rem] p-4 sm:p-5 cursor-pointer overflow-hidden transition-all duration-700 hover:-translate-y-2 hover:shadow-[0_40px_100px_rgba(0,0,0,0.9)] flex flex-col h-auto sm:min-h-[460px]"
+        className="group relative bg-[#0A0A0A] border border-black/10 dark:border-white/5 hover:border-neon-blue/40 rounded-[2.5rem] sm:rounded-[3rem] p-4 sm:p-5 cursor-pointer overflow-hidden transition-all duration-700 hover:-translate-y-2 hover:shadow-[0_40px_100px_rgba(0,0,0,0.9)] flex flex-col h-auto sm:min-h-[460px]"
     >
         {/* Cinematic Backdrop */}
         <div className="absolute inset-0 bg-gradient-to-br from-neon-blue/5 via-transparent to-neon-pink/5 opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
         
         {/* Avatar / Image Section - REDUCED SIZE */}
         <div className="relative mb-5 group-hover:scale-[1.01] transition-transform duration-700">
-            <div className="aspect-[4/3] rounded-[2rem] overflow-hidden bg-black border border-white/5 relative flex items-center justify-center">
+            <div className="aspect-[4/3] rounded-[2rem] overflow-hidden bg-white dark:bg-black border border-black/10 dark:border-white/5 relative flex items-center justify-center">
                 {artist.image ? (
                     <img src={artist.image} alt={artist.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000" />
                 ) : (
-                    <div className="text-6xl font-black text-white/[0.03] uppercase italic select-none">
+                    <div className="text-6xl font-black text-black/[0.03] dark:text-white/[0.03] uppercase italic select-none">
                         {artist.name.charAt(0)}
                     </div>
                 )}
@@ -706,14 +706,14 @@ const ArtistBadgeCard = ({ artist, onSelect }) => (
         <div className="flex-1 flex flex-col px-1">
             <div className="mb-4">
                 <p className="text-[9px] font-black text-neon-blue uppercase tracking-[0.4em] mb-1.5 opacity-80">{artist.category}</p>
-                <h3 className="text-2xl font-black text-white tracking-tighter uppercase italic leading-none group-hover:text-neon-blue transition-colors duration-500 line-clamp-2 break-words">
+                <h3 className="text-2xl font-black text-gray-900 dark:text-white tracking-tighter uppercase italic leading-none group-hover:text-neon-blue transition-colors duration-500 line-clamp-2 break-words">
                     {artist.name}
                 </h3>
             </div>
 
             {/* Operational Meta (Grid for better layout) */}
             <div className="grid grid-cols-2 gap-2 mb-4">
-                <div className="flex items-center gap-2 text-gray-500 text-[9px] font-black uppercase tracking-[0.15em] bg-white/[0.03] px-3 py-2 rounded-xl border border-white/5 shadow-inner">
+                <div className="flex items-center gap-2 text-gray-500 text-[9px] font-black uppercase tracking-[0.15em] bg-white/[0.03] px-3 py-2 rounded-xl border border-black/10 dark:border-white/5 shadow-inner">
                     <MapPin size={10} className="text-neon-pink shrink-0" />
                     <span className="truncate">{artist.city || 'GLOBAL'}</span>
                 </div>
@@ -722,21 +722,21 @@ const ArtistBadgeCard = ({ artist, onSelect }) => (
                     <span className="truncate">{artist.experienceYears || '0'}Y EXP</span>
                 </div>
                 {/* Added Phone/Contact info */}
-                <div className="col-span-2 flex items-center gap-2 text-white/40 text-[9px] font-black uppercase tracking-[0.15em] bg-white/[0.02] px-3 py-2 rounded-xl border border-white/5">
+                <div className="col-span-2 flex items-center gap-2 text-gray-900 dark:text-white/40 text-[9px] font-black uppercase tracking-[0.15em] bg-white/[0.02] px-3 py-2 rounded-xl border border-black/10 dark:border-white/5">
                     <Phone size={10} className="text-neon-blue shrink-0" />
                     <span className="truncate">{artist.phone || 'PHONE N/A'}</span>
                 </div>
             </div>
 
             {/* Commercial Baseline */}
-            <div className="mt-auto pt-4 border-t border-white/5 flex items-center justify-between">
+            <div className="mt-auto pt-4 border-t border-black/10 dark:border-white/5 flex items-center justify-between">
                 <div>
                     <p className="text-[7px] font-black text-gray-600 uppercase tracking-widest mb-1">BASE PRICE</p>
-                    <p className="text-xl font-black text-white tracking-tighter tabular-nums">₹{Number(artist.basePrice).toLocaleString()}</p>
+                    <p className="text-xl font-black text-gray-900 dark:text-white tracking-tighter tabular-nums">₹{Number(artist.basePrice).toLocaleString()}</p>
                 </div>
                 <div className="flex gap-1.5">
                     {artist.instagram && (
-                        <div className="w-8 h-8 rounded-lg bg-white/5 border border-white/5 flex items-center justify-center text-gray-500 hover:text-neon-pink hover:border-neon-pink/30 hover:bg-neon-pink/10 transition-all">
+                        <div className="w-8 h-8 rounded-lg bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/5 flex items-center justify-center text-gray-500 hover:text-neon-pink hover:border-neon-pink/30 hover:bg-neon-pink/10 transition-all">
                             <Instagram size={14} />
                         </div>
                     )}
@@ -754,11 +754,11 @@ const ArtistBadgeCard = ({ artist, onSelect }) => (
 const ArtistListItem = ({ artist, onSelect }) => (
     <div 
         onClick={onSelect}
-        className="group flex flex-col sm:flex-row items-start sm:items-center p-5 sm:px-8 sm:py-5 bg-[#080808]/40 backdrop-blur-xl border border-white/5 hover:border-white/10 hover:bg-[#0A0A0A]/80 rounded-[2rem] cursor-pointer transition-all duration-300 gap-4 sm:gap-6"
+        className="group flex flex-col sm:flex-row items-start sm:items-center p-5 sm:px-8 sm:py-5 bg-[#080808]/40 backdrop-blur-xl border border-black/10 dark:border-white/5 hover:border-black/10 dark:hover:border-white/10 hover:bg-[#0A0A0A]/80 rounded-[2rem] cursor-pointer transition-all duration-300 gap-4 sm:gap-6"
 
     >
         <div className="w-16">
-            <div className="w-14 h-14 bg-black border border-white/10 rounded-2xl flex items-center justify-center font-black text-white group-hover:border-neon-blue/40 overflow-hidden transition-colors group-hover:scale-105 transition-transform">
+            <div className="w-14 h-14 bg-white dark:bg-black border border-black/10 dark:border-white/10 rounded-2xl flex items-center justify-center font-black text-gray-900 dark:text-white group-hover:border-neon-blue/40 overflow-hidden transition-colors group-hover:scale-105 transition-transform">
                 {artist.image ? (
                     <img src={artist.image} alt={artist.name} className="w-full h-full object-cover" />
                 ) : (
@@ -768,7 +768,7 @@ const ArtistListItem = ({ artist, onSelect }) => (
         </div>
         <div className="flex-1 w-full sm:w-auto">
             <div className="flex items-center justify-between sm:block mb-2 sm:mb-0">
-                <p className="font-black uppercase italic tracking-tight text-white group-hover:text-neon-blue transition-colors text-lg sm:text-xl leading-none mb-2">{artist.name}</p>
+                <p className="font-black uppercase italic tracking-tight text-gray-900 dark:text-white group-hover:text-neon-blue transition-colors text-lg sm:text-xl leading-none mb-2">{artist.name}</p>
                 <div className="sm:hidden">
                     <StatusPill status={artist.profileStatus} />
                 </div>
@@ -777,22 +777,22 @@ const ArtistListItem = ({ artist, onSelect }) => (
                 <p className="text-[9px] sm:text-[10px] text-gray-600 font-black tracking-[0.2em] flex items-center gap-1.5 uppercase">
                     <MapPin size={10} className="text-neon-pink" /> {artist.city}
                 </p>
-                <div className="w-1 h-1 rounded-full bg-white/10" />
+                <div className="w-1 h-1 rounded-full bg-black/10 dark:bg-white/10" />
                 <p className="text-[9px] sm:text-[10px] text-gray-600 font-black tracking-[0.2em] uppercase">{artist.experienceYears}Y Exp</p>
             </div>
         </div>
         <div className="w-48 hidden md:block">
-            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-400 bg-white/5 border border-white/5 px-4 py-2 rounded-xl group-hover:bg-white/10 transition-colors">
+            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-600 dark:text-gray-400 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/5 px-4 py-2 rounded-xl group-hover:bg-black/10 dark:group-hover:bg-white/10 transition-colors">
                 {artist.category}
             </span>
         </div>
         <div className="w-40 hidden lg:block text-right pr-10">
-            <p className="text-lg font-black text-white tracking-tighter">₹{Number(artist.basePrice).toLocaleString()}</p>
+            <p className="text-lg font-black text-gray-900 dark:text-white tracking-tighter">₹{Number(artist.basePrice).toLocaleString()}</p>
         </div>
         <div className="hidden sm:flex w-32 items-center justify-end">
             <StatusPill status={artist.profileStatus} />
         </div>
-        <div className="hidden sm:flex w-12 h-12 rounded-2xl bg-white/5 border border-white/5 items-center justify-center group-hover:bg-white group-hover:text-black transition-all group-hover:scale-110">
+        <div className="hidden sm:flex w-12 h-12 rounded-2xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/5 items-center justify-center group-hover:bg-white group-hover:text-black transition-all group-hover:scale-110">
             <ChevronRight size={20} />
         </div>
     </div>
@@ -842,10 +842,10 @@ const ArtistDetailModal = ({ artist, onClose, onUpdateStatus, onDelete, onExport
     const youtubeId = getYoutubeId(artist?.youtube);
     
     return createPortal(
-        <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 md:p-10 bg-black/50 backdrop-blur-md">
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 md:p-10 bg-white dark:bg-black/50 backdrop-blur-md">
             <motion.div 
                 initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} 
-                className="absolute inset-0 bg-black/80" 
+                className="absolute inset-0 bg-white dark:bg-black/80" 
                 onClick={onClose} 
             />
             <motion.div
@@ -853,23 +853,23 @@ const ArtistDetailModal = ({ artist, onClose, onUpdateStatus, onDelete, onExport
                 animate={{ scale: 1, opacity: 1, y: 0 }} 
                 exit={{ scale: 0.95, opacity: 0, y: 30 }}
                 transition={{ type: "spring", damping: 25, stiffness: 200 }}
-                className="relative bg-[#050505] border border-white/10 rounded-[3rem] w-full max-w-5xl h-[85vh] flex flex-col overflow-hidden shadow-[0_0_100px_rgba(0,0,0,1)] z-10"
+                className="relative bg-[#050505] border border-black/10 dark:border-white/10 rounded-[3rem] w-full max-w-5xl h-[85vh] flex flex-col overflow-hidden shadow-[0_0_100px_rgba(0,0,0,1)] z-10"
             >
                 {/* Modal Glow Decor */}
                 <div className="absolute top-0 left-1/2 -translate-x-1/2 w-2/3 h-px bg-gradient-to-r from-transparent via-neon-blue to-transparent opacity-50" />
                 
                 <button 
                     onClick={onClose} 
-                    className="absolute top-6 right-6 w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white hover:text-black transition-all group z-50 hover:scale-110 active:scale-95"
+                    className="absolute top-6 right-6 w-12 h-12 rounded-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 flex items-center justify-center hover:bg-white hover:text-black transition-all group z-50 hover:scale-110 active:scale-95"
                 >
                     <X size={20} className="group-hover:rotate-90 transition-transform duration-500" />
                 </button>
 
                 <div className="flex-1 flex flex-col lg:flex-row overflow-hidden p-6 sm:p-10 gap-8 h-full">
                     {/* Left Side: Profile, Meta, Contact, Actions */}
-                    <div className="w-full lg:w-[350px] flex flex-col justify-between gap-6 shrink-0 border-b lg:border-b-0 lg:border-r border-white/10 pb-6 lg:pb-0 lg:pr-8 overflow-y-auto custom-scrollbar">
+                    <div className="w-full lg:w-[350px] flex flex-col justify-between gap-6 shrink-0 border-b lg:border-b-0 lg:border-r border-black/10 dark:border-white/10 pb-6 lg:pb-0 lg:pr-8 overflow-y-auto custom-scrollbar">
                         <div className="space-y-6">
-                            <div className="relative w-36 h-36 bg-black border-2 border-white/10 rounded-[2.5rem] flex items-center justify-center text-5xl font-black text-white shadow-[0_20px_45px_rgba(0,0,0,0.8)] overflow-hidden group mx-auto lg:mx-0">
+                            <div className="relative w-36 h-36 bg-white dark:bg-black border-2 border-black/10 dark:border-white/10 rounded-[2.5rem] flex items-center justify-center text-5xl font-black text-gray-900 dark:text-white shadow-[0_20px_45px_rgba(0,0,0,0.8)] overflow-hidden group mx-auto lg:mx-0">
                                 <div className="absolute inset-0 bg-gradient-to-br from-neon-blue/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                                 {artist.image ? (
                                     <img src={artist.image} alt={artist.name} className="w-full h-full object-cover relative z-10" />
@@ -881,26 +881,26 @@ const ArtistDetailModal = ({ artist, onClose, onUpdateStatus, onDelete, onExport
                             <div className="space-y-3 text-center lg:text-left">
                                 <div className="flex flex-wrap justify-center lg:justify-start gap-2 items-center">
                                     <StatusPill status={artist.profileStatus} />
-                                    <span className="px-3 py-1 bg-white/5 border border-white/5 rounded-full text-[8px] font-black text-gray-500 tracking-[0.2em] uppercase">
+                                    <span className="px-3 py-1 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/5 rounded-full text-[8px] font-black text-gray-500 tracking-[0.2em] uppercase">
                                         since {new Date(artist.createdAt || Date.now()).getFullYear()}
                                     </span>
                                 </div>
-                                <h2 className="text-3xl font-black font-heading tracking-tighter uppercase italic leading-[0.9] text-white break-words">
+                                <h2 className="text-3xl font-black font-heading tracking-tighter uppercase italic leading-[0.9] text-gray-900 dark:text-white break-words">
                                     {artist.name}
                                 </h2>
                             </div>
 
                             {/* Meta Grid */}
                             <div className="grid grid-cols-2 gap-2.5 text-[9px] font-black uppercase tracking-[0.1em]">
-                                <div className="px-3.5 py-2.5 bg-white/5 border border-white/5 rounded-2xl text-gray-300 flex items-center gap-2">
+                                <div className="px-3.5 py-2.5 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/5 rounded-2xl text-gray-700 dark:text-gray-300 flex items-center gap-2">
                                     <MapPin size={12} className="text-neon-pink shrink-0" />
                                     <span className="truncate">{artist.city || 'GLOBAL'}</span>
                                 </div>
-                                <div className="px-3.5 py-2.5 bg-white/5 border border-white/5 rounded-2xl text-gray-300 flex items-center gap-2">
+                                <div className="px-3.5 py-2.5 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/5 rounded-2xl text-gray-700 dark:text-gray-300 flex items-center gap-2">
                                     <Award size={12} className="text-yellow-500 shrink-0" />
                                     <span className="truncate">{artist.experienceYears || 0} Years</span>
                                 </div>
-                                <div className="px-3.5 py-2.5 bg-white/5 border border-white/5 rounded-2xl text-gray-300 flex items-center gap-2">
+                                <div className="px-3.5 py-2.5 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/5 rounded-2xl text-gray-700 dark:text-gray-300 flex items-center gap-2">
                                     <Music size={12} className="text-neon-blue shrink-0" />
                                     <span className="truncate">{artist.category}</span>
                                 </div>
@@ -912,25 +912,25 @@ const ArtistDetailModal = ({ artist, onClose, onUpdateStatus, onDelete, onExport
 
                             {/* Contact channels */}
                             <div className="space-y-2">
-                                <div className="p-3 bg-[#0A0A0A] border border-white/5 rounded-2xl flex items-center gap-3">
+                                <div className="p-3 bg-[#0A0A0A] border border-black/10 dark:border-white/5 rounded-2xl flex items-center gap-3">
                                     <Mail size={14} className="text-gray-500 shrink-0" />
                                     <div className="min-w-0 flex-1">
                                         <p className="text-[7px] font-black text-gray-600 uppercase tracking-widest">Email</p>
-                                        <p className="text-xs font-black text-white truncate">{artist.email || 'N/A'}</p>
+                                        <p className="text-xs font-black text-gray-900 dark:text-white truncate">{artist.email || 'N/A'}</p>
                                     </div>
                                 </div>
-                                <div className="p-3 bg-[#0A0A0A] border border-white/5 rounded-2xl flex items-center gap-3">
+                                <div className="p-3 bg-[#0A0A0A] border border-black/10 dark:border-white/5 rounded-2xl flex items-center gap-3">
                                     <Phone size={14} className="text-gray-500 shrink-0" />
                                     <div className="min-w-0 flex-1">
                                         <p className="text-[7px] font-black text-gray-600 uppercase tracking-widest">Phone</p>
-                                        <p className="text-xs font-black text-white truncate">{artist.phone || 'N/A'}</p>
+                                        <p className="text-xs font-black text-gray-900 dark:text-white truncate">{artist.phone || 'N/A'}</p>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
                         {/* Actions block */}
-                        <div className="space-y-3 pt-4 border-t border-white/5 shrink-0">
+                        <div className="space-y-3 pt-4 border-t border-black/10 dark:border-white/5 shrink-0">
                             <div className="flex gap-2">
                                 {artist.profileStatus !== 'approved' && (
                                     <button 
@@ -945,7 +945,7 @@ const ArtistDetailModal = ({ artist, onClose, onUpdateStatus, onDelete, onExport
                                     <button 
                                         onClick={() => onUpdateStatus(artist.id, 'rejected')} 
                                         disabled={isUpdating}
-                                        className="flex-1 h-12 bg-white/5 border border-white/10 text-gray-400 font-black uppercase tracking-[0.2em] text-[9px] rounded-xl hover:bg-white hover:text-black hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2"
+                                        className="flex-1 h-12 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-gray-600 dark:text-gray-400 font-black uppercase tracking-[0.2em] text-[9px] rounded-xl hover:bg-white hover:text-black hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2"
                                     >
                                         {isUpdating ? <LoadingSpinner size="xs" color="black" /> : 'REJECT'}
                                     </button>
@@ -954,13 +954,13 @@ const ArtistDetailModal = ({ artist, onClose, onUpdateStatus, onDelete, onExport
                             <div className="flex gap-2">
                                 <button 
                                     onClick={onExport}
-                                    className="flex-1 h-12 bg-white text-black font-black uppercase tracking-[0.2em] text-[9px] rounded-xl hover:bg-neon-blue hover:text-white hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2"
+                                    className="flex-1 h-12 bg-white text-black font-black uppercase tracking-[0.2em] text-[9px] rounded-xl hover:bg-neon-blue hover:text-gray-900 dark:hover:text-white hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2"
                                 >
                                     <Download size={12} /> EXPORT CSV
                                 </button>
                                 <button 
                                     onClick={() => onDelete(artist.id)} 
-                                    className="w-12 h-12 bg-red-600/10 border border-red-600/20 rounded-xl flex items-center justify-center text-red-500 hover:bg-red-600 hover:text-white transition-all active:scale-90"
+                                    className="w-12 h-12 bg-red-600/10 border border-red-600/20 rounded-xl flex items-center justify-center text-red-500 hover:bg-red-600 hover:text-gray-900 dark:hover:text-white transition-all active:scale-90"
                                 >
                                     <Trash2 size={16} />
                                 </button>
@@ -975,8 +975,8 @@ const ArtistDetailModal = ({ artist, onClose, onUpdateStatus, onDelete, onExport
                                 <h3 className="text-[10px] font-black text-neon-blue uppercase tracking-[0.4em] whitespace-nowrap">ARTIST MANIFESTO</h3>
                                 <div className="w-full h-px bg-gradient-to-r from-neon-blue/30 to-transparent" />
                             </div>
-                            <div className="bg-[#0A0A0A] p-5 rounded-2xl border border-white/5 max-h-[160px] overflow-y-auto custom-scrollbar">
-                                <p className="text-gray-300 leading-relaxed italic text-sm font-medium">"{artist.bio || 'No manifesto provided.'}"</p>
+                            <div className="bg-[#0A0A0A] p-5 rounded-2xl border border-black/10 dark:border-white/5 max-h-[160px] overflow-y-auto custom-scrollbar">
+                                <p className="text-gray-700 dark:text-gray-300 leading-relaxed italic text-sm font-medium">"{artist.bio || 'No manifesto provided.'}"</p>
                             </div>
                         </section>
 
@@ -986,7 +986,7 @@ const ArtistDetailModal = ({ artist, onClose, onUpdateStatus, onDelete, onExport
                                     <h3 className="text-[10px] font-black text-red-500 uppercase tracking-[0.4em] whitespace-nowrap">DIGITAL PORTFOLIO</h3>
                                     <div className="w-full h-px bg-gradient-to-r from-red-500/30 to-transparent" />
                                 </div>
-                                <div className="aspect-video max-h-[220px] bg-black rounded-2xl overflow-hidden border border-white/10 shadow-lg relative w-full">
+                                <div className="aspect-video max-h-[220px] bg-white dark:bg-black rounded-2xl overflow-hidden border border-black/10 dark:border-white/10 shadow-lg relative w-full">
                                     <iframe 
                                         width="100%" height="100%" 
                                         src={`https://www.youtube.com/embed/${youtubeId}`}
@@ -1002,7 +1002,7 @@ const ArtistDetailModal = ({ artist, onClose, onUpdateStatus, onDelete, onExport
                         <section className="space-y-3">
                             <div className="flex items-center gap-4">
                                 <h3 className="text-[10px] font-black text-gray-500 uppercase tracking-[0.4em] whitespace-nowrap">SOCIAL FOOTPRINT</h3>
-                                <div className="w-full h-px bg-gradient-to-r from-white/10 to-transparent" />
+                                <div className="w-full h-px bg-gradient-to-r from-gray-900 dark:from-white/10 to-transparent" />
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 {artist.instagram && (
@@ -1010,13 +1010,13 @@ const ArtistDetailModal = ({ artist, onClose, onUpdateStatus, onDelete, onExport
                                         href={`https://instagram.com/${artist.instagram.replace('@','')}`}
                                         target="_blank" 
                                         rel="noopener noreferrer"
-                                        className="p-4 bg-[#0A0A0A] border border-white/5 hover:border-neon-pink/40 rounded-2xl flex items-center justify-between transition-all"
+                                        className="p-4 bg-[#0A0A0A] border border-black/10 dark:border-white/5 hover:border-neon-pink/40 rounded-2xl flex items-center justify-between transition-all"
                                     >
                                         <div className="flex items-center gap-3">
                                             <div className="w-9 h-9 rounded-lg bg-neon-pink/10 flex items-center justify-center text-neon-pink"><Instagram size={16} /></div>
                                             <div>
                                                 <p className="text-[7px] font-black text-gray-600 uppercase tracking-widest">Instagram</p>
-                                                <p className="text-xs font-black text-white truncate">@{artist.instagram.replace('@', '')}</p>
+                                                <p className="text-xs font-black text-gray-900 dark:text-white truncate">@{artist.instagram.replace('@', '')}</p>
                                             </div>
                                         </div>
                                         <ExternalLink size={12} className="text-gray-700" />
@@ -1027,13 +1027,13 @@ const ArtistDetailModal = ({ artist, onClose, onUpdateStatus, onDelete, onExport
                                         href={artist.youtube}
                                         target="_blank" 
                                         rel="noopener noreferrer"
-                                        className="p-4 bg-[#0A0A0A] border border-white/5 hover:border-red-600/40 rounded-2xl flex items-center justify-between transition-all"
+                                        className="p-4 bg-[#0A0A0A] border border-black/10 dark:border-white/5 hover:border-red-600/40 rounded-2xl flex items-center justify-between transition-all"
                                     >
                                         <div className="flex items-center gap-3">
                                             <div className="w-9 h-9 rounded-lg bg-red-600/10 flex items-center justify-center text-red-500"><Youtube size={16} /></div>
                                             <div>
                                                 <p className="text-[7px] font-black text-gray-600 uppercase tracking-widest">YouTube</p>
-                                                <p className="text-xs font-black text-white truncate">Channel</p>
+                                                <p className="text-xs font-black text-gray-900 dark:text-white truncate">Channel</p>
                                             </div>
                                         </div>
                                         <ExternalLink size={12} className="text-gray-700" />
@@ -1045,7 +1045,7 @@ const ArtistDetailModal = ({ artist, onClose, onUpdateStatus, onDelete, onExport
                                         className="col-span-2 h-14 bg-white text-black rounded-2xl font-black uppercase tracking-[0.2em] text-[9px] flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-98 transition-all shadow-md overflow-hidden relative group"
                                     >
                                         <div className="absolute inset-0 bg-gradient-to-r from-neon-blue to-neon-pink opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                                        <span className="relative z-10 flex items-center gap-2 group-hover:text-white transition-colors duration-500">
+                                        <span className="relative z-10 flex items-center gap-2 group-hover:text-gray-900 dark:group-hover:text-white transition-colors duration-500">
                                             <Globe size={14} /> FULL CASE STUDY
                                         </span>
                                     </button>
@@ -1064,17 +1064,17 @@ const ArtistDetailModal = ({ artist, onClose, onUpdateStatus, onDelete, onExport
 
 
 const ContactItem = ({ icon, label, value }) => (
-    <div className="group flex items-center justify-between p-6 bg-[#0A0A0A] border border-white/5 rounded-3xl hover:border-white/20 transition-all shadow-xl">
+    <div className="group flex items-center justify-between p-6 bg-[#0A0A0A] border border-black/10 dark:border-white/5 rounded-3xl hover:border-black/20 dark:hover:border-white/20 transition-all shadow-xl">
         <div className="flex items-center gap-5">
-            <div className="w-12 h-12 rounded-2xl bg-black border border-white/10 flex items-center justify-center text-gray-500 group-hover:text-white transition-colors">
+            <div className="w-12 h-12 rounded-2xl bg-white dark:bg-black border border-black/10 dark:border-white/10 flex items-center justify-center text-gray-500 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">
                 {icon}
             </div>
             <div className="space-y-0.5">
                 <p className="text-[8px] font-black text-gray-600 uppercase tracking-[0.3em]">{label}</p>
-                <p className="text-sm font-black text-white tracking-tight">{value}</p>
+                <p className="text-sm font-black text-gray-900 dark:text-white tracking-tight">{value}</p>
             </div>
         </div>
-        <button className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white hover:text-black">
+        <button className="w-10 h-10 rounded-full bg-black/5 dark:bg-white/5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white hover:text-black">
             <ExternalLink size={14} />
         </button>
     </div>
@@ -1097,20 +1097,20 @@ const SocialLink = ({ href, icon, label, value, color }) => {
             target="_blank" 
             rel="noopener noreferrer"
             className={cn(
-                "group flex items-center justify-between p-6 bg-[#0A0A0A] border border-white/5 rounded-3xl transition-all duration-500 shadow-2xl",
+                "group flex items-center justify-between p-6 bg-[#0A0A0A] border border-black/10 dark:border-white/5 rounded-3xl transition-all duration-500 shadow-2xl",
                 themes[color]
             )}
         >
             <div className="flex items-center gap-5">
-                <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center text-white shadow-lg", iconBgs[color])}>
+                <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center text-gray-900 dark:text-white shadow-lg", iconBgs[color])}>
                     {icon}
                 </div>
                 <div className="space-y-0.5">
                     <p className="text-[8px] font-black text-gray-600 uppercase tracking-[0.3em]">{label}</p>
-                    <p className="text-sm font-black text-white tracking-tight">{value}</p>
+                    <p className="text-sm font-black text-gray-900 dark:text-white tracking-tight">{value}</p>
                 </div>
             </div>
-            <ExternalLink size={16} className="text-gray-700 group-hover:text-white transition-colors" />
+            <ExternalLink size={16} className="text-gray-700 group-hover:text-gray-900 dark:group-hover:text-white transition-colors" />
         </a>
     );
 };
@@ -1143,33 +1143,33 @@ const CastingBoardModal = ({ upcomingEvents, artists, onClose, onCast }) => {
 
     return createPortal(
         <div className="fixed top-0 left-0 w-full h-full z-[99999] flex items-center justify-center p-4 md:p-10 pt-24 pb-12">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-black/99 backdrop-blur-[40px]" onClick={onClose} />
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-white dark:bg-black/99 backdrop-blur-[40px]" onClick={onClose} />
             <motion.div 
                 initial={{ scale: 0.95, opacity: 0, filter: 'blur(10px)' }} 
                 animate={{ scale: 1, opacity: 1, filter: 'blur(0px)' }} 
                 exit={{ scale: 0.95, opacity: 0, filter: 'blur(10px)' }}
-                className="relative bg-[#050505] border border-white/10 rounded-[4rem] w-full max-w-[1500px] h-full overflow-hidden flex flex-col shadow-[0_50px_150px_rgba(0,0,0,1)] z-10"
+                className="relative bg-[#050505] border border-black/10 dark:border-white/10 rounded-[4rem] w-full max-w-[1500px] h-full overflow-hidden flex flex-col shadow-[0_50px_150px_rgba(0,0,0,1)] z-10"
             >
                 {/* Board Header */}
-                <div className="px-12 py-10 border-b border-white/5 flex items-center justify-between shrink-0 bg-[#080808]/50">
+                <div className="px-12 py-10 border-b border-black/10 dark:border-white/5 flex items-center justify-between shrink-0 bg-[#080808]/50">
                     <div className="flex items-center gap-8">
                         <div className="w-20 h-20 bg-white text-black rounded-[2.5rem] flex items-center justify-center shadow-[0_20px_40px_rgba(255,255,255,0.15)] group relative overflow-hidden">
                             <div className="absolute inset-0 bg-gradient-to-br from-neon-blue via-neon-pink to-purple-500 opacity-0 group-hover:opacity-100 transition-opacity" />
-                            <Target size={36} className="relative z-10 group-hover:text-white transition-colors" />
+                            <Target size={36} className="relative z-10 group-hover:text-gray-900 dark:group-hover:text-white transition-colors" />
                         </div>
                         <div className="space-y-1">
-                            <h2 className="text-5xl font-black font-heading uppercase italic tracking-tighter text-white">GIG <span className="text-neon-blue">CASTING</span> BOARD</h2>
+                            <h2 className="text-5xl font-black font-heading uppercase italic tracking-tighter text-gray-900 dark:text-white">GIG <span className="text-neon-blue">CASTING</span> BOARD</h2>
                             <p className="text-[10px] font-black text-gray-500 uppercase tracking-[0.5em] mt-1">Deploy elite verified talent to active missions</p>
                         </div>
                     </div>
-                    <button onClick={onClose} className="w-16 h-16 rounded-full bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white hover:text-black transition-all group hover:scale-110 active:scale-90">
+                    <button onClick={onClose} className="w-16 h-16 rounded-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 flex items-center justify-center hover:bg-white hover:text-black transition-all group hover:scale-110 active:scale-90">
                         <X size={28} className="group-hover:rotate-90 transition-transform duration-500" />
                     </button>
                 </div>
 
                 <div className="flex-1 flex overflow-hidden">
                     {/* Event Summary Sidebar */}
-                    <div className="w-[450px] border-r border-white/5 overflow-y-auto custom-scrollbar p-10 bg-[#080808]/30">
+                    <div className="w-[450px] border-r border-black/10 dark:border-white/5 overflow-y-auto custom-scrollbar p-10 bg-[#080808]/30">
                         <div className="flex items-center gap-4 mb-10">
                             <Calendar size={18} className="text-neon-pink" />
                             <p className="text-[11px] font-black text-gray-500 uppercase tracking-[0.4em]">Active Missions</p>
@@ -1177,7 +1177,7 @@ const CastingBoardModal = ({ upcomingEvents, artists, onClose, onCast }) => {
                         
                         <div className="space-y-4">
                             {upcomingEvents.length === 0 ? (
-                                <div className="p-10 text-center border-2 border-dashed border-white/5 rounded-[3rem] space-y-4">
+                                <div className="p-10 text-center border-2 border-dashed border-black/10 dark:border-white/5 rounded-[3rem] space-y-4">
                                     <Calendar size={32} className="text-gray-800 mx-auto" />
                                     <p className="text-[10px] font-black text-gray-700 uppercase tracking-widest leading-loose">No active missions scheduled in the command center</p>
                                 </div>
@@ -1189,12 +1189,12 @@ const CastingBoardModal = ({ upcomingEvents, artists, onClose, onCast }) => {
                                         "p-8 rounded-[2.5rem] border cursor-pointer transition-all duration-500 relative overflow-hidden group hover:-translate-y-1",
                                         selectedEvent?.id === event.id 
                                             ? "bg-white text-black border-white shadow-[0_20px_40px_rgba(255,255,255,0.1)]" 
-                                            : "bg-[#0A0A0A] border-white/5 hover:border-white/20 text-white"
+                                            : "bg-[#0A0A0A] border-black/10 dark:border-white/5 hover:border-black/20 dark:hover:border-white/20 text-gray-900 dark:text-white"
                                     )}
                                 >
                                     <div className="relative z-10">
                                         <div className="flex justify-between items-start mb-4">
-                                            <div className={cn("text-[9px] font-black uppercase tracking-[0.2em] px-3 py-1 rounded-full", selectedEvent?.id === event.id ? "bg-black/10" : "bg-white/5")}>
+                                            <div className={cn("text-[9px] font-black uppercase tracking-[0.2em] px-3 py-1 rounded-full", selectedEvent?.id === event.id ? "bg-white dark:bg-black/10" : "bg-black/5 dark:bg-white/5")}>
                                                 {event.date || 'TBA'}
                                             </div>
                                             <StatusPill status="approved" />
@@ -1206,7 +1206,7 @@ const CastingBoardModal = ({ upcomingEvents, artists, onClose, onCast }) => {
                                     </div>
                                     <div className={cn(
                                         "absolute top-0 right-0 w-32 h-32 blur-[60px] rounded-full -mr-16 -mt-16 transition-opacity duration-1000",
-                                        selectedEvent?.id === event.id ? "bg-neon-blue/40 opacity-100" : "bg-white/5 opacity-0 group-hover:opacity-100"
+                                        selectedEvent?.id === event.id ? "bg-neon-blue/40 opacity-100" : "bg-black/5 dark:bg-white/5 opacity-0 group-hover:opacity-100"
                                     )} />
                                 </div>
                             ))}
@@ -1217,15 +1217,15 @@ const CastingBoardModal = ({ upcomingEvents, artists, onClose, onCast }) => {
                     <div className="flex-1 flex flex-col overflow-hidden bg-[#0B0F17] admin-hub-content-container">
                         {selectedEvent ? (
                             <>
-                                <div className="p-10 border-b border-white/5 bg-[#080808]/20 flex items-center justify-between">
+                                <div className="p-10 border-b border-black/10 dark:border-white/5 bg-[#080808]/20 flex items-center justify-between">
                                     <div className="relative max-w-xl flex-1 group">
-                                        <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-700 group-focus-within:text-neon-blue transition-colors" size={20} />
+                                        <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-700 group-focus-within:text-blue-600 dark:group-focus-within:text-neon-blue transition-colors" size={20} />
                                         <input
                                             type="text"
                                             placeholder="FILTER COMPATIBLE TALENT..."
                                             value={castingSearch}
                                             onChange={(e) => setCastingSearch(e.target.value)}
-                                            className="w-full h-18 pl-16 pr-8 bg-black border border-white/5 rounded-[2rem] text-xs font-black uppercase tracking-[0.2em] focus:border-neon-blue/40 outline-none transition-all placeholder:text-gray-800"
+                                            className="w-full h-18 pl-16 pr-8 bg-white dark:bg-black border border-black/10 dark:border-white/5 rounded-[2rem] text-xs font-black uppercase tracking-[0.2em] focus:border-neon-blue/40 outline-none transition-all placeholder:text-gray-800"
                                         />
                                     </div>
                                     <div className="flex items-center gap-6 pl-10 text-right">
@@ -1251,11 +1251,11 @@ const CastingBoardModal = ({ upcomingEvents, artists, onClose, onCast }) => {
                                                         "p-8 rounded-[3rem] border transition-all duration-500 flex flex-col relative group overflow-hidden h-auto", 
                                                         isAlreadyCast 
                                                             ? "bg-neon-green/5 border-neon-green/20 shadow-[0_20px_40px_rgba(57,255,20,0.05)]" 
-                                                            : "bg-[#0A0A0A] border-white/5 hover:border-white/20 hover:bg-[#0E0E0E]"
+                                                            : "bg-[#0A0A0A] border-black/10 dark:border-white/5 hover:border-black/20 dark:hover:border-white/20 hover:bg-[#0E0E0E]"
                                                     )}
                                                 >
                                                     <div className="flex items-start justify-between mb-8 relative z-10">
-                                                        <div className="w-16 h-16 bg-black rounded-2xl border border-white/10 flex items-center justify-center font-black text-white text-xl shadow-2xl group-hover:border-neon-blue/30 transition-colors">
+                                                        <div className="w-16 h-16 bg-white dark:bg-black rounded-2xl border border-black/10 dark:border-white/10 flex items-center justify-center font-black text-gray-900 dark:text-white text-xl shadow-2xl group-hover:border-neon-blue/30 transition-colors">
                                                             {artist.name.charAt(0)}
                                                         </div>
                                                         {isAlreadyCast ? (
@@ -1263,7 +1263,7 @@ const CastingBoardModal = ({ upcomingEvents, artists, onClose, onCast }) => {
                                                                 <Check size={12} strokeWidth={4} /> DEPLOYED
                                                             </div>
                                                         ) : (
-                                                            <div className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-500">
+                                                            <div className="w-10 h-10 rounded-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-500">
                                                                 <Zap size={14} className="text-neon-blue" />
                                                             </div>
                                                         )}
@@ -1284,8 +1284,8 @@ const CastingBoardModal = ({ upcomingEvents, artists, onClose, onCast }) => {
                                                             className={cn(
                                                                 "flex-1 h-16 text-[11px] font-black tracking-[0.3em] uppercase rounded-[1.5rem] transition-all duration-500 shadow-2xl", 
                                                                 isAlreadyCast 
-                                                                    ? "bg-white/5 text-gray-700 cursor-not-allowed" 
-                                                                    : "bg-white text-black hover:bg-neon-blue hover:text-white hover:scale-[1.03] active:scale-95"
+                                                                    ? "bg-black/5 dark:bg-white/5 text-gray-700 cursor-not-allowed" 
+                                                                    : "bg-white text-black hover:bg-neon-blue hover:text-gray-900 dark:hover:text-white hover:scale-[1.03] active:scale-95"
                                                             )}
                                                         >
                                                             {isAlreadyCast ? 'MISSION ASSIGNED' : 'DEPLOY TO MISSION'}
@@ -1304,11 +1304,11 @@ const CastingBoardModal = ({ upcomingEvents, artists, onClose, onCast }) => {
 
                                     {matchingArtists.length === 0 && (
                                         <div className="flex flex-col items-center justify-center py-40 space-y-8 opacity-40">
-                                            <div className="w-32 h-32 rounded-full border-2 border-dashed border-white/20 flex items-center justify-center">
-                                                <Target size={48} className="text-white" />
+                                            <div className="w-32 h-32 rounded-full border-2 border-dashed border-black/20 dark:border-white/20 flex items-center justify-center">
+                                                <Target size={48} className="text-gray-900 dark:text-white" />
                                             </div>
                                             <div className="text-center space-y-2">
-                                                <p className="text-2xl font-black uppercase italic tracking-tighter text-white">No Compatible Talent</p>
+                                                <p className="text-2xl font-black uppercase italic tracking-tighter text-gray-900 dark:text-white">No Compatible Talent</p>
                                                 <p className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-500">Searching for verified operators in {selectedEvent.location}</p>
                                             </div>
                                         </div>
@@ -1319,7 +1319,7 @@ const CastingBoardModal = ({ upcomingEvents, artists, onClose, onCast }) => {
                             <div className="flex-1 flex flex-col items-center justify-center text-center p-10 bg-[#0B0F17]">
                                 <div className="relative mb-12">
                                     <div className="absolute inset-0 bg-neon-blue/20 blur-[100px] animate-pulse rounded-full" />
-                                    <div className="relative w-48 h-48 bg-white/5 rounded-[4rem] flex items-center justify-center border border-white/10 animate-float">
+                                    <div className="relative w-48 h-48 bg-black/5 dark:bg-white/5 rounded-[4rem] flex items-center justify-center border border-black/10 dark:border-white/10 animate-float">
                                         <Calendar size={64} className="text-gray-700" />
                                     </div>
                                 </div>

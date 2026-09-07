@@ -92,11 +92,11 @@ const ContractPreview = ({ formData, paginatedPages, currentPage }) => {
         />
         <div className="flex items-center gap-6 text-right">
           <div className="space-y-0.5">
-            <span className="text-[7px] font-bold text-gray-400 uppercase tracking-widest block">Agreement ID</span>
+            <span className="text-[7px] font-bold text-gray-600 dark:text-gray-400 uppercase tracking-widest block">Agreement ID</span>
             <span className="text-[10px] font-bold text-black tracking-widest block">{formData.agreementNumber}</span>
           </div>
           <div className="space-y-0.5 border-l border-black/10 pl-6">
-            <span className="text-[7px] font-bold text-gray-400 uppercase tracking-widest block">Effective Date</span>
+            <span className="text-[7px] font-bold text-gray-600 dark:text-gray-400 uppercase tracking-widest block">Effective Date</span>
             <span className="text-[10px] font-bold text-black uppercase tracking-wider block">{new Date(formData.effectiveDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
           </div>
         </div>
@@ -119,11 +119,11 @@ const ContractPreview = ({ formData, paginatedPages, currentPage }) => {
 
                 <div className="grid grid-cols-1 gap-6">
                   <div className="space-y-3 border-l border-black/10 pl-6">
-                    <p className="font-bold uppercase tracking-widest text-[8px] text-gray-400">By and Between:</p>
+                    <p className="font-bold uppercase tracking-widest text-[8px] text-gray-600 dark:text-gray-400">By and Between:</p>
                     <div className="space-y-1">
                       <p><span className="font-bold uppercase">{formData.parties.firstParty.name}</span>, a company incorporated under the laws of India, having its principal place of business at {formData.parties.firstParty.address || '[Address]'} (hereinafter referred to as the <span className="font-bold">"{formData.parties.firstParty.role || 'Provider'}"</span>);</p>
                     </div>
-                    <p className="font-bold uppercase tracking-widest text-[8px] text-gray-400 mt-2">And:</p>
+                    <p className="font-bold uppercase tracking-widest text-[8px] text-gray-600 dark:text-gray-400 mt-2">And:</p>
                     <div className="space-y-1">
                       <p><span className="font-bold uppercase">{formData.parties.secondParty.name || '[Client Name]'}</span>, {formData.parties.secondParty.address ? `located at ${formData.parties.secondParty.address}` : 'having its registered address as specified in the execution block'} (hereinafter referred to as the <span className="font-bold">"{formData.parties.secondParty.role || 'Client'}"</span>).</p>
                     </div>
@@ -232,7 +232,7 @@ const ContractPreview = ({ formData, paginatedPages, currentPage }) => {
                         {formData.clientSignature ? (
                           <img src={formData.clientSignature} className="h-full w-auto object-contain grayscale mix-blend-multiply" alt="Client Signature" crossOrigin="anonymous" />
                         ) : (
-                          <div className="w-full h-px bg-black/10 border-dashed border-t" />
+                          <div className="w-full h-px bg-white dark:bg-black/10 border-dashed border-t" />
                         )}
                       </div>
                       <div className="pt-4">

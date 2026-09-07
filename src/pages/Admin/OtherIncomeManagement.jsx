@@ -305,7 +305,7 @@ const OtherIncomeManagement = () => {
                     <div className="flex flex-wrap items-center gap-2 md:gap-3 w-full md:w-auto">
                         <button
                             onClick={handleExportCSV}
-                            className="flex-1 md:flex-none h-11 md:h-12 px-4 md:px-6 bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white font-black uppercase tracking-widest text-[8px] md:text-[9px] rounded-xl border border-white/5 transition-all flex items-center justify-center gap-2"
+                            className="flex-1 md:flex-none h-11 md:h-12 px-4 md:px-6 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white font-black uppercase tracking-widest text-[8px] md:text-[9px] rounded-xl border border-black/10 dark:border-white/5 transition-all flex items-center justify-center gap-2"
                         >
                             <Download size={14} /> Export CSV
                         </button>
@@ -328,7 +328,7 @@ const OtherIncomeManagement = () => {
                                         "flex items-center gap-2 px-5 py-2.5 rounded-full border text-[10px] font-black uppercase tracking-widest transition-all duration-300 group",
                                         pill.isActive 
                                             ? "bg-[#39FF14] text-black border-[#39FF14] shadow-[0_0_15px_rgba(57,255,20,0.3)]" 
-                                            : "bg-white/[0.03] text-zinc-400 border-white/10 hover:border-white/30 hover:text-white hover:bg-white/[0.05]"
+                                            : "bg-white/[0.03] text-zinc-400 border-black/10 dark:border-white/10 hover:border-white/30 hover:text-gray-900 dark:hover:text-white hover:bg-white/[0.05]"
                                     )}
                                 >
                                     <Icon size={14} className={cn("transition-transform group-hover:scale-110", pill.isActive ? "text-black" : "text-[#39FF14]")} />
@@ -339,7 +339,7 @@ const OtherIncomeManagement = () => {
                     </motion.div>
 
                     {/* Advanced Command Filter Panel */}
-                    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="bg-white/[0.03] backdrop-blur-xl border border-white/10 rounded-2xl p-4 space-y-4">
+                    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="bg-white/[0.03] backdrop-blur-xl border border-black/10 dark:border-white/10 rounded-2xl p-4 space-y-4">
                         {/* First Row: Search & View modes */}
                         <div className="flex flex-col xl:flex-row items-center gap-4">
                             <div className="relative flex-1 w-full group">
@@ -348,17 +348,17 @@ const OtherIncomeManagement = () => {
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
                                     placeholder="Search by client, sponsor, receiver, reference or notes..."
-                                    className="w-full bg-zinc-950/40 border border-white/10 rounded-xl text-[10px] font-extrabold uppercase tracking-widest text-white h-10 pl-10 pr-3 outline-none focus:border-[#39FF14] transition-all placeholder:text-zinc-600"
+                                    className="w-full bg-gray-100 dark:bg-zinc-950/40 border border-black/10 dark:border-white/10 rounded-xl text-[10px] font-extrabold uppercase tracking-widest text-gray-900 dark:text-white h-10 pl-10 pr-3 outline-none focus:border-[#39FF14] transition-all placeholder:text-zinc-600"
                                 />
                             </div>
 
                             {/* View Mode Toggle */}
-                            <div className="flex bg-zinc-950/40 p-1 rounded-xl border border-white/10 w-full xl:w-auto justify-center shrink-0">
+                            <div className="flex bg-gray-100 dark:bg-zinc-950/40 p-1 rounded-xl border border-black/10 dark:border-white/10 w-full xl:w-auto justify-center shrink-0">
                                 <button
                                     onClick={() => setViewMode('grid')}
                                     className={cn(
                                         "flex-1 xl:flex-none px-6 py-2 rounded-lg transition-all flex items-center justify-center gap-2 text-[9px] font-black uppercase tracking-widest h-8",
-                                        viewMode === 'grid' ? "bg-white/10 text-white" : "text-zinc-500 hover:text-white"
+                                        viewMode === 'grid' ? "bg-black/10 dark:bg-white/10 text-gray-900 dark:text-white" : "text-zinc-500 hover:text-gray-900 dark:hover:text-white"
                                     )}
                                 >
                                     <LayoutGrid size={14} /> Grid
@@ -367,7 +367,7 @@ const OtherIncomeManagement = () => {
                                     onClick={() => setViewMode('table')}
                                     className={cn(
                                         "flex-1 xl:flex-none px-6 py-2 rounded-lg transition-all flex items-center justify-center gap-2 text-[9px] font-black uppercase tracking-widest h-8",
-                                        viewMode === 'table' ? "bg-white/10 text-white" : "text-zinc-500 hover:text-white"
+                                        viewMode === 'table' ? "bg-black/10 dark:bg-white/10 text-gray-900 dark:text-white" : "text-zinc-500 hover:text-gray-900 dark:hover:text-white"
                                     )}
                                 >
                                     <FileText size={14} /> Table
@@ -381,9 +381,9 @@ const OtherIncomeManagement = () => {
                             <select 
                                 value={monthFilter} 
                                 onChange={(e) => setMonthFilter(e.target.value)}
-                                className="w-full bg-zinc-950/40 border border-white/10 rounded-xl text-[10px] font-extrabold uppercase tracking-widest text-white h-10 px-3 outline-none focus:border-[#39FF14] transition-all cursor-pointer"
+                                className="w-full bg-gray-100 dark:bg-zinc-950/40 border border-black/10 dark:border-white/10 rounded-xl text-[10px] font-extrabold uppercase tracking-widest text-gray-900 dark:text-white h-10 px-3 outline-none focus:border-[#39FF14] transition-all cursor-pointer"
                             >
-                                {monthOptions.map(m => <option key={m} value={m} className="bg-zinc-950">{m}</option>)}
+                                {monthOptions.map(m => <option key={m} value={m} className="bg-gray-100 dark:bg-zinc-950">{m}</option>)}
                             </select>
 
                             {/* Date Filter Selector */}
@@ -391,39 +391,39 @@ const OtherIncomeManagement = () => {
                                 type="date"
                                 value={dateFilter} 
                                 onChange={(e) => setDateFilter(e.target.value)}
-                                className="w-full bg-zinc-950/40 border border-white/10 rounded-xl text-[10px] font-extrabold uppercase tracking-widest text-white h-10 px-3 outline-none focus:border-[#39FF14] transition-all"
+                                className="w-full bg-gray-100 dark:bg-zinc-950/40 border border-black/10 dark:border-white/10 rounded-xl text-[10px] font-extrabold uppercase tracking-widest text-gray-900 dark:text-white h-10 px-3 outline-none focus:border-[#39FF14] transition-all"
                             />
 
                             {/* Category selection */}
                             <select 
                                 value={categoryFilter} 
                                 onChange={(e) => setCategoryFilter(e.target.value)}
-                                className="w-full bg-zinc-950/40 border border-white/10 rounded-xl text-[10px] font-extrabold uppercase tracking-widest text-white h-10 px-3 outline-none focus:border-[#39FF14] transition-all cursor-pointer"
+                                className="w-full bg-gray-100 dark:bg-zinc-950/40 border border-black/10 dark:border-white/10 rounded-xl text-[10px] font-extrabold uppercase tracking-widest text-gray-900 dark:text-white h-10 px-3 outline-none focus:border-[#39FF14] transition-all cursor-pointer"
                             >
-                                <option value="All" className="bg-zinc-950">All Categories</option>
-                                {incomeCategories.map(c => <option key={c} value={c} className="bg-zinc-950">{c}</option>)}
+                                <option value="All" className="bg-gray-100 dark:bg-zinc-950">All Categories</option>
+                                {incomeCategories.map(c => <option key={c} value={c} className="bg-gray-100 dark:bg-zinc-950">{c}</option>)}
                             </select>
 
                             {/* Account type filter */}
                             <select 
                                 value={accountFilter} 
                                 onChange={(e) => setAccountFilter(e.target.value)}
-                                className="w-full bg-zinc-950/40 border border-white/10 rounded-xl text-[10px] font-extrabold uppercase tracking-widest text-white h-10 px-3 outline-none focus:border-[#39FF14] transition-all cursor-pointer"
+                                className="w-full bg-gray-100 dark:bg-zinc-950/40 border border-black/10 dark:border-white/10 rounded-xl text-[10px] font-extrabold uppercase tracking-widest text-gray-900 dark:text-white h-10 px-3 outline-none focus:border-[#39FF14] transition-all cursor-pointer"
                             >
-                                <option value="All" className="bg-zinc-950">All Accounts</option>
-                                <option value="newbi" className="bg-zinc-950">Newbi Official</option>
-                                <option value="personal" className="bg-zinc-950">Personal Account</option>
+                                <option value="All" className="bg-gray-100 dark:bg-zinc-950">All Accounts</option>
+                                <option value="newbi" className="bg-gray-100 dark:bg-zinc-950">Newbi Official</option>
+                                <option value="personal" className="bg-gray-100 dark:bg-zinc-950">Personal Account</option>
                             </select>
 
                             {/* Status filter */}
                             <select 
                                 value={statusFilter} 
                                 onChange={(e) => setStatusFilter(e.target.value)}
-                                className="w-full bg-zinc-950/40 border border-white/10 rounded-xl text-[10px] font-extrabold uppercase tracking-widest text-white h-10 px-3 outline-none focus:border-[#39FF14] transition-all cursor-pointer"
+                                className="w-full bg-gray-100 dark:bg-zinc-950/40 border border-black/10 dark:border-white/10 rounded-xl text-[10px] font-extrabold uppercase tracking-widest text-gray-900 dark:text-white h-10 px-3 outline-none focus:border-[#39FF14] transition-all cursor-pointer"
                             >
-                                <option value="All" className="bg-zinc-950">All Status</option>
-                                <option value="Paid" className="bg-zinc-950">Received / Cleared</option>
-                                <option value="Pending" className="bg-zinc-950">Pending / Outstanding</option>
+                                <option value="All" className="bg-gray-100 dark:bg-zinc-950">All Status</option>
+                                <option value="Paid" className="bg-gray-100 dark:bg-zinc-950">Received / Cleared</option>
+                                <option value="Pending" className="bg-gray-100 dark:bg-zinc-950">Pending / Outstanding</option>
                             </select>
 
                             {/* Clear/Reset button */}
@@ -436,7 +436,7 @@ const OtherIncomeManagement = () => {
                                     setAccountFilter('All');
                                     setDateFilter('');
                                 }}
-                                className="w-full h-10 bg-white/[0.03] hover:bg-white/[0.05] text-zinc-400 hover:text-white rounded-xl transition-all border border-white/10 flex items-center justify-center gap-2 text-[10px] font-extrabold tracking-widest uppercase hover:border-white/30"
+                                className="w-full h-10 bg-white/[0.03] hover:bg-white/[0.05] text-zinc-400 hover:text-gray-900 dark:hover:text-white rounded-xl transition-all border border-black/10 dark:border-white/10 flex items-center justify-center gap-2 text-[10px] font-extrabold tracking-widest uppercase hover:border-white/30"
                             >
                                 <X size={12} /> Clear
                             </button>
@@ -453,7 +453,7 @@ const OtherIncomeManagement = () => {
                             <motion.div key="grid" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ delay: 0.3 }} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                 {filteredIncomes.map((inc, i) => (
                                     <motion.div key={inc.id} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.3 + (i * 0.05) }} className="h-full flex flex-col">
-                                        <div className="group relative p-6 bg-white/[0.03] backdrop-blur-xl border border-white/10 rounded-3xl flex flex-col justify-between h-full overflow-hidden hover:border-white/20 hover:bg-white/[0.04] transition-all">
+                                        <div className="group relative p-6 bg-white/[0.03] backdrop-blur-xl border border-black/10 dark:border-white/10 rounded-3xl flex flex-col justify-between h-full overflow-hidden hover:border-black/20 dark:hover:border-white/20 hover:bg-white/[0.04] transition-all">
                                             <div>
                                                 {/* Top badges */}
                                                 <div className="flex justify-between items-start mb-6">
@@ -466,39 +466,39 @@ const OtherIncomeManagement = () => {
                                                         </div>
                                                     </div>
                                                     <div className="flex items-center gap-1.5 z-20">
-                                                        <button onClick={() => openEdit(inc)} className="p-2 bg-white/5 hover:bg-white/10 text-zinc-400 rounded-xl transition-all border border-white/5 hover:text-white" title="Edit Income"><Edit size={14} /></button>
+                                                        <button onClick={() => openEdit(inc)} className="p-2 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-zinc-400 rounded-xl transition-all border border-black/10 dark:border-white/5 hover:text-gray-900 dark:hover:text-white" title="Edit Income"><Edit size={14} /></button>
                                                         {user?.role !== 'editor' && user?.role !== 'content_admin' && (
-                                                            <button onClick={() => handleDeleteIncome(inc.id)} className="p-2 bg-white/5 hover:bg-red-500/20 hover:text-red-500 text-zinc-400 rounded-xl transition-all border border-white/5" title="Purge Record"><Trash2 size={14} /></button>
+                                                            <button onClick={() => handleDeleteIncome(inc.id)} className="p-2 bg-black/5 dark:bg-white/5 hover:bg-red-500/20 hover:text-red-500 text-zinc-400 rounded-xl transition-all border border-black/10 dark:border-white/5" title="Purge Record"><Trash2 size={14} /></button>
                                                         )}
                                                     </div>
                                                 </div>
 
                                                 {/* Details section */}
-                                                <h3 className="text-xl font-black uppercase text-white mb-2 leading-tight line-clamp-2">{inc.sourceName}</h3>
+                                                <h3 className="text-xl font-black uppercase text-gray-900 dark:text-white mb-2 leading-tight line-clamp-2">{inc.sourceName}</h3>
                                                 
                                                 <div className="space-y-1 mt-4">
                                                     <div className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Amount</div>
-                                                    <div className="text-2xl font-mono font-black text-white flex items-center gap-1">
+                                                    <div className="text-2xl font-mono font-black text-gray-900 dark:text-white flex items-center gap-1">
                                                         ₹{inc.amount?.toLocaleString()}
                                                     </div>
                                                 </div>
 
                                                 <div className="space-y-2 mt-5 text-[9px] font-bold uppercase tracking-wider text-zinc-400">
-                                                    <div className="flex justify-between"><span>Date:</span> <span className="text-white">{new Date(inc.date).toLocaleDateString()}</span></div>
-                                                    <div className="flex justify-between"><span>Payment Mode:</span> <span className="text-white">{inc.paymentMode}</span></div>
-                                                    <div className="flex justify-between"><span>Account:</span> <span className="text-white">{inc.accountType === 'personal' ? `Personal (${inc.receiverName})` : 'Newbi Official'}</span></div>
+                                                    <div className="flex justify-between"><span>Date:</span> <span className="text-gray-900 dark:text-white">{new Date(inc.date).toLocaleDateString()}</span></div>
+                                                    <div className="flex justify-between"><span>Payment Mode:</span> <span className="text-gray-900 dark:text-white">{inc.paymentMode}</span></div>
+                                                    <div className="flex justify-between"><span>Account:</span> <span className="text-gray-900 dark:text-white">{inc.accountType === 'personal' ? `Personal (${inc.receiverName})` : 'Newbi Official'}</span></div>
                                                 </div>
 
                                                 {/* Transaction Ref copy block */}
                                                 {inc.transactionRef && (
-                                                    <div className="mt-4 p-3 bg-white/[0.02] border border-white/10 rounded-xl flex items-center justify-between gap-3 text-[8px] font-black uppercase tracking-widest z-20 relative">
+                                                    <div className="mt-4 p-3 bg-white/[0.02] border border-black/10 dark:border-white/10 rounded-xl flex items-center justify-between gap-3 text-[8px] font-black uppercase tracking-widest z-20 relative">
                                                         <div className="truncate flex-1">
                                                             <span className="text-zinc-500 block text-[7px]">Transaction Ref</span>
-                                                            <span className="text-white font-mono select-all truncate block mt-0.5">{inc.transactionRef}</span>
+                                                            <span className="text-gray-900 dark:text-white font-mono select-all truncate block mt-0.5">{inc.transactionRef}</span>
                                                         </div>
                                                         <button 
                                                             onClick={() => copyToClipboard(inc.transactionRef)}
-                                                            className="p-2 hover:bg-white/10 text-zinc-400 hover:text-white rounded-lg border border-white/5 transition-all shrink-0"
+                                                            className="p-2 hover:bg-black/10 dark:hover:bg-white/10 text-zinc-400 hover:text-gray-900 dark:hover:text-white rounded-lg border border-black/10 dark:border-white/5 transition-all shrink-0"
                                                             title="Copy Reference"
                                                         >
                                                             <Copy size={12} />
@@ -508,14 +508,14 @@ const OtherIncomeManagement = () => {
                                             </div>
 
                                             {/* Bottom metrics and Action toggles */}
-                                            <div className="flex items-center justify-between pt-6 mt-6 border-t border-white/10 shrink-0 relative z-10">
+                                            <div className="flex items-center justify-between pt-6 mt-6 border-t border-black/10 dark:border-white/10 shrink-0 relative z-10">
                                                 <div className="flex items-center gap-2 w-full">
                                                     {inc.attachmentUrl ? (
                                                         <a 
                                                             href={inc.attachmentUrl} 
                                                             target="_blank" 
                                                             rel="noopener noreferrer" 
-                                                            className="flex-1 h-10 px-3 bg-white/[0.03] hover:bg-white/[0.05] text-zinc-400 hover:text-white rounded-xl border border-white/10 flex items-center justify-center gap-1.5 text-[9px] font-black uppercase tracking-widest transition-all"
+                                                            className="flex-1 h-10 px-3 bg-white/[0.03] hover:bg-white/[0.05] text-zinc-400 hover:text-gray-900 dark:hover:text-white rounded-xl border border-black/10 dark:border-white/10 flex items-center justify-center gap-1.5 text-[9px] font-black uppercase tracking-widest transition-all"
                                                         >
                                                             <Eye size={12} /> View Proof
                                                         </a>
@@ -524,7 +524,7 @@ const OtherIncomeManagement = () => {
                                                     )}
                                                     <button
                                                         onClick={() => handleToggleStatus(inc)}
-                                                        className="flex-1 h-10 px-3 bg-white/[0.03] hover:bg-white/[0.05] text-zinc-400 hover:text-white rounded-xl border border-white/10 flex items-center justify-center text-[9px] font-black uppercase tracking-widest transition-all"
+                                                        className="flex-1 h-10 px-3 bg-white/[0.03] hover:bg-white/[0.05] text-zinc-400 hover:text-gray-900 dark:hover:text-white rounded-xl border border-black/10 dark:border-white/10 flex items-center justify-center text-[9px] font-black uppercase tracking-widest transition-all"
                                                     >
                                                         Toggle Status
                                                     </button>
@@ -536,10 +536,10 @@ const OtherIncomeManagement = () => {
                             </motion.div>
                         ) : (
                             <motion.div key="table" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ delay: 0.3 }} className="overflow-x-auto custom-scrollbar">
-                                <div className="min-w-[1000px] bg-white/[0.03] backdrop-blur-xl border border-white/10 rounded-3xl p-0 overflow-hidden">
+                                <div className="min-w-[1000px] bg-white/[0.03] backdrop-blur-xl border border-black/10 dark:border-white/10 rounded-3xl p-0 overflow-hidden">
                                     <table className="w-full text-left">
                                         <thead>
-                                            <tr className="border-b border-white/5 text-[9px] font-black uppercase tracking-[0.2em] text-zinc-500">
+                                            <tr className="border-b border-black/10 dark:border-white/5 text-[9px] font-black uppercase tracking-[0.2em] text-zinc-500">
                                                 <th className="p-6">Income Source</th>
                                                 <th className="p-6">Amount</th>
                                                 <th className="p-6">Category</th>
@@ -554,10 +554,10 @@ const OtherIncomeManagement = () => {
                                             {filteredIncomes.map((inc) => (
                                                 <tr key={inc.id} className="hover:bg-white/[0.03] transition-colors group">
                                                     <td className="p-6">
-                                                        <div className="text-xs font-black text-white uppercase">{inc.sourceName}</div>
+                                                        <div className="text-xs font-black text-gray-900 dark:text-white uppercase">{inc.sourceName}</div>
                                                         {inc.notes && <div className="text-[9px] text-zinc-500 tracking-wide mt-1 line-clamp-1">{inc.notes}</div>}
                                                     </td>
-                                                    <td className="p-6 text-white font-black font-mono">
+                                                    <td className="p-6 text-gray-900 dark:text-white font-black font-mono">
                                                         ₹{inc.amount?.toLocaleString()}
                                                     </td>
                                                     <td className="p-6 text-zinc-400 uppercase text-[9px] font-black">{inc.category}</td>
@@ -568,10 +568,10 @@ const OtherIncomeManagement = () => {
                                                     <td className="p-6 text-zinc-400">
                                                         {inc.transactionRef ? (
                                                             <div className="flex items-center gap-2 max-w-[200px]">
-                                                                <span className="font-mono text-[10px] truncate text-white select-all">{inc.transactionRef}</span>
+                                                                <span className="font-mono text-[10px] truncate text-gray-900 dark:text-white select-all">{inc.transactionRef}</span>
                                                                 <button 
                                                                     onClick={() => copyToClipboard(inc.transactionRef)}
-                                                                    className="p-1.5 hover:bg-white/10 text-zinc-500 rounded hover:text-white transition-all shrink-0"
+                                                                    className="p-1.5 hover:bg-black/10 dark:hover:bg-white/10 text-zinc-500 rounded hover:text-gray-900 dark:hover:text-white transition-all shrink-0"
                                                                     title="Copy Reference"
                                                                 >
                                                                     <Copy size={12} />
@@ -598,11 +598,11 @@ const OtherIncomeManagement = () => {
                                                     <td className="p-6 text-right">
                                                         <div className="flex justify-end gap-2">
                                                             {inc.attachmentUrl && (
-                                                                <a href={inc.attachmentUrl} target="_blank" rel="noopener noreferrer" className="p-2 text-zinc-500 hover:text-white transition-colors bg-white/5 rounded-lg"><Eye size={14} /></a>
+                                                                <a href={inc.attachmentUrl} target="_blank" rel="noopener noreferrer" className="p-2 text-zinc-500 hover:text-gray-900 dark:hover:text-white transition-colors bg-black/5 dark:bg-white/5 rounded-lg"><Eye size={14} /></a>
                                                             )}
-                                                            <button onClick={() => openEdit(inc)} className="p-2 text-zinc-500 hover:text-white transition-colors bg-white/5 rounded-lg"><Edit size={14} /></button>
+                                                            <button onClick={() => openEdit(inc)} className="p-2 text-zinc-500 hover:text-gray-900 dark:hover:text-white transition-colors bg-black/5 dark:bg-white/5 rounded-lg"><Edit size={14} /></button>
                                                             {user?.role !== 'editor' && user?.role !== 'content_admin' && (
-                                                                <button onClick={() => handleDeleteIncome(inc.id)} className="p-2 text-zinc-500 hover:text-red-500 transition-colors bg-white/5 rounded-lg"><Trash2 size={14} /></button>
+                                                                <button onClick={() => handleDeleteIncome(inc.id)} className="p-2 text-zinc-500 hover:text-red-500 transition-colors bg-black/5 dark:bg-white/5 rounded-lg"><Trash2 size={14} /></button>
                                                             )}
                                                         </div>
                                                     </td>
@@ -621,19 +621,19 @@ const OtherIncomeManagement = () => {
             <AnimatePresence>
                 {showAddModal && (
                     <>
-                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowAddModal(false)} className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100]" />
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowAddModal(false)} className="fixed inset-0 bg-white dark:bg-black/60 backdrop-blur-sm z-[100]" />
                         <motion.div 
                             initial={{ x: '100%' }} 
                             animate={{ x: 0 }} 
                             exit={{ x: '100%' }}
                             transition={{ type: "spring", damping: 30, stiffness: 300 }}
-                            className="fixed top-0 right-0 h-full w-full max-w-xl bg-zinc-950/95 backdrop-blur-3xl border-l border-white/10 shadow-2xl z-[101] flex flex-col text-white"
+                            className="fixed top-0 right-0 h-full w-full max-w-xl bg-gray-100 dark:bg-zinc-950/95 backdrop-blur-3xl border-l border-black/10 dark:border-white/10 shadow-2xl z-[101] flex flex-col text-gray-900 dark:text-white"
                         >
-                            <div className="p-6 border-b border-white/10 flex items-center justify-between">
+                            <div className="p-6 border-b border-black/10 dark:border-white/10 flex items-center justify-between">
                                 <div>
-                                    <h2 className="text-xl font-black uppercase text-white">LOG INCOME</h2>
+                                    <h2 className="text-xl font-black uppercase text-gray-900 dark:text-white">LOG INCOME</h2>
                                 </div>
-                                <button type="button" onClick={() => setShowAddModal(false)} className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 text-zinc-400 hover:text-white transition-all"><X size={14} /></button>
+                                <button type="button" onClick={() => setShowAddModal(false)} className="w-8 h-8 rounded-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 flex items-center justify-center hover:bg-black/10 dark:hover:bg-white/10 text-zinc-400 hover:text-gray-900 dark:hover:text-white transition-all"><X size={14} /></button>
                             </div>
                             
                             <form onSubmit={handleCreateIncome} className="flex-1 flex flex-col overflow-hidden">
@@ -641,33 +641,33 @@ const OtherIncomeManagement = () => {
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <div className="space-y-1.5">
                                             <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest pl-1">Source Name (Sponsor/Client) *</label>
-                                            <input value={sourceName} onChange={(e) => setSourceName(e.target.value)} placeholder="e.g. Sprite Sponsor / Offline Ticket Cash" className="w-full h-12 bg-zinc-900/50 border border-white/10 rounded-xl px-4 text-[10px] font-extrabold uppercase tracking-widest text-white outline-none focus:border-[#39FF14] transition-all" required />
+                                            <input value={sourceName} onChange={(e) => setSourceName(e.target.value)} placeholder="e.g. Sprite Sponsor / Offline Ticket Cash" className="w-full h-12 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl px-4 text-[10px] font-extrabold uppercase tracking-widest text-gray-900 dark:text-white outline-none focus:border-[#39FF14] transition-all" required />
                                         </div>
                                         <div className="space-y-1.5">
                                             <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest pl-1">Amount (INR) *</label>
-                                            <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="e.g. 50000" className="w-full h-12 bg-zinc-900/50 border border-white/10 rounded-xl px-4 text-[10px] font-extrabold uppercase tracking-widest text-white outline-none focus:border-[#39FF14] transition-all" required />
+                                            <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="e.g. 50000" className="w-full h-12 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl px-4 text-[10px] font-extrabold uppercase tracking-widest text-gray-900 dark:text-white outline-none focus:border-[#39FF14] transition-all" required />
                                         </div>
                                     </div>
 
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <div className="space-y-1.5">
                                             <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest pl-1">Category *</label>
-                                            <select value={category} onChange={(e) => setCategory(e.target.value)} className="w-full h-12 bg-zinc-900/50 border border-white/10 rounded-xl px-4 text-[10px] font-extrabold uppercase tracking-widest text-white outline-none focus:border-[#39FF14] transition-all cursor-pointer">
-                                                {incomeCategories.map(c => <option key={c} value={c} className="bg-zinc-950">{c}</option>)}
+                                            <select value={category} onChange={(e) => setCategory(e.target.value)} className="w-full h-12 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl px-4 text-[10px] font-extrabold uppercase tracking-widest text-gray-900 dark:text-white outline-none focus:border-[#39FF14] transition-all cursor-pointer">
+                                                {incomeCategories.map(c => <option key={c} value={c} className="bg-gray-100 dark:bg-zinc-950">{c}</option>)}
                                             </select>
                                         </div>
                                         <div className="space-y-1.5">
                                             <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest pl-1">Date *</label>
-                                            <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="w-full h-12 bg-zinc-900/50 border border-white/10 rounded-xl px-4 text-[10px] font-extrabold uppercase tracking-widest text-white outline-none focus:border-[#39FF14] transition-all" required />
+                                            <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="w-full h-12 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl px-4 text-[10px] font-extrabold uppercase tracking-widest text-gray-900 dark:text-white outline-none focus:border-[#39FF14] transition-all" required />
                                         </div>
                                     </div>
 
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <div className="space-y-1.5">
                                             <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest pl-1">Destination Account *</label>
-                                            <select value={accountType} onChange={(e) => setAccountType(e.target.value)} className="w-full h-12 bg-zinc-900/50 border border-white/10 rounded-xl px-4 text-[10px] font-extrabold uppercase tracking-widest text-white outline-none focus:border-[#39FF14] transition-all cursor-pointer">
-                                                <option value="newbi" className="bg-zinc-950">Official Newbi Account</option>
-                                                <option value="personal" className="bg-zinc-950">Personal Account</option>
+                                            <select value={accountType} onChange={(e) => setAccountType(e.target.value)} className="w-full h-12 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl px-4 text-[10px] font-extrabold uppercase tracking-widest text-gray-900 dark:text-white outline-none focus:border-[#39FF14] transition-all cursor-pointer">
+                                                <option value="newbi" className="bg-gray-100 dark:bg-zinc-950">Official Newbi Account</option>
+                                                <option value="personal" className="bg-gray-100 dark:bg-zinc-950">Personal Account</option>
                                             </select>
                                         </div>
                                         <div className="space-y-1.5">
@@ -678,7 +678,7 @@ const OtherIncomeManagement = () => {
                                                 value={accountType === 'personal' ? receiverName : 'Newbi Core Account'} 
                                                 onChange={(e) => setReceiverName(e.target.value)} 
                                                 placeholder={accountType === 'personal' ? "e.g. Team member name" : "Newbi Core Account"} 
-                                                className="w-full h-12 bg-zinc-900/50 border border-white/10 rounded-xl px-4 text-[10px] font-extrabold uppercase tracking-widest text-white outline-none focus:border-[#39FF14] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                                className="w-full h-12 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl px-4 text-[10px] font-extrabold uppercase tracking-widest text-gray-900 dark:text-white outline-none focus:border-[#39FF14] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                                                 disabled={accountType === 'newbi'}
                                                 required={accountType === 'personal'}
                                             />
@@ -688,15 +688,15 @@ const OtherIncomeManagement = () => {
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <div className="space-y-1.5">
                                             <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest pl-1">Payment Method</label>
-                                            <select value={paymentMode} onChange={(e) => setPaymentMode(e.target.value)} className="w-full h-12 bg-zinc-900/50 border border-white/10 rounded-xl px-4 text-[10px] font-extrabold uppercase tracking-widest text-white outline-none focus:border-[#39FF14] transition-all cursor-pointer">
-                                                {paymentModes.map(m => <option key={m} value={m} className="bg-zinc-950">{m}</option>)}
+                                            <select value={paymentMode} onChange={(e) => setPaymentMode(e.target.value)} className="w-full h-12 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl px-4 text-[10px] font-extrabold uppercase tracking-widest text-gray-900 dark:text-white outline-none focus:border-[#39FF14] transition-all cursor-pointer">
+                                                {paymentModes.map(m => <option key={m} value={m} className="bg-gray-100 dark:bg-zinc-950">{m}</option>)}
                                             </select>
                                         </div>
                                         <div className="space-y-1.5">
                                             <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest pl-1">Status</label>
-                                            <select value={status} onChange={(e) => setStatus(e.target.value)} className="w-full h-12 bg-zinc-900/50 border border-white/10 rounded-xl px-4 text-[10px] font-extrabold uppercase tracking-widest text-white outline-none focus:border-[#39FF14] transition-all cursor-pointer">
-                                                <option value="Paid" className="bg-zinc-950">Received / Cleared</option>
-                                                <option value="Pending" className="bg-zinc-950">Pending / Outstanding</option>
+                                            <select value={status} onChange={(e) => setStatus(e.target.value)} className="w-full h-12 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl px-4 text-[10px] font-extrabold uppercase tracking-widest text-gray-900 dark:text-white outline-none focus:border-[#39FF14] transition-all cursor-pointer">
+                                                <option value="Paid" className="bg-gray-100 dark:bg-zinc-950">Received / Cleared</option>
+                                                <option value="Pending" className="bg-gray-100 dark:bg-zinc-950">Pending / Outstanding</option>
                                             </select>
                                         </div>
                                     </div>
@@ -708,21 +708,21 @@ const OtherIncomeManagement = () => {
                                                 value={transactionRef} 
                                                 onChange={(e) => setTransactionRef(e.target.value)} 
                                                 placeholder="e.g. UPI Ref / Bank IMPS ID" 
-                                                className="w-full h-12 bg-zinc-900/50 border border-white/10 rounded-xl px-4 text-[10px] font-extrabold uppercase tracking-widest text-white outline-none focus:border-[#39FF14] transition-all" 
+                                                className="w-full h-12 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl px-4 text-[10px] font-extrabold uppercase tracking-widest text-gray-900 dark:text-white outline-none focus:border-[#39FF14] transition-all" 
                                             />
                                         </div>
                                         <div className="space-y-1.5">
                                             <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest pl-1">Proof Attachment (Image/PDF)</label>
-                                            <div className="relative group cursor-pointer h-12 border border-dashed border-white/10 rounded-xl flex items-center justify-center gap-3 bg-zinc-900/50 hover:border-white/30 transition-all">
+                                            <div className="relative group cursor-pointer h-12 border border-dashed border-black/10 dark:border-white/10 rounded-xl flex items-center justify-center gap-3 bg-gray-100 dark:bg-zinc-900/50 hover:border-white/30 transition-all">
                                                 <input type="file" onChange={(e) => handleAttachmentUpload(e, setAttachmentUrl)} className="absolute inset-0 opacity-0 cursor-pointer z-10" />
-                                                <Upload className="text-zinc-500 group-hover:text-white transition-colors" size={16} />
-                                                <span className="text-[10px] font-black text-zinc-500 group-hover:text-white uppercase tracking-widest transition-colors">
+                                                <Upload className="text-zinc-500 group-hover:text-gray-900 dark:group-hover:text-white transition-colors" size={16} />
+                                                <span className="text-[10px] font-black text-zinc-500 group-hover:text-gray-900 dark:group-hover:text-white uppercase tracking-widest transition-colors">
                                                     {uploadingAttachment ? 'UPLOADING...' : (attachmentUrl ? 'CHANGE ATTACHMENT' : 'CHOOSE FILE')}
                                                 </span>
                                             </div>
                                             {attachmentUrl && (
                                                 <div className="text-[9px] text-[#39FF14] font-bold uppercase tracking-wider mt-1.5 pl-1 truncate">
-                                                    File linked: <a href={attachmentUrl} target="_blank" rel="noopener noreferrer" className="underline hover:text-white">View File</a>
+                                                    File linked: <a href={attachmentUrl} target="_blank" rel="noopener noreferrer" className="underline hover:text-gray-900 dark:hover:text-white">View File</a>
                                                 </div>
                                             )}
                                         </div>
@@ -730,11 +730,11 @@ const OtherIncomeManagement = () => {
 
                                     <div className="space-y-1.5">
                                         <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest pl-1">Internal Notes</label>
-                                        <textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Add transaction details or verification reference..." className="w-full bg-zinc-900/50 border border-white/10 rounded-xl p-4 text-[10px] font-extrabold uppercase tracking-widest text-white outline-none focus:border-[#39FF14] min-h-[100px] resize-y transition-all" />
+                                        <textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Add transaction details or verification reference..." className="w-full bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl p-4 text-[10px] font-extrabold uppercase tracking-widest text-gray-900 dark:text-white outline-none focus:border-[#39FF14] min-h-[100px] resize-y transition-all" />
                                     </div>
 
                                     <div className="pt-4 flex gap-3">
-                                        <button type="button" onClick={() => setShowAddModal(false)} className="flex-1 h-12 bg-white/[0.03] hover:bg-white/[0.05] text-zinc-400 hover:text-white font-black uppercase tracking-widest text-[10px] rounded-xl border border-white/10 transition-all">
+                                        <button type="button" onClick={() => setShowAddModal(false)} className="flex-1 h-12 bg-white/[0.03] hover:bg-white/[0.05] text-zinc-400 hover:text-gray-900 dark:hover:text-white font-black uppercase tracking-widest text-[10px] rounded-xl border border-black/10 dark:border-white/10 transition-all">
                                             Cancel
                                         </button>
                                         <button type="submit" disabled={uploadingAttachment} className="flex-1 h-12 bg-white text-black hover:bg-zinc-200 font-black uppercase tracking-widest text-[10px] rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed">
@@ -752,19 +752,19 @@ const OtherIncomeManagement = () => {
             <AnimatePresence>
                 {showEditModal && (
                     <>
-                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowEditModal(null)} className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100]" />
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowEditModal(null)} className="fixed inset-0 bg-white dark:bg-black/60 backdrop-blur-sm z-[100]" />
                         <motion.div 
                             initial={{ x: '100%' }} 
                             animate={{ x: 0 }} 
                             exit={{ x: '100%' }}
                             transition={{ type: "spring", damping: 30, stiffness: 300 }}
-                            className="fixed top-0 right-0 h-full w-full max-w-xl bg-zinc-950/95 backdrop-blur-3xl border-l border-white/10 shadow-2xl z-[101] flex flex-col text-white"
+                            className="fixed top-0 right-0 h-full w-full max-w-xl bg-gray-100 dark:bg-zinc-950/95 backdrop-blur-3xl border-l border-black/10 dark:border-white/10 shadow-2xl z-[101] flex flex-col text-gray-900 dark:text-white"
                         >
-                            <div className="p-6 border-b border-white/10 flex items-center justify-between">
+                            <div className="p-6 border-b border-black/10 dark:border-white/10 flex items-center justify-between">
                                 <div>
-                                    <h2 className="text-xl font-black uppercase text-white">EDIT INCOME</h2>
+                                    <h2 className="text-xl font-black uppercase text-gray-900 dark:text-white">EDIT INCOME</h2>
                                 </div>
-                                <button type="button" onClick={() => setShowEditModal(null)} className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 text-zinc-400 hover:text-white transition-all"><X size={14} /></button>
+                                <button type="button" onClick={() => setShowEditModal(null)} className="w-8 h-8 rounded-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 flex items-center justify-center hover:bg-black/10 dark:hover:bg-white/10 text-zinc-400 hover:text-gray-900 dark:hover:text-white transition-all"><X size={14} /></button>
                             </div>
                             
                             <form onSubmit={handleUpdateIncome} className="flex-1 flex flex-col overflow-hidden">
@@ -772,33 +772,33 @@ const OtherIncomeManagement = () => {
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <div className="space-y-1.5">
                                             <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest pl-1">Source Name (Sponsor/Client) *</label>
-                                            <input value={sourceName} onChange={(e) => setSourceName(e.target.value)} placeholder="e.g. Sprite Sponsor" className="w-full h-12 bg-zinc-900/50 border border-white/10 rounded-xl px-4 text-[10px] font-extrabold uppercase tracking-widest text-white outline-none focus:border-[#39FF14] transition-all" required />
+                                            <input value={sourceName} onChange={(e) => setSourceName(e.target.value)} placeholder="e.g. Sprite Sponsor" className="w-full h-12 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl px-4 text-[10px] font-extrabold uppercase tracking-widest text-gray-900 dark:text-white outline-none focus:border-[#39FF14] transition-all" required />
                                         </div>
                                         <div className="space-y-1.5">
                                             <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest pl-1">Amount (INR) *</label>
-                                            <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="e.g. 50000" className="w-full h-12 bg-zinc-900/50 border border-white/10 rounded-xl px-4 text-[10px] font-extrabold uppercase tracking-widest text-white outline-none focus:border-[#39FF14] transition-all" required />
+                                            <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="e.g. 50000" className="w-full h-12 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl px-4 text-[10px] font-extrabold uppercase tracking-widest text-gray-900 dark:text-white outline-none focus:border-[#39FF14] transition-all" required />
                                         </div>
                                     </div>
 
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <div className="space-y-1.5">
                                             <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest pl-1">Category *</label>
-                                            <select value={category} onChange={(e) => setCategory(e.target.value)} className="w-full h-12 bg-zinc-900/50 border border-white/10 rounded-xl px-4 text-[10px] font-extrabold uppercase tracking-widest text-white outline-none focus:border-[#39FF14] transition-all cursor-pointer">
-                                                {incomeCategories.map(c => <option key={c} value={c} className="bg-zinc-950">{c}</option>)}
+                                            <select value={category} onChange={(e) => setCategory(e.target.value)} className="w-full h-12 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl px-4 text-[10px] font-extrabold uppercase tracking-widest text-gray-900 dark:text-white outline-none focus:border-[#39FF14] transition-all cursor-pointer">
+                                                {incomeCategories.map(c => <option key={c} value={c} className="bg-gray-100 dark:bg-zinc-950">{c}</option>)}
                                             </select>
                                         </div>
                                         <div className="space-y-1.5">
                                             <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest pl-1">Date *</label>
-                                            <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="w-full h-12 bg-zinc-900/50 border border-white/10 rounded-xl px-4 text-[10px] font-extrabold uppercase tracking-widest text-white outline-none focus:border-[#39FF14] transition-all" required />
+                                            <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="w-full h-12 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl px-4 text-[10px] font-extrabold uppercase tracking-widest text-gray-900 dark:text-white outline-none focus:border-[#39FF14] transition-all" required />
                                         </div>
                                     </div>
 
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <div className="space-y-1.5">
                                             <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest pl-1">Destination Account *</label>
-                                            <select value={accountType} onChange={(e) => setAccountType(e.target.value)} className="w-full h-12 bg-zinc-900/50 border border-white/10 rounded-xl px-4 text-[10px] font-extrabold uppercase tracking-widest text-white outline-none focus:border-[#39FF14] transition-all cursor-pointer">
-                                                <option value="newbi" className="bg-zinc-950">Official Newbi Account</option>
-                                                <option value="personal" className="bg-zinc-950">Personal Account</option>
+                                            <select value={accountType} onChange={(e) => setAccountType(e.target.value)} className="w-full h-12 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl px-4 text-[10px] font-extrabold uppercase tracking-widest text-gray-900 dark:text-white outline-none focus:border-[#39FF14] transition-all cursor-pointer">
+                                                <option value="newbi" className="bg-gray-100 dark:bg-zinc-950">Official Newbi Account</option>
+                                                <option value="personal" className="bg-gray-100 dark:bg-zinc-950">Personal Account</option>
                                             </select>
                                         </div>
                                         <div className="space-y-1.5">
@@ -809,7 +809,7 @@ const OtherIncomeManagement = () => {
                                                 value={accountType === 'personal' ? receiverName : 'Newbi Core Account'} 
                                                 onChange={(e) => setReceiverName(e.target.value)} 
                                                 placeholder={accountType === 'personal' ? "e.g. Team member name" : "Newbi Core Account"} 
-                                                className="w-full h-12 bg-zinc-900/50 border border-white/10 rounded-xl px-4 text-[10px] font-extrabold uppercase tracking-widest text-white outline-none focus:border-[#39FF14] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                                className="w-full h-12 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl px-4 text-[10px] font-extrabold uppercase tracking-widest text-gray-900 dark:text-white outline-none focus:border-[#39FF14] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                                                 disabled={accountType === 'newbi'}
                                                 required={accountType === 'personal'}
                                             />
@@ -819,15 +819,15 @@ const OtherIncomeManagement = () => {
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <div className="space-y-1.5">
                                             <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest pl-1">Payment Method</label>
-                                            <select value={paymentMode} onChange={(e) => setPaymentMode(e.target.value)} className="w-full h-12 bg-zinc-900/50 border border-white/10 rounded-xl px-4 text-[10px] font-extrabold uppercase tracking-widest text-white outline-none focus:border-[#39FF14] transition-all cursor-pointer">
-                                                {paymentModes.map(m => <option key={m} value={m} className="bg-zinc-950">{m}</option>)}
+                                            <select value={paymentMode} onChange={(e) => setPaymentMode(e.target.value)} className="w-full h-12 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl px-4 text-[10px] font-extrabold uppercase tracking-widest text-gray-900 dark:text-white outline-none focus:border-[#39FF14] transition-all cursor-pointer">
+                                                {paymentModes.map(m => <option key={m} value={m} className="bg-gray-100 dark:bg-zinc-950">{m}</option>)}
                                             </select>
                                         </div>
                                         <div className="space-y-1.5">
                                             <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest pl-1">Status</label>
-                                            <select value={status} onChange={(e) => setStatus(e.target.value)} className="w-full h-12 bg-zinc-900/50 border border-white/10 rounded-xl px-4 text-[10px] font-extrabold uppercase tracking-widest text-white outline-none focus:border-[#39FF14] transition-all cursor-pointer">
-                                                <option value="Paid" className="bg-zinc-950">Received / Cleared</option>
-                                                <option value="Pending" className="bg-zinc-950">Pending / Outstanding</option>
+                                            <select value={status} onChange={(e) => setStatus(e.target.value)} className="w-full h-12 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl px-4 text-[10px] font-extrabold uppercase tracking-widest text-gray-900 dark:text-white outline-none focus:border-[#39FF14] transition-all cursor-pointer">
+                                                <option value="Paid" className="bg-gray-100 dark:bg-zinc-950">Received / Cleared</option>
+                                                <option value="Pending" className="bg-gray-100 dark:bg-zinc-950">Pending / Outstanding</option>
                                             </select>
                                         </div>
                                     </div>
@@ -839,21 +839,21 @@ const OtherIncomeManagement = () => {
                                                 value={transactionRef} 
                                                 onChange={(e) => setTransactionRef(e.target.value)} 
                                                 placeholder="e.g. UPI Ref / Bank IMPS ID" 
-                                                className="w-full h-12 bg-zinc-900/50 border border-white/10 rounded-xl px-4 text-[10px] font-extrabold uppercase tracking-widest text-white outline-none focus:border-[#39FF14] transition-all" 
+                                                className="w-full h-12 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl px-4 text-[10px] font-extrabold uppercase tracking-widest text-gray-900 dark:text-white outline-none focus:border-[#39FF14] transition-all" 
                                             />
                                         </div>
                                         <div className="space-y-1.5">
                                             <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest pl-1">Proof Attachment (Image/PDF)</label>
-                                            <div className="relative group cursor-pointer h-12 border border-dashed border-white/10 rounded-xl flex items-center justify-center gap-3 bg-zinc-900/50 hover:border-white/30 transition-all">
+                                            <div className="relative group cursor-pointer h-12 border border-dashed border-black/10 dark:border-white/10 rounded-xl flex items-center justify-center gap-3 bg-gray-100 dark:bg-zinc-900/50 hover:border-white/30 transition-all">
                                                 <input type="file" onChange={(e) => handleAttachmentUpload(e, setAttachmentUrl)} className="absolute inset-0 opacity-0 cursor-pointer z-10" />
-                                                <Upload className="text-zinc-500 group-hover:text-white transition-colors" size={16} />
-                                                <span className="text-[10px] font-black text-zinc-500 group-hover:text-white uppercase tracking-widest transition-colors">
+                                                <Upload className="text-zinc-500 group-hover:text-gray-900 dark:group-hover:text-white transition-colors" size={16} />
+                                                <span className="text-[10px] font-black text-zinc-500 group-hover:text-gray-900 dark:group-hover:text-white uppercase tracking-widest transition-colors">
                                                     {uploadingAttachment ? 'UPLOADING...' : (attachmentUrl ? 'CHANGE ATTACHMENT' : 'CHOOSE FILE')}
                                                 </span>
                                             </div>
                                             {attachmentUrl && (
                                                 <div className="text-[9px] text-[#39FF14] font-bold uppercase tracking-wider mt-1.5 pl-1 truncate">
-                                                    File linked: <a href={attachmentUrl} target="_blank" rel="noopener noreferrer" className="underline hover:text-white">View File</a>
+                                                    File linked: <a href={attachmentUrl} target="_blank" rel="noopener noreferrer" className="underline hover:text-gray-900 dark:hover:text-white">View File</a>
                                                 </div>
                                             )}
                                         </div>
@@ -861,11 +861,11 @@ const OtherIncomeManagement = () => {
 
                                     <div className="space-y-1.5">
                                         <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest pl-1">Internal Notes</label>
-                                        <textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Add transaction details or verification reference..." className="w-full bg-zinc-900/50 border border-white/10 rounded-xl p-4 text-[10px] font-extrabold uppercase tracking-widest text-white outline-none focus:border-[#39FF14] min-h-[100px] resize-y transition-all" />
+                                        <textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Add transaction details or verification reference..." className="w-full bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl p-4 text-[10px] font-extrabold uppercase tracking-widest text-gray-900 dark:text-white outline-none focus:border-[#39FF14] min-h-[100px] resize-y transition-all" />
                                     </div>
 
                                     <div className="pt-4 flex gap-3">
-                                        <button type="button" onClick={() => setShowEditModal(null)} className="flex-1 h-12 bg-white/[0.03] hover:bg-white/[0.05] text-zinc-400 hover:text-white font-black uppercase tracking-widest text-[10px] rounded-xl border border-white/10 transition-all">
+                                        <button type="button" onClick={() => setShowEditModal(null)} className="flex-1 h-12 bg-white/[0.03] hover:bg-white/[0.05] text-zinc-400 hover:text-gray-900 dark:hover:text-white font-black uppercase tracking-widest text-[10px] rounded-xl border border-black/10 dark:border-white/10 transition-all">
                                             Cancel
                                         </button>
                                         <button type="submit" disabled={uploadingAttachment} className="flex-1 h-12 bg-white text-black hover:bg-zinc-200 font-black uppercase tracking-widest text-[10px] rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed">

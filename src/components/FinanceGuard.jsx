@@ -11,7 +11,7 @@ const FinanceGuard = ({ children }) => {
     }
 
     return (
-        <div className="min-h-screen bg-black flex items-center justify-center p-6">
+        <div className="min-h-screen bg-white dark:bg-black flex items-center justify-center p-6">
             <motion.div 
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -29,7 +29,7 @@ const FinanceGuard = ({ children }) => {
                 </div>
                 
                 <div className="space-y-4">
-                    <h1 className="text-4xl font-black font-heading text-white uppercase italic tracking-tighter">FINANCE ACCESS DENIED.</h1>
+                    <h1 className="text-4xl font-black font-heading text-gray-900 dark:text-white uppercase italic tracking-tighter">FINANCE ACCESS DENIED.</h1>
                     <p className="text-gray-500 text-sm font-bold uppercase tracking-widest leading-relaxed">
                         Your admin credentials do not have the clearance level required to view the <span className="text-neon-green">Newbi Finance Dashboard</span>.
                     </p>
@@ -38,7 +38,7 @@ const FinanceGuard = ({ children }) => {
                 <div className="pt-8 space-y-4">
                     <button 
                         onClick={() => window.location.href = '/admin'}
-                        className="px-8 h-14 bg-white/5 border border-white/5 text-white font-black uppercase tracking-widest text-[10px] rounded-2xl hover:bg-white/10 transition-all w-full"
+                        className="px-8 h-14 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/5 text-gray-900 dark:text-white font-black uppercase tracking-widest text-[10px] rounded-2xl hover:bg-black/10 dark:hover:bg-white/10 transition-all w-full"
                     >
                         Return to Admin Command Center
                     </button>

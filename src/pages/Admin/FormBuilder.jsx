@@ -160,7 +160,7 @@ const FormBuilder = () => {
             <div className="flex flex-col lg:grid lg:grid-cols-2 gap-12 items-stretch mb-20 relative z-10">
                 {/* Editor Column */}
                 <div className="w-full">
-                    <Card className="p-8 md:p-12 bg-zinc-950/40 backdrop-blur-3xl border-white/5 rounded-[2.5rem] shadow-2xl relative overflow-hidden">
+                    <Card className="p-8 md:p-12 bg-gray-100 dark:bg-zinc-950/40 backdrop-blur-3xl border-black/10 dark:border-white/5 rounded-[2.5rem] shadow-2xl relative overflow-hidden">
                         {/* Ambient Background Glow */}
                         <div className="absolute -top-20 -right-20 w-64 h-64 bg-neon-pink/5 rounded-full blur-[100px] pointer-events-none" />
                         
@@ -168,7 +168,7 @@ const FormBuilder = () => {
                             <div className="space-y-3">
                                 <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em] pl-1">DESCRIPTION</label>
                                 <textarea 
-                                    className="w-full bg-black/60 border border-white/5 rounded-[1.5rem] p-8 text-white focus:outline-none focus:border-neon-pink/40 min-h-[150px] resize-none text-[13px] font-medium placeholder:text-gray-800 leading-relaxed italic shadow-inner" 
+                                    className="w-full bg-white dark:bg-black/60 border border-black/10 dark:border-white/5 rounded-[1.5rem] p-8 text-gray-900 dark:text-white focus:outline-none focus:border-neon-pink/40 min-h-[150px] resize-none text-[13px] font-medium placeholder:text-gray-800 leading-relaxed italic shadow-inner" 
                                     value={description} 
                                     onChange={e => setDescription(e.target.value)} 
                                     placeholder="Brief details..." 
@@ -184,7 +184,7 @@ const FormBuilder = () => {
                                             onChange={e => setTitle(e.target.value)} 
                                             required 
                                             placeholder="e.g. JOIN THE TRIBE"
-                                            className="h-14 bg-black/60 border-white/5 rounded-2xl px-6 text-[11px] font-black uppercase tracking-widest focus:border-neon-pink/40" 
+                                            className="h-14 bg-white dark:bg-black/60 border-black/10 dark:border-white/5 rounded-2xl px-6 text-[11px] font-black uppercase tracking-widest focus:border-neon-pink/40" 
                                         />
                                     </div>
                                     <div className="space-y-3">
@@ -210,7 +210,7 @@ const FormBuilder = () => {
                                             value={bottomText} 
                                             onChange={e => setBottomText(e.target.value)} 
                                             placeholder="e.g. GLOBAL ACCESS"
-                                            className="h-14 bg-black/60 border-white/5 rounded-2xl px-6 text-[11px] font-black uppercase tracking-widest focus:border-neon-pink/40" 
+                                            className="h-14 bg-white dark:bg-black/60 border-black/10 dark:border-white/5 rounded-2xl px-6 text-[11px] font-black uppercase tracking-widest focus:border-neon-pink/40" 
                                         />
                                     </div>
                                     <div className="space-y-3">
@@ -219,7 +219,7 @@ const FormBuilder = () => {
                                             value={buttonText} 
                                             onChange={e => setButtonText(e.target.value)} 
                                             placeholder="e.g. FILL FORM"
-                                            className="h-14 bg-black/60 border-white/5 rounded-2xl px-6 text-[11px] font-black uppercase tracking-widest focus:border-neon-pink/40" 
+                                            className="h-14 bg-white dark:bg-black/60 border-black/10 dark:border-white/5 rounded-2xl px-6 text-[11px] font-black uppercase tracking-widest focus:border-neon-pink/40" 
                                         />
                                     </div>
                                 </div>
@@ -227,31 +227,31 @@ const FormBuilder = () => {
                                 <div className="space-y-3">
                                     <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em] pl-1">DESCRIPTION</label>
                                     <textarea 
-                                        className="w-full bg-black/60 border border-white/5 rounded-[1.5rem] p-8 text-white focus:outline-none focus:border-neon-pink/40 min-h-[150px] resize-none text-[13px] font-medium placeholder:text-gray-800 leading-relaxed italic shadow-inner" 
+                                        className="w-full bg-white dark:bg-black/60 border border-black/10 dark:border-white/5 rounded-[1.5rem] p-8 text-gray-900 dark:text-white focus:outline-none focus:border-neon-pink/40 min-h-[150px] resize-none text-[13px] font-medium placeholder:text-gray-800 leading-relaxed italic shadow-inner" 
                                         value={description} 
                                         onChange={e => setDescription(e.target.value)} 
                                         placeholder="Brief details..." 
                                     />
                                 </div>
 
-                                <div className="p-8 rounded-[2rem] bg-black/40 border border-white/5 space-y-6">
+                                <div className="p-8 rounded-[2rem] bg-white dark:bg-black/40 border border-black/10 dark:border-white/5 space-y-6">
                                     <div className="flex justify-between items-center">
                                         <label className="text-[10px] font-black text-neon-pink uppercase tracking-[0.3em]">FORM LINK (URL)</label>
                                         <button
                                             type="button"
                                             onClick={() => setShowHelp(!showHelp)}
-                                            className="text-[9px] font-black text-gray-600 hover:text-white uppercase tracking-widest transition-colors flex items-center gap-2 underline"
+                                            className="text-[9px] font-black text-gray-600 hover:text-gray-900 dark:hover:text-white uppercase tracking-widest transition-colors flex items-center gap-2 underline"
                                         >
                                             <HelpCircle size={12} /> GUIDE
                                         </button>
                                     </div>
 
                                     {showHelp && (
-                                        <div className="text-[11px] text-gray-400 bg-black/60 p-6 rounded-2xl border border-white/10 uppercase tracking-widest leading-loose italic">
+                                        <div className="text-[11px] text-gray-600 dark:text-gray-400 bg-white dark:bg-black/60 p-6 rounded-2xl border border-black/10 dark:border-white/10 uppercase tracking-widest leading-loose italic">
                                             <ol className="list-decimal pl-4 space-y-2">
                                                 <li>Open your Google Form in edit mode.</li>
-                                                <li>Click the <strong className="text-white">Send</strong> button.</li>
-                                                <li>Click the <strong className="text-white">&lt; &gt;</strong> (Embed) tab.</li>
+                                                <li>Click the <strong className="text-gray-900 dark:text-white">Send</strong> button.</li>
+                                                <li>Click the <strong className="text-gray-900 dark:text-white">&lt; &gt;</strong> (Embed) tab.</li>
                                                 <li>Copy the URL inside <code>src="..."</code>.</li>
                                             </ol>
                                         </div>
@@ -262,30 +262,30 @@ const FormBuilder = () => {
                                         onChange={(e) => setFormUrl(e.target.value)}
                                         required
                                         placeholder="HTTPS://DOCS.GOOGLE.COM/FORMS/D/E/.../VIEWFORM"
-                                        className="h-14 font-mono text-[10px] bg-black/60 border-white/5 rounded-2xl px-6 focus:border-neon-pink/40"
+                                        className="h-14 font-mono text-[10px] bg-white dark:bg-black/60 border-black/10 dark:border-white/5 rounded-2xl px-6 focus:border-neon-pink/40"
                                     />
 
-                                    <div className="flex items-start gap-4 p-6 rounded-2xl border border-white/5 bg-black/40 group hover:border-white/10 transition-all">
+                                    <div className="flex items-start gap-4 p-6 rounded-2xl border border-black/10 dark:border-white/5 bg-white dark:bg-black/40 group hover:border-black/10 dark:hover:border-white/10 transition-all">
                                         <input
                                             type="checkbox"
                                             id="requiresExternal"
                                             checked={requiresExternal}
                                             onChange={(e) => setRequiresExternal(e.target.checked)}
-                                            className="mt-1 w-5 h-5 rounded border-white/10 text-neon-pink focus:ring-neon-pink bg-black/60"
+                                            className="mt-1 w-5 h-5 rounded border-black/10 dark:border-white/10 text-neon-pink focus:ring-neon-pink bg-white dark:bg-black/60"
                                         />
                                         <div>
-                                            <label htmlFor="requiresExternal" className="text-[11px] text-white font-black uppercase tracking-widest cursor-pointer flex items-center gap-2">
+                                            <label htmlFor="requiresExternal" className="text-[11px] text-gray-900 dark:text-white font-black uppercase tracking-widest cursor-pointer flex items-center gap-2">
                                                 EXTERNAL REDIRECT
                                                 <ExternalLink className="h-3 w-3 text-gray-500" />
                                             </label>
                                             <p className="text-[9px] uppercase font-bold tracking-widest text-gray-600 mt-1">
-                                                Open in new tab. Required for <span className="text-white">File Uploads</span> or <span className="text-white">Forced Login</span>.
+                                                Open in new tab. Required for <span className="text-gray-900 dark:text-white">File Uploads</span> or <span className="text-gray-900 dark:text-white">Forced Login</span>.
                                             </p>
                                         </div>
                                     </div>
                                 </div>
 
-                                <div className="space-y-8 pt-6 border-t border-white/5">
+                                <div className="space-y-8 pt-6 border-t border-black/10 dark:border-white/5">
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                         <div className="space-y-3">
                                             <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em] pl-1">IMAGE</label>
@@ -294,13 +294,13 @@ const FormBuilder = () => {
                                                     value={image} 
                                                     onChange={e => setImage(e.target.value)} 
                                                     placeholder="URL" 
-                                                    className="flex-1 h-14 bg-black/60 border-white/5 rounded-2xl focus:border-neon-pink/40" 
+                                                    className="flex-1 h-14 bg-white dark:bg-black/60 border-black/10 dark:border-white/5 rounded-2xl focus:border-neon-pink/40" 
                                                 />
                                                 <div className="relative group w-14 h-14 shrink-0">
                                                     <input type="file" onChange={handleFileChange} className="absolute inset-0 opacity-0 cursor-pointer z-10" />
                                                     <div className={cn(
                                                         "h-full w-full rounded-2xl flex items-center justify-center border-2 border-dashed transition-all", 
-                                                        isUploading ? "border-neon-pink bg-neon-pink/10 text-neon-pink" : "border-white/10 bg-white/5 text-gray-500 hover:border-white/20"
+                                                        isUploading ? "border-neon-pink bg-neon-pink/10 text-neon-pink" : "border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 text-gray-500 hover:border-black/20 dark:hover:border-white/20"
                                                     )}>
                                                         {isUploading ? <Loader className="animate-spin" size={18} /> : <Plus size={18} />}
                                                     </div>
@@ -309,7 +309,7 @@ const FormBuilder = () => {
                                         </div>
                                         <div className="space-y-3">
                                             <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em] pl-1">HIGHLIGHT COLOR</label>
-                                            <div className="flex items-center gap-4 h-14 bg-black/60 border border-white/5 rounded-2xl px-6">
+                                            <div className="flex items-center gap-4 h-14 bg-white dark:bg-black/60 border border-black/10 dark:border-white/5 rounded-2xl px-6">
                                                 {colorPresets.map(color => (
                                                     <button 
                                                         key={color.value} 
@@ -327,13 +327,13 @@ const FormBuilder = () => {
                                     </div>
                                 </div>
 
-                                <div className="p-8 rounded-[2rem] bg-black/40 border border-white/5 space-y-10">
+                                <div className="p-8 rounded-[2rem] bg-white dark:bg-black/40 border border-black/10 dark:border-white/5 space-y-10">
                                     <div className="flex items-center justify-between">
                                         <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-neon-pink italic">IMAGE POSITION</h4>
                                         <button 
                                             type="button" 
                                             onClick={() => setImageTransform({ scale: 1.05, x: 0, y: 0 })} 
-                                            className="text-[9px] font-black text-gray-600 hover:text-white uppercase tracking-widest transition-colors flex items-center gap-2"
+                                            className="text-[9px] font-black text-gray-600 hover:text-gray-900 dark:hover:text-white uppercase tracking-widest transition-colors flex items-center gap-2"
                                         >
                                             <X size={12} /> RESET
                                         </button>
@@ -365,30 +365,30 @@ const FormBuilder = () => {
 
                                 <div className={cn(
                                     "p-8 rounded-[2rem] border flex items-center justify-between transition-all duration-500 mt-auto", 
-                                    isPinned ? "bg-neon-pink/10 border-neon-pink/40 shadow-[0_0_40px_rgba(255,79,139,0.05)]" : "bg-black/40 border-white/5"
+                                    isPinned ? "bg-neon-pink/10 border-neon-pink/40 shadow-[0_0_40px_rgba(255,79,139,0.05)]" : "bg-white dark:bg-black/40 border-black/10 dark:border-white/5"
                                 )}>
                                     <div className="flex items-center gap-8">
-                                        <div className={cn("w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-500 shadow-xl", isPinned ? "bg-neon-pink text-black" : "bg-white/5 text-gray-600")}>
+                                        <div className={cn("w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-500 shadow-xl", isPinned ? "bg-neon-pink text-black" : "bg-black/5 dark:bg-white/5 text-gray-600")}>
                                             <Star size={24} className={cn(isPinned && "fill-current")} />
                                         </div>
                                         <div>
-                                            <h4 className="text-white text-sm font-black uppercase tracking-widest italic leading-tight">FEATURE AS SPOTLIGHT</h4>
+                                            <h4 className="text-gray-900 dark:text-white text-sm font-black uppercase tracking-widest italic leading-tight">FEATURE AS SPOTLIGHT</h4>
                                             <p className="text-[10px] text-gray-600 mt-1 uppercase font-bold tracking-[0.1em]">SHOW IN THE FEATURED SECTION AT TOP</p>
                                         </div>
                                     </div>
                                     <button 
                                         type="button" 
                                         onClick={() => setIsPinned(!isPinned)} 
-                                        className={cn("w-14 h-8 rounded-full relative transition-all border-2", isPinned ? "bg-neon-pink border-neon-pink" : "bg-black/60 border-white/10")}
+                                        className={cn("w-14 h-8 rounded-full relative transition-all border-2", isPinned ? "bg-neon-pink border-neon-pink" : "bg-white dark:bg-black/60 border-black/10 dark:border-white/10")}
                                     >
-                                        <div className={cn("absolute top-1 w-5 h-5 rounded-full transition-all shadow-lg", isPinned ? "right-1 bg-black" : "left-1 bg-gray-600")} />
+                                        <div className={cn("absolute top-1 w-5 h-5 rounded-full transition-all shadow-lg", isPinned ? "right-1 bg-white dark:bg-black" : "left-1 bg-gray-600")} />
                                     </button>
                                 </div>
                             </div>
 
-                            <div className="flex flex-col sm:flex-row justify-end gap-4 pt-12 mt-12 border-t border-white/5">
+                            <div className="flex flex-col sm:flex-row justify-end gap-4 pt-12 mt-12 border-t border-black/10 dark:border-white/5">
                                 <Link to="/admin/forms">
-                                    <Button type="button" variant="outline" className="h-14 rounded-2xl px-10 text-[10px] font-black uppercase tracking-widest border-white/5 hover:bg-white/5">CANCEL</Button>
+                                    <Button type="button" variant="outline" className="h-14 rounded-2xl px-10 text-[10px] font-black uppercase tracking-widest border-black/10 dark:border-white/5 hover:bg-black/5 dark:hover:bg-white/5">CANCEL</Button>
                                 </Link>
                                 <Button 
                                     onClick={handleSubmit} 
@@ -405,12 +405,12 @@ const FormBuilder = () => {
 
                 {/* Preview Column */}
                 <div className="lg:sticky lg:top-32 space-y-8 w-full">
-                    <div className="flex bg-zinc-950/60 border border-white/5 p-2 rounded-2xl w-fit backdrop-blur-3xl shadow-2xl">
+                    <div className="flex bg-gray-100 dark:bg-zinc-950/60 border border-black/10 dark:border-white/5 p-2 rounded-2xl w-fit backdrop-blur-3xl shadow-2xl">
                         <button 
                             onClick={() => setPreviewType('card')}
                             className={cn(
                                 "px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
-                                previewType === 'card' ? "bg-neon-pink text-black shadow-lg" : "text-gray-500 hover:text-white"
+                                previewType === 'card' ? "bg-neon-pink text-black shadow-lg" : "text-gray-500 hover:text-gray-900 dark:hover:text-white"
                             )}
                         >
                             CARD VIEW
@@ -419,7 +419,7 @@ const FormBuilder = () => {
                             onClick={() => setPreviewType('embed')}
                             className={cn(
                                 "px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
-                                previewType === 'embed' ? "bg-neon-pink text-black shadow-lg" : "text-gray-500 hover:text-white"
+                                previewType === 'embed' ? "bg-neon-pink text-black shadow-lg" : "text-gray-500 hover:text-gray-900 dark:hover:text-white"
                             )}
                         >
                             EMBED VIEW

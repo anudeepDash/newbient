@@ -7,7 +7,6 @@ export function useConsolidatedMembers() {
         'allUsers',
         'creators',
         'artists',
-        'campusProfiles',
         'subscribers',
         'admins',
         'ticketOrders',
@@ -19,7 +18,6 @@ export function useConsolidatedMembers() {
         allUsers = [],
         creators = [],
         artists = [],
-        campusProfiles = [],
         subscribers = [],
         admins = [],
         ticketOrders = [],
@@ -49,16 +47,6 @@ export function useConsolidatedMembers() {
                 isArtist: true,
                 phone: a.phone,
                 ...a
-            })),
-            ...(campusProfiles || []).map(cp => ({
-                id: cp.uid || cp.id,
-                email: cp.email,
-                displayName: cp.fullName || cp.name || cp.displayName,
-                createdAt: cp.createdAt,
-                hasJoinedTribe: true,
-                isCampus: true,
-                phone: cp.phone,
-                ...cp
             })),
             ...(admins || []).map(adm => ({
                 id: adm.uid || adm.id,
@@ -126,7 +114,6 @@ export function useConsolidatedMembers() {
                     hasJoinedTribe: item.hasJoinedTribe || false,
                     isCreator: !!item.isCreator,
                     isArtist: !!item.isArtist,
-                    isCampus: !!item.isCampus,
                     isAdmin: !!item.isAdmin,
                     isSubscriber: !!item.isSubscriber,
                     isTicketHolder: !!item.isTicketHolder,
@@ -148,7 +135,6 @@ export function useConsolidatedMembers() {
                     isBlocked: existing.isBlocked || item.isBlocked || false,
                     isCreator: existing.isCreator || !!item.isCreator,
                     isArtist: existing.isArtist || !!item.isArtist,
-                    isCampus: existing.isCampus || !!item.isCampus,
                     isAdmin: existing.isAdmin || !!item.isAdmin,
                     isSubscriber: existing.isSubscriber || !!item.isSubscriber,
                     isTicketHolder: existing.isTicketHolder || !!item.isTicketHolder,
@@ -161,7 +147,7 @@ export function useConsolidatedMembers() {
 
         const list = Array.from(memberMap.values());
         return list.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
-    }, [allUsers, creators, artists, campusProfiles, subscribers, admins, ticketOrders, giveawayEntries, clientRequests]);
+    }, [allUsers, creators, artists, subscribers, admins, ticketOrders, giveawayEntries, clientRequests]);
 
     const activeMembers = useMemo(() => {
         return members.filter(m => !m.isBlocked);
@@ -179,7 +165,6 @@ export function useConsolidatedMembers() {
         activeCount: activeMembers.length,
         suspendedCount: suspendedMembers.length,
         creators,
-        artists,
-        campusProfiles
+        artists
     };
 }

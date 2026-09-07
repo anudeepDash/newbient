@@ -74,7 +74,7 @@ const GigCard = ({ gig, index, totalGigs, onEdit, onMove, onUpdate, onDelete }) 
         <Card 
             key={gig.id} 
             onMouseMove={handleMouseMove}
-            className="p-0 bg-zinc-950/40 backdrop-blur-2xl border border-white/5 rounded-[2.5rem] overflow-hidden group hover:border-neon-green/30 transition-all duration-700 shadow-2xl flex flex-col min-h-[480px] relative"
+            className="p-0 bg-gray-100 dark:bg-zinc-950/40 backdrop-blur-2xl border border-black/10 dark:border-white/5 rounded-[2.5rem] overflow-hidden group hover:border-neon-green/30 transition-all duration-700 shadow-2xl flex flex-col min-h-[480px] relative"
             style={{ 
                 background: `radial-gradient(circle at ${mousePos.x}% ${mousePos.y}%, ${gig.highlightColor || '#39FF14'}10 0%, transparent 60%)`
             }}
@@ -93,7 +93,7 @@ const GigCard = ({ gig, index, totalGigs, onEdit, onMove, onUpdate, onDelete }) 
                     />
                 ) : (
                     <div className="w-full h-full bg-gradient-to-br from-zinc-900 to-black flex items-center justify-center">
-                        <Zap size={48} className="text-white/10" />
+                        <Zap size={48} className="text-gray-900 dark:text-white/10" />
                     </div>
                 )}
                 <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/20 to-transparent" />
@@ -114,12 +114,12 @@ const GigCard = ({ gig, index, totalGigs, onEdit, onMove, onUpdate, onDelete }) 
                 </div>
 
                 <div className="absolute bottom-6 left-8 right-8">
-                    <h3 className="text-3xl font-black italic uppercase tracking-tighter text-white truncate drop-shadow-2xl">{gig.title}</h3>
+                    <h3 className="text-3xl font-black italic uppercase tracking-tighter text-gray-900 dark:text-white truncate drop-shadow-2xl">{gig.title}</h3>
                     <div className="flex items-center gap-4 mt-2 opacity-60">
-                        <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
+                        <span className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
                             <Calendar size={12} className="text-neon-green" /> {gig.dates && gig.dates.length > 0 ? (gig.dates.length > 1 ? `${gig.dates.length} DAYS` : gig.dates[0]) : gig.date || 'TBA'}
                         </span>
-                        <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
+                        <span className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
                             <MapPin size={12} className="text-neon-green" /> {gig.location || 'GLOBAL'}
                         </span>
                     </div>
@@ -129,16 +129,16 @@ const GigCard = ({ gig, index, totalGigs, onEdit, onMove, onUpdate, onDelete }) 
             {/* Card Content */}
             <div className="p-8 flex-grow flex flex-col justify-between">
                 <div className="space-y-4">
-                    <div className="flex items-center gap-4 text-white/20">
+                    <div className="flex items-center gap-4 text-gray-900 dark:text-white/20">
                         <div className="w-10 h-[1px] bg-current" />
                         <span className="text-[9px] font-black uppercase tracking-[0.4em]">DESCRIPTION</span>
                     </div>
-                    <p className="text-[12px] font-medium text-gray-400 uppercase tracking-widest line-clamp-3 italic leading-relaxed">
+                    <p className="text-[12px] font-medium text-gray-600 dark:text-gray-400 uppercase tracking-widest line-clamp-3 italic leading-relaxed">
                         {gig.description || "EMPTY."}
                     </p>
                 </div>
 
-                <div className="mt-8 pt-6 border-t border-white/5 space-y-4">
+                <div className="mt-8 pt-6 border-t border-black/10 dark:border-white/5 space-y-4">
                     <div className="flex flex-wrap items-center gap-3">
                         <Button 
                             variant="outline" 
@@ -148,16 +148,16 @@ const GigCard = ({ gig, index, totalGigs, onEdit, onMove, onUpdate, onDelete }) 
                                     useStore.getState().addToast("Notification sent to all volunteers!", 'success');
                                 }
                             }}
-                            className="flex-1 h-14 rounded-2xl border-white/5 bg-yellow-500/5 text-yellow-500 hover:bg-yellow-500 hover:text-black transition-all flex items-center justify-center gap-3 group/btn"
+                            className="flex-1 h-14 rounded-2xl border-black/10 dark:border-white/5 bg-yellow-500/5 text-yellow-500 hover:bg-yellow-500 hover:text-black transition-all flex items-center justify-center gap-3 group/btn"
                         >
                             <Megaphone size={20} className="group-hover/btn:rotate-12 transition-transform" />
                             <span className="text-[10px] font-black uppercase tracking-[0.2em]">NOTIFY</span>
                         </Button>
-                        <div className="flex bg-white/5 rounded-2xl p-1.5 border border-white/5">
-                            <button onClick={() => onMove(index, 'up')} disabled={index === 0} className="p-3 hover:text-white text-gray-500 disabled:opacity-20 transition-all">
+                        <div className="flex bg-black/5 dark:bg-white/5 rounded-2xl p-1.5 border border-black/10 dark:border-white/5">
+                            <button onClick={() => onMove(index, 'up')} disabled={index === 0} className="p-3 hover:text-gray-900 dark:hover:text-white text-gray-500 disabled:opacity-20 transition-all">
                                 <ArrowUp size={20} />
                             </button>
-                            <button onClick={() => onMove(index, 'down')} disabled={index === totalGigs - 1} className="p-3 hover:text-white text-gray-500 disabled:opacity-20 transition-all">
+                            <button onClick={() => onMove(index, 'down')} disabled={index === totalGigs - 1} className="p-3 hover:text-gray-900 dark:hover:text-white text-gray-500 disabled:opacity-20 transition-all">
                                 <ArrowDown size={20} />
                             </button>
                         </div>
@@ -167,7 +167,7 @@ const GigCard = ({ gig, index, totalGigs, onEdit, onMove, onUpdate, onDelete }) 
                         <Button 
                             variant="outline" 
                             onClick={() => onEdit(gig)} 
-                            className="h-14 flex-[2] rounded-2xl border-white/5 bg-white/5 hover:bg-white hover:text-black transition-all flex items-center justify-center gap-3"
+                            className="h-14 flex-[2] rounded-2xl border-black/10 dark:border-white/5 bg-black/5 dark:bg-white/5 hover:bg-white hover:text-black transition-all flex items-center justify-center gap-3"
                         >
                             <Edit size={22} />
                             <span className="text-[10px] font-black uppercase tracking-[0.2em]">EDIT GIG</span>
@@ -179,8 +179,8 @@ const GigCard = ({ gig, index, totalGigs, onEdit, onMove, onUpdate, onDelete }) 
                                 onUpdate(gig.id, { ...gig, status: newStatus });
                             }}
                             className={cn(
-                                "h-14 w-14 rounded-2xl border-white/5 transition-all flex items-center justify-center",
-                                gig.status === 'Open' ? "bg-neon-green/10 text-neon-green hover:bg-neon-green hover:text-black shadow-[0_0_20px_rgba(57,255,20,0.1)]" : "bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white shadow-[0_0_20px_rgba(239,68,68,0.1)]"
+                                "h-14 w-14 rounded-2xl border-black/10 dark:border-white/5 transition-all flex items-center justify-center",
+                                gig.status === 'Open' ? "bg-neon-green/10 text-neon-green hover:bg-neon-green hover:text-black shadow-[0_0_20px_rgba(57,255,20,0.1)]" : "bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-gray-900 dark:hover:text-white shadow-[0_0_20px_rgba(239,68,68,0.1)]"
                             )}
                             title={gig.status === 'Open' ? "Close Entries" : "Open Entries"}
                         >
@@ -189,7 +189,7 @@ const GigCard = ({ gig, index, totalGigs, onEdit, onMove, onUpdate, onDelete }) 
                         <Button 
                             variant="outline" 
                             onClick={() => { if(confirm('Permanently delete this gig?')) onDelete(gig.id); }}
-                            className="h-14 w-14 rounded-2xl bg-red-500 text-white border-none hover:bg-red-600 transition-all flex items-center justify-center shrink-0 shadow-xl"
+                            className="h-14 w-14 rounded-2xl bg-red-500 text-gray-900 dark:text-white border-none hover:bg-red-600 transition-all flex items-center justify-center shrink-0 shadow-xl"
                         >
                             <Trash2 size={26} />
                         </Button>
@@ -389,7 +389,7 @@ const VolunteerGigManager = () => {
                 <div className="flex flex-col lg:grid lg:grid-cols-2 gap-12 items-stretch mb-20 relative z-10">
                     {/* Editor Column */}
                     <div className="w-full">
-                        <Card className="p-8 md:p-12 bg-zinc-950/40 backdrop-blur-3xl border-white/5 rounded-[2.5rem] shadow-2xl relative overflow-hidden">
+                        <Card className="p-8 md:p-12 bg-gray-100 dark:bg-zinc-950/40 backdrop-blur-3xl border-black/10 dark:border-white/5 rounded-[2.5rem] shadow-2xl relative overflow-hidden">
                             {/* Ambient Background Glow */}
                             <div className="absolute -top-20 -right-20 w-64 h-64 bg-neon-green/5 rounded-full blur-[100px] pointer-events-none" />
                             
@@ -403,7 +403,7 @@ const VolunteerGigManager = () => {
                                                 onChange={e => setFormData({ ...formData, title: e.target.value })} 
                                                 required 
                                                 placeholder="e.g. EVENT CREW"
-                                                className="h-14 bg-black/60 border-white/5 rounded-2xl px-6 text-[11px] font-black uppercase tracking-widest focus:border-neon-green/40" 
+                                                className="h-14 bg-white dark:bg-black/60 border-black/10 dark:border-white/5 rounded-2xl px-6 text-[11px] font-black uppercase tracking-widest focus:border-neon-green/40" 
                                             />
                                         </div>
                                         <div className="space-y-3">
@@ -422,11 +422,11 @@ const VolunteerGigManager = () => {
                                         </div>
                                     </div>
 
-                                    <div className="space-y-6 p-8 rounded-[2rem] bg-black/40 border border-white/5">
+                                    <div className="space-y-6 p-8 rounded-[2rem] bg-white dark:bg-black/40 border border-black/10 dark:border-white/5">
                                         <label className="text-[10px] font-black text-neon-green uppercase tracking-[0.3em] pl-1">DATES</label>
                                         <div className="flex flex-wrap gap-3">
                                             {formData.dates.map((d, index) => (
-                                                <div key={index} className="flex items-center gap-3 bg-zinc-900 border border-white/5 px-4 py-2.5 rounded-xl text-[10px] font-black tracking-widest uppercase text-white shadow-lg">
+                                                <div key={index} className="flex items-center gap-3 bg-gray-100 dark:bg-zinc-900 border border-black/10 dark:border-white/5 px-4 py-2.5 rounded-xl text-[10px] font-black tracking-widest uppercase text-gray-900 dark:text-white shadow-lg">
                                                     <span>{formatDate(d)}</span>
                                                     <button type="button" onClick={() => setFormData({ ...formData, dates: formData.dates.filter((_, i) => i !== index) })} className="text-red-500 hover:scale-125 transition-transform">
                                                         <X size={14} />
@@ -469,13 +469,13 @@ const VolunteerGigManager = () => {
                                                     onChange={e => setFormData({ ...formData, location: e.target.value })} 
                                                     required 
                                                     placeholder="e.g. MAIN ARENA"
-                                                    className="h-14 bg-black/60 border-white/5 rounded-2xl px-6 text-[11px] font-black uppercase tracking-widest focus:border-neon-green/40" 
+                                                    className="h-14 bg-white dark:bg-black/60 border-black/10 dark:border-white/5 rounded-2xl px-6 text-[11px] font-black uppercase tracking-widest focus:border-neon-green/40" 
                                                 />
                                             </div>
                                         </div>
                                     </div>
 
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 p-8 rounded-[2rem] bg-black/40 border border-white/5">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 p-8 rounded-[2rem] bg-white dark:bg-black/40 border border-black/10 dark:border-white/5">
                                         <div className="space-y-3">
                                             <label className="text-[10px] font-black text-neon-green uppercase tracking-[0.3em] pl-1">APPLY VIA</label>
                                             <StudioSelect
@@ -497,7 +497,7 @@ const VolunteerGigManager = () => {
                                                 value={formData.applyLink}
                                                 onChange={e => setFormData({ ...formData, applyLink: e.target.value })}
                                                 placeholder={formData.applyType === 'whatsapp' ? 'e.g. 919876543210' : 'https://'}
-                                                className="h-14 bg-black/60 border-white/5 rounded-2xl px-6 text-[11px] font-black uppercase tracking-widest focus:border-neon-green/40"
+                                                className="h-14 bg-white dark:bg-black/60 border-black/10 dark:border-white/5 rounded-2xl px-6 text-[11px] font-black uppercase tracking-widest focus:border-neon-green/40"
                                             />
                                         </div>
                                         <div className="md:col-span-2 space-y-3 pt-4">
@@ -506,7 +506,7 @@ const VolunteerGigManager = () => {
                                                 value={formData.whatsappLink}
                                                 onChange={e => setFormData({ ...formData, whatsappLink: e.target.value })}
                                                 placeholder="https://chat.whatsapp.com/..."
-                                                className="h-14 bg-black/60 border-white/5 rounded-2xl px-6 text-[11px] font-black uppercase tracking-widest focus:border-neon-green/40"
+                                                className="h-14 bg-white dark:bg-black/60 border-black/10 dark:border-white/5 rounded-2xl px-6 text-[11px] font-black uppercase tracking-widest focus:border-neon-green/40"
                                             />
                                         </div>
                                     </div>
@@ -514,14 +514,14 @@ const VolunteerGigManager = () => {
                                     <div className="space-y-3">
                                         <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em] pl-1">DESCRIPTION</label>
                                         <textarea 
-                                            className="w-full bg-black/60 border border-white/5 rounded-[1.5rem] p-8 text-white focus:outline-none focus:border-neon-green/40 min-h-[150px] resize-none text-[13px] font-medium placeholder:text-gray-800 leading-relaxed italic shadow-inner" 
+                                            className="w-full bg-white dark:bg-black/60 border border-black/10 dark:border-white/5 rounded-[1.5rem] p-8 text-gray-900 dark:text-white focus:outline-none focus:border-neon-green/40 min-h-[150px] resize-none text-[13px] font-medium placeholder:text-gray-800 leading-relaxed italic shadow-inner" 
                                             value={formData.description} 
                                             onChange={e => setFormData({ ...formData, description: e.target.value })} 
                                             placeholder="Enter gig description and details..." 
                                         />
                                     </div>
 
-                                    <div className="space-y-8 pt-6 border-t border-white/5">
+                                    <div className="space-y-8 pt-6 border-t border-black/10 dark:border-white/5">
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                             <div className="space-y-3">
                                                 <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em] pl-1">IMAGE</label>
@@ -531,13 +531,13 @@ const VolunteerGigManager = () => {
                                                         onChange={e => setFormData({ ...formData, image: e.target.value })} 
                                                         onPaste={handlePaste}
                                                         placeholder="URL OR CTRL+V IMAGE" 
-                                                        className="flex-1 h-14 bg-black/60 border-white/5 rounded-2xl focus:border-neon-green/40" 
+                                                        className="flex-1 h-14 bg-white dark:bg-black/60 border-black/10 dark:border-white/5 rounded-2xl focus:border-neon-green/40" 
                                                     />
                                                     <div className="relative group w-14 h-14 shrink-0">
                                                         <input type="file" onChange={handleFileChange} className="absolute inset-0 opacity-0 cursor-pointer z-10" />
                                                         <div className={cn(
                                                             "h-full w-full rounded-2xl flex items-center justify-center border-2 border-dashed transition-all", 
-                                                            isUploading ? "border-neon-green bg-neon-green/10 text-neon-green" : "border-white/10 bg-white/5 text-gray-500 hover:border-white/20"
+                                                            isUploading ? "border-neon-green bg-neon-green/10 text-neon-green" : "border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 text-gray-500 hover:border-black/20 dark:hover:border-white/20"
                                                         )}>
                                                             {isUploading ? <Loader className="animate-spin" size={18} /> : <Plus size={18} />}
                                                         </div>
@@ -546,7 +546,7 @@ const VolunteerGigManager = () => {
                                             </div>
                                             <div className="space-y-3">
                                                 <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em] pl-1">HIGHLIGHT COLOR</label>
-                                                <div className="flex items-center gap-4 h-14 bg-black/60 border border-white/5 rounded-2xl px-6">
+                                                <div className="flex items-center gap-4 h-14 bg-white dark:bg-black/60 border border-black/10 dark:border-white/5 rounded-2xl px-6">
                                                     {colorPresets.map(color => (
                                                         <button 
                                                             key={color.value} 
@@ -564,13 +564,13 @@ const VolunteerGigManager = () => {
                                         </div>
                                     </div>
 
-                                    <div className="p-8 rounded-[2rem] bg-black/40 border border-white/5 space-y-10">
+                                    <div className="p-8 rounded-[2rem] bg-white dark:bg-black/40 border border-black/10 dark:border-white/5 space-y-10">
                                         <div className="flex items-center justify-between">
                                             <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-neon-green italic">IMAGE POSITION</h4>
                                             <button 
                                                 type="button" 
                                                 onClick={() => setFormData({ ...formData, imageTransform: { scale: 1.05, x: 0, y: 0 } })} 
-                                                className="text-[9px] font-black text-gray-600 hover:text-white uppercase tracking-widest transition-colors flex items-center gap-2"
+                                                className="text-[9px] font-black text-gray-600 hover:text-gray-900 dark:hover:text-white uppercase tracking-widest transition-colors flex items-center gap-2"
                                             >
                                                 <X size={12} /> RESET
                                             </button>
@@ -602,30 +602,30 @@ const VolunteerGigManager = () => {
 
                                     <div className={cn(
                                         "p-8 rounded-[2rem] border flex items-center justify-between transition-all duration-500", 
-                                        formData.isPinned ? "bg-neon-green/10 border-neon-green/40 shadow-[0_0_40px_rgba(57,255,20,0.05)]" : "bg-black/40 border-white/5"
+                                        formData.isPinned ? "bg-neon-green/10 border-neon-green/40 shadow-[0_0_40px_rgba(57,255,20,0.05)]" : "bg-white dark:bg-black/40 border-black/10 dark:border-white/5"
                                     )}>
                                         <div className="flex items-center gap-8">
-                                            <div className={cn("w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-500 shadow-xl", formData.isPinned ? "bg-neon-green text-black" : "bg-white/5 text-gray-600")}>
+                                            <div className={cn("w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-500 shadow-xl", formData.isPinned ? "bg-neon-green text-black" : "bg-black/5 dark:bg-white/5 text-gray-600")}>
                                                 <Star size={24} className={cn(formData.isPinned && "fill-current")} />
                                             </div>
                                             <div>
-                                                <h4 className="text-white text-sm font-black uppercase tracking-widest italic leading-tight">FEATURE AS SPOTLIGHT</h4>
+                                                <h4 className="text-gray-900 dark:text-white text-sm font-black uppercase tracking-widest italic leading-tight">FEATURE AS SPOTLIGHT</h4>
                                                 <p className="text-[10px] text-gray-600 mt-1 uppercase font-bold tracking-[0.1em]">SHOW IN THE FEATURED SECTION AT TOP</p>
                                             </div>
                                         </div>
                                         <button 
                                             type="button" 
                                             onClick={() => setFormData({ ...formData, isPinned: !formData.isPinned })} 
-                                            className={cn("w-14 h-8 rounded-full relative transition-all border-2", formData.isPinned ? "bg-neon-green border-neon-green" : "bg-black/60 border-white/10")}
+                                            className={cn("w-14 h-8 rounded-full relative transition-all border-2", formData.isPinned ? "bg-neon-green border-neon-green" : "bg-white dark:bg-black/60 border-black/10 dark:border-white/10")}
                                         >
-                                            <div className={cn("absolute top-1 w-5 h-5 rounded-full transition-all shadow-lg", formData.isPinned ? "right-1 bg-black" : "left-1 bg-gray-600")} />
+                                            <div className={cn("absolute top-1 w-5 h-5 rounded-full transition-all shadow-lg", formData.isPinned ? "right-1 bg-white dark:bg-black" : "left-1 bg-gray-600")} />
                                         </button>
                                     </div>
 
                                 </div>
 
-                                <div className="flex flex-col sm:flex-row justify-end gap-4 pt-12 mt-12 border-t border-white/5">
-                                    <Button type="button" variant="outline" onClick={resetForm} className="h-14 rounded-2xl px-10 text-[10px] font-black uppercase tracking-widest border-white/5 hover:bg-white/5">CANCEL</Button>
+                                <div className="flex flex-col sm:flex-row justify-end gap-4 pt-12 mt-12 border-t border-black/10 dark:border-white/5">
+                                    <Button type="button" variant="outline" onClick={resetForm} className="h-14 rounded-2xl px-10 text-[10px] font-black uppercase tracking-widest border-black/10 dark:border-white/5 hover:bg-black/5 dark:hover:bg-white/5">CANCEL</Button>
                                     <Button 
                                         onClick={handleSave} 
                                         disabled={saving}
@@ -641,12 +641,12 @@ const VolunteerGigManager = () => {
 
                     {/* Preview Column */}
                     <div className="lg:sticky lg:top-32 space-y-8 w-full">
-                        <div className="flex bg-zinc-950/60 border border-white/5 p-2 rounded-2xl w-fit backdrop-blur-3xl shadow-2xl">
+                        <div className="flex bg-gray-100 dark:bg-zinc-950/60 border border-black/10 dark:border-white/5 p-2 rounded-2xl w-fit backdrop-blur-3xl shadow-2xl">
                             <button 
                                 onClick={() => setPreviewType('card')}
                                 className={cn(
                                     "px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
-                                    previewType === 'card' ? "bg-neon-green text-black shadow-lg" : "text-gray-500 hover:text-white"
+                                    previewType === 'card' ? "bg-neon-green text-black shadow-lg" : "text-gray-500 hover:text-gray-900 dark:hover:text-white"
                                 )}
                             >
                                 CARD VIEW
@@ -655,7 +655,7 @@ const VolunteerGigManager = () => {
                                 onClick={() => setPreviewType('embed')}
                                 className={cn(
                                     "px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
-                                    previewType === 'embed' ? "bg-neon-green text-black shadow-lg" : "text-gray-500 hover:text-white"
+                                    previewType === 'embed' ? "bg-neon-green text-black shadow-lg" : "text-gray-500 hover:text-gray-900 dark:hover:text-white"
                                 )}
                             >
                                 EMBED VIEW
@@ -666,12 +666,12 @@ const VolunteerGigManager = () => {
                             {previewType === 'card' ? (
                                 <LivePreview type="gig" data={formData} hideDecorations={false} />
                             ) : (
-                                <div className="aspect-video rounded-[2rem] border border-white/5 bg-zinc-950/40 backdrop-blur-3xl flex flex-col items-center justify-center p-12 text-center relative overflow-hidden group">
+                                <div className="aspect-video rounded-[2rem] border border-black/10 dark:border-white/5 bg-gray-100 dark:bg-zinc-950/40 backdrop-blur-3xl flex flex-col items-center justify-center p-12 text-center relative overflow-hidden group">
                                     <div className="absolute inset-0 bg-gradient-to-br from-neon-green/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
                                     <div className="w-16 h-16 rounded-[1.5rem] bg-neon-green/10 flex items-center justify-center mb-8 relative z-10 border border-neon-green/20">
                                         <Megaphone className="text-neon-green" size={28} />
                                     </div>
-                                    <h3 className="text-2xl font-black uppercase italic tracking-tighter text-white mb-4 relative z-10">LIVE PREVIEW</h3>
+                                    <h3 className="text-2xl font-black uppercase italic tracking-tighter text-gray-900 dark:text-white mb-4 relative z-10">LIVE PREVIEW</h3>
                                     <p className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-500 leading-relaxed max-w-xs relative z-10">
                                         HOW IT WILL APPEAR TO USERS.
                                     </p>
@@ -718,10 +718,10 @@ const VolunteerGigManager = () => {
                         ))
                     ) : (
                         <div className="col-span-full py-40 text-center">
-                            <div className="w-20 h-20 bg-white/5 rounded-[1.5rem] flex items-center justify-center mx-auto mb-8 border border-dashed border-white/10">
-                                <Briefcase size={32} className="text-white/20" />
+                            <div className="w-20 h-20 bg-black/5 dark:bg-white/5 rounded-[1.5rem] flex items-center justify-center mx-auto mb-8 border border-dashed border-black/10 dark:border-white/10">
+                                <Briefcase size={32} className="text-gray-900 dark:text-white/20" />
                             </div>
-                            <h3 className="text-xl font-black italic uppercase tracking-tighter text-white/40">No opportunities found.</h3>
+                            <h3 className="text-xl font-black italic uppercase tracking-tighter text-gray-900 dark:text-white/40">No opportunities found.</h3>
                             <p className="text-[10px] font-black text-gray-600 uppercase tracking-[0.3em] mt-2">CREATE ONE TO START.</p>
                         </div>
                     )}

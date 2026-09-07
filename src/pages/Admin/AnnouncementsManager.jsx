@@ -193,20 +193,20 @@ const AnnouncementsManager = () => {
                 {!isAdding && (
                     <div className="flex items-center gap-6 mb-10 overflow-x-auto pb-4 scrollbar-hide">
                         <div className="text-center shrink-0">
-                            <p className="text-3xl font-black text-white font-heading leading-none">{announcements.length}</p>
+                            <p className="text-3xl font-black text-gray-900 dark:text-white font-heading leading-none">{announcements.length}</p>
                             <p className="text-[9px] font-black text-gray-600 uppercase tracking-widest mt-1">Total Announcements</p>
                         </div>
-                        <div className="w-px h-10 bg-white/5 shrink-0" />
+                        <div className="w-px h-10 bg-black/5 dark:bg-white/5 shrink-0" />
                         <div className="text-center shrink-0">
                             <p className="text-3xl font-black text-neon-pink font-heading leading-none">{announcements.filter(a => a.isPinned).length}</p>
                             <p className="text-[9px] font-black text-gray-600 uppercase tracking-widest mt-1">Pinned</p>
                         </div>
-                        <div className="w-px h-10 bg-white/5 shrink-0" />
+                        <div className="w-px h-10 bg-black/5 dark:bg-white/5 shrink-0" />
                         <div className="text-center shrink-0">
-                            <p className="text-3xl font-black text-white font-heading leading-none">{announcements.filter(a => a.priority === 'High').length}</p>
+                            <p className="text-3xl font-black text-gray-900 dark:text-white font-heading leading-none">{announcements.filter(a => a.priority === 'High').length}</p>
                             <p className="text-[9px] font-black text-gray-600 uppercase tracking-widest mt-1">High Priority</p>
                         </div>
-                        <div className="w-px h-10 bg-white/5 shrink-0" />
+                        <div className="w-px h-10 bg-black/5 dark:bg-white/5 shrink-0" />
                         <div className="text-center shrink-0">
                             <p className="text-3xl font-black text-neon-pink font-heading leading-none">{announcements.filter(a => a.priority === 'Critical').length}</p>
                             <p className="text-[9px] font-black text-gray-600 uppercase tracking-widest mt-1">Critical</p>
@@ -227,20 +227,20 @@ const AnnouncementsManager = () => {
                                         ) : (
                                             <div className="grid grid-cols-1 xl:grid-cols-12 gap-10 items-stretch">
                                                 <div className="xl:col-span-7">
-                                                    <Card className="p-6 md:p-10 bg-zinc-900/40 backdrop-blur-3xl border-white/5 rounded-[2.5rem] md:rounded-[3rem] overflow-hidden">
+                                                    <Card className="p-6 md:p-10 bg-gray-100 dark:bg-zinc-900/40 backdrop-blur-3xl border-black/10 dark:border-white/5 rounded-[2.5rem] md:rounded-[3rem] overflow-hidden">
                                                         {/* Header */}
                                                         <div className="flex justify-between items-center mb-10">
                                                             <div className="space-y-1">
-                                                                <h2 className="text-2xl font-black font-heading tracking-tighter uppercase italic text-white flex items-center gap-3 leading-none">
+                                                                <h2 className="text-2xl font-black font-heading tracking-tighter uppercase italic text-gray-900 dark:text-white flex items-center gap-3 leading-none">
                                                                     ANNOUNCEMENT <span className="text-neon-pink">EDITOR.</span>
                                                                 </h2>
                                                                 <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest pl-1">Announcement Management v2.0</p>
                                                             </div>
-                                                            <button onClick={resetForm} className="px-4 py-2 rounded-xl bg-white/5 text-[10px] font-black text-gray-500 hover:text-white uppercase tracking-widest border border-white/5 transition-all">Abort</button>
+                                                            <button onClick={resetForm} className="px-4 py-2 rounded-xl bg-black/5 dark:bg-white/5 text-[10px] font-black text-gray-500 hover:text-gray-900 dark:hover:text-white uppercase tracking-widest border border-black/10 dark:border-white/5 transition-all">Abort</button>
                                                         </div>
 
                                                         {/* Tabs */}
-                                                        <div className="flex gap-2 mb-12 p-1.5 bg-black/40 rounded-2xl border border-white/5 w-fit">
+                                                        <div className="flex gap-2 mb-12 p-1.5 bg-white dark:bg-black/40 rounded-2xl border border-black/10 dark:border-white/5 w-fit">
                                                             {['details', 'content', 'media', 'publish'].map((tab) => (
                                                                 <button
                                                                     key={tab}
@@ -249,7 +249,7 @@ const AnnouncementsManager = () => {
                                                                         "px-6 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all",
                                                                         activeEditorTab === tab 
                                                                             ? "bg-neon-pink text-black shadow-[0_0_20px_rgba(255,46,144,0.3)]" 
-                                                                            : "text-gray-500 hover:text-white hover:bg-white/5"
+                                                                            : "text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5"
                                                                     )}
                                                                 >
                                                                     {tab}
@@ -264,11 +264,11 @@ const AnnouncementsManager = () => {
                                                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                                                             <div className="space-y-3">
                                                                                 <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Headline</label>
-                                                                                <Input placeholder="ENTER HEADLINE..." value={newAnnouncement.title} onChange={(e) => setNewAnnouncement({ ...newAnnouncement, title: e.target.value })} required className="h-16 bg-black/50 border-white/5 rounded-2xl uppercase text-[10px] font-black tracking-widest px-6" />
+                                                                                <Input placeholder="ENTER HEADLINE..." value={newAnnouncement.title} onChange={(e) => setNewAnnouncement({ ...newAnnouncement, title: e.target.value })} required className="h-16 bg-white dark:bg-black/50 border-black/10 dark:border-white/5 rounded-2xl uppercase text-[10px] font-black tracking-widest px-6" />
                                                                             </div>
                                                                             <div className="space-y-3">
                                                                                 <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Tagline (Optional)</label>
-                                                                                <Input placeholder="BRIEF HOOK..." value={newAnnouncement.tagline} onChange={(e) => setNewAnnouncement({ ...newAnnouncement, tagline: e.target.value })} className="h-16 bg-black/50 border-white/5 rounded-2xl uppercase text-[10px] font-black tracking-widest px-6" />
+                                                                                <Input placeholder="BRIEF HOOK..." value={newAnnouncement.tagline} onChange={(e) => setNewAnnouncement({ ...newAnnouncement, tagline: e.target.value })} className="h-16 bg-white dark:bg-black/50 border-black/10 dark:border-white/5 rounded-2xl uppercase text-[10px] font-black tracking-widest px-6" />
                                                                             </div>
                                                                         </div>
                                                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -277,7 +277,7 @@ const AnnouncementsManager = () => {
                                                                                 <select 
                                                                                     value={newAnnouncement.category} 
                                                                                     onChange={(e) => setNewAnnouncement({ ...newAnnouncement, category: e.target.value })}
-                                                                                    className="w-full h-16 bg-black/50 border border-white/5 rounded-2xl text-[10px] font-black tracking-widest px-6 text-white uppercase appearance-none focus:outline-none focus:border-neon-pink/30"
+                                                                                    className="w-full h-16 bg-white dark:bg-black/50 border border-black/10 dark:border-white/5 rounded-2xl text-[10px] font-black tracking-widest px-6 text-gray-900 dark:text-white uppercase appearance-none focus:outline-none focus:border-neon-pink/30"
                                                                                 >
                                                                                     {['NEWS', 'UPDATE', 'ALERT', 'EVENT', 'OPPORTUNITY'].map(cat => (
                                                                                         <option key={cat} value={cat}>{cat}</option>
@@ -286,7 +286,7 @@ const AnnouncementsManager = () => {
                                                                             </div>
                                                                             <div className="space-y-3">
                                                                                 <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Release Date</label>
-                                                                                <Input type="date" value={newAnnouncement.date} onChange={(e) => setNewAnnouncement({ ...newAnnouncement, date: e.target.value })} required className="h-16 bg-black/50 border-white/5 rounded-2xl text-[10px] font-black tracking-widest px-6" />
+                                                                                <Input type="date" value={newAnnouncement.date} onChange={(e) => setNewAnnouncement({ ...newAnnouncement, date: e.target.value })} required className="h-16 bg-white dark:bg-black/50 border-black/10 dark:border-white/5 rounded-2xl text-[10px] font-black tracking-widest px-6" />
                                                                             </div>
                                                                         </div>
                                                                     </motion.div>
@@ -297,7 +297,7 @@ const AnnouncementsManager = () => {
                                                                         <div className="space-y-3">
                                                                             <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Message Body</label>
                                                                             <textarea 
-                                                                                className="w-full bg-black/50 border border-white/5 rounded-[2.5rem] p-8 text-sm font-medium text-gray-300 focus:outline-none focus:border-neon-pink/30 transition-all min-h-[300px] resize-none shadow-inner custom-scrollbar" 
+                                                                                className="w-full bg-white dark:bg-black/50 border border-black/10 dark:border-white/5 rounded-[2.5rem] p-8 text-sm font-medium text-gray-700 dark:text-gray-300 focus:outline-none focus:border-neon-pink/30 transition-all min-h-[300px] resize-none shadow-inner custom-scrollbar" 
                                                                                 placeholder="ENTER MESSAGE CONTENT..." 
                                                                                 value={newAnnouncement.content} 
                                                                                 onChange={(e) => setNewAnnouncement({ ...newAnnouncement, content: e.target.value })} 
@@ -319,26 +319,26 @@ const AnnouncementsManager = () => {
                                                                                             value={newAnnouncement.image} 
                                                                                             onChange={(e) => setNewAnnouncement({ ...newAnnouncement, image: e.target.value })} 
                                                                                             onPaste={handlePaste}
-                                                                                            className="h-16 bg-black/50 border-white/5 rounded-2xl text-[10px] font-black tracking-widest px-6" 
+                                                                                            className="h-16 bg-white dark:bg-black/50 border-black/10 dark:border-white/5 rounded-2xl text-[10px] font-black tracking-widest px-6" 
                                                                                         />
                                                                                     </div>
                                                                                     <div className="relative group">
                                                                                         <input type="file" onChange={(e) => setSelectedFile(e.target.files[0])} className="absolute inset-0 opacity-0 cursor-pointer z-10" />
-                                                                                        <div className={cn("h-16 border-2 border-dashed border-white/5 rounded-2xl flex items-center justify-center gap-3 bg-black/20 group-hover:border-neon-pink/30 transition-all", selectedFile && "border-neon-pink/50 bg-neon-pink/5")}>
+                                                                                        <div className={cn("h-16 border-2 border-dashed border-black/10 dark:border-white/5 rounded-2xl flex items-center justify-center gap-3 bg-white dark:bg-black/20 group-hover:border-neon-pink/30 transition-all", selectedFile && "border-neon-pink/50 bg-neon-pink/5")}>
                                                                                             <Sparkles className={cn("text-gray-500 group-hover:text-neon-pink", selectedFile && "text-neon-pink")} size={18} />
-                                                                                            <span className="text-[8px] font-black text-gray-500 group-hover:text-white uppercase tracking-widest">{selectedFile ? 'READY' : 'UPLOAD'}</span>
+                                                                                            <span className="text-[8px] font-black text-gray-500 group-hover:text-gray-900 dark:group-hover:text-white uppercase tracking-widest">{selectedFile ? 'READY' : 'UPLOAD'}</span>
                                                                                         </div>
                                                                                     </div>
                                                                                 </div>
                                                                             </div>
                                                                             <div className="space-y-3">
                                                                                 <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">CTA Action Text</label>
-                                                                                <Input placeholder="READ MORE..." value={newAnnouncement.buttonText} onChange={(e) => setNewAnnouncement({ ...newAnnouncement, buttonText: e.target.value })} className="h-16 bg-black/50 border-white/5 rounded-2xl uppercase text-[10px] font-black tracking-widest px-6" />
+                                                                                <Input placeholder="READ MORE..." value={newAnnouncement.buttonText} onChange={(e) => setNewAnnouncement({ ...newAnnouncement, buttonText: e.target.value })} className="h-16 bg-white dark:bg-black/50 border-black/10 dark:border-white/5 rounded-2xl uppercase text-[10px] font-black tracking-widest px-6" />
                                                                             </div>
                                                                         </div>
 
                                                                         {/* Visual Calibration */}
-                                                                        <div className="bg-white/5 p-8 rounded-3xl border border-white/5 space-y-6">
+                                                                        <div className="bg-black/5 dark:bg-white/5 p-8 rounded-3xl border border-black/10 dark:border-white/5 space-y-6">
                                                                             <div className="flex justify-between items-center mb-4">
                                                                                 <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-neon-pink">Image Adjustment</h4>
                                                                                 <button 
@@ -347,7 +347,7 @@ const AnnouncementsManager = () => {
                                                                                         ...newAnnouncement, 
                                                                                         imageTransform: { scale: 1, x: 0, y: 0 } 
                                                                                     })}
-                                                                                    className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/5 border border-white/5 text-[8px] font-black uppercase tracking-widest text-gray-500 hover:text-neon-pink hover:bg-neon-pink/5 hover:border-neon-pink/20 transition-all"
+                                                                                    className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/5 text-[8px] font-black uppercase tracking-widest text-gray-500 hover:text-neon-pink hover:bg-neon-pink/5 hover:border-neon-pink/20 transition-all"
                                                                                 >
                                                                                     <RotateCcw size={10} />
                                                                                     Reset
@@ -362,9 +362,9 @@ const AnnouncementsManager = () => {
                                                                                     <div key={adjust.key} className="space-y-3">
                                                                                         <div className="flex justify-between">
                                                                                             <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest">{adjust.label}</span>
-                                                                                            <span className="text-[8px] font-black text-white">{newAnnouncement.imageTransform?.[adjust.key].toFixed(adjust.step < 1 ? 2 : 0)}{adjust.unit}</span>
+                                                                                            <span className="text-[8px] font-black text-gray-900 dark:text-white">{newAnnouncement.imageTransform?.[adjust.key].toFixed(adjust.step < 1 ? 2 : 0)}{adjust.unit}</span>
                                                                                         </div>
-                                                                                        <input type="range" min={adjust.min} max={adjust.max} step={adjust.step} value={newAnnouncement.imageTransform?.[adjust.key]} onChange={(e) => setNewAnnouncement({ ...newAnnouncement, imageTransform: { ...newAnnouncement.imageTransform, [adjust.key]: parseFloat(e.target.value) } })} className="w-full h-1 rounded-full appearance-none cursor-pointer bg-white/10 accent-neon-pink" />
+                                                                                        <input type="range" min={adjust.min} max={adjust.max} step={adjust.step} value={newAnnouncement.imageTransform?.[adjust.key]} onChange={(e) => setNewAnnouncement({ ...newAnnouncement, imageTransform: { ...newAnnouncement.imageTransform, [adjust.key]: parseFloat(e.target.value) } })} className="w-full h-1 rounded-full appearance-none cursor-pointer bg-black/10 dark:bg-white/10 accent-neon-pink" />
                                                                                     </div>
                                                                                 ))}
                                                                             </div>
@@ -372,7 +372,7 @@ const AnnouncementsManager = () => {
 
                                                                         <div className="space-y-3">
                                                                             <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Target Link (External or Relative)</label>
-                                                                            <Input placeholder="HTTPS://..." value={newAnnouncement.link} onChange={(e) => setNewAnnouncement({ ...newAnnouncement, link: e.target.value })} className="h-16 bg-black/50 border-white/5 rounded-2xl text-[10px] font-black tracking-widest px-6" />
+                                                                            <Input placeholder="HTTPS://..." value={newAnnouncement.link} onChange={(e) => setNewAnnouncement({ ...newAnnouncement, link: e.target.value })} className="h-16 bg-white dark:bg-black/50 border-black/10 dark:border-white/5 rounded-2xl text-[10px] font-black tracking-widest px-6" />
                                                                         </div>
                                                                     </motion.div>
                                                                 )}
@@ -385,7 +385,7 @@ const AnnouncementsManager = () => {
                                                                                 <select 
                                                                                     value={newAnnouncement.priority} 
                                                                                     onChange={(e) => setNewAnnouncement({ ...newAnnouncement, priority: e.target.value })}
-                                                                                    className="w-full h-16 bg-black/50 border border-white/5 rounded-2xl text-[10px] font-black tracking-widest px-6 text-white uppercase appearance-none focus:outline-none focus:border-neon-pink/30"
+                                                                                    className="w-full h-16 bg-white dark:bg-black/50 border border-black/10 dark:border-white/5 rounded-2xl text-[10px] font-black tracking-widest px-6 text-gray-900 dark:text-white uppercase appearance-none focus:outline-none focus:border-neon-pink/30"
                                                                                 >
                                                                                     {['Normal', 'High', 'Critical'].map(p => (
                                                                                         <option key={p} value={p}>{p}</option>
@@ -393,22 +393,22 @@ const AnnouncementsManager = () => {
                                                                                 </select>
                                                                             </div>
                                                                             <div className="pt-7">
-                                                                                <div className="flex items-center gap-4 bg-white/5 p-4 rounded-2xl border border-white/10 group cursor-pointer hover:bg-white/10 transition-all" onClick={() => setNewAnnouncement({ ...newAnnouncement, isPinned: !newAnnouncement.isPinned })}>
-                                                                                    <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center transition-all", newAnnouncement.isPinned ? "bg-neon-pink text-black shadow-[0_0_15px_rgba(255,46,144,0.4)]" : "bg-black text-gray-500")}>
+                                                                                <div className="flex items-center gap-4 bg-black/5 dark:bg-white/5 p-4 rounded-2xl border border-black/10 dark:border-white/10 group cursor-pointer hover:bg-black/10 dark:hover:bg-white/10 transition-all" onClick={() => setNewAnnouncement({ ...newAnnouncement, isPinned: !newAnnouncement.isPinned })}>
+                                                                                    <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center transition-all", newAnnouncement.isPinned ? "bg-neon-pink text-black shadow-[0_0_15px_rgba(255,46,144,0.4)]" : "bg-white dark:bg-black text-gray-500")}>
                                                                                         <Pin size={18} className={newAnnouncement.isPinned ? "fill-current" : ""} />
                                                                                     </div>
                                                                                     <div className="flex-1">
-                                                                                        <p className="text-[10px] font-black uppercase tracking-widest text-white leading-none mb-1">PIN ANNOUNCEMENT</p>
+                                                                                        <p className="text-[10px] font-black uppercase tracking-widest text-gray-900 dark:text-white leading-none mb-1">PIN ANNOUNCEMENT</p>
                                                                                         <p className="text-[8px] font-bold text-gray-500 uppercase tracking-widest">Pin to global dashboard</p>
                                                                                     </div>
                                                                                 </div>
                                                                             </div>
                                                                         </div>
                                                                         
-                                                                        <div className="p-6 rounded-2xl bg-zinc-950 border border-white/5 space-y-4">
+                                                                        <div className="p-6 rounded-2xl bg-gray-100 dark:bg-zinc-950 border border-black/10 dark:border-white/5 space-y-4">
                                                                             <div className="flex items-center gap-3">
                                                                                 <Sparkles size={14} className="text-neon-pink" />
-                                                                                <h4 className="text-[10px] font-black text-white uppercase tracking-widest">Publishing Policy</h4>
+                                                                                <h4 className="text-[10px] font-black text-gray-900 dark:text-white uppercase tracking-widest">Publishing Policy</h4>
                                                                             </div>
                                                                             <p className="text-[9px] font-medium text-gray-500 leading-relaxed uppercase tracking-widest">Publishing this announcement will automatically notify users and update the app across all devices.</p>
                                                                         </div>
@@ -416,7 +416,7 @@ const AnnouncementsManager = () => {
                                                                 )}
                                                             </AnimatePresence>
 
-                                                            <div className="flex flex-col sm:flex-row gap-4 pt-10 border-t border-white/5">
+                                                            <div className="flex flex-col sm:flex-row gap-4 pt-10 border-t border-black/10 dark:border-white/5">
                                                                 <button 
                                                                     type="button" 
                                                                     onClick={() => {
@@ -425,7 +425,7 @@ const AnnouncementsManager = () => {
                                                                         if (currentIndex > 0) setActiveEditorTab(tabs[currentIndex - 1]);
                                                                         else resetForm();
                                                                     }} 
-                                                                    className="h-16 px-12 rounded-2xl bg-white/5 border border-white/5 text-gray-500 hover:text-white hover:bg-white/10 transition-all font-black uppercase tracking-widest text-[10px] flex-1"
+                                                                    className="h-16 px-12 rounded-2xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/5 text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-black/10 dark:hover:bg-white/10 transition-all font-black uppercase tracking-widest text-[10px] flex-1"
                                                                 >
                                                                     {activeEditorTab === 'details' ? 'Cancel' : 'Back'}
                                                                 </button>
@@ -451,7 +451,7 @@ const AnnouncementsManager = () => {
                                                     <div className="space-y-6">
                                                         <div className="flex items-center justify-between">
                                                             <h3 className="text-[10px] font-black text-gray-500 uppercase tracking-[0.4em] flex items-center gap-3">
-                                                                <div className="w-8 h-px bg-white/10" /> LIVE PREVIEW
+                                                                <div className="w-8 h-px bg-black/10 dark:bg-white/10" /> LIVE PREVIEW
                                                             </h3>
                                                             <div className="flex items-center gap-2">
                                                                 <div className="w-1.5 h-1.5 rounded-full bg-neon-pink animate-pulse" />
@@ -469,8 +469,8 @@ const AnnouncementsManager = () => {
                         ) : (
                             <div className="space-y-6">
                                 {announcements.length === 0 ? (
-                                    <div className="py-32 text-center bg-zinc-900/20 rounded-[3rem] border-2 border-dashed border-white/5 flex flex-col items-center gap-6">
-                                        <div className="w-20 h-20 rounded-full bg-white/5 flex items-center justify-center text-gray-700">
+                                    <div className="py-32 text-center bg-gray-100 dark:bg-zinc-900/20 rounded-[3rem] border-2 border-dashed border-black/10 dark:border-white/5 flex flex-col items-center gap-6">
+                                        <div className="w-20 h-20 rounded-full bg-black/5 dark:bg-white/5 flex items-center justify-center text-gray-700">
                                             <Clock size={40} />
                                         </div>
                                         <div className="space-y-2">
@@ -494,7 +494,7 @@ const AnnouncementsManager = () => {
                                                     exit={{ opacity: 0, scale: 0.92 }}
                                                     transition={{ duration: 0.4 }}
                                                     className={cn(
-                                                        "group relative aspect-[4/5] rounded-[2.5rem] overflow-hidden bg-zinc-950 border border-white/5 hover:border-neon-pink/20 transition-all duration-500 shadow-[0_20px_60px_rgba(0,0,0,0.5)] shrink-0 w-[85vw] md:w-auto snap-center",
+                                                        "group relative aspect-[4/5] rounded-[2.5rem] overflow-hidden bg-gray-100 dark:bg-zinc-950 border border-black/10 dark:border-white/5 hover:border-neon-pink/20 transition-all duration-500 shadow-[0_20px_60px_rgba(0,0,0,0.5)] shrink-0 w-[85vw] md:w-auto snap-center",
                                                         item.isPinned && "border-neon-pink/40 shadow-[0_0_30px_rgba(255,46,144,0.1)]"
                                                     )}
                                                 >
@@ -510,7 +510,7 @@ const AnnouncementsManager = () => {
                                                                 }}
                                                             />
                                                         ) : (
-                                                            <div className="absolute inset-0 flex items-center justify-center bg-zinc-900">
+                                                            <div className="absolute inset-0 flex items-center justify-center bg-gray-100 dark:bg-zinc-900">
                                                                 <Megaphone size={40} className="text-gray-800" />
                                                             </div>
                                                         )}
@@ -523,11 +523,11 @@ const AnnouncementsManager = () => {
                                                     <div className="absolute top-5 left-5 right-5 z-30 flex justify-between items-start opacity-0 group-hover:opacity-100 -translate-y-2 group-hover:translate-y-0 transition-all duration-400">
                                                         <div className="flex gap-2">
                                                             <button onClick={() => handleMoveUp(index)} disabled={index === 0}
-                                                                className="w-9 h-9 rounded-xl bg-black/70 backdrop-blur-md border border-white/10 flex items-center justify-center text-white hover:bg-neon-pink hover:text-black transition-all disabled:opacity-0">
+                                                                className="w-9 h-9 rounded-xl bg-white dark:bg-black/70 backdrop-blur-md border border-black/10 dark:border-white/10 flex items-center justify-center text-gray-900 dark:text-white hover:bg-neon-pink hover:text-black transition-all disabled:opacity-0">
                                                                 <ChevronUp size={16} />
                                                             </button>
                                                             <button onClick={() => handleMoveDown(index)} disabled={index === announcements.length - 1}
-                                                                className="w-9 h-9 rounded-xl bg-black/70 backdrop-blur-md border border-white/10 flex items-center justify-center text-white hover:bg-neon-pink hover:text-black transition-all disabled:opacity-0">
+                                                                className="w-9 h-9 rounded-xl bg-white dark:bg-black/70 backdrop-blur-md border border-black/10 dark:border-white/10 flex items-center justify-center text-gray-900 dark:text-white hover:bg-neon-pink hover:text-black transition-all disabled:opacity-0">
                                                                 <ChevronDown size={16} />
                                                             </button>
                                                         </div>
@@ -544,7 +544,7 @@ const AnnouncementsManager = () => {
                                                                     });
                                                                     window.location.href = `/admin/mailing?${params.toString()}`;
                                                                 }}
-                                                                className="w-9 h-9 rounded-xl bg-black/70 backdrop-blur-md border border-white/10 flex items-center justify-center text-white hover:bg-neon-green hover:text-black transition-all"
+                                                                className="w-9 h-9 rounded-xl bg-white dark:bg-black/70 backdrop-blur-md border border-black/10 dark:border-white/10 flex items-center justify-center text-gray-900 dark:text-white hover:bg-neon-green hover:text-black transition-all"
                                                                 title="Email Blast"
                                                             >
                                                                 <Mail size={15} />
@@ -562,11 +562,11 @@ const AnnouncementsManager = () => {
                                                                 <Sparkles size={15} />
                                                             </button>
                                                             <button onClick={() => handleEdit(item)}
-                                                                className="w-9 h-9 rounded-xl bg-black/70 backdrop-blur-md border border-white/10 flex items-center justify-center text-white hover:bg-neon-pink hover:text-black transition-all">
+                                                                className="w-9 h-9 rounded-xl bg-white dark:bg-black/70 backdrop-blur-md border border-black/10 dark:border-white/10 flex items-center justify-center text-gray-900 dark:text-white hover:bg-neon-pink hover:text-black transition-all">
                                                                 <Edit size={15} />
                                                             </button>
                                                             <button onClick={() => deleteAnnouncement(item.id)}
-                                                                className="w-9 h-9 rounded-xl bg-black/70 backdrop-blur-md border border-white/10 flex items-center justify-center text-white hover:bg-red-500 transition-all">
+                                                                className="w-9 h-9 rounded-xl bg-white dark:bg-black/70 backdrop-blur-md border border-black/10 dark:border-white/10 flex items-center justify-center text-gray-900 dark:text-white hover:bg-red-500 transition-all">
                                                                 <Trash2 size={15} />
                                                             </button>
                                                         </div>
@@ -585,7 +585,7 @@ const AnnouncementsManager = () => {
                                                     {/* Bottom Content Slab */}
                                                     <div className="absolute inset-x-6 bottom-6 z-20 space-y-3">
                                                         <div className="flex flex-wrap gap-2">
-                                                            <span className="px-2.5 py-1 text-[7px] font-black uppercase tracking-widest border border-white/20 bg-white/5 rounded-full backdrop-blur-md text-white/70">
+                                                            <span className="px-2.5 py-1 text-[7px] font-black uppercase tracking-widest border border-black/20 dark:border-white/20 bg-black/5 dark:bg-white/5 rounded-full backdrop-blur-md text-gray-900 dark:text-white/70">
                                                                 {item.category || 'ANNOUNCEMENT'}
                                                             </span>
                                                             {item.priority !== 'Normal' && (
@@ -598,20 +598,20 @@ const AnnouncementsManager = () => {
                                                             )}
                                                         </div>
 
-                                                        <h3 className="text-xl font-black font-heading tracking-tight uppercase italic text-white group-hover:text-neon-pink transition-colors duration-500 leading-tight line-clamp-2">
+                                                        <h3 className="text-xl font-black font-heading tracking-tight uppercase italic text-gray-900 dark:text-white group-hover:text-neon-pink transition-colors duration-500 leading-tight line-clamp-2">
                                                             {item.title}
                                                         </h3>
 
                                                         <div className="flex items-center justify-between pt-2 border-t border-white/[0.06]">
                                                             <div className="flex items-center gap-1.5">
-                                                                <Clock size={10} className="text-white/30" />
-                                                                <span className="text-[8px] font-black text-white/40 uppercase tracking-widest">{item.date}</span>
+                                                                <Clock size={10} className="text-gray-900 dark:text-white/30" />
+                                                                <span className="text-[8px] font-black text-gray-900 dark:text-white/40 uppercase tracking-widest">{item.date}</span>
                                                             </div>
                                                             <button 
                                                                 onClick={() => togglePinAnnouncement(item.id)}
                                                                 className={cn(
                                                                     "p-2 rounded-lg transition-all",
-                                                                    item.isPinned ? "text-neon-pink" : "text-white/20 hover:text-white"
+                                                                    item.isPinned ? "text-neon-pink" : "text-gray-900 dark:text-white/20 hover:text-gray-900 dark:hover:text-white"
                                                                 )}
                                                             >
                                                                 <Pin size={12} className={item.isPinned ? "fill-current" : ""} />

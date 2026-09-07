@@ -411,21 +411,21 @@ const CreatorManager = ({ showLeaderboardOnly = false, isEmbedded = false }) => 
                 <div className="relative z-50 bg-white/[0.02] border border-white/[0.06] rounded-2xl p-3 sm:p-4 mb-6 md:mb-8 space-y-3">
                     
                     {/* Row 1: Search Engine & Action Bar */}
-                    <div className="flex flex-col lg:flex-row items-stretch lg:items-center gap-2.5 sm:gap-3">
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3">
                         {/* Search Input */}
                         <div className="relative flex-1 min-w-0">
-                            <Search className="absolute left-3.5 sm:left-4 top-1/2 -translate-y-1/2 text-white/20" size={14} />
+                            <Search className="absolute left-3.5 sm:left-4 top-1/2 -translate-y-1/2 text-gray-900 dark:text-white/20" size={14} />
                             <input
                                 type="text"
                                 placeholder="Search creators..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
-                                className="w-full h-10 pl-9 sm:pl-10 pr-9 bg-black/30 border border-white/[0.06] focus:border-white/20 rounded-xl text-xs font-medium outline-none transition-all placeholder:text-white/15 text-white min-w-0"
+                                className="w-full h-10 pl-9 sm:pl-10 pr-9 bg-white dark:bg-black/30 border border-white/[0.06] focus:border-black/20 dark:focus:border-white/20 rounded-xl text-xs font-medium outline-none transition-all placeholder:text-gray-900 dark:placeholder:text-white/15 text-gray-900 dark:text-white min-w-0"
                             />
                             {searchTerm && (
                                 <button
                                     onClick={() => setSearchTerm('')}
-                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-white/20 hover:text-white transition-colors"
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-900 dark:text-white/20 hover:text-gray-900 dark:hover:text-white transition-colors"
                                 >
                                     <X size={13} />
                                 </button>
@@ -433,60 +433,66 @@ const CreatorManager = ({ showLeaderboardOnly = false, isEmbedded = false }) => 
                         </div>
 
                         {/* Action Controls Cluster */}
-                        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5 w-full lg:w-auto justify-start lg:justify-end shrink-0">
-                            {/* View Switcher */}
-                            <div className="flex bg-black/30 p-0.5 rounded-xl border border-white/[0.06] shrink-0 h-10 items-center">
+                        <div className="flex items-center justify-between sm:justify-end gap-2 shrink-0">
+                            <div className="flex items-center gap-1.5 sm:gap-2">
+                                {/* View Switcher */}
+                                <div className="flex bg-white dark:bg-black/30 p-0.5 rounded-xl border border-white/[0.06] shrink-0 h-10 items-center">
+                                    <button 
+                                        onClick={() => setViewMode('grid')} 
+                                        title="Grid View"
+                                        className={cn(
+                                            "w-9 h-9 rounded-lg flex items-center justify-center transition-all", 
+                                            viewMode === 'grid' ? "bg-black/10 dark:bg-white/10 text-gray-900 dark:text-white" : "text-gray-900 dark:text-white/25 hover:text-gray-900 dark:hover:text-white/50"
+                                        )}
+                                    >
+                                        <LayoutGrid size={14} />
+                                    </button>
+                                    <button 
+                                        onClick={() => setViewMode('list')} 
+                                        title="List View"
+                                        className={cn(
+                                            "w-9 h-9 rounded-lg flex items-center justify-center transition-all", 
+                                            viewMode === 'list' ? "bg-black/10 dark:bg-white/10 text-gray-900 dark:text-white" : "text-gray-900 dark:text-white/25 hover:text-gray-900 dark:hover:text-white/50"
+                                        )}
+                                    >
+                                        <FileSpreadsheet size={14} />
+                                    </button>
+                                </div>
+
+                                {/* Export CSV */}
                                 <button 
-                                    onClick={() => setViewMode('grid')} 
-                                    title="Grid View"
-                                    className={cn(
-                                        "w-9 h-9 rounded-lg flex items-center justify-center transition-all", 
-                                        viewMode === 'grid' ? "bg-white/10 text-white" : "text-white/25 hover:text-white/50"
-                                    )}
+                                    onClick={exportToCSV}
+                                    className="h-10 px-2.5 sm:px-4 bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.08] text-gray-900 dark:text-white/60 hover:text-gray-900 dark:hover:text-white rounded-xl font-bold uppercase tracking-wider text-[9px] transition-all flex items-center justify-center gap-1.5 shrink-0"
+                                    title="Export Creators to CSV"
                                 >
-                                    <LayoutGrid size={14} />
+                                    <Download size={13} />
+                                    <span className="hidden xs:inline sm:inline">Export</span>
                                 </button>
-                                <button 
-                                    onClick={() => setViewMode('list')} 
-                                    title="List View"
-                                    className={cn(
-                                        "w-9 h-9 rounded-lg flex items-center justify-center transition-all", 
-                                        viewMode === 'list' ? "bg-white/10 text-white" : "text-white/25 hover:text-white/50"
-                                    )}
+
+                                {/* Import Sheet */}
+                                <label 
+                                    className="h-10 px-2.5 sm:px-4 bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.08] text-gray-900 dark:text-white/60 hover:text-gray-900 dark:hover:text-white rounded-xl font-bold uppercase tracking-wider text-[9px] transition-all cursor-pointer flex items-center justify-center gap-1.5 shrink-0"
+                                    title="Import Creators from CSV"
                                 >
-                                    <FileSpreadsheet size={14} />
-                                </button>
+                                    <Upload size={13} />
+                                    <span className="hidden xs:inline sm:inline">Import</span>
+                                    <input type="file" accept=".csv" onChange={handleImportCSV} className="hidden" />
+                                </label>
                             </div>
-
-                            {/* Export CSV */}
-                            <button 
-                                onClick={exportToCSV}
-                                className="h-10 px-3 sm:px-4 bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.08] text-white/60 hover:text-white rounded-xl font-bold uppercase tracking-wider text-[9px] transition-all flex items-center justify-center gap-1.5 shrink-0"
-                            >
-                                <Download size={13} />
-                                <span>Export</span>
-                            </button>
-
-                            {/* Import Sheet */}
-                            <label className="h-10 px-3 sm:px-4 bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.08] text-white/60 hover:text-white rounded-xl font-bold uppercase tracking-wider text-[9px] transition-all cursor-pointer flex items-center justify-center gap-1.5 shrink-0">
-                                <Upload size={13} />
-                                <span>Import</span>
-                                <input type="file" accept=".csv" onChange={handleImportCSV} className="hidden" />
-                            </label>
 
                             {/* Add Creator */}
                             <button 
                                 onClick={() => setIsAddModalOpen(true)}
-                                className="h-10 px-4 sm:px-5 bg-white text-black hover:bg-neon-pink rounded-xl font-bold uppercase tracking-wider text-[9px] transition-all flex items-center justify-center gap-1.5 shrink-0 ml-auto sm:ml-0"
+                                className="h-10 px-3.5 sm:px-5 bg-white text-black hover:bg-neon-pink rounded-xl font-bold uppercase tracking-wider text-[9px] transition-all flex items-center justify-center gap-1.5 shrink-0"
                             >
                                 <Plus size={14} />
-                                <span>Add Creator</span>
+                                <span className="whitespace-nowrap">Add Creator</span>
                             </button>
                         </div>
                     </div>
 
-                    {/* Row 2: Filter Toolbar (2-column on mobile, inline flex on desktop) */}
-                    <div className="pt-2.5 border-t border-white/[0.04] grid grid-cols-2 sm:flex sm:flex-wrap lg:flex-nowrap items-center gap-2">
+                    {/* Row 2: Filter Toolbar (2-column balanced grid on mobile, inline flex on desktop) */}
+                    <div className="pt-2.5 border-t border-white/[0.04] grid grid-cols-2 sm:grid-cols-3 lg:flex lg:flex-nowrap items-center gap-2">
                         
                         {/* Filter Indicator Label */}
                         <div className="hidden xl:flex items-center gap-1.5 px-2 text-[9px] font-black uppercase tracking-widest text-gray-500 shrink-0 select-none">
@@ -499,13 +505,13 @@ const CreatorManager = ({ showLeaderboardOnly = false, isEmbedded = false }) => 
                             <div 
                                 onClick={() => setIsFollowersOpen(!isFollowersOpen)}
                                 className={cn(
-                                    "flex items-center justify-between h-10 bg-black/40 border border-white/[0.06] rounded-xl px-3 cursor-pointer hover:border-white/20 transition-all group select-none",
+                                    "flex items-center justify-between h-10 bg-white dark:bg-black/40 border border-white/[0.06] rounded-xl px-3 cursor-pointer hover:border-black/20 dark:hover:border-white/20 transition-all group select-none",
                                     isFollowersOpen && "border-neon-pink/40"
                                 )}
                             >
                                 <span className={cn(
                                     "text-[9px] font-bold uppercase tracking-wider truncate leading-none",
-                                    (!minFollowers && !maxFollowers) ? "text-white/40" : "text-white"
+                                    (!minFollowers && !maxFollowers) ? "text-gray-900 dark:text-white/40" : "text-gray-900 dark:text-white"
                                 )}
                                 title={getFollowersLabel()}
                                 >
@@ -514,7 +520,7 @@ const CreatorManager = ({ showLeaderboardOnly = false, isEmbedded = false }) => 
                                 <ChevronDown 
                                     size={12} 
                                     className={cn(
-                                        "transition-all duration-300 shrink-0 ml-1.5 text-white/30 group-hover:text-white/50",
+                                        "transition-all duration-300 shrink-0 ml-1.5 text-gray-900 dark:text-white/30 group-hover:text-gray-900 dark:group-hover:text-white/50",
                                         isFollowersOpen && "rotate-180 text-neon-pink"
                                     )} 
                                 />
@@ -526,40 +532,40 @@ const CreatorManager = ({ showLeaderboardOnly = false, isEmbedded = false }) => 
                                         initial={{ opacity: 0, y: 10, scale: 0.95 }}
                                         animate={{ opacity: 1, y: 0, scale: 1 }}
                                         exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                                        className="absolute z-[100] left-0 mt-2 w-[calc(100vw-3rem)] sm:w-[260px] max-w-[280px] bg-[#0a0a0a]/95 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-2xl p-4 sm:p-5 space-y-3"
+                                        className="absolute z-[100] left-0 mt-2 w-[calc(100vw-2.5rem)] sm:w-[260px] max-w-[280px] bg-[#0a0a0a]/95 backdrop-blur-2xl border border-black/10 dark:border-white/10 rounded-2xl shadow-2xl p-4 sm:p-5 space-y-3"
                                     >
                                         <div className="space-y-1">
-                                            <p className="text-[9px] font-bold text-white/40 uppercase tracking-wider">Follower Range</p>
+                                            <p className="text-[9px] font-bold text-gray-900 dark:text-white/40 uppercase tracking-wider">Follower Range</p>
                                         </div>
                                         <div className="flex gap-2 items-center">
                                             <div className="space-y-1 flex-1">
-                                                <label className="text-[7px] font-bold text-white/30 uppercase tracking-wider pl-0.5">Min</label>
+                                                <label className="text-[7px] font-bold text-gray-900 dark:text-white/30 uppercase tracking-wider pl-0.5">Min</label>
                                                 <input 
                                                     type="number" 
                                                     value={minFollowers} 
                                                     onChange={(e) => setMinFollowers(e.target.value)}
                                                     placeholder="0" 
-                                                    className="w-full h-9 bg-black/40 border border-white/10 rounded-lg px-2 text-xs font-bold text-white focus:border-neon-pink outline-none transition-all"
+                                                    className="w-full h-9 bg-white dark:bg-black/40 border border-black/10 dark:border-white/10 rounded-lg px-2 text-xs font-bold text-gray-900 dark:text-white focus:border-neon-pink outline-none transition-all"
                                                 />
                                             </div>
-                                            <span className="text-white/20 text-xs font-bold pt-4">-</span>
+                                            <span className="text-gray-900 dark:text-white/20 text-xs font-bold pt-4">-</span>
                                             <div className="space-y-1 flex-1">
-                                                <label className="text-[7px] font-bold text-white/30 uppercase tracking-wider pl-0.5">Max</label>
+                                                <label className="text-[7px] font-bold text-gray-900 dark:text-white/30 uppercase tracking-wider pl-0.5">Max</label>
                                                 <input 
                                                     type="number" 
                                                     value={maxFollowers} 
                                                     onChange={(e) => setMaxFollowers(e.target.value)}
                                                     placeholder="Any" 
-                                                    className="w-full h-9 bg-black/40 border border-white/10 rounded-lg px-2 text-xs font-bold text-white focus:border-neon-pink outline-none transition-all"
+                                                    className="w-full h-9 bg-white dark:bg-black/40 border border-black/10 dark:border-white/10 rounded-lg px-2 text-xs font-bold text-gray-900 dark:text-white focus:border-neon-pink outline-none transition-all"
                                                 />
                                             </div>
                                         </div>
 
-                                        <div className="h-px bg-white/5" />
+                                        <div className="h-px bg-black/5 dark:bg-white/5" />
 
                                         {/* Preset quick ranges */}
                                         <div className="space-y-1.5">
-                                            <p className="text-[7px] font-bold text-white/30 uppercase tracking-wider pl-0.5">Presets</p>
+                                            <p className="text-[7px] font-bold text-gray-900 dark:text-white/30 uppercase tracking-wider pl-0.5">Presets</p>
                                             <div className="grid grid-cols-2 gap-1.5">
                                                 {[
                                                     { label: '0 - 10K', min: '0', max: '10000' },
@@ -576,7 +582,7 @@ const CreatorManager = ({ showLeaderboardOnly = false, isEmbedded = false }) => 
                                                              setMinFollowers(p.min);
                                                              setMaxFollowers(p.max);
                                                         }}
-                                                        className="px-2.5 py-1.5 bg-white/5 border border-white/5 hover:border-neon-pink/20 hover:bg-neon-pink/5 hover:text-neon-pink rounded-lg text-[8px] font-bold uppercase tracking-wider text-white/50 transition-all text-center"
+                                                        className="px-2.5 py-1.5 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/5 hover:border-neon-pink/20 hover:bg-neon-pink/5 hover:text-neon-pink rounded-lg text-[8px] font-bold uppercase tracking-wider text-gray-900 dark:text-white/50 transition-all text-center"
                                                     >
                                                         {p.label}
                                                     </button>
@@ -592,7 +598,7 @@ const CreatorManager = ({ showLeaderboardOnly = false, isEmbedded = false }) => 
                                                     setMaxFollowers('');
                                                     setIsFollowersOpen(false);
                                                 }}
-                                                className="flex-1 py-1.5 rounded-lg border border-white/5 hover:bg-white/5 text-[8px] font-bold uppercase tracking-wider text-white/40 hover:text-white transition-all text-center"
+                                                className="flex-1 py-1.5 rounded-lg border border-black/10 dark:border-white/5 hover:bg-black/5 dark:hover:bg-white/5 text-[8px] font-bold uppercase tracking-wider text-gray-900 dark:text-white/40 hover:text-gray-900 dark:hover:text-white transition-all text-center"
                                             >
                                                 Reset
                                             </button>
@@ -615,7 +621,7 @@ const CreatorManager = ({ showLeaderboardOnly = false, isEmbedded = false }) => 
                                 value={filterNiche} 
                                 options={['All', ...NICHES].map(n => ({ value: n, label: n === 'All' ? 'NICHE' : n.toUpperCase() }))} 
                                 onChange={setFilterNiche} 
-                                className="w-full min-w-0 h-10 rounded-xl border-white/[0.06] bg-black/40 text-[9px]" 
+                                className="w-full min-w-0 h-10 rounded-xl border-white/[0.06] bg-white dark:bg-black/40 text-[9px]" 
                                 accentColor="neon-pink" 
                                 classNamePrefix="studio-select"
                             />
@@ -627,7 +633,7 @@ const CreatorManager = ({ showLeaderboardOnly = false, isEmbedded = false }) => 
                                 value={filterCity} 
                                 options={cities.map(c => ({ value: c, label: c === 'All' ? 'LOCATION' : c.toUpperCase() }))} 
                                 onChange={setFilterCity} 
-                                className="w-full min-w-0 h-10 rounded-xl border-white/[0.06] bg-black/40 text-[9px]" 
+                                className="w-full min-w-0 h-10 rounded-xl border-white/[0.06] bg-white dark:bg-black/40 text-[9px]" 
                                 accentColor="neon-blue" 
                                 classNamePrefix="studio-select"
                             />
@@ -644,7 +650,7 @@ const CreatorManager = ({ showLeaderboardOnly = false, isEmbedded = false }) => 
                                     { value: 'rejected', label: 'REJECTED' }
                                 ]} 
                                 onChange={setFilterStatus} 
-                                className="w-full min-w-0 h-10 rounded-xl border-white/[0.06] bg-black/40 text-[9px]" 
+                                className="w-full min-w-0 h-10 rounded-xl border-white/[0.06] bg-white dark:bg-black/40 text-[9px]" 
                                 accentColor="neon-green" 
                                 classNamePrefix="studio-select"
                             />
@@ -661,26 +667,31 @@ const CreatorManager = ({ showLeaderboardOnly = false, isEmbedded = false }) => 
                                     { value: 'youtube', label: 'YOUTUBE' }
                                 ]} 
                                 onChange={setFilterPlatform} 
-                                className="w-full min-w-0 h-10 rounded-xl border-white/[0.06] bg-black/40 text-[9px]" 
+                                className="w-full min-w-0 h-10 rounded-xl border-white/[0.06] bg-white dark:bg-black/40 text-[9px]" 
                                 accentColor="neon-blue" 
                                 classNamePrefix="studio-select"
                             />
                         </div>
 
-                        {/* Reset Filters Quick Button */}
-                        {hasActiveFilters && (
+                        {/* 6th Slot on Mobile Grid: Reset Button if active, or Count pill */}
+                        {hasActiveFilters ? (
                             <button
                                 onClick={resetAllFilters}
                                 className="col-span-1 sm:col-auto h-10 px-3.5 rounded-xl bg-neon-pink/10 border border-neon-pink/30 hover:bg-neon-pink/20 text-neon-pink text-[9px] font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all shrink-0 active:scale-95"
                                 title="Reset all filters"
                             >
                                 <X size={12} />
-                                <span>Reset</span>
+                                <span>Reset Filters</span>
                             </button>
+                        ) : (
+                            <div className="col-span-1 sm:hidden h-10 px-3 bg-white dark:bg-black/40 border border-white/[0.06] rounded-xl flex items-center justify-center gap-1.5 text-[8px] font-bold text-gray-900 dark:text-white/30 uppercase tracking-wider select-none">
+                                <span className="w-1.5 h-1.5 rounded-full bg-neon-pink animate-pulse" />
+                                <span>{filteredCreators.length} of {creators.length}</span>
+                            </div>
                         )}
 
-                        {/* Creators Count Badge */}
-                        <div className="col-span-2 sm:col-auto flex items-center justify-center sm:justify-start gap-1.5 text-[8px] font-bold text-white/30 uppercase tracking-wider sm:ml-auto shrink-0 py-1 select-none">
+                        {/* Creators Count Badge (Tablet / Desktop) */}
+                        <div className="hidden sm:flex col-auto items-center justify-start gap-1.5 text-[8px] font-bold text-gray-900 dark:text-white/30 uppercase tracking-wider sm:ml-auto shrink-0 py-1 select-none">
                             <span className="w-1.5 h-1.5 rounded-full bg-neon-pink animate-pulse" />
                             <span>{filteredCreators.length} of {creators.length} Creators</span>
                         </div>
@@ -693,9 +704,9 @@ const CreatorManager = ({ showLeaderboardOnly = false, isEmbedded = false }) => 
                         {creators.length === 0 ? (
                             <motion.div 
                                 initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                                className="py-40 text-center bg-[#050505]/40 rounded-[4rem] border border-white/5 flex flex-col items-center gap-8 shadow-inner"
+                                className="py-40 text-center bg-[#050505]/40 rounded-[4rem] border border-black/10 dark:border-white/5 flex flex-col items-center gap-8 shadow-inner"
                             >
-                                <div className="w-32 h-32 bg-white/5 rounded-full flex items-center justify-center border border-white/10 animate-pulse">
+                                <div className="w-32 h-32 bg-black/5 dark:bg-white/5 rounded-full flex items-center justify-center border border-black/10 dark:border-white/10 animate-pulse">
                                     <Users size={48} className="text-gray-700" />
                                 </div>
                                 <div className="space-y-2">
@@ -726,12 +737,12 @@ const CreatorManager = ({ showLeaderboardOnly = false, isEmbedded = false }) => 
                                     <div className="relative group/carousel">
                                         {/* Scroll Indicators - Only visible on desktop hover or mobile always */}
                                         <div className="absolute -left-4 top-1/2 -translate-y-1/2 z-20 hidden md:flex opacity-0 group-hover/carousel:opacity-100 transition-opacity pointer-events-none">
-                                            <button onClick={() => scrollContainer('creator-grid', 'left')} className="w-12 h-12 rounded-2xl bg-black/80 backdrop-blur-xl border border-white/10 flex items-center justify-center text-white pointer-events-auto hover:bg-white hover:text-black transition-all shadow-2xl">
+                                            <button onClick={() => scrollContainer('creator-grid', 'left')} className="w-12 h-12 rounded-2xl bg-white dark:bg-black/80 backdrop-blur-xl border border-black/10 dark:border-white/10 flex items-center justify-center text-gray-900 dark:text-white pointer-events-auto hover:bg-white hover:text-black transition-all shadow-2xl">
                                                 <ChevronRight className="rotate-180" size={24} />
                                             </button>
                                         </div>
                                         <div className="absolute -right-4 top-1/2 -translate-y-1/2 z-20 hidden md:flex opacity-0 group-hover/carousel:opacity-100 transition-opacity pointer-events-none">
-                                            <button onClick={() => scrollContainer('creator-grid', 'right')} className="w-12 h-12 rounded-2xl bg-black/80 backdrop-blur-xl border border-white/10 flex items-center justify-center text-white pointer-events-auto hover:bg-white hover:text-black transition-all shadow-2xl">
+                                            <button onClick={() => scrollContainer('creator-grid', 'right')} className="w-12 h-12 rounded-2xl bg-white dark:bg-black/80 backdrop-blur-xl border border-black/10 dark:border-white/10 flex items-center justify-center text-gray-900 dark:text-white pointer-events-auto hover:bg-white hover:text-black transition-all shadow-2xl">
                                                 <ChevronRight size={24} />
                                             </button>
                                         </div>
@@ -760,7 +771,7 @@ const CreatorManager = ({ showLeaderboardOnly = false, isEmbedded = false }) => 
                                     </div>
                                 ) : (
                                     <div className="flex flex-col gap-3">
-                                        <div className="hidden md:flex items-center gap-6 px-10 py-6 text-[10px] font-black text-gray-600 uppercase tracking-[0.4em] border-b border-white/5">
+                                        <div className="hidden md:flex items-center gap-6 px-10 py-6 text-[10px] font-black text-gray-600 uppercase tracking-[0.4em] border-b border-black/10 dark:border-white/5">
                                             <div className="w-6 shrink-0" />
                                             <div className="w-16 shrink-0">Identity</div>
                                             <div className="flex-1 pl-1">Profile Details</div>
@@ -794,7 +805,7 @@ const CreatorManager = ({ showLeaderboardOnly = false, isEmbedded = false }) => 
                                         <button 
                                             disabled={currentPage === 1}
                                             onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                                            className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white disabled:opacity-20 hover:bg-white hover:text-black transition-all"
+                                            className="w-12 h-12 rounded-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 flex items-center justify-center text-gray-900 dark:text-white disabled:opacity-20 hover:bg-white hover:text-black transition-all"
                                         >
                                             <ChevronLeft size={20} />
                                         </button>
@@ -818,7 +829,7 @@ const CreatorManager = ({ showLeaderboardOnly = false, isEmbedded = false }) => 
                                                             "w-12 h-12 rounded-full font-black text-xs transition-all border flex items-center justify-center",
                                                             currentPage === page 
                                                                 ? "bg-white text-black border-white shadow-[0_0_20px_rgba(255,255,255,0.3)]" 
-                                                                : "bg-white/5 text-gray-500 border-white/10 hover:border-white/30"
+                                                                : "bg-black/5 dark:bg-white/5 text-gray-500 border-black/10 dark:border-white/10 hover:border-white/30"
                                                         )}
                                                     >
                                                         {page}
@@ -829,7 +840,7 @@ const CreatorManager = ({ showLeaderboardOnly = false, isEmbedded = false }) => 
                                         <button 
                                             disabled={currentPage === totalPages}
                                             onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                                            className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white disabled:opacity-20 hover:bg-white hover:text-black transition-all"
+                                            className="w-12 h-12 rounded-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 flex items-center justify-center text-gray-900 dark:text-white disabled:opacity-20 hover:bg-white hover:text-black transition-all"
                                         >
                                             <ChevronRight size={20} />
                                         </button>
@@ -911,11 +922,11 @@ const CreatorManager = ({ showLeaderboardOnly = false, isEmbedded = false }) => 
                             animate={{ y: 0, x: '-50%', opacity: 1 }}
                             exit={{ y: 100, x: '-50%', opacity: 0 }}
                             transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-                            className="fixed bottom-6 md:bottom-8 left-1/2 z-[100] w-[94%] sm:w-[90%] max-w-2xl bg-black/80 backdrop-blur-2xl border border-white/10 rounded-2xl sm:rounded-3xl px-4 sm:px-6 py-3 sm:py-4 flex flex-col md:flex-row items-center justify-between gap-3 sm:gap-4 shadow-[0_20px_50px_rgba(0,0,0,0.5)] border-t-white/20"
+                            className="fixed bottom-6 md:bottom-8 left-1/2 z-[100] w-[94%] sm:w-[90%] max-w-2xl bg-white dark:bg-black/80 backdrop-blur-2xl border border-black/10 dark:border-white/10 rounded-2xl sm:rounded-3xl px-4 sm:px-6 py-3 sm:py-4 flex flex-col md:flex-row items-center justify-between gap-3 sm:gap-4 shadow-[0_20px_50px_rgba(0,0,0,0.5)] border-t-white/20"
                         >
                             <div className="flex items-center gap-2.5">
                                 <span className="w-2.5 h-2.5 rounded-full bg-neon-pink animate-pulse" />
-                                <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-white">
+                                <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-gray-900 dark:text-white">
                                     {selectedUids.length} Creator{selectedUids.length > 1 ? 's' : ''} Selected
                                 </span>
                             </div>
@@ -931,13 +942,13 @@ const CreatorManager = ({ showLeaderboardOnly = false, isEmbedded = false }) => 
                                             return newUids;
                                         });
                                     }}
-                                    className="flex-1 md:flex-none h-9 sm:h-10 px-3 sm:px-4 bg-white/5 border border-white/10 hover:border-white/20 text-white font-black text-[8px] sm:text-[9px] uppercase tracking-widest rounded-xl transition-all"
+                                    className="flex-1 md:flex-none h-9 sm:h-10 px-3 sm:px-4 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 hover:border-black/20 dark:hover:border-white/20 text-gray-900 dark:text-white font-black text-[8px] sm:text-[9px] uppercase tracking-widest rounded-xl transition-all"
                                 >
                                     Select Page
                                 </button>
                                 <button
                                     onClick={handleDeselectAll}
-                                    className="flex-1 md:flex-none h-9 sm:h-10 px-3 sm:px-4 bg-white/5 border border-white/10 hover:border-white/20 text-white font-black text-[8px] sm:text-[9px] uppercase tracking-widest rounded-xl transition-all"
+                                    className="flex-1 md:flex-none h-9 sm:h-10 px-3 sm:px-4 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 hover:border-black/20 dark:hover:border-white/20 text-gray-900 dark:text-white font-black text-[8px] sm:text-[9px] uppercase tracking-widest rounded-xl transition-all"
                                 >
                                     Deselect All
                                 </button>
@@ -984,7 +995,7 @@ const StatCard = ({ icon, label, value, color, description, compact = false }) =
             <div className={cn("relative z-10 flex h-full", compact ? "flex-row items-center gap-4" : "flex-col justify-between gap-8")}>
                 <div className="flex items-start justify-between">
                     <div className={cn(
-                        "rounded-2xl flex items-center justify-center shadow-inner border border-white/5 shrink-0", 
+                        "rounded-2xl flex items-center justify-center shadow-inner border border-black/10 dark:border-white/5 shrink-0", 
                         compact ? "w-10 h-10 md:w-12 md:h-12" : "w-16 h-16",
                         theme.bg, theme.text
                     )}>
@@ -993,13 +1004,13 @@ const StatCard = ({ icon, label, value, color, description, compact = false }) =
                     {!compact && (
                         <div className="text-right">
                             <TrendingUp size={16} className={cn("inline-block mr-2", theme.text)} />
-                            <span className="text-[10px] font-black text-white/40 uppercase tracking-widest">+8%</span>
+                            <span className="text-[10px] font-black text-gray-900 dark:text-white/40 uppercase tracking-widest">+8%</span>
                         </div>
                     )}
                 </div>
                 <div className={cn("space-y-1", compact ? "flex-1" : "")}>
                     <p className={cn("font-black uppercase tracking-[0.4em] leading-tight text-gray-500", compact ? "text-[8px]" : "text-[10px]")}>{label}</p>
-                    <h3 className={cn("font-black text-white tracking-tighter tabular-nums leading-none", compact ? "text-2xl" : "text-6xl")}>{value}</h3>
+                    <h3 className={cn("font-black text-gray-900 dark:text-white tracking-tighter tabular-nums leading-none", compact ? "text-2xl" : "text-6xl")}>{value}</h3>
                     {!compact && description && (
                         <p className="text-[10px] font-bold text-gray-700 uppercase tracking-widest mt-2">{description}</p>
                     )}
@@ -1033,20 +1044,20 @@ const CreatorBadgeCard = ({ creator, onSelect, isSelected, onToggleSelect }) => 
             )}
         >
             {/* Image */}
-            <div className="relative aspect-[4/3] overflow-hidden bg-black/30">
+            <div className="relative aspect-[4/3] overflow-hidden bg-white dark:bg-black/30">
                 {/* Checkbox */}
                 <div className="absolute top-3 left-3 z-30" onClick={(e) => e.stopPropagation()}>
                     <input
                         type="checkbox"
                         checked={isSelected || false}
                         onChange={() => onToggleSelect(creator.uid)}
-                        className="w-4 h-4 rounded border-white/20 bg-black/60 text-neon-pink focus:ring-0 cursor-pointer"
+                        className="w-4 h-4 rounded border-black/20 dark:border-white/20 bg-white dark:bg-black/60 text-neon-pink focus:ring-0 cursor-pointer"
                     />
                 </div>
                 {creator.profilePicture ? (
                     <img src={creator.profilePicture} alt={creator.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                 ) : (
-                    <div className="w-full h-full flex items-center justify-center text-5xl font-black text-white/[0.03] uppercase italic select-none">
+                    <div className="w-full h-full flex items-center justify-center text-5xl font-black text-black/[0.03] dark:text-white/[0.03] uppercase italic select-none">
                         {creator.name.charAt(0)}
                     </div>
                 )}
@@ -1065,7 +1076,7 @@ const CreatorBadgeCard = ({ creator, onSelect, isSelected, onToggleSelect }) => 
                 {/* Name & Niche */}
                 <div>
                     <p className="text-[9px] font-bold text-neon-pink/70 uppercase tracking-wider mb-1">{(creator.niches || creator.specializations || [])[0] || 'Creator'}</p>
-                    <h3 className="text-lg font-black text-white tracking-tight uppercase leading-tight line-clamp-1">
+                    <h3 className="text-lg font-black text-gray-900 dark:text-white tracking-tight uppercase leading-tight line-clamp-1">
                         {creator.name}
                     </h3>
                 </div>
@@ -1096,22 +1107,22 @@ const CreatorBadgeCard = ({ creator, onSelect, isSelected, onToggleSelect }) => 
 
                 {/* Meta pills */}
                 <div className="flex flex-wrap gap-1.5">
-                    <span className="flex items-center gap-1 text-[8px] font-bold text-white/30 uppercase tracking-wider bg-white/[0.03] px-2 py-1 rounded-md border border-white/[0.04]">
+                    <span className="flex items-center gap-1 text-[8px] font-bold text-gray-900 dark:text-white/30 uppercase tracking-wider bg-white/[0.03] px-2 py-1 rounded-md border border-white/[0.04]">
                         <MapPin size={9} className="text-neon-pink/50" />{creator.city || 'Global'}
                     </span>
-                    <span className="flex items-center gap-1 text-[8px] font-bold text-white/30 uppercase tracking-wider bg-white/[0.03] px-2 py-1 rounded-md border border-white/[0.04]">
+                    <span className="flex items-center gap-1 text-[8px] font-bold text-gray-900 dark:text-white/30 uppercase tracking-wider bg-white/[0.03] px-2 py-1 rounded-md border border-white/[0.04]">
                         <TrendingUp size={9} />{maxFollowers.toLocaleString()} flw
                     </span>
                 </div>
 
                 {/* Contact */}
                 <div className="space-y-1">
-                    <div className="flex items-center gap-2 text-[8px] font-bold text-white/25 uppercase tracking-wider truncate">
-                        <Mail size={10} className="shrink-0 text-white/15" /><span className="truncate">{creator.email || 'N/A'}</span>
+                    <div className="flex items-center gap-2 text-[8px] font-bold text-gray-900 dark:text-white/25 uppercase tracking-wider truncate">
+                        <Mail size={10} className="shrink-0 text-gray-900 dark:text-white/15" /><span className="truncate">{creator.email || 'N/A'}</span>
                     </div>
-                    <div className="flex items-center justify-between text-[8px] font-bold text-white/25 uppercase tracking-wider">
+                    <div className="flex items-center justify-between text-[8px] font-bold text-gray-900 dark:text-white/25 uppercase tracking-wider">
                         <div className="flex items-center gap-2 min-w-0">
-                            <Phone size={10} className="shrink-0 text-white/15" /><span className="truncate">{creator.phone || 'N/A'}</span>
+                            <Phone size={10} className="shrink-0 text-gray-900 dark:text-white/15" /><span className="truncate">{creator.phone || 'N/A'}</span>
                         </div>
                         {creator.isPhoneVerified && (
                             <span className="flex items-center gap-0.5 text-neon-green text-[7px] tracking-wider shrink-0 bg-neon-green/10 border border-neon-green/20 px-1.5 py-0.5 rounded">
@@ -1146,10 +1157,10 @@ const CreatorBadgeCard = ({ creator, onSelect, isSelected, onToggleSelect }) => 
                             ><Youtube size={11} /></a>
                         )}
                         {!creator.instagram && !creator.linkedin && !creator.youtube && (
-                            <span className="text-[8px] font-bold text-white/15">No socials</span>
+                            <span className="text-[8px] font-bold text-gray-900 dark:text-white/15">No socials</span>
                         )}
                     </div>
-                    <div className="w-7 h-7 rounded-lg bg-white/[0.03] border border-white/[0.05] flex items-center justify-center text-white/20 group-hover:text-white/40 transition-colors">
+                    <div className="w-7 h-7 rounded-lg bg-white/[0.03] border border-white/[0.05] flex items-center justify-center text-gray-900 dark:text-white/20 group-hover:text-gray-900 dark:group-hover:text-white/40 transition-colors">
                         <ChevronRight size={13} />
                     </div>
                 </div>
@@ -1180,35 +1191,35 @@ const CreatorListItem = ({ creator, onSelect, isSelected, onToggleSelect }) => {
                         type="checkbox"
                         checked={isSelected || false}
                         onChange={() => onToggleSelect(creator.uid)}
-                        className="w-4 h-4 rounded border-white/20 bg-black/60 text-neon-pink focus:ring-0 cursor-pointer"
+                        className="w-4 h-4 rounded border-black/20 dark:border-white/20 bg-white dark:bg-black/60 text-neon-pink focus:ring-0 cursor-pointer"
                     />
                 </div>
-                <div className="w-12 h-12 bg-black/40 border border-white/[0.08] rounded-xl flex items-center justify-center font-black text-white overflow-hidden shrink-0">
+                <div className="w-12 h-12 bg-white dark:bg-black/40 border border-white/[0.08] rounded-xl flex items-center justify-center font-black text-gray-900 dark:text-white overflow-hidden shrink-0">
                     {creator.profilePicture ? (
                         <img src={creator.profilePicture} alt={creator.name} className="w-full h-full object-cover" />
                     ) : (
-                        <span className="italic text-white/30">{creator.name.charAt(0)}</span>
+                        <span className="italic text-gray-900 dark:text-white/30">{creator.name.charAt(0)}</span>
                     )}
                 </div>
                 <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 flex-wrap">
-                        <h4 className="text-base font-black text-white uppercase tracking-tight truncate">{creator.name}</h4>
+                        <h4 className="text-base font-black text-gray-900 dark:text-white uppercase tracking-tight truncate">{creator.name}</h4>
                         {creator.isPhoneVerified && (
                             <span className="flex items-center gap-0.5 text-neon-green text-[7px] font-bold tracking-wider bg-neon-green/10 border border-neon-green/20 px-1.5 py-0.5 rounded">
                                 <Check size={7} strokeWidth={3} /> OK
                             </span>
                         )}
                     </div>
-                    <div className="flex flex-wrap items-center gap-y-1 gap-x-2 mt-0.5 text-[8px] text-white/30 font-bold tracking-wider uppercase">
+                    <div className="flex flex-wrap items-center gap-y-1 gap-x-2 mt-0.5 text-[8px] text-gray-900 dark:text-white/30 font-bold tracking-wider uppercase">
                         <span className="truncate max-w-[150px]">{creator.email}</span>
-                        <span className="text-white/10">•</span>
-                        <span className="flex items-center gap-1"><Phone size={9} className="text-white/20" /> {creator.phone || 'N/A'}</span>
+                        <span className="text-gray-900 dark:text-white/10">•</span>
+                        <span className="flex items-center gap-1"><Phone size={9} className="text-gray-900 dark:text-white/20" /> {creator.phone || 'N/A'}</span>
                     </div>
                 </div>
             </div>
 
             <div className="flex flex-wrap gap-1.5 w-full lg:w-56 shrink-0">
-                <span className="text-[8px] font-bold uppercase tracking-wider text-white/40 bg-white/[0.03] border border-white/[0.04] px-2.5 py-1 rounded-lg">
+                <span className="text-[8px] font-bold uppercase tracking-wider text-gray-900 dark:text-white/40 bg-white/[0.03] border border-white/[0.04] px-2.5 py-1 rounded-lg">
                     {(creator.niches || creator.specializations || [])[0] || 'Creator'}
                 </span>
                 {creator.collegeName && (
@@ -1258,13 +1269,13 @@ const CreatorListItem = ({ creator, onSelect, isSelected, onToggleSelect }) => {
             </div>
 
             <div className="hidden lg:block w-32 text-right pr-2">
-                <p className="text-[7px] font-bold text-white/20 uppercase tracking-wider mb-0.5">FOLLOWERS</p>
-                <p className="text-sm font-bold text-white tabular-nums">{Math.max(Number(creator.instagramFollowers || 0), Number(creator.youtubeSubscribers || 0), Number(creator.linkedinFollowers || 0)).toLocaleString()}</p>
+                <p className="text-[7px] font-bold text-gray-900 dark:text-white/20 uppercase tracking-wider mb-0.5">FOLLOWERS</p>
+                <p className="text-sm font-bold text-gray-900 dark:text-white tabular-nums">{Math.max(Number(creator.instagramFollowers || 0), Number(creator.youtubeSubscribers || 0), Number(creator.linkedinFollowers || 0)).toLocaleString()}</p>
             </div>
 
             <div className="flex items-center justify-between lg:justify-end gap-3 w-full lg:w-44 shrink-0">
                 <StatusPill status={creator.profileStatus} />
-                <div className="w-8 h-8 rounded-lg bg-white/[0.03] border border-white/[0.05] flex items-center justify-center text-white/20 group-hover:text-white/50 transition-all shrink-0">
+                <div className="w-8 h-8 rounded-lg bg-white/[0.03] border border-white/[0.05] flex items-center justify-center text-gray-900 dark:text-white/20 group-hover:text-gray-900 dark:group-hover:text-white/50 transition-all shrink-0">
                     <ChevronRight size={14} />
                 </div>
             </div>
@@ -1408,7 +1419,7 @@ const CreatorDetailModal = ({ creator, onClose, onUpdateStatus, onDelete, isUpda
 
     // Section heading component
     const SectionLabel = ({ children }) => (
-        <p className="text-[10px] font-bold text-white/30 uppercase tracking-[0.2em] mb-3">{children}</p>
+        <p className="text-[10px] font-bold text-gray-900 dark:text-white/30 uppercase tracking-[0.2em] mb-3">{children}</p>
     );
 
     return createPortal(
@@ -1417,7 +1428,7 @@ const CreatorDetailModal = ({ creator, onClose, onUpdateStatus, onDelete, isUpda
             <motion.div 
                 initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                 transition={{ duration: 0.2 }}
-                className="absolute inset-0 bg-black/60 backdrop-blur-sm" 
+                className="absolute inset-0 bg-white dark:bg-black/60 backdrop-blur-sm" 
                 onClick={onClose} 
             />
 
@@ -1433,16 +1444,16 @@ const CreatorDetailModal = ({ creator, onClose, onUpdateStatus, onDelete, isUpda
                 <div className="sticky top-0 z-50 flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 bg-[#0A0A0A]/95 backdrop-blur-xl border-b border-white/[0.06]">
                     <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
                         <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl bg-white/[0.04] border border-white/[0.06] flex items-center justify-center shrink-0">
-                            <Users size={13} className="text-white/40" />
+                            <Users size={13} className="text-gray-900 dark:text-white/40" />
                         </div>
                         <div className="min-w-0">
-                            <p className="text-[8px] sm:text-[9px] font-bold text-white/30 uppercase tracking-[0.15em]">Creator Profile</p>
-                            <p className="text-xs font-bold text-white truncate">{creator.name}</p>
+                            <p className="text-[8px] sm:text-[9px] font-bold text-gray-900 dark:text-white/30 uppercase tracking-[0.15em]">Creator Profile</p>
+                            <p className="text-xs font-bold text-gray-900 dark:text-white truncate">{creator.name}</p>
                         </div>
                     </div>
                     <button 
                         onClick={onClose}
-                        className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-white/[0.04] border border-white/[0.06] flex items-center justify-center text-white/40 hover:bg-white/10 hover:text-white transition-all shrink-0"
+                        className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-white/[0.04] border border-white/[0.06] flex items-center justify-center text-gray-900 dark:text-white/40 hover:bg-black/10 dark:hover:bg-white/10 hover:text-gray-900 dark:hover:text-white transition-all shrink-0"
                     >
                         <X size={16} />
                     </button>
@@ -1454,11 +1465,11 @@ const CreatorDetailModal = ({ creator, onClose, onUpdateStatus, onDelete, isUpda
 
                         {/* ─── Hero Section ─── */}
                         <div className="flex items-start gap-3.5 sm:gap-5">
-                            <div className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-xl sm:rounded-2xl bg-black border border-white/[0.08] overflow-hidden shrink-0">
+                            <div className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-xl sm:rounded-2xl bg-white dark:bg-black border border-white/[0.08] overflow-hidden shrink-0">
                                 {creator.profilePicture ? (
                                     <img src={creator.profilePicture} alt="" className="w-full h-full object-cover" />
                                 ) : (
-                                    <div className="w-full h-full flex items-center justify-center text-xl sm:text-2xl font-black text-white/[0.06] italic select-none">{creator.name.charAt(0)}</div>
+                                    <div className="w-full h-full flex items-center justify-center text-xl sm:text-2xl font-black text-black/[0.06] dark:text-white/[0.06] italic select-none">{creator.name.charAt(0)}</div>
                                 )}
                                 {creator.profileStatus === 'approved' && (
                                     <div className="absolute -bottom-0.5 -right-0.5 w-5 h-5 sm:w-6 sm:h-6 bg-neon-green rounded-md sm:rounded-lg flex items-center justify-center border-2 border-[#0A0A0A]">
@@ -1469,17 +1480,17 @@ const CreatorDetailModal = ({ creator, onClose, onUpdateStatus, onDelete, isUpda
                             <div className="flex-1 min-w-0 pt-0.5">
                                 <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-1">
                                     <StatusPill status={creator.profileStatus} />
-                                    <span className="text-[7px] sm:text-[8px] font-bold text-white/20 uppercase tracking-[0.15em] bg-white/[0.03] px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-md border border-white/[0.04]">
+                                    <span className="text-[7px] sm:text-[8px] font-bold text-gray-900 dark:text-white/20 uppercase tracking-[0.15em] bg-white/[0.03] px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-md border border-white/[0.04]">
                                         {creator.creatorId || creator.uid.slice(0, 8).toUpperCase()}
                                     </span>
                                 </div>
-                                <h2 className="text-xl sm:text-2xl font-black font-heading tracking-tight uppercase text-white leading-tight break-words">
+                                <h2 className="text-xl sm:text-2xl font-black font-heading tracking-tight uppercase text-gray-900 dark:text-white leading-tight break-words">
                                     {creator.name}
                                 </h2>
-                                <div className="flex items-center gap-2 sm:gap-3 mt-1.5 text-[8px] sm:text-[9px] font-bold text-white/30 uppercase tracking-wider flex-wrap">
+                                <div className="flex items-center gap-2 sm:gap-3 mt-1.5 text-[8px] sm:text-[9px] font-bold text-gray-900 dark:text-white/30 uppercase tracking-wider flex-wrap">
                                     <span className="flex items-center gap-1"><MapPin size={9} className="text-neon-pink/60" />{creator.city || 'Global'}</span>
-                                    <span className="text-white/10">•</span>
-                                    <span className="flex items-center gap-1"><Calendar size={9} className="text-white/20" />{new Date(creator.createdAt || Date.now()).getFullYear()} Joined</span>
+                                    <span className="text-gray-900 dark:text-white/10">•</span>
+                                    <span className="flex items-center gap-1"><Calendar size={9} className="text-gray-900 dark:text-white/20" />{new Date(creator.createdAt || Date.now()).getFullYear()} Joined</span>
                                 </div>
                             </div>
                         </div>
@@ -1506,7 +1517,7 @@ const CreatorDetailModal = ({ creator, onClose, onUpdateStatus, onDelete, isUpda
                                         <span>{badge}</span>
                                         <button 
                                             onClick={() => handleRemoveBadge(badge)}
-                                            className="ml-0.5 text-red-400 hover:text-white transition-colors"
+                                            className="ml-0.5 text-red-400 hover:text-gray-900 dark:hover:text-white transition-colors"
                                         >
                                             ×
                                         </button>
@@ -1523,25 +1534,25 @@ const CreatorDetailModal = ({ creator, onClose, onUpdateStatus, onDelete, isUpda
                             <SectionLabel>Contact</SectionLabel>
                             <div className="space-y-2">
                                 <div className="flex items-center gap-3 px-4 py-3 bg-white/[0.02] border border-white/[0.05] rounded-xl">
-                                    <Mail size={14} className="text-white/20 shrink-0" />
+                                    <Mail size={14} className="text-gray-900 dark:text-white/20 shrink-0" />
                                     <div className="min-w-0 flex-1">
-                                        <p className="text-[8px] font-bold text-white/20 uppercase tracking-wider">Email</p>
-                                        <p className="text-sm font-medium text-white truncate">{creator.email || 'N/A'}</p>
+                                        <p className="text-[8px] font-bold text-gray-900 dark:text-white/20 uppercase tracking-wider">Email</p>
+                                        <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{creator.email || 'N/A'}</p>
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-3 px-4 py-3 bg-white/[0.02] border border-white/[0.05] rounded-xl">
-                                    <Phone size={14} className="text-white/20 shrink-0" />
+                                    <Phone size={14} className="text-gray-900 dark:text-white/20 shrink-0" />
                                     <div className="min-w-0 flex-1">
-                                        <p className="text-[8px] font-bold text-white/20 uppercase tracking-wider">Phone</p>
-                                        <p className="text-sm font-medium text-white truncate">{creator.phone || 'N/A'}</p>
+                                        <p className="text-[8px] font-bold text-gray-900 dark:text-white/20 uppercase tracking-wider">Phone</p>
+                                        <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{creator.phone || 'N/A'}</p>
                                     </div>
                                 </div>
                                 {creator.collegeName && (
                                     <div className="flex items-center gap-3 px-4 py-3 bg-white/[0.02] border border-white/[0.05] rounded-xl">
-                                        <Layers size={14} className="text-white/20 shrink-0" />
+                                        <Layers size={14} className="text-gray-900 dark:text-white/20 shrink-0" />
                                         <div className="min-w-0 flex-1">
-                                            <p className="text-[8px] font-bold text-white/20 uppercase tracking-wider">College</p>
-                                            <p className="text-sm font-medium text-white truncate">{creator.collegeName}</p>
+                                            <p className="text-[8px] font-bold text-gray-900 dark:text-white/20 uppercase tracking-wider">College</p>
+                                            <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{creator.collegeName}</p>
                                         </div>
                                     </div>
                                 )}
@@ -1565,13 +1576,13 @@ const CreatorDetailModal = ({ creator, onClose, onUpdateStatus, onDelete, isUpda
                                                 <social.icon size={15} />
                                             </div>
                                             <div className="flex-1 min-w-0">
-                                                <p className="text-[8px] font-bold text-white/30 uppercase tracking-wider">{social.platform}</p>
-                                                <p className="text-xs font-bold text-white truncate">{social.handle}</p>
+                                                <p className="text-[8px] font-bold text-gray-900 dark:text-white/30 uppercase tracking-wider">{social.platform}</p>
+                                                <p className="text-xs font-bold text-gray-900 dark:text-white truncate">{social.handle}</p>
                                                 {social.followers && (
-                                                    <p className="text-[9px] font-medium text-white/30">{Number(social.followers || 0).toLocaleString()} followers</p>
+                                                    <p className="text-[9px] font-medium text-gray-900 dark:text-white/30">{Number(social.followers || 0).toLocaleString()} followers</p>
                                                 )}
                                             </div>
-                                            <ExternalLink size={12} className="text-white/15 shrink-0" />
+                                            <ExternalLink size={12} className="text-gray-900 dark:text-white/15 shrink-0" />
                                         </a>
                                     ))}
                                 </div>
@@ -1582,7 +1593,7 @@ const CreatorDetailModal = ({ creator, onClose, onUpdateStatus, onDelete, isUpda
                         <div>
                             <SectionLabel>Strategic Dossier</SectionLabel>
                             <div className="px-4 py-4 bg-white/[0.02] border border-white/[0.05] rounded-xl">
-                                <p className="text-sm text-white/60 leading-relaxed italic">
+                                <p className="text-sm text-gray-900 dark:text-white/60 leading-relaxed italic">
                                     "{creator.bio || "No professional overview provided."}"
                                 </p>
                             </div>
@@ -1593,12 +1604,12 @@ const CreatorDetailModal = ({ creator, onClose, onUpdateStatus, onDelete, isUpda
                             <SectionLabel>Niche & Specialization</SectionLabel>
                             <div className="flex flex-wrap gap-2">
                                 {(creator.niches || creator.specializations || []).map((n, i) => (
-                                    <span key={i} className="px-3 py-1.5 bg-white/[0.03] border border-white/[0.06] rounded-lg text-[9px] font-bold uppercase tracking-wider text-white/50">
+                                    <span key={i} className="px-3 py-1.5 bg-white/[0.03] border border-white/[0.06] rounded-lg text-[9px] font-bold uppercase tracking-wider text-gray-900 dark:text-white/50">
                                         {n}
                                     </span>
                                 ))}
                                 {(creator.niches || creator.specializations || []).length === 0 && (
-                                    <span className="text-[9px] font-medium text-white/20 italic">No specializations listed</span>
+                                    <span className="text-[9px] font-medium text-gray-900 dark:text-white/20 italic">No specializations listed</span>
                                 )}
                             </div>
                         </div>
@@ -1608,14 +1619,14 @@ const CreatorDetailModal = ({ creator, onClose, onUpdateStatus, onDelete, isUpda
                             <SectionLabel>Collaboration Preferences</SectionLabel>
                             <div className="grid grid-cols-2 gap-2">
                                 <div className="px-4 py-3 bg-white/[0.02] border border-white/[0.05] rounded-xl">
-                                    <p className="text-[8px] font-bold text-white/20 uppercase tracking-wider mb-1">Barter</p>
-                                    <p className="text-xs font-bold text-white">
+                                    <p className="text-[8px] font-bold text-gray-900 dark:text-white/20 uppercase tracking-wider mb-1">Barter</p>
+                                    <p className="text-xs font-bold text-gray-900 dark:text-white">
                                         {creator.doBarter === 'yes' ? 'Yes' : creator.doBarter === 'no' ? 'Paid Only' : creator.doBarter === 'selective' ? 'Selective' : (creator.doBarter || 'N/A')}
                                     </p>
                                 </div>
                                 <div className="px-4 py-3 bg-white/[0.02] border border-white/[0.05] rounded-xl">
-                                    <p className="text-[8px] font-bold text-white/20 uppercase tracking-wider mb-1">Rates</p>
-                                    <p className="text-xs font-bold text-white">{creator.commercials || 'N/A'}</p>
+                                    <p className="text-[8px] font-bold text-gray-900 dark:text-white/20 uppercase tracking-wider mb-1">Rates</p>
+                                    <p className="text-xs font-bold text-gray-900 dark:text-white">{creator.commercials || 'N/A'}</p>
                                 </div>
                             </div>
                         </div>
@@ -1626,17 +1637,17 @@ const CreatorDetailModal = ({ creator, onClose, onUpdateStatus, onDelete, isUpda
                         {/* ─── Promotions & Badges ─── */}
                         <div className="p-4 bg-white/[0.02] border border-white/[0.05] rounded-2xl space-y-4">
                             <div className="flex items-center justify-between">
-                                <p className="text-[10px] font-bold text-white/30 uppercase tracking-[0.2em]">Promotions & Badges</p>
+                                <p className="text-[10px] font-bold text-gray-900 dark:text-white/30 uppercase tracking-[0.2em]">Promotions & Badges</p>
                                 <div className="flex items-center gap-2.5">
-                                    <span className="text-[9px] font-bold text-white/25 uppercase tracking-wider">Featured</span>
+                                    <span className="text-[9px] font-bold text-gray-900 dark:text-white/25 uppercase tracking-wider">Featured</span>
                                     <button 
                                         onClick={handleToggleFeatured}
                                         className={cn(
                                             "w-10 h-5 rounded-full p-0.5 transition-all duration-300 flex items-center",
-                                            isFeatured ? "bg-neon-pink justify-end" : "bg-white/10 justify-start"
+                                            isFeatured ? "bg-neon-pink justify-end" : "bg-black/10 dark:bg-white/10 justify-start"
                                         )}
                                     >
-                                        <motion.div layout className="w-4 h-4 rounded-full bg-black shadow-md" />
+                                        <motion.div layout className="w-4 h-4 rounded-full bg-white dark:bg-black shadow-md" />
                                     </button>
                                 </div>
                             </div>
@@ -1646,11 +1657,11 @@ const CreatorDetailModal = ({ creator, onClose, onUpdateStatus, onDelete, isUpda
                                     value={customBadgeText}
                                     onChange={(e) => setCustomBadgeText(e.target.value)}
                                     placeholder="Custom badge name..."
-                                    className="flex-1 h-10 bg-black/40 border border-white/[0.06] rounded-lg px-3 text-xs font-medium text-white focus:border-white/20 outline-none transition-all placeholder:text-white/15"
+                                    className="flex-1 h-10 bg-white dark:bg-black/40 border border-white/[0.06] rounded-lg px-3 text-xs font-medium text-gray-900 dark:text-white focus:border-black/20 dark:focus:border-white/20 outline-none transition-all placeholder:text-gray-900 dark:placeholder:text-white/15"
                                 />
                                 <button 
                                     type="submit"
-                                    className="px-4 h-10 bg-white/[0.06] hover:bg-white/10 text-white/60 hover:text-white rounded-lg text-[9px] font-bold uppercase tracking-wider transition-all"
+                                    className="px-4 h-10 bg-white/[0.06] hover:bg-black/10 dark:hover:bg-white/10 text-gray-900 dark:text-white/60 hover:text-gray-900 dark:hover:text-white rounded-lg text-[9px] font-bold uppercase tracking-wider transition-all"
                                 >
                                     Add
                                 </button>
@@ -1660,13 +1671,13 @@ const CreatorDetailModal = ({ creator, onClose, onUpdateStatus, onDelete, isUpda
                         {/* ─── Direct Communication ─── */}
                         <div className="p-4 bg-white/[0.02] border border-white/[0.05] rounded-2xl space-y-4">
                             <div className="flex items-center justify-between">
-                                <p className="text-[10px] font-bold text-white/30 uppercase tracking-[0.2em]">Direct Communication</p>
-                                <div className="flex bg-black/40 p-0.5 rounded-lg border border-white/[0.06] h-8 items-center">
+                                <p className="text-[10px] font-bold text-gray-900 dark:text-white/30 uppercase tracking-[0.2em]">Direct Communication</p>
+                                <div className="flex bg-white dark:bg-black/40 p-0.5 rounded-lg border border-white/[0.06] h-8 items-center">
                                     <button 
                                         onClick={() => setCommunicationTab('email')} 
                                         className={cn(
                                             "px-3 h-7 rounded-md text-[8px] font-bold uppercase tracking-wider transition-all",
-                                            communicationTab === 'email' ? "bg-white/10 text-white" : "text-white/30 hover:text-white/50"
+                                            communicationTab === 'email' ? "bg-black/10 dark:bg-white/10 text-gray-900 dark:text-white" : "text-gray-900 dark:text-white/30 hover:text-gray-900 dark:hover:text-white/50"
                                         )}
                                     >
                                         Email
@@ -1675,7 +1686,7 @@ const CreatorDetailModal = ({ creator, onClose, onUpdateStatus, onDelete, isUpda
                                         onClick={() => setCommunicationTab('message')} 
                                         className={cn(
                                             "px-3 h-7 rounded-md text-[8px] font-bold uppercase tracking-wider transition-all",
-                                            communicationTab === 'message' ? "bg-white/10 text-white" : "text-white/30 hover:text-white/50"
+                                            communicationTab === 'message' ? "bg-black/10 dark:bg-white/10 text-gray-900 dark:text-white" : "text-gray-900 dark:text-white/30 hover:text-gray-900 dark:hover:text-white/50"
                                         )}
                                     >
                                         Notification
@@ -1686,28 +1697,28 @@ const CreatorDetailModal = ({ creator, onClose, onUpdateStatus, onDelete, isUpda
                             {communicationTab === 'email' ? (
                                 <form onSubmit={handleSendEmail} className="space-y-3">
                                     <div>
-                                        <label className="text-[8px] font-bold text-white/20 uppercase tracking-wider block mb-1 pl-0.5">Subject</label>
+                                        <label className="text-[8px] font-bold text-gray-900 dark:text-white/20 uppercase tracking-wider block mb-1 pl-0.5">Subject</label>
                                         <input 
                                             type="text" 
                                             value={emailSubject}
                                             onChange={(e) => setEmailSubject(e.target.value)}
                                             placeholder="Email subject..." 
-                                            className="w-full h-10 bg-black/40 border border-white/[0.06] rounded-lg px-3 text-xs font-medium text-white focus:border-white/20 outline-none transition-all placeholder:text-white/15"
+                                            className="w-full h-10 bg-white dark:bg-black/40 border border-white/[0.06] rounded-lg px-3 text-xs font-medium text-gray-900 dark:text-white focus:border-black/20 dark:focus:border-white/20 outline-none transition-all placeholder:text-gray-900 dark:placeholder:text-white/15"
                                         />
                                     </div>
                                     <div>
-                                        <label className="text-[8px] font-bold text-white/20 uppercase tracking-wider block mb-1 pl-0.5">Message Body</label>
+                                        <label className="text-[8px] font-bold text-gray-900 dark:text-white/20 uppercase tracking-wider block mb-1 pl-0.5">Message Body</label>
                                         <textarea 
                                             value={emailBody}
                                             onChange={(e) => setEmailBody(e.target.value)}
                                             placeholder="Write email body..." 
-                                            className="w-full h-28 bg-black/40 border border-white/[0.06] rounded-lg p-3 text-xs font-medium text-white focus:border-white/20 outline-none transition-all resize-none placeholder:text-white/15"
+                                            className="w-full h-28 bg-white dark:bg-black/40 border border-white/[0.06] rounded-lg p-3 text-xs font-medium text-gray-900 dark:text-white focus:border-black/20 dark:focus:border-white/20 outline-none transition-all resize-none placeholder:text-gray-900 dark:placeholder:text-white/15"
                                         />
                                     </div>
                                     <button 
                                         type="submit"
                                         disabled={sendingEmail}
-                                        className="w-full h-10 bg-white/[0.06] hover:bg-white/10 text-white rounded-lg text-[9px] font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-all disabled:opacity-40"
+                                        className="w-full h-10 bg-white/[0.06] hover:bg-black/10 dark:hover:bg-white/10 text-gray-900 dark:text-white rounded-lg text-[9px] font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-all disabled:opacity-40"
                                     >
                                         {sendingEmail ? <LoadingSpinner size="xs" color="white" /> : (
                                             <><Send size={11} /> Send Email</>
@@ -1717,18 +1728,18 @@ const CreatorDetailModal = ({ creator, onClose, onUpdateStatus, onDelete, isUpda
                             ) : (
                                 <form onSubmit={handleSendMessage} className="space-y-3">
                                     <div>
-                                        <label className="text-[8px] font-bold text-white/20 uppercase tracking-wider block mb-1 pl-0.5">Notification Text</label>
+                                        <label className="text-[8px] font-bold text-gray-900 dark:text-white/20 uppercase tracking-wider block mb-1 pl-0.5">Notification Text</label>
                                         <textarea 
                                             value={messageText}
                                             onChange={(e) => setMessageText(e.target.value)}
                                             placeholder="Write notification message..." 
-                                            className="w-full h-28 bg-black/40 border border-white/[0.06] rounded-lg p-3 text-xs font-medium text-white focus:border-white/20 outline-none transition-all resize-none placeholder:text-white/15"
+                                            className="w-full h-28 bg-white dark:bg-black/40 border border-white/[0.06] rounded-lg p-3 text-xs font-medium text-gray-900 dark:text-white focus:border-black/20 dark:focus:border-white/20 outline-none transition-all resize-none placeholder:text-gray-900 dark:placeholder:text-white/15"
                                         />
                                     </div>
                                     <button 
                                         type="submit"
                                         disabled={sendingMessage}
-                                        className="w-full h-10 bg-white/[0.06] hover:bg-white/10 text-white rounded-lg text-[9px] font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-all disabled:opacity-40"
+                                        className="w-full h-10 bg-white/[0.06] hover:bg-black/10 dark:hover:bg-white/10 text-gray-900 dark:text-white rounded-lg text-[9px] font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-all disabled:opacity-40"
                                     >
                                         {sendingMessage ? <LoadingSpinner size="xs" color="white" /> : (
                                             <><MessageSquare size={11} /> Send Notification</>
@@ -1742,7 +1753,7 @@ const CreatorDetailModal = ({ creator, onClose, onUpdateStatus, onDelete, isUpda
                         {creator.portfolioInfo && (
                             <button 
                                 onClick={() => window.open(creator.portfolioInfo.includes('http') ? creator.portfolioInfo : `https://${creator.portfolioInfo}`, '_blank')}
-                                className="w-full h-11 bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.06] text-white/60 hover:text-white rounded-xl font-bold uppercase tracking-wider text-[9px] flex items-center justify-center gap-2 transition-all"
+                                className="w-full h-11 bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.06] text-gray-900 dark:text-white/60 hover:text-gray-900 dark:hover:text-white rounded-xl font-bold uppercase tracking-wider text-[9px] flex items-center justify-center gap-2 transition-all"
                             >
                                 <FileText size={13} /> View Media Kit / Portfolio
                             </button>
@@ -1921,44 +1932,44 @@ const AddCreatorModal = ({ onClose }) => {
     const showCollegeField = form.specializations === 'Student/ Campus Creator' || form.specializations === 'Student Creator/ Campus Creator' || form.specializations === 'College Pages';
 
     return createPortal(
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-6 md:p-10 bg-black/50 backdrop-blur-md overflow-y-auto">
-            <div className="fixed inset-0 bg-black/80" onClick={onClose} />
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-6 md:p-10 bg-white dark:bg-black/50 backdrop-blur-md overflow-y-auto">
+            <div className="fixed inset-0 bg-white dark:bg-black/80" onClick={onClose} />
             <motion.div 
                 initial={{ scale: 0.95, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                className="relative bg-[#050505] border border-white/10 rounded-2xl sm:rounded-[2.5rem] w-full max-w-2xl max-h-[92dvh] overflow-y-auto p-5 sm:p-8 md:p-10 shadow-2xl z-10 custom-scrollbar"
+                className="relative bg-[#050505] border border-black/10 dark:border-white/10 rounded-2xl sm:rounded-[2.5rem] w-full max-w-2xl max-h-[92dvh] overflow-y-auto p-5 sm:p-8 md:p-10 shadow-2xl z-10 custom-scrollbar"
             >
-                <button onClick={onClose} className="absolute top-6 right-6 w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white hover:text-black transition-all">
+                <button onClick={onClose} className="absolute top-6 right-6 w-10 h-10 rounded-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 flex items-center justify-center hover:bg-white hover:text-black transition-all">
                     <X size={16} />
                 </button>
                 
-                <h3 className="text-2xl font-black uppercase italic tracking-tighter text-white mb-6">MANUALLY ADD INFLUENCER</h3>
+                <h3 className="text-2xl font-black uppercase italic tracking-tighter text-gray-900 dark:text-white mb-6">MANUALLY ADD INFLUENCER</h3>
                 
                 <form onSubmit={handleSubmit} className="space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-1.5">
                             <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Full Name</label>
-                            <input required name="name" value={form.name} onChange={handleChange} placeholder="Full Name" className="w-full h-12 bg-black border border-white/10 rounded-xl px-4 text-sm font-bold text-white focus:border-neon-blue outline-none transition-all" />
+                            <input required name="name" value={form.name} onChange={handleChange} placeholder="Full Name" className="w-full h-12 bg-white dark:bg-black border border-black/10 dark:border-white/10 rounded-xl px-4 text-sm font-bold text-gray-900 dark:text-white focus:border-neon-blue outline-none transition-all" />
                         </div>
                         <div className="space-y-1.5">
                             <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Contact Number</label>
-                            <input name="phone" type="tel" value={form.phone} onChange={handleChange} placeholder="Contact Number (Optional)" className="w-full h-12 bg-black border border-white/10 rounded-xl px-4 text-sm font-bold text-white focus:border-neon-blue outline-none transition-all" />
+                            <input name="phone" type="tel" value={form.phone} onChange={handleChange} placeholder="Contact Number (Optional)" className="w-full h-12 bg-white dark:bg-black border border-black/10 dark:border-white/10 rounded-xl px-4 text-sm font-bold text-gray-900 dark:text-white focus:border-neon-blue outline-none transition-all" />
                         </div>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-1.5">
                             <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Email Address</label>
-                            <input name="email" type="email" value={form.email} onChange={handleChange} placeholder="email@example.com (Optional)" className="w-full h-12 bg-black border border-white/10 rounded-xl px-4 text-sm font-bold text-white focus:border-neon-blue outline-none transition-all" />
+                            <input name="email" type="email" value={form.email} onChange={handleChange} placeholder="email@example.com (Optional)" className="w-full h-12 bg-white dark:bg-black border border-black/10 dark:border-white/10 rounded-xl px-4 text-sm font-bold text-gray-900 dark:text-white focus:border-neon-blue outline-none transition-all" />
                         </div>
                         <div className="space-y-1.5">
                             <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Operational Hub (City)</label>
                             <select
                                 name="city" value={form.city} onChange={handleChange}
-                                className="w-full h-12 bg-black border border-white/10 rounded-xl px-4 text-sm font-bold text-white focus:border-neon-blue outline-none transition-all appearance-none cursor-pointer"
+                                className="w-full h-12 bg-white dark:bg-black border border-black/10 dark:border-white/10 rounded-xl px-4 text-sm font-bold text-gray-900 dark:text-white focus:border-neon-blue outline-none transition-all appearance-none cursor-pointer"
                             >
                                 <option value="">Select City (Optional)</option>
-                                {PREDEFINED_CITIES.map(c => <option key={c} value={c} className="bg-zinc-950">{c.toUpperCase()}</option>)}
+                                {PREDEFINED_CITIES.map(c => <option key={c} value={c} className="bg-gray-100 dark:bg-zinc-950">{c.toUpperCase()}</option>)}
                             </select>
                         </div>
                     </div>
@@ -1966,7 +1977,7 @@ const AddCreatorModal = ({ onClose }) => {
                     {form.city === 'Others' && (
                         <div className="space-y-1.5">
                             <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Specify City Name</label>
-                            <input name="customCity" value={form.customCity} onChange={handleChange} placeholder="City Name" className="w-full h-12 bg-black border border-white/10 rounded-xl px-4 text-sm font-bold text-white focus:border-neon-blue outline-none transition-all" />
+                            <input name="customCity" value={form.customCity} onChange={handleChange} placeholder="City Name" className="w-full h-12 bg-white dark:bg-black border border-black/10 dark:border-white/10 rounded-xl px-4 text-sm font-bold text-gray-900 dark:text-white focus:border-neon-blue outline-none transition-all" />
                         </div>
                     )}
 
@@ -1975,10 +1986,10 @@ const AddCreatorModal = ({ onClose }) => {
                             <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Niche / Specialization</label>
                             <select
                                 name="specializations" value={form.specializations} onChange={handleChange}
-                                className="w-full h-12 bg-black border border-white/10 rounded-xl px-4 text-sm font-bold text-white focus:border-neon-blue outline-none transition-all appearance-none cursor-pointer"
+                                className="w-full h-12 bg-white dark:bg-black border border-black/10 dark:border-white/10 rounded-xl px-4 text-sm font-bold text-gray-900 dark:text-white focus:border-neon-blue outline-none transition-all appearance-none cursor-pointer"
                             >
                                 <option value="">Select Niche (Optional)</option>
-                                {NICHES.map(n => <option key={n} value={n} className="bg-zinc-950">{n.toUpperCase()}</option>)}
+                                {NICHES.map(n => <option key={n} value={n} className="bg-gray-100 dark:bg-zinc-950">{n.toUpperCase()}</option>)}
                             </select>
                         </div>
                         <div className="space-y-1.5">
@@ -1990,7 +2001,7 @@ const AddCreatorModal = ({ onClose }) => {
                                 value={form.collegeName} 
                                 onChange={handleChange} 
                                 placeholder={showCollegeField ? 'College/University Name' : 'College/University Name (Optional)'} 
-                                className="w-full h-12 bg-black border border-white/10 rounded-xl px-4 text-sm font-bold text-white focus:border-neon-blue outline-none transition-all" 
+                                className="w-full h-12 bg-white dark:bg-black border border-black/10 dark:border-white/10 rounded-xl px-4 text-sm font-bold text-gray-900 dark:text-white focus:border-neon-blue outline-none transition-all" 
                             />
                             <p className="text-[8px] font-bold text-gray-500 uppercase tracking-wider pl-1 mt-0.5 leading-normal">
                                 Matching college helps connect creators with regional campaigns and events.
@@ -2001,40 +2012,40 @@ const AddCreatorModal = ({ onClose }) => {
                     {form.specializations === 'Others' && (
                         <div className="space-y-1.5">
                             <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Specify Content Niche</label>
-                            <input name="customNiche" value={form.customNiche} onChange={handleChange} placeholder="Niche Description" className="w-full h-12 bg-black border border-white/10 rounded-xl px-4 text-sm font-bold text-white focus:border-neon-blue outline-none transition-all" />
+                            <input name="customNiche" value={form.customNiche} onChange={handleChange} placeholder="Niche Description" className="w-full h-12 bg-white dark:bg-black border border-black/10 dark:border-white/10 rounded-xl px-4 text-sm font-bold text-gray-900 dark:text-white focus:border-neon-blue outline-none transition-all" />
                         </div>
                     )}
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-1.5">
                             <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Instagram Handle</label>
-                            <input name="instagram" value={form.instagram} onChange={handleChange} placeholder="@handle" className="w-full h-12 bg-black border border-white/10 rounded-xl px-4 text-sm font-bold text-white focus:border-neon-blue outline-none transition-all" />
+                            <input name="instagram" value={form.instagram} onChange={handleChange} placeholder="@handle" className="w-full h-12 bg-white dark:bg-black border border-black/10 dark:border-white/10 rounded-xl px-4 text-sm font-bold text-gray-900 dark:text-white focus:border-neon-blue outline-none transition-all" />
                         </div>
                         <div className="space-y-1.5">
                             <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Instagram Followers</label>
-                            <input name="instagramFollowers" type="number" value={form.instagramFollowers} onChange={handleChange} placeholder="e.g. 5000 (Optional)" className="w-full h-12 bg-black border border-white/10 rounded-xl px-4 text-sm font-bold text-white focus:border-neon-blue outline-none transition-all" />
+                            <input name="instagramFollowers" type="number" value={form.instagramFollowers} onChange={handleChange} placeholder="e.g. 5000 (Optional)" className="w-full h-12 bg-white dark:bg-black border border-black/10 dark:border-white/10 rounded-xl px-4 text-sm font-bold text-gray-900 dark:text-white focus:border-neon-blue outline-none transition-all" />
                         </div>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-1.5">
                             <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">LinkedIn Profile URL</label>
-                            <input name="linkedin" value={form.linkedin} onChange={handleChange} placeholder="https://linkedin.com/in/username" className="w-full h-12 bg-black border border-white/10 rounded-xl px-4 text-sm font-bold text-white focus:border-neon-blue outline-none transition-all" />
+                            <input name="linkedin" value={form.linkedin} onChange={handleChange} placeholder="https://linkedin.com/in/username" className="w-full h-12 bg-white dark:bg-black border border-black/10 dark:border-white/10 rounded-xl px-4 text-sm font-bold text-gray-900 dark:text-white focus:border-neon-blue outline-none transition-all" />
                         </div>
                         <div className="space-y-1.5">
                             <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">LinkedIn Connections</label>
-                            <input name="linkedinFollowers" type="number" value={form.linkedinFollowers} onChange={handleChange} placeholder="e.g. 500 (Optional)" className="w-full h-12 bg-black border border-white/10 rounded-xl px-4 text-sm font-bold text-white focus:border-neon-blue outline-none transition-all" />
+                            <input name="linkedinFollowers" type="number" value={form.linkedinFollowers} onChange={handleChange} placeholder="e.g. 500 (Optional)" className="w-full h-12 bg-white dark:bg-black border border-black/10 dark:border-white/10 rounded-xl px-4 text-sm font-bold text-gray-900 dark:text-white focus:border-neon-blue outline-none transition-all" />
                         </div>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-1.5">
                             <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">YouTube URL</label>
-                            <input name="youtube" value={form.youtube} onChange={handleChange} placeholder="https://youtube.com/..." className="w-full h-12 bg-black border border-white/10 rounded-xl px-4 text-sm font-bold text-white focus:border-neon-blue outline-none transition-all" />
+                            <input name="youtube" value={form.youtube} onChange={handleChange} placeholder="https://youtube.com/..." className="w-full h-12 bg-white dark:bg-black border border-black/10 dark:border-white/10 rounded-xl px-4 text-sm font-bold text-gray-900 dark:text-white focus:border-neon-blue outline-none transition-all" />
                         </div>
                         <div className="space-y-1.5">
                             <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Twitter / X URL</label>
-                            <input name="twitter" value={form.twitter} onChange={handleChange} placeholder="https://twitter.com/..." className="w-full h-12 bg-black border border-white/10 rounded-xl px-4 text-sm font-bold text-white focus:border-neon-blue outline-none transition-all" />
+                            <input name="twitter" value={form.twitter} onChange={handleChange} placeholder="https://twitter.com/..." className="w-full h-12 bg-white dark:bg-black border border-black/10 dark:border-white/10 rounded-xl px-4 text-sm font-bold text-gray-900 dark:text-white focus:border-neon-blue outline-none transition-all" />
                         </div>
                     </div>
 
@@ -2043,40 +2054,40 @@ const AddCreatorModal = ({ onClose }) => {
                             <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Barter Collaborations</label>
                             <select
                                 name="doBarter" value={form.doBarter} onChange={handleChange}
-                                className="w-full h-12 bg-black border border-white/10 rounded-xl px-4 text-sm font-bold text-white focus:border-neon-blue outline-none transition-all appearance-none cursor-pointer"
+                                className="w-full h-12 bg-white dark:bg-black border border-black/10 dark:border-white/10 rounded-xl px-4 text-sm font-bold text-gray-900 dark:text-white focus:border-neon-blue outline-none transition-all appearance-none cursor-pointer"
                             >
                                 <option value="">Select Preference</option>
-                                <option value="yes" className="bg-zinc-950">YES</option>
-                                <option value="no" className="bg-zinc-950">NO (ONLY PAID)</option>
-                                <option value="selective" className="bg-zinc-950">SELECTIVE</option>
+                                <option value="yes" className="bg-gray-100 dark:bg-zinc-950">YES</option>
+                                <option value="no" className="bg-gray-100 dark:bg-zinc-950">NO (ONLY PAID)</option>
+                                <option value="selective" className="bg-gray-100 dark:bg-zinc-950">SELECTIVE</option>
                             </select>
                         </div>
                         <div className="space-y-1.5">
                             <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Commercial Rates</label>
-                            <input name="commercials" value={form.commercials} onChange={handleChange} placeholder="e.g. 5k/Reel, 2k/Story" className="w-full h-12 bg-black border border-white/10 rounded-xl px-4 text-sm font-bold text-white focus:border-neon-blue outline-none transition-all" />
+                            <input name="commercials" value={form.commercials} onChange={handleChange} placeholder="e.g. 5k/Reel, 2k/Story" className="w-full h-12 bg-white dark:bg-black border border-black/10 dark:border-white/10 rounded-xl px-4 text-sm font-bold text-gray-900 dark:text-white focus:border-neon-blue outline-none transition-all" />
                         </div>
                     </div>
 
                     <div className="space-y-1.5">
                         <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Profile Picture URL</label>
-                        <input name="profilePicture" value={form.profilePicture} onChange={handleChange} placeholder="https://..." className="w-full h-12 bg-black border border-white/10 rounded-xl px-4 text-sm font-bold text-white focus:border-neon-blue outline-none transition-all" />
+                        <input name="profilePicture" value={form.profilePicture} onChange={handleChange} placeholder="https://..." className="w-full h-12 bg-white dark:bg-black border border-black/10 dark:border-white/10 rounded-xl px-4 text-sm font-bold text-gray-900 dark:text-white focus:border-neon-blue outline-none transition-all" />
                     </div>
 
                     <div className="space-y-1.5">
                         <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Strategic Bio</label>
-                        <textarea name="bio" value={form.bio} onChange={handleChange} placeholder="Bio description..." className="w-full h-24 bg-black border border-white/10 rounded-xl p-4 text-sm font-bold text-white focus:border-neon-blue outline-none transition-all resize-none animate-none" />
+                        <textarea name="bio" value={form.bio} onChange={handleChange} placeholder="Bio description..." className="w-full h-24 bg-white dark:bg-black border border-black/10 dark:border-white/10 rounded-xl p-4 text-sm font-bold text-gray-900 dark:text-white focus:border-neon-blue outline-none transition-all resize-none animate-none" />
                     </div>
 
-                    <div className="flex items-center gap-3 py-3 bg-white/5 border border-white/10 rounded-2xl px-4">
+                    <div className="flex items-center gap-3 py-3 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-2xl px-4">
                         <input
                             type="checkbox"
                             id="sendWelcomeMail"
                             checked={sendWelcomeMail}
                             onChange={(e) => setSendWelcomeMail(e.target.checked)}
                             disabled={!form.email?.trim()}
-                            className="w-5 h-5 rounded border-white/10 bg-black text-neon-blue focus:ring-0 focus:ring-offset-0 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                            className="w-5 h-5 rounded border-black/10 dark:border-white/10 bg-white dark:bg-black text-neon-blue focus:ring-0 focus:ring-offset-0 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
                         />
-                        <label htmlFor="sendWelcomeMail" className={`text-xs font-black uppercase tracking-wider cursor-pointer ${!form.email?.trim() ? 'text-gray-600' : 'text-gray-300 hover:text-white'}`}>
+                        <label htmlFor="sendWelcomeMail" className={`text-xs font-black uppercase tracking-wider cursor-pointer ${!form.email?.trim() ? 'text-gray-600' : 'text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'}`}>
                             Send Welcome Email {!form.email?.trim() && "(Requires Email)"}
                         </label>
                     </div>
@@ -2163,61 +2174,61 @@ const ReferralLeaderboard = ({ creators, onSelectCreator }) => {
         <div className="space-y-8 relative z-10 max-w-[1700px] mx-auto pb-20">
             {/* Stats Overview */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-[#0A0A0A] border border-white/5 p-6 rounded-[2rem] shadow-xl flex items-center gap-4">
+                <div className="bg-[#0A0A0A] border border-black/10 dark:border-white/5 p-6 rounded-[2rem] shadow-xl flex items-center gap-4">
                     <div className="w-12 h-12 rounded-xl bg-neon-pink/10 border border-neon-pink/20 flex items-center justify-center text-neon-pink shrink-0">
                         <Users size={20} />
                     </div>
                     <div>
                         <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest leading-none mb-1">TOTAL REFERRED</p>
-                        <h3 className="text-3xl font-black text-white italic">{stats.totalReferred}</h3>
+                        <h3 className="text-3xl font-black text-gray-900 dark:text-white italic">{stats.totalReferred}</h3>
                     </div>
                 </div>
                 
-                <div className="bg-[#0A0A0A] border border-white/5 p-6 rounded-[2rem] shadow-xl flex items-center gap-4">
+                <div className="bg-[#0A0A0A] border border-black/10 dark:border-white/5 p-6 rounded-[2rem] shadow-xl flex items-center gap-4">
                     <div className="w-12 h-12 rounded-xl bg-neon-blue/10 border border-neon-blue/20 flex items-center justify-center text-neon-blue shrink-0">
                         <Trophy size={20} />
                     </div>
                     <div>
                         <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest leading-none mb-1">TOP REFERRER</p>
-                        <h3 className="text-xl font-black text-white truncate max-w-[200px] italic">
+                        <h3 className="text-xl font-black text-gray-900 dark:text-white truncate max-w-[200px] italic">
                             {stats.topReferrerName} ({stats.topReferrerCount})
                         </h3>
                     </div>
                 </div>
 
-                <div className="bg-[#0A0A0A] border border-white/5 p-6 rounded-[2rem] shadow-xl flex items-center gap-4">
+                <div className="bg-[#0A0A0A] border border-black/10 dark:border-white/5 p-6 rounded-[2rem] shadow-xl flex items-center gap-4">
                     <div className="w-12 h-12 rounded-xl bg-neon-green/10 border border-neon-green/20 flex items-center justify-center text-neon-green shrink-0">
                         <TrendingUp size={20} />
                     </div>
                     <div>
                         <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest leading-none mb-1">NETWORK REACH</p>
-                        <h3 className="text-3xl font-black text-white italic">{stats.networkFollowers.toLocaleString()} FLW</h3>
+                        <h3 className="text-3xl font-black text-gray-900 dark:text-white italic">{stats.networkFollowers.toLocaleString()} FLW</h3>
                     </div>
                 </div>
             </div>
 
             {/* Filter Search */}
             <div className="relative group">
-                <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-neon-pink transition-colors" size={16} />
+                <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-600 dark:text-gray-400 group-focus-within:text-pink-600 dark:group-focus-within:text-neon-pink transition-colors" size={16} />
                 <input
                     type="text"
                     placeholder="SEARCH REFERRERS..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full h-14 pl-14 pr-6 bg-black/60 border border-white/10 group-hover:border-white/20 focus:border-neon-pink/60 rounded-full text-[10px] font-black uppercase tracking-[0.2em] outline-none transition-all placeholder:text-gray-700 text-white"
+                    className="w-full h-14 pl-14 pr-6 bg-white dark:bg-black/60 border border-black/10 dark:border-white/10 group-hover:border-black/20 dark:group-hover:border-white/20 focus:border-neon-pink/60 rounded-full text-[10px] font-black uppercase tracking-[0.2em] outline-none transition-all placeholder:text-gray-700 text-gray-900 dark:text-white"
                 />
             </div>
 
             {/* Leaderboard Table */}
             {/* Leaderboard Section */}
-            <div className="bg-[#050505]/40 md:bg-transparent md:border-none rounded-[2.5rem] border border-white/5 overflow-hidden md:overflow-visible shadow-2xl md:shadow-none">
+            <div className="bg-[#050505]/40 md:bg-transparent md:border-none rounded-[2.5rem] border border-black/10 dark:border-white/5 overflow-hidden md:overflow-visible shadow-2xl md:shadow-none">
                 
                 {/* Desktop Table View */}
-                <div className="hidden md:block bg-[#050505]/40 rounded-[2.5rem] border border-white/5 overflow-hidden shadow-2xl">
+                <div className="hidden md:block bg-[#050505]/40 rounded-[2.5rem] border border-black/10 dark:border-white/5 overflow-hidden shadow-2xl">
                     <div className="overflow-x-auto">
                         <table className="w-full border-collapse text-left">
                             <thead>
-                                <tr className="border-b border-white/5 text-[9px] font-black text-gray-500 uppercase tracking-[0.3em]">
+                                <tr className="border-b border-black/10 dark:border-white/5 text-[9px] font-black text-gray-500 uppercase tracking-[0.3em]">
                                     <th className="py-6 px-8 w-16 text-center">Rank</th>
                                     <th className="py-6 px-6">Creator</th>
                                     <th className="py-6 px-6 text-center">Invites</th>
@@ -2248,15 +2259,15 @@ const ReferralLeaderboard = ({ creators, onSelectCreator }) => {
                                                 <td className="py-5 px-8 text-center font-black text-lg italic">{medal}</td>
                                                 <td className="py-5 px-6">
                                                     <div className="flex items-center gap-3">
-                                                        <div className="w-10 h-10 rounded-xl bg-zinc-900 border border-white/5 overflow-hidden flex items-center justify-center shrink-0">
+                                                        <div className="w-10 h-10 rounded-xl bg-gray-100 dark:bg-zinc-900 border border-black/10 dark:border-white/5 overflow-hidden flex items-center justify-center shrink-0">
                                                             {referrer.profilePicture ? (
                                                                 <img src={referrer.profilePicture} alt="" className="w-full h-full object-cover" />
                                                             ) : (
-                                                                <span className="text-[12px] font-black text-white italic">{referrer.name?.charAt(0)}</span>
+                                                                <span className="text-[12px] font-black text-gray-900 dark:text-white italic">{referrer.name?.charAt(0)}</span>
                                                             )}
                                                         </div>
                                                         <div>
-                                                            <h4 className="text-sm font-black text-white uppercase italic tracking-tight leading-tight">{referrer.name}</h4>
+                                                            <h4 className="text-sm font-black text-gray-900 dark:text-white uppercase italic tracking-tight leading-tight">{referrer.name}</h4>
                                                             <p className="text-[8px] text-gray-500 uppercase tracking-widest mt-0.5">@{referrer.instagram || 'N/A'}</p>
                                                         </div>
                                                     </div>
@@ -2266,21 +2277,21 @@ const ReferralLeaderboard = ({ creators, onSelectCreator }) => {
                                                         {referrer.referralCount}
                                                     </span>
                                                 </td>
-                                                <td className="py-5 px-6 text-right font-black text-sm text-gray-400 tabular-nums">
+                                                <td className="py-5 px-6 text-right font-black text-sm text-gray-600 dark:text-gray-400 tabular-nums">
                                                     {totalReach.toLocaleString()} FLW
                                                 </td>
                                                 <td className="py-5 px-8 text-center">
                                                     <div className="flex items-center justify-center gap-2">
                                                         <button 
                                                             onClick={() => toggleExpand(referrer.uid)}
-                                                            className="h-10 px-4 rounded-xl bg-white/5 border border-white/10 text-[9px] font-black uppercase tracking-wider text-gray-400 hover:text-white hover:bg-white/10 transition-all flex items-center gap-1.5 animate-none"
+                                                            className="h-10 px-4 rounded-xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-[9px] font-black uppercase tracking-wider text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-black/10 dark:hover:bg-white/10 transition-all flex items-center gap-1.5 animate-none"
                                                         >
                                                             <span>Invites ({referrer.referredCreators.length})</span>
                                                             {isExpanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
                                                         </button>
                                                         <button 
                                                             onClick={() => onSelectCreator(referrer)}
-                                                            className="w-10 h-10 rounded-xl bg-white text-black hover:bg-neon-pink hover:text-white transition-all flex items-center justify-center"
+                                                            className="w-10 h-10 rounded-xl bg-white text-black hover:bg-neon-pink hover:text-gray-900 dark:hover:text-white transition-all flex items-center justify-center"
                                                             title="View Profile"
                                                         >
                                                             <ChevronRight size={16} />
@@ -2292,9 +2303,9 @@ const ReferralLeaderboard = ({ creators, onSelectCreator }) => {
                                             {/* Expandable referrals row */}
                                             {isExpanded && (
                                                 <tr>
-                                                    <td colSpan={5} className="bg-black/30 p-8 border-b border-white/5">
+                                                    <td colSpan={5} className="bg-white dark:bg-black/30 p-8 border-b border-black/10 dark:border-white/5">
                                                         <div className="space-y-4">
-                                                            <div className="flex items-center justify-between border-b border-white/5 pb-2">
+                                                            <div className="flex items-center justify-between border-b border-black/10 dark:border-white/5 pb-2">
                                                                 <h5 className="text-[9px] font-black text-neon-pink uppercase tracking-widest">INVITED CREATORS BY {referrer.name.toUpperCase()}</h5>
                                                             </div>
                                                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -2304,18 +2315,18 @@ const ReferralLeaderboard = ({ creators, onSelectCreator }) => {
                                                                         <div 
                                                                             key={rc.uid}
                                                                             onClick={() => onSelectCreator(rc)}
-                                                                            className="p-4 bg-zinc-950/60 border border-white/5 hover:border-white/10 hover:bg-zinc-950 rounded-2xl flex items-center justify-between cursor-pointer transition-all group"
+                                                                            className="p-4 bg-gray-100 dark:bg-zinc-950/60 border border-black/10 dark:border-white/5 hover:border-black/10 dark:hover:border-white/10 hover:bg-gray-100 dark:hover:bg-zinc-950 rounded-2xl flex items-center justify-between cursor-pointer transition-all group"
                                                                         >
                                                                             <div className="flex items-center gap-3 min-w-0">
-                                                                                <div className="w-8 h-8 rounded-lg bg-zinc-900 border border-white/5 overflow-hidden flex items-center justify-center shrink-0">
+                                                                                <div className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-zinc-900 border border-black/10 dark:border-white/5 overflow-hidden flex items-center justify-center shrink-0">
                                                                                     {rc.profilePicture ? (
                                                                                         <img src={rc.profilePicture} alt="" className="w-full h-full object-cover" />
                                                                                     ) : (
-                                                                                        <span className="text-[10px] font-black text-white italic">{rc.name?.charAt(0)}</span>
+                                                                                        <span className="text-[10px] font-black text-gray-900 dark:text-white italic">{rc.name?.charAt(0)}</span>
                                                                                     )}
                                                                                 </div>
                                                                                 <div className="min-w-0">
-                                                                                    <h6 className="text-xs font-bold text-white uppercase tracking-tight truncate leading-tight group-hover:text-neon-pink transition-colors">{rc.name}</h6>
+                                                                                    <h6 className="text-xs font-bold text-gray-900 dark:text-white uppercase tracking-tight truncate leading-tight group-hover:text-neon-pink transition-colors">{rc.name}</h6>
                                                                                     <p className="text-[8px] text-gray-500 uppercase tracking-widest mt-0.5 truncate">@{rc.instagram || 'N/A'}</p>
                                                                                 </div>
                                                                             </div>
@@ -2364,18 +2375,18 @@ const ReferralLeaderboard = ({ creators, onSelectCreator }) => {
                         else if (index === 2) medal = '🥉';
 
                         return (
-                            <div key={referrer.uid} className="bg-black/60 rounded-[2rem] border border-white/5 p-5 shadow-lg flex flex-col gap-4">
-                                <div className="flex items-center justify-between border-b border-white/5 pb-4">
+                            <div key={referrer.uid} className="bg-white dark:bg-black/60 rounded-[2rem] border border-black/10 dark:border-white/5 p-5 shadow-lg flex flex-col gap-4">
+                                <div className="flex items-center justify-between border-b border-black/10 dark:border-white/5 pb-4">
                                     <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 rounded-xl bg-zinc-900 border border-white/5 overflow-hidden flex items-center justify-center shrink-0">
+                                        <div className="w-10 h-10 rounded-xl bg-gray-100 dark:bg-zinc-900 border border-black/10 dark:border-white/5 overflow-hidden flex items-center justify-center shrink-0">
                                             {referrer.profilePicture ? (
                                                 <img src={referrer.profilePicture} alt="" className="w-full h-full object-cover" />
                                             ) : (
-                                                <span className="text-[12px] font-black text-white italic">{referrer.name?.charAt(0)}</span>
+                                                <span className="text-[12px] font-black text-gray-900 dark:text-white italic">{referrer.name?.charAt(0)}</span>
                                             )}
                                         </div>
                                         <div>
-                                            <h4 className="text-sm font-black text-white uppercase italic tracking-tight leading-tight flex items-center gap-2">
+                                            <h4 className="text-sm font-black text-gray-900 dark:text-white uppercase italic tracking-tight leading-tight flex items-center gap-2">
                                                 {referrer.name} <span className="text-lg">{medal}</span>
                                             </h4>
                                             <p className="text-[8px] text-gray-500 uppercase tracking-widest mt-0.5">@{referrer.instagram || 'N/A'}</p>
@@ -2383,7 +2394,7 @@ const ReferralLeaderboard = ({ creators, onSelectCreator }) => {
                                     </div>
                                     <button 
                                         onClick={() => onSelectCreator(referrer)}
-                                        className="w-10 h-10 rounded-xl bg-white/5 text-gray-400 hover:text-white hover:bg-white/10 transition-all flex items-center justify-center shrink-0"
+                                        className="w-10 h-10 rounded-xl bg-black/5 dark:bg-white/5 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-black/10 dark:hover:bg-white/10 transition-all flex items-center justify-center shrink-0"
                                         title="View Profile"
                                     >
                                         <ChevronRight size={16} />
@@ -2399,7 +2410,7 @@ const ReferralLeaderboard = ({ creators, onSelectCreator }) => {
                                     </div>
                                     <div className="text-right">
                                         <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest mb-1">NETWORK REACH</p>
-                                        <p className="font-black text-sm text-gray-400 tabular-nums">
+                                        <p className="font-black text-sm text-gray-600 dark:text-gray-400 tabular-nums">
                                             {totalReach.toLocaleString()} FLW
                                         </p>
                                     </div>
@@ -2407,7 +2418,7 @@ const ReferralLeaderboard = ({ creators, onSelectCreator }) => {
 
                                 <button 
                                     onClick={() => toggleExpand(referrer.uid)}
-                                    className="w-full h-12 mt-2 rounded-xl bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-wider text-gray-400 hover:text-white hover:bg-white/10 transition-all flex items-center justify-center gap-2"
+                                    className="w-full h-12 mt-2 rounded-xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-[10px] font-black uppercase tracking-wider text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-black/10 dark:hover:bg-white/10 transition-all flex items-center justify-center gap-2"
                                 >
                                     <span>Invites ({referrer.referredCreators.length})</span>
                                     {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
@@ -2416,7 +2427,7 @@ const ReferralLeaderboard = ({ creators, onSelectCreator }) => {
                                 {/* Expandable referrals */}
                                 <AnimatePresence>
                                     {isExpanded && (
-                                        <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden mt-2 pt-4 border-t border-white/5">
+                                        <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden mt-2 pt-4 border-t border-black/10 dark:border-white/5">
                                             <div className="flex flex-col gap-3">
                                                 {referrer.referredCreators.map(rc => {
                                                     const isApproved = rc.profileStatus === 'approved';
@@ -2424,18 +2435,18 @@ const ReferralLeaderboard = ({ creators, onSelectCreator }) => {
                                                         <div 
                                                             key={rc.uid}
                                                             onClick={() => onSelectCreator(rc)}
-                                                            className="p-4 bg-zinc-950/60 border border-white/5 hover:border-white/10 hover:bg-zinc-950 rounded-2xl flex items-center justify-between cursor-pointer transition-all group"
+                                                            className="p-4 bg-gray-100 dark:bg-zinc-950/60 border border-black/10 dark:border-white/5 hover:border-black/10 dark:hover:border-white/10 hover:bg-gray-100 dark:hover:bg-zinc-950 rounded-2xl flex items-center justify-between cursor-pointer transition-all group"
                                                         >
                                                             <div className="flex items-center gap-3 min-w-0">
-                                                                <div className="w-8 h-8 rounded-lg bg-zinc-900 border border-white/5 overflow-hidden flex items-center justify-center shrink-0">
+                                                                <div className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-zinc-900 border border-black/10 dark:border-white/5 overflow-hidden flex items-center justify-center shrink-0">
                                                                     {rc.profilePicture ? (
                                                                         <img src={rc.profilePicture} alt="" className="w-full h-full object-cover" />
                                                                     ) : (
-                                                                        <span className="text-[10px] font-black text-white italic">{rc.name?.charAt(0)}</span>
+                                                                        <span className="text-[10px] font-black text-gray-900 dark:text-white italic">{rc.name?.charAt(0)}</span>
                                                                     )}
                                                                 </div>
                                                                 <div className="min-w-0">
-                                                                    <h6 className="text-xs font-bold text-white uppercase tracking-tight truncate leading-tight group-hover:text-neon-pink transition-colors">{rc.name}</h6>
+                                                                    <h6 className="text-xs font-bold text-gray-900 dark:text-white uppercase tracking-tight truncate leading-tight group-hover:text-neon-pink transition-colors">{rc.name}</h6>
                                                                     <p className="text-[8px] text-gray-500 uppercase tracking-widest mt-0.5 truncate">@{rc.instagram || 'N/A'}</p>
                                                                 </div>
                                                             </div>
@@ -2509,19 +2520,19 @@ const BulkEmailModal = ({ selectedUids, creators, onClose }) => {
     };
 
     return createPortal(
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-6 md:p-10 bg-black/50 backdrop-blur-md overflow-y-auto">
-            <div className="fixed inset-0 bg-black/80" onClick={onClose} />
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-6 md:p-10 bg-white dark:bg-black/50 backdrop-blur-md overflow-y-auto">
+            <div className="fixed inset-0 bg-white dark:bg-black/80" onClick={onClose} />
             <motion.div 
                 initial={{ scale: 0.95, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                className="relative bg-[#050505] border border-white/10 rounded-2xl sm:rounded-[2.5rem] w-full max-w-2xl max-h-[92dvh] overflow-y-auto p-5 sm:p-8 md:p-10 shadow-2xl z-10 custom-scrollbar"
+                className="relative bg-[#050505] border border-black/10 dark:border-white/10 rounded-2xl sm:rounded-[2.5rem] w-full max-w-2xl max-h-[92dvh] overflow-y-auto p-5 sm:p-8 md:p-10 shadow-2xl z-10 custom-scrollbar"
             >
-                <div className="flex items-center justify-between border-b border-white/5 pb-4 mb-5 sm:mb-6">
+                <div className="flex items-center justify-between border-b border-black/10 dark:border-white/5 pb-4 mb-5 sm:mb-6">
                     <div>
                         <h3 className="text-xl sm:text-2xl font-black font-heading uppercase italic tracking-tighter">BULK PARTNERSHIP EMAIL</h3>
                         <p className="text-[8px] sm:text-[9px] font-black text-gray-500 uppercase tracking-widest mt-1">Sending to {selectedCreators.length} recipients</p>
                     </div>
-                    <button onClick={onClose} className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white/5 border border-white/10 text-gray-400 hover:text-white flex items-center justify-center">
+                    <button onClick={onClose} className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white flex items-center justify-center">
                         <X size={16} />
                     </button>
                 </div>
@@ -2530,10 +2541,10 @@ const BulkEmailModal = ({ selectedUids, creators, onClose }) => {
                     <div className="py-12 flex flex-col items-center justify-center space-y-6 text-center">
                         <LoadingSpinner size="md" color="#FF007F" />
                         <div className="space-y-1">
-                            <h4 className="text-lg font-black uppercase tracking-wider text-white">Dispatched {progress.current} of {progress.total}</h4>
+                            <h4 className="text-lg font-black uppercase tracking-wider text-gray-900 dark:text-white">Dispatched {progress.current} of {progress.total}</h4>
                             <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Generating and transmitting official branded emails...</p>
                         </div>
-                        <div className="w-full bg-white/5 h-2 rounded-full overflow-hidden max-w-md">
+                        <div className="w-full bg-black/5 dark:bg-white/5 h-2 rounded-full overflow-hidden max-w-md">
                             <div 
                                 className="bg-neon-pink h-full transition-all duration-300"
                                 style={{ width: `${(progress.current / progress.total) * 100}%` }}
@@ -2544,9 +2555,9 @@ const BulkEmailModal = ({ selectedUids, creators, onClose }) => {
                     <form onSubmit={handleSendBulkEmail} className="space-y-6">
                         <div className="space-y-2">
                             <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Recipients Preview</label>
-                            <div className="bg-[#0A0A0A] border border-white/5 p-4 rounded-2xl max-h-[120px] overflow-y-auto custom-scrollbar flex flex-wrap gap-2">
+                            <div className="bg-[#0A0A0A] border border-black/10 dark:border-white/5 p-4 rounded-2xl max-h-[120px] overflow-y-auto custom-scrollbar flex flex-wrap gap-2">
                                 {selectedCreators.map(c => (
-                                    <span key={c.uid} className="px-3 py-1 bg-white/5 rounded-lg text-[9px] font-black text-gray-300 border border-white/5">
+                                    <span key={c.uid} className="px-3 py-1 bg-black/5 dark:bg-white/5 rounded-lg text-[9px] font-black text-gray-700 dark:text-gray-300 border border-black/10 dark:border-white/5">
                                         {c.name} ({c.email || 'No email'})
                                     </span>
                                 ))}
@@ -2560,7 +2571,7 @@ const BulkEmailModal = ({ selectedUids, creators, onClose }) => {
                                 type="text" 
                                 value={emailSubject}
                                 onChange={(e) => setEmailSubject(e.target.value)}
-                                className="w-full h-12 bg-black border border-white/10 rounded-xl px-4 text-xs font-bold text-white focus:border-neon-pink outline-none transition-all"
+                                className="w-full h-12 bg-white dark:bg-black border border-black/10 dark:border-white/10 rounded-xl px-4 text-xs font-bold text-gray-900 dark:text-white focus:border-neon-pink outline-none transition-all"
                             />
                         </div>
 
@@ -2571,7 +2582,7 @@ const BulkEmailModal = ({ selectedUids, creators, onClose }) => {
                                 value={emailBody}
                                 onChange={(e) => setEmailBody(e.target.value)}
                                 placeholder="WRITE YOUR BULK CORRESPONDENCE MESSAGE HERE..."
-                                className="w-full h-64 bg-black border border-white/10 rounded-xl p-4 text-xs font-bold text-white focus:border-neon-pink outline-none transition-all resize-none placeholder:text-gray-700"
+                                className="w-full h-64 bg-white dark:bg-black border border-black/10 dark:border-white/10 rounded-xl p-4 text-xs font-bold text-gray-900 dark:text-white focus:border-neon-pink outline-none transition-all resize-none placeholder:text-gray-700"
                             />
                         </div>
 

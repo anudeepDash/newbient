@@ -133,7 +133,7 @@ const CommunityCard = ({ item, type, handleShare, onAction }) => {
                 {/* Front Side */}
                 <div 
                     className={cn(
-                        "backface-hidden relative bg-black border border-white/5 rounded-3xl overflow-hidden flex-1 flex flex-col shadow-2xl transition-all duration-500",
+                        "backface-hidden relative bg-white dark:bg-black border border-black/10 dark:border-white/5 rounded-3xl overflow-hidden flex-1 flex flex-col shadow-2xl transition-all duration-500",
                         isFlipped ? "pointer-events-none" : "pointer-events-auto"
                     )}
                 >
@@ -167,12 +167,12 @@ const CommunityCard = ({ item, type, handleShare, onAction }) => {
                         ) : (
                             <div className="w-full h-full bg-gradient-to-br from-zinc-900 to-zinc-950 flex items-center justify-center relative overflow-hidden">
                                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(57,255,20,0.08),transparent_60%)]" />
-                                {isForm ? <ClipboardList size={60} className="text-white/5" /> : 
-                                 isGig ? <Users size={60} className="text-white/5" /> : 
-                                 isCampaign ? <Megaphone size={60} className="text-white/5" /> : 
-                                 isGL ? <Ticket size={60} className="text-white/5" /> : 
-                                 isEvent ? <Calendar size={60} className="text-white/5" /> :
-                                 <Star size={60} className="text-white/5" />}
+                                {isForm ? <ClipboardList size={60} className="text-gray-900 dark:text-white/5" /> : 
+                                 isGig ? <Users size={60} className="text-gray-900 dark:text-white/5" /> : 
+                                 isCampaign ? <Megaphone size={60} className="text-gray-900 dark:text-white/5" /> : 
+                                 isGL ? <Ticket size={60} className="text-gray-900 dark:text-white/5" /> : 
+                                 isEvent ? <Calendar size={60} className="text-gray-900 dark:text-white/5" /> :
+                                 <Star size={60} className="text-gray-900 dark:text-white/5" />}
                             </div>
                         )}
                         {/* Advanced Overlay Gradients */}
@@ -183,7 +183,7 @@ const CommunityCard = ({ item, type, handleShare, onAction }) => {
                     {/* Corner Badges */}
                     <div className="absolute top-8 left-8 right-8 z-10 flex justify-between items-start">
                         <div className="flex gap-2">
-                            <div className="px-4 h-8 rounded-2xl bg-black/40 backdrop-blur-3xl border border-white/10 flex items-center gap-2">
+                            <div className="px-4 h-8 rounded-2xl bg-black/50 backdrop-blur-3xl border border-white/15 flex items-center gap-2">
                                 <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: highlightColor }} />
                                 <span className="text-[9px] font-black uppercase tracking-widest text-white/90">
                                     {isGig ? "Volunteer" : (isCampaign ? "Campaign" : (isForm ? "Form" : (isEvent ? "Event" : "Guestlist")))}
@@ -192,9 +192,9 @@ const CommunityCard = ({ item, type, handleShare, onAction }) => {
                             {item.status && (
                                 <div className={cn(
                                     "px-4 h-8 rounded-2xl border text-[9px] font-black uppercase tracking-widest flex items-center justify-center gap-2 backdrop-blur-3xl",
-                                    (item.status === 'Open' || item.activeLabel === 'Live' || item.status === 'Live') ? "bg-green-500/10 border-green-500/20 text-green-400" : 
-                                    (item.status === 'Filling Fast' || item.activeLabel === 'Few Slots Remain' || item.status === 'Few Slots Remain') ? "bg-yellow-500/10 border-yellow-500/20 text-yellow-500" : 
-                                    "bg-red-500/10 border-red-500/20 text-red-400"
+                                    (item.status === 'Open' || item.activeLabel === 'Live' || item.status === 'Live') ? "bg-green-500/20 border-green-500/40 text-green-300" : 
+                                    (item.status === 'Filling Fast' || item.activeLabel === 'Few Slots Remain' || item.status === 'Few Slots Remain') ? "bg-yellow-500/20 border-yellow-500/40 text-yellow-300" : 
+                                    "bg-red-500/20 border-red-500/40 text-red-300"
                                 )}>
                                     {(item.status || item.activeLabel || 'LIVE').toUpperCase()}
                                 </div>
@@ -203,13 +203,13 @@ const CommunityCard = ({ item, type, handleShare, onAction }) => {
                         
                         <div className="flex gap-2">
                             {item.isPinned && (
-                                <div className="w-10 h-10 rounded-xl bg-yellow-400/10 border border-yellow-400/20 flex items-center justify-center text-yellow-400 backdrop-blur-3xl">
+                                <div className="w-10 h-10 rounded-xl bg-yellow-400/20 border border-yellow-400/40 flex items-center justify-center text-yellow-300 backdrop-blur-3xl">
                                     <Star size={14} className="fill-current" />
                                 </div>
                             )}
                             <button 
                                 onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleShare?.(type, item.id); }}
-                                className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-white/40 hover:text-white hover:bg-white/10 transition-all backdrop-blur-3xl"
+                                className="w-10 h-10 rounded-xl bg-black/50 border border-white/15 flex items-center justify-center text-white/60 hover:text-white hover:bg-black/70 transition-all backdrop-blur-3xl"
                             >
                                 <Share2 size={14} />
                             </button>
@@ -223,12 +223,12 @@ const CommunityCard = ({ item, type, handleShare, onAction }) => {
                             {artistsList.length > 0 && (
                                 <div className="flex flex-wrap items-center gap-2 pb-1">
                                     {artistsList.slice(0, 2).map((artist, idx) => (
-                                        <span key={idx} className="text-[9px] font-black uppercase tracking-widest text-neon-green/80 px-2 py-0.5 rounded bg-neon-green/5 border border-neon-green/20 whitespace-nowrap">
+                                        <span key={idx} className="text-[9px] font-black uppercase tracking-widest text-neon-green px-2 py-0.5 rounded bg-neon-green/10 border border-neon-green/30 whitespace-nowrap">
                                             {artist}
                                         </span>
                                     ))}
                                     {artistsList.length > 2 && (
-                                        <span className="text-[9px] font-black uppercase tracking-widest text-white/20 whitespace-nowrap">+{artistsList.length - 2} MORE</span>
+                                        <span className="text-[9px] font-black uppercase tracking-widest text-white/50 whitespace-nowrap">+{artistsList.length - 2} MORE</span>
                                     )}
                                 </div>
                             )}
@@ -237,16 +237,16 @@ const CommunityCard = ({ item, type, handleShare, onAction }) => {
                                 {item.title}
                             </h3>
 
-                            <p className="text-[11px] md:text-[12px] font-medium text-zinc-400 leading-relaxed line-clamp-2">
+                            <p className="text-[11px] md:text-[12px] font-medium text-zinc-300 leading-relaxed line-clamp-2">
                                 {item.description || "No description provided."}
                             </p>
                         </div>
 
                         {/* Metadata Row */}
-                        <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-white/40">
+                        <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-white/70">
                             {!isForm && (
                                 <div className="flex items-center gap-2">
-                                    <Calendar size={12} className="text-zinc-500 shrink-0" />
+                                    <Calendar size={12} className="text-zinc-300 shrink-0" />
                                     <span className="text-[10px] font-black uppercase tracking-widest whitespace-nowrap">{formatDate(item.dates || item.date)}</span>
                                 </div>
                             )}
@@ -265,7 +265,7 @@ const CommunityCard = ({ item, type, handleShare, onAction }) => {
                                     className={cn(
                                         "flex-1 h-14 rounded-2xl text-[10px] font-black uppercase tracking-[0.15em] flex items-center justify-center gap-2 transition-all active:scale-95",
                                         isClosed 
-                                            ? "bg-white/5 border border-white/5 text-zinc-600 cursor-not-allowed opacity-50" 
+                                            ? "bg-white/10 border border-white/10 text-zinc-500 cursor-not-allowed opacity-50" 
                                             : "bg-white text-black hover:bg-neon-green hover:scale-[1.02] shadow-2xl"
                                     )}
                                 >
@@ -290,12 +290,12 @@ const CommunityCard = ({ item, type, handleShare, onAction }) => {
                 {/* Back Side */}
                 <div 
                     className={cn(
-                        "absolute inset-0 backface-hidden rotate-y-180 bg-zinc-950/95 backdrop-blur-2xl border border-white/10 rounded-3xl p-6 md:p-8 flex flex-col justify-between shadow-[0_30px_60px_-15px_rgba(0,0,0,0.8)] overflow-hidden",
+                        "absolute inset-0 backface-hidden rotate-y-180 bg-white dark:bg-zinc-950/95 backdrop-blur-2xl border border-gray-200 dark:border-white/10 rounded-3xl p-6 md:p-8 flex flex-col justify-between shadow-2xl overflow-hidden",
                         isFlipped ? "pointer-events-auto" : "pointer-events-none"
                     )}
                     style={{ 
-                        borderColor: `${highlightColor}25`,
-                        background: `radial-gradient(circle at bottom right, ${highlightColor}05 0%, transparent 70%)`
+                        borderColor: `${highlightColor}35`,
+                        background: `radial-gradient(circle at bottom right, ${highlightColor}08 0%, transparent 70%)`
                     }}
                 >
                     <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.02),transparent)] pointer-events-none" />
@@ -303,11 +303,11 @@ const CommunityCard = ({ item, type, handleShare, onAction }) => {
                     <div className="relative z-10 flex items-center justify-between mb-4">
                         <div className="flex items-center gap-2">
                             <span className="w-2 h-2 rounded-full bg-neon-green animate-pulse" />
-                            <span className="text-[9px] font-extrabold uppercase tracking-[0.2em] text-zinc-400">Details Overview</span>
+                            <span className="text-[9px] font-extrabold uppercase tracking-[0.2em] text-gray-500 dark:text-zinc-400">Details Overview</span>
                         </div>
                         <button 
                             onClick={() => setIsFlipped(false)}
-                            className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-zinc-400 hover:text-white hover:bg-white/10 transition-all group/close"
+                            className="w-8 h-8 rounded-lg bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 flex items-center justify-center text-gray-600 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-white hover:bg-black/10 dark:hover:bg-white/10 transition-all group/close"
                         >
                             <X size={14} className="group-hover/close:rotate-90 transition-transform duration-300" />
                         </button>
@@ -315,20 +315,20 @@ const CommunityCard = ({ item, type, handleShare, onAction }) => {
 
                     <div className="relative z-10 flex-1 overflow-y-auto pr-1 space-y-5 scrollbar-hide text-left">
                         <div className="space-y-2">
-                            <h4 className="text-[10px] font-extrabold uppercase tracking-widest text-zinc-500">Description</h4>
-                            <p className="text-xs font-medium text-zinc-300 leading-relaxed whitespace-pre-wrap">
+                            <h4 className="text-[10px] font-extrabold uppercase tracking-widest text-gray-500 dark:text-zinc-500">Description</h4>
+                            <p className="text-xs font-medium text-gray-800 dark:text-zinc-300 leading-relaxed whitespace-pre-wrap">
                                 {item.description || "No additional description provided."}
                             </p>
                         </div>
 
                         {item.importantNotes && (
-                            <div className="p-4 rounded-xl bg-white/[0.02] border border-white/5 relative overflow-hidden group/note">
+                            <div className="p-4 rounded-xl bg-gray-50 dark:bg-white/[0.02] border border-gray-200 dark:border-white/5 relative overflow-hidden group/note">
                                 <div className="absolute top-0 left-0 w-[3px] h-full transition-all duration-300 group-hover/note:w-[4px]" style={{ backgroundColor: highlightColor }} />
                                 <div className="flex items-center gap-2 mb-1.5">
                                     <Info style={{ color: highlightColor }} size={12} className="shrink-0" />
-                                    <span className="text-[8px] font-extrabold uppercase tracking-[0.15em] text-zinc-400">Important Notes</span>
+                                    <span className="text-[8px] font-extrabold uppercase tracking-[0.15em] text-gray-500 dark:text-zinc-400">Important Notes</span>
                                 </div>
-                                <p className="text-[10px] font-semibold text-zinc-300 leading-normal">
+                                <p className="text-[10px] font-semibold text-gray-800 dark:text-zinc-300 leading-normal">
                                     {item.importantNotes}
                                 </p>
                             </div>
@@ -336,26 +336,26 @@ const CommunityCard = ({ item, type, handleShare, onAction }) => {
 
                         {isCampaign && (
                             <div className="space-y-2 pt-2">
-                                <h4 className="text-[10px] font-extrabold uppercase tracking-widest text-zinc-500">Requirements</h4>
-                                <div className="p-4 rounded-xl bg-white/[0.01] border border-white/5 flex items-center justify-between group/metric hover:bg-white/[0.03] transition-all duration-300">
+                                <h4 className="text-[10px] font-extrabold uppercase tracking-widest text-gray-500 dark:text-zinc-500">Requirements</h4>
+                                <div className="p-4 rounded-xl bg-gray-50 dark:bg-white/[0.01] border border-gray-200 dark:border-white/5 flex items-center justify-between group/metric hover:bg-gray-100 dark:hover:bg-white/[0.03] transition-all duration-300">
                                     <div>
                                         <p className="text-[8px] font-bold text-neon-green uppercase tracking-[0.15em] mb-0.5 opacity-80">MINIMUM FOLLOWERS</p>
-                                        <p className="text-2xl font-black tracking-tight text-white">{Number(item.minInstagramFollowers || 0).toLocaleString()}+</p>
+                                        <p className="text-2xl font-black tracking-tight text-gray-900 dark:text-white">{Number(item.minInstagramFollowers || 0).toLocaleString()}+</p>
                                     </div>
-                                    <Users size={24} className="text-white/10 group-hover/metric:text-neon-green group-hover/metric:scale-105 transition-all duration-300" />
+                                    <Users size={24} className="text-gray-900 dark:text-white/10 group-hover/metric:text-emerald-600 dark:metric:text-neon-green group-hover/metric:scale-105 transition-all duration-300" />
                                 </div>
                             </div>
                         )}
                     </div>
 
-                    <div className="relative z-10 pt-4 mt-auto flex items-center justify-between border-t border-white/5">
+                    <div className="relative z-10 pt-4 mt-auto flex items-center justify-between border-t border-gray-200 dark:border-white/5">
                         <div className="flex items-center gap-2">
                             <Star size={10} className="text-neon-green" />
                             <span className="text-[8px] font-extrabold text-zinc-600 uppercase tracking-[0.3em]">NEWBI ENTERTAINMENT</span>
                         </div>
                         <div className="flex gap-1">
-                            <div className="w-1.5 h-1.5 rounded-full bg-white/20" />
-                            <div className="w-1.5 h-1.5 rounded-full bg-white/10" />
+                            <div className="w-1.5 h-1.5 rounded-full bg-black/20 dark:bg-white/20" />
+                            <div className="w-1.5 h-1.5 rounded-full bg-black/10 dark:bg-white/10" />
                         </div>
                     </div>
                 </div>
