@@ -130,54 +130,51 @@ const UpcomingEventsManager = () => {
     const [dragStart, setDragStart] = useState(null);
     const [currentDrag, setCurrentDrag] = useState(null);
 
-    const thumbnailPreviewUrl = useMemo(() => {
-        if (selectedFile) {
-            try {
-                return URL.createObjectURL(selectedFile);
-            } catch (e) {
-                console.error("Error creating thumbnail preview URL:", e);
-            }
+    const [thumbnailPreviewUrl, setThumbnailPreviewUrl] = useState('');
+    const [hubBannerPreviewUrl, setHubBannerPreviewUrl] = useState('');
+    const [venueLayoutPreviewUrl, setVenueLayoutPreviewUrl] = useState('');
+
+    useEffect(() => {
+        if (!selectedFile) {
+            setThumbnailPreviewUrl(newEvent.image || '');
+            return;
         }
-        return newEvent.image || '';
+        let isMounted = true;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            if (isMounted) setThumbnailPreviewUrl(e.target?.result || '');
+        };
+        reader.readAsDataURL(selectedFile);
+        return () => { isMounted = false; };
     }, [selectedFile, newEvent.image]);
 
     useEffect(() => {
-        return () => {
-            if (thumbnailPreviewUrl && thumbnailPreviewUrl.startsWith('blob:')) {
-                URL.revokeObjectURL(thumbnailPreviewUrl);
-            }
-        };
-    }, [thumbnailPreviewUrl]);
-
-    const hubBannerPreviewUrl = useMemo(() => {
-        if (selectedHubBanner) {
-            try {
-                return URL.createObjectURL(selectedHubBanner);
-            } catch (e) {
-                console.error("Error creating hub banner preview URL:", e);
-            }
+        if (!selectedHubBanner) {
+            setHubBannerPreviewUrl(newEvent.hubImage || '');
+            return;
         }
-        return newEvent.hubImage || '';
+        let isMounted = true;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            if (isMounted) setHubBannerPreviewUrl(e.target?.result || '');
+        };
+        reader.readAsDataURL(selectedHubBanner);
+        return () => { isMounted = false; };
     }, [selectedHubBanner, newEvent.hubImage]);
 
     useEffect(() => {
-        return () => {
-            if (hubBannerPreviewUrl && hubBannerPreviewUrl.startsWith('blob:')) {
-                URL.revokeObjectURL(hubBannerPreviewUrl);
-            }
+        if (!venueLayoutFile) {
+            setVenueLayoutPreviewUrl(newEvent.venueLayout || '');
+            return;
+        }
+        let isMounted = true;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            if (isMounted) setVenueLayoutPreviewUrl(e.target?.result || '');
         };
-    }, [hubBannerPreviewUrl]);
-
-    const venueLayoutPreviewUrl = useMemo(() => {
-        if (venueLayoutFile) return URL.createObjectURL(venueLayoutFile);
-        return null;
-    }, [venueLayoutFile]);
-
-    useEffect(() => {
-        return () => {
-            if (venueLayoutPreviewUrl) URL.revokeObjectURL(venueLayoutPreviewUrl);
-        };
-    }, [venueLayoutPreviewUrl]);
+        reader.readAsDataURL(venueLayoutFile);
+        return () => { isMounted = false; };
+    }, [venueLayoutFile, newEvent.venueLayout]);
 
     useEffect(() => {
         const handleGlobalMouseUp = () => {
