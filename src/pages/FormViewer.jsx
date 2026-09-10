@@ -5,7 +5,6 @@ import { motion } from 'framer-motion';
 import FileText from 'lucide-react/dist/esm/icons/file-text';
 import ArrowLeft from 'lucide-react/dist/esm/icons/arrow-left';
 import ExternalLink from 'lucide-react/dist/esm/icons/external-link';
-import Loader2 from 'lucide-react/dist/esm/icons/loader-2';
 import MapPin from 'lucide-react/dist/esm/icons/map-pin';
 import ShieldCheck from 'lucide-react/dist/esm/icons/shield-check';
 import LogIn from 'lucide-react/dist/esm/icons/log-in';
@@ -15,6 +14,80 @@ import { db } from '../lib/firebase';
 import { useStoreSubscription } from '../hooks/useStoreSubscription';
 import { Button } from '../components/ui/Button';
 import useDynamicMeta from '../hooks/useDynamicMeta';
+
+// Custom Animated Form Loader with floating Icon & Shimmer Bar
+const FormLoadingAnimation = ({ label = "Loading Form" }) => (
+    <div className="flex flex-col items-center justify-center p-8 text-center select-none">
+        {/* Animated Form Icon Container */}
+        <div className="relative w-24 h-24 mb-6 flex items-center justify-center">
+            {/* Glowing Aura Rings */}
+            <motion.div
+                animate={{ scale: [1, 1.35, 1], opacity: [0.25, 0.6, 0.25] }}
+                transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
+                className="absolute inset-0 rounded-3xl bg-gradient-to-tr from-neon-pink/25 via-neon-blue/20 to-neon-green/25 blur-xl pointer-events-none"
+            />
+            
+            {/* Outer Rotating Dashed Ring */}
+            <motion.div
+                animate={{ rotate: 360 }}
+                transition={{ duration: 12, repeat: Infinity, ease: "linear" }}
+                className="absolute -inset-1.5 rounded-3xl border border-dashed border-neon-pink/30 dark:border-white/20"
+            />
+
+            {/* Main Form Icon Box */}
+            <motion.div
+                animate={{ y: [-4, 4, -4] }}
+                transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
+                className="relative z-10 w-20 h-20 rounded-2xl bg-white dark:bg-zinc-900 border border-black/10 dark:border-white/10 shadow-2xl flex flex-col items-center justify-center overflow-hidden"
+            >
+                {/* Decorative Top Accent Line */}
+                <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-neon-pink via-neon-blue to-neon-green" />
+
+                {/* Animated Form Icon */}
+                <div className="relative mb-1">
+                    <FileText size={28} className="text-neon-pink" />
+                    <motion.div
+                        animate={{ scale: [0.8, 1.2, 0.8], opacity: [0.6, 1, 0.6] }}
+                        transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
+                        className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-neon-green shadow-[0_0_8px_#39FF14]"
+                    />
+                </div>
+
+                {/* Animated Form input skeleton lines inside the icon */}
+                <div className="w-10 space-y-1">
+                    <motion.div 
+                        animate={{ width: ["40%", "100%", "40%"] }} 
+                        transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }} 
+                        className="h-1 rounded-full bg-neon-blue/70" 
+                    />
+                    <motion.div 
+                        animate={{ width: ["100%", "55%", "100%"] }} 
+                        transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut", delay: 0.3 }} 
+                        className="h-1 rounded-full bg-neon-pink/70" 
+                    />
+                </div>
+            </motion.div>
+        </div>
+
+        {/* Status Label & Shimmer Track */}
+        <div className="space-y-3">
+            <div className="flex items-center justify-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-neon-pink animate-pulse" />
+                <p className="text-[11px] font-black uppercase tracking-[0.25em] text-gray-900 dark:text-white font-heading">
+                    {label}
+                </p>
+            </div>
+            
+            <div className="w-40 h-1 bg-black/5 dark:bg-white/10 rounded-full overflow-hidden mx-auto">
+                <motion.div
+                    animate={{ x: [-160, 160] }}
+                    transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+                    className="w-20 h-full bg-gradient-to-r from-transparent via-neon-pink to-transparent"
+                />
+            </div>
+        </div>
+    </div>
+);
 
 const FormViewer = ({ formIdOverride }) => {
     useStoreSubscription(['forms']);
@@ -142,12 +215,11 @@ const FormViewer = ({ formIdOverride }) => {
         }
     }, [activeForm?.formUrl, user?.email]);
 
-    // Show loading spinner while querying Firestore
+    // Show custom animated form loader while querying Firestore
     if (isFetchingDirect && !activeForm) {
         return (
-            <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 dark:bg-dark text-gray-900 dark:text-white">
-                <Loader2 size={36} className="animate-spin text-neon-blue mb-4" />
-                <p className="text-[11px] font-black uppercase tracking-[0.2em] text-gray-400">Loading Form...</p>
+            <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-dark text-gray-900 dark:text-white">
+                <FormLoadingAnimation label="Opening Form" />
             </div>
         );
     }
@@ -325,11 +397,10 @@ const FormViewer = ({ formIdOverride }) => {
                             </div>
                         ) : (
                             <div className="relative">
-                                {/* Loading State */}
+                                {/* Loading State with Custom Form Icon Animation */}
                                 {!iframeLoaded && (
-                                    <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-white dark:bg-zinc-950 gap-4">
-                                        <Loader2 size={28} className="animate-spin text-gray-400" />
-                                        <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Loading Form</p>
+                                    <div className="absolute inset-0 z-10 flex items-center justify-center bg-white dark:bg-zinc-950 min-h-[400px]">
+                                        <FormLoadingAnimation label="Loading Form Content" />
                                     </div>
                                 )}
                                 
