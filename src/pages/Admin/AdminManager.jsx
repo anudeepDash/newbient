@@ -713,7 +713,7 @@ const AdminManager = () => {
                                 {filteredRequests.map(admin => (
                                     <motion.div key={admin.id} layout initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} className="group relative has-[.select-open]:z-50">
                                         <div className="absolute inset-0 rounded-[2.5rem] bg-yellow-500/5 blur-xl pointer-events-none" />
-                                        <Card className="relative p-7 bg-gray-100 dark:bg-zinc-950/60 border-yellow-500/10 hover:border-yellow-500/25 backdrop-blur-3xl rounded-[2.5rem] transition-all duration-500 shadow-md hover:-translate-y-1 flex flex-col gap-5 border overflow-hidden">
+                                        <Card className="relative p-7 bg-gray-100 dark:bg-zinc-950/60 border-yellow-500/10 hover:border-yellow-500/25 backdrop-blur-3xl rounded-[2.5rem] transition-all duration-500 shadow-md hover:-translate-y-1 flex flex-col gap-5 border">
                                             <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-yellow-500/60 to-amber-500/40 rounded-t-[2.5rem]" />
                                             <div className="flex items-start justify-between gap-3">
                                                 <div className="w-10 h-10 rounded-2xl bg-yellow-500/10 border border-yellow-500/20 flex items-center justify-center shrink-0"><Clock size={16} className="text-yellow-500 animate-pulse" /></div>
@@ -742,7 +742,7 @@ const AdminManager = () => {
                         {/* Invite Panel */}
                         <AnimatePresence>
                             {isInviteOpen && (
-                                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
+                                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} style={{ overflow: 'clip' }}>
                                     <div className="relative p-0.5 rounded-[2.5rem] bg-gradient-to-r from-neon-green/30 via-neon-blue/20 to-purple-500/30 mb-6">
                                         <Card className="p-8 sm:p-10 bg-white dark:bg-[#0B0F17]/95 border-none rounded-[2.4rem]">
                                             <div className="flex items-center justify-between mb-7 pb-4 border-b border-black/10 dark:border-white/5">
@@ -830,7 +830,7 @@ const AdminManager = () => {
                                             const rs = roleColors[admin.role] || { text: 'text-gray-500', border: 'border-black/10 dark:border-white/5', bg: 'bg-black/5 dark:bg-white/5', name: admin.role, bar: 'from-gray-400 to-gray-600' };
                                             return (
                                                 <motion.div key={admin.id} layout initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} className="group relative has-[.select-open]:z-50">
-                                                    <Card className="relative p-7 bg-gray-100 dark:bg-zinc-950/60 group-hover:bg-gray-50 dark:group-hover:bg-zinc-900/50 border-black/10 dark:border-white/5 hover:border-black/15 dark:hover:border-white/10 backdrop-blur-3xl rounded-[2.5rem] transition-all duration-500 shadow-md hover:shadow-xl flex flex-col gap-5 border hover:-translate-y-1 overflow-hidden min-h-[300px]">
+                                                    <Card className="relative p-7 bg-gray-100 dark:bg-zinc-950/60 group-hover:bg-gray-50 dark:group-hover:bg-zinc-900/50 border-black/10 dark:border-white/5 hover:border-black/15 dark:hover:border-white/10 backdrop-blur-3xl rounded-[2.5rem] transition-all duration-500 shadow-md hover:shadow-xl flex flex-col gap-5 border hover:-translate-y-1 min-h-[300px]">
                                                         <div className={cn("absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r rounded-t-[2.5rem]", rs.bar)} />
                                                         <div className="flex justify-between items-start">
                                                             <span className={cn("px-2.5 py-1 rounded-full border font-black uppercase tracking-widest text-[8px]", rs.bg, rs.border, rs.text)}>{rs.name}</span>
