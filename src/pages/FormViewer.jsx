@@ -7,10 +7,7 @@ import ArrowLeft from 'lucide-react/dist/esm/icons/arrow-left';
 import ExternalLink from 'lucide-react/dist/esm/icons/external-link';
 import MapPin from 'lucide-react/dist/esm/icons/map-pin';
 import Home from 'lucide-react/dist/esm/icons/home';
-import ShieldCheck from 'lucide-react/dist/esm/icons/shield-check';
-import Sparkles from 'lucide-react/dist/esm/icons/sparkles';
 import LogIn from 'lucide-react/dist/esm/icons/log-in';
-import Zap from 'lucide-react/dist/esm/icons/zap';
 import { useStore } from '../lib/store';
 import { db } from '../lib/firebase';
 import { useStoreSubscription } from '../hooks/useStoreSubscription';
@@ -416,7 +413,7 @@ const FormViewer = ({ formIdOverride }) => {
                 <motion.div 
                     initial={{ opacity: 0, x: -10 }} 
                     animate={{ opacity: 1, x: 0 }}
-                    className="mb-8 flex items-center justify-between"
+                    className="mb-8 flex flex-wrap items-center justify-between gap-4"
                 >
                     <button 
                         onClick={() => navigate('/community')} 
@@ -426,16 +423,33 @@ const FormViewer = ({ formIdOverride }) => {
                         Community Hub
                     </button>
 
-                    {themedFormUrl && (
-                        <a 
-                            href={themedFormUrl} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1.5 text-[11px] font-bold text-gray-500 hover:text-neon-pink uppercase tracking-widest transition-colors"
-                        >
-                            Open in New Tab <ExternalLink size={12} />
-                        </a>
-                    )}
+                    <div className="flex items-center gap-3">
+                        {user ? (
+                            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-xs text-gray-700 dark:text-gray-300">
+                                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                                <span className="truncate max-w-[140px] sm:max-w-[200px] text-[11px] font-medium">{user.displayName || user.email}</span>
+                            </div>
+                        ) : (
+                            <button
+                                onClick={() => setAuthModal(true)}
+                                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 border border-black/10 dark:border-white/10 text-[11px] font-bold text-gray-800 dark:text-gray-200 hover:text-neon-pink transition-all"
+                            >
+                                <LogIn size={13} />
+                                <span>Sign In</span>
+                            </button>
+                        )}
+
+                        {themedFormUrl && (
+                            <a 
+                                href={themedFormUrl} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1.5 text-[11px] font-bold text-gray-500 hover:text-neon-pink uppercase tracking-widest transition-colors ml-1"
+                            >
+                                Open in New Tab <ExternalLink size={12} />
+                            </a>
+                        )}
+                    </div>
                 </motion.div>
 
                 {/* Form Header */}
@@ -478,79 +492,6 @@ const FormViewer = ({ formIdOverride }) => {
                         </div>
                     )}
                 </motion.div>
-
-                {/* Active Member Status & Optional Sign-in Banner */}
-                {user ? (
-                    <motion.div 
-                        initial={{ opacity: 0, y: 15 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.15 }}
-                        className="mb-6 p-4 md:p-5 bg-white/80 dark:bg-zinc-900/80 border border-green-500/20 dark:border-green-500/30 rounded-2xl md:rounded-3xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-lg backdrop-blur-xl"
-                    >
-                        <div className="flex items-center gap-3.5">
-                            <div className="relative">
-                                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-green-500/20 to-emerald-500/10 border border-green-500/30 flex items-center justify-center text-green-500">
-                                    <ShieldCheck size={20} />
-                                </div>
-                                <span className="absolute -top-1 -right-1 flex h-3 w-3">
-                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                                    <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
-                                </span>
-                            </div>
-                            <div className="min-w-0">
-                                <div className="flex items-center gap-2">
-                                    <span className="text-[10px] font-black uppercase tracking-wider text-green-600 dark:text-green-400">
-                                        Active Member Verified
-                                    </span>
-                                </div>
-                                <p className="text-xs md:text-sm font-bold text-gray-900 dark:text-white truncate">
-                                    {user.displayName || user.email}
-                                </p>
-                            </div>
-                        </div>
-
-                        <div className="flex items-center gap-2 self-start sm:self-center bg-green-500/10 dark:bg-green-500/15 border border-green-500/20 px-3 py-1.5 rounded-xl text-[10px] font-bold text-green-600 dark:text-green-400">
-                            <Zap size={12} className="fill-current" />
-                            <span>Activity & details linked</span>
-                        </div>
-                    </motion.div>
-                ) : (
-                    <motion.div 
-                        initial={{ opacity: 0, y: 15 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.15 }}
-                        className="mb-6 p-4 md:p-5 bg-gradient-to-r from-neon-pink/5 via-neon-purple/5 to-neon-blue/5 border border-neon-pink/20 dark:border-white/10 rounded-2xl md:rounded-3xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xl backdrop-blur-xl"
-                    >
-                        <div className="flex items-start sm:items-center gap-3.5">
-                            <div className="w-10 h-10 rounded-xl bg-neon-pink/10 border border-neon-pink/30 flex items-center justify-center text-neon-pink shrink-0">
-                                <Sparkles size={20} />
-                            </div>
-                            <div>
-                                <div className="flex items-center gap-2">
-                                    <h4 className="text-xs md:text-sm font-extrabold text-gray-900 dark:text-white tracking-tight">
-                                        Sign in to mark your active membership
-                                    </h4>
-                                    <span className="px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider bg-neon-pink/15 text-neon-pink border border-neon-pink/30">
-                                        Member Perks
-                                    </span>
-                                </div>
-                                <p className="text-xs text-gray-500 dark:text-gray-400 font-medium mt-0.5">
-                                    Logs your participation for active member status and auto-fills your details.
-                                </p>
-                            </div>
-                        </div>
-
-                        <div className="flex items-center gap-3 shrink-0">
-                            <Button
-                                onClick={() => setAuthModal(true)}
-                                className="h-10 px-5 rounded-xl text-xs font-bold tracking-wider bg-neon-pink hover:bg-neon-pink/90 text-white shadow-lg shadow-neon-pink/20 hover:scale-[1.02] transition-all"
-                            >
-                                <LogIn size={14} className="mr-2" />
-                                Sign In
-                            </Button>
-                        </div>
-                    </motion.div>
-                )}
 
                 {/* Form Container */}
                 <motion.div 
