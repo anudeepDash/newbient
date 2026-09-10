@@ -379,7 +379,7 @@ const AuthOverlay = () => {
 
     return (
         <AnimatePresence>
-            <div className="fixed inset-0 z-[100] flex items-end md:items-center justify-center bg-black/60 dark:bg-black/80 backdrop-blur-md sm:p-4">
+            <div className="fixed inset-0 z-[150] flex items-end sm:items-center justify-center bg-black/60 dark:bg-black/80 backdrop-blur-md sm:p-4">
                 {/* Backdrop */}
                 <motion.div
                     initial={{ opacity: 0 }}
@@ -389,88 +389,63 @@ const AuthOverlay = () => {
                     className="fixed inset-0 bg-transparent"
                 />
 
-                {/* Content Modal */}
+                {/* Compact Modal / Drawer Card */}
                 <motion.div
-                    initial={{ y: '100%', opacity: 0 }}
-                    animate={{ y: 0, opacity: 1 }}
-                    exit={{ y: '100%', opacity: 0 }}
-                    transition={{ type: "spring", damping: 25, stiffness: 200 }}
-                    className="relative w-full max-w-4xl z-10 bg-white dark:bg-zinc-950 md:bg-white dark:md:bg-zinc-900 rounded-t-[2rem] md:rounded-3xl border-t md:border border-black/10 dark:border-white/10 shadow-2xl overflow-hidden flex flex-col md:flex-row max-h-[90vh] md:max-h-[85vh]"
+                    initial={{ y: 30, opacity: 0, scale: 0.95 }}
+                    animate={{ y: 0, opacity: 1, scale: 1 }}
+                    exit={{ y: 30, opacity: 0, scale: 0.95 }}
+                    transition={{ type: "spring", damping: 25, stiffness: 300 }}
+                    className="relative w-full max-w-md z-10 bg-white dark:bg-zinc-950 rounded-t-[2rem] sm:rounded-3xl border border-black/10 dark:border-white/10 shadow-2xl overflow-hidden flex flex-col max-h-[85vh] sm:max-h-[90vh]"
                 >
                     {/* Mobile Drag Handle */}
-                    <div className="w-full flex justify-center pt-4 pb-2 md:hidden">
-                        <div className="w-12 h-1.5 bg-black/20 dark:bg-white/20 rounded-full" />
+                    <div className="w-full flex justify-center pt-3 pb-1 sm:hidden">
+                        <div className="w-10 h-1 bg-black/20 dark:bg-white/20 rounded-full" />
                     </div>
 
+                    {/* Close Button */}
                     <button
                         onClick={onClose}
-                        className="absolute top-4 md:top-6 right-4 md:right-6 p-2 bg-gray-100 dark:bg-black/50 hover:bg-black/10 dark:hover:bg-white/10 rounded-full text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all z-20"
+                        className="absolute top-4 right-4 p-2 bg-gray-100 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 rounded-full text-gray-500 hover:text-gray-900 dark:hover:text-white transition-all z-20"
                     >
-                        <X size={20} />
+                        <X size={18} />
                     </button>
 
-                    {/* Left Branding Column (Desktop Only) */}
-                    <div className="hidden md:flex flex-col justify-between w-1/2 p-12 relative overflow-hidden bg-gradient-to-br from-zinc-950 via-zinc-900 to-zinc-950 border-r border-black/10 dark:border-white/5">
-                        {/* Abstract Background Elements */}
-                        <div className="absolute -top-24 -left-24 w-64 h-64 bg-neon-blue/20 rounded-full blur-[80px]" />
-                        <div className="absolute -bottom-24 -right-24 w-64 h-64 bg-neon-pink/20 rounded-full blur-[80px]" />
-                        
-                        <div className="relative z-10">
-                            <h2 className="text-3xl lg:text-4xl font-black font-heading italic tracking-tighter text-white drop-shadow-md mb-2">NEWBI ENT.</h2>
-                            <p className="text-zinc-400 font-medium tracking-widest text-xs uppercase">The Pulse of Youth</p>
-                        </div>
-
-                        <div className="relative z-10 mt-auto">
-                            <motion.h3 
-                                key={mode}
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                className="text-4xl lg:text-5xl font-black text-white leading-tight mb-4"
-                            >
-                                {mode === 'signIn' ? 'Welcome\nBack.' : mode === 'signUp' ? 'Join the\nTribe.' : mode === 'forgot' ? 'Reset\nPassword.' : 'Secure\nAccess.'}
-                            </motion.h3>
-                            <p className="text-zinc-400 text-sm leading-relaxed max-w-sm">
-                                {mode === 'signIn' ? 'Experience premium events, creator campaigns, and community perks all in one place.' : mode === 'signUp' ? 'Create an account to discover exclusive opportunities and manage your collaborations.' : 'Enter your details to securely verify your identity and manage your account.'}
-                            </p>
-                        </div>
-                    </div>
-
-                    {/* Right Form Column */}
-                    <div className="w-full md:w-1/2 bg-white dark:bg-zinc-950 p-6 md:p-12 overflow-y-auto mobile-scrollbar-hide relative flex flex-col pb-[env(safe-area-inset-bottom)]">
-                        <div className="md:hidden text-center mb-8">
-                            <h2 className="text-3xl font-black font-heading text-transparent bg-clip-text bg-gradient-to-r from-neon-pink to-neon-blue">
-                                {mode === 'signIn' ? 'Welcome Back' : mode === 'signUp' ? 'Join the Tribe' : mode === 'forgot' ? 'Reset Password' : 'Phone Sign In'}
+                    <div className="p-6 sm:p-7 overflow-y-auto no-scrollbar">
+                        {/* Header Title */}
+                        <div className="text-center mb-6">
+                            <h2 className="text-2xl font-black font-heading tracking-tight text-gray-900 dark:text-white uppercase">
+                                {mode === 'signIn' ? 'Welcome Back' : mode === 'signUp' ? 'Create Account' : mode === 'forgot' ? 'Reset Password' : mode === 'phone' ? 'Phone Sign In' : 'Complete Profile'}
                             </h2>
-                            <p className="text-gray-600 dark:text-gray-400 mt-2 text-xs">
-                                {mode === 'signIn' ? 'Sign in to access exclusive perks' : mode === 'signUp' ? 'Create an account to join the community' : mode === 'forgot' ? 'Enter your email to reset' : 'Sign in using your mobile number'}
+                            <p className="text-gray-500 dark:text-gray-400 mt-1 text-xs font-medium">
+                                {mode === 'signIn' ? 'Sign in to access your perks & activity' : mode === 'signUp' ? 'Join Newbi to explore campaigns & events' : mode === 'forgot' ? 'Enter your email to receive reset instructions' : mode === 'phone' ? 'Verify your mobile number' : 'Enter your name to complete registration'}
                             </p>
                         </div>
                         
-                        <div className="flex-1 flex flex-col justify-center max-w-sm mx-auto w-full">
+                        <div className="w-full">
                             {error && (
-                                <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="mb-6 p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-xs font-medium text-center">
+                                <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="mb-4 p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-xs font-medium text-center">
                                     {error}
                                 </motion.div>
                             )}
 
                             {resetSent ? (
-                                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center gap-4 py-6 text-center">
-                                    <CheckCircle2 size={48} className="text-neon-green" />
-                                    <p className="text-base font-bold text-gray-900 dark:text-white">Reset link sent!</p>
-                                    <p className="text-xs text-gray-600 dark:text-gray-400">Check your inbox at <span className="text-neon-blue">{formData.email}</span></p>
-                                    <button onClick={() => { setMode('signIn'); setResetSent(false); }} className="text-xs text-neon-pink hover:underline mt-4 tracking-widest uppercase font-bold">Back to Sign In</button>
+                                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center gap-4 py-4 text-center">
+                                    <CheckCircle2 size={40} className="text-neon-green" />
+                                    <p className="text-sm font-bold text-gray-900 dark:text-white">Reset link sent!</p>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400">Check your inbox at <span className="text-neon-blue font-semibold">{formData.email}</span></p>
+                                    <button onClick={() => { setMode('signIn'); setResetSent(false); }} className="text-xs text-neon-pink hover:underline mt-2 tracking-widest uppercase font-bold">Back to Sign In</button>
                                 </motion.div>
                             ) : mode === 'phone' ? (
-                                <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-6">
+                                <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-4">
                                     {step === 'input' ? (
-                                        <form onSubmit={handleSendOTP} className="space-y-5">
-                                            <div className="space-y-2">
+                                        <form onSubmit={handleSendOTP} className="space-y-4">
+                                            <div className="space-y-1.5">
                                                 <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Phone Number</label>
                                                 <div className="flex gap-2">
                                                     <select 
                                                         value={countryCode} 
                                                         onChange={(e) => setCountryCode(e.target.value)}
-                                                        className="w-24 h-14 bg-gray-50 dark:bg-zinc-900 border border-black/10 dark:border-white/5 rounded-xl text-gray-900 dark:text-white text-sm px-2 focus:border-neon-blue focus:ring-1 focus:ring-neon-blue transition-all outline-none"
+                                                        className="w-20 h-12 bg-gray-50 dark:bg-zinc-900 border border-black/10 dark:border-white/5 rounded-xl text-gray-900 dark:text-white text-xs px-2 focus:border-neon-blue focus:ring-1 focus:ring-neon-blue transition-all outline-none font-bold"
                                                     >
                                                         <option value="+91" className="bg-white dark:bg-zinc-900">🇮🇳 +91</option>
                                                         <option value="+1" className="bg-white dark:bg-zinc-900">🇺🇸 +1</option>
@@ -478,11 +453,11 @@ const AuthOverlay = () => {
                                                         <option value="+971" className="bg-white dark:bg-zinc-900">🇦🇪 +971</option>
                                                     </select>
                                                     <div className="relative flex-1 group">
-                                                        <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-600 dark:group-focus-within:text-neon-blue transition-colors" size={18} />
+                                                        <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-600 dark:group-focus-within:text-neon-blue transition-colors" size={16} />
                                                         <Input
                                                             type="tel"
                                                             placeholder="99999 99999"
-                                                            className="pl-12 h-14 bg-gray-50 dark:bg-zinc-900 border-black/10 dark:border-white/5 focus:border-neon-blue transition-all placeholder:text-gray-400 dark:placeholder:text-gray-600"
+                                                            className="pl-10 h-12 bg-gray-50 dark:bg-zinc-900 border-black/10 dark:border-white/5 focus:border-neon-blue transition-all placeholder:text-gray-400 dark:placeholder:text-gray-600 text-sm"
                                                             value={phone}
                                                             onChange={(e) => setPhone(e.target.value)}
                                                             required
@@ -490,13 +465,13 @@ const AuthOverlay = () => {
                                                     </div>
                                                 </div>
                                             </div>
-                                            <Button type="submit" className="w-full h-14 rounded-xl text-sm tracking-widest uppercase font-bold bg-black text-white dark:bg-white dark:text-black hover:bg-neon-blue hover:text-black dark:hover:bg-neon-blue dark:hover:text-black shadow-md transition-all" disabled={loading || cooldown > 0}>
+                                            <Button type="submit" className="w-full h-12 rounded-xl text-xs tracking-widest uppercase font-bold bg-black text-white dark:bg-white dark:text-black hover:bg-neon-blue hover:text-black dark:hover:bg-neon-blue dark:hover:text-black shadow-md transition-all" disabled={loading || cooldown > 0}>
                                                 {loading ? <LoadingSpinner size="xs" color="#FFFFFF" /> : cooldown > 0 ? `Resend OTP in ${cooldown}s` : 'Send OTP'}
                                             </Button>
                                         </form>
                                     ) : (
-                                        <form onSubmit={handleVerifyOTP} className="space-y-6">
-                                            <div className="space-y-3">
+                                        <form onSubmit={handleVerifyOTP} className="space-y-4">
+                                            <div className="space-y-2">
                                                 <div className="flex justify-between items-center ml-1">
                                                     <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">6-Digit Code</label>
                                                     <span className="text-[10px] font-medium text-gray-500 dark:text-gray-400">
@@ -510,13 +485,13 @@ const AuthOverlay = () => {
                                                     variants={{
                                                         hidden: { opacity: 0 },
                                                         visible: {
-                                                             opacity: 1,
+                                                            opacity: 1,
                                                             transition: {
                                                                 staggerChildren: 0.05
                                                             }
                                                         }
                                                     }}
-                                                    className="flex justify-between gap-2 max-w-sm mx-auto"
+                                                    className="flex justify-between gap-1.5 max-w-sm mx-auto"
                                                 >
                                                     {otpValues.map((digit, idx) => (
                                                         <motion.input
@@ -534,7 +509,7 @@ const AuthOverlay = () => {
                                                                 visible: { opacity: 1, scale: 1, y: 0 }
                                                             }}
                                                             whileFocus={{ scale: 1.05 }}
-                                                            className="w-12 h-16 sm:w-14 sm:h-20 bg-gray-50 dark:bg-zinc-900/60 backdrop-blur-md border border-black/10 dark:border-white/10 rounded-2xl text-center text-2xl font-black text-gray-900 dark:text-white focus:border-neon-pink focus:shadow-[0_0_20px_rgba(244,63,94,0.3)] transition-all outline-none"
+                                                            className="w-10 h-14 sm:w-12 sm:h-16 bg-gray-50 dark:bg-zinc-900/60 backdrop-blur-md border border-black/10 dark:border-white/10 rounded-xl text-center text-xl font-black text-gray-900 dark:text-white focus:border-neon-pink focus:shadow-[0_0_20px_rgba(244,63,94,0.3)] transition-all outline-none"
                                                         />
                                                     ))}
                                                 </motion.div>
@@ -542,24 +517,24 @@ const AuthOverlay = () => {
 
                                             <Button 
                                                 type="submit" 
-                                                className="w-full h-14 rounded-xl text-sm tracking-widest uppercase font-black bg-gradient-to-r from-neon-pink to-pink-600 text-white hover:shadow-[0_0_30px_rgba(244,63,94,0.4)] hover:scale-[1.01] active:scale-95 transition-all shadow-lg" 
+                                                className="w-full h-12 rounded-xl text-xs tracking-widest uppercase font-black bg-gradient-to-r from-neon-pink to-pink-600 text-white hover:shadow-[0_0_30px_rgba(244,63,94,0.4)] hover:scale-[1.01] active:scale-95 transition-all shadow-lg" 
                                                 disabled={loading || otpValues.join('').length !== 6}
                                             >
                                                 {loading ? <LoadingSpinner size="xs" color="#FFFFFF" /> : 'Verify & Sign In'}
                                             </Button>
 
-                                            <div className="flex flex-col gap-3 pt-2 text-center">
+                                            <div className="flex flex-col gap-2 pt-1 text-center">
                                                 {cooldown > 0 ? (
                                                     <span className="text-[10px] font-bold text-gray-500 tracking-wider uppercase">
                                                         Resend Code in <span className="text-neon-pink">{cooldown}s</span>
                                                     </span>
                                                 ) : (
                                                     <button 
-                                                        type="button"
+                                                        type="button" 
                                                         onClick={handleSendOTP}
-                                                        className="text-xs font-black text-neon-blue hover:text-gray-900 dark:hover:text-white uppercase tracking-widest transition-colors"
+                                                        className="text-xs font-bold text-neon-blue hover:text-gray-900 dark:hover:text-white uppercase tracking-widest transition-colors"
                                                     >
-                                                        Resend Verification Code
+                                                        Resend Code
                                                     </button>
                                                 )}
                                                 
@@ -575,134 +550,134 @@ const AuthOverlay = () => {
                                     )}
                                     <button 
                                         onClick={() => setMode('signIn')}
-                                        className="w-full text-[10px] font-black text-neon-blue hover:text-gray-900 dark:hover:text-white uppercase tracking-widest transition-colors py-2"
+                                        className="w-full text-[10px] font-bold text-neon-blue hover:text-gray-900 dark:hover:text-white uppercase tracking-widest transition-colors py-1"
                                     >
-                                        BACK TO EMAIL LOGIN
+                                        Back to Email Login
                                     </button>
                                 </motion.div>
                             ) : mode === 'complete_profile' ? (
-                                <motion.form initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} onSubmit={handleCompleteProfile} className="space-y-5">
-                                    <div className="space-y-2">
+                                <motion.form initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} onSubmit={handleCompleteProfile} className="space-y-4">
+                                    <div className="space-y-1.5">
                                         <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Full Name</label>
                                         <div className="relative group">
-                                            <User className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-600 dark:group-focus-within:text-neon-blue transition-colors" size={18} />
+                                            <User className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-600 dark:group-focus-within:text-neon-blue transition-colors" size={16} />
                                             <Input
                                                 placeholder="Enter your name"
-                                                className="pl-12 h-14 bg-gray-50 dark:bg-zinc-900 border-black/10 dark:border-white/5 focus:border-neon-blue transition-all placeholder:text-gray-400 dark:placeholder:text-gray-600"
+                                                className="pl-10 h-12 bg-gray-50 dark:bg-zinc-900 border-black/10 dark:border-white/5 focus:border-neon-blue transition-all placeholder:text-gray-400 dark:placeholder:text-gray-600 text-sm"
                                                 value={formData.name}
                                                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                                                 required
                                             />
                                         </div>
                                     </div>
-                                    <div className="space-y-2">
+                                    <div className="space-y-1.5">
                                         <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Email Address</label>
                                         <div className="relative group">
-                                            <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-600 dark:group-focus-within:text-neon-blue transition-colors" size={18} />
+                                            <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-600 dark:group-focus-within:text-neon-blue transition-colors" size={16} />
                                             <Input
                                                 type="email"
                                                 placeholder="email@example.com"
-                                                className="pl-12 h-14 bg-gray-50 dark:bg-zinc-900 border-black/10 dark:border-white/5 focus:border-neon-blue transition-all placeholder:text-gray-400 dark:placeholder:text-gray-600"
+                                                className="pl-10 h-12 bg-gray-50 dark:bg-zinc-900 border-black/10 dark:border-white/5 focus:border-neon-blue transition-all placeholder:text-gray-400 dark:placeholder:text-gray-600 text-sm"
                                                 value={formData.email}
                                                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                                                 required
                                             />
                                         </div>
                                     </div>
-                                    <Button type="submit" className="w-full h-14 rounded-xl text-sm tracking-widest uppercase font-bold bg-black text-white dark:bg-white dark:text-black hover:bg-neon-green hover:text-black dark:hover:bg-neon-green dark:hover:text-black shadow-md transition-all" disabled={loading}>
+                                    <Button type="submit" className="w-full h-12 rounded-xl text-xs tracking-widest uppercase font-bold bg-black text-white dark:bg-white dark:text-black hover:bg-neon-green hover:text-black dark:hover:bg-neon-green dark:hover:text-black shadow-md transition-all" disabled={loading}>
                                         {loading ? <LoadingSpinner size="xs" color="#FFFFFF" /> : 'Complete Registration'}
                                     </Button>
                                 </motion.form>
                             ) : (
-                            <motion.form key={mode} initial={{ opacity: 0, x: mode === 'signIn' ? -20 : 20 }} animate={{ opacity: 1, x: 0 }} onSubmit={handleSubmit} className="space-y-5">
-                                {mode === 'signUp' && (
-                                    <div className="space-y-2">
-                                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Full Name</label>
-                                        <div className="relative group">
-                                            <User className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-pink-600 dark:group-focus-within:text-neon-pink transition-colors" size={18} />
-                                            <Input
-                                                placeholder="John Doe"
-                                                className="pl-12 h-14 bg-gray-50 dark:bg-zinc-900 border-black/10 dark:border-white/5 focus:border-neon-pink transition-all placeholder:text-gray-400 dark:placeholder:text-gray-600"
-                                                value={formData.name}
-                                                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                                required
-                                            />
+                                <motion.form key={mode} initial={{ opacity: 0, x: mode === 'signIn' ? -15 : 15 }} animate={{ opacity: 1, x: 0 }} onSubmit={handleSubmit} className="space-y-3.5">
+                                    {mode === 'signUp' && (
+                                        <div className="space-y-1.5">
+                                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Full Name</label>
+                                            <div className="relative group">
+                                                <User className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-pink-600 dark:group-focus-within:text-neon-pink transition-colors" size={16} />
+                                                <Input
+                                                    placeholder="Your name"
+                                                    className="pl-10 h-12 bg-gray-50 dark:bg-zinc-900 border-black/10 dark:border-white/5 focus:border-neon-pink transition-all placeholder:text-gray-400 dark:placeholder:text-gray-600 text-sm"
+                                                    value={formData.name}
+                                                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                                    required
+                                                />
+                                            </div>
                                         </div>
-                                    </div>
-                                )}
-
-                                <div className="space-y-2">
-                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Email Address</label>
-                                    <div className="relative group">
-                                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-600 dark:group-focus-within:text-neon-blue transition-colors" size={18} />
-                                        <Input
-                                            type="email"
-                                            placeholder="you@example.com"
-                                            className="pl-12 h-14 bg-gray-50 dark:bg-zinc-900 border-black/10 dark:border-white/5 focus:border-neon-blue transition-all placeholder:text-gray-400 dark:placeholder:text-gray-600"
-                                            value={formData.email}
-                                            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                            required
-                                        />
-                                    </div>
-                                </div>
-
-                                {mode !== 'forgot' && (
-                                    <div className="space-y-2">
-                                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Password</label>
-                                        <div className="relative group">
-                                            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-600 dark:group-focus-within:text-neon-blue transition-colors" size={18} />
-                                            <Input
-                                                type="password"
-                                                placeholder="••••••••"
-                                                className="pl-12 h-14 bg-gray-50 dark:bg-zinc-900 border-black/10 dark:border-white/5 focus:border-neon-blue transition-all placeholder:text-gray-400 dark:placeholder:text-gray-600"
-                                                value={formData.password}
-                                                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                                                required
-                                            />
-                                        </div>
-                                    </div>
-                                )}
-
-                                {mode === 'signIn' && (
-                                    <div className="text-right">
-                                        <button
-                                            type="button"
-                                            onClick={() => setMode('forgot')}
-                                            className="text-[10px] font-bold tracking-wider text-neon-blue hover:text-gray-900 dark:hover:text-white transition-colors py-1"
-                                        >
-                                            FORGOT PASSWORD?
-                                        </button>
-                                    </div>
-                                )}
-
-                                <Button
-                                    type="submit"
-                                    className={cn(
-                                        "w-full h-14 rounded-xl text-sm tracking-widest uppercase font-bold shadow-lg transition-all",
-                                        mode === 'signUp' 
-                                            ? 'bg-neon-pink hover:bg-pink-600 text-white shadow-[0_0_20px_rgba(255,79,139,0.3)]' 
-                                            : 'bg-black text-white dark:bg-white dark:text-black hover:bg-neon-blue hover:text-black dark:hover:bg-neon-blue dark:hover:text-black'
                                     )}
-                                    disabled={loading}
-                                >
-                                    {loading ? <LoadingSpinner size="xs" color={mode === 'signUp' ? '#FFFFFF' : '#000000'} /> : mode === 'signIn' ? 'Sign In' : mode === 'signUp' ? 'Create Account' : 'Send Reset Link'}
-                                </Button>
-                            </motion.form>
+
+                                    <div className="space-y-1.5">
+                                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Email Address</label>
+                                        <div className="relative group">
+                                            <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-600 dark:group-focus-within:text-neon-blue transition-colors" size={16} />
+                                            <Input
+                                                type="email"
+                                                placeholder="you@example.com"
+                                                className="pl-10 h-12 bg-gray-50 dark:bg-zinc-900 border-black/10 dark:border-white/5 focus:border-neon-blue transition-all placeholder:text-gray-400 dark:placeholder:text-gray-600 text-sm"
+                                                value={formData.email}
+                                                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                                                required
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {mode !== 'forgot' && (
+                                        <div className="space-y-1.5">
+                                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Password</label>
+                                            <div className="relative group">
+                                                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-600 dark:group-focus-within:text-neon-blue transition-colors" size={16} />
+                                                <Input
+                                                    type="password"
+                                                    placeholder="••••••••"
+                                                    className="pl-10 h-12 bg-gray-50 dark:bg-zinc-900 border-black/10 dark:border-white/5 focus:border-neon-blue transition-all placeholder:text-gray-400 dark:placeholder:text-gray-600 text-sm"
+                                                    value={formData.password}
+                                                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                                                    required
+                                                />
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {mode === 'signIn' && (
+                                        <div className="text-right">
+                                            <button
+                                                type="button"
+                                                onClick={() => setMode('forgot')}
+                                                className="text-[10px] font-bold tracking-wider text-neon-blue hover:text-gray-900 dark:hover:text-white transition-colors"
+                                            >
+                                                FORGOT PASSWORD?
+                                            </button>
+                                        </div>
+                                    )}
+
+                                    <Button
+                                        type="submit"
+                                        className={cn(
+                                            "w-full h-12 rounded-xl text-xs tracking-widest uppercase font-bold shadow-md transition-all mt-2",
+                                            mode === 'signUp' 
+                                                ? 'bg-neon-pink hover:bg-pink-600 text-white shadow-[0_0_20px_rgba(255,79,139,0.3)]' 
+                                                : 'bg-black text-white dark:bg-white dark:text-black hover:bg-neon-blue hover:text-black dark:hover:bg-neon-blue dark:hover:text-black'
+                                        )}
+                                        disabled={loading}
+                                    >
+                                        {loading ? <LoadingSpinner size="xs" color={mode === 'signUp' ? '#FFFFFF' : '#000000'} /> : mode === 'signIn' ? 'Sign In' : mode === 'signUp' ? 'Create Account' : 'Send Reset Link'}
+                                    </Button>
+                                </motion.form>
                             )}
 
-                            <div className="relative my-8">
+                            <div className="relative my-5">
                                 <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-black/10 dark:border-white/5"></div></div>
-                                <div className="relative flex justify-center text-[10px] font-bold tracking-widest uppercase"><span className="bg-white dark:bg-zinc-950 px-4 text-gray-500">Or continue with</span></div>
+                                <div className="relative flex justify-center text-[10px] font-bold tracking-widest uppercase"><span className="bg-white dark:bg-zinc-950 px-3 text-gray-400">Or continue with</span></div>
                             </div>
 
-                            <div className="space-y-3">
+                            <div className="grid grid-cols-2 gap-2.5">
                                 <button
                                     type="button"
                                     onClick={handleGoogleLogin}
-                                    className="w-full h-14 bg-gray-50 dark:bg-zinc-900 hover:bg-gray-100 dark:hover:bg-zinc-800 text-gray-900 dark:text-white border border-black/10 dark:border-white/5 hover:border-black/20 dark:hover:border-white/20 rounded-xl flex items-center justify-center gap-3 transition-all font-medium group shadow-sm"
+                                    className="h-11 bg-gray-50 dark:bg-zinc-900 hover:bg-gray-100 dark:hover:bg-zinc-800 text-gray-900 dark:text-white border border-black/10 dark:border-white/5 hover:border-black/20 dark:hover:border-white/20 rounded-xl flex items-center justify-center gap-2 transition-all font-medium text-xs shadow-sm"
                                     disabled={loading}
                                 >
-                                    <svg className="w-5 h-5 group-hover:scale-110 transition-transform" viewBox="0 0 24 24">
+                                    <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
                                         <path
                                             d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
                                             fill="#4285F4"
@@ -720,23 +695,23 @@ const AuthOverlay = () => {
                                             fill="#EA4335"
                                         />
                                     </svg>
-                                    <span className="text-sm tracking-wide">Google</span>
+                                    <span>Google</span>
                                 </button>
 
                                 {mode !== 'phone' && (
                                     <button
                                         type="button"
                                         onClick={() => setMode('phone')}
-                                        className="w-full h-14 bg-gray-50 dark:bg-zinc-900 hover:bg-gray-100 dark:hover:bg-zinc-800 text-gray-900 dark:text-white border border-black/10 dark:border-white/5 hover:border-black/20 dark:hover:border-white/20 rounded-xl flex items-center justify-center gap-3 transition-all font-medium group shadow-sm"
+                                        className="h-11 bg-gray-50 dark:bg-zinc-900 hover:bg-gray-100 dark:hover:bg-zinc-800 text-gray-900 dark:text-white border border-black/10 dark:border-white/5 hover:border-black/20 dark:hover:border-white/20 rounded-xl flex items-center justify-center gap-2 transition-all font-medium text-xs shadow-sm"
                                         disabled={loading}
                                     >
-                                        <Phone size={18} className="text-gray-600 dark:text-gray-400 group-hover:text-neon-blue group-hover:scale-110 transition-all" />
-                                        <span className="text-sm tracking-wide">Phone OTP</span>
+                                        <Phone size={14} className="text-gray-500 group-hover:text-neon-blue" />
+                                        <span>Phone OTP</span>
                                     </button>
                                 )}
                             </div>
 
-                            <div className="mt-8 pt-4 text-center text-xs font-medium text-gray-500 border-t border-black/10 dark:border-white/5">
+                            <div className="mt-6 pt-3.5 text-center text-xs font-medium text-gray-500 border-t border-black/10 dark:border-white/5">
                                 {mode === 'signIn' ? (
                                     <>Don't have an account? <button onClick={() => setMode('signUp')} className="text-neon-pink hover:text-gray-900 dark:hover:text-white transition-colors ml-1 font-bold tracking-widest uppercase">Sign Up</button></>
                                 ) : mode === 'signUp' ? (
