@@ -355,16 +355,16 @@ const AnnouncementsManager = () => {
                                                                             </div>
                                                                             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                                                                                 {[
-                                                                                    { label: 'Scale', key: 'scale', min: 1, max: 3, step: 0.01, unit: 'x' },
+                                                                                    { label: 'Scale', key: 'scale', min: -3, max: 3, step: 0.01, unit: 'x' },
                                                                                     { label: 'X-Position', key: 'x', min: -100, max: 100, step: 1, unit: '%' },
                                                                                     { label: 'Y-Position', key: 'y', min: -100, max: 100, step: 1, unit: '%' }
                                                                                 ].map(adjust => (
                                                                                     <div key={adjust.key} className="space-y-3">
                                                                                         <div className="flex justify-between">
                                                                                             <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest">{adjust.label}</span>
-                                                                                            <span className="text-[8px] font-black text-gray-900 dark:text-white">{newAnnouncement.imageTransform?.[adjust.key].toFixed(adjust.step < 1 ? 2 : 0)}{adjust.unit}</span>
+                                                                                            <span className="text-[8px] font-black text-gray-900 dark:text-white">{(newAnnouncement.imageTransform?.[adjust.key] ?? (adjust.key === 'scale' ? 1 : 0)).toFixed(adjust.step < 1 ? 2 : 0)}{adjust.unit}</span>
                                                                                         </div>
-                                                                                        <input type="range" min={adjust.min} max={adjust.max} step={adjust.step} value={newAnnouncement.imageTransform?.[adjust.key]} onChange={(e) => setNewAnnouncement({ ...newAnnouncement, imageTransform: { ...newAnnouncement.imageTransform, [adjust.key]: parseFloat(e.target.value) } })} className="w-full h-1 rounded-full appearance-none cursor-pointer bg-black/10 dark:bg-white/10 accent-neon-pink" />
+                                                                                        <input type="range" min={adjust.min} max={adjust.max} step={adjust.step} value={newAnnouncement.imageTransform?.[adjust.key] ?? (adjust.key === 'scale' ? 1 : 0)} onChange={(e) => setNewAnnouncement({ ...newAnnouncement, imageTransform: { ...newAnnouncement.imageTransform, [adjust.key]: parseFloat(e.target.value) } })} className="w-full h-1 rounded-full appearance-none cursor-pointer bg-black/10 dark:bg-white/10 accent-neon-pink" />
                                                                                     </div>
                                                                                 ))}
                                                                             </div>

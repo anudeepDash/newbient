@@ -127,15 +127,24 @@ const CommunityCard = ({ item, type, handleShare, onAction }) => {
             <motion.div
                 initial={false}
                 animate={{ rotateY: isFlipped ? 180 : 0 }}
-                transition={{ duration: 0.8, type: "spring", stiffness: 80, damping: 20 }}
+                transition={{ duration: 0.6, type: "spring", stiffness: 90, damping: 22 }}
                 className="relative w-full h-full preserve-3d cursor-default flex-1 flex"
+                style={{ 
+                    transformStyle: 'preserve-3d',
+                    WebkitTransformStyle: 'preserve-3d'
+                }}
             >
                 {/* Front Side */}
                 <div 
                     className={cn(
-                        "backface-hidden relative bg-white dark:bg-black border border-black/10 dark:border-white/5 rounded-3xl overflow-hidden flex-1 flex flex-col shadow-2xl transition-all duration-500",
-                        isFlipped ? "pointer-events-none" : "pointer-events-auto"
+                        "backface-hidden relative bg-white dark:bg-black border border-black/10 dark:border-white/5 rounded-3xl overflow-hidden flex-1 flex flex-col shadow-2xl transition-opacity duration-300",
+                        isFlipped ? "opacity-0 pointer-events-none" : "opacity-100 pointer-events-auto"
                     )}
+                    style={{
+                        backfaceVisibility: 'hidden',
+                        WebkitBackfaceVisibility: 'hidden',
+                        transform: 'rotateY(0deg)',
+                    }}
                 >
                     {/* Background Visual */}
                     <div className="absolute inset-0 z-0 overflow-hidden">
@@ -290,10 +299,13 @@ const CommunityCard = ({ item, type, handleShare, onAction }) => {
                 {/* Back Side */}
                 <div 
                     className={cn(
-                        "absolute inset-0 backface-hidden rotate-y-180 bg-white dark:bg-zinc-950/95 backdrop-blur-2xl border border-gray-200 dark:border-white/10 rounded-3xl p-6 md:p-8 flex flex-col justify-between shadow-2xl overflow-hidden",
-                        isFlipped ? "pointer-events-auto" : "pointer-events-none"
+                        "absolute inset-0 backface-hidden rotate-y-180 bg-white dark:bg-zinc-950/95 backdrop-blur-2xl border border-gray-200 dark:border-white/10 rounded-3xl p-6 md:p-8 flex flex-col justify-between shadow-2xl overflow-hidden transition-opacity duration-300",
+                        isFlipped ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
                     )}
                     style={{ 
+                        backfaceVisibility: 'hidden',
+                        WebkitBackfaceVisibility: 'hidden',
+                        transform: 'rotateY(180deg)',
                         borderColor: `${highlightColor}35`,
                         background: `radial-gradient(circle at bottom right, ${highlightColor}08 0%, transparent 70%)`
                     }}

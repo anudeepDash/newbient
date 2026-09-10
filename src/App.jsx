@@ -1,5 +1,5 @@
 import React, { useEffect, lazy, Suspense } from 'react';
-import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import ScrollToTop from './components/ScrollToTop';
 import { useStore } from './lib/store'; 
@@ -64,7 +64,6 @@ const VolunteerGigManager = lazy(() => import('./pages/Admin/VolunteerGigManager
 const CreatorManager = lazy(() => import('./pages/Admin/CreatorManager'));
 const CampaignManager = lazy(() => import('./pages/Admin/CampaignManager'));
 const UpcomingEventsManager = lazy(() => import('./pages/Admin/UpcomingEventsManager'));
-const Maintenance = lazy(() => import('./pages/Admin/Maintenance'));
 const GiveawayManager = lazy(() => import('./pages/Admin/GiveawayManager'));
 const GiveawayParticipants = lazy(() => import('./pages/Admin/GiveawayParticipants'));
 const DevSettings = lazy(() => import('./pages/Admin/DevSettings'));
@@ -222,12 +221,25 @@ function AppContent() {
             <Route path="admin/ticketing" element={<AdminGuard><MaintenanceGuard featureId="ticketing"><TicketingManagement /></MaintenanceGuard></AdminGuard>} />
             <Route path="admin/documents" element={<AdminGuard><DocumentHub /></AdminGuard>} />
             <Route path="admin/system-command" element={<AdminGuard><DevSettings /></AdminGuard>} />
-            <Route path="admin/settings" element={<AdminGuard><DevSettings /></AdminGuard>} />
-            <Route path="admin/dev-settings" element={<AdminGuard><DevSettings /></AdminGuard>} />
+            <Route path="admin/settings" element={<Navigate to="/admin/system-command" replace />} />
+            <Route path="admin/dev-settings" element={<Navigate to="/admin/system-command" replace />} />
 
             <Route path="campaign/:id" element={<CampaignPublicView />} />
             <Route path="doc/:id" element={<DocumentViewer />} />
             <Route path="auth/action" element={<ActionHandler />} />
+
+            {/* 404 catch-all */}
+            <Route path="*" element={
+              <div className="min-h-screen bg-white dark:bg-black flex items-center justify-center p-6">
+                <div className="text-center space-y-4 max-w-md">
+                  <h1 className="text-6xl font-black text-gray-900 dark:text-white">404</h1>
+                  <p className="text-gray-500 text-sm font-bold uppercase tracking-widest">Page not found</p>
+                  <a href="/" className="inline-block px-8 py-3 bg-neon-green text-black font-black uppercase tracking-widest text-xs rounded-2xl hover:scale-105 active:scale-95 transition-all">
+                    Return Home
+                  </a>
+                </div>
+              </div>
+            } />
           </Route>
         </Routes>
       </Suspense>

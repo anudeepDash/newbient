@@ -17,8 +17,8 @@ const THEME_KEY = 'nb_theme';
  */
 export function useTheme() {
   const getSystemTheme = () => {
-    if (typeof window === 'undefined') return 'dark';
-    return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+    if (typeof window === 'undefined') return 'light';
+    return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
   };
 
   const getSavedTheme = () => {
@@ -48,9 +48,9 @@ export function useTheme() {
   useEffect(() => {
     applyTheme(theme);
 
-    const mq = window.matchMedia('(prefers-color-scheme: light)');
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
     const osHandler = (e) => {
-      const newSystemTheme = e.matches ? 'light' : 'dark';
+      const newSystemTheme = e.matches ? 'dark' : 'light';
       setSystemTheme(newSystemTheme);
 
       // Only follow system if user hasn't manually overridden

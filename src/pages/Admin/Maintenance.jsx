@@ -10,7 +10,7 @@ import { useStore } from '../../lib/store';
 
 const Maintenance = () => {
     const navigate = useNavigate();
-    const { user } = useStore();
+    const { user, maintenanceState = {} } = useStore();
 
     const isAdmin = ['developer', 'super_admin', 'editor', 'admin', 'founder', 'content_admin', 'gate_manager', 'scanner', 'blog_writer'].includes(user?.role);
 
@@ -24,7 +24,7 @@ const Maintenance = () => {
                         rotate: [0, 90, 0],
                         opacity: [0.1, 0.2, 0.1]
                     }}
-                    transition={{ duration: 10, repeat: Infinity }}
+                    transition={{ duration: 10, repeat: 2 }}
                     className="absolute -top-20 -left-20 w-80 h-80 bg-neon-purple rounded-full blur-[100px]"
                 />
                 <motion.div
@@ -33,48 +33,33 @@ const Maintenance = () => {
                         rotate: [0, -90, 0],
                         opacity: [0.1, 0.2, 0.1]
                     }}
-                    transition={{ duration: 12, repeat: Infinity }}
+                    transition={{ duration: 12, repeat: 2 }}
                     className="absolute -bottom-20 -right-20 w-80 h-80 bg-neon-blue rounded-full blur-[100px]"
                 />
             </div>
 
-            <Card className="max-w-xl w-full p-8 md:p-12 relative z-10 border-black/10 dark:border-white/10 backdrop-blur-xl bg-white dark:bg-black/40 shadow-[0_0_50px_rgba(0,0,0,0.5)]">
+            <Card className="max-w-xl w-full p-8 md:p-12 relative z-10 border-black/10 dark:border-white/10 backdrop-blur-xl bg-white dark:bg-black/40 shadow-[0_0_50px_rgba(0,0,0,0.1)] dark:shadow-[0_0_50px_rgba(0,0,0,0.5)]">
                 <div className="flex flex-col items-center text-center space-y-8">
                     {/* Animated Icon */}
-                    <motion.div
-                        animate={{
-                            rotate: [0, -10, 10, -10, 0],
-                            scale: [1, 1.1, 1]
-                        }}
-                        transition={{ duration: 4, repeat: Infinity }}
-                        className="relative"
-                    >
+                    <div className="relative">
                         <div className="absolute inset-0 bg-neon-pink/20 blur-xl rounded-full" />
                         <div className="p-6 bg-gradient-to-br from-neon-pink to-neon-purple rounded-3xl text-gray-900 dark:text-white shadow-lg relative">
                             <Construction size={48} strokeWidth={1.5} />
                         </div>
-                        <motion.div
-                            animate={{ y: [-5, 5, -5], x: [-5, 5, -5] }}
-                            transition={{ duration: 3, repeat: Infinity }}
-                            className="absolute -top-2 -right-2 text-yellow-400"
-                        >
+                        <div className="absolute -top-2 -right-2 text-yellow-400">
                             <AlertTriangle size={24} fill="currentColor" />
-                        </motion.div>
-                        <motion.div
-                            animate={{ scale: [0.8, 1.2, 0.8] }}
-                            transition={{ duration: 2, repeat: Infinity }}
-                            className="absolute -bottom-2 -left-2 text-neon-blue"
-                        >
+                        </div>
+                        <div className="absolute -bottom-2 -left-2 text-neon-blue">
                             <Sparkles size={24} />
-                        </motion.div>
-                    </motion.div>
+                        </div>
+                    </div>
 
                     {/* Professional Messaging */}
                     <div className="space-y-4">
                         <motion.h1
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
-                            className="text-4xl md:text-5xl font-black italic tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-gray-950 via-gray-800 to-gray-500 dark:from-white dark:via-white to-gray-500 uppercase"
+                            className="text-4xl md:text-5xl font-black italic tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-gray-900 via-gray-700 to-gray-500 dark:from-white dark:via-white dark:to-gray-300 uppercase"
                         >
                             Under Maintenance
                         </motion.h1>
@@ -112,6 +97,11 @@ const Maintenance = () => {
                     >
                         {isAdmin ? (
                             <AdminDashboardLink />
+                        ) : maintenanceState.global ? (
+                            <div className="text-center p-4 rounded-xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10">
+                                <p className="text-sm font-bold text-gray-900 dark:text-white">Site is under maintenance.</p>
+                                <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">Please check back later.</p>
+                            </div>
                         ) : (
                             <Link to="/">
                                 <Button className="w-full h-12 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 hover:bg-black/10 dark:hover:bg-white/10 text-gray-900 dark:text-white font-black uppercase tracking-widest text-[10px] rounded-xl flex items-center justify-center gap-2">

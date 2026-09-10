@@ -326,7 +326,7 @@ const FinanceDashboard = () => {
                     <select
                         value={selectedMonth}
                         onChange={(e) => setSelectedMonth(e.target.value)}
-                        className="bg-gray-100 dark:bg-zinc-950/40 border border-black/10 dark:border-white/10 h-11 px-4 rounded-xl text-[10px] font-extrabold uppercase tracking-widest text-gray-900 dark:text-white outline-none focus:border-neon-green/40 focus:ring-1 focus:ring-neon-green/10 shadow-xl cursor-pointer hover:border-black/20 dark:hover:border-white/20 transition-all font-mono"
+                        className="appearance-none bg-gray-100 dark:bg-zinc-950/40 border border-black/10 dark:border-white/10 h-11 px-4 rounded-xl text-[10px] font-extrabold uppercase tracking-widest text-gray-900 dark:text-white outline-none focus:border-neon-green/40 focus:ring-1 focus:ring-neon-green/10 shadow-xl cursor-pointer hover:border-black/20 dark:hover:border-white/20 transition-all font-mono"
                     >
                         {monthOptions.map(opt => (
                             <option key={opt} value={opt} className="bg-gray-100 dark:bg-zinc-950 text-gray-900 dark:text-white font-semibold">{opt}</option>

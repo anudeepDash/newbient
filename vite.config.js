@@ -255,6 +255,27 @@ export default defineConfig(({ mode }) => {
             }
           });
         }
+      },
+      {
+        name: 'api-sync-users-middleware',
+        configureServer(server) {
+          server.middlewares.use(async (req, res, next) => {
+            if (req.url.startsWith('/api/sync-users')) {
+              try {
+                Object.assign(process.env, env);
+                const { default: handler } = await import('./api/sync-users.js');
+                await handler(req, res);
+              } catch (err) {
+                console.error('[LOCAL SYNC DEV PROXY] Error executing sync-users:', err);
+                res.statusCode = 500;
+                res.setHeader('Content-Type', 'application/json');
+                res.end(JSON.stringify({ error: err.message || 'Internal local sync error' }));
+              }
+            } else {
+              next();
+            }
+          });
+        }
       }
     ],
     optimizeDeps: {

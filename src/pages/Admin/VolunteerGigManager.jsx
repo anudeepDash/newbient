@@ -581,7 +581,7 @@ const VolunteerGigManager = () => {
                                                     <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest">ZOOM</label>
                                                     <span className="text-[9px] font-mono text-neon-green">{formData.imageTransform.scale.toFixed(2)}x</span>
                                                 </div>
-                                                <input type="range" min="0.5" max="2.5" step="0.01" value={formData.imageTransform.scale} onChange={e => setFormData({ ...formData, imageTransform: { ...formData.imageTransform, scale: parseFloat(e.target.value) } })} className="w-full accent-neon-green" />
+                                                <input type="range" min="-3" max="3" step="0.01" value={formData.imageTransform?.scale ?? 1.05} onChange={e => setFormData({ ...formData, imageTransform: { ...formData.imageTransform, scale: parseFloat(e.target.value) } })} className="w-full accent-neon-green" />
                                             </div>
                                             <div className="space-y-4">
                                                 <div className="flex justify-between">

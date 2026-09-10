@@ -110,7 +110,7 @@ const BlogPostDetail = () => {
     useDynamicMeta({
         title: post ? post.title : "Newbi Article",
         description: post ? post.shortDescription : "Read this article on Concert Zone.",
-        image: post && post.coverImage ? post.coverImage : "/favicon.svg",
+        image: post?.coverImage || "/og-image.png",
         url: window.location.href
     });
 

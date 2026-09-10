@@ -4,24 +4,16 @@ import Plus from 'lucide-react/dist/esm/icons/plus';
 import Edit from 'lucide-react/dist/esm/icons/edit';
 import Trash2 from 'lucide-react/dist/esm/icons/trash-2';
 import Share2 from 'lucide-react/dist/esm/icons/share-2';
-import Bell from 'lucide-react/dist/esm/icons/bell';
 import Eye from 'lucide-react/dist/esm/icons/eye';
-import ClipboardList from 'lucide-react/dist/esm/icons/clipboard-list';
-import Pin from 'lucide-react/dist/esm/icons/pin';
-import Sparkles from 'lucide-react/dist/esm/icons/sparkles';
-import ArrowRight from 'lucide-react/dist/esm/icons/arrow-right';
-import Info from 'lucide-react/dist/esm/icons/info';
-import Calendar from 'lucide-react/dist/esm/icons/calendar';
-import MapPin from 'lucide-react/dist/esm/icons/map-pin';
-import Megaphone from 'lucide-react/dist/esm/icons/megaphone';
-import Zap from 'lucide-react/dist/esm/icons/zap';
 import FileText from 'lucide-react/dist/esm/icons/file-text';
 import Lock from 'lucide-react/dist/esm/icons/lock';
 import Unlock from 'lucide-react/dist/esm/icons/unlock';
+import Megaphone from 'lucide-react/dist/esm/icons/megaphone';
+import Star from 'lucide-react/dist/esm/icons/star';
+import ExternalLink from 'lucide-react/dist/esm/icons/external-link';
 import { useStore } from '../../lib/store';
 import { useStoreSubscription } from '../../hooks/useStoreSubscription';
 import { Button } from '../../components/ui/Button';
-import { Card } from '../../components/ui/Card';
 import AdminCommunityHubLayout from '../../components/admin/AdminCommunityHubLayout';
 import { cn } from '../../lib/utils';
 import { notifyAllUsers } from '../../lib/notificationTriggers';
@@ -55,7 +47,7 @@ const FormManager = () => {
             'form'
         );
         
-        useStore.getState().addToast('Form pushed to announcements and notifications triggered!', 'success');
+        useStore.getState().addToast('Notification sent to all users!', 'success');
     };
 
     const handleShareWhatsApp = (form) => {
@@ -77,121 +69,162 @@ const FormManager = () => {
             }}
             action={
                 <Link to="/admin/forms/create">
-                    <Button className="h-16 px-12 bg-neon-pink text-black font-black uppercase tracking-[0.3em] text-[12px] rounded-[1rem] shadow-[0_15px_40px_rgba(255,79,139,0.2)] hover:scale-105 active:scale-95 transition-all border-none flex items-center justify-center gap-3">
-                        <Plus size={24} /> CREATE NEW
+                    <Button className="h-12 px-8 bg-neon-pink text-black font-bold uppercase tracking-widest text-[11px] rounded-xl shadow-[0_10px_30px_rgba(255,79,139,0.2)] hover:scale-[1.02] active:scale-[0.98] transition-all border-none flex items-center justify-center gap-2">
+                        <Plus size={18} /> Create Form
                     </Button>
                 </Link>
             }
         >
-            <div className="relative z-10 max-w-[1400px] mx-auto pb-32">
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
-                    {forms.map((item) => (
-                        <Card key={item.id} className="p-0 bg-gray-100 dark:bg-zinc-950/40 backdrop-blur-3xl border border-black/10 dark:border-white/5 rounded-[2rem] overflow-hidden group hover:border-neon-pink/30 transition-all duration-700 shadow-2xl flex flex-col h-full">
-                            {/* Card Header Media */}
-                            <div className="h-48 relative overflow-hidden">
-                                {item.image ? (
-                                    <img src={item.image} alt={item.title} className="w-full h-full object-cover opacity-40 group-hover:opacity-70 group-hover:scale-110 transition-all duration-1000" />
-                                ) : (
-                                    <div className="w-full h-full bg-gradient-to-br from-zinc-900 to-black flex items-center justify-center">
-                                        <FileText size={48} className="text-gray-900 dark:text-white/10" />
-                                    </div>
-                                )}
-                                <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/20 to-transparent" />
-                                
-                                <div className="absolute top-6 right-6 flex gap-2">
-                                    <div className={cn(
-                                        "px-3 py-1 rounded-full border text-[8px] font-black uppercase tracking-widest flex items-center gap-1.5",
-                                        item.activeLabel === 'Live' ? "bg-green-500/10 border-green-500/20 text-green-400" : "bg-red-500/10 border-red-500/20 text-red-400"
-                                    )}>
-                                        <div className="w-1 h-1 rounded-full bg-current animate-pulse" />
-                                        {item.activeLabel || 'LIVE'}
-                                    </div>
-                                </div>
-
-                                <div className="absolute bottom-6 left-8 right-8">
-                                    <h3 className="text-2xl font-black italic uppercase tracking-tighter text-gray-900 dark:text-white truncate drop-shadow-2xl">{item.title}</h3>
-                                    <div className="flex items-center gap-4 mt-2 opacity-60">
-                                        <span className="text-[9px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
-                                            <Calendar size={10} className="text-neon-pink" /> {item.date || 'ALWAYS ACTIVE'}
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Card Content */}
-                            <div className="p-8 flex-grow flex flex-col justify-between">
-                                <p className="text-[11px] font-medium text-gray-500 uppercase tracking-widest line-clamp-2 italic leading-relaxed">
-                                    {item.description || "No description provided."}
-                                </p>
-
-                                <div className="mt-8 pt-6 border-t border-black/10 dark:border-white/5 space-y-4">
-                                    <div className="flex items-center gap-3">
-                                        <Button 
-                                            variant="outline" 
-                                            onClick={() => handlePushNotification(item)}
-                                            className="flex-1 h-12 rounded-xl border-black/10 dark:border-white/5 bg-yellow-500/5 text-yellow-500 hover:bg-yellow-500 hover:text-black transition-all flex items-center justify-center gap-2 group/btn"
-                                        >
-                                            <Megaphone size={14} className="group-hover/btn:rotate-12 transition-transform" />
-                                            <span className="text-[9px] font-black uppercase tracking-widest">NOTIFY</span>
-                                        </Button>
-                                        <Button 
-                                            variant="outline" 
-                                            onClick={() => handleShareWhatsApp(item)}
-                                            className="w-12 h-12 rounded-xl border-black/10 dark:border-white/5 bg-neon-pink/5 text-neon-pink hover:bg-neon-pink hover:text-black transition-all flex items-center justify-center"
-                                        >
-                                            <Share2 size={16} />
-                                        </Button>
-                                    </div>
-
-                                    <div className="flex items-center gap-3">
-                                        <Button 
-                                            variant="outline" 
-                                            onClick={() => {
-                                                const newLabel = item.activeLabel === 'Live' ? 'Closed' : 'Live';
-                                                useStore.getState().updateForm(item.id, { ...item, activeLabel: newLabel });
-                                            }}
-                                            className={cn(
-                                                "w-12 h-14 rounded-2xl border-black/10 dark:border-white/5 transition-all flex items-center justify-center",
-                                                item.activeLabel === 'Live' ? "bg-black/5 dark:bg-white/5 text-neon-green hover:bg-neon-green hover:text-black" : "bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-gray-900 dark:hover:text-white"
-                                            )}
-                                            title={item.activeLabel === 'Live' ? "Close Form" : "Open Form"}
-                                        >
-                                            {item.activeLabel === 'Live' ? <Unlock size={18} /> : <Lock size={18} />}
-                                        </Button>
-                                        <Link to={`/admin/forms/edit/${item.id}`} className="flex-1">
-                                            <Button variant="outline" className="w-full h-14 rounded-2xl border-black/10 dark:border-white/5 hover:bg-white hover:text-black transition-all flex items-center justify-center gap-2">
-                                                <Edit size={16} />
-                                                <span className="text-[10px] font-black uppercase tracking-widest">EDIT</span>
-                                            </Button>
-                                        </Link>
-                                        <Link to={`/forms/${item.id}`} target="_blank">
-                                            <Button variant="outline" className="w-14 h-14 rounded-2xl border-black/10 dark:border-white/5 text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 flex items-center justify-center">
-                                                <Eye size={18} />
-                                            </Button>
-                                        </Link>
-                                        <Button 
-                                            variant="outline" 
-                                            onClick={() => handleDelete(item.id)}
-                                            className="w-14 h-14 rounded-2xl bg-red-500 text-gray-900 dark:text-white border-none hover:bg-red-600 transition-all flex items-center justify-center shrink-0"
-                                        >
-                                            <Trash2 size={20} />
-                                        </Button>
-                                    </div>
-                                </div>
-                            </div>
-                        </Card>
-                    ))}
-
-                    {forms.length === 0 && (
-                        <div className="col-span-full py-40 text-center">
-                            <div className="w-20 h-20 bg-black/5 dark:bg-white/5 rounded-[1.5rem] flex items-center justify-center mx-auto mb-8 border border-dashed border-black/10 dark:border-white/10">
-                                <FileText size={32} className="text-gray-900 dark:text-white/20" />
-                            </div>
-                            <h3 className="text-xl font-black italic uppercase tracking-tighter text-gray-900 dark:text-white/40">No forms found.</h3>
-                            <p className="text-[10px] font-black text-gray-600 uppercase tracking-[0.3em] mt-2">CREATE ONE TO START.</p>
+            <div className="relative z-10 max-w-[1400px] mx-auto pb-20">
+                {forms.length === 0 ? (
+                    <div className="py-32 text-center">
+                        <div className="w-20 h-20 bg-gray-100 dark:bg-white/5 rounded-2xl flex items-center justify-center mx-auto mb-6 border border-dashed border-black/10 dark:border-white/10">
+                            <FileText size={28} className="text-gray-400 dark:text-gray-600" />
                         </div>
-                    )}
-                </div>
+                        <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">No forms yet</h3>
+                        <p className="text-sm text-gray-500 mb-8 max-w-xs mx-auto">Create your first form to start collecting responses from your community.</p>
+                        <Link to="/admin/forms/create">
+                            <Button className="h-11 px-8 bg-neon-pink text-black font-bold text-xs rounded-xl">
+                                <Plus size={16} className="mr-2" /> Create Form
+                            </Button>
+                        </Link>
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+                        {forms.map((item) => {
+                            const isLive = item.activeLabel === 'Live' || !item.activeLabel;
+                            const highlightColor = item.highlightColor || '#FF4F8B';
+
+                            return (
+                                <div 
+                                    key={item.id} 
+                                    className="bg-white dark:bg-zinc-950/50 border border-black/5 dark:border-white/5 rounded-2xl overflow-hidden group hover:border-black/10 dark:hover:border-white/10 transition-all duration-500 flex flex-col"
+                                >
+                                    {/* Card Header */}
+                                    <div className="relative h-44 overflow-hidden">
+                                        {item.image ? (
+                                            <img 
+                                                src={item.image} 
+                                                alt={item.title} 
+                                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" 
+                                            />
+                                        ) : (
+                                            <div className="w-full h-full flex items-center justify-center" style={{ background: `linear-gradient(135deg, ${highlightColor}08, ${highlightColor}15)` }}>
+                                                <FileText size={40} className="text-gray-300 dark:text-gray-700" />
+                                            </div>
+                                        )}
+                                        <div className="absolute inset-0 bg-gradient-to-t from-white dark:from-zinc-950 via-transparent to-transparent" />
+
+                                        {/* Status Badge */}
+                                        <div className="absolute top-4 left-4">
+                                            <div className={cn(
+                                                "px-2.5 py-1 rounded-lg text-[9px] font-bold uppercase tracking-widest flex items-center gap-1.5 backdrop-blur-xl border",
+                                                isLive 
+                                                    ? "bg-green-500/10 border-green-500/20 text-green-600 dark:text-green-400" 
+                                                    : "bg-red-500/10 border-red-500/20 text-red-500"
+                                            )}>
+                                                <div className={cn("w-1.5 h-1.5 rounded-full", isLive ? "bg-green-500 animate-pulse" : "bg-red-500")} />
+                                                {item.activeLabel || 'Live'}
+                                            </div>
+                                        </div>
+
+                                        {/* Spotlight Badge */}
+                                        {item.isPinned && (
+                                            <div className="absolute top-4 right-4">
+                                                <div className="w-7 h-7 rounded-lg bg-neon-pink/90 backdrop-blur-xl flex items-center justify-center">
+                                                    <Star size={12} className="text-white fill-current" />
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Accent Bar */}
+                                        <div className="absolute bottom-0 left-0 right-0 h-0.5" style={{ background: `linear-gradient(to right, transparent, ${highlightColor}40, transparent)` }} />
+                                    </div>
+
+                                    {/* Card Body */}
+                                    <div className="p-5 flex-1 flex flex-col">
+                                        <h3 className="text-base font-bold text-gray-900 dark:text-white mb-1.5 line-clamp-1">
+                                            {item.title}
+                                        </h3>
+                                        <p className="text-xs text-gray-500 line-clamp-2 leading-relaxed mb-4 flex-1">
+                                            {item.description || "No description provided."}
+                                        </p>
+
+                                        {item.bottomText && (
+                                            <div className="mb-4">
+                                                <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">{item.bottomText}</span>
+                                            </div>
+                                        )}
+
+                                        {/* Quick Actions */}
+                                        <div className="space-y-2 pt-3 border-t border-black/5 dark:border-white/5">
+                                            {/* Primary Actions Row */}
+                                            <div className="flex items-center gap-2">
+                                                <Link to={`/admin/forms/edit/${item.id}`} className="flex-1">
+                                                    <Button variant="outline" className="w-full h-10 rounded-xl border-black/5 dark:border-white/5 hover:bg-gray-100 dark:hover:bg-white/5 transition-all flex items-center justify-center gap-2">
+                                                        <Edit size={13} />
+                                                        <span className="text-[10px] font-bold uppercase tracking-widest">Edit</span>
+                                                    </Button>
+                                                </Link>
+                                                <Button 
+                                                    variant="outline" 
+                                                    onClick={() => handlePushNotification(item)}
+                                                    className="flex-1 h-10 rounded-xl border-black/5 dark:border-white/5 bg-amber-500/5 text-amber-600 dark:text-amber-400 hover:bg-amber-500 hover:text-black transition-all flex items-center justify-center gap-2"
+                                                    title="Push notification to all users"
+                                                >
+                                                    <Megaphone size={13} />
+                                                    <span className="text-[10px] font-bold uppercase tracking-widest">Notify</span>
+                                                </Button>
+                                            </div>
+
+                                            {/* Secondary Actions Row */}
+                                            <div className="flex items-center gap-2">
+                                                <Button 
+                                                    variant="outline" 
+                                                    onClick={() => {
+                                                        const newLabel = isLive ? 'Closed' : 'Live';
+                                                        useStore.getState().updateForm(item.id, { ...item, activeLabel: newLabel });
+                                                    }}
+                                                    className={cn(
+                                                        "w-10 h-10 rounded-xl border-black/5 dark:border-white/5 transition-all flex items-center justify-center",
+                                                        isLive 
+                                                            ? "text-green-600 dark:text-green-400 hover:bg-green-500 hover:text-black" 
+                                                            : "text-red-500 hover:bg-red-500 hover:text-white"
+                                                    )}
+                                                    title={isLive ? "Close form" : "Open form"}
+                                                >
+                                                    {isLive ? <Unlock size={14} /> : <Lock size={14} />}
+                                                </Button>
+                                                <Button 
+                                                    variant="outline" 
+                                                    onClick={() => handleShareWhatsApp(item)}
+                                                    className="w-10 h-10 rounded-xl border-black/5 dark:border-white/5 text-green-600 hover:bg-green-500 hover:text-white transition-all flex items-center justify-center"
+                                                    title="Share on WhatsApp"
+                                                >
+                                                    <Share2 size={14} />
+                                                </Button>
+                                                <Link to={`/forms/${item.id}`} target="_blank" className="flex-1">
+                                                    <Button variant="outline" className="w-full h-10 rounded-xl border-black/5 dark:border-white/5 text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/5 transition-all flex items-center justify-center gap-2">
+                                                        <Eye size={14} />
+                                                        <span className="text-[10px] font-bold uppercase tracking-widest">View</span>
+                                                    </Button>
+                                                </Link>
+                                                <Button 
+                                                    variant="outline" 
+                                                    onClick={() => handleDelete(item.id)}
+                                                    className="w-10 h-10 rounded-xl border-red-500/10 bg-red-500/5 text-red-500 hover:bg-red-500 hover:text-white hover:border-red-500 transition-all flex items-center justify-center"
+                                                    title="Delete form"
+                                                >
+                                                    <Trash2 size={14} />
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
             </div>
         </AdminCommunityHubLayout>
     );

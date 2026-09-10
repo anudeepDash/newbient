@@ -4,23 +4,17 @@ import ArrowLeft from 'lucide-react/dist/esm/icons/arrow-left';
 import Save from 'lucide-react/dist/esm/icons/save';
 import HelpCircle from 'lucide-react/dist/esm/icons/help-circle';
 import ExternalLink from 'lucide-react/dist/esm/icons/external-link';
-import Smartphone from 'lucide-react/dist/esm/icons/smartphone';
-import Monitor from 'lucide-react/dist/esm/icons/monitor';
-import LayoutGrid from 'lucide-react/dist/esm/icons/layout-grid';
-import Sparkles from 'lucide-react/dist/esm/icons/sparkles';
-import Palette from 'lucide-react/dist/esm/icons/palette';
-import ImageIcon from 'lucide-react/dist/esm/icons/image';
 import Plus from 'lucide-react/dist/esm/icons/plus';
 import X from 'lucide-react/dist/esm/icons/x';
-import Pin from 'lucide-react/dist/esm/icons/pin';
 import FileText from 'lucide-react/dist/esm/icons/file-text';
 import Loader from 'lucide-react/dist/esm/icons/loader';
-import Zap from 'lucide-react/dist/esm/icons/zap';
 import Star from 'lucide-react/dist/esm/icons/star';
+import Link2 from 'lucide-react/dist/esm/icons/link-2';
+import ImageIcon from 'lucide-react/dist/esm/icons/image';
+import Move from 'lucide-react/dist/esm/icons/move';
 import { notifyAllUsers } from '../../lib/notificationTriggers';
 import { useStore } from '../../lib/store';
 import { useStoreSubscription } from '../../hooks/useStoreSubscription';
-import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import LivePreview from '../../components/admin/LivePreview';
@@ -147,6 +141,29 @@ const FormBuilder = () => {
         }
     };
 
+    // Section wrapper for visual grouping
+    const Section = ({ title, icon: Icon, children, accent = false }) => (
+        <div className={cn(
+            "rounded-[1.5rem] border p-6 md:p-8 space-y-6 transition-all duration-300",
+            accent 
+                ? "bg-neon-pink/[0.03] border-neon-pink/10 hover:border-neon-pink/20" 
+                : "bg-white dark:bg-black/30 border-black/5 dark:border-white/5 hover:border-black/10 dark:hover:border-white/10"
+        )}>
+            <div className="flex items-center gap-3">
+                {Icon && (
+                    <div className={cn(
+                        "w-8 h-8 rounded-xl flex items-center justify-center",
+                        accent ? "bg-neon-pink/10 text-neon-pink" : "bg-black/5 dark:bg-white/5 text-gray-500"
+                    )}>
+                        <Icon size={14} />
+                    </div>
+                )}
+                <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">{title}</h3>
+            </div>
+            {children}
+        </div>
+    );
+
     return (
         <AdminCommunityHubLayout 
             hideTabs 
@@ -157,277 +174,288 @@ const FormBuilder = () => {
                 accentClass: "text-neon-pink"
             }}
         >
-            <div className="flex flex-col lg:grid lg:grid-cols-2 gap-12 items-stretch mb-20 relative z-10">
+            <div className="flex flex-col lg:grid lg:grid-cols-[1fr,420px] gap-8 lg:gap-12 items-start mb-20 relative z-10">
                 {/* Editor Column */}
-                <div className="w-full">
-                    <Card className="p-8 md:p-12 bg-gray-100 dark:bg-zinc-950/40 backdrop-blur-3xl border-black/10 dark:border-white/5 rounded-[2.5rem] shadow-2xl relative overflow-hidden">
-                        {/* Ambient Background Glow */}
-                        <div className="absolute -top-20 -right-20 w-64 h-64 bg-neon-pink/5 rounded-full blur-[100px] pointer-events-none" />
+                <div className="w-full space-y-6">
+                    <form onSubmit={handleSubmit} className="space-y-6">
                         
-                        <form onSubmit={handleSubmit} className="space-y-12 relative z-10">
-                            <div className="space-y-3">
-                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em] pl-1">DESCRIPTION</label>
+                        {/* Basic Info */}
+                        <Section title="Basic Information" icon={FileText}>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] pl-1">Title</label>
+                                    <Input 
+                                        value={title} 
+                                        onChange={e => setTitle(e.target.value)} 
+                                        required 
+                                        placeholder="e.g. Join The Tribe"
+                                        className="h-12 bg-gray-50 dark:bg-black/40 border-black/5 dark:border-white/5 rounded-xl px-4 text-sm font-semibold focus:border-neon-pink/40" 
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] pl-1">Status</label>
+                                    <StudioSelect
+                                        value={activeLabel}
+                                        options={[
+                                            { value: 'Live', label: 'LIVE' },
+                                            { value: 'Few Slots Remain', label: 'FILLING FAST' },
+                                            { value: 'Closed', label: 'CLOSED' }
+                                        ]}
+                                        onChange={val => setActiveLabel(val)}
+                                        className="h-12"
+                                        accentColor="neon-pink"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] pl-1">Description</label>
                                 <textarea 
-                                    className="w-full bg-white dark:bg-black/60 border border-black/10 dark:border-white/5 rounded-[1.5rem] p-8 text-gray-900 dark:text-white focus:outline-none focus:border-neon-pink/40 min-h-[150px] resize-none text-[13px] font-medium placeholder:text-gray-800 leading-relaxed italic shadow-inner" 
+                                    className="w-full bg-gray-50 dark:bg-black/40 border border-black/5 dark:border-white/5 rounded-xl p-4 text-gray-900 dark:text-white focus:outline-none focus:border-neon-pink/30 min-h-[100px] resize-none text-sm font-medium placeholder:text-gray-400 dark:placeholder:text-gray-600 leading-relaxed transition-colors" 
                                     value={description} 
                                     onChange={e => setDescription(e.target.value)} 
-                                    placeholder="Brief details..." 
+                                    placeholder="Brief description of this form..." 
                                 />
                             </div>
 
-                            <div className="space-y-10">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                    <div className="space-y-3">
-                                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em] pl-1">TITLE</label>
-                                        <Input 
-                                            value={title} 
-                                            onChange={e => setTitle(e.target.value)} 
-                                            required 
-                                            placeholder="e.g. JOIN THE TRIBE"
-                                            className="h-14 bg-white dark:bg-black/60 border-black/10 dark:border-white/5 rounded-2xl px-6 text-[11px] font-black uppercase tracking-widest focus:border-neon-pink/40" 
-                                        />
-                                    </div>
-                                    <div className="space-y-3">
-                                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em] pl-1">STATUS</label>
-                                        <StudioSelect
-                                            value={activeLabel}
-                                            options={[
-                                                { value: 'Live', label: 'LIVE' },
-                                                { value: 'Few Slots Remain', label: 'FILLING FAST' },
-                                                { value: 'Closed', label: 'CLOSED' }
-                                            ]}
-                                            onChange={val => setActiveLabel(val)}
-                                            className="h-14"
-                                            accentColor="neon-pink"
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                    <div className="space-y-3">
-                                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em] pl-1">LABEL</label>
-                                        <Input 
-                                            value={bottomText} 
-                                            onChange={e => setBottomText(e.target.value)} 
-                                            placeholder="e.g. GLOBAL ACCESS"
-                                            className="h-14 bg-white dark:bg-black/60 border-black/10 dark:border-white/5 rounded-2xl px-6 text-[11px] font-black uppercase tracking-widest focus:border-neon-pink/40" 
-                                        />
-                                    </div>
-                                    <div className="space-y-3">
-                                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em] pl-1">BUTTON TEXT</label>
-                                        <Input 
-                                            value={buttonText} 
-                                            onChange={e => setButtonText(e.target.value)} 
-                                            placeholder="e.g. FILL FORM"
-                                            className="h-14 bg-white dark:bg-black/60 border-black/10 dark:border-white/5 rounded-2xl px-6 text-[11px] font-black uppercase tracking-widest focus:border-neon-pink/40" 
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="space-y-3">
-                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em] pl-1">DESCRIPTION</label>
-                                    <textarea 
-                                        className="w-full bg-white dark:bg-black/60 border border-black/10 dark:border-white/5 rounded-[1.5rem] p-8 text-gray-900 dark:text-white focus:outline-none focus:border-neon-pink/40 min-h-[150px] resize-none text-[13px] font-medium placeholder:text-gray-800 leading-relaxed italic shadow-inner" 
-                                        value={description} 
-                                        onChange={e => setDescription(e.target.value)} 
-                                        placeholder="Brief details..." 
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] pl-1">Location Label</label>
+                                    <Input 
+                                        value={bottomText} 
+                                        onChange={e => setBottomText(e.target.value)} 
+                                        placeholder="e.g. Global Access"
+                                        className="h-12 bg-gray-50 dark:bg-black/40 border-black/5 dark:border-white/5 rounded-xl px-4 text-sm font-semibold focus:border-neon-pink/40" 
                                     />
                                 </div>
-
-                                <div className="p-8 rounded-[2rem] bg-white dark:bg-black/40 border border-black/10 dark:border-white/5 space-y-6">
-                                    <div className="flex justify-between items-center">
-                                        <label className="text-[10px] font-black text-neon-pink uppercase tracking-[0.3em]">FORM LINK (URL)</label>
-                                        <button
-                                            type="button"
-                                            onClick={() => setShowHelp(!showHelp)}
-                                            className="text-[9px] font-black text-gray-600 hover:text-gray-900 dark:hover:text-white uppercase tracking-widest transition-colors flex items-center gap-2 underline"
-                                        >
-                                            <HelpCircle size={12} /> GUIDE
-                                        </button>
-                                    </div>
-
-                                    {showHelp && (
-                                        <div className="text-[11px] text-gray-600 dark:text-gray-400 bg-white dark:bg-black/60 p-6 rounded-2xl border border-black/10 dark:border-white/10 uppercase tracking-widest leading-loose italic">
-                                            <ol className="list-decimal pl-4 space-y-2">
-                                                <li>Open your Google Form in edit mode.</li>
-                                                <li>Click the <strong className="text-gray-900 dark:text-white">Send</strong> button.</li>
-                                                <li>Click the <strong className="text-gray-900 dark:text-white">&lt; &gt;</strong> (Embed) tab.</li>
-                                                <li>Copy the URL inside <code>src="..."</code>.</li>
-                                            </ol>
-                                        </div>
-                                    )}
-
-                                    <Input
-                                        value={formUrl}
-                                        onChange={(e) => setFormUrl(e.target.value)}
-                                        required
-                                        placeholder="HTTPS://DOCS.GOOGLE.COM/FORMS/D/E/.../VIEWFORM"
-                                        className="h-14 font-mono text-[10px] bg-white dark:bg-black/60 border-black/10 dark:border-white/5 rounded-2xl px-6 focus:border-neon-pink/40"
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] pl-1">Button Text</label>
+                                    <Input 
+                                        value={buttonText} 
+                                        onChange={e => setButtonText(e.target.value)} 
+                                        placeholder="e.g. Fill Form"
+                                        className="h-12 bg-gray-50 dark:bg-black/40 border-black/5 dark:border-white/5 rounded-xl px-4 text-sm font-semibold focus:border-neon-pink/40" 
                                     />
+                                </div>
+                            </div>
+                        </Section>
 
-                                    <div className="flex items-start gap-4 p-6 rounded-2xl border border-black/10 dark:border-white/5 bg-white dark:bg-black/40 group hover:border-black/10 dark:hover:border-white/10 transition-all">
-                                        <input
-                                            type="checkbox"
-                                            id="requiresExternal"
-                                            checked={requiresExternal}
-                                            onChange={(e) => setRequiresExternal(e.target.checked)}
-                                            className="mt-1 w-5 h-5 rounded border-black/10 dark:border-white/10 text-neon-pink focus:ring-neon-pink bg-white dark:bg-black/60"
-                                        />
-                                        <div>
-                                            <label htmlFor="requiresExternal" className="text-[11px] text-gray-900 dark:text-white font-black uppercase tracking-widest cursor-pointer flex items-center gap-2">
-                                                EXTERNAL REDIRECT
-                                                <ExternalLink className="h-3 w-3 text-gray-500" />
-                                            </label>
-                                            <p className="text-[9px] uppercase font-bold tracking-widest text-gray-600 mt-1">
-                                                Open in new tab. Required for <span className="text-gray-900 dark:text-white">File Uploads</span> or <span className="text-gray-900 dark:text-white">Forced Login</span>.
-                                            </p>
+                        {/* Form Link */}
+                        <Section title="Google Form Link" icon={Link2} accent>
+                            <div className="flex justify-between items-center -mt-2">
+                                <p className="text-[10px] font-medium text-gray-500 tracking-wide">Paste your Google Form URL or embed code</p>
+                                <button
+                                    type="button"
+                                    onClick={() => setShowHelp(!showHelp)}
+                                    className="text-[9px] font-bold text-neon-pink hover:text-gray-900 dark:hover:text-white uppercase tracking-widest transition-colors flex items-center gap-1.5"
+                                >
+                                    <HelpCircle size={12} /> How to get URL
+                                </button>
+                            </div>
+
+                            {showHelp && (
+                                <div className="text-xs text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-black/40 p-5 rounded-xl border border-black/5 dark:border-white/5 space-y-2">
+                                    <ol className="list-decimal pl-4 space-y-1.5">
+                                        <li>Open your Google Form in edit mode.</li>
+                                        <li>Click the <strong className="text-gray-900 dark:text-white">Send</strong> button.</li>
+                                        <li>Click the <strong className="text-gray-900 dark:text-white">&lt; &gt;</strong> (Embed) tab.</li>
+                                        <li>Copy the URL inside <code className="px-1.5 py-0.5 bg-black/5 dark:bg-white/5 rounded text-[10px]">src="..."</code> or paste the full embed code.</li>
+                                    </ol>
+                                </div>
+                            )}
+
+                            <Input
+                                value={formUrl}
+                                onChange={(e) => setFormUrl(e.target.value)}
+                                required
+                                placeholder="https://docs.google.com/forms/d/e/.../viewform"
+                                className="h-12 font-mono text-xs bg-gray-50 dark:bg-black/40 border-black/5 dark:border-white/5 rounded-xl px-4 focus:border-neon-pink/40"
+                            />
+
+                            <label className="flex items-center gap-4 p-4 rounded-xl border border-black/5 dark:border-white/5 bg-gray-50 dark:bg-black/20 cursor-pointer hover:border-black/10 dark:hover:border-white/10 transition-all group">
+                                <input
+                                    type="checkbox"
+                                    checked={requiresExternal}
+                                    onChange={(e) => setRequiresExternal(e.target.checked)}
+                                    className="w-4 h-4 rounded border-black/20 dark:border-white/20 text-neon-pink focus:ring-neon-pink bg-white dark:bg-black/60 cursor-pointer"
+                                />
+                                <div className="flex-1">
+                                    <span className="text-xs text-gray-900 dark:text-white font-bold flex items-center gap-2">
+                                        Open externally <ExternalLink className="h-3 w-3 text-gray-400" />
+                                    </span>
+                                    <p className="text-[10px] text-gray-500 mt-0.5">
+                                        Required for forms with file uploads or forced Google login.
+                                    </p>
+                                </div>
+                            </label>
+                        </Section>
+
+                        {/* Appearance */}
+                        <Section title="Appearance" icon={ImageIcon}>
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] pl-1">Cover Image</label>
+                                <div className="flex gap-3">
+                                    <Input 
+                                        value={image} 
+                                        onChange={e => setImage(e.target.value)} 
+                                        placeholder="Paste image URL" 
+                                        className="flex-1 h-12 bg-gray-50 dark:bg-black/40 border-black/5 dark:border-white/5 rounded-xl px-4 text-sm focus:border-neon-pink/40" 
+                                    />
+                                    <div className="relative group w-12 h-12 shrink-0">
+                                        <input type="file" accept="image/*" onChange={handleFileChange} className="absolute inset-0 opacity-0 cursor-pointer z-10" />
+                                        <div className={cn(
+                                            "h-full w-full rounded-xl flex items-center justify-center border-2 border-dashed transition-all", 
+                                            isUploading ? "border-neon-pink bg-neon-pink/10 text-neon-pink" : "border-black/10 dark:border-white/10 bg-gray-50 dark:bg-black/30 text-gray-400 hover:border-black/20 dark:hover:border-white/20 hover:text-gray-600"
+                                        )}>
+                                            {isUploading ? <Loader className="animate-spin" size={16} /> : <Plus size={16} />}
                                         </div>
                                     </div>
                                 </div>
-
-                                <div className="space-y-8 pt-6 border-t border-black/10 dark:border-white/5">
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                        <div className="space-y-3">
-                                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em] pl-1">IMAGE</label>
-                                            <div className="flex gap-4">
-                                                <Input 
-                                                    value={image} 
-                                                    onChange={e => setImage(e.target.value)} 
-                                                    placeholder="URL" 
-                                                    className="flex-1 h-14 bg-white dark:bg-black/60 border-black/10 dark:border-white/5 rounded-2xl focus:border-neon-pink/40" 
-                                                />
-                                                <div className="relative group w-14 h-14 shrink-0">
-                                                    <input type="file" onChange={handleFileChange} className="absolute inset-0 opacity-0 cursor-pointer z-10" />
-                                                    <div className={cn(
-                                                        "h-full w-full rounded-2xl flex items-center justify-center border-2 border-dashed transition-all", 
-                                                        isUploading ? "border-neon-pink bg-neon-pink/10 text-neon-pink" : "border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 text-gray-500 hover:border-black/20 dark:hover:border-white/20"
-                                                    )}>
-                                                        {isUploading ? <Loader className="animate-spin" size={18} /> : <Plus size={18} />}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div className="space-y-3">
-                                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em] pl-1">HIGHLIGHT COLOR</label>
-                                            <div className="flex items-center gap-4 h-14 bg-white dark:bg-black/60 border border-black/10 dark:border-white/5 rounded-2xl px-6">
-                                                {colorPresets.map(color => (
-                                                    <button 
-                                                        key={color.value} 
-                                                        type="button" 
-                                                        onClick={() => setHighlightColor(color.value)} 
-                                                        className={cn(
-                                                            "w-6 h-6 rounded-full border-2 transition-all hover:scale-110", 
-                                                            highlightColor === color.value ? "border-white shadow-[0_0_15px_rgba(255,79,139,0.4)]" : "border-black/50"
-                                                        )} 
-                                                        style={{ backgroundColor: color.value }} 
-                                                    />
-                                                ))}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="p-8 rounded-[2rem] bg-white dark:bg-black/40 border border-black/10 dark:border-white/5 space-y-10">
-                                    <div className="flex items-center justify-between">
-                                        <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-neon-pink italic">IMAGE POSITION</h4>
+                                {image && (
+                                    <div className="relative mt-2 h-32 rounded-xl overflow-hidden border border-black/5 dark:border-white/5">
+                                        <img src={image} alt="Preview" className="w-full h-full object-cover" />
                                         <button 
                                             type="button" 
-                                            onClick={() => setImageTransform({ scale: 1.05, x: 0, y: 0 })} 
-                                            className="text-[9px] font-black text-gray-600 hover:text-gray-900 dark:hover:text-white uppercase tracking-widest transition-colors flex items-center gap-2"
+                                            onClick={() => setImage('')}
+                                            className="absolute top-2 right-2 w-7 h-7 rounded-lg bg-black/60 text-white flex items-center justify-center hover:bg-black/80 transition-colors"
                                         >
-                                            <X size={12} /> RESET
+                                            <X size={12} />
                                         </button>
                                     </div>
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-12 pt-2">
-                                        <div className="space-y-4">
-                                            <div className="flex justify-between">
-                                                <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest">ZOOM</label>
-                                                <span className="text-[9px] font-mono text-neon-pink">{imageTransform.scale.toFixed(2)}x</span>
-                                            </div>
-                                            <input type="range" min="0.5" max="2.5" step="0.01" value={imageTransform.scale} onChange={e => setImageTransform({ ...imageTransform, scale: parseFloat(e.target.value) })} className="w-full accent-neon-pink" />
-                                        </div>
-                                        <div className="space-y-4">
-                                            <div className="flex justify-between">
-                                                <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest">X</label>
-                                                <span className="text-[9px] font-mono text-neon-pink">{imageTransform.x}%</span>
-                                            </div>
-                                            <input type="range" min="-100" max="100" step="1" value={imageTransform.x} onChange={e => setImageTransform({ ...imageTransform, x: parseInt(e.target.value) })} className="w-full accent-neon-pink" />
-                                        </div>
-                                        <div className="space-y-4">
-                                            <div className="flex justify-between">
-                                                <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Y</label>
-                                                <span className="text-[9px] font-mono text-neon-pink">{imageTransform.y}%</span>
-                                            </div>
-                                            <input type="range" min="-100" max="100" step="1" value={imageTransform.y} onChange={e => setImageTransform({ ...imageTransform, y: parseInt(e.target.value) })} className="w-full accent-neon-pink" />
-                                        </div>
+                                )}
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] pl-1">Accent Color</label>
+                                <div className="flex items-center gap-3 h-12 bg-gray-50 dark:bg-black/40 border border-black/5 dark:border-white/5 rounded-xl px-4">
+                                    {colorPresets.map(color => (
+                                        <button 
+                                            key={color.value} 
+                                            type="button" 
+                                            onClick={() => setHighlightColor(color.value)} 
+                                            className={cn(
+                                                "w-7 h-7 rounded-full border-2 transition-all hover:scale-110", 
+                                                highlightColor === color.value 
+                                                    ? "border-gray-900 dark:border-white scale-110 shadow-lg" 
+                                                    : "border-transparent opacity-60 hover:opacity-100"
+                                            )} 
+                                            style={{ backgroundColor: color.value }}
+                                            title={color.name}
+                                        />
+                                    ))}
+                                    <div className="ml-auto flex items-center gap-2">
+                                        <div className="w-4 h-4 rounded-full" style={{ backgroundColor: highlightColor }} />
+                                        <span className="text-[10px] font-mono text-gray-500">{highlightColor}</span>
                                     </div>
                                 </div>
+                            </div>
+                        </Section>
 
-                                <div className={cn(
-                                    "p-8 rounded-[2rem] border flex items-center justify-between transition-all duration-500 mt-auto", 
-                                    isPinned ? "bg-neon-pink/10 border-neon-pink/40 shadow-[0_0_40px_rgba(255,79,139,0.05)]" : "bg-white dark:bg-black/40 border-black/10 dark:border-white/5"
-                                )}>
-                                    <div className="flex items-center gap-8">
-                                        <div className={cn("w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-500 shadow-xl", isPinned ? "bg-neon-pink text-black" : "bg-black/5 dark:bg-white/5 text-gray-600")}>
-                                            <Star size={24} className={cn(isPinned && "fill-current")} />
-                                        </div>
-                                        <div>
-                                            <h4 className="text-gray-900 dark:text-white text-sm font-black uppercase tracking-widest italic leading-tight">FEATURE AS SPOTLIGHT</h4>
-                                            <p className="text-[10px] text-gray-600 mt-1 uppercase font-bold tracking-[0.1em]">SHOW IN THE FEATURED SECTION AT TOP</p>
-                                        </div>
-                                    </div>
+                        {/* Image Position */}
+                        {image && (
+                            <Section title="Image Position" icon={Move}>
+                                <div className="flex items-center justify-end -mt-4">
                                     <button 
                                         type="button" 
-                                        onClick={() => setIsPinned(!isPinned)} 
-                                        className={cn("w-14 h-8 rounded-full relative transition-all border-2", isPinned ? "bg-neon-pink border-neon-pink" : "bg-white dark:bg-black/60 border-black/10 dark:border-white/10")}
+                                        onClick={() => setImageTransform({ scale: 1.05, x: 0, y: 0 })} 
+                                        className="text-[9px] font-bold text-gray-500 hover:text-gray-900 dark:hover:text-white uppercase tracking-widest transition-colors flex items-center gap-1.5"
                                     >
-                                        <div className={cn("absolute top-1 w-5 h-5 rounded-full transition-all shadow-lg", isPinned ? "right-1 bg-white dark:bg-black" : "left-1 bg-gray-600")} />
+                                        <X size={10} /> Reset
                                     </button>
                                 </div>
-                            </div>
+                                <div className="grid grid-cols-3 gap-6">
+                                    <div className="space-y-3">
+                                        <div className="flex justify-between">
+                                            <label className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">Zoom</label>
+                                            <span className="text-[9px] font-mono text-neon-pink">{imageTransform.scale.toFixed(2)}x</span>
+                                        </div>
+                                        <input type="range" min="-3" max="3" step="0.01" value={imageTransform.scale} onChange={e => setImageTransform({ ...imageTransform, scale: parseFloat(e.target.value) })} className="w-full accent-neon-pink" />
+                                    </div>
+                                    <div className="space-y-3">
+                                        <div className="flex justify-between">
+                                            <label className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">X</label>
+                                            <span className="text-[9px] font-mono text-neon-pink">{imageTransform.x}%</span>
+                                        </div>
+                                        <input type="range" min="-100" max="100" step="1" value={imageTransform.x} onChange={e => setImageTransform({ ...imageTransform, x: parseInt(e.target.value) })} className="w-full accent-neon-pink" />
+                                    </div>
+                                    <div className="space-y-3">
+                                        <div className="flex justify-between">
+                                            <label className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">Y</label>
+                                            <span className="text-[9px] font-mono text-neon-pink">{imageTransform.y}%</span>
+                                        </div>
+                                        <input type="range" min="-100" max="100" step="1" value={imageTransform.y} onChange={e => setImageTransform({ ...imageTransform, y: parseInt(e.target.value) })} className="w-full accent-neon-pink" />
+                                    </div>
+                                </div>
+                            </Section>
+                        )}
 
-                            <div className="flex flex-col sm:flex-row justify-end gap-4 pt-12 mt-12 border-t border-black/10 dark:border-white/5">
-                                <Link to="/admin/forms">
-                                    <Button type="button" variant="outline" className="h-14 rounded-2xl px-10 text-[10px] font-black uppercase tracking-widest border-black/10 dark:border-white/5 hover:bg-black/5 dark:hover:bg-white/5">CANCEL</Button>
-                                </Link>
-                                <Button 
-                                    onClick={handleSubmit} 
-                                    disabled={saving}
-                                    className="h-16 px-12 bg-neon-pink text-black font-black uppercase tracking-[0.3em] text-[12px] italic rounded-[1rem] shadow-[0_15px_40px_rgba(255,79,139,0.3)] hover:scale-105 active:scale-95 transition-all border-none flex items-center justify-center gap-4 min-w-[240px]"
-                                >
-                                    {saving ? <Loader className="animate-spin" size={20} /> : <Save size={20} />}
-                                    {id ? 'UPDATE' : 'CREATE'}
-                                </Button>
+                        {/* Spotlight Toggle */}
+                        <div className={cn(
+                            "rounded-[1.5rem] border p-5 flex items-center justify-between transition-all duration-500", 
+                            isPinned ? "bg-neon-pink/[0.06] border-neon-pink/20" : "bg-white dark:bg-black/30 border-black/5 dark:border-white/5"
+                        )}>
+                            <div className="flex items-center gap-4">
+                                <div className={cn(
+                                    "w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-500", 
+                                    isPinned ? "bg-neon-pink text-black" : "bg-black/5 dark:bg-white/5 text-gray-500"
+                                )}>
+                                    <Star size={18} className={cn(isPinned && "fill-current")} />
+                                </div>
+                                <div>
+                                    <h4 className="text-xs font-bold text-gray-900 dark:text-white">Feature as Spotlight</h4>
+                                    <p className="text-[10px] text-gray-500 mt-0.5">Pin to the featured section at top of community</p>
+                                </div>
                             </div>
-                        </form>
-                    </Card>
+                            <button 
+                                type="button" 
+                                onClick={() => setIsPinned(!isPinned)} 
+                                className={cn("w-11 h-6 rounded-full relative transition-all", isPinned ? "bg-neon-pink" : "bg-black/10 dark:bg-white/10")}
+                            >
+                                <div className={cn("absolute top-1 w-4 h-4 rounded-full transition-all shadow", isPinned ? "right-1 bg-white" : "left-1 bg-gray-400 dark:bg-gray-600")} />
+                            </button>
+                        </div>
+
+                        {/* Actions */}
+                        <div className="flex flex-col sm:flex-row justify-end gap-3 pt-6 border-t border-black/5 dark:border-white/5">
+                            <Link to="/admin/forms">
+                                <Button type="button" variant="outline" className="h-12 rounded-xl px-8 text-[10px] font-bold uppercase tracking-widest border-black/10 dark:border-white/5 hover:bg-black/5 dark:hover:bg-white/5 w-full sm:w-auto">Cancel</Button>
+                            </Link>
+                            <Button 
+                                onClick={handleSubmit} 
+                                disabled={saving}
+                                className="h-12 px-10 bg-neon-pink text-black font-bold uppercase tracking-widest text-xs rounded-xl shadow-[0_10px_30px_rgba(255,79,139,0.2)] hover:shadow-[0_15px_40px_rgba(255,79,139,0.3)] hover:scale-[1.02] active:scale-[0.98] transition-all border-none flex items-center justify-center gap-3"
+                            >
+                                {saving ? <Loader className="animate-spin" size={16} /> : <Save size={16} />}
+                                {id ? 'Update Form' : 'Create Form'}
+                            </Button>
+                        </div>
+                    </form>
                 </div>
 
                 {/* Preview Column */}
-                <div className="lg:sticky lg:top-32 space-y-8 w-full">
-                    <div className="flex bg-gray-100 dark:bg-zinc-950/60 border border-black/10 dark:border-white/5 p-2 rounded-2xl w-fit backdrop-blur-3xl shadow-2xl">
+                <div className="lg:sticky lg:top-32 space-y-4 w-full">
+                    <div className="flex bg-gray-100 dark:bg-white/5 border border-black/5 dark:border-white/5 p-1 rounded-xl w-fit">
                         <button 
                             onClick={() => setPreviewType('card')}
                             className={cn(
-                                "px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
-                                previewType === 'card' ? "bg-neon-pink text-black shadow-lg" : "text-gray-500 hover:text-gray-900 dark:hover:text-white"
+                                "px-5 py-2 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all",
+                                previewType === 'card' ? "bg-neon-pink text-black shadow-sm" : "text-gray-500 hover:text-gray-900 dark:hover:text-white"
                             )}
                         >
-                            CARD VIEW
+                            Card
                         </button>
                         <button 
                             onClick={() => setPreviewType('embed')}
                             className={cn(
-                                "px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
-                                previewType === 'embed' ? "bg-neon-pink text-black shadow-lg" : "text-gray-500 hover:text-gray-900 dark:hover:text-white"
+                                "px-5 py-2 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all",
+                                previewType === 'embed' ? "bg-neon-pink text-black shadow-sm" : "text-gray-500 hover:text-gray-900 dark:hover:text-white"
                             )}
                         >
-                            EMBED VIEW
+                            Embed
                         </button>
                     </div>
 
-
-                    <div className="flex-grow pt-4">
+                    <div className="pt-2">
                         {previewType === 'card' ? (
                             <LivePreview 
                                 type="form" 

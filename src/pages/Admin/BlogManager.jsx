@@ -18,6 +18,7 @@ const BlogManager = () => {
     const [viewMode, setViewMode] = useState('grid');
     const [showTickerEditor, setShowTickerEditor] = useState(false);
     const [tickerItems, setTickerItems] = useState(siteSettings?.blogTicker || ['Welcome to ConcertZone', 'New stories every week']);
+    const [activeMenu, setActiveMenu] = useState(null);
     const navigate = useNavigate();
 
     const coreContentTabs = [
@@ -294,11 +295,14 @@ const BlogManager = () => {
                                                     <Edit2 size={18} />
                                                 </button>
                                                 <div className="relative group/menu">
-                                                    <button className="w-full h-full bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 border border-black/10 dark:border-white/5 rounded-2xl text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all flex items-center justify-center">
+                                                    <button 
+                                                        onClick={(e) => { e.stopPropagation(); setActiveMenu(activeMenu === post.id ? null : post.id); }}
+                                                        className="w-full h-full bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 border border-black/10 dark:border-white/5 rounded-2xl text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all flex items-center justify-center"
+                                                    >
                                                         <MoreHorizontal size={18} />
                                                     </button>
                                                     {/* Floating Menu */}
-                                                    <div className="absolute bottom-full right-0 mb-4 w-56 bg-gray-100 dark:bg-zinc-900 border border-black/10 dark:border-white/10 rounded-2xl p-2 opacity-0 pointer-events-none group-hover/menu:opacity-100 group-hover/menu:pointer-events-auto transition-all translate-y-2 group-hover/menu:translate-y-0 backdrop-blur-3xl shadow-2xl z-50">
+                                                    <div className={`absolute bottom-full right-0 mb-4 w-56 bg-gray-100 dark:bg-zinc-900 border border-black/10 dark:border-white/10 rounded-2xl p-2 transition-all backdrop-blur-3xl shadow-2xl z-50 ${activeMenu === post.id ? 'opacity-100 pointer-events-auto translate-y-0' : 'opacity-0 pointer-events-none translate-y-2 group-hover/menu:opacity-100 group-hover/menu:pointer-events-auto group-hover/menu:translate-y-0'}`}>
                                                         <button 
                                                             onClick={() => toggleFeatured(post)}
                                                             className="w-full p-4 flex items-center gap-4 text-[10px] font-black uppercase tracking-widest text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 rounded-xl transition-all"
@@ -346,7 +350,8 @@ const BlogManager = () => {
                     </div>
                 ) : (
                     <div className="bg-gray-100 dark:bg-zinc-900/40 border border-black/10 dark:border-white/5 rounded-[2.5rem] overflow-hidden backdrop-blur-3xl">
-                        <table className="w-full text-left">
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left min-w-[800px]">
                             <thead>
                                 <tr className="border-b border-black/10 dark:border-white/5 bg-black/5 dark:bg-white/5">
                                     <th className="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-gray-600 dark:text-gray-400">ARTICLE_ID</th>
@@ -417,6 +422,7 @@ const BlogManager = () => {
                                 </AnimatePresence>
                             </tbody>
                         </table>
+                        </div>
                     </div>
                 )}
 

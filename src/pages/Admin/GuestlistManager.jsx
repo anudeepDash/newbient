@@ -39,20 +39,19 @@ import StudioDatePicker from '../../components/ui/StudioDatePicker';
 import StudioSelect from '../../components/ui/StudioSelect';
 
 const GuestlistCard = ({ gl, navigate, updateGuestlist, deleteGuestlist, handleEdit }) => {
-    const [mousePos, setMousePos] = useState({ x: 50, y: 50 });
-    const handleMouseMove = (e) => {
-        const rect = e.currentTarget.getBoundingClientRect();
-        const x = ((e.clientX - rect.left) / rect.width) * 100;
-        const y = ((e.clientY - rect.top) / rect.height) * 100;
-        setMousePos({ x, y });
-    };
-
     return (
         <Card 
-            onMouseMove={handleMouseMove}
+            onMouseMove={(e) => {
+                const rect = e.currentTarget.getBoundingClientRect();
+                const x = ((e.clientX - rect.left) / rect.width) * 100;
+                const y = ((e.clientY - rect.top) / rect.height) * 100;
+                e.currentTarget.style.setProperty('--mouse-x', `${x}%`);
+                e.currentTarget.style.setProperty('--mouse-y', `${y}%`);
+                e.currentTarget.style.setProperty('--mouse-x-deg', `${x}deg`);
+            }}
             className="p-0 bg-gray-100 dark:bg-zinc-950/40 backdrop-blur-2xl border border-black/10 dark:border-white/5 rounded-[2.5rem] overflow-hidden group hover:border-neon-blue/30 transition-all duration-700 shadow-2xl flex flex-col h-[520px] relative"
             style={{ 
-                background: `radial-gradient(circle at ${mousePos.x}% ${mousePos.y}%, ${gl.highlightColor || '#2ebfff'}10 0%, transparent 60%)`
+                background: `radial-gradient(circle at var(--mouse-x, 50%) var(--mouse-y, 50%), ${gl.highlightColor || '#2ebfff'}10 0%, transparent 60%)`
             }}
         >
             {/* Card Header Media */}
@@ -177,7 +176,7 @@ const GuestlistCard = ({ gl, navigate, updateGuestlist, deleteGuestlist, handleE
 
             {/* Shimmer Overlay */}
             <div className="absolute inset-0 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-1000"
-                style={{ background: `linear-gradient(${mousePos.x}deg, transparent 40%, ${gl.highlightColor || '#2ebfff'}05 50%, transparent 60%)` }}
+                style={{ background: `linear-gradient(var(--mouse-x-deg, 50deg), transparent 40%, ${gl.highlightColor || '#2ebfff'}05 50%, transparent 60%)` }}
             />
         </Card>
     );
@@ -286,13 +285,15 @@ const GuestlistManager = () => {
                 await updateGuestlist(editingId, glData);
             } else {
                 await addGuestlist(glData);
-                await notifyAllUsers(
-                    `GUESTLIST OPEN: ${glData.title.toUpperCase()}`,
-                    `Secure your spot for ${glData.title} at ${glData.location}. Limited slots available!`,
-                    '/guestlists',
-                    glData.image,
-                    true // sendEmail
-                );
+                if (window.confirm('Send notification to all users about this new guestlist?')) {
+                    await notifyAllUsers(
+                        `GUESTLIST OPEN: ${glData.title.toUpperCase()}`,
+                        `Secure your spot for ${glData.title} at ${glData.location}. Limited slots available!`,
+                        '/guestlists',
+                        glData.image,
+                        true // sendEmail
+                    );
+                }
             }
             useStore.getState().addToast(`Guestlist ${editingId ? 'updated' : 'created'} successfully!`, 'success');
             resetForm();
@@ -557,7 +558,7 @@ const GuestlistManager = () => {
                                                     <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest">ZOOM</label>
                                                     <span className="text-[9px] font-mono text-neon-blue">{formData.imageTransform.scale.toFixed(2)}x</span>
                                                 </div>
-                                                <input type="range" min="0.5" max="2.5" step="0.01" value={formData.imageTransform.scale} onChange={e => setFormData({ ...formData, imageTransform: { ...formData.imageTransform, scale: parseFloat(e.target.value) } })} className="w-full accent-neon-blue" />
+                                                <input type="range" min="-3" max="3" step="0.01" value={formData.imageTransform?.scale ?? 1.05} onChange={e => setFormData({ ...formData, imageTransform: { ...formData.imageTransform, scale: parseFloat(e.target.value) } })} className="w-full accent-neon-blue" />
                                             </div>
                                             <div className="space-y-4">
                                                 <div className="flex justify-between">

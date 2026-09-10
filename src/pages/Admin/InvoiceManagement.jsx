@@ -29,6 +29,8 @@ import MessageCircle from 'lucide-react/dist/esm/icons/message-circle';
 import Receipt from 'lucide-react/dist/esm/icons/receipt';
 import AlertTriangle from 'lucide-react/dist/esm/icons/alert-triangle';
 import FolderOpen from 'lucide-react/dist/esm/icons/folder-open';
+import History from 'lucide-react/dist/esm/icons/history';
+import Share2 from 'lucide-react/dist/esm/icons/share-2';
 import { useStore } from '../../lib/store';
 import { useStoreSubscription } from '../../hooks/useStoreSubscription';
 import { sendInvoiceEmail, generateInvoiceEmailHTML, sendPaymentApprovedEmail, sendPaymentDeclinedEmail } from '../../lib/email';

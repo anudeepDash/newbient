@@ -479,11 +479,11 @@ const BlogPostEditor = () => {
                                                 <div className="space-y-4">
                                                     <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-gray-500">
                                                         <span>Scale / Zoom</span>
-                                                        <span className="text-neon-blue">{((formData.coverImageScale || 1) * 100).toFixed(0)}%</span>
+                                                        <span className="text-neon-blue">{((formData.coverImageScale ?? 1) * 100).toFixed(0)}%</span>
                                                     </div>
                                                     <input 
-                                                        type="range" min="1" max="3" step="0.05" 
-                                                        value={formData.coverImageScale || 1} 
+                                                        type="range" min="-3" max="3" step="0.01" 
+                                                        value={formData.coverImageScale ?? 1} 
                                                         onChange={e => setFormData({ ...formData, coverImageScale: parseFloat(e.target.value) })}
                                                         className="w-full accent-neon-blue"
                                                     />

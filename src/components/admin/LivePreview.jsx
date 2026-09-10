@@ -50,7 +50,7 @@ const formatDate = (dateValue) => {
     return String(val).toUpperCase();
 };
 
-const LivePreview = ({ type, data, categories = [], hideDecorations = false, onAction }) => {
+const LivePreview = ({ type, data = {}, categories = [], hideDecorations = false, onAction }) => {
     return (
         <div className="h-full flex flex-col">
             {!hideDecorations && (
@@ -177,11 +177,13 @@ const LivePreview = ({ type, data, categories = [], hideDecorations = false, onA
                     {type === 'form_embed' && (
                         <div className="w-full h-[500px] bg-white dark:bg-black/40 rounded-[2.5rem] border border-black/10 dark:border-white/10 overflow-hidden relative group">
                             {data.formUrl ? (
-                                <iframe 
-                                    src={data.formUrl} 
-                                    className="w-full h-full border-none opacity-80 group-hover:opacity-100 transition-opacity"
-                                    title="Form Preview"
-                                />
+                                <div className="form-iframe-wrapper w-full h-full">
+                                    <iframe 
+                                        src={data.formUrl} 
+                                        className="w-full h-full border-none opacity-90 group-hover:opacity-100 transition-opacity"
+                                        title="Form Preview"
+                                    />
+                                </div>
                             ) : (
                                 <div className="absolute inset-0 flex flex-col items-center justify-center gap-6 p-12 text-center">
                                     <div className="w-20 h-20 rounded-3xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 flex items-center justify-center text-gray-700 animate-pulse">
@@ -194,7 +196,7 @@ const LivePreview = ({ type, data, categories = [], hideDecorations = false, onA
                                 </div>
                             )}
                             {data.requiresExternal && (
-                                <div className="absolute top-6 right-6 px-4 py-2 bg-neon-pink text-black text-[9px] font-black uppercase tracking-widest rounded-xl shadow-2xl">
+                                <div className="absolute top-6 right-6 px-4 py-2 bg-neon-pink text-black text-[9px] font-black uppercase tracking-widest rounded-xl shadow-2xl z-20">
                                     External Redirect Active
                                 </div>
                             )}
@@ -203,21 +205,19 @@ const LivePreview = ({ type, data, categories = [], hideDecorations = false, onA
 
                     {/* PORTFOLIO PREVIEW */}
                     {type === 'portfolio' && (
-                        <div className="relative bg-gray-100 dark:bg-zinc-950 border border-black/10 dark:border-white/5 rounded-[2.5rem] overflow-hidden transition-all duration-700 group shadow-[0_30px_100px_rgba(0,0,0,0.5)] w-full max-w-[380px] mx-auto">
+                        <div className="relative aspect-[4/5] bg-gray-100 dark:bg-zinc-950 border border-black/10 dark:border-white/5 rounded-[2.5rem] overflow-hidden transition-all duration-700 group shadow-[0_30px_100px_rgba(0,0,0,0.5)] w-full max-w-[380px] mx-auto">
                             {/* Glow Halo */}
                             <div className="absolute -inset-px rounded-[2.5rem] bg-gradient-to-br from-neon-green/10 to-neon-blue/5 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none blur-xl" />
 
                             {/* Background elements */}
                             <div className="absolute inset-0 z-0 overflow-hidden bg-white dark:bg-black">
                                 {data.image ? (
-                                    <img
-                                        src={data.image}
-                                        alt=""
-                                        crossOrigin="anonymous"
-                                        className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110 opacity-60 group-hover:opacity-100"
+                                    <div
+                                        className="absolute inset-0 bg-cover transition-transform duration-700 group-hover:scale-110"
                                         style={{ 
+                                            backgroundImage: `url(${data.image})`,
                                             transform: `scale(${data.imageTransform?.scale || 1})`,
-                                            objectPosition: `${50 + (data.imageTransform?.x || 0)}% ${50 + (data.imageTransform?.y || 0)}%`,
+                                            backgroundPosition: `calc(50% + ${(data.imageTransform?.x || 0)}%) calc(50% + ${(data.imageTransform?.y || 0)}%)`,
                                             transformOrigin: 'center',
                                         }}
                                     />
@@ -236,45 +236,52 @@ const LivePreview = ({ type, data, categories = [], hideDecorations = false, onA
                             
                             {/* Top Badges */}
                             <div className="absolute top-6 left-6 right-6 z-30 flex justify-between items-start">
-                                <div className="px-4 py-2 rounded-2xl bg-white dark:bg-black/40 backdrop-blur-2xl border border-black/10 dark:border-white/10 group-hover:border-neon-green/20 transition-colors duration-500">
+                                <div className="px-4 py-2 rounded-2xl bg-white/10 dark:bg-black/40 backdrop-blur-2xl border border-white/10 group-hover:border-neon-green/20 transition-colors duration-500">
                                     <span className="text-[9px] font-black uppercase tracking-[0.3em] text-neon-green">
                                         {data.sector || categories.find(c => c.id === data.category)?.label || 'CATEGORY'}
                                     </span>
                                 </div>
 
-                                <div className="px-3 py-1.5 rounded-xl bg-black/5 dark:bg-white/5 backdrop-blur-2xl border border-black/10 dark:border-white/10 flex items-center gap-1.5">
-                                    <Clock size={10} className="text-gray-900 dark:text-white/40" />
-                                    <span className="text-[9px] font-black uppercase tracking-widest text-gray-900 dark:text-white/50">{data.year || new Date().getFullYear()}</span>
+                                <div className="px-3 py-1.5 rounded-xl bg-white/10 dark:bg-white/5 backdrop-blur-2xl border border-white/10 flex items-center gap-1.5">
+                                    <Clock size={10} className="text-white/60" />
+                                    <span className="text-[9px] font-black uppercase tracking-widest text-white/70">{data.year || new Date().getFullYear()}</span>
                                 </div>
                             </div>
-
-
 
                             {/* Content Body */}
                             <div className="absolute inset-x-6 bottom-7 z-30 space-y-5 w-full pr-12">
                                 <div>
-                                    <h3 className="text-2xl md:text-3xl font-black font-heading text-gray-900 dark:text-white leading-none tracking-tighter uppercase italic mb-2 group-hover:text-neon-green transition-all duration-500 line-clamp-2">
+                                    <h3 className="text-2xl md:text-3xl font-black font-heading text-white leading-none tracking-tighter uppercase italic mb-2 group-hover:text-neon-green transition-all duration-500 line-clamp-2">
                                         {data.title || 'UNTITLED PROJECT'}
                                     </h3>
-                                    <p className="text-[9px] font-black text-gray-900 dark:text-white/30 uppercase tracking-[0.25em]">
-                                        {data.date ? new Date(data.date).toLocaleDateString('en-IN', { month: 'long', year: 'numeric' }) : 'PROJECT DATE'}
+                                    <p className="text-[9px] font-black text-white/50 uppercase tracking-[0.25em]">
+                                        {(() => {
+                                            if (!data.date) return 'PROJECT DATE';
+                                            try {
+                                                const d = data.date?.seconds ? new Date(data.date.seconds * 1000) : new Date(data.date);
+                                                if (!isNaN(d.getTime())) {
+                                                    return d.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' }).toUpperCase();
+                                                }
+                                            } catch (e) {}
+                                            return 'PROJECT DATE';
+                                        })()}
                                     </p>
                                 </div>
 
-                                <div className="pt-5 border-t border-black/10 dark:border-white/5 flex items-center justify-between">
+                                <div className="pt-5 border-t border-white/10 flex items-center justify-between">
                                     {data.highlightUrl ? (
                                         <div className="flex items-center gap-3">
                                             <span className="w-8 h-8 rounded-xl bg-neon-green/90 text-black flex items-center justify-center shadow-[0_0_20px_rgba(46,255,144,0.3)]">
                                                 <Play size={14} fill="black" />
                                             </span>
-                                            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-900 dark:text-white/70">
+                                            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/80">
                                                 View Reel
                                             </span>
-                                            <ArrowRight size={14} className="text-gray-900 dark:text-white/30" />
+                                            <ArrowRight size={14} className="text-white/50" />
                                         </div>
                                     ) : (
-                                        <span className="text-[9px] font-black text-gray-900 dark:text-white/20 uppercase tracking-[0.3em] flex items-center gap-2">
-                                            <span className="w-4 h-px bg-black/20 dark:bg-white/20" />
+                                        <span className="text-[9px] font-black text-white/40 uppercase tracking-[0.3em] flex items-center gap-2">
+                                            <span className="w-4 h-px bg-white/20" />
                                             Archived Record
                                         </span>
                                     )}

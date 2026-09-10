@@ -19,6 +19,7 @@ import ChevronDown from 'lucide-react/dist/esm/icons/chevron-down';
 import FileText from 'lucide-react/dist/esm/icons/file-text';
 import ChevronLeft from 'lucide-react/dist/esm/icons/chevron-left';
 import ChevronRight from 'lucide-react/dist/esm/icons/chevron-right';
+import RefreshCw from 'lucide-react/dist/esm/icons/refresh-cw';
 import { collection, addDoc, getDocs, deleteDoc, doc, updateDoc, query, where } from 'firebase/firestore';
 import { db, auth } from '../../lib/firebase';
 import { Card } from '../../components/ui/Card';
@@ -98,8 +99,16 @@ const getSelectAccentColor = (role) => {
 };
 
 const AdminManager = () => {
-    useStoreSubscription(['creators', 'artists', 'allUsers', 'admins', 'subscribers']);
+    useStoreSubscription(['creators', 'artists', 'allUsers', 'admins', 'subscribers', 'ticketOrders', 'giveawayEntries', 'clientRequests']);
     const { user, blockUser, unblockUser, creators = [], artists = [], subscribers = [], allUsers = [], admins: storeAdmins = [] } = useStore();
+    const { 
+        members, 
+        activeMembers, 
+        suspendedMembers, 
+        totalCount, 
+        activeCount, 
+        suspendedCount 
+    } = useConsolidatedMembers();
     const [activeTab, setActiveTab] = useState('members');
 
     // Admin State
@@ -124,94 +133,7 @@ const AdminManager = () => {
     const [localLoadingMembers, setLocalLoadingMembers] = useState(true);
     const [memberSearch, setMemberSearch] = useState('');
 
-    const members = useMemo(() => {
-        const userList = (allUsers && allUsers.length > 0) ? allUsers : localMembers;
-        const adminList = (storeAdmins && storeAdmins.length > 0) ? storeAdmins : localAdmins;
-
-        const combined = [
-            ...(userList || []),
-            ...(creators || []).map(c => ({
-                id: c.uid || c.id,
-                email: c.email,
-                displayName: c.name || c.fullName || c.displayName,
-                createdAt: c.createdAt,
-                hasJoinedTribe: true,
-                isCreator: true,
-                ...c
-            })),
-            ...(artists || []).map(a => ({
-                id: a.uid || a.id,
-                email: a.email,
-                displayName: a.stageName || a.name || a.displayName,
-                createdAt: a.createdAt,
-                hasJoinedTribe: true,
-                isArtist: true,
-                ...a
-            })),
-            ...(adminList || []).map(adm => ({
-                id: adm.uid || adm.id,
-                email: adm.email,
-                displayName: adm.displayName || adm.name,
-                createdAt: adm.createdAt,
-                isAdmin: true,
-                ...adm
-            })),
-            ...(subscribers || []).map(s => ({
-                id: s.id,
-                email: s.email,
-                displayName: s.displayName || s.name || (s.email ? s.email.split('@')[0] : 'Subscriber'),
-                createdAt: s.createdAt,
-                isSubscriber: true,
-                ...s
-            }))
-        ];
-
-        const memberMap = new Map();
-        combined.forEach(item => {
-            if (!item) return;
-            const emailKey = item.email ? item.email.toLowerCase().trim() : null;
-            const idKey = item.id || item.uid;
-            const key = emailKey || idKey;
-            if (!key) return;
-
-            if (!memberMap.has(key)) {
-                memberMap.set(key, {
-                    id: idKey || key,
-                    uid: idKey || key,
-                    email: item.email || '',
-                    displayName: item.displayName || item.fullName || item.name || (item.email ? item.email.split('@')[0] : 'UNNAMED_MEMBER'),
-                    createdAt: item.createdAt || null,
-                    lastActive: item.lastActive || item.createdAt || null,
-                    isBlocked: item.isBlocked || false,
-                    hasJoinedTribe: item.hasJoinedTribe || false,
-                    isCreator: !!item.isCreator,
-                    isArtist: !!item.isArtist,
-                    role: item.role || 'Member',
-                    ...item
-                });
-            } else {
-                const existing = memberMap.get(key);
-                memberMap.set(key, {
-                    ...item,
-                    ...existing,
-                    id: existing.id || idKey,
-                    uid: existing.uid || idKey,
-                    displayName: (existing.displayName && existing.displayName !== 'UNNAMED_MEMBER') ? existing.displayName : (item.displayName || item.fullName || item.name || existing.displayName),
-                    hasJoinedTribe: existing.hasJoinedTribe || item.hasJoinedTribe || false,
-                    isBlocked: existing.isBlocked || item.isBlocked || false,
-                    isCreator: existing.isCreator || !!item.isCreator,
-                    isArtist: existing.isArtist || !!item.isArtist,
-                    createdAt: existing.createdAt || item.createdAt || null,
-                    lastActive: existing.lastActive || item.lastActive || null
-                });
-            }
-        });
-
-        const list = Array.from(memberMap.values());
-        return list.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
-    }, [allUsers, localMembers, storeAdmins, localAdmins, creators, artists, subscribers]);
-
-    const loadingMembers = (!allUsers || allUsers.length === 0) && localLoadingMembers && (!creators || creators.length === 0) && (!artists || artists.length === 0);
+    const loadingMembers = (!allUsers || allUsers.length === 0) && localLoadingMembers && (!creators || creators.length === 0) && (!artists || artists.length === 0) && (!members || members.length === 0);
 
     // Pagination & Filter State
     const [viewMode, setViewMode] = useState('grid');
@@ -407,6 +329,21 @@ const AdminManager = () => {
     };
 
     const [isInviteOpen, setIsInviteOpen] = useState(false);
+    const [isSyncing, setIsSyncing] = useState(false);
+
+    const handleSyncAuthUsers = async () => {
+        if (!window.confirm("Synchronize all registered user accounts from Firebase Authentication into the Firestore member database?")) return;
+        setIsSyncing(true);
+        try {
+            const result = await useStore.getState().syncAuthUsers();
+            useStore.getState().addToast(result.message || `Successfully synced ${result.syncedCount} members!`, 'success');
+        } catch (error) {
+            console.error("Sync error:", error);
+            useStore.getState().addToast(error.message || "Failed to synchronize users.", 'error');
+        } finally {
+            setIsSyncing(false);
+        }
+    };
 
     const canAuthorizeStaff = user?.role === 'developer' || user?.role === 'founder';
     const canManageDevelopers = user?.role === 'developer' || user?.role === 'founder';
@@ -438,14 +375,16 @@ const AdminManager = () => {
     const filteredMembers = useMemo(() => {
         return members.filter(m => {
             const matchesSearch = ((m.email || '').toLowerCase().includes((memberSearch || '').toLowerCase()) ||
-                                   (m.displayName || '').toLowerCase().includes((memberSearch || '').toLowerCase()));
+                                   (m.displayName || '').toLowerCase().includes((memberSearch || '').toLowerCase()) ||
+                                   (m.phone || '').toLowerCase().includes((memberSearch || '').toLowerCase()));
             if (!matchesSearch) return false;
 
-            if (memberFilter === 'authorized') return !m.isBlocked;
+            if (memberFilter === 'authorized' || memberFilter === 'active') return !m.isBlocked;
             if (memberFilter === 'suspended') return m.isBlocked;
             if (memberFilter === 'tribe') return m.hasJoinedTribe;
             if (memberFilter === 'creators') return m.isCreator || creators?.some(c => c.uid === m.id || c.email === m.email);
             if (memberFilter === 'artists') return m.isArtist || artists?.some(a => (a.uid === m.id || a.email === m.email) && a.profileStatus === 'approved');
+            if (memberFilter === 'tickets') return m.isTicketHolder;
 
             return true;
         });
@@ -510,7 +449,7 @@ const AdminManager = () => {
     return (
         <AdminCommunityHubLayout
             studioHeader={{
-                title: 'Access',
+                title: 'Access & Members',
                 subtitle: 'Registry',
                 icon: Shield,
                 accentClass: 'text-neon-green'
@@ -518,29 +457,46 @@ const AdminManager = () => {
             accentColor="neon-green"
             hideTabs={true}
             action={
-                activeTab === 'admins' && canAuthorizeStaff && (
-                    <button
-                        onClick={() => setIsInviteOpen(!isInviteOpen)}
-                        className={cn(
-                            "w-full md:w-auto flex items-center justify-center gap-3 h-12 md:h-14 px-8 rounded-xl md:rounded-2xl font-black uppercase text-[10px] tracking-widest transition-all duration-300",
-                            isInviteOpen 
-                                ? "bg-black/10 dark:bg-white/10 text-gray-900 dark:text-white border border-black/10 dark:border-white/10 hover:bg-white/15" 
-                                : "bg-neon-green text-black hover:scale-[1.02] active:scale-95 shadow-[0_10px_20px_rgba(57,255,20,0.25)]"
-                        )}
-                    >
-                        <UserPlus size={14} />
-                        {isInviteOpen ? 'Close Panel' : 'Add Admin'}
-                    </button>
-                )
+                <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
+                    {activeTab === 'members' && (
+                        <button
+                            onClick={handleSyncAuthUsers}
+                            disabled={isSyncing}
+                            className={cn(
+                                "w-full md:w-auto flex items-center justify-center gap-3 h-12 md:h-14 px-8 rounded-xl md:rounded-2xl font-black uppercase text-[10px] tracking-widest transition-all duration-300",
+                                isSyncing
+                                    ? "bg-neon-blue/20 text-neon-blue border border-neon-blue/30 cursor-wait opacity-80"
+                                    : "bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-gray-900 dark:text-white border border-black/10 dark:border-white/10 hover:border-neon-blue/40"
+                            )}
+                        >
+                            <RefreshCw size={14} className={cn("text-neon-blue", isSyncing && "animate-spin")} />
+                            {isSyncing ? 'Syncing Firebase Auth...' : 'Sync Auth Members'}
+                        </button>
+                    )}
+                    {activeTab === 'admins' && canAuthorizeStaff && (
+                        <button
+                            onClick={() => setIsInviteOpen(!isInviteOpen)}
+                            className={cn(
+                                "w-full md:w-auto flex items-center justify-center gap-3 h-12 md:h-14 px-8 rounded-xl md:rounded-2xl font-black uppercase text-[10px] tracking-widest transition-all duration-300",
+                                isInviteOpen 
+                                    ? "bg-black/10 dark:bg-white/10 text-gray-900 dark:text-white border border-black/10 dark:border-white/10 hover:bg-white/15" 
+                                    : "bg-neon-green text-black hover:scale-[1.02] active:scale-95 shadow-[0_10px_20px_rgba(57,255,20,0.25)]"
+                            )}
+                        >
+                            <UserPlus size={14} />
+                            {isInviteOpen ? 'Close Panel' : 'Add Admin'}
+                        </button>
+                    )}
+                </div>
             }
         >
             {/* Quick Metrics KPI Bar */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-10">
                 {[
                     { 
-                        label: 'Users', 
-                        count: members.length, 
-                        detail: `${members.filter(m => !m.isBlocked).length} Active`, 
+                        label: 'Total Members', 
+                        count: totalCount, 
+                        detail: `${activeCount} Active • ${suspendedCount} Suspended`, 
                         color: 'text-neon-blue', 
                         bgGlow: 'bg-neon-blue',
                         hoverBorder: 'group-hover:border-neon-blue/30',
@@ -605,7 +561,7 @@ const AdminManager = () => {
             <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 mb-10 border-b border-black/10 dark:border-white/5 pb-8">
                 <div className="flex flex-wrap sm:flex-nowrap bg-gray-100 dark:bg-zinc-950/60 p-1.5 rounded-full border border-black/10 dark:border-white/10 backdrop-blur-3xl gap-1.5 w-full lg:w-auto relative z-10 shadow-lg">
                     {[
-                        { id: 'members', label: 'Users', count: members.length, icon: Users },
+                        { id: 'members', label: 'Members', count: totalCount, icon: Users },
                         { id: 'admins', label: 'Admins', count: admins.filter(a => a.role !== 'pending').length, icon: Shield },
                         ...(canAuthorizeStaff ? [{ id: 'requests', label: 'Pending Approvals', count: pendingRequests.length, icon: Clock }] : [])
                     ].map(tab => {
@@ -652,7 +608,7 @@ const AdminManager = () => {
                         onChange={(e) => setMemberSearch(e.target.value)}
                         placeholder={
                             activeTab === 'members' 
-                                ? "Search personnel registry..." 
+                                ? "Search personnel & members registry..." 
                                 : (activeTab === 'requests' ? "Search clearance queries..." : "Search active command staff...")
                         }
                         className="w-full bg-transparent h-14 md:h-16 pl-16 md:pl-20 pr-12 rounded-full text-[9px] md:text-[11px] font-black uppercase tracking-widest outline-none transition-all placeholder:text-gray-600"
@@ -674,12 +630,13 @@ const AdminManager = () => {
                         <div className="flex items-center bg-white dark:bg-black/40 p-1.5 rounded-full border border-black/10 dark:border-white/10 w-full md:w-auto overflow-x-auto no-scrollbar">
                             <div className="flex items-center gap-1 w-full">
                                 {[
-                                    { id: 'all', label: 'All' },
-                                    { id: 'authorized', label: 'Authorized' },
-                                    { id: 'suspended', label: 'Suspended' },
+                                    { id: 'all', label: `All (${totalCount})` },
+                                    { id: 'authorized', label: `Active (${activeCount})` },
+                                    { id: 'suspended', label: `Suspended (${suspendedCount})` },
                                     { id: 'tribe', label: 'Tribe' },
                                     { id: 'creators', label: 'Creators' },
-                                    { id: 'artists', label: 'Artists' }
+                                    { id: 'artists', label: 'Artists' },
+                                    { id: 'tickets', label: 'Tickets' }
                                 ].map((filter) => (
                                     <button
                                         key={filter.id}
@@ -878,7 +835,7 @@ const AdminManager = () => {
                                             })}
                                         </div>
                                     ) : (
-                                        <div className="overflow-x-auto scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0 pb-36 -mb-36">
+                                        <div className="overflow-x-auto scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0 pb-4">
                                             <Card className="min-w-[800px] bg-gray-100 dark:bg-zinc-900/40 backdrop-blur-3xl border-black/10 dark:border-white/5 rounded-[2rem] md:rounded-[2.5rem] p-0 border">
                                                 <table className="w-full text-left">
                                                     <thead>
@@ -1076,7 +1033,7 @@ const AdminManager = () => {
                                     ))}
                                 </div>
                             ) : (
-                                <div className="overflow-x-auto scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0 pb-36 -mb-36">
+                                <div className="overflow-x-auto scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0 pb-4">
                                     <Card className="min-w-[800px] min-h-[450px] bg-gray-100 dark:bg-zinc-900/40 backdrop-blur-3xl border-black/10 dark:border-white/5 rounded-[2rem] md:rounded-[2.5rem] p-0 border">
                                         <table className="w-full text-left">
                                             <thead>
@@ -1388,7 +1345,7 @@ const AdminManager = () => {
                                         })}
                                     </div>
                                 ) : (
-                                    <div className="overflow-x-auto scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0 pb-36 -mb-36">
+                                    <div className="overflow-x-auto scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0 pb-4">
                                         <Card className="min-w-[800px] min-h-[450px] bg-gray-100 dark:bg-zinc-900/40 backdrop-blur-3xl border-black/10 dark:border-white/5 rounded-[2rem] md:rounded-[2.5rem] p-0 border">
                                             <table className="w-full text-left">
                                                 <thead>

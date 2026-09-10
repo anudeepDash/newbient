@@ -2,6 +2,10 @@ import { initializeApp, getApps, getApp } from "firebase/app";
 import { getFirestore, doc, getDoc, collection, query, where, getDocs } from "firebase/firestore";
 import fs from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const firebaseConfig = {
     apiKey: process.env.VITE_FIREBASE_API_KEY || process.env.FIREBASE_API_KEY,

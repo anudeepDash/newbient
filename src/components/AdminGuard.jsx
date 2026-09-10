@@ -1,5 +1,5 @@
-import React, { useEffect } from 'react';
-import { Navigate, useLocation } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useStore } from '../lib/store';
 import { ShieldAlert } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -54,6 +54,8 @@ const getAdminTitle = (pathname) => {
 const AdminGuard = ({ children }) => {
     const { user, authInitialized, setAuthModal } = useStore();
     const location = useLocation();
+    const navigate = useNavigate();
+    const [requesting, setRequesting] = useState(false);
 
     const adminTitle = getAdminTitle(location.pathname);
     useDynamicMeta({
@@ -79,6 +81,7 @@ const AdminGuard = ({ children }) => {
         user.role !== 'founder' &&
         user.role !== 'super_admin' && 
         user.role !== 'developer' && 
+        user.role !== 'admin' &&
         user.role !== 'editor' && 
         user.role !== 'scanner' && 
         user.role !== 'content_admin' && 
@@ -120,22 +123,19 @@ const AdminGuard = ({ children }) => {
                             </button>
                         ) : (user.role === 'unauthorized') ? (
                             <button 
+                                disabled={requesting}
                                 onClick={async () => {
                                     try {
-                                        const btn = document.activeElement;
-                                        btn.disabled = true;
-                                        btn.innerText = 'SENDING REQUEST...';
+                                        setRequesting(true);
                                         await useStore.getState().requestAdminAccess();
                                     } catch (err) {
                                         useStore.getState().addToast(err.message || "Failed to send request", 'error');
-                                        const btn = document.activeElement;
-                                        btn.disabled = false;
-                                        btn.innerText = 'REQUEST COMMAND ACCESS';
+                                        setRequesting(false);
                                     }
                                 }}
-                                className="px-8 h-14 bg-neon-green text-black font-black uppercase tracking-widest text-xs rounded-2xl hover:scale-105 active:scale-95 transition-all w-full shadow-[0_10px_30px_rgba(57,255,20,0.2)]"
+                                className="px-8 h-14 bg-neon-green text-black font-black uppercase tracking-widest text-xs rounded-2xl hover:scale-105 active:scale-95 transition-all w-full shadow-[0_10px_30px_rgba(57,255,20,0.2)] disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                REQUEST ADMIN ACCESS
+                                {requesting ? 'SENDING REQUEST...' : 'REQUEST ADMIN ACCESS'}
                             </button>
                         ) : user.role === 'pending' ? (
                             <div className="p-6 bg-yellow-500/5 border border-yellow-500/20 rounded-2xl text-center">
@@ -145,7 +145,7 @@ const AdminGuard = ({ children }) => {
                         ) : null}
 
                         <button 
-                            onClick={() => window.location.href = '/'}
+                            onClick={() => navigate('/')}
                             className="px-8 h-14 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/5 text-gray-900 dark:text-white font-black uppercase tracking-widest text-[10px] rounded-2xl hover:bg-black/10 dark:hover:bg-white/10 transition-all w-full"
                         >
                             Return to Safe Zone

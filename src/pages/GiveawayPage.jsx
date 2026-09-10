@@ -66,7 +66,7 @@ const GiveawayPage = () => {
     useDynamicMeta({
         title: giveaway ? giveaway.name : "Giveaway",
         description: giveaway ? giveaway.description : "Enter the giveaway to win amazing prizes.",
-        image: giveaway && giveaway.posterUrl ? giveaway.posterUrl : "/favicon.svg",
+        image: giveaway?.posterUrl || "/og-image.png",
         url: window.location.href
     });
 
