@@ -7,10 +7,12 @@ import {
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useStore } from '../../lib/store';
+import { useStoreSubscription } from '../../hooks/useStoreSubscription';
 import CommunityCard from './CommunityCard';
 import EventTicketingModal from '../tickets/EventTicketingModal';
 
 const EventHubModal = ({ event, isOpen, onClose }) => {
+    useStoreSubscription(['forms', 'volunteerGigs', 'campaigns']);
     const getVideoEmbedUrl = (url) => {
         if (!url) return null;
         if (url.includes('youtube.com/watch?v=')) {
@@ -33,7 +35,7 @@ const EventHubModal = ({ event, isOpen, onClose }) => {
     };
 
     const { 
-        volunteerGigs, campaigns, forms, 
+        volunteerGigs = [], campaigns = [], forms = [], 
         maintenanceState, user, setAuthModal 
     } = useStore();
     
@@ -53,13 +55,14 @@ const EventHubModal = ({ event, isOpen, onClose }) => {
     if (!isOpen || !event) return null;
 
     // Resolve Hub Connections
-    const volunteerGig = volunteerGigs.find(g => g.id === event.relatedVolunteerGigId || g.id === event.gigId);
-    const campaign = campaigns.find(c => c.id === event.relatedCampaignId);
-    const artistForm = forms.find(f => f.id === event.relatedArtistFormId || f.id === event.formId);
+    const volunteerGig = (volunteerGigs || []).find(g => g.id === event.relatedVolunteerGigId || g.id === event.gigId);
+    const campaign = (campaigns || []).find(c => c.id === event.relatedCampaignId);
+    const targetFormId = event.relatedArtistFormId || event.formId;
+    const artistForm = (forms || []).find(f => f.id === targetFormId || f.id === event.id);
 
     const hasInternalOps = event.isTicketed || event.isGuestlistEnabled;
     const hasExternalLinks = event.externalTicketingLinks && event.externalTicketingLinks.length > 0;
-    const directActionUrl = event.link || (event.formId ? `/forms/${event.formId}` : null);
+    const directActionUrl = event.formUrl || event.link || (targetFormId ? `/forms/${targetFormId}` : (event.isForm ? `/forms/${event.id}` : null));
     
     const handleInternalAction = () => {
         if (event.isTicketed && maintenanceState.features?.tickets) {

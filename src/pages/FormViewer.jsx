@@ -1,5 +1,6 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { doc, getDoc } from 'firebase/firestore';
 import { motion } from 'framer-motion';
 import FileText from 'lucide-react/dist/esm/icons/file-text';
 import ArrowLeft from 'lucide-react/dist/esm/icons/arrow-left';
@@ -8,7 +9,9 @@ import Loader2 from 'lucide-react/dist/esm/icons/loader-2';
 import MapPin from 'lucide-react/dist/esm/icons/map-pin';
 import ShieldCheck from 'lucide-react/dist/esm/icons/shield-check';
 import LogIn from 'lucide-react/dist/esm/icons/log-in';
+import Home from 'lucide-react/dist/esm/icons/home';
 import { useStore } from '../lib/store';
+import { db } from '../lib/firebase';
 import { useStoreSubscription } from '../hooks/useStoreSubscription';
 import { Button } from '../components/ui/Button';
 import useDynamicMeta from '../hooks/useDynamicMeta';
@@ -17,77 +20,167 @@ const FormViewer = ({ formIdOverride }) => {
     useStoreSubscription(['forms']);
     const { id } = useParams();
     const navigate = useNavigate();
-    const { forms, user, setAuthModal } = useStore();
+    const { forms = [], user, setAuthModal } = useStore();
     const formId = formIdOverride || id;
+
+    const [directForm, setDirectForm] = useState(null);
+    const [isFetchingDirect, setIsFetchingDirect] = useState(true);
     const [iframeLoaded, setIframeLoaded] = useState(false);
-    const [isResolving, setIsResolving] = useState(true);
 
-    const form = forms.find(f => f.id === formId);
+    // 1. Check Store first
+    const storeForm = forms.find(f => f.id === formId);
 
-    React.useEffect(() => {
-        if (form) {
-            setIsResolving(false);
-        } else {
-            const timer = setTimeout(() => {
-                setIsResolving(false);
-            }, 1500);
-            return () => clearTimeout(timer);
-        }
-    }, [form]);
+    // 2. Direct Firestore fallback query if not immediately available in store
+    useEffect(() => {
+        let isMounted = true;
+
+        const fetchDirect = async () => {
+            if (!formId || !db) {
+                if (isMounted) setIsFetchingDirect(false);
+                return;
+            }
+
+            // If already in store, no need to query directly
+            if (storeForm) {
+                if (isMounted) setIsFetchingDirect(false);
+                return;
+            }
+
+            try {
+                // Try 'forms' collection first
+                const formSnap = await getDoc(doc(db, 'forms', formId));
+                if (formSnap.exists()) {
+                    if (isMounted) {
+                        setDirectForm({ id: formSnap.id, ...formSnap.data() });
+                        setIsFetchingDirect(false);
+                    }
+                    return;
+                }
+
+                // Fallback: check 'upcoming_events' in case an event ID was passed
+                const eventSnap = await getDoc(doc(db, 'upcoming_events', formId));
+                if (eventSnap.exists()) {
+                    const eventData = eventSnap.data();
+                    const extractedUrl = eventData.formUrl || eventData.link;
+                    if (extractedUrl) {
+                        if (isMounted) {
+                            setDirectForm({
+                                id: eventSnap.id,
+                                title: eventData.title,
+                                description: eventData.description,
+                                formUrl: extractedUrl,
+                                activeLabel: eventData.status || 'Live',
+                                image: eventData.image,
+                                highlightColor: eventData.highlightColor || '#2ebfff',
+                                bottomText: eventData.location || 'Event Form'
+                            });
+                            setIsFetchingDirect(false);
+                        }
+                        return;
+                    }
+                }
+
+                // Fallback: check 'volunteer_gigs'
+                const gigSnap = await getDoc(doc(db, 'volunteer_gigs', formId));
+                if (gigSnap.exists()) {
+                    const gigData = gigSnap.data();
+                    const extractedUrl = gigData.formUrl || gigData.applyLink || gigData.link;
+                    if (extractedUrl) {
+                        if (isMounted) {
+                            setDirectForm({
+                                id: gigSnap.id,
+                                title: gigData.title,
+                                description: gigData.description,
+                                formUrl: extractedUrl,
+                                activeLabel: gigData.status || 'Live',
+                                image: gigData.image,
+                                highlightColor: gigData.highlightColor || '#39FF14',
+                                bottomText: gigData.location || 'Gig Form'
+                            });
+                            setIsFetchingDirect(false);
+                        }
+                        return;
+                    }
+                }
+            } catch (err) {
+                console.warn("[FormViewer] Firestore lookup error:", err);
+            }
+
+            if (isMounted) {
+                setIsFetchingDirect(false);
+            }
+        };
+
+        fetchDirect();
+
+        return () => {
+            isMounted = false;
+        };
+    }, [formId, storeForm]);
+
+    const activeForm = storeForm || directForm;
 
     useDynamicMeta({
-        title: form ? form.title : "Form",
-        description: form ? (form.description || "Fill out this form.") : "Form not found.",
-        image: form && form.image ? form.image : "/favicon.svg",
+        title: activeForm ? activeForm.title : "Form Access",
+        description: activeForm ? (activeForm.description || "Take a moment to complete this form with Newbi Entertainment.") : "Form not found.",
+        image: activeForm?.image || "/og-image.png",
         url: window.location.href
     });
 
     // Build the themed Google Form URL with user email pre-fill if available
     const themedFormUrl = useMemo(() => {
-        if (!form?.formUrl) return '';
+        if (!activeForm?.formUrl) return '';
         try {
-            const url = new URL(form.formUrl);
+            const url = new URL(activeForm.formUrl);
             // If user is signed in and has an email, pre-fill via emailAddress param
             if (user?.email) {
                 url.searchParams.set('emailAddress', user.email);
             }
             return url.toString();
         } catch {
-            return form.formUrl;
+            return activeForm.formUrl;
         }
-    }, [form?.formUrl, user?.email]);
+    }, [activeForm?.formUrl, user?.email]);
 
-    if (isResolving && !form) {
+    // Show loading spinner while querying Firestore
+    if (isFetchingDirect && !activeForm) {
         return (
-            <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 dark:bg-dark">
-                <Loader2 size={32} className="animate-spin text-neon-blue mb-4" />
-                <p className="text-[10px] font-bold uppercase tracking-widest text-gray-500">Resolving Form...</p>
+            <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 dark:bg-dark text-gray-900 dark:text-white">
+                <Loader2 size={36} className="animate-spin text-neon-blue mb-4" />
+                <p className="text-[11px] font-black uppercase tracking-[0.2em] text-gray-400">Loading Form...</p>
             </div>
         );
     }
 
-    if (!form) {
+    if (!activeForm) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-dark">
+            <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-dark text-gray-900 dark:text-white px-4">
                 <motion.div 
                     initial={{ opacity: 0, y: 20 }} 
                     animate={{ opacity: 1, y: 0 }}
-                    className="text-center px-6"
+                    className="text-center max-w-md mx-auto p-8 rounded-[2.5rem] bg-white dark:bg-zinc-950/60 border border-black/5 dark:border-white/5 shadow-2xl backdrop-blur-3xl"
                 >
-                    <div className="w-20 h-20 rounded-3xl bg-gray-100 dark:bg-white/5 border border-black/10 dark:border-white/10 flex items-center justify-center mx-auto mb-6">
+                    <div className="w-20 h-20 rounded-3xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 flex items-center justify-center mx-auto mb-6">
                         <FileText size={32} className="text-gray-400 dark:text-gray-500" />
                     </div>
-                    <h2 className="text-2xl font-extrabold font-heading text-gray-900 dark:text-white mb-3 uppercase tracking-tight">Form Not Found</h2>
-                    <p className="text-gray-500 text-sm font-medium mb-8 max-w-xs mx-auto">The form you are looking for does not exist or has been removed.</p>
-                    <Button onClick={() => navigate('/community')} className="h-12 px-8 rounded-xl text-sm font-bold tracking-wider">
-                        <ArrowLeft size={16} className="mr-2" /> Back to Community
-                    </Button>
+                    <h2 className="text-2xl font-extrabold font-heading text-gray-900 dark:text-white mb-2 uppercase tracking-tight">Form Not Found</h2>
+                    <p className="text-gray-500 text-sm font-medium mb-8 leading-relaxed">
+                        The form you are looking for does not exist, has expired, or is currently inactive.
+                    </p>
+                    <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                        <Button onClick={() => navigate('/community')} className="h-12 px-6 rounded-xl text-xs font-bold tracking-wider">
+                            <ArrowLeft size={16} className="mr-2" /> Community Hub
+                        </Button>
+                        <Button onClick={() => navigate('/')} variant="outline" className="h-12 px-6 rounded-xl text-xs font-bold tracking-wider border-black/10 dark:border-white/10">
+                            <Home size={16} className="mr-2" /> Home
+                        </Button>
+                    </div>
                 </motion.div>
             </div>
         );
     }
 
-    const highlightColor = form.highlightColor || '#FF4F8B';
+    const highlightColor = activeForm.highlightColor || '#FF4F8B';
 
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-dark pt-28 pb-20 relative overflow-hidden">
@@ -131,25 +224,25 @@ const FormViewer = ({ formIdOverride }) => {
                             <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: highlightColor }} />
                             <span className="text-[9px] font-black uppercase tracking-widest text-gray-500">Form</span>
                         </div>
-                        {form.activeLabel && (
+                        {activeForm.activeLabel && (
                             <span className="px-3 py-1 rounded-xl text-[9px] font-black uppercase tracking-widest bg-green-500/10 text-green-600 dark:text-green-400 border border-green-500/20">
-                                {form.activeLabel}
+                                {activeForm.activeLabel}
                             </span>
                         )}
                     </div>
 
                     <h1 className="text-3xl md:text-5xl font-extrabold font-heading text-gray-900 dark:text-white tracking-tight leading-tight mb-3">
-                        {form.title}
+                        {activeForm.title}
                     </h1>
-                    {form.description && (
+                    {activeForm.description && (
                         <p className="text-gray-600 dark:text-gray-400 text-sm md:text-base font-medium leading-relaxed max-w-2xl">
-                            {form.description}
+                            {activeForm.description}
                         </p>
                     )}
-                    {form.bottomText && (
+                    {activeForm.bottomText && (
                         <div className="flex items-center gap-2 mt-3 text-gray-500">
                             <MapPin size={12} />
-                            <span className="text-[10px] font-bold uppercase tracking-widest">{form.bottomText}</span>
+                            <span className="text-[10px] font-bold uppercase tracking-widest">{activeForm.bottomText}</span>
                         </div>
                     )}
                 </motion.div>
@@ -205,14 +298,14 @@ const FormViewer = ({ formIdOverride }) => {
                     />
 
                     <div className="relative bg-white dark:bg-zinc-950 rounded-[2rem] md:rounded-[2.5rem] overflow-hidden border border-black/10 dark:border-white/5 shadow-2xl">
-                        {!form.formUrl ? (
+                        {!activeForm.formUrl ? (
                             <div className="p-16 text-center">
                                 <div className="w-16 h-16 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center mx-auto mb-4">
                                     <FileText size={24} className="text-red-400" />
                                 </div>
                                 <p className="text-gray-500 font-bold uppercase tracking-widest text-xs">Invalid or missing form URL</p>
                             </div>
-                        ) : form.requiresExternal ? (
+                        ) : activeForm.requiresExternal ? (
                             <div className="p-12 md:p-20 text-center">
                                 <div className="w-20 h-20 rounded-3xl bg-gray-100 dark:bg-white/5 border border-black/10 dark:border-white/10 flex items-center justify-center mx-auto mb-8">
                                     <ExternalLink size={32} className="text-gray-400" />
@@ -250,7 +343,7 @@ const FormViewer = ({ formIdOverride }) => {
                                             height: '900px',
                                             opacity: iframeLoaded ? 1 : 0
                                         }}
-                                        title={form.title}
+                                        title={activeForm.title}
                                         onLoad={() => setIframeLoaded(true)}
                                         allow="camera; microphone"
                                         sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"
