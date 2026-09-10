@@ -887,12 +887,12 @@ const CampaignManager = () => {
                                             {editingId ? 'EDIT' : 'NEW'} <span className="text-neon-blue">CAMPAIGN DETAILS</span>
                                         </h2>
                                     </div>
-                                    <div className="fixed md:relative bottom-0 left-0 right-0 z-50 flex items-center justify-center md:justify-end gap-4 bg-[#0A0A0A]/95 md:bg-transparent backdrop-blur-2xl md:backdrop-blur-none border-t border-black/10 dark:border-white/10 md:border-none p-4 md:p-0 shadow-[0_-20px_40px_rgba(0,0,0,0.8)] md:shadow-none">
+                                    <div className="fixed md:relative bottom-0 left-0 right-0 z-50 flex items-center justify-center md:justify-end gap-4 bg-white/95 dark:bg-[#0A0A0A]/95 md:bg-transparent backdrop-blur-2xl md:backdrop-blur-none border-t border-black/10 dark:border-white/10 md:border-none p-4 md:p-0 shadow-lg md:shadow-none">
                                         <button onClick={resetForm} className="text-[10px] font-black text-gray-500 hover:text-gray-900 dark:hover:text-white uppercase tracking-widest transition-colors">Discard</button>
                                         <button 
                                             onClick={handleSubmit} 
                                             disabled={isDeploying || isUploading}
-                                            className="h-12 px-10 bg-white text-black font-black uppercase tracking-widest rounded-full hover:scale-105 transition-all flex items-center justify-center gap-3 min-w-[140px] flex-1 md:flex-none"
+                                            className="h-12 px-10 bg-black text-white dark:bg-white dark:text-black font-black uppercase tracking-widest rounded-full hover:scale-105 transition-all flex items-center justify-center gap-3 min-w-[140px] flex-1 md:flex-none shadow-md"
                                         >
                                             {isDeploying ? <LoadingSpinner size="xs" color="black" /> : 'SAVE'}
                                         </button>
@@ -1240,16 +1240,16 @@ const CampaignManager = () => {
             <AnimatePresence>
                 {rejectionModal && (
                     <div className="fixed inset-0 z-[300] flex items-center justify-center p-4">
-                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-white dark:bg-black/90 backdrop-blur-md" />
-                        <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="relative bg-[#0A0A0A] border border-black/10 dark:border-white/10 rounded-[2.5rem] p-10 max-w-lg w-full shadow-2xl">
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/60 dark:bg-black/90 backdrop-blur-md" onClick={() => setRejectionModal(null)} />
+                        <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="relative bg-white dark:bg-[#0A0A0A] border border-black/10 dark:border-white/10 rounded-[2.5rem] p-10 max-w-lg w-full shadow-2xl z-10">
                             <h3 className="text-xl font-black uppercase italic tracking-tighter text-gray-900 dark:text-white mb-6">REJECTION FEEDBACK</h3>
-                            <textarea value={rejectionReason} onChange={(e) => setRejectionReason(e.target.value)} placeholder="Provide specific reasons for rejection..." className="w-full h-40 bg-white dark:bg-black border border-black/10 dark:border-white/10 rounded-2xl p-6 text-sm text-gray-900 dark:text-white focus:border-red-500/50 outline-none transition-all resize-none mb-6" />
+                            <textarea value={rejectionReason} onChange={(e) => setRejectionReason(e.target.value)} placeholder="Provide specific reasons for rejection..." className="w-full h-40 bg-gray-50 dark:bg-black border border-black/10 dark:border-white/10 rounded-2xl p-6 text-sm text-gray-900 dark:text-white focus:border-red-500/50 outline-none transition-all resize-none mb-6 placeholder:text-gray-400 dark:placeholder:text-gray-600" />
                             <div className="flex gap-4">
-                                <button onClick={() => setRejectionModal(null)} className="flex-1 h-14 rounded-xl border border-black/10 dark:border-white/10 text-[10px] font-black uppercase tracking-widest hover:bg-black/5 dark:hover:bg-white/5 transition-all">Cancel</button>
+                                <button onClick={() => setRejectionModal(null)} className="flex-1 h-14 rounded-xl border border-black/10 dark:border-white/10 text-[10px] font-black uppercase tracking-widest text-gray-700 dark:text-gray-300 hover:bg-black/5 dark:hover:bg-white/5 transition-all">Cancel</button>
                                 <button 
                                     onClick={confirmRejection} 
                                     disabled={isReviewing}
-                                    className="flex-1 h-14 rounded-xl bg-red-600 text-gray-900 dark:text-white text-[10px] font-black uppercase tracking-widest hover:bg-red-700 transition-all flex items-center justify-center gap-3"
+                                    className="flex-1 h-14 rounded-xl bg-red-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-red-700 transition-all flex items-center justify-center gap-3 shadow-lg"
                                 >
                                     {isReviewing ? <LoadingSpinner size="xs" color="white" /> : 'Confirm Rejection'}
                                 </button>

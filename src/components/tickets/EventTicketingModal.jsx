@@ -1711,13 +1711,13 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
                                 animate={{ opacity: 1 }}
                                 exit={{ opacity: 0 }}
                                 onClick={() => setInfoPopup(null)}
-                                className="absolute inset-0 bg-white dark:bg-black/60 backdrop-blur-md"
+                                className="absolute inset-0 bg-black/60 dark:bg-black/80 backdrop-blur-md"
                             />
                             <motion.div 
                                 initial={{ opacity: 0, scale: 0.9, y: 20 }}
                                 animate={{ opacity: 1, scale: 1, y: 0 }}
                                 exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                                className="relative w-full max-w-lg bg-gray-100 dark:bg-zinc-900 border border-black/10 dark:border-white/10 rounded-[2.5rem] shadow-[0_50px_100px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col"
+                                className="relative w-full max-w-lg bg-white dark:bg-[#0A0A0A] border border-black/10 dark:border-white/10 rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col"
                             >
                                 <div className="p-8 border-b border-black/10 dark:border-white/5 flex items-center justify-between">
                                     <div className="flex items-center gap-4">
@@ -1741,10 +1741,10 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
                                         {infoPopup.content}
                                     </p>
                                 </div>
-                                <div className="p-6 bg-white dark:bg-black/20 border-t border-black/10 dark:border-white/5">
+                                <div className="p-6 bg-gray-50 dark:bg-black/20 border-t border-black/10 dark:border-white/5">
                                     <Button 
                                         onClick={() => setInfoPopup(null)}
-                                        className="w-full h-14 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-gray-900 dark:text-white font-black uppercase tracking-widest text-[10px] rounded-xl hover:bg-white hover:text-black transition-all"
+                                        className="w-full h-14 bg-black text-white dark:bg-white dark:text-black font-black uppercase tracking-widest text-[10px] rounded-xl hover:bg-neon-green hover:text-black transition-all shadow-md"
                                     >
                                         CLOSE
                                     </Button>
@@ -1767,13 +1767,13 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
                 <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 md:p-6 overflow-hidden">
                     <AnimatePresence>
                         {isDownloading && (
-                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[200] bg-white dark:bg-black/80 backdrop-blur-2xl flex flex-col items-center justify-center gap-6">
+                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[200] bg-black/60 dark:bg-black/80 backdrop-blur-2xl flex flex-col items-center justify-center gap-6">
                                 <LoadingSpinner size="md" color="#2bd93e" />
                                 <p className="text-[10px] font-black text-neon-green uppercase tracking-[0.4em]">GENERATING PASS...</p>
                             </motion.div>
                         )}
                     </AnimatePresence>
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} className="absolute inset-0 bg-white dark:bg-black/90 backdrop-blur-3xl" />
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} className="absolute inset-0 bg-black/60 dark:bg-black/90 backdrop-blur-md" />
                     {modalContent}
                 </div>
             )}

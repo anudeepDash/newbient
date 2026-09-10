@@ -1300,7 +1300,7 @@ const StatusPill = ({ status }) => {
 
 // Section heading component
 const SectionLabel = ({ children }) => (
-    <p className="text-[10px] font-bold text-gray-900 dark:text-white/30 uppercase tracking-[0.2em] mb-3">{children}</p>
+    <p className="text-[10px] font-bold text-gray-500 dark:text-white/40 uppercase tracking-[0.2em] mb-3">{children}</p>
 );
 
 const CreatorDetailModal = ({ creator, onClose, onUpdateStatus, onDelete, isUpdating, isDeleting }) => {
@@ -1322,107 +1322,154 @@ const CreatorDetailModal = ({ creator, onClose, onUpdateStatus, onDelete, isUpda
         setAdminBadges(creator.adminBadges || []);
     }, [creator]);
 
+    // Derived badges from creator stats
+    const earnedBadges = useMemo(() => {
+        const badges = [];
+        const followers = Number(creator.instagramFollowers || 0);
+        
+        if (followers >= 100000) {
+            badges.push({ id: 'macro', label: 'Macro Creator (100K+)', icon: '👑', bg: 'bg-amber-500/10 border-amber-500/20 text-amber-500 dark:text-amber-400', desc: 'Over 100,000 followers' });
+        } else if (followers >= 10000) {
+            badges.push({ id: 'micro', label: 'Micro Creator (10K+)', icon: '⭐', bg: 'bg-blue-500/10 border-blue-500/20 text-blue-500 dark:text-blue-400', desc: 'Over 10,000 followers' });
+        } else if (followers >= 1000) {
+            badges.push({ id: 'nano', label: 'Nano Creator (1K+)', icon: '🌱', bg: 'bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400', desc: 'Over 1,000 followers' });
+        }
+
+        const joinedCount = (creator.joinedCampaigns || []).length;
+        if (joinedCount >= 10) {
+            badges.push({ id: 'veteran', label: 'Campaign Veteran (10+)', icon: '🔥', bg: 'bg-orange-500/10 border-orange-500/20 text-orange-500 dark:text-orange-400', desc: 'Completed 10+ campaigns' });
+        } else if (joinedCount >= 3) {
+            badges.push({ id: 'active', label: 'Active Collaborator (3+)', icon: '⚡', bg: 'bg-purple-500/10 border-purple-500/20 text-purple-600 dark:text-purple-400', desc: 'Participated in 3+ campaigns' });
+        }
+
+        const approvedCount = (creator.shortlistedCampaigns || []).length;
+        if (approvedCount >= 5) {
+            badges.push({ id: 'top_performer', label: 'Top Performer', icon: '🏆', bg: 'bg-rose-500/10 border-rose-500/20 text-rose-500 dark:text-rose-400', desc: 'Shortlisted for 5+ campaigns' });
+        }
+
+        if (creator.isPhoneVerified) {
+            badges.push({ id: 'verified_phone', label: 'Verified Contact', icon: '📱', bg: 'bg-teal-500/10 border-teal-500/20 text-teal-600 dark:text-teal-400', desc: 'Phone number verified' });
+        }
+
+        return badges;
+    }, [creator]);
+
+    // Handle toggle featured
     const handleToggleFeatured = async () => {
-        const nextVal = !isFeatured;
-        setIsFeatured(nextVal);
+        const next = !isFeatured;
+        setIsFeatured(next);
         try {
-            await updateCreator(creator.uid, { isFeatured: nextVal });
-            useStore.getState().addToast(`Creator ${nextVal ? 'featured' : 'unfeatured'} successfully!`, 'success');
+            await updateCreator(creator.uid, { isFeatured: next });
+            useStore.getState().addToast(next ? "Marked as Featured Creator" : "Removed from Featured", 'success');
         } catch (err) {
-            setIsFeatured(!nextVal);
-            useStore.getState().addToast("Failed to update featured status.", 'error');
+            setIsFeatured(!next);
+            useStore.getState().addToast("Failed to update featured status", 'error');
         }
     };
 
+    // Handle add custom badge
     const handleAddBadge = async (e) => {
         e.preventDefault();
-        const cleanBadge = customBadgeText.trim();
-        if (!cleanBadge) return;
-        if (adminBadges.includes(cleanBadge)) {
-            useStore.getState().addToast("Badge already exists.", 'warning');
+        const trimmed = customBadgeText.trim();
+        if (!trimmed) return;
+        if (adminBadges.includes(trimmed)) {
+            useStore.getState().addToast("Badge already exists", 'error');
             return;
         }
-        const nextBadges = [...adminBadges, cleanBadge];
+        const updated = [...adminBadges, trimmed];
+        setAdminBadges(updated);
+        setCustomBadgeText('');
         try {
-            await updateCreator(creator.uid, { adminBadges: nextBadges });
-            setAdminBadges(nextBadges);
-            setCustomBadgeText('');
-            useStore.getState().addToast("Custom badge added!", 'success');
+            await updateCreator(creator.uid, { adminBadges: updated });
+            useStore.getState().addToast(`Added badge: ${trimmed}`, 'success');
         } catch (err) {
-            useStore.getState().addToast("Failed to add custom badge.", 'error');
+            setAdminBadges(adminBadges);
+            useStore.getState().addToast("Failed to add badge", 'error');
         }
     };
 
+    // Handle remove custom badge
     const handleRemoveBadge = async (badgeToRemove) => {
-        const nextBadges = adminBadges.filter(b => b !== badgeToRemove);
+        const updated = adminBadges.filter(b => b !== badgeToRemove);
+        setAdminBadges(updated);
         try {
-            await updateCreator(creator.uid, { adminBadges: nextBadges });
-            setAdminBadges(nextBadges);
-            useStore.getState().addToast("Custom badge removed.", 'success');
+            await updateCreator(creator.uid, { adminBadges: updated });
+            useStore.getState().addToast(`Removed badge: ${badgeToRemove}`, 'success');
         } catch (err) {
-            useStore.getState().addToast("Failed to remove custom badge.", 'error');
+            setAdminBadges(adminBadges);
+            useStore.getState().addToast("Failed to remove badge", 'error');
         }
     };
 
+    // Handle sending individual email
     const handleSendEmail = async (e) => {
         e.preventDefault();
+        if (!creator.email) {
+            useStore.getState().addToast("Creator does not have an email address", 'error');
+            return;
+        }
         if (!emailSubject.trim() || !emailBody.trim()) {
-            useStore.getState().addToast("Please fill in subject and body.", 'warning');
+            useStore.getState().addToast("Please enter both subject and message body", 'error');
             return;
         }
         setSendingEmail(true);
         try {
-            const res = await sendCreatorDirectEmail(creator.email, emailSubject, emailBody, creator.name);
-            if (res.success) {
-                useStore.getState().addToast("Direct email sent successfully!", 'success');
+            const { sendCustomEmail } = await import('../../lib/email');
+            const result = await sendCustomEmail({
+                toEmail: creator.email,
+                toName: creator.name,
+                subject: emailSubject,
+                message: emailBody,
+                html: `<div style="font-family: Arial, sans-serif; padding: 20px; color: #111;">
+                    <p>${emailBody.replace(/\n/g, '<br/>')}</p>
+                    <hr style="margin-top: 30px; border: none; border-top: 1px solid #eee;" />
+                    <p style="font-size: 12px; color: #888;">Newbi Entertainment • Creator Operations</p>
+                </div>`
+            });
+            if (result && result.success) {
+                useStore.getState().addToast(`Email sent to ${creator.name}!`, 'success');
                 setEmailBody('');
             } else {
-                useStore.getState().addToast(res.error || "Failed to send email.", 'error');
+                throw new Error(result?.error || "Send failed");
             }
         } catch (err) {
-            useStore.getState().addToast("Failed to send email.", 'error');
+            console.error("Error sending custom email:", err);
+            useStore.getState().addToast("Failed to send email. Please try again.", 'error');
         } finally {
             setSendingEmail(false);
         }
     };
 
+    // Handle sending notification
     const handleSendMessage = async (e) => {
         e.preventDefault();
-        if (!messageText.trim()) {
-            useStore.getState().addToast("Please enter a notification message.", 'warning');
-            return;
-        }
+        if (!messageText.trim()) return;
         setSendingMessage(true);
         try {
             await addNotification({
                 userId: creator.uid,
-                title: "Admin Announcement ✉️",
+                title: 'Message from Newbi Admin',
                 message: messageText.trim(),
-                type: "info"
+                type: 'admin_message',
+                createdAt: new Date().toISOString(),
+                read: false
             });
-            useStore.getState().addToast("In-app notification sent successfully!", 'success');
+            useStore.getState().addToast(`Notification sent to ${creator.name}!`, 'success');
             setMessageText('');
         } catch (err) {
-            useStore.getState().addToast("Failed to send notification.", 'error');
+            console.error("Error sending notification:", err);
+            useStore.getState().addToast("Failed to send notification", 'error');
         } finally {
             setSendingMessage(false);
         }
     };
 
-    const earnedBadges = getEarnedBadges(creator, creators, campaigns);
-
-    const instagramUrl = creator.instagram
-        ? (creator.instagram.includes('instagram.com') ? creator.instagram : `https://instagram.com/${creator.instagram.replace(/^@/, '').trim()}`)
-        : '';
-
     const socialLinks = [
-        creator.instagram && { platform: 'Instagram', icon: Instagram, handle: `@${creator.instagram.replace(/^@/, '').trim()}`, followers: creator.instagramFollowers, url: instagramUrl, color: 'text-pink-400', bg: 'bg-pink-500/10 border-pink-500/20' },
-        creator.linkedin && { platform: 'LinkedIn', icon: Linkedin, handle: 'Profile', followers: creator.linkedinFollowers, url: creator.linkedin.includes('http') ? creator.linkedin : `https://${creator.linkedin}`, color: 'text-blue-400', bg: 'bg-blue-500/10 border-blue-500/20' },
-        creator.youtube && { platform: 'YouTube', icon: Youtube, handle: 'Channel', followers: creator.youtubeSubscribers, url: creator.youtube.includes('http') ? creator.youtube : `https://${creator.youtube}`, color: 'text-red-400', bg: 'bg-red-500/10 border-red-500/20' },
-        creator.twitter && { platform: 'X / Web', icon: Twitter, handle: 'Link', followers: null, url: creator.twitter.includes('http') ? creator.twitter : `https://${creator.twitter}`, color: 'text-sky-400', bg: 'bg-sky-500/10 border-sky-500/20' },
+        creator.instagram && { platform: 'Instagram', icon: Instagram, handle: `@${creator.instagram.replace('@', '')}`, followers: creator.instagramFollowers, url: `https://instagram.com/${creator.instagram.replace('@', '')}`, color: 'text-pink-600 dark:text-pink-400', bg: 'bg-pink-500/10 border-pink-500/20' },
+        creator.linkedin && { platform: 'LinkedIn', icon: Linkedin, handle: 'Profile', followers: creator.linkedinFollowers, url: creator.linkedin.includes('http') ? creator.linkedin : `https://${creator.linkedin}`, color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-500/10 border-blue-500/20' },
+        creator.youtube && { platform: 'YouTube', icon: Youtube, handle: 'Channel', followers: creator.youtubeSubscribers, url: creator.youtube.includes('http') ? creator.youtube : `https://${creator.youtube}`, color: 'text-red-600 dark:text-red-400', bg: 'bg-red-500/10 border-red-500/20' },
+        creator.twitter && { platform: 'X / Web', icon: Twitter, handle: 'Link', followers: null, url: creator.twitter.includes('http') ? creator.twitter : `https://${creator.twitter}`, color: 'text-sky-600 dark:text-sky-400', bg: 'bg-sky-500/10 border-sky-500/20' },
     ].filter(Boolean);
-
-    // Section heading component
 
     return createPortal(
         <div className="fixed inset-0 z-[99999] flex justify-end">
@@ -1430,7 +1477,7 @@ const CreatorDetailModal = ({ creator, onClose, onUpdateStatus, onDelete, isUpda
             <motion.div 
                 initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                 transition={{ duration: 0.2 }}
-                className="absolute inset-0 bg-white dark:bg-black/60 backdrop-blur-sm" 
+                className="absolute inset-0 bg-black/60 backdrop-blur-sm" 
                 onClick={onClose} 
             />
 
@@ -1440,22 +1487,22 @@ const CreatorDetailModal = ({ creator, onClose, onUpdateStatus, onDelete, isUpda
                 animate={{ x: 0 }}
                 exit={{ x: '100%' }}
                 transition={{ type: "spring", damping: 30, stiffness: 300 }}
-                className="relative w-full sm:max-w-xl md:max-w-2xl h-[100dvh] max-h-[100dvh] bg-[#0A0A0A] sm:border-l border-white/[0.06] flex flex-col z-10 shadow-[-20px_0_60px_rgba(0,0,0,0.5)]"
+                className="relative w-full sm:max-w-xl md:max-w-2xl h-[100dvh] max-h-[100dvh] bg-white dark:bg-[#0A0A0A] sm:border-l border-black/10 dark:border-white/[0.06] flex flex-col z-10 shadow-[-20px_0_60px_rgba(0,0,0,0.2)] dark:shadow-[-20px_0_60px_rgba(0,0,0,0.5)]"
             >
                 {/* Sticky Header */}
-                <div className="sticky top-0 z-50 flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 bg-[#0A0A0A]/95 backdrop-blur-xl border-b border-white/[0.06]">
+                <div className="sticky top-0 z-50 flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 bg-white/95 dark:bg-[#0A0A0A]/95 backdrop-blur-xl border-b border-black/10 dark:border-white/[0.06]">
                     <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
-                        <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl bg-white/[0.04] border border-white/[0.06] flex items-center justify-center shrink-0">
-                            <Users size={13} className="text-gray-900 dark:text-white/40" />
+                        <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl bg-black/5 dark:bg-white/[0.04] border border-black/10 dark:border-white/[0.06] flex items-center justify-center shrink-0">
+                            <Users size={13} className="text-gray-500 dark:text-white/40" />
                         </div>
                         <div className="min-w-0">
-                            <p className="text-[8px] sm:text-[9px] font-bold text-gray-900 dark:text-white/30 uppercase tracking-[0.15em]">Creator Profile</p>
+                            <p className="text-[8px] sm:text-[9px] font-bold text-gray-500 dark:text-white/40 uppercase tracking-[0.15em]">Creator Profile</p>
                             <p className="text-xs font-bold text-gray-900 dark:text-white truncate">{creator.name}</p>
                         </div>
                     </div>
                     <button 
                         onClick={onClose}
-                        className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-white/[0.04] border border-white/[0.06] flex items-center justify-center text-gray-900 dark:text-white/40 hover:bg-black/10 dark:hover:bg-white/10 hover:text-gray-900 dark:hover:text-white transition-all shrink-0"
+                        className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-black/5 dark:bg-white/[0.04] border border-black/10 dark:border-white/[0.06] flex items-center justify-center text-gray-600 dark:text-white/40 hover:bg-black/10 dark:hover:bg-white/10 hover:text-gray-900 dark:hover:text-white transition-all shrink-0"
                     >
                         <X size={16} />
                     </button>
@@ -1467,14 +1514,14 @@ const CreatorDetailModal = ({ creator, onClose, onUpdateStatus, onDelete, isUpda
 
                         {/* ─── Hero Section ─── */}
                         <div className="flex items-start gap-3.5 sm:gap-5">
-                            <div className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-xl sm:rounded-2xl bg-white dark:bg-black border border-white/[0.08] overflow-hidden shrink-0">
+                            <div className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-xl sm:rounded-2xl bg-gray-100 dark:bg-black border border-black/10 dark:border-white/[0.08] overflow-hidden shrink-0">
                                 {creator.profilePicture ? (
                                     <img src={creator.profilePicture} alt="" className="w-full h-full object-cover" />
                                 ) : (
-                                    <div className="w-full h-full flex items-center justify-center text-xl sm:text-2xl font-black text-black/[0.06] dark:text-white/[0.06] italic select-none">{creator.name.charAt(0)}</div>
+                                    <div className="w-full h-full flex items-center justify-center text-xl sm:text-2xl font-black text-black/10 dark:text-white/[0.06] italic select-none">{creator.name.charAt(0)}</div>
                                 )}
                                 {creator.profileStatus === 'approved' && (
-                                    <div className="absolute -bottom-0.5 -right-0.5 w-5 h-5 sm:w-6 sm:h-6 bg-neon-green rounded-md sm:rounded-lg flex items-center justify-center border-2 border-[#0A0A0A]">
+                                    <div className="absolute -bottom-0.5 -right-0.5 w-5 h-5 sm:w-6 sm:h-6 bg-neon-green rounded-md sm:rounded-lg flex items-center justify-center border-2 border-white dark:border-[#0A0A0A]">
                                         <Check size={10} strokeWidth={3} className="text-black" />
                                     </div>
                                 )}
@@ -1482,17 +1529,17 @@ const CreatorDetailModal = ({ creator, onClose, onUpdateStatus, onDelete, isUpda
                             <div className="flex-1 min-w-0 pt-0.5">
                                 <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-1">
                                     <StatusPill status={creator.profileStatus} />
-                                    <span className="text-[7px] sm:text-[8px] font-bold text-gray-900 dark:text-white/20 uppercase tracking-[0.15em] bg-white/[0.03] px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-md border border-white/[0.04]">
+                                    <span className="text-[7px] sm:text-[8px] font-bold text-gray-500 dark:text-white/40 uppercase tracking-[0.15em] bg-black/5 dark:bg-white/[0.03] px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-md border border-black/10 dark:border-white/[0.04]">
                                         {creator.creatorId || creator.uid.slice(0, 8).toUpperCase()}
                                     </span>
                                 </div>
                                 <h2 className="text-xl sm:text-2xl font-black font-heading tracking-tight uppercase text-gray-900 dark:text-white leading-tight break-words">
                                     {creator.name}
                                 </h2>
-                                <div className="flex items-center gap-2 sm:gap-3 mt-1.5 text-[8px] sm:text-[9px] font-bold text-gray-900 dark:text-white/30 uppercase tracking-wider flex-wrap">
+                                <div className="flex items-center gap-2 sm:gap-3 mt-1.5 text-[8px] sm:text-[9px] font-bold text-gray-500 dark:text-white/40 uppercase tracking-wider flex-wrap">
                                     <span className="flex items-center gap-1"><MapPin size={9} className="text-neon-pink/60" />{creator.city || 'Global'}</span>
-                                    <span className="text-gray-900 dark:text-white/10">•</span>
-                                    <span className="flex items-center gap-1"><Calendar size={9} className="text-gray-900 dark:text-white/20" />{new Date(creator.createdAt || Date.now()).getFullYear()} Joined</span>
+                                    <span className="text-gray-300 dark:text-white/10">•</span>
+                                    <span className="flex items-center gap-1"><Calendar size={9} className="text-gray-400 dark:text-white/20" />{new Date(creator.createdAt || Date.now()).getFullYear()} Joined</span>
                                 </div>
                             </div>
                         </div>
@@ -1513,13 +1560,13 @@ const CreatorDetailModal = ({ creator, onClose, onUpdateStatus, onDelete, isUpda
                                 {adminBadges.map((badge, idx) => (
                                     <span 
                                         key={`custom-${idx}`} 
-                                        className="inline-flex items-center gap-1 px-2.5 py-1 bg-purple-500/10 border border-purple-500/20 text-purple-400 rounded-lg text-[8px] font-bold uppercase tracking-wider"
+                                        className="inline-flex items-center gap-1 px-2.5 py-1 bg-purple-500/10 border border-purple-500/20 text-purple-600 dark:text-purple-400 rounded-lg text-[8px] font-bold uppercase tracking-wider"
                                     >
                                         <span>🏅</span>
                                         <span>{badge}</span>
                                         <button 
                                             onClick={() => handleRemoveBadge(badge)}
-                                            className="ml-0.5 text-red-400 hover:text-gray-900 dark:hover:text-white transition-colors"
+                                            className="ml-0.5 text-red-500 hover:text-red-700 dark:hover:text-white transition-colors"
                                         >
                                             ×
                                         </button>
@@ -1529,31 +1576,31 @@ const CreatorDetailModal = ({ creator, onClose, onUpdateStatus, onDelete, isUpda
                         )}
 
                         {/* Divider */}
-                        <div className="h-px bg-white/[0.04]" />
+                        <div className="h-px bg-black/10 dark:bg-white/[0.04]" />
 
                         {/* ─── Contact Info ─── */}
                         <div>
                             <SectionLabel>Contact</SectionLabel>
                             <div className="space-y-2">
-                                <div className="flex items-center gap-3 px-4 py-3 bg-white/[0.02] border border-white/[0.05] rounded-xl">
-                                    <Mail size={14} className="text-gray-900 dark:text-white/20 shrink-0" />
+                                <div className="flex items-center gap-3 px-4 py-3 bg-gray-50 dark:bg-white/[0.02] border border-black/10 dark:border-white/[0.05] rounded-xl">
+                                    <Mail size={14} className="text-gray-400 dark:text-white/30 shrink-0" />
                                     <div className="min-w-0 flex-1">
-                                        <p className="text-[8px] font-bold text-gray-900 dark:text-white/20 uppercase tracking-wider">Email</p>
+                                        <p className="text-[8px] font-bold text-gray-500 dark:text-white/40 uppercase tracking-wider">Email</p>
                                         <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{creator.email || 'N/A'}</p>
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-3 px-4 py-3 bg-white/[0.02] border border-white/[0.05] rounded-xl">
-                                    <Phone size={14} className="text-gray-900 dark:text-white/20 shrink-0" />
+                                <div className="flex items-center gap-3 px-4 py-3 bg-gray-50 dark:bg-white/[0.02] border border-black/10 dark:border-white/[0.05] rounded-xl">
+                                    <Phone size={14} className="text-gray-400 dark:text-white/30 shrink-0" />
                                     <div className="min-w-0 flex-1">
-                                        <p className="text-[8px] font-bold text-gray-900 dark:text-white/20 uppercase tracking-wider">Phone</p>
+                                        <p className="text-[8px] font-bold text-gray-500 dark:text-white/40 uppercase tracking-wider">Phone</p>
                                         <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{creator.phone || 'N/A'}</p>
                                     </div>
                                 </div>
                                 {creator.collegeName && (
-                                    <div className="flex items-center gap-3 px-4 py-3 bg-white/[0.02] border border-white/[0.05] rounded-xl">
-                                        <Layers size={14} className="text-gray-900 dark:text-white/20 shrink-0" />
+                                    <div className="flex items-center gap-3 px-4 py-3 bg-gray-50 dark:bg-white/[0.02] border border-black/10 dark:border-white/[0.05] rounded-xl">
+                                        <Layers size={14} className="text-gray-400 dark:text-white/30 shrink-0" />
                                         <div className="min-w-0 flex-1">
-                                            <p className="text-[8px] font-bold text-gray-900 dark:text-white/20 uppercase tracking-wider">College</p>
+                                            <p className="text-[8px] font-bold text-gray-500 dark:text-white/40 uppercase tracking-wider">College</p>
                                             <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{creator.collegeName}</p>
                                         </div>
                                     </div>
@@ -1578,13 +1625,13 @@ const CreatorDetailModal = ({ creator, onClose, onUpdateStatus, onDelete, isUpda
                                                 <social.icon size={15} />
                                             </div>
                                             <div className="flex-1 min-w-0">
-                                                <p className="text-[8px] font-bold text-gray-900 dark:text-white/30 uppercase tracking-wider">{social.platform}</p>
+                                                <p className="text-[8px] font-bold text-gray-500 dark:text-white/40 uppercase tracking-wider">{social.platform}</p>
                                                 <p className="text-xs font-bold text-gray-900 dark:text-white truncate">{social.handle}</p>
                                                 {social.followers && (
-                                                    <p className="text-[9px] font-medium text-gray-900 dark:text-white/30">{Number(social.followers || 0).toLocaleString()} followers</p>
+                                                    <p className="text-[9px] font-medium text-gray-600 dark:text-white/40">{Number(social.followers || 0).toLocaleString()} followers</p>
                                                 )}
                                             </div>
-                                            <ExternalLink size={12} className="text-gray-900 dark:text-white/15 shrink-0" />
+                                            <ExternalLink size={12} className="text-gray-400 dark:text-white/20 shrink-0" />
                                         </a>
                                     ))}
                                 </div>
@@ -1594,8 +1641,8 @@ const CreatorDetailModal = ({ creator, onClose, onUpdateStatus, onDelete, isUpda
                         {/* ─── Bio / Strategic Dossier ─── */}
                         <div>
                             <SectionLabel>Strategic Dossier</SectionLabel>
-                            <div className="px-4 py-4 bg-white/[0.02] border border-white/[0.05] rounded-xl">
-                                <p className="text-sm text-gray-900 dark:text-white/60 leading-relaxed italic">
+                            <div className="px-4 py-4 bg-gray-50 dark:bg-white/[0.02] border border-black/10 dark:border-white/[0.05] rounded-xl">
+                                <p className="text-sm text-gray-700 dark:text-white/60 leading-relaxed italic">
                                     "{creator.bio || "No professional overview provided."}"
                                 </p>
                             </div>
@@ -1606,12 +1653,12 @@ const CreatorDetailModal = ({ creator, onClose, onUpdateStatus, onDelete, isUpda
                             <SectionLabel>Niche & Specialization</SectionLabel>
                             <div className="flex flex-wrap gap-2">
                                 {(creator.niches || creator.specializations || []).map((n, i) => (
-                                    <span key={i} className="px-3 py-1.5 bg-white/[0.03] border border-white/[0.06] rounded-lg text-[9px] font-bold uppercase tracking-wider text-gray-900 dark:text-white/50">
+                                    <span key={i} className="px-3 py-1.5 bg-gray-100 dark:bg-white/[0.03] border border-black/10 dark:border-white/[0.06] rounded-lg text-[9px] font-bold uppercase tracking-wider text-gray-700 dark:text-white/50">
                                         {n}
                                     </span>
                                 ))}
                                 {(creator.niches || creator.specializations || []).length === 0 && (
-                                    <span className="text-[9px] font-medium text-gray-900 dark:text-white/20 italic">No specializations listed</span>
+                                    <span className="text-[9px] font-medium text-gray-400 dark:text-white/20 italic">No specializations listed</span>
                                 )}
                             </div>
                         </div>
@@ -1620,28 +1667,28 @@ const CreatorDetailModal = ({ creator, onClose, onUpdateStatus, onDelete, isUpda
                         <div>
                             <SectionLabel>Collaboration Preferences</SectionLabel>
                             <div className="grid grid-cols-2 gap-2">
-                                <div className="px-4 py-3 bg-white/[0.02] border border-white/[0.05] rounded-xl">
-                                    <p className="text-[8px] font-bold text-gray-900 dark:text-white/20 uppercase tracking-wider mb-1">Barter</p>
+                                <div className="px-4 py-3 bg-gray-50 dark:bg-white/[0.02] border border-black/10 dark:border-white/[0.05] rounded-xl">
+                                    <p className="text-[8px] font-bold text-gray-500 dark:text-white/40 uppercase tracking-wider mb-1">Barter</p>
                                     <p className="text-xs font-bold text-gray-900 dark:text-white">
                                         {creator.doBarter === 'yes' ? 'Yes' : creator.doBarter === 'no' ? 'Paid Only' : creator.doBarter === 'selective' ? 'Selective' : (creator.doBarter || 'N/A')}
                                     </p>
                                 </div>
-                                <div className="px-4 py-3 bg-white/[0.02] border border-white/[0.05] rounded-xl">
-                                    <p className="text-[8px] font-bold text-gray-900 dark:text-white/20 uppercase tracking-wider mb-1">Rates</p>
+                                <div className="px-4 py-3 bg-gray-50 dark:bg-white/[0.02] border border-black/10 dark:border-white/[0.05] rounded-xl">
+                                    <p className="text-[8px] font-bold text-gray-500 dark:text-white/40 uppercase tracking-wider mb-1">Rates</p>
                                     <p className="text-xs font-bold text-gray-900 dark:text-white">{creator.commercials || 'N/A'}</p>
                                 </div>
                             </div>
                         </div>
 
                         {/* Divider */}
-                        <div className="h-px bg-white/[0.04]" />
+                        <div className="h-px bg-black/10 dark:bg-white/[0.04]" />
 
                         {/* ─── Promotions & Badges ─── */}
-                        <div className="p-4 bg-white/[0.02] border border-white/[0.05] rounded-2xl space-y-4">
+                        <div className="p-4 bg-gray-50 dark:bg-white/[0.02] border border-black/10 dark:border-white/[0.05] rounded-2xl space-y-4">
                             <div className="flex items-center justify-between">
-                                <p className="text-[10px] font-bold text-gray-900 dark:text-white/30 uppercase tracking-[0.2em]">Promotions & Badges</p>
+                                <p className="text-[10px] font-bold text-gray-500 dark:text-white/40 uppercase tracking-[0.2em]">Promotions & Badges</p>
                                 <div className="flex items-center gap-2.5">
-                                    <span className="text-[9px] font-bold text-gray-900 dark:text-white/25 uppercase tracking-wider">Featured</span>
+                                    <span className="text-[9px] font-bold text-gray-500 dark:text-white/40 uppercase tracking-wider">Featured</span>
                                     <button 
                                         onClick={handleToggleFeatured}
                                         className={cn(
@@ -1659,11 +1706,11 @@ const CreatorDetailModal = ({ creator, onClose, onUpdateStatus, onDelete, isUpda
                                     value={customBadgeText}
                                     onChange={(e) => setCustomBadgeText(e.target.value)}
                                     placeholder="Custom badge name..."
-                                    className="flex-1 h-10 bg-white dark:bg-black/40 border border-white/[0.06] rounded-lg px-3 text-xs font-medium text-gray-900 dark:text-white focus:border-black/20 dark:focus:border-white/20 outline-none transition-all placeholder:text-gray-900 dark:placeholder:text-white/15"
+                                    className="flex-1 h-10 bg-white dark:bg-black/40 border border-black/10 dark:border-white/[0.06] rounded-lg px-3 text-xs font-medium text-gray-900 dark:text-white focus:border-neon-pink/40 outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-white/20"
                                 />
                                 <button 
                                     type="submit"
-                                    className="px-4 h-10 bg-white/[0.06] hover:bg-black/10 dark:hover:bg-white/10 text-gray-900 dark:text-white/60 hover:text-gray-900 dark:hover:text-white rounded-lg text-[9px] font-bold uppercase tracking-wider transition-all"
+                                    className="px-4 h-10 bg-black/5 dark:bg-white/[0.06] hover:bg-black/10 dark:hover:bg-white/10 text-gray-800 dark:text-white/60 hover:text-black dark:hover:text-white rounded-lg text-[9px] font-bold uppercase tracking-wider transition-all"
                                 >
                                     Add
                                 </button>
@@ -1671,15 +1718,15 @@ const CreatorDetailModal = ({ creator, onClose, onUpdateStatus, onDelete, isUpda
                         </div>
 
                         {/* ─── Direct Communication ─── */}
-                        <div className="p-4 bg-white/[0.02] border border-white/[0.05] rounded-2xl space-y-4">
+                        <div className="p-4 bg-gray-50 dark:bg-white/[0.02] border border-black/10 dark:border-white/[0.05] rounded-2xl space-y-4">
                             <div className="flex items-center justify-between">
-                                <p className="text-[10px] font-bold text-gray-900 dark:text-white/30 uppercase tracking-[0.2em]">Direct Communication</p>
-                                <div className="flex bg-white dark:bg-black/40 p-0.5 rounded-lg border border-white/[0.06] h-8 items-center">
+                                <p className="text-[10px] font-bold text-gray-500 dark:text-white/40 uppercase tracking-[0.2em]">Direct Communication</p>
+                                <div className="flex bg-black/5 dark:bg-black/40 p-0.5 rounded-lg border border-black/10 dark:border-white/[0.06] h-8 items-center">
                                     <button 
                                         onClick={() => setCommunicationTab('email')} 
                                         className={cn(
                                             "px-3 h-7 rounded-md text-[8px] font-bold uppercase tracking-wider transition-all",
-                                            communicationTab === 'email' ? "bg-black/10 dark:bg-white/10 text-gray-900 dark:text-white" : "text-gray-900 dark:text-white/30 hover:text-gray-900 dark:hover:text-white/50"
+                                            communicationTab === 'email' ? "bg-white dark:bg-white/10 text-gray-900 dark:text-white shadow-sm" : "text-gray-500 dark:text-white/40 hover:text-gray-900 dark:hover:text-white"
                                         )}
                                     >
                                         Email
@@ -1688,7 +1735,7 @@ const CreatorDetailModal = ({ creator, onClose, onUpdateStatus, onDelete, isUpda
                                         onClick={() => setCommunicationTab('message')} 
                                         className={cn(
                                             "px-3 h-7 rounded-md text-[8px] font-bold uppercase tracking-wider transition-all",
-                                            communicationTab === 'message' ? "bg-black/10 dark:bg-white/10 text-gray-900 dark:text-white" : "text-gray-900 dark:text-white/30 hover:text-gray-900 dark:hover:text-white/50"
+                                            communicationTab === 'message' ? "bg-white dark:bg-white/10 text-gray-900 dark:text-white shadow-sm" : "text-gray-500 dark:text-white/40 hover:text-gray-900 dark:hover:text-white"
                                         )}
                                     >
                                         Notification
@@ -1699,28 +1746,28 @@ const CreatorDetailModal = ({ creator, onClose, onUpdateStatus, onDelete, isUpda
                             {communicationTab === 'email' ? (
                                 <form onSubmit={handleSendEmail} className="space-y-3">
                                     <div>
-                                        <label className="text-[8px] font-bold text-gray-900 dark:text-white/20 uppercase tracking-wider block mb-1 pl-0.5">Subject</label>
+                                        <label className="text-[8px] font-bold text-gray-500 dark:text-white/40 uppercase tracking-wider block mb-1 pl-0.5">Subject</label>
                                         <input 
                                             type="text" 
                                             value={emailSubject}
                                             onChange={(e) => setEmailSubject(e.target.value)}
                                             placeholder="Email subject..." 
-                                            className="w-full h-10 bg-white dark:bg-black/40 border border-white/[0.06] rounded-lg px-3 text-xs font-medium text-gray-900 dark:text-white focus:border-black/20 dark:focus:border-white/20 outline-none transition-all placeholder:text-gray-900 dark:placeholder:text-white/15"
+                                            className="w-full h-10 bg-white dark:bg-black/40 border border-black/10 dark:border-white/[0.06] rounded-lg px-3 text-xs font-medium text-gray-900 dark:text-white focus:border-neon-pink/40 outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-white/20"
                                         />
                                     </div>
                                     <div>
-                                        <label className="text-[8px] font-bold text-gray-900 dark:text-white/20 uppercase tracking-wider block mb-1 pl-0.5">Message Body</label>
+                                        <label className="text-[8px] font-bold text-gray-500 dark:text-white/40 uppercase tracking-wider block mb-1 pl-0.5">Message Body</label>
                                         <textarea 
                                             value={emailBody}
                                             onChange={(e) => setEmailBody(e.target.value)}
                                             placeholder="Write email body..." 
-                                            className="w-full h-28 bg-white dark:bg-black/40 border border-white/[0.06] rounded-lg p-3 text-xs font-medium text-gray-900 dark:text-white focus:border-black/20 dark:focus:border-white/20 outline-none transition-all resize-none placeholder:text-gray-900 dark:placeholder:text-white/15"
+                                            className="w-full h-28 bg-white dark:bg-black/40 border border-black/10 dark:border-white/[0.06] rounded-lg p-3 text-xs font-medium text-gray-900 dark:text-white focus:border-neon-pink/40 outline-none transition-all resize-none placeholder:text-gray-400 dark:placeholder:text-white/20"
                                         />
                                     </div>
                                     <button 
                                         type="submit"
                                         disabled={sendingEmail}
-                                        className="w-full h-10 bg-white/[0.06] hover:bg-black/10 dark:hover:bg-white/10 text-gray-900 dark:text-white rounded-lg text-[9px] font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-all disabled:opacity-40"
+                                        className="w-full h-10 bg-black text-white dark:bg-white/10 hover:bg-black/80 dark:hover:bg-white/20 dark:text-white rounded-lg text-[9px] font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-all disabled:opacity-40"
                                     >
                                         {sendingEmail ? <LoadingSpinner size="xs" color="white" /> : (
                                             <><Send size={11} /> Send Email</>
@@ -1730,18 +1777,18 @@ const CreatorDetailModal = ({ creator, onClose, onUpdateStatus, onDelete, isUpda
                             ) : (
                                 <form onSubmit={handleSendMessage} className="space-y-3">
                                     <div>
-                                        <label className="text-[8px] font-bold text-gray-900 dark:text-white/20 uppercase tracking-wider block mb-1 pl-0.5">Notification Text</label>
+                                        <label className="text-[8px] font-bold text-gray-500 dark:text-white/40 uppercase tracking-wider block mb-1 pl-0.5">Notification Text</label>
                                         <textarea 
                                             value={messageText}
                                             onChange={(e) => setMessageText(e.target.value)}
                                             placeholder="Write notification message..." 
-                                            className="w-full h-28 bg-white dark:bg-black/40 border border-white/[0.06] rounded-lg p-3 text-xs font-medium text-gray-900 dark:text-white focus:border-black/20 dark:focus:border-white/20 outline-none transition-all resize-none placeholder:text-gray-900 dark:placeholder:text-white/15"
+                                            className="w-full h-28 bg-white dark:bg-black/40 border border-black/10 dark:border-white/[0.06] rounded-lg p-3 text-xs font-medium text-gray-900 dark:text-white focus:border-neon-pink/40 outline-none transition-all resize-none placeholder:text-gray-400 dark:placeholder:text-white/20"
                                         />
                                     </div>
                                     <button 
                                         type="submit"
                                         disabled={sendingMessage}
-                                        className="w-full h-10 bg-white/[0.06] hover:bg-black/10 dark:hover:bg-white/10 text-gray-900 dark:text-white rounded-lg text-[9px] font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-all disabled:opacity-40"
+                                        className="w-full h-10 bg-black text-white dark:bg-white/10 hover:bg-black/80 dark:hover:bg-white/20 dark:text-white rounded-lg text-[9px] font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-all disabled:opacity-40"
                                     >
                                         {sendingMessage ? <LoadingSpinner size="xs" color="white" /> : (
                                             <><MessageSquare size={11} /> Send Notification</>
@@ -1755,7 +1802,7 @@ const CreatorDetailModal = ({ creator, onClose, onUpdateStatus, onDelete, isUpda
                         {creator.portfolioInfo && (
                             <button 
                                 onClick={() => window.open(creator.portfolioInfo.includes('http') ? creator.portfolioInfo : `https://${creator.portfolioInfo}`, '_blank')}
-                                className="w-full h-11 bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.06] text-gray-900 dark:text-white/60 hover:text-gray-900 dark:hover:text-white rounded-xl font-bold uppercase tracking-wider text-[9px] flex items-center justify-center gap-2 transition-all"
+                                className="w-full h-11 bg-black/5 hover:bg-black/10 dark:bg-white/[0.04] dark:hover:bg-white/[0.08] border border-black/10 dark:border-white/[0.06] text-gray-800 dark:text-white/60 hover:text-black dark:hover:text-white rounded-xl font-bold uppercase tracking-wider text-[9px] flex items-center justify-center gap-2 transition-all"
                             >
                                 <FileText size={13} /> View Media Kit / Portfolio
                             </button>
@@ -1767,7 +1814,7 @@ const CreatorDetailModal = ({ creator, onClose, onUpdateStatus, onDelete, isUpda
                 </div>
 
                 {/* ─── Sticky Bottom Action Bar ─── */}
-                <div className="sticky bottom-0 z-50 px-4 sm:px-6 py-3 sm:py-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] bg-[#0A0A0A]/95 backdrop-blur-xl border-t border-white/[0.06] flex items-center gap-2">
+                <div className="sticky bottom-0 z-50 px-4 sm:px-6 py-3 sm:py-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] bg-white/95 dark:bg-[#0A0A0A]/95 backdrop-blur-xl border-t border-black/10 dark:border-white/[0.06] flex items-center gap-2">
                     <button 
                         onClick={() => onUpdateStatus(creator.uid, 'approved')}
                         disabled={isUpdating || creator.profileStatus === 'approved'}
@@ -1934,14 +1981,14 @@ const AddCreatorModal = ({ onClose }) => {
     const showCollegeField = form.specializations === 'Student/ Campus Creator' || form.specializations === 'Student Creator/ Campus Creator' || form.specializations === 'College Pages';
 
     return createPortal(
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-6 md:p-10 bg-white dark:bg-black/50 backdrop-blur-md overflow-y-auto">
-            <div className="fixed inset-0 bg-white dark:bg-black/80" onClick={onClose} />
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-6 md:p-10 bg-black/60 dark:bg-black/50 backdrop-blur-md overflow-y-auto">
+            <div className="fixed inset-0 bg-black/60 dark:bg-black/80" onClick={onClose} />
             <motion.div 
                 initial={{ scale: 0.95, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                className="relative bg-[#050505] border border-black/10 dark:border-white/10 rounded-2xl sm:rounded-[2.5rem] w-full max-w-2xl max-h-[92dvh] overflow-y-auto p-5 sm:p-8 md:p-10 shadow-2xl z-10 custom-scrollbar"
+                className="relative bg-white dark:bg-[#050505] border border-black/10 dark:border-white/10 rounded-2xl sm:rounded-[2.5rem] w-full max-w-2xl max-h-[92dvh] overflow-y-auto p-5 sm:p-8 md:p-10 shadow-2xl z-10 custom-scrollbar"
             >
-                <button onClick={onClose} className="absolute top-6 right-6 w-10 h-10 rounded-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 flex items-center justify-center hover:bg-white hover:text-black transition-all">
+                <button onClick={onClose} className="absolute top-6 right-6 w-10 h-10 rounded-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 flex items-center justify-center text-gray-600 dark:text-gray-400 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-all">
                     <X size={16} />
                 </button>
                 
@@ -1951,24 +1998,24 @@ const AddCreatorModal = ({ onClose }) => {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-1.5">
                             <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Full Name</label>
-                            <input required name="name" value={form.name} onChange={handleChange} placeholder="Full Name" className="w-full h-12 bg-white dark:bg-black border border-black/10 dark:border-white/10 rounded-xl px-4 text-sm font-bold text-gray-900 dark:text-white focus:border-neon-blue outline-none transition-all" />
+                            <input required name="name" value={form.name} onChange={handleChange} placeholder="Full Name" className="w-full h-12 bg-gray-50 dark:bg-black border border-black/10 dark:border-white/10 rounded-xl px-4 text-sm font-bold text-gray-900 dark:text-white focus:border-neon-blue outline-none transition-all" />
                         </div>
                         <div className="space-y-1.5">
                             <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Contact Number</label>
-                            <input name="phone" type="tel" value={form.phone} onChange={handleChange} placeholder="Contact Number (Optional)" className="w-full h-12 bg-white dark:bg-black border border-black/10 dark:border-white/10 rounded-xl px-4 text-sm font-bold text-gray-900 dark:text-white focus:border-neon-blue outline-none transition-all" />
+                            <input name="phone" type="tel" value={form.phone} onChange={handleChange} placeholder="Contact Number (Optional)" className="w-full h-12 bg-gray-50 dark:bg-black border border-black/10 dark:border-white/10 rounded-xl px-4 text-sm font-bold text-gray-900 dark:text-white focus:border-neon-blue outline-none transition-all" />
                         </div>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-1.5">
                             <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Email Address</label>
-                            <input name="email" type="email" value={form.email} onChange={handleChange} placeholder="email@example.com (Optional)" className="w-full h-12 bg-white dark:bg-black border border-black/10 dark:border-white/10 rounded-xl px-4 text-sm font-bold text-gray-900 dark:text-white focus:border-neon-blue outline-none transition-all" />
+                            <input name="email" type="email" value={form.email} onChange={handleChange} placeholder="email@example.com (Optional)" className="w-full h-12 bg-gray-50 dark:bg-black border border-black/10 dark:border-white/10 rounded-xl px-4 text-sm font-bold text-gray-900 dark:text-white focus:border-neon-blue outline-none transition-all" />
                         </div>
                         <div className="space-y-1.5">
                             <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Operational Hub (City)</label>
                             <select
                                 name="city" value={form.city} onChange={handleChange}
-                                className="w-full h-12 bg-white dark:bg-black border border-black/10 dark:border-white/10 rounded-xl px-4 text-sm font-bold text-gray-900 dark:text-white focus:border-neon-blue outline-none transition-all appearance-none cursor-pointer"
+                                className="w-full h-12 bg-gray-50 dark:bg-black border border-black/10 dark:border-white/10 rounded-xl px-4 text-sm font-bold text-gray-900 dark:text-white focus:border-neon-blue outline-none transition-all appearance-none cursor-pointer"
                             >
                                 <option value="">Select City (Optional)</option>
                                 {PREDEFINED_CITIES.map(c => <option key={c} value={c} className="bg-gray-100 dark:bg-zinc-950">{c.toUpperCase()}</option>)}
@@ -1979,7 +2026,7 @@ const AddCreatorModal = ({ onClose }) => {
                     {form.city === 'Others' && (
                         <div className="space-y-1.5">
                             <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Specify City Name</label>
-                            <input name="customCity" value={form.customCity} onChange={handleChange} placeholder="City Name" className="w-full h-12 bg-white dark:bg-black border border-black/10 dark:border-white/10 rounded-xl px-4 text-sm font-bold text-gray-900 dark:text-white focus:border-neon-blue outline-none transition-all" />
+                            <input name="customCity" value={form.customCity} onChange={handleChange} placeholder="City Name" className="w-full h-12 bg-gray-50 dark:bg-black border border-black/10 dark:border-white/10 rounded-xl px-4 text-sm font-bold text-gray-900 dark:text-white focus:border-neon-blue outline-none transition-all" />
                         </div>
                     )}
 
@@ -1988,7 +2035,7 @@ const AddCreatorModal = ({ onClose }) => {
                             <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Niche / Specialization</label>
                             <select
                                 name="specializations" value={form.specializations} onChange={handleChange}
-                                className="w-full h-12 bg-white dark:bg-black border border-black/10 dark:border-white/10 rounded-xl px-4 text-sm font-bold text-gray-900 dark:text-white focus:border-neon-blue outline-none transition-all appearance-none cursor-pointer"
+                                className="w-full h-12 bg-gray-50 dark:bg-black border border-black/10 dark:border-white/10 rounded-xl px-4 text-sm font-bold text-gray-900 dark:text-white focus:border-neon-blue outline-none transition-all appearance-none cursor-pointer"
                             >
                                 <option value="">Select Niche (Optional)</option>
                                 {NICHES.map(n => <option key={n} value={n} className="bg-gray-100 dark:bg-zinc-950">{n.toUpperCase()}</option>)}
@@ -2003,7 +2050,7 @@ const AddCreatorModal = ({ onClose }) => {
                                 value={form.collegeName} 
                                 onChange={handleChange} 
                                 placeholder={showCollegeField ? 'College/University Name' : 'College/University Name (Optional)'} 
-                                className="w-full h-12 bg-white dark:bg-black border border-black/10 dark:border-white/10 rounded-xl px-4 text-sm font-bold text-gray-900 dark:text-white focus:border-neon-blue outline-none transition-all" 
+                                className="w-full h-12 bg-gray-50 dark:bg-black border border-black/10 dark:border-white/10 rounded-xl px-4 text-sm font-bold text-gray-900 dark:text-white focus:border-neon-blue outline-none transition-all" 
                             />
                             <p className="text-[8px] font-bold text-gray-500 uppercase tracking-wider pl-1 mt-0.5 leading-normal">
                                 Matching college helps connect creators with regional campaigns and events.
@@ -2014,40 +2061,40 @@ const AddCreatorModal = ({ onClose }) => {
                     {form.specializations === 'Others' && (
                         <div className="space-y-1.5">
                             <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Specify Content Niche</label>
-                            <input name="customNiche" value={form.customNiche} onChange={handleChange} placeholder="Niche Description" className="w-full h-12 bg-white dark:bg-black border border-black/10 dark:border-white/10 rounded-xl px-4 text-sm font-bold text-gray-900 dark:text-white focus:border-neon-blue outline-none transition-all" />
+                            <input name="customNiche" value={form.customNiche} onChange={handleChange} placeholder="Niche Description" className="w-full h-12 bg-gray-50 dark:bg-black border border-black/10 dark:border-white/10 rounded-xl px-4 text-sm font-bold text-gray-900 dark:text-white focus:border-neon-blue outline-none transition-all" />
                         </div>
                     )}
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-1.5">
                             <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Instagram Handle</label>
-                            <input name="instagram" value={form.instagram} onChange={handleChange} placeholder="@handle" className="w-full h-12 bg-white dark:bg-black border border-black/10 dark:border-white/10 rounded-xl px-4 text-sm font-bold text-gray-900 dark:text-white focus:border-neon-blue outline-none transition-all" />
+                            <input name="instagram" value={form.instagram} onChange={handleChange} placeholder="@handle" className="w-full h-12 bg-gray-50 dark:bg-black border border-black/10 dark:border-white/10 rounded-xl px-4 text-sm font-bold text-gray-900 dark:text-white focus:border-neon-blue outline-none transition-all" />
                         </div>
                         <div className="space-y-1.5">
                             <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Instagram Followers</label>
-                            <input name="instagramFollowers" type="number" value={form.instagramFollowers} onChange={handleChange} placeholder="e.g. 5000 (Optional)" className="w-full h-12 bg-white dark:bg-black border border-black/10 dark:border-white/10 rounded-xl px-4 text-sm font-bold text-gray-900 dark:text-white focus:border-neon-blue outline-none transition-all" />
+                            <input name="instagramFollowers" type="number" value={form.instagramFollowers} onChange={handleChange} placeholder="e.g. 5000 (Optional)" className="w-full h-12 bg-gray-50 dark:bg-black border border-black/10 dark:border-white/10 rounded-xl px-4 text-sm font-bold text-gray-900 dark:text-white focus:border-neon-blue outline-none transition-all" />
                         </div>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-1.5">
                             <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">LinkedIn Profile URL</label>
-                            <input name="linkedin" value={form.linkedin} onChange={handleChange} placeholder="https://linkedin.com/in/username" className="w-full h-12 bg-white dark:bg-black border border-black/10 dark:border-white/10 rounded-xl px-4 text-sm font-bold text-gray-900 dark:text-white focus:border-neon-blue outline-none transition-all" />
+                            <input name="linkedin" value={form.linkedin} onChange={handleChange} placeholder="https://linkedin.com/in/username" className="w-full h-12 bg-gray-50 dark:bg-black border border-black/10 dark:border-white/10 rounded-xl px-4 text-sm font-bold text-gray-900 dark:text-white focus:border-neon-blue outline-none transition-all" />
                         </div>
                         <div className="space-y-1.5">
                             <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">LinkedIn Connections</label>
-                            <input name="linkedinFollowers" type="number" value={form.linkedinFollowers} onChange={handleChange} placeholder="e.g. 500 (Optional)" className="w-full h-12 bg-white dark:bg-black border border-black/10 dark:border-white/10 rounded-xl px-4 text-sm font-bold text-gray-900 dark:text-white focus:border-neon-blue outline-none transition-all" />
+                            <input name="linkedinFollowers" type="number" value={form.linkedinFollowers} onChange={handleChange} placeholder="e.g. 500 (Optional)" className="w-full h-12 bg-gray-50 dark:bg-black border border-black/10 dark:border-white/10 rounded-xl px-4 text-sm font-bold text-gray-900 dark:text-white focus:border-neon-blue outline-none transition-all" />
                         </div>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-1.5">
                             <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">YouTube URL</label>
-                            <input name="youtube" value={form.youtube} onChange={handleChange} placeholder="https://youtube.com/..." className="w-full h-12 bg-white dark:bg-black border border-black/10 dark:border-white/10 rounded-xl px-4 text-sm font-bold text-gray-900 dark:text-white focus:border-neon-blue outline-none transition-all" />
+                            <input name="youtube" value={form.youtube} onChange={handleChange} placeholder="https://youtube.com/..." className="w-full h-12 bg-gray-50 dark:bg-black border border-black/10 dark:border-white/10 rounded-xl px-4 text-sm font-bold text-gray-900 dark:text-white focus:border-neon-blue outline-none transition-all" />
                         </div>
                         <div className="space-y-1.5">
                             <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Twitter / X URL</label>
-                            <input name="twitter" value={form.twitter} onChange={handleChange} placeholder="https://twitter.com/..." className="w-full h-12 bg-white dark:bg-black border border-black/10 dark:border-white/10 rounded-xl px-4 text-sm font-bold text-gray-900 dark:text-white focus:border-neon-blue outline-none transition-all" />
+                            <input name="twitter" value={form.twitter} onChange={handleChange} placeholder="https://twitter.com/..." className="w-full h-12 bg-gray-50 dark:bg-black border border-black/10 dark:border-white/10 rounded-xl px-4 text-sm font-bold text-gray-900 dark:text-white focus:border-neon-blue outline-none transition-all" />
                         </div>
                     </div>
 
@@ -2056,7 +2103,7 @@ const AddCreatorModal = ({ onClose }) => {
                             <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Barter Collaborations</label>
                             <select
                                 name="doBarter" value={form.doBarter} onChange={handleChange}
-                                className="w-full h-12 bg-white dark:bg-black border border-black/10 dark:border-white/10 rounded-xl px-4 text-sm font-bold text-gray-900 dark:text-white focus:border-neon-blue outline-none transition-all appearance-none cursor-pointer"
+                                className="w-full h-12 bg-gray-50 dark:bg-black border border-black/10 dark:border-white/10 rounded-xl px-4 text-sm font-bold text-gray-900 dark:text-white focus:border-neon-blue outline-none transition-all appearance-none cursor-pointer"
                             >
                                 <option value="">Select Preference</option>
                                 <option value="yes" className="bg-gray-100 dark:bg-zinc-950">YES</option>
@@ -2066,21 +2113,21 @@ const AddCreatorModal = ({ onClose }) => {
                         </div>
                         <div className="space-y-1.5">
                             <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Commercial Rates</label>
-                            <input name="commercials" value={form.commercials} onChange={handleChange} placeholder="e.g. 5k/Reel, 2k/Story" className="w-full h-12 bg-white dark:bg-black border border-black/10 dark:border-white/10 rounded-xl px-4 text-sm font-bold text-gray-900 dark:text-white focus:border-neon-blue outline-none transition-all" />
+                            <input name="commercials" value={form.commercials} onChange={handleChange} placeholder="e.g. 5k/Reel, 2k/Story" className="w-full h-12 bg-gray-50 dark:bg-black border border-black/10 dark:border-white/10 rounded-xl px-4 text-sm font-bold text-gray-900 dark:text-white focus:border-neon-blue outline-none transition-all" />
                         </div>
                     </div>
 
                     <div className="space-y-1.5">
                         <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Profile Picture URL</label>
-                        <input name="profilePicture" value={form.profilePicture} onChange={handleChange} placeholder="https://..." className="w-full h-12 bg-white dark:bg-black border border-black/10 dark:border-white/10 rounded-xl px-4 text-sm font-bold text-gray-900 dark:text-white focus:border-neon-blue outline-none transition-all" />
+                        <input name="profilePicture" value={form.profilePicture} onChange={handleChange} placeholder="https://..." className="w-full h-12 bg-gray-50 dark:bg-black border border-black/10 dark:border-white/10 rounded-xl px-4 text-sm font-bold text-gray-900 dark:text-white focus:border-neon-blue outline-none transition-all" />
                     </div>
 
                     <div className="space-y-1.5">
                         <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Strategic Bio</label>
-                        <textarea name="bio" value={form.bio} onChange={handleChange} placeholder="Bio description..." className="w-full h-24 bg-white dark:bg-black border border-black/10 dark:border-white/10 rounded-xl p-4 text-sm font-bold text-gray-900 dark:text-white focus:border-neon-blue outline-none transition-all resize-none animate-none" />
+                        <textarea name="bio" value={form.bio} onChange={handleChange} placeholder="Bio description..." className="w-full h-24 bg-gray-50 dark:bg-black border border-black/10 dark:border-white/10 rounded-xl p-4 text-sm font-bold text-gray-900 dark:text-white focus:border-neon-blue outline-none transition-all resize-none animate-none" />
                     </div>
 
-                    <div className="flex items-center gap-3 py-3 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-2xl px-4">
+                    <div className="flex items-center gap-3 py-3 bg-gray-50 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-2xl px-4">
                         <input
                             type="checkbox"
                             id="sendWelcomeMail"
@@ -2089,13 +2136,13 @@ const AddCreatorModal = ({ onClose }) => {
                             disabled={!form.email?.trim()}
                             className="w-5 h-5 rounded border-black/10 dark:border-white/10 bg-white dark:bg-black text-neon-blue focus:ring-0 focus:ring-offset-0 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
                         />
-                        <label htmlFor="sendWelcomeMail" className={`text-xs font-black uppercase tracking-wider cursor-pointer ${!form.email?.trim() ? 'text-gray-600' : 'text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'}`}>
+                        <label htmlFor="sendWelcomeMail" className={`text-xs font-black uppercase tracking-wider cursor-pointer ${!form.email?.trim() ? 'text-gray-400' : 'text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'}`}>
                             Send Welcome Email {!form.email?.trim() && "(Requires Email)"}
                         </label>
                     </div>
 
-                    <button type="submit" disabled={isSaving} className="w-full h-14 bg-white hover:bg-neon-blue text-black font-black uppercase tracking-widest rounded-xl transition-all flex items-center justify-center gap-2">
-                        {isSaving ? <LoadingSpinner size="xs" color="black" /> : 'Add Creator Profile'}
+                    <button type="submit" disabled={isSaving} className="w-full h-14 bg-black text-white hover:bg-neon-blue hover:text-black dark:bg-white dark:text-black dark:hover:bg-neon-blue font-black uppercase tracking-widest rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg">
+                        {isSaving ? <LoadingSpinner size="xs" color="currentColor" /> : 'Add Creator Profile'}
                     </button>
                 </form>
             </motion.div>

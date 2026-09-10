@@ -362,8 +362,8 @@ const ConcertZoneBlog = () => {
                 <span className="text-[8px] font-black uppercase tracking-[0.6em] rotate-180 [writing-mode:vertical-lr] text-neon-blue/60">Vol. 01 · 2026</span>
             </div>
 
-            {/* Floating Bottom Nav */}
-            <nav className={`fixed bottom-8 left-1/2 -translate-x-1/2 z-[100] transition-all duration-500 ${scrolled ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10 pointer-events-none'}`}>
+            {/* Floating Bottom Nav (Desktop Only on Scroll) */}
+            <nav className={`hidden md:block fixed bottom-8 left-1/2 -translate-x-1/2 z-[100] transition-all duration-500 ${scrolled ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10 pointer-events-none'}`}>
                 <div className="bg-gray-100 dark:bg-slate-900/40 backdrop-blur-3xl border border-black/10 dark:border-white/5 rounded-2xl px-2 py-1.5 flex items-center gap-1 shadow-inner">
                     {CATEGORIES.map((cat) => (
                         <button key={cat.id} onClick={() => handleCategoryChange(cat.id)}
