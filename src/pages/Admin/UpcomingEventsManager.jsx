@@ -130,6 +130,44 @@ const UpcomingEventsManager = () => {
     const [dragStart, setDragStart] = useState(null);
     const [currentDrag, setCurrentDrag] = useState(null);
 
+    const thumbnailPreviewUrl = useMemo(() => {
+        if (selectedFile) {
+            try {
+                return URL.createObjectURL(selectedFile);
+            } catch (e) {
+                console.error("Error creating thumbnail preview URL:", e);
+            }
+        }
+        return newEvent.image || '';
+    }, [selectedFile, newEvent.image]);
+
+    useEffect(() => {
+        return () => {
+            if (thumbnailPreviewUrl && thumbnailPreviewUrl.startsWith('blob:')) {
+                URL.revokeObjectURL(thumbnailPreviewUrl);
+            }
+        };
+    }, [thumbnailPreviewUrl]);
+
+    const hubBannerPreviewUrl = useMemo(() => {
+        if (selectedHubBanner) {
+            try {
+                return URL.createObjectURL(selectedHubBanner);
+            } catch (e) {
+                console.error("Error creating hub banner preview URL:", e);
+            }
+        }
+        return newEvent.hubImage || '';
+    }, [selectedHubBanner, newEvent.hubImage]);
+
+    useEffect(() => {
+        return () => {
+            if (hubBannerPreviewUrl && hubBannerPreviewUrl.startsWith('blob:')) {
+                URL.revokeObjectURL(hubBannerPreviewUrl);
+            }
+        };
+    }, [hubBannerPreviewUrl]);
+
     const venueLayoutPreviewUrl = useMemo(() => {
         if (venueLayoutFile) return URL.createObjectURL(venueLayoutFile);
         return null;
@@ -200,23 +238,46 @@ const UpcomingEventsManager = () => {
     };
 
     const handlePaste = (e, type) => {
-        const items = (e.clipboardData || e.originalEvent.clipboardData).items;
-        for (let index in items) {
-            const item = items[index];
-            if (item.kind === 'file' && item.type.startsWith('image/')) {
-                const file = item.getAsFile();
-                if (type === 'image') {
-                    setSelectedFile(file);
-                    useStore.getState().addToast("Thumbnail pasted from clipboard!", 'success');
-                } else if (type === 'hubImage') {
-                    setSelectedHubBanner(file);
-                    useStore.getState().addToast("Hub banner pasted from clipboard!", 'success');
-                } else if (type === 'venueLayout') {
-                    setVenueLayoutFile(file);
-                    useStore.getState().addToast("Layout image pasted from clipboard!", 'success');
+        const items = (e.clipboardData || e.originalEvent?.clipboardData)?.items;
+        if (items) {
+            for (let index in items) {
+                const item = items[index];
+                if (item.kind === 'file' && item.type.startsWith('image/')) {
+                    const file = item.getAsFile();
+                    if (file) {
+                        if (type === 'image') {
+                            setSelectedFile(file);
+                            useStore.getState().addToast("Thumbnail pasted from clipboard!", 'success');
+                        } else if (type === 'hubImage') {
+                            setSelectedHubBanner(file);
+                            useStore.getState().addToast("Hub banner pasted from clipboard!", 'success');
+                        } else if (type === 'venueLayout') {
+                            setVenueLayoutFile(file);
+                            useStore.getState().addToast("Layout image pasted from clipboard!", 'success');
+                        }
+                        e.preventDefault();
+                        return;
+                    }
                 }
-                e.preventDefault();
             }
+        }
+
+        const text = (e.clipboardData || e.originalEvent?.clipboardData)?.getData('text');
+        if (text && (text.startsWith('http://') || text.startsWith('https://') || text.startsWith('data:image/'))) {
+            if (type === 'image') {
+                setSelectedFile(null);
+                setNewEvent(prev => ({ ...prev, image: text.trim() }));
+                useStore.getState().addToast("Thumbnail URL pasted!", 'success');
+            } else if (type === 'hubImage') {
+                setSelectedHubBanner(null);
+                setNewEvent(prev => ({ ...prev, hubImage: text.trim() }));
+                useStore.getState().addToast("Hub banner URL pasted!", 'success');
+            } else if (type === 'venueLayout') {
+                setVenueLayoutFile(null);
+                setNewEvent(prev => ({ ...prev, venueLayout: text.trim() }));
+                useStore.getState().addToast("Venue layout URL pasted!", 'success');
+            }
+            e.preventDefault();
         }
     };
 
@@ -335,7 +396,7 @@ const UpcomingEventsManager = () => {
                                 <AnimatePresence mode="wait">
                                     {showPreviewMobile ? (
                                         <div className="lg:hidden">
-                                            <LivePreview type="event" data={{ ...newEvent, image: selectedFile ? URL.createObjectURL(selectedFile) : newEvent.image }} />
+                                            <LivePreview type="event" data={{ ...newEvent, image: thumbnailPreviewUrl, hubImage: hubBannerPreviewUrl }} />
                                         </div>
                                     ) : (
                                         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-stretch">
@@ -360,17 +421,35 @@ const UpcomingEventsManager = () => {
                                                                         onPaste={(e) => handlePaste(e, 'image')}
                                                                         tabIndex={0}
                                                                     >
-                                                                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1 flex justify-between items-center">
-                                                                            Card Thumbnail (4:5)
-                                                                            <span className="text-[8px] text-neon-blue/40 opacity-0 group-hover/upload:opacity-100 transition-opacity">CTRL+V TO PASTE</span>
-                                                                        </label>
+                                                                        <div className="flex justify-between items-center pl-1">
+                                                                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">
+                                                                                Card Thumbnail (4:5)
+                                                                            </label>
+                                                                            <div className="flex items-center gap-3">
+                                                                                {thumbnailPreviewUrl && (
+                                                                                    <button 
+                                                                                        type="button" 
+                                                                                        onClick={(e) => {
+                                                                                            e.stopPropagation();
+                                                                                            setSelectedFile(null);
+                                                                                            setNewEvent(prev => ({ ...prev, image: '' }));
+                                                                                        }}
+                                                                                        className="text-[8px] font-black text-red-500 uppercase tracking-widest hover:underline"
+                                                                                    >
+                                                                                        Remove
+                                                                                    </button>
+                                                                                )}
+                                                                                <span className="text-[8px] text-neon-blue/40 opacity-0 group-hover/upload:opacity-100 transition-opacity">CTRL+V TO PASTE</span>
+                                                                            </div>
+                                                                        </div>
                                                                         <div className="relative aspect-[4/5] rounded-3xl overflow-hidden bg-white dark:bg-black border border-black/10 dark:border-white/10 group-hover/upload:border-blue-500 dark:upload:border-neon-blue/30 transition-all">
-                                                                            {(selectedFile || newEvent.image) ? (
+                                                                            {thumbnailPreviewUrl ? (
                                                                                 <img 
-                                                                                    src={selectedFile ? URL.createObjectURL(selectedFile) : newEvent.image} 
+                                                                                    src={thumbnailPreviewUrl} 
+                                                                                    alt="Card Thumbnail"
                                                                                     className="w-full h-full object-cover" 
                                                                                     style={{
-                                                                                        transform: `scale(${newEvent.imageTransform?.scale || 1})`,
+                                                                                        transform: `scale(${newEvent.imageTransform?.scale ?? 1})`,
                                                                                         objectPosition: `${50 + (newEvent.imageTransform?.x || 0)}% ${50 + (newEvent.imageTransform?.y || 0)}%`
                                                                                     }}
                                                                                 />
@@ -383,36 +462,70 @@ const UpcomingEventsManager = () => {
                                                                             <input 
                                                                                 type="file" 
                                                                                 accept="image/*" 
-                                                                                onChange={e => setSelectedFile(e.target.files[0])}
-                                                                                className="absolute inset-0 opacity-0 cursor-pointer"
+                                                                                onChange={e => {
+                                                                                    if (e.target.files && e.target.files[0]) {
+                                                                                        setSelectedFile(e.target.files[0]);
+                                                                                    }
+                                                                                    e.target.value = '';
+                                                                                }}
+                                                                                className="absolute inset-0 opacity-0 cursor-pointer z-10"
+                                                                            />
+                                                                        </div>
+
+                                                                        {/* URL Input */}
+                                                                        <div className="pt-2">
+                                                                            <Input 
+                                                                                placeholder="OR PASTE THUMBNAIL URL (HTTPS://...)" 
+                                                                                value={newEvent.image || ''} 
+                                                                                onChange={e => {
+                                                                                    setSelectedFile(null);
+                                                                                    setNewEvent(prev => ({ ...prev, image: e.target.value }));
+                                                                                }} 
+                                                                                className="h-10 bg-white dark:bg-black/50 border-black/10 dark:border-white/5 rounded-xl text-[9px] font-medium tracking-wider px-4" 
                                                                             />
                                                                         </div>
 
                                                                         {/* Calibration Overlay */}
-                                                                        {(selectedFile || newEvent.image) && (
+                                                                        {thumbnailPreviewUrl && (
                                                                             <div className="pt-4 space-y-4 border-t border-black/10 dark:border-white/5">
                                                                                 <div className="flex items-center justify-between">
                                                                                     <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest">CALIBRATE</span>
-                                                                                    <button type="button" onClick={() => setNewEvent({ ...newEvent, imageTransform: { scale: 1, x: 0, y: 0 } })} className="text-[8px] font-black text-neon-blue hover:underline">RESET</button>
+                                                                                    <button 
+                                                                                        type="button" 
+                                                                                        onClick={() => setNewEvent({ ...newEvent, imageTransform: { scale: 1, x: 0, y: 0 } })} 
+                                                                                        className="text-[8px] font-black text-neon-blue hover:underline flex items-center gap-1"
+                                                                                    >
+                                                                                        <RotateCcw size={10} /> RESET
+                                                                                    </button>
                                                                                 </div>
                                                                                 <div className="space-y-4">
                                                                                     <div className="space-y-2">
                                                                                         <div className="flex justify-between items-center">
-                                                                                            <span className="text-[8px] font-black text-gray-600 uppercase tracking-widest">Scale</span>
+                                                                                            <span className="text-[8px] font-black text-gray-600 uppercase tracking-widest">Scale ({(newEvent.imageTransform?.scale ?? 1).toFixed(2)}x)</span>
                                                                                             <input 
                                                                                                 type="number" 
                                                                                                 value={newEvent.imageTransform?.scale ?? 1} 
-                                                                                                step="0.01"
+                                                                                                step="0.05"
+                                                                                                min="0.1"
+                                                                                                max="5"
                                                                                                 onChange={e => setNewEvent({...newEvent, imageTransform: {...newEvent.imageTransform, scale: parseFloat(e.target.value) || 1}})}
-                                                                                                className="w-12 h-5 bg-white dark:bg-black/40 border border-black/10 dark:border-white/10 rounded text-[8px] font-black text-gray-900 dark:text-white text-center focus:border-neon-blue/40 outline-none"
+                                                                                                className="w-14 h-5 bg-white dark:bg-black/40 border border-black/10 dark:border-white/10 rounded text-[8px] font-black text-gray-900 dark:text-white text-center focus:border-neon-blue/40 outline-none"
                                                                                             />
                                                                                         </div>
-                                                                                        <input type="range" min="-3" max="3" step="0.01" value={newEvent.imageTransform?.scale ?? 1} onChange={e => setNewEvent({...newEvent, imageTransform: {...newEvent.imageTransform, scale: parseFloat(e.target.value)}})} className="w-full h-1 bg-black/5 dark:bg-white/5 rounded-full appearance-none accent-neon-blue" />
+                                                                                        <input 
+                                                                                            type="range" 
+                                                                                            min="0.1" 
+                                                                                            max="3" 
+                                                                                            step="0.01" 
+                                                                                            value={newEvent.imageTransform?.scale ?? 1} 
+                                                                                            onChange={e => setNewEvent({...newEvent, imageTransform: {...newEvent.imageTransform, scale: parseFloat(e.target.value) || 1}})} 
+                                                                                            className="w-full h-1 bg-black/5 dark:bg-white/5 rounded-full appearance-none accent-neon-blue cursor-pointer" 
+                                                                                        />
                                                                                     </div>
                                                                                     <div className="grid grid-cols-2 gap-4">
                                                                                         <div className="space-y-2">
                                                                                             <div className="flex justify-between items-center">
-                                                                                                <span className="text-[8px] font-black text-gray-600 uppercase tracking-widest">X-Pos</span>
+                                                                                                <span className="text-[8px] font-black text-gray-600 uppercase tracking-widest">X-Pos ({newEvent.imageTransform?.x || 0}%)</span>
                                                                                                 <input 
                                                                                                     type="number" 
                                                                                                     value={newEvent.imageTransform?.x || 0} 
@@ -420,11 +533,19 @@ const UpcomingEventsManager = () => {
                                                                                                     className="w-10 h-5 bg-white dark:bg-black/40 border border-black/10 dark:border-white/10 rounded text-[8px] font-black text-gray-900 dark:text-white text-center focus:border-neon-green/40 outline-none"
                                                                                                 />
                                                                                             </div>
-                                                                                            <input type="range" min="-100" max="100" step="1" value={newEvent.imageTransform?.x || 0} onChange={e => setNewEvent({...newEvent, imageTransform: {...newEvent.imageTransform, x: parseFloat(e.target.value)}})} className="h-1 bg-black/5 dark:bg-white/5 rounded-full appearance-none accent-neon-green" />
+                                                                                            <input 
+                                                                                                type="range" 
+                                                                                                min="-100" 
+                                                                                                max="100" 
+                                                                                                step="1" 
+                                                                                                value={newEvent.imageTransform?.x || 0} 
+                                                                                                onChange={e => setNewEvent({...newEvent, imageTransform: {...newEvent.imageTransform, x: parseFloat(e.target.value) || 0}})} 
+                                                                                                className="w-full h-1 bg-black/5 dark:bg-white/5 rounded-full appearance-none accent-neon-green cursor-pointer" 
+                                                                                            />
                                                                                         </div>
                                                                                         <div className="space-y-2">
                                                                                             <div className="flex justify-between items-center">
-                                                                                                <span className="text-[8px] font-black text-gray-600 uppercase tracking-widest">Y-Pos</span>
+                                                                                                <span className="text-[8px] font-black text-gray-600 uppercase tracking-widest">Y-Pos ({newEvent.imageTransform?.y || 0}%)</span>
                                                                                                 <input 
                                                                                                     type="number" 
                                                                                                     value={newEvent.imageTransform?.y || 0} 
@@ -432,7 +553,15 @@ const UpcomingEventsManager = () => {
                                                                                                     className="w-10 h-5 bg-white dark:bg-black/40 border border-black/10 dark:border-white/10 rounded text-[8px] font-black text-gray-900 dark:text-white text-center focus:border-neon-pink/40 outline-none"
                                                                                                 />
                                                                                             </div>
-                                                                                            <input type="range" min="-100" max="100" step="1" value={newEvent.imageTransform?.y || 0} onChange={e => setNewEvent({...newEvent, imageTransform: {...newEvent.imageTransform, y: parseFloat(e.target.value)}})} className="h-1 bg-black/5 dark:bg-white/5 rounded-full appearance-none accent-neon-pink" />
+                                                                                            <input 
+                                                                                                type="range" 
+                                                                                                min="-100" 
+                                                                                                max="100" 
+                                                                                                step="1" 
+                                                                                                value={newEvent.imageTransform?.y || 0} 
+                                                                                                onChange={e => setNewEvent({...newEvent, imageTransform: {...newEvent.imageTransform, y: parseFloat(e.target.value) || 0}})} 
+                                                                                                className="w-full h-1 bg-black/5 dark:bg-white/5 rounded-full appearance-none accent-neon-pink cursor-pointer" 
+                                                                                            />
                                                                                         </div>
                                                                                     </div>
                                                                                 </div>
@@ -445,17 +574,35 @@ const UpcomingEventsManager = () => {
                                                                         onPaste={(e) => handlePaste(e, 'hubImage')}
                                                                         tabIndex={0}
                                                                     >
-                                                                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1 flex justify-between items-center">
-                                                                            Hub Banner (16:9)
-                                                                            <span className="text-[8px] text-neon-pink/40 opacity-0 group-hover/hubupload:opacity-100 transition-opacity">CTRL+V TO PASTE</span>
-                                                                        </label>
+                                                                        <div className="flex justify-between items-center pl-1">
+                                                                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">
+                                                                                Hub Banner (16:9)
+                                                                            </label>
+                                                                            <div className="flex items-center gap-3">
+                                                                                {hubBannerPreviewUrl && (
+                                                                                    <button 
+                                                                                        type="button" 
+                                                                                        onClick={(e) => {
+                                                                                            e.stopPropagation();
+                                                                                            setSelectedHubBanner(null);
+                                                                                            setNewEvent(prev => ({ ...prev, hubImage: '' }));
+                                                                                        }}
+                                                                                        className="text-[8px] font-black text-red-500 uppercase tracking-widest hover:underline"
+                                                                                    >
+                                                                                        Remove
+                                                                                    </button>
+                                                                                )}
+                                                                                <span className="text-[8px] text-neon-pink/40 opacity-0 group-hover/hubupload:opacity-100 transition-opacity">CTRL+V TO PASTE</span>
+                                                                            </div>
+                                                                        </div>
                                                                         <div className="relative aspect-video rounded-3xl overflow-hidden bg-white dark:bg-black border border-black/10 dark:border-white/10 group-hover/hubupload:border-pink-500 dark:hubupload:border-neon-pink/30 transition-all">
-                                                                            {(selectedHubBanner || newEvent.hubImage) ? (
+                                                                            {hubBannerPreviewUrl ? (
                                                                                 <img 
-                                                                                    src={selectedHubBanner ? URL.createObjectURL(selectedHubBanner) : newEvent.hubImage} 
+                                                                                    src={hubBannerPreviewUrl} 
+                                                                                    alt="Hub Banner"
                                                                                     className="w-full h-full object-cover" 
                                                                                     style={{
-                                                                                        transform: `scale(${newEvent.hubImageTransform?.scale || 1})`,
+                                                                                        transform: `scale(${newEvent.hubImageTransform?.scale ?? 1})`,
                                                                                         objectPosition: `${50 + (newEvent.hubImageTransform?.x || 0)}% ${50 + (newEvent.hubImageTransform?.y || 0)}%`
                                                                                     }}
                                                                                 />
@@ -468,36 +615,70 @@ const UpcomingEventsManager = () => {
                                                                             <input 
                                                                                 type="file" 
                                                                                 accept="image/*" 
-                                                                                onChange={e => setSelectedHubBanner(e.target.files[0])}
-                                                                                className="absolute inset-0 opacity-0 cursor-pointer"
+                                                                                onChange={e => {
+                                                                                    if (e.target.files && e.target.files[0]) {
+                                                                                        setSelectedHubBanner(e.target.files[0]);
+                                                                                    }
+                                                                                    e.target.value = '';
+                                                                                }}
+                                                                                className="absolute inset-0 opacity-0 cursor-pointer z-10"
+                                                                            />
+                                                                        </div>
+
+                                                                        {/* URL Input */}
+                                                                        <div className="pt-2">
+                                                                            <Input 
+                                                                                placeholder="OR PASTE BANNER URL (HTTPS://...)" 
+                                                                                value={newEvent.hubImage || ''} 
+                                                                                onChange={e => {
+                                                                                    setSelectedHubBanner(null);
+                                                                                    setNewEvent(prev => ({ ...prev, hubImage: e.target.value }));
+                                                                                }} 
+                                                                                className="h-10 bg-white dark:bg-black/50 border-black/10 dark:border-white/5 rounded-xl text-[9px] font-medium tracking-wider px-4" 
                                                                             />
                                                                         </div>
 
                                                                         {/* Hub Calibration */}
-                                                                        {(selectedHubBanner || newEvent.hubImage) && (
+                                                                        {hubBannerPreviewUrl && (
                                                                             <div className="pt-4 space-y-4 border-t border-black/10 dark:border-white/5">
                                                                                 <div className="flex items-center justify-between">
                                                                                     <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest">CALIBRATE BANNER</span>
-                                                                                    <button type="button" onClick={() => setNewEvent({ ...newEvent, hubImageTransform: { scale: 1, x: 0, y: 0 } })} className="text-[8px] font-black text-neon-pink hover:underline">RESET</button>
+                                                                                    <button 
+                                                                                        type="button" 
+                                                                                        onClick={() => setNewEvent({ ...newEvent, hubImageTransform: { scale: 1, x: 0, y: 0 } })} 
+                                                                                        className="text-[8px] font-black text-neon-pink hover:underline flex items-center gap-1"
+                                                                                    >
+                                                                                        <RotateCcw size={10} /> RESET
+                                                                                    </button>
                                                                                 </div>
                                                                                 <div className="space-y-4">
                                                                                     <div className="space-y-2">
                                                                                         <div className="flex justify-between items-center">
-                                                                                            <span className="text-[8px] font-black text-gray-600 uppercase tracking-widest">Scale</span>
+                                                                                            <span className="text-[8px] font-black text-gray-600 uppercase tracking-widest">Scale ({(newEvent.hubImageTransform?.scale ?? 1).toFixed(2)}x)</span>
                                                                                             <input 
                                                                                                 type="number" 
                                                                                                 value={newEvent.hubImageTransform?.scale ?? 1} 
-                                                                                                step="0.01"
+                                                                                                step="0.05"
+                                                                                                min="0.1"
+                                                                                                max="5"
                                                                                                 onChange={e => setNewEvent({...newEvent, hubImageTransform: {...newEvent.hubImageTransform, scale: parseFloat(e.target.value) || 1}})}
-                                                                                                className="w-12 h-5 bg-white dark:bg-black/40 border border-black/10 dark:border-white/10 rounded text-[8px] font-black text-gray-900 dark:text-white text-center focus:border-neon-pink/40 outline-none"
+                                                                                                className="w-14 h-5 bg-white dark:bg-black/40 border border-black/10 dark:border-white/10 rounded text-[8px] font-black text-gray-900 dark:text-white text-center focus:border-neon-pink/40 outline-none"
                                                                                             />
                                                                                         </div>
-                                                                                        <input type="range" min="-3" max="3" step="0.01" value={newEvent.hubImageTransform?.scale ?? 1} onChange={e => setNewEvent({...newEvent, hubImageTransform: {...newEvent.hubImageTransform, scale: parseFloat(e.target.value)}})} className="w-full h-1 bg-black/5 dark:bg-white/5 rounded-full appearance-none accent-neon-pink" />
+                                                                                        <input 
+                                                                                            type="range" 
+                                                                                            min="0.1" 
+                                                                                            max="3" 
+                                                                                            step="0.01" 
+                                                                                            value={newEvent.hubImageTransform?.scale ?? 1} 
+                                                                                            onChange={e => setNewEvent({...newEvent, hubImageTransform: {...newEvent.hubImageTransform, scale: parseFloat(e.target.value) || 1}})} 
+                                                                                            className="w-full h-1 bg-black/5 dark:bg-white/5 rounded-full appearance-none accent-neon-pink cursor-pointer" 
+                                                                                        />
                                                                                     </div>
                                                                                     <div className="grid grid-cols-2 gap-4">
                                                                                         <div className="space-y-2">
                                                                                             <div className="flex justify-between items-center">
-                                                                                                <span className="text-[8px] font-black text-gray-600 uppercase tracking-widest">X-Pos</span>
+                                                                                                <span className="text-[8px] font-black text-gray-600 uppercase tracking-widest">X-Pos ({newEvent.hubImageTransform?.x || 0}%)</span>
                                                                                                 <input 
                                                                                                     type="number" 
                                                                                                     value={newEvent.hubImageTransform?.x || 0} 
@@ -505,11 +686,19 @@ const UpcomingEventsManager = () => {
                                                                                                     className="w-10 h-5 bg-white dark:bg-black/40 border border-black/10 dark:border-white/10 rounded text-[8px] font-black text-gray-900 dark:text-white text-center focus:border-neon-green/40 outline-none"
                                                                                                 />
                                                                                             </div>
-                                                                                            <input type="range" min="-100" max="100" step="1" value={newEvent.hubImageTransform?.x || 0} onChange={e => setNewEvent({...newEvent, hubImageTransform: {...newEvent.hubImageTransform, x: parseFloat(e.target.value)}})} className="h-1 bg-black/5 dark:bg-white/5 rounded-full appearance-none accent-neon-green" />
+                                                                                            <input 
+                                                                                                type="range" 
+                                                                                                min="-100" 
+                                                                                                max="100" 
+                                                                                                step="1" 
+                                                                                                value={newEvent.hubImageTransform?.x || 0} 
+                                                                                                onChange={e => setNewEvent({...newEvent, hubImageTransform: {...newEvent.hubImageTransform, x: parseFloat(e.target.value) || 0}})} 
+                                                                                                className="w-full h-1 bg-black/5 dark:bg-white/5 rounded-full appearance-none accent-neon-green cursor-pointer" 
+                                                                                            />
                                                                                         </div>
                                                                                         <div className="space-y-2">
                                                                                             <div className="flex justify-between items-center">
-                                                                                                <span className="text-[8px] font-black text-gray-600 uppercase tracking-widest">Y-Pos</span>
+                                                                                                <span className="text-[8px] font-black text-gray-600 uppercase tracking-widest">Y-Pos ({newEvent.hubImageTransform?.y || 0}%)</span>
                                                                                                 <input 
                                                                                                     type="number" 
                                                                                                     value={newEvent.hubImageTransform?.y || 0} 
@@ -517,7 +706,15 @@ const UpcomingEventsManager = () => {
                                                                                                     className="w-10 h-5 bg-white dark:bg-black/40 border border-black/10 dark:border-white/10 rounded text-[8px] font-black text-gray-900 dark:text-white text-center focus:border-neon-blue/40 outline-none"
                                                                                                 />
                                                                                             </div>
-                                                                                            <input type="range" min="-100" max="100" step="1" value={newEvent.hubImageTransform?.y || 0} onChange={e => setNewEvent({...newEvent, hubImageTransform: {...newEvent.hubImageTransform, y: parseFloat(e.target.value)}})} className="h-1 bg-black/5 dark:bg-white/5 rounded-full appearance-none accent-neon-blue" />
+                                                                                            <input 
+                                                                                                type="range" 
+                                                                                                min="-100" 
+                                                                                                max="100" 
+                                                                                                step="1" 
+                                                                                                value={newEvent.hubImageTransform?.y || 0} 
+                                                                                                onChange={e => setNewEvent({...newEvent, hubImageTransform: {...newEvent.hubImageTransform, y: parseFloat(e.target.value) || 0}})} 
+                                                                                                className="w-full h-1 bg-black/5 dark:bg-white/5 rounded-full appearance-none accent-neon-blue cursor-pointer" 
+                                                                                            />
                                                                                         </div>
                                                                                     </div>
                                                                                 </div>
@@ -1130,14 +1327,14 @@ const UpcomingEventsManager = () => {
                                                     type="event" 
                                                     data={{ 
                                                         ...newEvent, 
-                                                        image: selectedFile ? URL.createObjectURL(selectedFile) : newEvent.image,
-                                                        hubImage: selectedHubBanner ? URL.createObjectURL(selectedHubBanner) : newEvent.hubImage
+                                                        image: thumbnailPreviewUrl,
+                                                        hubImage: hubBannerPreviewUrl
                                                     }} 
                                                     onAction={() => {
                                                         setPreviewEvent({
                                                             ...newEvent,
-                                                            image: selectedFile ? URL.createObjectURL(selectedFile) : newEvent.image,
-                                                            hubImage: selectedHubBanner ? URL.createObjectURL(selectedHubBanner) : newEvent.hubImage
+                                                            image: thumbnailPreviewUrl,
+                                                            hubImage: hubBannerPreviewUrl
                                                         });
                                                         setIsPreviewOpen(true);
                                                     }}

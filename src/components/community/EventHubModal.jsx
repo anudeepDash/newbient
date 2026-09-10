@@ -115,17 +115,23 @@ const EventHubModal = ({ event, isOpen, onClose }) => {
                                     className="flex flex-col w-full flex-1 min-h-0 overflow-y-auto scrollbar-hide"
                                 >
                                     {/* Top Cinematic Header Banner */}
-                                    <div className="relative w-full overflow-hidden border-b border-black/10 dark:border-white/5 shrink-0">
-                                        <img 
-                                            src={event.hubImage || event.image} 
-                                            alt={event.title} 
-                                            className="w-full h-auto block" 
-                                            style={{
-                                                transform: `scale(${event.hubImageTransform?.scale || event.imageTransform?.scale || 1})`,
-                                                objectPosition: `${50 + (event.hubImageTransform?.x || event.imageTransform?.x || 0)}% ${50 + (event.hubImageTransform?.y || event.imageTransform?.y || 0)}%`
-                                            }}
-                                        />
-                                        <div className="absolute inset-0 bg-gradient-to-t from-[#020202] via-[#020202]/45 to-transparent" />
+                                    <div className="relative w-full overflow-hidden border-b border-black/10 dark:border-white/5 shrink-0 min-h-[160px] bg-zinc-950 flex items-center justify-center">
+                                        {(event?.hubImage || event?.image) ? (
+                                            <img 
+                                                src={event.hubImage || event.image} 
+                                                alt={event?.title || 'Event Banner'} 
+                                                className="w-full h-auto block" 
+                                                style={{
+                                                    transform: `scale(${event.hubImage ? (event.hubImageTransform?.scale ?? 1) : (event.imageTransform?.scale ?? 1)})`,
+                                                    objectPosition: `${50 + (event.hubImage ? (event.hubImageTransform?.x || 0) : (event.imageTransform?.x || 0))}% ${50 + (event.hubImage ? (event.hubImageTransform?.y || 0) : (event.imageTransform?.y || 0))}%`
+                                                }}
+                                            />
+                                        ) : (
+                                            <div className="w-full h-44 bg-gradient-to-br from-zinc-900 to-black flex items-center justify-center">
+                                                <Calendar size={48} className="text-white/10" />
+                                            </div>
+                                        )}
+                                        <div className="absolute inset-0 bg-gradient-to-t from-[#020202] via-[#020202]/45 to-transparent pointer-events-none" />
                                         
                                         {/* Cinematic Title overlay */}
                                         <div className="absolute bottom-6 left-6 right-6 text-left flex flex-col justify-end">

@@ -34,16 +34,20 @@ const EventCard = ({ item, onAction, handleShare }) => {
                         playsInline
                         className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-all duration-1000 scale-105 group-hover:scale-110"
                     />
-                ) : (
+                ) : (item.image || item.hubImage) ? (
                     <img 
-                        src={item.image} 
+                        src={item.image || item.hubImage} 
                         alt={item.title}
                         className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-all duration-1000 scale-105 group-hover:scale-110"
                         style={{
-                            transform: `scale(${item.imageTransform?.scale || 1})`,
-                            objectPosition: `${50 + (item.imageTransform?.x || 0)}% ${50 + (item.imageTransform?.y || 0)}%`
+                            transform: `scale(${item.image ? (item.imageTransform?.scale ?? 1) : (item.hubImageTransform?.scale ?? 1)})`,
+                            objectPosition: `${50 + (item.image ? (item.imageTransform?.x || 0) : (item.hubImageTransform?.x || 0))}% ${50 + (item.image ? (item.imageTransform?.y || 0) : (item.hubImageTransform?.y || 0))}%`
                         }}
                     />
+                ) : (
+                    <div className="w-full h-full bg-gradient-to-br from-zinc-900 to-black flex items-center justify-center">
+                        <Calendar size={60} className="text-gray-900 dark:text-white/10" />
+                    </div>
                 )}
                 {/* Advanced Overlay Gradients */}
                 <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent opacity-90" />
