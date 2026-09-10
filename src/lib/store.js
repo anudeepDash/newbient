@@ -3000,26 +3000,36 @@ export const useStore = create((set, get) => ({
     },
 
     // Members — cursor-paginated fetch (bypasses Firestore listener 300-doc cap)
+    // NOTE: uses orderBy(__name__) so ALL docs are returned regardless of whether
+    // fields like createdAt exist. Docs missing createdAt are silently excluded
+    // when using orderBy('createdAt'), causing empty results.
     fetchMembersPage: async (pageSize = 24, lastDoc = null) => {
         try {
             let q;
             if (lastDoc) {
                 q = query(
                     collection(db, 'users'),
-                    orderBy('createdAt', 'desc'),
+                    orderBy('__name__'),
                     startAfter(lastDoc),
                     limit(pageSize)
                 );
             } else {
                 q = query(
                     collection(db, 'users'),
-                    orderBy('createdAt', 'desc'),
+                    orderBy('__name__'),
                     limit(pageSize)
                 );
             }
             const snapshot = await getDocs(q);
             const docs = snapshot.docs;
-            const data = docs.map(d => ({ ...d.data(), id: d.id }));
+            // Sort client-side by createdAt desc (handles missing field gracefully)
+            const data = docs
+                .map(d => ({ ...d.data(), id: d.id }))
+                .sort((a, b) => {
+                    const ta = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+                    const tb = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+                    return tb - ta;
+                });
             const lastVisible = docs[docs.length - 1] || null;
             const hasMore = docs.length === pageSize;
             return { data, lastVisible, hasMore };
