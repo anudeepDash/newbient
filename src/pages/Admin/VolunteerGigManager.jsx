@@ -61,8 +61,14 @@ const formatDate = (dateStr) => {
     return s;
 };
 
-const GigCard = ({ gig, index, totalGigs, onEdit, onMove, onUpdate, onDelete }) => {
+const GigCard = ({ gig, index, totalGigs, onEdit, onMove, onUpdate, onDelete, upcomingEvents, onToggleHomeEvent }) => {
     const [mousePos, setMousePos] = useState({ x: 50, y: 50 });
+    const isPostedToUpcoming = (upcomingEvents || []).some(e => 
+        e.relatedVolunteerGigId === gig.id || 
+        e.gigId === gig.id || 
+        (e.title === gig.title && e.category === 'volunteer')
+    );
+
     const handleMouseMove = (e) => {
         const rect = e.currentTarget.getBoundingClientRect();
         const x = ((e.clientX - rect.left) / rect.width) * 100;
@@ -106,6 +112,12 @@ const GigCard = ({ gig, index, totalGigs, onEdit, onMove, onUpdate, onDelete }) 
                         <div className="w-1.5 h-1.5 rounded-full bg-current animate-pulse" />
                         {gig.status || 'ACTIVE'}
                     </div>
+                    {isPostedToUpcoming && (
+                        <div className="px-3 h-6 rounded-full border text-[8px] font-black uppercase tracking-widest flex items-center gap-1.5 backdrop-blur-3xl bg-neon-green/10 border-neon-green/30 text-neon-green">
+                            <Calendar size={10} className="animate-pulse" />
+                            <span>HOME EVENT</span>
+                        </div>
+                    )}
                     {gig.isPinned && (
                         <div className="w-8 h-8 rounded-xl bg-yellow-400/10 border border-yellow-400/20 flex items-center justify-center text-yellow-400 shadow-xl backdrop-blur-3xl">
                             <Star size={14} className="fill-current" />
@@ -163,6 +175,24 @@ const GigCard = ({ gig, index, totalGigs, onEdit, onMove, onUpdate, onDelete }) 
                         </div>
                     </div>
 
+                    {/* Home Event Toggle Button */}
+                    <Button 
+                        variant="outline" 
+                        onClick={() => onToggleHomeEvent(gig)}
+                        className={cn(
+                            "w-full h-12 rounded-2xl border transition-all flex items-center justify-center gap-2.5",
+                            isPostedToUpcoming 
+                                ? "bg-neon-green/10 text-neon-green border-neon-green/30 hover:bg-red-500/10 hover:text-red-400 hover:border-red-500/30" 
+                                : "bg-black/5 dark:bg-white/5 text-gray-700 dark:text-gray-300 border-black/10 dark:border-white/10 hover:bg-neon-green hover:text-black hover:border-neon-green"
+                        )}
+                        title={isPostedToUpcoming ? "Click to remove from Home Upcoming Events" : "Add this gig to Home Upcoming Events"}
+                    >
+                        <Calendar size={15} className={isPostedToUpcoming ? "text-neon-green" : "text-neon-green"} />
+                        <span className="text-[10px] font-black uppercase tracking-[0.15em]">
+                            {isPostedToUpcoming ? "On Home Events (Click to Remove)" : "Add to Home (Upcoming Events)"}
+                        </span>
+                    </Button>
+
                     <div className="flex flex-wrap items-center gap-3">
                         <Button 
                             variant="outline" 
@@ -206,7 +236,7 @@ const GigCard = ({ gig, index, totalGigs, onEdit, onMove, onUpdate, onDelete }) 
 };
 
 const VolunteerGigManager = () => {
-    useStoreSubscription(['volunteerGigs']);
+    useStoreSubscription(['volunteerGigs', 'upcomingEvents']);
     const navigate = useNavigate();
     const colorPresets = [
         { name: 'Neon Green', value: '#39FF14' },
@@ -215,7 +245,7 @@ const VolunteerGigManager = () => {
         { name: 'Cyber Blue', value: '#2ebfff' },
     ];
 
-    const { volunteerGigs, addVolunteerGig, updateVolunteerGig, deleteVolunteerGig, reorderVolunteerGigs, addAnnouncement, uploadToCloudinary } = useStore();
+    const { volunteerGigs, addVolunteerGig, updateVolunteerGig, deleteVolunteerGig, reorderVolunteerGigs, addAnnouncement, uploadToCloudinary, upcomingEvents, addUpcomingEvent, deleteUpcomingEvent } = useStore();
     const [isAdding, setIsAdding] = useState(false);
     const [editingId, setEditingId] = useState(null);
     const [saving, setSaving] = useState(false);
@@ -309,6 +339,38 @@ const VolunteerGigManager = () => {
             useStore.getState().addToast(`Something went wrong while saving. Please try again.`, 'error');
         } finally {
             setSaving(false);
+        }
+    };
+
+    const handleToggleHomeUpcomingEvent = async (gig) => {
+        const existingEvent = (upcomingEvents || []).find(e => 
+            e.relatedVolunteerGigId === gig.id || 
+            e.gigId === gig.id || 
+            (e.title === gig.title && e.category === 'volunteer')
+        );
+
+        if (existingEvent) {
+            if (confirm(`Remove "${gig.title}" from Home Upcoming Events?`)) {
+                await deleteUpcomingEvent(existingEvent.id);
+                useStore.getState().addToast(`"${gig.title}" removed from Home Upcoming Events`, 'info');
+            }
+        } else {
+            const eventData = {
+                title: gig.title,
+                description: gig.description || '',
+                image: gig.image || '',
+                location: gig.location || 'GLOBAL',
+                date: (gig.dates && gig.dates[0]) || gig.date || new Date().toISOString(),
+                buttonText: 'JOIN SQUAD',
+                link: gig.applyType === 'link' && gig.applyLink ? gig.applyLink : '/community',
+                highlightColor: gig.highlightColor || '#39FF14',
+                category: 'volunteer',
+                relatedVolunteerGigId: gig.id,
+                gigId: gig.id,
+                isVolunteerGig: true
+            };
+            await addUpcomingEvent(eventData);
+            useStore.getState().addToast(`"${gig.title}" added to Home Upcoming Events!`, 'success');
         }
     };
 
@@ -714,6 +776,8 @@ const VolunteerGigManager = () => {
                                 onMove={moveGig}
                                 onUpdate={updateVolunteerGig}
                                 onDelete={deleteVolunteerGig}
+                                upcomingEvents={upcomingEvents}
+                                onToggleHomeEvent={handleToggleHomeUpcomingEvent}
                             />
                         ))
                     ) : (

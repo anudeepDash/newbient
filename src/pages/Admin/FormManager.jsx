@@ -10,6 +10,7 @@ import Lock from 'lucide-react/dist/esm/icons/lock';
 import Unlock from 'lucide-react/dist/esm/icons/unlock';
 import Megaphone from 'lucide-react/dist/esm/icons/megaphone';
 import Star from 'lucide-react/dist/esm/icons/star';
+import Calendar from 'lucide-react/dist/esm/icons/calendar';
 import ExternalLink from 'lucide-react/dist/esm/icons/external-link';
 import { useStore } from '../../lib/store';
 import { useStoreSubscription } from '../../hooks/useStoreSubscription';
@@ -19,13 +20,46 @@ import { cn } from '../../lib/utils';
 import { notifyAllUsers } from '../../lib/notificationTriggers';
 
 const FormManager = () => {
-    useStoreSubscription(['forms']);
-    const { forms, deleteForm, addAnnouncement } = useStore();
+    useStoreSubscription(['forms', 'upcomingEvents']);
+    const { forms, deleteForm, addAnnouncement, upcomingEvents, addUpcomingEvent, deleteUpcomingEvent } = useStore();
     const navigate = useNavigate();
 
     const handleDelete = (id) => {
         if (window.confirm('Are you sure you want to delete this form?')) {
             deleteForm(id);
+        }
+    };
+
+    const handleToggleHomeUpcomingEvent = async (form) => {
+        const existingEvent = (upcomingEvents || []).find(e => 
+            e.formId === form.id || 
+            e.link === `/forms/${form.id}` || 
+            (e.title === form.title && e.category === 'form')
+        );
+
+        if (existingEvent) {
+            if (window.confirm(`Remove "${form.title}" from Home Upcoming Events?`)) {
+                await deleteUpcomingEvent(existingEvent.id);
+                useStore.getState().addToast(`"${form.title}" removed from Home Upcoming Events`, 'info');
+            }
+        } else {
+            const eventData = {
+                title: form.title,
+                description: form.description || '',
+                image: form.image || '',
+                link: `/forms/${form.id}`,
+                buttonText: form.buttonText || 'FILL FORM',
+                highlightColor: form.highlightColor || '#FF4F8B',
+                category: 'form',
+                formId: form.id,
+                relatedArtistFormId: form.id,
+                date: new Date().toISOString(),
+                location: 'Online Form',
+                status: form.activeLabel || 'Live',
+                isForm: true
+            };
+            await addUpcomingEvent(eventData);
+            useStore.getState().addToast(`"${form.title}" added to Home Upcoming Events!`, 'success');
         }
     };
 
@@ -94,6 +128,11 @@ const FormManager = () => {
                         {forms.map((item) => {
                             const isLive = item.activeLabel === 'Live' || !item.activeLabel;
                             const highlightColor = item.highlightColor || '#FF4F8B';
+                            const isPostedToUpcoming = (upcomingEvents || []).some(e => 
+                                e.formId === item.id || 
+                                e.link === `/forms/${item.id}` || 
+                                (e.title === item.title && e.category === 'form')
+                            );
 
                             return (
                                 <div 
@@ -127,6 +166,16 @@ const FormManager = () => {
                                                 {item.activeLabel || 'Live'}
                                             </div>
                                         </div>
+
+                                        {/* Home Event Badge */}
+                                        {isPostedToUpcoming && (
+                                            <div className="absolute top-4 right-14">
+                                                <div className="px-2.5 py-1 rounded-lg text-[9px] font-bold uppercase tracking-widest flex items-center gap-1.5 backdrop-blur-xl border bg-neon-green/10 border-neon-green/30 text-neon-green">
+                                                    <Calendar size={11} className="animate-pulse" />
+                                                    <span>Home Event</span>
+                                                </div>
+                                            </div>
+                                        )}
 
                                         {/* Spotlight Badge */}
                                         {item.isPinned && (
@@ -176,6 +225,24 @@ const FormManager = () => {
                                                     <span className="text-[10px] font-bold uppercase tracking-widest">Notify</span>
                                                 </Button>
                                             </div>
+
+                                            {/* Home Upcoming Events Toggle Action */}
+                                            <Button 
+                                                variant="outline"
+                                                onClick={() => handleToggleHomeUpcomingEvent(item)}
+                                                className={cn(
+                                                    "w-full h-10 rounded-xl border transition-all flex items-center justify-center gap-2",
+                                                    isPostedToUpcoming 
+                                                        ? "bg-neon-green/10 text-neon-green border-neon-green/30 hover:bg-red-500/10 hover:text-red-400 hover:border-red-500/30" 
+                                                        : "bg-black/5 dark:bg-white/5 text-gray-700 dark:text-gray-300 border-black/10 dark:border-white/10 hover:bg-neon-pink hover:text-black hover:border-neon-pink"
+                                                )}
+                                                title={isPostedToUpcoming ? "Click to remove from Home Upcoming Events" : "Add this form directly to Home Upcoming Events"}
+                                            >
+                                                <Calendar size={13} className={isPostedToUpcoming ? "text-neon-green" : "text-neon-pink"} />
+                                                <span className="text-[10px] font-bold uppercase tracking-widest">
+                                                    {isPostedToUpcoming ? "On Home Events (Remove)" : "Add to Home (Upcoming Events)"}
+                                                </span>
+                                            </Button>
 
                                             {/* Secondary Actions Row */}
                                             <div className="flex items-center gap-2">
