@@ -12,11 +12,11 @@ let modelCacheTimestamp = 0;
 const MODEL_CACHE_TTL = 6 * 60 * 60 * 1000;
 
 const FALLBACK_MODEL_LIST = [
-    'gemini-3.5-flash',
-    'gemini-3.1-flash',
-    'gemini-3.1-flash-lite',
-    'gemini-2.5-flash',
     'gemini-2.0-flash',
+    'gemini-1.5-flash',
+    'gemini-2.0-flash-lite',
+    'gemini-1.5-pro',
+    'gemini-2.5-flash',
 ];
 
 function parseModelVersion(modelName) {
@@ -148,6 +148,12 @@ export default defineConfig(({ mode }) => {
                             cachedModels = null; // Invalidate cache
                             continue;
                           }
+
+                          if (status === 429 || status === 503 || msg.includes('quota') || msg.includes('rate') || msg.includes('high demand') || msg.includes('temporarily unavailable')) {
+                            console.warn(`[LOCAL AI DEV PROXY] ⚠️ ${modelName} overloaded/rate-limited (${status}). Trying next...`);
+                            continue;
+                          }
+
                           console.warn(`[LOCAL AI DEV PROXY] ⚠️ ${modelName} failed:`, msg.substring(0, 100));
                           continue;
                         }
@@ -158,39 +164,50 @@ export default defineConfig(({ mode }) => {
 
                   // ── Try OpenRouter ──
                   if (OPENROUTER_API_KEY) {
-                    try {
-                      console.log('[LOCAL AI DEV PROXY] Trying OpenRouter...');
-                      const orRes = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-                        method: 'POST',
-                        headers: {
-                          'Content-Type': 'application/json',
-                          'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
-                          'HTTP-Referer': 'https://newbi.ent', 
-                          'X-Title': 'Newbi Entertainment Proxy'
-                        },
-                        body: JSON.stringify({
-                          model: "google/gemini-2.5-flash",
-                          messages: [
-                            { role: "system", content: systemPrompt },
-                            { role: "user", content: userPrompt }
-                          ],
-                          response_format: { type: "json_object" }
-                        })
-                      });
-                      if (orRes.ok) {
-                        const data = await orRes.json();
-                        const content = data.choices?.[0]?.message?.content;
-                        if (content) {
-                          res.statusCode = 200;
-                          res.end(JSON.stringify({ content, provider: 'openrouter' }));
-                          return;
+                    const orModels = [
+                      'google/gemini-2.0-flash-001',
+                      'google/gemini-flash-1.5',
+                      'meta-llama/llama-3.3-70b-instruct',
+                      'openai/gpt-4o-mini',
+                      'deepseek/deepseek-chat',
+                    ];
+
+                    for (const orModel of orModels) {
+                      try {
+                        console.log(`[LOCAL AI DEV PROXY] Trying OpenRouter (${orModel})...`);
+                        const orRes = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+                          method: 'POST',
+                          headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+                            'HTTP-Referer': 'https://newbi.live', 
+                            'X-Title': 'Newbi Entertainment Proxy'
+                          },
+                          body: JSON.stringify({
+                            model: orModel,
+                            messages: [
+                              { role: "system", content: systemPrompt },
+                              { role: "user", content: userPrompt }
+                            ],
+                            max_tokens: 4096,
+                            response_format: { type: "json_object" }
+                          })
+                        });
+                        if (orRes.ok) {
+                          const data = await orRes.json();
+                          const content = data.choices?.[0]?.message?.content;
+                          if (content) {
+                            res.statusCode = 200;
+                            res.end(JSON.stringify({ content, provider: `openrouter-${orModel}` }));
+                            return;
+                          }
+                        } else {
+                          const err = await orRes.text();
+                          console.warn(`[LOCAL AI DEV PROXY] OpenRouter ${orModel} failed:`, err.substring(0, 100));
                         }
-                      } else {
-                        const err = await orRes.text();
-                        console.warn('[LOCAL AI DEV PROXY] OpenRouter response failed:', err);
+                      } catch (e) {
+                        console.warn(`[LOCAL AI DEV PROXY] OpenRouter ${orModel} failed:`, e.message);
                       }
-                    } catch (e) {
-                      console.warn('[LOCAL AI DEV PROXY] OpenRouter failed:', e.message);
                     }
                   }
 
@@ -210,9 +227,11 @@ export default defineConfig(({ mode }) => {
                     });
                     if (afRes.ok) {
                       const data = await afRes.json();
-                      res.statusCode = 200;
-                      res.end(JSON.stringify({ content: data.choices[0].message.content, provider: 'airforce' }));
-                      return;
+                      if (data.choices?.[0]?.message?.content) {
+                        res.statusCode = 200;
+                        res.end(JSON.stringify({ content: data.choices[0].message.content, provider: 'airforce' }));
+                        return;
+                      }
                     }
                   } catch (e) {
                     console.warn('[LOCAL AI DEV PROXY] Airforce failed:', e.message);
@@ -221,12 +240,12 @@ export default defineConfig(({ mode }) => {
                   // ── Try Pollinations proxy ──
                   try {
                     console.log('[LOCAL AI DEV PROXY] Trying Pollinations...');
-                    const pollRes = await fetch('https://text.pollinations.ai/', {
+                    const pollRes = await fetch('https://gen.pollinations.ai/v1/chat/completions', {
                       method: 'POST',
                       headers: { 'Content-Type': 'application/json' },
                       body: JSON.stringify({
                         messages: [
-                          { role: 'system', content: systemPrompt },
+                          { role: 'system', content: systemPrompt + '\n\nIMPORTANT: Return ONLY valid JSON matching the schema.' },
                           { role: 'user', content: userPrompt }
                         ],
                         model: 'openai',
@@ -234,10 +253,13 @@ export default defineConfig(({ mode }) => {
                       })
                     });
                     if (pollRes.ok) {
-                      const text = await pollRes.text();
-                      res.statusCode = 200;
-                      res.end(JSON.stringify({ content: text, provider: 'pollinations' }));
-                      return;
+                      const pollData = await pollRes.json();
+                      const content = pollData.choices?.[0]?.message?.content;
+                      if (content && content.length > 20) {
+                        res.statusCode = 200;
+                        res.end(JSON.stringify({ content, provider: 'pollinations' }));
+                        return;
+                      }
                     }
                   } catch (e) {
                     console.warn('[LOCAL AI DEV PROXY] Pollinations failed:', e.message);

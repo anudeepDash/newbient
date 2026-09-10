@@ -536,40 +536,48 @@ const ArtistManager = ({ isEmbedded = false }) => {
                         isUpdating={isUpdating}
                     />
                 )}
-                {showDeleteConfirmId && (
-                    <div className="fixed inset-0 z-[500] flex items-center justify-center p-6 backdrop-blur-3xl bg-black/60 dark:bg-black/80">
-                        <motion.div 
-                            initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
-                            className="max-w-md w-full bg-white dark:bg-zinc-900 border border-black/10 dark:border-white/10 rounded-[3rem] p-12 text-center space-y-8 shadow-2xl dark:shadow-[0_50px_100px_rgba(0,0,0,0.5)]"
-                        >
-                            <div className="w-24 h-24 rounded-full bg-red-500/20 border border-red-500/20 flex items-center justify-center mx-auto">
-                                <AlertTriangle size={44} className="text-red-500" />
-                            </div>
-                            <div className="space-y-3">
-                                <h3 className="text-3xl font-black font-heading uppercase italic tracking-tighter text-gray-900 dark:text-white">Confirm Delete</h3>
-                                <p className="text-[11px] font-bold text-gray-500 uppercase tracking-widest leading-relaxed">
-                                    Are you certain you want to delete this artist profile? This action is irreversible and will remove all associated records.
-                                </p>
-                            </div>
-                            <div className="flex flex-col gap-4">
-                                <button 
-                                    onClick={() => handleDeleteArtist(showDeleteConfirmId)}
-                                    disabled={isDeleting}
-                                    className="w-full h-16 bg-red-500 text-white rounded-[1.5rem] font-black uppercase tracking-[0.2em] text-[11px] hover:bg-red-600 transition-all shadow-xl active:scale-95 flex items-center justify-center gap-3"
-                                >
-                                    {isDeleting ? <LoadingSpinner size="xs" color="white" /> : 'DELETE PROFILE'}
-                                </button>
-                                <button 
-                                    onClick={() => setShowDeleteConfirmId(null)}
-                                    className="w-full h-16 bg-black/5 dark:bg-white/5 text-gray-600 dark:text-gray-400 rounded-[1.5rem] font-black uppercase tracking-[0.2em] text-[11px] hover:bg-black/10 dark:hover:bg-white/10 transition-all active:scale-95"
-                                >
-                                    CANCEL
-                                </button>
-                            </div>
-                        </motion.div>
-                    </div>
-                )}
             </AnimatePresence>
+
+            {createPortal(
+                <AnimatePresence>
+                    {showDeleteConfirmId && (
+                        <div className="fixed inset-0 z-[500] flex items-center justify-center p-6 backdrop-blur-3xl bg-black/60 dark:bg-black/80">
+                            <motion.div 
+                                initial={{ scale: 0.9, opacity: 0 }} 
+                                animate={{ scale: 1, opacity: 1 }}
+                                exit={{ scale: 0.9, opacity: 0 }}
+                                className="max-w-md w-full bg-white dark:bg-zinc-900 border border-black/10 dark:border-white/10 rounded-[3rem] p-12 text-center space-y-8 shadow-2xl dark:shadow-[0_50px_100px_rgba(0,0,0,0.5)]"
+                            >
+                                <div className="w-24 h-24 rounded-full bg-red-500/20 border border-red-500/20 flex items-center justify-center mx-auto">
+                                    <AlertTriangle size={44} className="text-red-500" />
+                                </div>
+                                <div className="space-y-3">
+                                    <h3 className="text-3xl font-black font-heading uppercase italic tracking-tighter text-gray-900 dark:text-white">Confirm Delete</h3>
+                                    <p className="text-[11px] font-bold text-gray-500 uppercase tracking-widest leading-relaxed">
+                                        Are you certain you want to delete this artist profile? This action is irreversible and will remove all associated records.
+                                    </p>
+                                </div>
+                                <div className="flex flex-col gap-4">
+                                    <button 
+                                        onClick={() => handleDeleteArtist(showDeleteConfirmId)}
+                                        disabled={isDeleting}
+                                        className="w-full h-16 bg-red-500 text-white rounded-[1.5rem] font-black uppercase tracking-[0.2em] text-[11px] hover:bg-red-600 transition-all shadow-xl active:scale-95 flex items-center justify-center gap-3"
+                                    >
+                                        {isDeleting ? <LoadingSpinner size="xs" color="white" /> : 'DELETE PROFILE'}
+                                    </button>
+                                    <button 
+                                        onClick={() => setShowDeleteConfirmId(null)}
+                                        className="w-full h-16 bg-black/5 dark:bg-white/5 text-gray-600 dark:text-gray-400 rounded-[1.5rem] font-black uppercase tracking-[0.2em] text-[11px] hover:bg-black/10 dark:hover:bg-white/10 transition-all active:scale-95"
+                                    >
+                                        CANCEL
+                                    </button>
+                                </div>
+                            </motion.div>
+                        </div>
+                    )}
+                </AnimatePresence>,
+                document.body
+            )}
         </>
     );
 

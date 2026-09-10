@@ -28,12 +28,11 @@ const MODEL_CACHE_TTL = 6 * 60 * 60 * 1000; // Re-discover every 6 hours
 // Hardcoded fallback list in case model discovery itself fails.
 // Ordered newest → oldest. Even if these go stale, discovery will override them.
 const FALLBACK_MODEL_LIST = [
-    'gemini-3.5-flash',
-    'gemini-3.1-flash',
-    'gemini-3.1-flash-lite',
-    'gemini-2.5-flash',
     'gemini-2.0-flash',
     'gemini-1.5-flash',
+    'gemini-2.0-flash-lite',
+    'gemini-1.5-pro',
+    'gemini-2.5-flash',
 ];
 
 /**
@@ -229,9 +228,9 @@ export default async function handler(req, res) {
                             continue;
                         }
                         
-                        // Rate limit / quota — try next model
-                        if (status === 429 || errMsg.includes('quota') || errMsg.includes('rate')) {
-                            console.warn(`[AI PROXY] ⚠️ ${modelName} rate limited. Trying next...`);
+                        // Rate limit / quota / 503 high demand — try next model
+                        if (status === 429 || status === 503 || errMsg.includes('quota') || errMsg.includes('rate') || errMsg.includes('high demand') || errMsg.includes('temporarily unavailable')) {
+                            console.warn(`[AI PROXY] ⚠️ ${modelName} overloaded/rate-limited (${status}). Trying next model...`);
                             continue;
                         }
                         
@@ -250,12 +249,13 @@ export default async function handler(req, res) {
         // 2. TRY OPENROUTER (FETCH)
         // ═══════════════════════════════════════════════════════════════
         if (OPENROUTER_API_KEY && OPENROUTER_API_KEY.length > 10) {
-            // Try multiple OpenRouter models — best first, with a free fallback
+            // Try valid, active OpenRouter models — fast & stable first
             const orModels = [
-                'google/gemini-3.5-flash',
-                'google/gemini-3.1-flash-lite',
-                'google/gemini-2.5-flash',
-                'meta-llama/llama-4-scout:free',
+                'google/gemini-2.0-flash-001',
+                'google/gemini-flash-1.5',
+                'meta-llama/llama-3.3-70b-instruct',
+                'openai/gpt-4o-mini',
+                'deepseek/deepseek-chat',
             ];
 
             for (const orModel of orModels) {
@@ -290,7 +290,6 @@ export default async function handler(req, res) {
                     } else {
                         const errText = await orRes.text();
                         console.warn(`[AI PROXY] ⚠️ OpenRouter ${orModel} not OK:`, errText.substring(0, 120));
-                        // If it's a credits issue, try the next (cheaper/free) model
                         if (errText.includes('credits') || errText.includes('max_tokens')) continue;
                     }
                 } catch (e) {
@@ -316,10 +315,12 @@ export default async function handler(req, res) {
             });
             if (afRes.ok) {
                 const data = await afRes.json();
-                return res.status(200).json({ 
-                    content: data.choices[0].message.content, 
-                    provider: `airforce` 
-                });
+                if (data.choices?.[0]?.message?.content) {
+                    return res.status(200).json({ 
+                        content: data.choices[0].message.content, 
+                        provider: `airforce` 
+                    });
+                }
             }
         } catch (e) {
             console.error('[AI PROXY] Airforce path failed:', e.message);
@@ -329,12 +330,12 @@ export default async function handler(req, res) {
         // 4. TRY POLLINATIONS (FREE KEYLESS PROXY)
         // ═══════════════════════════════════════════════════════════════
         try {
-            const pollRes = await fetch('https://text.pollinations.ai/', {
+            const pollRes = await fetch('https://gen.pollinations.ai/v1/chat/completions', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     messages: [
-                        { role: 'system', content: systemPrompt },
+                        { role: 'system', content: systemPrompt + '\n\nIMPORTANT: Return ONLY valid JSON matching the schema.' },
                         { role: 'user', content: userPrompt }
                     ],
                     model: 'openai',
@@ -342,11 +343,14 @@ export default async function handler(req, res) {
                 })
             });
             if (pollRes.ok) {
-                const text = await pollRes.text();
-                return res.status(200).json({ 
-                    content: text, 
-                    provider: 'pollinations' 
-                });
+                const pollData = await pollRes.json();
+                const content = pollData.choices?.[0]?.message?.content;
+                if (content && content.length > 20) {
+                    return res.status(200).json({ 
+                        content: content, 
+                        provider: 'pollinations' 
+                    });
+                }
             }
         } catch (e) {
             console.error('[AI PROXY] Pollinations path failed:', e.message);

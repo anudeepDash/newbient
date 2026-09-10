@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate, Link, useParams } from 'react-router-dom';
 import Plus from 'lucide-react/dist/esm/icons/plus';
 import Trash2 from 'lucide-react/dist/esm/icons/trash-2';
@@ -694,27 +695,18 @@ const ProposalGenerator = () => {
             }, 1200);
         } catch (err) {
             addToast(`Oops! Couldn't refine "${inlineRefineState.fieldLabel}". ${err.message || 'Try again with a different prompt.'}`, 'error');
-        } finally {
+                    } finally {
             setInlineRefineLoading(false);
         }
     };
 
-    // Auto bulk mode detection
+    // Auto bulk mode detection: checks if the text is structured proposal draft/text
     const detectBulkMode = useCallback((prompt) => {
-        if (!prompt || prompt.trim().length < 20) return false;
+        if (!prompt || prompt.trim().length < 80) return false;
         const trimmed = prompt.trim();
-        // Explicit separators
-        if (trimmed.includes('---') || trimmed.includes('___')) return true;
-        // Multiple paragraphs (3+ separated by double newlines)
-        const paragraphs = trimmed.split(/\n\n+/).filter(p => p.trim().length > 10);
-        if (paragraphs.length >= 3) return true;
-        // Keywords
-        const bulkKeywords = /\b(batch|bulk|multiple proposals|create \d+ proposals|for each client|generate all|for all clients|separate proposals)\b/i;
-        if (bulkKeywords.test(trimmed)) return true;
-        // Numbered list pattern (1. ... 2. ... 3. ...)
-        const numberedItems = trimmed.match(/^\d+[\.\)]\s+.{10,}/gm);
-        if (numberedItems && numberedItems.length >= 3) return true;
-        return false;
+        const hasHeaders = /(?:^|\n)(?:#{1,3}\s+|scope of work|deliverables|payment terms|commercials|pricing breakdown|client overview|cost summary)/i.test(trimmed);
+        const hasStructuredSections = trimmed.includes('---') || trimmed.includes('___') || (trimmed.split(/\n\n+/).length >= 3 && trimmed.length > 200);
+        return hasHeaders || hasStructuredSections;
     }, []);
 
     // Page duplication helpers
@@ -728,20 +720,8 @@ const ProposalGenerator = () => {
             title: `${original.title} (Copy)`
         };
         pages.splice(idx + 1, 0, cloned);
-        setFormData(prev => ({ ...prev, customPages: pages }));
-        addToast(`Page "${original.title}" duplicated!`, 'success');
-    };
-
-    const duplicateAllCustomPages = () => {
-        const pages = [...(formData.customPages || [])];
-        if (pages.length === 0) return;
-        const clones = pages.map(p => ({
-            ...p,
-            id: String(Date.now()) + '-' + Math.random().toString(36).substr(2, 5),
-            title: `${p.title} (Copy)`
-        }));
-        setFormData(prev => ({ ...prev, customPages: [...pages, ...clones] }));
-        addToast(`All ${pages.length} pages duplicated!`, 'success');
+        setFormData({ ...formData, customPages: pages });
+        addToast("Page duplicated successfully", "success");
     };
 
     // Chat popup resizer handlers
@@ -822,7 +802,7 @@ const ProposalGenerator = () => {
             left = Math.max(16, Math.min(window.innerWidth - popupWidth - 16, aLeft - 100));
         }
 
-        return (
+        return createPortal(
             <div 
                 className="fixed z-[999] w-[92vw] max-w-[380px] bg-gray-100 dark:bg-zinc-950/95 backdrop-blur-2xl border border-neon-green/30 rounded-3xl p-5 shadow-[0_20px_60px_rgba(0,0,0,0.85),0_0_30px_rgba(57,255,20,0.15)] animate-fade-in flex flex-col gap-3 font-['Outfit']"
                 style={{ top: `${top}px`, left: `${left}px` }}
@@ -937,7 +917,8 @@ const ProposalGenerator = () => {
                         )}
                     </button>
                 </div>
-            </div>
+            </div>,
+            document.body
         );
     };
 
@@ -1839,89 +1820,6 @@ const ProposalGenerator = () => {
         setMessages(prev => [...prev, { id: String(Date.now()) + '-user', sender: 'user', text: currentPrompt }]);
         setIsGenerating(true);
 
-        // Auto-detect bulk mode
-        if (!isBulkMode && detectBulkMode(currentPrompt)) {
-            setIsBulkMode(true);
-            setBulkRawText(currentPrompt);
-            setMessages(prev => [...prev, {
-                id: String(Date.now()) + '-ai-bulk',
-                sender: 'ai',
-                text: "🔄 Looks like you have multiple proposals in your request! I've automatically switched to **Bulk Mode** to generate them separately. Hang tight..."
-            }]);
-            if (!isFloatingChatOpen) setUnreadChatCount(prev => prev + 1);
-            // Trigger bulk generation
-            setIsBulkGenerating(true);
-            try {
-                let prompts = [];
-                if (currentPrompt.includes('---') || currentPrompt.includes('___')) {
-                    prompts = currentPrompt.split(/\n?[-_]{3,}\n?/).map(p => p.trim()).filter(p => p.length > 5);
-                } else {
-                    prompts = currentPrompt.split(/\n\n+/).map(p => p.trim()).filter(p => p.length > 10);
-                }
-                if (prompts.length === 0) prompts = [currentPrompt];
-
-                setBulkProgress({ current: 0, total: prompts.length });
-                const generatedProposals = [];
-                for (let i = 0; i < prompts.length; i++) {
-                    const data = await generateFullDocument('proposal', prompts[i], 'Premium', {});
-                    const finalProposal = {
-                        clientName: data.clientName || `Client 0${i + 1}`,
-                        clientAddress: data.clientAddress || 'Corporate Headquarters',
-                        campaignName: data.campaignName || 'PROPOSAL PLAN',
-                        campaignDuration: data.campaignDuration || 'TBD',
-                        proposalNumber: `NBQ-${Math.floor(1000 + Math.random() * 9000)}`,
-                        coverDescription: data.coverDescription || 'This document contains the beautifully formatted and arranged synthesis of your data.',
-                        overview: data.overview || '', primaryGoal: data.primaryGoal || '',
-                        numericTargets: '', audienceAge: '', audienceLocation: '', audienceInterests: '',
-                        selectedChannels: [], contentCount: { reels: 0, posts: 0, stories: 0 },
-                        deliverables: data.deliverables?.length ? data.deliverables.map((d, index) => ({ id: Date.now() + index + Math.random(), item: d.item || d.name || '', qty: d.qty || '1', timeline: d.timeline || 'TBD' })) : [],
-                        clientRequirements: data.clientRequirements?.length ? data.clientRequirements.map((r, index) => ({ id: Date.now() + 100 + index + Math.random(), description: r.description || r.requirement || '' })) : [],
-                        scopeOfWork: data.scopeOfWork || prompts[i],
-                        terms: data.terms || '1. 50% Advance Fee required.\n2. Balance on delivery.\n3. Taxes as applicable (18% GST).\n4. Quote valid for 14 days.',
-                        paymentDetails: 'Account Name: Newbi Entertainment\nAccount Number: 0000000000\nIFSC: YOUR000000\nUPI: newbi@upi',
-                        gstRate: 18, advanceRequested: 50, showGst: true, showPaymentDetails: true,
-                        showSeal: false, showSignatures: true, signatureType: 'handwritten',
-                        providerSignature: '', clientSignature: '',
-                        senderName: 'Authorized Signatory', senderDesignation: 'Director of Operations',
-                        status: 'Draft', hiddenFields: [], selectedLogo: 'entertainment',
-                        customPages: (data.customPages || []).map((cp, cpIdx) => ({ id: String(Date.now()) + '-cp-' + cpIdx, title: cp.title || 'Additional Page', subtitle: cp.subtitle || '', content: cp.content || '', insertAfter: 'default' })),
-                        items: data.items?.length ? data.items.map((item, idx) => ({ id: Date.now() + 200 + idx + Math.random(), description: item.description || item.name || '', qty: Number(item.qty) || 1, unit: item.unit || 'Unit', price: Number(item.price) || 0 })) : [],
-                        subtotal: 0, gstAmount: 0, totalAmount: 0, hideTotalColumn: false, isBulkGenerated: true,
-                        strategyTitle: 'EXECUTIVE SUMMARY', strategySub: 'STRATEGIC OUTLINE',
-                        scopeTitle: 'SCOPE OF WORK', scopeSub: 'RESOURCE DELIVERABLES',
-                        proposalTitle: 'DELIVERABLES', proposalSub: 'PROJECT INVENTORY',
-                        inventoryTitle: 'RESOURCE INVENTORY', inventorySub: 'COMMERCIALS BREAKDOWN',
-                        commercialsTitle: 'COMMERCIAL TERMS', commercialsSub: 'SETTLEMENT & SIGN-OFF'
-                    };
-                    generatedProposals.push(finalProposal);
-                    setBulkProgress({ current: i + 1, total: prompts.length });
-                }
-                setBulkProposals(prev => {
-                    const newVault = [...prev, ...generatedProposals];
-                    setSelectedBulkIndex(newVault.length - generatedProposals.length);
-                    return newVault;
-                });
-                setMessages(prev => [...prev, {
-                    id: String(Date.now()) + '-ai',
-                    sender: 'ai',
-                    text: `✓ Successfully generated **${generatedProposals.length} proposals** in Bulk Mode! You can browse through them using the proposal selector in the preview panel.`
-                }]);
-                if (!isFloatingChatOpen) setUnreadChatCount(prev => prev + 1);
-                addToast(`${generatedProposals.length} proposals generated in Bulk Mode!`, 'success');
-            } catch (err) {
-                setMessages(prev => [...prev, {
-                    id: String(Date.now()) + '-ai-err',
-                    sender: 'ai',
-                    text: `⚠ **${err.code || 'NB-500'}** — ${err.message || "Something went wrong during bulk generation. Try simplifying your input."}\n\n💡 **Tip:** Need help? Try separating each proposal with \`---\` or simplify your prompt.`
-                }]);
-                if (!isFloatingChatOpen) setUnreadChatCount(prev => prev + 1);
-                addToast(err.message || 'Bulk generation failed', 'error');
-            }
-            setIsBulkGenerating(false);
-            setIsGenerating(false);
-            return;
-        }
-
         try {
             if (refinementContext) {
                 // Field refinement
@@ -1930,7 +1828,7 @@ const ProposalGenerator = () => {
                     refinementContext.fieldLabel,
                     refinementContext.currentValue,
                     currentPrompt,
-                    'Premium'
+                    aiTone
                 );
 
                 const fieldKey = refinementContext.fieldKey;
@@ -1975,145 +1873,114 @@ const ProposalGenerator = () => {
                 if (!isFloatingChatOpen) setUnreadChatCount(prev => prev + 1);
                 addToast(`Field "${refinementContext.fieldLabel}" successfully refined!`, 'success');
             } else {
-                // In bulk mode, AI creates new proposals instead of editing
-                if (isBulkMode) {
-                    setIsBulkGenerating(true);
-                    const data = await generateFullDocument('proposal', currentPrompt, 'Premium', {});
-                    const newProposal = {
-                        clientName: data.clientName || 'New Client',
-                        clientAddress: data.clientAddress || 'Corporate Headquarters',
-                        campaignName: data.campaignName || 'PROPOSAL PLAN',
-                        campaignDuration: data.campaignDuration || 'TBD',
-                        proposalNumber: `NBQ-${Math.floor(1000 + Math.random() * 9000)}`,
-                        coverDescription: data.coverDescription || '',
-                        overview: data.overview || '', primaryGoal: data.primaryGoal || '',
-                        numericTargets: '', audienceAge: '', audienceLocation: '', audienceInterests: '',
-                        selectedChannels: [], contentCount: { reels: 0, posts: 0, stories: 0 },
-                        deliverables: data.deliverables?.length ? data.deliverables.map((d, i) => ({ id: Date.now() + i, item: d.item || d.name || '', qty: d.qty || '1', timeline: d.timeline || 'TBD' })) : [],
-                        clientRequirements: data.clientRequirements?.length ? data.clientRequirements.map((r, i) => ({ id: Date.now() + 100 + i, description: r.description || r.requirement || '' })) : [],
-                        scopeOfWork: data.scopeOfWork || '', terms: data.terms || '',
-                        paymentDetails: formData.paymentDetails || '', gstRate: 18, advanceRequested: 50,
-                        showGst: true, showPaymentDetails: true, showSeal: false, showSignatures: true,
-                        signatureType: 'handwritten', providerSignature: '', clientSignature: '',
-                        senderName: 'Authorized Signatory', senderDesignation: 'Director of Operations',
-                        status: 'Draft', hiddenFields: [], selectedLogo: 'entertainment',
-                        customPages: (data.customPages || []).map((cp, cpIdx) => ({ id: String(Date.now()) + '-cp-' + cpIdx, title: cp.title || 'Additional Page', subtitle: cp.subtitle || '', content: cp.content || '', insertAfter: 'default' })),
-                        items: data.items?.length ? data.items.map((item, idx) => ({ id: Date.now() + 200 + idx, description: item.description || item.name || '', qty: Number(item.qty) || 1, unit: item.unit || 'Unit', price: Number(item.price) || 0 })) : [],
-                        isBulkGenerated: true,
-                        strategyTitle: 'EXECUTIVE SUMMARY', strategySub: 'STRATEGIC OUTLINE',
-                        scopeTitle: 'SCOPE OF WORK', scopeSub: 'RESOURCE DELIVERABLES',
-                        proposalTitle: 'DELIVERABLES', proposalSub: 'PROJECT INVENTORY',
-                        inventoryTitle: 'RESOURCE INVENTORY', inventorySub: 'COMMERCIALS BREAKDOWN',
-                        commercialsTitle: 'COMMERCIAL TERMS', commercialsSub: 'SETTLEMENT & SIGN-OFF'
-                    };
-                    setBulkProposals(prev => {
-                        const updated = [...prev, newProposal];
-                        setSelectedBulkIndex(updated.length - 1);
-                        return updated;
-                    });
+                const isBulk = isBulkMode || detectBulkMode(currentPrompt);
+                const isInitialGeneration = !singleFormData.clientName || singleFormData.clientName.trim() === '' || messages.length <= 1 || isBulk;
+
+                if (isInitialGeneration || isBulk) {
+                    const schema = isBulk ? 'bulk_proposal' : 'proposal';
+                    const data = await generateFullDocument(schema, currentPrompt, aiTone, {});
+                    
+                    setSingleFormData(prev => ({
+                        ...prev,
+                        clientName: data.clientName || prev.clientName,
+                        clientAddress: data.clientAddress || prev.clientAddress,
+                        campaignName: data.campaignName || prev.campaignName,
+                        campaignDuration: data.campaignDuration || prev.campaignDuration,
+                        coverDescription: data.coverDescription || prev.coverDescription,
+                        overview: data.overview || prev.overview,
+                        primaryGoal: data.primaryGoal || prev.primaryGoal,
+                        scopeOfWork: data.scopeOfWork || prev.scopeOfWork,
+                        terms: data.terms || prev.terms,
+                        deliverables: data.deliverables?.length 
+                            ? data.deliverables.map((d, i) => ({ 
+                                id: Date.now() + i, 
+                                item: d.item || d.name || '', 
+                                qty: d.qty || '1', 
+                                timeline: d.timeline || 'TBD' 
+                            })) 
+                            : prev.deliverables,
+                        clientRequirements: data.clientRequirements?.length 
+                            ? data.clientRequirements.map((r, i) => ({ 
+                                id: Date.now() + 100 + i, 
+                                description: r.description || r.requirement || '' 
+                            })) 
+                            : prev.clientRequirements,
+                        customPages: data.customPages?.length
+                            ? [
+                                ...(prev.customPages || []),
+                                ...data.customPages.map((cp, cpIdx) => ({
+                                    id: String(Date.now()) + '-aicp-' + cpIdx,
+                                    title: cp.title || 'AI Generated Page',
+                                    subtitle: cp.subtitle || '',
+                                    content: cp.content || '',
+                                    insertAfter: 'default'
+                                }))
+                            ]
+                            : prev.customPages,
+                    }));
+
+                    if (data.items && data.items.length > 0) {
+                        setSingleItems(data.items.map((item, idx) => ({
+                            id: Date.now() + 200 + idx,
+                            description: item.description || item.name || '',
+                            qty: Number(item.qty) || 1,
+                            unit: item.unit || 'Unit',
+                            price: Number(item.price) || 0
+                        })));
+                    }
+
+                    const extraPagesMsg = data.customPages?.length ? ` I also created ${data.customPages.length} additional custom page(s).` : '';
+                    
+                    if (isBulk) {
+                        setMessages(prev => [...prev, {
+                            id: String(Date.now()) + '-ai',
+                            sender: 'ai',
+                            text: `✓ **Pre-generated proposal text analyzed and structured!**\n\nAll fields, scope of work, deliverables (${data.deliverables?.length || 0}), financial line items (${data.items?.length || 0}), and terms have been populated directly into your proposal.${extraPagesMsg}\n\nYou can continue chatting here to modify any part, or click the tabs above to edit manually.`
+                        }]);
+                    } else {
+                        setMessages(prev => [...prev, {
+                            id: String(Date.now()) + '-ai',
+                            sender: 'ai',
+                            text: `✓ Proposal for "${data.clientName || 'Partner'}" generated successfully! I added ${data.items?.length || 0} financial line items.${extraPagesMsg}\n\nYou can continue chatting here to modify the proposal, or edit using the manual tabs.`
+                        }]);
+                    }
+
+                    if (!isFloatingChatOpen) setUnreadChatCount(prev => prev + 1);
+                    addToast(isBulk ? 'Pre-generated proposal text imported!' : 'Proposal successfully generated!', 'success');
+                } else {
+                    const currentDoc = singleFormData;
+                    const currentDocWithItems = { ...currentDoc, items };
+                    const updatedDoc = await reviseDocument(currentDocWithItems, currentPrompt, aiTone);
+                    
+                    // Handle custom pages from revision
+                    if (updatedDoc.customPages && updatedDoc.customPages.length > 0) {
+                        updatedDoc.customPages = updatedDoc.customPages.map((cp, cpIdx) => ({
+                            id: cp.id || String(Date.now()) + '-rcp-' + cpIdx,
+                            title: cp.title || 'Page',
+                            subtitle: cp.subtitle || '',
+                            content: cp.content || '',
+                            insertAfter: cp.insertAfter || 'default'
+                        }));
+                    }
+                    
+                    setFormData(updatedDoc);
+                    if (updatedDoc.items && updatedDoc.items.length > 0) {
+                        setItems(updatedDoc.items.map((item, idx) => ({
+                            id: Date.now() + 200 + idx,
+                            description: item.description || item.name || item.item || '',
+                            qty: Number(item.qty) || 1,
+                            unit: item.unit || 'Unit',
+                            price: Number(item.price) || 0
+                        })));
+                    }
+
                     setMessages(prev => [...prev, {
                         id: String(Date.now()) + '-ai',
                         sender: 'ai',
-                        text: `✓ New proposal for "${data.clientName || 'Partner'}" added to your Bulk Vault! Total proposals: ${bulkProposals.length + 1}.`
+                        text: `✓ Document refined according to request: "${currentPrompt}". You can inspect the updated preview on the right.`
                     }]);
                     if (!isFloatingChatOpen) setUnreadChatCount(prev => prev + 1);
-                    addToast('New proposal added to Bulk Vault!', 'success');
-                    setIsBulkGenerating(false);
-                } else {
-                    const isInitialGeneration = !singleFormData.clientName || singleFormData.clientName.trim() === '' || messages.length <= 1;
-                    if (isInitialGeneration) {
-                        const data = await generateFullDocument('proposal', currentPrompt, 'Premium', {});
-                        setSingleFormData(prev => ({
-                            ...prev,
-                            clientName: data.clientName || prev.clientName,
-                            clientAddress: data.clientAddress || prev.clientAddress,
-                            campaignName: data.campaignName || prev.campaignName,
-                            campaignDuration: data.campaignDuration || prev.campaignDuration,
-                            coverDescription: data.coverDescription || prev.coverDescription,
-                            overview: data.overview || prev.overview,
-                            primaryGoal: data.primaryGoal || prev.primaryGoal,
-                            scopeOfWork: data.scopeOfWork || prev.scopeOfWork,
-                            terms: data.terms || prev.terms,
-                            deliverables: data.deliverables?.length 
-                                ? data.deliverables.map((d, i) => ({ 
-                                    id: Date.now() + i, 
-                                    item: d.item || d.name || '', 
-                                    qty: d.qty || '1', 
-                                    timeline: d.timeline || 'TBD' 
-                                })) 
-                                : prev.deliverables,
-                            clientRequirements: data.clientRequirements?.length 
-                                ? data.clientRequirements.map((r, i) => ({ 
-                                    id: Date.now() + 100 + i, 
-                                    description: r.description || r.requirement || '' 
-                                })) 
-                                : prev.clientRequirements,
-                            customPages: data.customPages?.length
-                                ? [
-                                    ...(prev.customPages || []),
-                                    ...data.customPages.map((cp, cpIdx) => ({
-                                        id: String(Date.now()) + '-aicp-' + cpIdx,
-                                        title: cp.title || 'AI Generated Page',
-                                        subtitle: cp.subtitle || '',
-                                        content: cp.content || '',
-                                        insertAfter: 'default'
-                                    }))
-                                ]
-                                : prev.customPages,
-                        }));
-                        if (data.items && data.items.length > 0) {
-                            setSingleItems(data.items.map((item, idx) => ({
-                                id: Date.now() + 200 + idx,
-                                description: item.description || item.name || '',
-                                qty: Number(item.qty) || 1,
-                                unit: item.unit || 'Unit',
-                                price: Number(item.price) || 0
-                            })));
-                        }
-
-                        const extraPagesMsg = data.customPages?.length ? ` I also created ${data.customPages.length} additional page(s) for you.` : '';
-                        setMessages(prev => [...prev, {
-                            id: String(Date.now()) + '-ai',
-                            sender: 'ai',
-                            text: `✓ Proposal for "${data.clientName || 'Partner'}" generated successfully! I added ${data.items?.length || 0} financial line items.${extraPagesMsg} \n\nYou can continue chatting here to modify the proposal, or edit using the manual tabs.`
-                        }]);
-                        if (!isFloatingChatOpen) setUnreadChatCount(prev => prev + 1);
-                        addToast('Proposal successfully generated!', 'success');
-                    } else {
-                        const currentDoc = singleFormData;
-                        const currentDocWithItems = { ...currentDoc, items };
-                        const updatedDoc = await reviseDocument(currentDocWithItems, currentPrompt, 'Premium');
-                        
-                        // Handle custom pages from revision
-                        if (updatedDoc.customPages && updatedDoc.customPages.length > 0) {
-                            updatedDoc.customPages = updatedDoc.customPages.map((cp, cpIdx) => ({
-                                id: cp.id || String(Date.now()) + '-rcp-' + cpIdx,
-                                title: cp.title || 'Page',
-                                subtitle: cp.subtitle || '',
-                                content: cp.content || '',
-                                insertAfter: cp.insertAfter || 'default'
-                            }));
-                        }
-                        
-                        setFormData(updatedDoc);
-                        if (updatedDoc.items && updatedDoc.items.length > 0) {
-                            setItems(updatedDoc.items.map((item, idx) => ({
-                                id: Date.now() + 200 + idx,
-                                description: item.description || item.name || item.item || '',
-                                qty: Number(item.qty) || 1,
-                                unit: item.unit || 'Unit',
-                                price: Number(item.price) || 0
-                            })));
-                        }
-
-                        setMessages(prev => [...prev, {
-                            id: String(Date.now()) + '-ai',
-                            sender: 'ai',
-                            text: `✓ Document refined according to request: "${currentPrompt}". You can inspect the updated preview on the right.`
-                        }]);
-                        if (!isFloatingChatOpen) setUnreadChatCount(prev => prev + 1);
-                        addToast('Document successfully refined!', 'success');
-                    }
+                    addToast('Document successfully refined!', 'success');
                 }
             }
         } catch (err) {
@@ -2503,15 +2370,41 @@ const ProposalGenerator = () => {
                                                     <Sparkles className="w-8 h-8 text-neon-green animate-pulse" />
                                                 </div>
                                                 <h2 className="text-2xl md:text-3xl font-extrabold tracking-tight text-gray-900 dark:text-white">AI Proposal Studio<span className="text-neon-green">.</span></h2>
-                                                <p className="text-sm text-gray-500 font-medium max-w-md mx-auto leading-relaxed">
-                                                    Describe what you need and our AI will craft a complete, professional proposal in seconds. You can refine it through the chat.
+                                                <p className="text-sm text-gray-500 font-medium max-w-lg mx-auto leading-relaxed">
+                                                    {isBulkMode 
+                                                        ? "Paste complete pre-generated proposal text, raw drafts, meeting briefs, or unformatted quotes. AI will automatically extract, organize, and structure all sections directly into this proposal."
+                                                        : "Describe what you need and our AI will craft a complete, professional proposal in seconds. You can refine it through the chat."}
                                                 </p>
-                                                {isBulkMode && (
-                                                    <div className="inline-flex items-center gap-2 px-4 py-2 bg-amber-500/10 border border-amber-500/20 rounded-full">
-                                                        <Zap size={14} className="text-amber-400" />
-                                                        <span className="text-[10px] font-black uppercase tracking-widest text-amber-400">Bulk Mode Active</span>
-                                                    </div>
-                                                )}
+
+                                                {/* Mode Switcher */}
+                                                <div className="flex items-center justify-center gap-1.5 p-1 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-2xl w-fit mx-auto shadow-inner">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setIsBulkMode(false)}
+                                                        className={cn(
+                                                            "px-4 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2",
+                                                            !isBulkMode 
+                                                                ? "bg-white dark:bg-zinc-800 text-gray-900 dark:text-white shadow-sm border border-black/5 dark:border-white/10" 
+                                                                : "text-zinc-500 hover:text-gray-900 dark:hover:text-white"
+                                                        )}
+                                                    >
+                                                        <Sparkles size={13} className={!isBulkMode ? "text-neon-green" : "text-zinc-500"} />
+                                                        Standard Prompt
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setIsBulkMode(true)}
+                                                        className={cn(
+                                                            "px-4 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2",
+                                                            isBulkMode 
+                                                                ? "bg-white dark:bg-zinc-800 text-gray-900 dark:text-white shadow-sm border border-black/5 dark:border-white/10" 
+                                                                : "text-zinc-500 hover:text-gray-900 dark:hover:text-white"
+                                                        )}
+                                                    >
+                                                        <Zap size={13} className={isBulkMode ? "text-amber-400" : "text-zinc-500"} />
+                                                        Bulk / Pre-Generated Text
+                                                    </button>
+                                                </div>
                                             </div>
 
                                             {/* Quick Prompt Card */}
@@ -2525,8 +2418,10 @@ const ProposalGenerator = () => {
                                                             handleStudioSubmit();
                                                         }
                                                     }}
-                                                    className="w-full bg-white dark:bg-white border border-black/10 dark:border-white/10 rounded-2xl p-5 text-sm text-gray-900 dark:text-white placeholder:text-gray-600 font-medium outline-none focus:border-neon-green/30 transition-all resize-none min-h-[120px] scrollbar-hide"
-                                                    placeholder={isBulkMode ? "Paste multiple proposals separated by --- or double line breaks..." : "e.g. Create a proposal for a 3-day music festival in Mumbai for XYZ Corp..."}
+                                                    className="w-full bg-white dark:bg-zinc-950 border border-black/10 dark:border-white/10 rounded-2xl p-5 text-sm text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-zinc-500 font-medium outline-none focus:border-neon-green/40 transition-all resize-none min-h-[140px] scrollbar-hide"
+                                                    placeholder={isBulkMode 
+                                                        ? "Paste complete pre-generated proposal text, raw brief, scope document, or quote draft here to automatically populate all proposal sections..." 
+                                                        : "e.g. Create a proposal for a 3-day music festival in Mumbai for XYZ Corp..."}
                                                 />
                                                 <div className="flex items-center justify-between">
                                                     <div className="flex items-center gap-3 text-[8px] font-bold text-zinc-500 uppercase tracking-wider">
@@ -2542,22 +2437,34 @@ const ProposalGenerator = () => {
                                                         disabled={!promptText.trim() || isGenerating}
                                                         className="px-6 py-3 bg-neon-green text-black font-black uppercase text-[10px] tracking-widest rounded-xl hover:scale-105 active:scale-95 transition-all disabled:opacity-20 disabled:scale-100 shadow-[0_0_20px_rgba(57,255,20,0.3)] flex items-center gap-2"
                                                     >
-                                                        {isGenerating ? <RefreshCw className="animate-spin" size={14} /> : <Send size={14} />}
-                                                        {isGenerating ? 'Generating...' : 'Generate'}
+                                                        {isGenerating ? <RefreshCw className="animate-spin" size={14} /> : (isBulkMode ? <Zap size={14} /> : <Send size={14} />)}
+                                                        {isGenerating ? 'Processing...' : (isBulkMode ? 'Ingest & Populate' : 'Generate')}
                                                     </button>
                                                 </div>
                                             </div>
 
                                             {/* Quick Suggestion Chips */}
                                             <div className="flex flex-wrap justify-center gap-2">
-                                                {['Music Festival Proposal', 'Comedy Tour Budget', 'Corporate Event Plan', 'Marketing Campaign'].map(s => (
+                                                {(isBulkMode 
+                                                    ? [
+                                                        { label: 'Agency Retainer Brief', text: 'Client: Stellar Global Brand\nProject: 2026 Digital Media & Talent Retainer\nScope: Complete monthly brand strategy, 12 influencer campaigns, full content production, and monthly analytics reporting.\nDeliverables:\n1. 12x Dedicated Creator Activations (Quarterly)\n2. 40x Short-form Reels/Shorts\n3. Comprehensive Monthly Performance Audit\nPricing: Monthly Retainer Fee INR 4,50,000 + GST. 50% advance upon signature.' },
+                                                        { label: 'Festival Staging & Sound SOW', text: 'Client: Sunwaves Entertainment\nProject: Arena Staging, Light & Sound Execution\nOverview: 3-day music and cultural festival technical production.\nScope:\n- Main Stage LED Wall (60ft x 30ft)\n- Line Array Sound System (L-Acoustics K2)\n- Intelligent Lighting Rig & Laser mapping\n- Onsite Power Generator backup\nDeliverables:\n- Stage Setup & Structural Sign-off: Day -1\n- Soundcheck & Calibration: Day 0\n- Live Show Support: Day 1-3\nCommercials: Line items for Sound (INR 6,00,000), Stage (INR 4,50,000), Crew (INR 2,00,000).' },
+                                                        { label: 'Influencer Marketing Campaign', text: 'Client: Nova Skincare Ltd\nCampaign: GlowLaunch 2026\nObjective: Generate 5M+ organic impressions and 100K clicks across Tier 1 cities.\nDeliverables:\n1. 20x Top-tier Beauty Influencer Video Posts\n2. 50x Story mentions with tracked affiliate swipe-up links\n3. Full usage rights for Meta & Google ads for 90 days\nCost: Total Package INR 8,50,000.' }
+                                                    ]
+                                                    : [
+                                                        { label: 'Music Festival Proposal', text: 'Create a detailed proposal for a 3-day music festival in Mumbai for a premium brand.' },
+                                                        { label: 'Comedy Tour Budget', text: 'Create a proposal for a 10-city standup comedy tour with complete budget breakdown.' },
+                                                        { label: 'Corporate Event Plan', text: 'Create a corporate annual gala dinner proposal for 500 attendees with stage, lighting, and emcee.' },
+                                                        { label: 'Marketing Campaign', text: 'Create a comprehensive digital and offline marketing campaign proposal for a brand launch.' }
+                                                    ]
+                                                ).map(s => (
                                                     <button
-                                                        key={s}
+                                                        key={s.label}
                                                         type="button"
-                                                        onClick={() => setPromptText(`Create a detailed proposal for a ${s.toLowerCase()} for a premium client in India.`)}
+                                                        onClick={() => setPromptText(s.text)}
                                                         className="px-4 py-2 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/5 rounded-full text-[9px] font-bold uppercase tracking-wider text-gray-600 dark:text-gray-400 hover:text-neon-green hover:border-neon-green/20 hover:bg-neon-green/5 transition-all"
                                                     >
-                                                        <Sparkles size={10} className="inline mr-1.5 opacity-50" />{s}
+                                                        <Sparkles size={10} className="inline mr-1.5 opacity-50" />{s.label}
                                                     </button>
                                                 ))}
                                             </div>

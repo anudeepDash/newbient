@@ -61,6 +61,14 @@
     ],
     "rewrites": [
         {
+            "source": "/api/track",
+            "destination": "/api/track.js"
+        },
+        {
+            "source": "/api/track/:path*",
+            "destination": "/api/track.js"
+        },
+        {
             "source": "/api/forms",
             "destination": "/api/forms.js"
         },

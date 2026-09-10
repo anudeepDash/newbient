@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate, Link, useParams } from 'react-router-dom';
 import Plus from 'lucide-react/dist/esm/icons/plus';
 import Minus from 'lucide-react/dist/esm/icons/minus';
@@ -1591,14 +1592,15 @@ const ContractGenerator = () => {
             </div>
 
             {/* Field Refinement Modal */}
-            <AnimatePresence>
-                {refinementContext && (
-                    <motion.div 
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-white dark:bg-black/60 backdrop-blur-sm no-print"
-                    >
+            {createPortal(
+                <AnimatePresence>
+                    {refinementContext && (
+                        <motion.div 
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-white dark:bg-black/60 backdrop-blur-sm no-print"
+                        >
                         <motion.div 
                             initial={{ scale: 0.95, y: 20 }}
                             animate={{ scale: 1, y: 0 }}
@@ -1679,7 +1681,9 @@ const ContractGenerator = () => {
                         </motion.div>
                     </motion.div>
                 )}
-            </AnimatePresence>
+            </AnimatePresence>,
+            document.body
+        )}
 
             <SignatureModal 
                 isOpen={isSignatureModalOpen} 

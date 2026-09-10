@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import Edit from 'lucide-react/dist/esm/icons/edit';
 import Trash2 from 'lucide-react/dist/esm/icons/trash-2';
@@ -618,266 +619,272 @@ const OtherIncomeManagement = () => {
             </AdminCommunityHubLayout>
 
             {/* Add Income Drawer Modal */}
-            <AnimatePresence>
-                {showAddModal && (
-                    <>
-                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowAddModal(false)} className="fixed inset-0 bg-white dark:bg-black/60 backdrop-blur-sm z-[100]" />
-                        <motion.div 
-                            initial={{ x: '100%' }} 
-                            animate={{ x: 0 }} 
-                            exit={{ x: '100%' }}
-                            transition={{ type: "spring", damping: 30, stiffness: 300 }}
-                            className="fixed top-0 right-0 h-full w-full max-w-xl bg-gray-100 dark:bg-zinc-950/95 backdrop-blur-3xl border-l border-black/10 dark:border-white/10 shadow-2xl z-[101] flex flex-col text-gray-900 dark:text-white"
-                        >
-                            <div className="p-6 border-b border-black/10 dark:border-white/10 flex items-center justify-between">
-                                <div>
-                                    <h2 className="text-xl font-black uppercase text-gray-900 dark:text-white">LOG INCOME</h2>
+            {createPortal(
+                <AnimatePresence>
+                    {showAddModal && (
+                        <>
+                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowAddModal(false)} className="fixed inset-0 bg-white dark:bg-black/60 backdrop-blur-sm z-[100]" />
+                            <motion.div 
+                                initial={{ x: '100%' }} 
+                                animate={{ x: 0 }} 
+                                exit={{ x: '100%' }}
+                                transition={{ type: "spring", damping: 30, stiffness: 300 }}
+                                className="fixed top-0 right-0 h-full w-full max-w-xl bg-gray-100 dark:bg-zinc-950/95 backdrop-blur-3xl border-l border-black/10 dark:border-white/10 shadow-2xl z-[101] flex flex-col text-gray-900 dark:text-white"
+                            >
+                                <div className="p-6 border-b border-black/10 dark:border-white/10 flex items-center justify-between">
+                                    <div>
+                                        <h2 className="text-xl font-black uppercase text-gray-900 dark:text-white">LOG INCOME</h2>
+                                    </div>
+                                    <button type="button" onClick={() => setShowAddModal(false)} className="w-8 h-8 rounded-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 flex items-center justify-center hover:bg-black/10 dark:hover:bg-white/10 text-zinc-400 hover:text-gray-900 dark:hover:text-white transition-all"><X size={14} /></button>
                                 </div>
-                                <button type="button" onClick={() => setShowAddModal(false)} className="w-8 h-8 rounded-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 flex items-center justify-center hover:bg-black/10 dark:hover:bg-white/10 text-zinc-400 hover:text-gray-900 dark:hover:text-white transition-all"><X size={14} /></button>
-                            </div>
-                            
-                            <form onSubmit={handleCreateIncome} className="flex-1 flex flex-col overflow-hidden">
-                                <div className="flex-1 overflow-y-auto p-6 space-y-5 custom-scrollbar pb-24">
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div className="space-y-1.5">
-                                            <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest pl-1">Source Name (Sponsor/Client) *</label>
-                                            <input value={sourceName} onChange={(e) => setSourceName(e.target.value)} placeholder="e.g. Sprite Sponsor / Offline Ticket Cash" className="w-full h-12 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl px-4 text-[10px] font-extrabold uppercase tracking-widest text-gray-900 dark:text-white outline-none focus:border-[#39FF14] transition-all" required />
-                                        </div>
-                                        <div className="space-y-1.5">
-                                            <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest pl-1">Amount (INR) *</label>
-                                            <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="e.g. 50000" className="w-full h-12 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl px-4 text-[10px] font-extrabold uppercase tracking-widest text-gray-900 dark:text-white outline-none focus:border-[#39FF14] transition-all" required />
-                                        </div>
-                                    </div>
-
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div className="space-y-1.5">
-                                            <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest pl-1">Category *</label>
-                                            <select value={category} onChange={(e) => setCategory(e.target.value)} className="w-full h-12 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl px-4 text-[10px] font-extrabold uppercase tracking-widest text-gray-900 dark:text-white outline-none focus:border-[#39FF14] transition-all cursor-pointer">
-                                                {incomeCategories.map(c => <option key={c} value={c} className="bg-gray-100 dark:bg-zinc-950">{c}</option>)}
-                                            </select>
-                                        </div>
-                                        <div className="space-y-1.5">
-                                            <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest pl-1">Date *</label>
-                                            <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="w-full h-12 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl px-4 text-[10px] font-extrabold uppercase tracking-widest text-gray-900 dark:text-white outline-none focus:border-[#39FF14] transition-all" required />
-                                        </div>
-                                    </div>
-
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div className="space-y-1.5">
-                                            <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest pl-1">Destination Account *</label>
-                                            <select value={accountType} onChange={(e) => setAccountType(e.target.value)} className="w-full h-12 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl px-4 text-[10px] font-extrabold uppercase tracking-widest text-gray-900 dark:text-white outline-none focus:border-[#39FF14] transition-all cursor-pointer">
-                                                <option value="newbi" className="bg-gray-100 dark:bg-zinc-950">Official Newbi Account</option>
-                                                <option value="personal" className="bg-gray-100 dark:bg-zinc-950">Personal Account</option>
-                                            </select>
-                                        </div>
-                                        <div className="space-y-1.5">
-                                            <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest pl-1">
-                                                {accountType === 'personal' ? 'Receiver Name (Team Member) *' : 'Receiver Entity'}
-                                            </label>
-                                            <input 
-                                                value={accountType === 'personal' ? receiverName : 'Newbi Core Account'} 
-                                                onChange={(e) => setReceiverName(e.target.value)} 
-                                                placeholder={accountType === 'personal' ? "e.g. Team member name" : "Newbi Core Account"} 
-                                                className="w-full h-12 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl px-4 text-[10px] font-extrabold uppercase tracking-widest text-gray-900 dark:text-white outline-none focus:border-[#39FF14] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                                                disabled={accountType === 'newbi'}
-                                                required={accountType === 'personal'}
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div className="space-y-1.5">
-                                            <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest pl-1">Payment Method</label>
-                                            <select value={paymentMode} onChange={(e) => setPaymentMode(e.target.value)} className="w-full h-12 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl px-4 text-[10px] font-extrabold uppercase tracking-widest text-gray-900 dark:text-white outline-none focus:border-[#39FF14] transition-all cursor-pointer">
-                                                {paymentModes.map(m => <option key={m} value={m} className="bg-gray-100 dark:bg-zinc-950">{m}</option>)}
-                                            </select>
-                                        </div>
-                                        <div className="space-y-1.5">
-                                            <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest pl-1">Status</label>
-                                            <select value={status} onChange={(e) => setStatus(e.target.value)} className="w-full h-12 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl px-4 text-[10px] font-extrabold uppercase tracking-widest text-gray-900 dark:text-white outline-none focus:border-[#39FF14] transition-all cursor-pointer">
-                                                <option value="Paid" className="bg-gray-100 dark:bg-zinc-950">Received / Cleared</option>
-                                                <option value="Pending" className="bg-gray-100 dark:bg-zinc-950">Pending / Outstanding</option>
-                                            </select>
-                                        </div>
-                                    </div>
-
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div className="space-y-1.5">
-                                            <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest pl-1">Transaction Ref / Details</label>
-                                            <input 
-                                                value={transactionRef} 
-                                                onChange={(e) => setTransactionRef(e.target.value)} 
-                                                placeholder="e.g. UPI Ref / Bank IMPS ID" 
-                                                className="w-full h-12 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl px-4 text-[10px] font-extrabold uppercase tracking-widest text-gray-900 dark:text-white outline-none focus:border-[#39FF14] transition-all" 
-                                            />
-                                        </div>
-                                        <div className="space-y-1.5">
-                                            <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest pl-1">Proof Attachment (Image/PDF)</label>
-                                            <div className="relative group cursor-pointer h-12 border border-dashed border-black/10 dark:border-white/10 rounded-xl flex items-center justify-center gap-3 bg-gray-100 dark:bg-zinc-900/50 hover:border-white/30 transition-all">
-                                                <input type="file" onChange={(e) => handleAttachmentUpload(e, setAttachmentUrl)} className="absolute inset-0 opacity-0 cursor-pointer z-10" />
-                                                <Upload className="text-zinc-500 group-hover:text-gray-900 dark:group-hover:text-white transition-colors" size={16} />
-                                                <span className="text-[10px] font-black text-zinc-500 group-hover:text-gray-900 dark:group-hover:text-white uppercase tracking-widest transition-colors">
-                                                    {uploadingAttachment ? 'UPLOADING...' : (attachmentUrl ? 'CHANGE ATTACHMENT' : 'CHOOSE FILE')}
-                                                </span>
+                                
+                                <form onSubmit={handleCreateIncome} className="flex-1 flex flex-col overflow-hidden">
+                                    <div className="flex-1 overflow-y-auto p-6 space-y-5 custom-scrollbar pb-24">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div className="space-y-1.5">
+                                                <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest pl-1">Source Name (Sponsor/Client) *</label>
+                                                <input value={sourceName} onChange={(e) => setSourceName(e.target.value)} placeholder="e.g. Sprite Sponsor / Offline Ticket Cash" className="w-full h-12 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl px-4 text-[10px] font-extrabold uppercase tracking-widest text-gray-900 dark:text-white outline-none focus:border-[#39FF14] transition-all" required />
                                             </div>
-                                            {attachmentUrl && (
-                                                <div className="text-[9px] text-[#39FF14] font-bold uppercase tracking-wider mt-1.5 pl-1 truncate">
-                                                    File linked: <a href={attachmentUrl} target="_blank" rel="noopener noreferrer" className="underline hover:text-gray-900 dark:hover:text-white">View File</a>
+                                            <div className="space-y-1.5">
+                                                <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest pl-1">Amount (INR) *</label>
+                                                <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="e.g. 50000" className="w-full h-12 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl px-4 text-[10px] font-extrabold uppercase tracking-widest text-gray-900 dark:text-white outline-none focus:border-[#39FF14] transition-all" required />
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div className="space-y-1.5">
+                                                <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest pl-1">Category *</label>
+                                                <select value={category} onChange={(e) => setCategory(e.target.value)} className="w-full h-12 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl px-4 text-[10px] font-extrabold uppercase tracking-widest text-gray-900 dark:text-white outline-none focus:border-[#39FF14] transition-all cursor-pointer">
+                                                    {incomeCategories.map(c => <option key={c} value={c} className="bg-gray-100 dark:bg-zinc-950">{c}</option>)}
+                                                </select>
+                                            </div>
+                                            <div className="space-y-1.5">
+                                                <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest pl-1">Date *</label>
+                                                <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="w-full h-12 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl px-4 text-[10px] font-extrabold uppercase tracking-widest text-gray-900 dark:text-white outline-none focus:border-[#39FF14] transition-all" required />
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div className="space-y-1.5">
+                                                <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest pl-1">Destination Account *</label>
+                                                <select value={accountType} onChange={(e) => setAccountType(e.target.value)} className="w-full h-12 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl px-4 text-[10px] font-extrabold uppercase tracking-widest text-gray-900 dark:text-white outline-none focus:border-[#39FF14] transition-all cursor-pointer">
+                                                    <option value="newbi" className="bg-gray-100 dark:bg-zinc-950">Official Newbi Account</option>
+                                                    <option value="personal" className="bg-gray-100 dark:bg-zinc-950">Personal Account</option>
+                                                </select>
+                                            </div>
+                                            <div className="space-y-1.5">
+                                                <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest pl-1">
+                                                    {accountType === 'personal' ? 'Receiver Name (Team Member) *' : 'Receiver Entity'}
+                                                </label>
+                                                <input 
+                                                    value={accountType === 'personal' ? receiverName : 'Newbi Core Account'} 
+                                                    onChange={(e) => setReceiverName(e.target.value)} 
+                                                    placeholder={accountType === 'personal' ? "e.g. Team member name" : "Newbi Core Account"} 
+                                                    className="w-full h-12 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl px-4 text-[10px] font-extrabold uppercase tracking-widest text-gray-900 dark:text-white outline-none focus:border-[#39FF14] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                                    disabled={accountType === 'newbi'}
+                                                    required={accountType === 'personal'}
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div className="space-y-1.5">
+                                                <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest pl-1">Payment Method</label>
+                                                <select value={paymentMode} onChange={(e) => setPaymentMode(e.target.value)} className="w-full h-12 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl px-4 text-[10px] font-extrabold uppercase tracking-widest text-gray-900 dark:text-white outline-none focus:border-[#39FF14] transition-all cursor-pointer">
+                                                    {paymentModes.map(m => <option key={m} value={m} className="bg-gray-100 dark:bg-zinc-950">{m}</option>)}
+                                                </select>
+                                            </div>
+                                            <div className="space-y-1.5">
+                                                <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest pl-1">Status</label>
+                                                <select value={status} onChange={(e) => setStatus(e.target.value)} className="w-full h-12 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl px-4 text-[10px] font-extrabold uppercase tracking-widest text-gray-900 dark:text-white outline-none focus:border-[#39FF14] transition-all cursor-pointer">
+                                                    <option value="Paid" className="bg-gray-100 dark:bg-zinc-950">Received / Cleared</option>
+                                                    <option value="Pending" className="bg-gray-100 dark:bg-zinc-950">Pending / Outstanding</option>
+                                                </select>
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div className="space-y-1.5">
+                                                <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest pl-1">Transaction Ref / Details</label>
+                                                <input 
+                                                    value={transactionRef} 
+                                                    onChange={(e) => setTransactionRef(e.target.value)} 
+                                                    placeholder="e.g. UPI Ref / Bank IMPS ID" 
+                                                    className="w-full h-12 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl px-4 text-[10px] font-extrabold uppercase tracking-widest text-gray-900 dark:text-white outline-none focus:border-[#39FF14] transition-all" 
+                                                />
+                                            </div>
+                                            <div className="space-y-1.5">
+                                                <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest pl-1">Proof Attachment (Image/PDF)</label>
+                                                <div className="relative group cursor-pointer h-12 border border-dashed border-black/10 dark:border-white/10 rounded-xl flex items-center justify-center gap-3 bg-gray-100 dark:bg-zinc-900/50 hover:border-white/30 transition-all">
+                                                    <input type="file" onChange={(e) => handleAttachmentUpload(e, setAttachmentUrl)} className="absolute inset-0 opacity-0 cursor-pointer z-10" />
+                                                    <Upload className="text-zinc-500 group-hover:text-gray-900 dark:group-hover:text-white transition-colors" size={16} />
+                                                    <span className="text-[10px] font-black text-zinc-500 group-hover:text-gray-900 dark:group-hover:text-white uppercase tracking-widest transition-colors">
+                                                        {uploadingAttachment ? 'UPLOADING...' : (attachmentUrl ? 'CHANGE ATTACHMENT' : 'CHOOSE FILE')}
+                                                    </span>
                                                 </div>
-                                            )}
+                                                {attachmentUrl && (
+                                                    <div className="text-[9px] text-[#39FF14] font-bold uppercase tracking-wider mt-1.5 pl-1 truncate">
+                                                        File linked: <a href={attachmentUrl} target="_blank" rel="noopener noreferrer" className="underline hover:text-gray-900 dark:hover:text-white">View File</a>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-1.5">
+                                            <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest pl-1">Internal Notes</label>
+                                            <textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Add transaction details or verification reference..." className="w-full bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl p-4 text-[10px] font-extrabold uppercase tracking-widest text-gray-900 dark:text-white outline-none focus:border-[#39FF14] min-h-[100px] resize-y transition-all" />
+                                        </div>
+
+                                        <div className="pt-4 flex gap-3">
+                                            <button type="button" onClick={() => setShowAddModal(false)} className="flex-1 h-12 bg-white/[0.03] hover:bg-white/[0.05] text-zinc-400 hover:text-gray-900 dark:hover:text-white font-black uppercase tracking-widest text-[10px] rounded-xl border border-black/10 dark:border-white/10 transition-all">
+                                                Cancel
+                                            </button>
+                                            <button type="submit" disabled={uploadingAttachment} className="flex-1 h-12 bg-white text-black hover:bg-zinc-200 font-black uppercase tracking-widest text-[10px] rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+                                                LOG INCOME RECORD
+                                            </button>
                                         </div>
                                     </div>
-
-                                    <div className="space-y-1.5">
-                                        <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest pl-1">Internal Notes</label>
-                                        <textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Add transaction details or verification reference..." className="w-full bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl p-4 text-[10px] font-extrabold uppercase tracking-widest text-gray-900 dark:text-white outline-none focus:border-[#39FF14] min-h-[100px] resize-y transition-all" />
-                                    </div>
-
-                                    <div className="pt-4 flex gap-3">
-                                        <button type="button" onClick={() => setShowAddModal(false)} className="flex-1 h-12 bg-white/[0.03] hover:bg-white/[0.05] text-zinc-400 hover:text-gray-900 dark:hover:text-white font-black uppercase tracking-widest text-[10px] rounded-xl border border-black/10 dark:border-white/10 transition-all">
-                                            Cancel
-                                        </button>
-                                        <button type="submit" disabled={uploadingAttachment} className="flex-1 h-12 bg-white text-black hover:bg-zinc-200 font-black uppercase tracking-widest text-[10px] rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed">
-                                            LOG INCOME RECORD
-                                        </button>
-                                    </div>
-                                </div>
-                            </form>
-                        </motion.div>
-                    </>
-                )}
-            </AnimatePresence>
+                                </form>
+                            </motion.div>
+                        </>
+                    )}
+                </AnimatePresence>,
+                document.body
+            )}
 
             {/* Edit Income Drawer Modal */}
-            <AnimatePresence>
-                {showEditModal && (
-                    <>
-                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowEditModal(null)} className="fixed inset-0 bg-white dark:bg-black/60 backdrop-blur-sm z-[100]" />
-                        <motion.div 
-                            initial={{ x: '100%' }} 
-                            animate={{ x: 0 }} 
-                            exit={{ x: '100%' }}
-                            transition={{ type: "spring", damping: 30, stiffness: 300 }}
-                            className="fixed top-0 right-0 h-full w-full max-w-xl bg-gray-100 dark:bg-zinc-950/95 backdrop-blur-3xl border-l border-black/10 dark:border-white/10 shadow-2xl z-[101] flex flex-col text-gray-900 dark:text-white"
-                        >
-                            <div className="p-6 border-b border-black/10 dark:border-white/10 flex items-center justify-between">
-                                <div>
-                                    <h2 className="text-xl font-black uppercase text-gray-900 dark:text-white">EDIT INCOME</h2>
+            {createPortal(
+                <AnimatePresence>
+                    {showEditModal && (
+                        <>
+                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowEditModal(null)} className="fixed inset-0 bg-white dark:bg-black/60 backdrop-blur-sm z-[100]" />
+                            <motion.div 
+                                initial={{ x: '100%' }} 
+                                animate={{ x: 0 }} 
+                                exit={{ x: '100%' }}
+                                transition={{ type: "spring", damping: 30, stiffness: 300 }}
+                                className="fixed top-0 right-0 h-full w-full max-w-xl bg-gray-100 dark:bg-zinc-950/95 backdrop-blur-3xl border-l border-black/10 dark:border-white/10 shadow-2xl z-[101] flex flex-col text-gray-900 dark:text-white"
+                            >
+                                <div className="p-6 border-b border-black/10 dark:border-white/10 flex items-center justify-between">
+                                    <div>
+                                        <h2 className="text-xl font-black uppercase text-gray-900 dark:text-white">EDIT INCOME</h2>
+                                    </div>
+                                    <button type="button" onClick={() => setShowEditModal(null)} className="w-8 h-8 rounded-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 flex items-center justify-center hover:bg-black/10 dark:hover:bg-white/10 text-zinc-400 hover:text-gray-900 dark:hover:text-white transition-all"><X size={14} /></button>
                                 </div>
-                                <button type="button" onClick={() => setShowEditModal(null)} className="w-8 h-8 rounded-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 flex items-center justify-center hover:bg-black/10 dark:hover:bg-white/10 text-zinc-400 hover:text-gray-900 dark:hover:text-white transition-all"><X size={14} /></button>
-                            </div>
-                            
-                            <form onSubmit={handleUpdateIncome} className="flex-1 flex flex-col overflow-hidden">
-                                <div className="flex-1 overflow-y-auto p-6 space-y-5 custom-scrollbar pb-24">
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div className="space-y-1.5">
-                                            <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest pl-1">Source Name (Sponsor/Client) *</label>
-                                            <input value={sourceName} onChange={(e) => setSourceName(e.target.value)} placeholder="e.g. Sprite Sponsor" className="w-full h-12 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl px-4 text-[10px] font-extrabold uppercase tracking-widest text-gray-900 dark:text-white outline-none focus:border-[#39FF14] transition-all" required />
-                                        </div>
-                                        <div className="space-y-1.5">
-                                            <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest pl-1">Amount (INR) *</label>
-                                            <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="e.g. 50000" className="w-full h-12 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl px-4 text-[10px] font-extrabold uppercase tracking-widest text-gray-900 dark:text-white outline-none focus:border-[#39FF14] transition-all" required />
-                                        </div>
-                                    </div>
-
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div className="space-y-1.5">
-                                            <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest pl-1">Category *</label>
-                                            <select value={category} onChange={(e) => setCategory(e.target.value)} className="w-full h-12 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl px-4 text-[10px] font-extrabold uppercase tracking-widest text-gray-900 dark:text-white outline-none focus:border-[#39FF14] transition-all cursor-pointer">
-                                                {incomeCategories.map(c => <option key={c} value={c} className="bg-gray-100 dark:bg-zinc-950">{c}</option>)}
-                                            </select>
-                                        </div>
-                                        <div className="space-y-1.5">
-                                            <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest pl-1">Date *</label>
-                                            <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="w-full h-12 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl px-4 text-[10px] font-extrabold uppercase tracking-widest text-gray-900 dark:text-white outline-none focus:border-[#39FF14] transition-all" required />
-                                        </div>
-                                    </div>
-
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div className="space-y-1.5">
-                                            <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest pl-1">Destination Account *</label>
-                                            <select value={accountType} onChange={(e) => setAccountType(e.target.value)} className="w-full h-12 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl px-4 text-[10px] font-extrabold uppercase tracking-widest text-gray-900 dark:text-white outline-none focus:border-[#39FF14] transition-all cursor-pointer">
-                                                <option value="newbi" className="bg-gray-100 dark:bg-zinc-950">Official Newbi Account</option>
-                                                <option value="personal" className="bg-gray-100 dark:bg-zinc-950">Personal Account</option>
-                                            </select>
-                                        </div>
-                                        <div className="space-y-1.5">
-                                            <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest pl-1">
-                                                {accountType === 'personal' ? 'Receiver Name (Team Member) *' : 'Receiver Entity'}
-                                            </label>
-                                            <input 
-                                                value={accountType === 'personal' ? receiverName : 'Newbi Core Account'} 
-                                                onChange={(e) => setReceiverName(e.target.value)} 
-                                                placeholder={accountType === 'personal' ? "e.g. Team member name" : "Newbi Core Account"} 
-                                                className="w-full h-12 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl px-4 text-[10px] font-extrabold uppercase tracking-widest text-gray-900 dark:text-white outline-none focus:border-[#39FF14] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                                                disabled={accountType === 'newbi'}
-                                                required={accountType === 'personal'}
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div className="space-y-1.5">
-                                            <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest pl-1">Payment Method</label>
-                                            <select value={paymentMode} onChange={(e) => setPaymentMode(e.target.value)} className="w-full h-12 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl px-4 text-[10px] font-extrabold uppercase tracking-widest text-gray-900 dark:text-white outline-none focus:border-[#39FF14] transition-all cursor-pointer">
-                                                {paymentModes.map(m => <option key={m} value={m} className="bg-gray-100 dark:bg-zinc-950">{m}</option>)}
-                                            </select>
-                                        </div>
-                                        <div className="space-y-1.5">
-                                            <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest pl-1">Status</label>
-                                            <select value={status} onChange={(e) => setStatus(e.target.value)} className="w-full h-12 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl px-4 text-[10px] font-extrabold uppercase tracking-widest text-gray-900 dark:text-white outline-none focus:border-[#39FF14] transition-all cursor-pointer">
-                                                <option value="Paid" className="bg-gray-100 dark:bg-zinc-950">Received / Cleared</option>
-                                                <option value="Pending" className="bg-gray-100 dark:bg-zinc-950">Pending / Outstanding</option>
-                                            </select>
-                                        </div>
-                                    </div>
-
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div className="space-y-1.5">
-                                            <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest pl-1">Transaction Ref / Details</label>
-                                            <input 
-                                                value={transactionRef} 
-                                                onChange={(e) => setTransactionRef(e.target.value)} 
-                                                placeholder="e.g. UPI Ref / Bank IMPS ID" 
-                                                className="w-full h-12 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl px-4 text-[10px] font-extrabold uppercase tracking-widest text-gray-900 dark:text-white outline-none focus:border-[#39FF14] transition-all" 
-                                            />
-                                        </div>
-                                        <div className="space-y-1.5">
-                                            <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest pl-1">Proof Attachment (Image/PDF)</label>
-                                            <div className="relative group cursor-pointer h-12 border border-dashed border-black/10 dark:border-white/10 rounded-xl flex items-center justify-center gap-3 bg-gray-100 dark:bg-zinc-900/50 hover:border-white/30 transition-all">
-                                                <input type="file" onChange={(e) => handleAttachmentUpload(e, setAttachmentUrl)} className="absolute inset-0 opacity-0 cursor-pointer z-10" />
-                                                <Upload className="text-zinc-500 group-hover:text-gray-900 dark:group-hover:text-white transition-colors" size={16} />
-                                                <span className="text-[10px] font-black text-zinc-500 group-hover:text-gray-900 dark:group-hover:text-white uppercase tracking-widest transition-colors">
-                                                    {uploadingAttachment ? 'UPLOADING...' : (attachmentUrl ? 'CHANGE ATTACHMENT' : 'CHOOSE FILE')}
-                                                </span>
+                                
+                                <form onSubmit={handleUpdateIncome} className="flex-1 flex flex-col overflow-hidden">
+                                    <div className="flex-1 overflow-y-auto p-6 space-y-5 custom-scrollbar pb-24">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div className="space-y-1.5">
+                                                <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest pl-1">Source Name (Sponsor/Client) *</label>
+                                                <input value={sourceName} onChange={(e) => setSourceName(e.target.value)} placeholder="e.g. Sprite Sponsor" className="w-full h-12 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl px-4 text-[10px] font-extrabold uppercase tracking-widest text-gray-900 dark:text-white outline-none focus:border-[#39FF14] transition-all" required />
                                             </div>
-                                            {attachmentUrl && (
-                                                <div className="text-[9px] text-[#39FF14] font-bold uppercase tracking-wider mt-1.5 pl-1 truncate">
-                                                    File linked: <a href={attachmentUrl} target="_blank" rel="noopener noreferrer" className="underline hover:text-gray-900 dark:hover:text-white">View File</a>
+                                            <div className="space-y-1.5">
+                                                <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest pl-1">Amount (INR) *</label>
+                                                <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="e.g. 50000" className="w-full h-12 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl px-4 text-[10px] font-extrabold uppercase tracking-widest text-gray-900 dark:text-white outline-none focus:border-[#39FF14] transition-all" required />
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div className="space-y-1.5">
+                                                <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest pl-1">Category *</label>
+                                                <select value={category} onChange={(e) => setCategory(e.target.value)} className="w-full h-12 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl px-4 text-[10px] font-extrabold uppercase tracking-widest text-gray-900 dark:text-white outline-none focus:border-[#39FF14] transition-all cursor-pointer">
+                                                    {incomeCategories.map(c => <option key={c} value={c} className="bg-gray-100 dark:bg-zinc-950">{c}</option>)}
+                                                </select>
+                                            </div>
+                                            <div className="space-y-1.5">
+                                                <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest pl-1">Date *</label>
+                                                <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="w-full h-12 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl px-4 text-[10px] font-extrabold uppercase tracking-widest text-gray-900 dark:text-white outline-none focus:border-[#39FF14] transition-all" required />
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div className="space-y-1.5">
+                                                <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest pl-1">Destination Account *</label>
+                                                <select value={accountType} onChange={(e) => setAccountType(e.target.value)} className="w-full h-12 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl px-4 text-[10px] font-extrabold uppercase tracking-widest text-gray-900 dark:text-white outline-none focus:border-[#39FF14] transition-all cursor-pointer">
+                                                    <option value="newbi" className="bg-gray-100 dark:bg-zinc-950">Official Newbi Account</option>
+                                                    <option value="personal" className="bg-gray-100 dark:bg-zinc-950">Personal Account</option>
+                                                </select>
+                                            </div>
+                                            <div className="space-y-1.5">
+                                                <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest pl-1">
+                                                    {accountType === 'personal' ? 'Receiver Name (Team Member) *' : 'Receiver Entity'}
+                                                </label>
+                                                <input 
+                                                    value={accountType === 'personal' ? receiverName : 'Newbi Core Account'} 
+                                                    onChange={(e) => setReceiverName(e.target.value)} 
+                                                    placeholder={accountType === 'personal' ? "e.g. Team member name" : "Newbi Core Account"} 
+                                                    className="w-full h-12 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl px-4 text-[10px] font-extrabold uppercase tracking-widest text-gray-900 dark:text-white outline-none focus:border-[#39FF14] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                                    disabled={accountType === 'newbi'}
+                                                    required={accountType === 'personal'}
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div className="space-y-1.5">
+                                                <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest pl-1">Payment Method</label>
+                                                <select value={paymentMode} onChange={(e) => setPaymentMode(e.target.value)} className="w-full h-12 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl px-4 text-[10px] font-extrabold uppercase tracking-widest text-gray-900 dark:text-white outline-none focus:border-[#39FF14] transition-all cursor-pointer">
+                                                    {paymentModes.map(m => <option key={m} value={m} className="bg-gray-100 dark:bg-zinc-950">{m}</option>)}
+                                                </select>
+                                            </div>
+                                            <div className="space-y-1.5">
+                                                <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest pl-1">Status</label>
+                                                <select value={status} onChange={(e) => setStatus(e.target.value)} className="w-full h-12 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl px-4 text-[10px] font-extrabold uppercase tracking-widest text-gray-900 dark:text-white outline-none focus:border-[#39FF14] transition-all cursor-pointer">
+                                                    <option value="Paid" className="bg-gray-100 dark:bg-zinc-950">Received / Cleared</option>
+                                                    <option value="Pending" className="bg-gray-100 dark:bg-zinc-950">Pending / Outstanding</option>
+                                                </select>
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div className="space-y-1.5">
+                                                <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest pl-1">Transaction Ref / Details</label>
+                                                <input 
+                                                    value={transactionRef} 
+                                                    onChange={(e) => setTransactionRef(e.target.value)} 
+                                                    placeholder="e.g. UPI Ref / Bank IMPS ID" 
+                                                    className="w-full h-12 bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl px-4 text-[10px] font-extrabold uppercase tracking-widest text-gray-900 dark:text-white outline-none focus:border-[#39FF14] transition-all" 
+                                                />
+                                            </div>
+                                            <div className="space-y-1.5">
+                                                <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest pl-1">Proof Attachment (Image/PDF)</label>
+                                                <div className="relative group cursor-pointer h-12 border border-dashed border-black/10 dark:border-white/10 rounded-xl flex items-center justify-center gap-3 bg-gray-100 dark:bg-zinc-900/50 hover:border-white/30 transition-all">
+                                                    <input type="file" onChange={(e) => handleAttachmentUpload(e, setAttachmentUrl)} className="absolute inset-0 opacity-0 cursor-pointer z-10" />
+                                                    <Upload className="text-zinc-500 group-hover:text-gray-900 dark:group-hover:text-white transition-colors" size={16} />
+                                                    <span className="text-[10px] font-black text-zinc-500 group-hover:text-gray-900 dark:group-hover:text-white uppercase tracking-widest transition-colors">
+                                                        {uploadingAttachment ? 'UPLOADING...' : (attachmentUrl ? 'CHANGE ATTACHMENT' : 'CHOOSE FILE')}
+                                                    </span>
                                                 </div>
-                                            )}
+                                                {attachmentUrl && (
+                                                    <div className="text-[9px] text-[#39FF14] font-bold uppercase tracking-wider mt-1.5 pl-1 truncate">
+                                                        File linked: <a href={attachmentUrl} target="_blank" rel="noopener noreferrer" className="underline hover:text-gray-900 dark:hover:text-white">View File</a>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-1.5">
+                                            <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest pl-1">Internal Notes</label>
+                                            <textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Add transaction details or verification reference..." className="w-full bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl p-4 text-[10px] font-extrabold uppercase tracking-widest text-gray-900 dark:text-white outline-none focus:border-[#39FF14] min-h-[100px] resize-y transition-all" />
+                                        </div>
+
+                                        <div className="pt-4 flex gap-3">
+                                            <button type="button" onClick={() => setShowEditModal(null)} className="flex-1 h-12 bg-white/[0.03] hover:bg-white/[0.05] text-zinc-400 hover:text-gray-900 dark:hover:text-white font-black uppercase tracking-widest text-[10px] rounded-xl border border-black/10 dark:border-white/10 transition-all">
+                                                Cancel
+                                            </button>
+                                            <button type="submit" disabled={uploadingAttachment} className="flex-1 h-12 bg-white text-black hover:bg-zinc-200 font-black uppercase tracking-widest text-[10px] rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+                                                UPDATE INCOME RECORD
+                                            </button>
                                         </div>
                                     </div>
-
-                                    <div className="space-y-1.5">
-                                        <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest pl-1">Internal Notes</label>
-                                        <textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Add transaction details or verification reference..." className="w-full bg-gray-100 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl p-4 text-[10px] font-extrabold uppercase tracking-widest text-gray-900 dark:text-white outline-none focus:border-[#39FF14] min-h-[100px] resize-y transition-all" />
-                                    </div>
-
-                                    <div className="pt-4 flex gap-3">
-                                        <button type="button" onClick={() => setShowEditModal(null)} className="flex-1 h-12 bg-white/[0.03] hover:bg-white/[0.05] text-zinc-400 hover:text-gray-900 dark:hover:text-white font-black uppercase tracking-widest text-[10px] rounded-xl border border-black/10 dark:border-white/10 transition-all">
-                                            Cancel
-                                        </button>
-                                        <button type="submit" disabled={uploadingAttachment} className="flex-1 h-12 bg-white text-black hover:bg-zinc-200 font-black uppercase tracking-widest text-[10px] rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed">
-                                            UPDATE INCOME RECORD
-                                        </button>
-                                    </div>
-                                </div>
-                            </form>
-                        </motion.div>
-                    </>
-                )}
-            </AnimatePresence>
+                                </form>
+                            </motion.div>
+                        </>
+                    )}
+                </AnimatePresence>,
+                document.body
+            )}
         </>
     );
 };

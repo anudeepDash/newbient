@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { Html5QrcodeScanner } from 'html5-qrcode';
 import QrCode from 'lucide-react/dist/esm/icons/qr-code';
 import CheckCircle from 'lucide-react/dist/esm/icons/check-circle';
@@ -312,9 +313,10 @@ const EntryTerminal = ({ eventId }) => {
             </div>
 
             {/* SCAN MODAL */}
-            <AnimatePresence>
-                {scanModalOpen && (
-                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            {createPortal(
+                <AnimatePresence>
+                    {scanModalOpen && (
+                        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
                         <motion.div 
                             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                             className="absolute inset-0 bg-white dark:bg-black/90 backdrop-blur-3xl"
@@ -386,7 +388,9 @@ const EntryTerminal = ({ eventId }) => {
                         </motion.div>
                     </div>
                 )}
-            </AnimatePresence>
+            </AnimatePresence>,
+            document.body
+        )}
         </div>
     );
 };

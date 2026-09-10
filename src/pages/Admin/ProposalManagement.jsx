@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Link, useNavigate } from 'react-router-dom';
 import Edit from 'lucide-react/dist/esm/icons/edit';
 import Trash2 from 'lucide-react/dist/esm/icons/trash-2';
@@ -510,11 +511,12 @@ const ProposalManagement = () => {
                 </AnimatePresence>
 
                 {/* Analytics Modal */}
-                <AnimatePresence>
-                    {selectedAnalytics && (
-                        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setSelectedAnalytics(null)} className="absolute inset-0 bg-white dark:bg-black/90 backdrop-blur-sm" />
-                            <motion.div initial={{ opacity: 0, scale: 0.9, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: 20 }} className="relative w-full max-w-2xl bg-gray-100 dark:bg-zinc-900 border border-black/10 dark:border-white/10 rounded-[2rem] md:rounded-[2.5rem] overflow-hidden max-h-[90vh] flex flex-col">
+                {createPortal(
+                    <AnimatePresence>
+                        {selectedAnalytics && (
+                            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setSelectedAnalytics(null)} className="absolute inset-0 bg-white dark:bg-black/90 backdrop-blur-sm" />
+                                <motion.div initial={{ opacity: 0, scale: 0.9, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: 20 }} className="relative w-full max-w-2xl bg-gray-100 dark:bg-zinc-900 border border-black/10 dark:border-white/10 rounded-[2rem] md:rounded-[2.5rem] overflow-hidden max-h-[90vh] flex flex-col">
                                 <div className="p-6 md:p-8 border-b border-black/10 dark:border-white/5 flex justify-between items-center shrink-0">
                                     <div>
                                         <h3 className="text-xl md:text-2xl font-black uppercase tracking-tighter italic">Strategic Analytics.</h3>
@@ -672,9 +674,12 @@ const ProposalManagement = () => {
                             </motion.div>
                         </div>
                     )}
-                </AnimatePresence>
+                </AnimatePresence>,
+                document.body
+            )}
 
-                {/* Unified Share Modal */}
+            {/* Unified Share Modal */}
+            {createPortal(
                 <AnimatePresence>
                     {sharingProposal && (
                         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
@@ -723,7 +728,9 @@ const ProposalManagement = () => {
                             </motion.div>
                         </div>
                     )}
-                </AnimatePresence>
+                </AnimatePresence>,
+                document.body
+            )}
             </div>
 
             {/* Proposal Email Modal */}

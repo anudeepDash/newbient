@@ -1342,107 +1342,58 @@ const AIStudio = () => {
         try {
             if (activeEngine === 'proposal') {
                 if (isBulkMode) {
-                    setIsBulkGenerating(true);
-                    let prompts = [];
-                    if (promptText.includes('---') || promptText.includes('___')) {
-                        prompts = promptText
-                            .split(/\n?[-_]{3,}\n?/)
-                            .map(p => p.trim())
-                            .filter(p => p.length > 5);
-                    } else {
-                        prompts = promptText
-                            .split(/\n\n+/)
-                            .map(p => p.trim())
-                            .filter(p => p.length > 10);
-                    }
-                    if (prompts.length === 0) {
-                        prompts = [promptText.trim()];
-                    }
-
-                    setBulkProgress({ current: 0, total: prompts.length });
-                    const generatedProposals = [];
-
-                    for (let i = 0; i < prompts.length; i++) {
-                        const prompt = prompts[i];
-                        const data = await generateFullDocument('proposal', prompt, 'Premium', {});
-                        
-                        const finalProposal = {
-                            clientName: data.clientName || `Client 0${i + 1}`,
-                            clientAddress: data.clientAddress || 'Corporate Headquarters',
-                            campaignName: data.campaignName || 'Strategic Initiative',
-                            campaignDuration: data.campaignDuration || 'TBD',
-                            proposalNumber: `NBQ-${Math.floor(1000 + Math.random() * 9000)}`,
-                            coverDescription: data.coverDescription || 'This document contains the beautifully formatted and arranged synthesis of your data.',
-                            overview: data.overview || '',
-                            primaryGoal: data.primaryGoal || '',
-                            deliverables: data.deliverables?.length 
-                                ? data.deliverables.map((d, index) => ({ 
-                                    id: Date.now() + index + Math.random(), 
-                                    item: d.item || d.name || '', 
-                                    qty: d.qty || '1', 
-                                    timeline: d.timeline || 'TBD' 
-                                })) 
-                                : [],
-                            clientRequirements: data.clientRequirements?.length 
-                                ? data.clientRequirements.map((r, index) => ({ 
-                                    id: Date.now() + 100 + index + Math.random(), 
-                                    description: r.description || r.requirement || '' 
-                                })) 
-                                : [],
-                            scopeOfWork: data.scopeOfWork || prompt,
-                            terms: data.terms || '1. 50% Advance Fee required.\n2. Balance on delivery.\n3. Taxes as applicable (18% GST).\n4. Quote valid for 14 days.',
-                            paymentDetails: 'Account Name: Newbi Entertainment\nAccount Number: 0000000000\nIFSC: YOUR000000\nUPI: newbi@upi',
-                            gstRate: 18,
-                            advanceRequested: 50,
-                            showGst: true,
-                            showPaymentDetails: true,
-                            showSeal: false,
-                            showSignatures: true,
-                            signatureType: 'handwritten',
-                            providerSignature: '',
-                            clientSignature: '',
-                            senderName: 'Authorized Signatory',
-                            senderDesignation: 'Director of Operations',
-                            status: 'Draft',
-                            hiddenFields: [],
-                            selectedLogo: 'entertainment',
-                            items: data.items?.length 
-                                ? data.items.map((item, idx) => ({
-                                    id: Date.now() + 200 + idx + Math.random(),
-                                    description: item.description || item.name || '',
-                                    qty: Number(item.qty) || 1,
-                                    unit: item.unit || 'Unit',
-                                    price: Number(item.price) || 0
+                    const data = await generateFullDocument('bulk_proposal', promptText, 'Premium', {});
+                    setProposalFormData(prev => ({
+                        ...prev,
+                        clientName: data.clientName || prev.clientName,
+                        clientAddress: data.clientAddress || prev.clientAddress,
+                        campaignName: data.campaignName || prev.campaignName,
+                        campaignDuration: data.campaignDuration || prev.campaignDuration,
+                        coverDescription: data.coverDescription || prev.coverDescription,
+                        overview: data.overview || prev.overview,
+                        primaryGoal: data.primaryGoal || prev.primaryGoal,
+                        scopeOfWork: data.scopeOfWork || prev.scopeOfWork,
+                        terms: data.terms || prev.terms,
+                        deliverables: data.deliverables?.length 
+                            ? data.deliverables.map((d, i) => ({ 
+                                id: Date.now() + i, 
+                                item: d.item || d.name || '', 
+                                qty: d.qty || '1', 
+                                timeline: d.timeline || 'TBD' 
+                            })) 
+                            : prev.deliverables,
+                        clientRequirements: data.clientRequirements?.length 
+                            ? data.clientRequirements.map((r, i) => ({ 
+                                id: Date.now() + 100 + i, 
+                                description: r.description || r.requirement || r.name || '' 
+                            })) 
+                            : prev.clientRequirements,
+                        customPages: data.customPages?.length
+                            ? [
+                                ...(prev.customPages || []),
+                                ...data.customPages.map((cp, cpIdx) => ({
+                                    id: String(Date.now()) + '-cp-' + cpIdx,
+                                    title: cp.title || 'Additional Page',
+                                    subtitle: cp.subtitle || '',
+                                    content: cp.content || '',
+                                    insertAfter: 'default'
                                 }))
-                                : [],
-                            subtotal: 0,
-                            gstAmount: 0,
-                            totalAmount: 0,
-                            isBulkGenerated: true,
-                            hideTotalColumn: false,
-                            strategyTitle: 'EXECUTIVE SUMMARY',
-                            strategySub: 'STRATEGIC OUTLINE',
-                            scopeTitle: 'SCOPE OF WORK',
-                            scopeSub: 'RESOURCE DELIVERABLES',
-                            proposalTitle: 'DELIVERABLES',
-                            proposalSub: 'PROJECT INVENTORY',
-                            inventoryTitle: 'RESOURCE INVENTORY',
-                            inventorySub: 'COMMERCIALS BREAKDOWN',
-                            commercialsTitle: 'COMMERCIAL TERMS',
-                            commercialsSub: 'SETTLEMENT & SIGN-OFF'
-                        };
-                        generatedProposals.push(finalProposal);
-                        setBulkProgress({ current: i + 1, total: prompts.length });
+                            ]
+                            : (prev.customPages || [])
+                    }));
+                    if (data.items && data.items.length > 0) {
+                        setProposalItems(data.items.map((item, idx) => ({
+                            id: Date.now() + 200 + idx,
+                            description: item.description || item.name || '',
+                            qty: Number(item.qty) || 1,
+                            unit: item.unit || 'Unit',
+                            price: Number(item.price) || 0
+                        })));
                     }
-                    setBulkProposals(prev => {
-                        const newVault = [...prev, ...generatedProposals];
-                        setSelectedBulkIndex(newVault.length - generatedProposals.length);
-                        return newVault;
-                    });
                     setMessages(prev => [...prev, {
                         id: Date.now() + '-ai',
                         sender: 'ai',
-                        text: `✓ Bulk requirements successfully structured! I have generated ${generatedProposals.length} proposals. Preview the compiled A4 sheet on the right, or click save to persist.`
+                        text: `✓ Pre-generated proposal text analyzed and structured! All fields, scope of work, deliverables (${data.deliverables?.length || 0}), financial line items (${data.items?.length || 0}), and custom pages have been automatically populated into your proposal. Preview the compiled A4 sheet on the right, or click save to persist.`
                     }]);
                 } else {
                     const data = await generateFullDocument('proposal', promptText, 'Premium', {});
@@ -1963,7 +1914,7 @@ const AIStudio = () => {
                             {/* Toggle Bulk Mode (Proposal Engine Only) */}
                             {activeEngine === 'proposal' && (
                                 <div className="flex items-center gap-3">
-                                    <span className="text-[9px] font-black text-zinc-500 uppercase tracking-wider">Bulk mode</span>
+                                    <span className="text-[9px] font-black text-zinc-500 uppercase tracking-wider">Bulk / Pre-Generated Text</span>
                                     <button
                                         onClick={() => setIsBulkMode(!isBulkMode)}
                                         className={cn(
@@ -1990,10 +1941,10 @@ const AIStudio = () => {
                                 onChange={(e) => setPromptText(e.target.value)}
                                 placeholder={
                                     isBulkMode
-                                        ? "Paste raw CSV / structured requirements here to process bulk proposals..."
+                                        ? "Paste complete pre-generated proposal text, raw brief, scope document, or quote draft here to automatically populate all proposal sections..."
                                         : `Describe the ${activeEngine === 'proposal' ? 'proposal' : 'agreement'} requirements in natural language...`
                                 }
-                                className="w-full bg-transparent text-sm text-gray-900 dark:text-white placeholder-zinc-600 outline-none border-none resize-none py-2 px-1 min-h-[60px]"
+                                className="w-full bg-transparent text-sm text-gray-900 dark:text-white placeholder-zinc-600 outline-none border-none resize-none py-2 px-1 min-h-[70px]"
                                 onKeyDown={(e) => {
                                     if (e.key === 'Enter' && !e.shiftKey) {
                                         e.preventDefault();
@@ -2002,35 +1953,10 @@ const AIStudio = () => {
                                 }}
                             />
 
-                            {isBulkMode && parsedPrompts.length > 0 && (
-                                <div className="space-y-1.5 mt-2 pt-2 border-t border-black/10 dark:border-white/5 animate-fade-in relative z-10">
-                                    <div className="flex items-center justify-between px-1">
-                                        <label className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Parsed Prompts ({parsedPrompts.length})</label>
-                                        <span className="text-[7px] font-black text-neon-green/70 uppercase tracking-wider">Split using '---' line break</span>
-                                    </div>
-                                    <div className="max-h-28 overflow-y-auto space-y-1 pr-1 scrollbar-hide">
-                                        {parsedPrompts.map((pText, idx) => (
-                                            <div key={idx} className="flex items-start gap-2 p-2 bg-white dark:bg-black/60 border border-black/10 dark:border-white/5 rounded-xl text-[9px] text-zinc-400 hover:border-black/10 dark:hover:border-white/10 hover:text-gray-900 dark:hover:text-white transition-all font-mono">
-                                                <span className="text-neon-green font-black select-none">{String(idx + 1).padStart(2, '0')}.</span>
-                                                <span className="truncate flex-1">{pText}</span>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-
-                            {isBulkGenerating && (
-                                <div className="space-y-1 mt-2 pt-2 border-t border-black/10 dark:border-white/5 animate-pulse relative z-10">
-                                    <div className="flex justify-between items-center text-[8px] font-black uppercase tracking-widest text-gray-600 dark:text-gray-400">
-                                        <span>AI Pulse Progress ({bulkProgress.current} of {bulkProgress.total})</span>
-                                        <span className="text-neon-green">{Math.round((bulkProgress.current / bulkProgress.total) * 100) || 0}%</span>
-                                    </div>
-                                    <div className="w-full h-1.5 bg-gray-100 dark:bg-zinc-950 rounded-full overflow-hidden">
-                                        <div 
-                                            className="h-full bg-neon-green rounded-full transition-all duration-500 shadow-[0_0_8px_#39FF14]"
-                                            style={{ width: `${(bulkProgress.current / bulkProgress.total) * 100}%` }}
-                                        />
-                                    </div>
+                            {isBulkMode && (
+                                <div className="flex items-center gap-2 p-2.5 bg-amber-500/10 border border-amber-500/20 rounded-2xl text-[10px] text-amber-400 font-bold mt-2 animate-fade-in relative z-10">
+                                    <Zap size={14} className="shrink-0 text-amber-400" />
+                                    <span>Bulk Ingestion Active: Paste complete raw drafts, briefs, or quotes to extract & structure all sections directly into this proposal.</span>
                                 </div>
                             )}
 
@@ -2053,8 +1979,8 @@ const AIStudio = () => {
                                             : "bg-[#A855F7] text-gray-900 dark:text-white disabled:bg-zinc-800 disabled:text-zinc-600"
                                     )}
                                 >
-                                    {isGenerating ? <RefreshCw size={12} className="animate-spin" /> : <Sparkles size={12} />}
-                                    <span>{isBulkMode ? "Process Bulk" : "Generate"}</span>
+                                    {isGenerating ? <RefreshCw size={12} className="animate-spin" /> : (isBulkMode ? <Zap size={12} /> : <Sparkles size={12} />)}
+                                    <span>{isBulkMode ? "Ingest & Populate" : "Generate"}</span>
                                 </button>
                             </div>
                         </div>

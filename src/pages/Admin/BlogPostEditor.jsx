@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Save, X, Image, Type, FileText, Eye, ChevronLeft, Loader2, User, Settings, Sparkles, Zap } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -810,32 +811,35 @@ const BlogPostEditor = () => {
             </main>
 
             {/* Mobile Preview Modal */}
-            <AnimatePresence>
-                {showPreviewMobile && (
-                    <motion.div 
-                        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-[200] bg-white dark:bg-black lg:hidden overflow-y-auto"
-                    >
-                        <div className="p-4 border-b border-black/10 dark:border-white/10 flex items-center justify-between sticky top-0 bg-white dark:bg-black/80 backdrop-blur-xl z-10">
-                            <span className="text-[10px] font-black uppercase tracking-[0.4em] text-neon-blue">Reality Preview</span>
-                            <button onClick={() => setShowPreviewMobile(false)} className="p-2 bg-black/5 dark:bg-white/5 rounded-xl"><X size={18} /></button>
-                        </div>
-                        <div className="p-6 space-y-8 pb-32">
-                            <div className="space-y-4">
-                                <span className="px-3 py-1 bg-neon-blue text-black text-[10px] font-black uppercase tracking-widest rounded-full italic">{formData.category}</span>
-                                <h1 className="text-4xl font-black uppercase italic tracking-tighter leading-none">{formData.title || 'Untitled'}</h1>
-                                <div className="flex items-center gap-4 text-gray-500 text-[10px] font-bold uppercase tracking-widest">
-                                    <span>{formData.author}</span>
-                                    <span>•</span>
-                                    <span>{Math.ceil((formData.content?.split(' ').length || 0) / 200)} MIN</span>
-                                </div>
+            {createPortal(
+                <AnimatePresence>
+                    {showPreviewMobile && (
+                        <motion.div 
+                            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                            className="fixed inset-0 z-[200] bg-white dark:bg-black lg:hidden overflow-y-auto"
+                        >
+                            <div className="p-4 border-b border-black/10 dark:border-white/10 flex items-center justify-between sticky top-0 bg-white dark:bg-black/80 backdrop-blur-xl z-10">
+                                <span className="text-[10px] font-black uppercase tracking-[0.4em] text-neon-blue">Reality Preview</span>
+                                <button onClick={() => setShowPreviewMobile(false)} className="p-2 bg-black/5 dark:bg-white/5 rounded-xl"><X size={18} /></button>
                             </div>
-                            {formData.coverImage && <img src={formData.coverImage} className="w-full rounded-3xl border border-black/10 dark:border-white/10" alt="Cover" />}
-                            <div className="prose prose-invert text-gray-600 dark:text-gray-400" dangerouslySetInnerHTML={{ __html: formData.content }} />
-                        </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
+                            <div className="p-6 space-y-8 pb-32">
+                                <div className="space-y-4">
+                                    <span className="px-3 py-1 bg-neon-blue text-black text-[10px] font-black uppercase tracking-widest rounded-full italic">{formData.category}</span>
+                                    <h1 className="text-4xl font-black uppercase italic tracking-tighter leading-none">{formData.title || 'Untitled'}</h1>
+                                    <div className="flex items-center gap-4 text-gray-500 text-[10px] font-bold uppercase tracking-widest">
+                                        <span>{formData.author}</span>
+                                        <span>•</span>
+                                        <span>{Math.ceil((formData.content?.split(' ').length || 0) / 200)} MIN</span>
+                                    </div>
+                                </div>
+                                {formData.coverImage && <img src={formData.coverImage} className="w-full rounded-3xl border border-black/10 dark:border-white/10" alt="Cover" />}
+                                <div className="prose prose-invert text-gray-600 dark:text-gray-400" dangerouslySetInnerHTML={{ __html: formData.content }} />
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>,
+                document.body
+            )}
         </div>
     );
 };
