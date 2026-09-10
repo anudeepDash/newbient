@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, getDocs, query, where } from 'firebase/firestore';
 import { motion } from 'framer-motion';
 import FileText from 'lucide-react/dist/esm/icons/file-text';
 import ArrowLeft from 'lucide-react/dist/esm/icons/arrow-left';
@@ -89,39 +89,169 @@ const FormLoadingAnimation = ({ label = "Loading Form" }) => (
     </div>
 );
 
+const normalizeString = (str) => String(str || '').trim().toLowerCase();
+const createSlug = (str) => String(str || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+
 const FormViewer = ({ formIdOverride }) => {
-    useStoreSubscription(['forms']);
+    useStoreSubscription(['forms', 'upcomingEvents', 'volunteerGigs', 'guestlists', 'campaigns']);
     const { id } = useParams();
     const navigate = useNavigate();
-    const { forms = [], user, setAuthModal } = useStore();
-    const formId = formIdOverride || id;
+    const { 
+        forms = [], 
+        upcomingEvents = [], 
+        volunteerGigs = [], 
+        guestlists = [], 
+        campaigns = [], 
+        user, 
+        setAuthModal 
+    } = useStore();
+
+    // Extract form identifier from params, search queries, or path
+    const searchParams = new URLSearchParams(window.location.search);
+    const rawTargetId = formIdOverride || id || searchParams.get('form') || searchParams.get('id') || searchParams.get('formId') || '';
+    const pathSegments = (window.location.pathname || '').split('/');
+    const formsIndex = pathSegments.indexOf('forms');
+    const pathFormId = formsIndex !== -1 ? pathSegments[formsIndex + 1] : '';
+    const cleanTargetId = decodeURIComponent((rawTargetId || pathFormId || '').trim()).replace(/\/+$/, '');
 
     const [directForm, setDirectForm] = useState(null);
     const [isFetchingDirect, setIsFetchingDirect] = useState(true);
     const [iframeLoaded, setIframeLoaded] = useState(false);
 
-    // 1. Check Store first
-    const storeForm = forms.find(f => f.id === formId);
+    // 1. Comprehensive Store Matching Across Collections
+    const storeForm = useMemo(() => {
+        if (!cleanTargetId) return null;
+        const clean = normalizeString(cleanTargetId);
+        const cleanSlug = createSlug(cleanTargetId);
 
-    // 2. Direct Firestore fallback query if not immediately available in store
+        // A. Match forms collection
+        let match = forms.find(f => 
+            normalizeString(f.id) === clean ||
+            normalizeString(f.slug) === clean ||
+            normalizeString(f.formId) === clean ||
+            (f.title && createSlug(f.title) === cleanSlug) ||
+            (f.link && normalizeString(f.link).endsWith(`/${clean}`))
+        );
+        if (match) return match;
+
+        // B. Match upcomingEvents collection
+        const eventMatch = upcomingEvents.find(e => 
+            normalizeString(e.id) === clean ||
+            normalizeString(e.formId) === clean ||
+            normalizeString(e.relatedArtistFormId) === clean ||
+            (e.title && createSlug(e.title) === cleanSlug) ||
+            (e.link && normalizeString(e.link).endsWith(`/${clean}`))
+        );
+        if (eventMatch) {
+            const refId = eventMatch.formId || eventMatch.relatedArtistFormId;
+            if (refId) {
+                const formInStore = forms.find(f => normalizeString(f.id) === normalizeString(refId));
+                if (formInStore) return formInStore;
+            }
+            if (eventMatch.formUrl || (eventMatch.link && eventMatch.link.startsWith('http'))) {
+                return {
+                    id: eventMatch.id,
+                    title: eventMatch.title,
+                    description: eventMatch.description,
+                    formUrl: eventMatch.formUrl || eventMatch.link,
+                    activeLabel: eventMatch.status || 'Live',
+                    image: eventMatch.image,
+                    highlightColor: eventMatch.highlightColor || '#2ebfff',
+                    bottomText: eventMatch.location || 'Event Form'
+                };
+            }
+        }
+
+        // C. Match volunteerGigs collection
+        const gigMatch = volunteerGigs.find(g => 
+            normalizeString(g.id) === clean ||
+            normalizeString(g.formId) === clean ||
+            (g.title && createSlug(g.title) === cleanSlug)
+        );
+        if (gigMatch) {
+            if (gigMatch.formId) {
+                const formInStore = forms.find(f => normalizeString(f.id) === normalizeString(gigMatch.formId));
+                if (formInStore) return formInStore;
+            }
+            if (gigMatch.formUrl || gigMatch.applyLink || (gigMatch.link && gigMatch.link.startsWith('http'))) {
+                return {
+                    id: gigMatch.id,
+                    title: gigMatch.title,
+                    description: gigMatch.description,
+                    formUrl: gigMatch.formUrl || gigMatch.applyLink || gigMatch.link,
+                    activeLabel: gigMatch.status || 'Live',
+                    image: gigMatch.image,
+                    highlightColor: gigMatch.highlightColor || '#39FF14',
+                    bottomText: gigMatch.location || 'Gig Form'
+                };
+            }
+        }
+
+        // D. Match guestlists collection
+        const glMatch = guestlists.find(gl => 
+            normalizeString(gl.id) === clean ||
+            normalizeString(gl.formId) === clean ||
+            (gl.title && createSlug(gl.title) === cleanSlug)
+        );
+        if (glMatch) {
+            if (glMatch.formUrl || (glMatch.link && glMatch.link.startsWith('http'))) {
+                return {
+                    id: glMatch.id,
+                    title: glMatch.title,
+                    description: glMatch.description,
+                    formUrl: glMatch.formUrl || glMatch.link,
+                    activeLabel: glMatch.status || 'Live',
+                    image: glMatch.image,
+                    highlightColor: glMatch.highlightColor || '#39FF14',
+                    bottomText: glMatch.location || 'Guestlist Form'
+                };
+            }
+        }
+
+        // E. Match campaigns collection
+        const campMatch = campaigns.find(c => 
+            normalizeString(c.id) === clean ||
+            normalizeString(c.slug) === clean ||
+            normalizeString(c.formId) === clean ||
+            (c.title && createSlug(c.title) === cleanSlug)
+        );
+        if (campMatch) {
+            if (campMatch.formUrl || campMatch.applyLink || (campMatch.link && campMatch.link.startsWith('http'))) {
+                return {
+                    id: campMatch.id,
+                    title: campMatch.title,
+                    description: campMatch.description,
+                    formUrl: campMatch.formUrl || campMatch.applyLink || campMatch.link,
+                    activeLabel: campMatch.status || 'Live',
+                    image: campMatch.image,
+                    highlightColor: campMatch.highlightColor || '#BF00FF',
+                    bottomText: campMatch.brandName || 'Campaign Form'
+                };
+            }
+        }
+
+        return null;
+    }, [cleanTargetId, forms, upcomingEvents, volunteerGigs, guestlists, campaigns]);
+
+    // 2. Direct Multi-Tier Firestore Query Fallback
     useEffect(() => {
         let isMounted = true;
 
         const fetchDirect = async () => {
-            if (!formId || !db) {
+            if (!cleanTargetId || !db) {
                 if (isMounted) setIsFetchingDirect(false);
                 return;
             }
 
-            // If already in store, no need to query directly
+            // If already resolved from store, stop direct query
             if (storeForm) {
                 if (isMounted) setIsFetchingDirect(false);
                 return;
             }
 
             try {
-                // Try 'forms' collection first
-                const formSnap = await getDoc(doc(db, 'forms', formId));
+                // Tier 1: Direct 'forms' document ID lookup
+                const formSnap = await getDoc(doc(db, 'forms', cleanTargetId));
                 if (formSnap.exists()) {
                     if (isMounted) {
                         setDirectForm({ id: formSnap.id, ...formSnap.data() });
@@ -130,11 +260,44 @@ const FormViewer = ({ formIdOverride }) => {
                     return;
                 }
 
-                // Fallback: check 'upcoming_events' in case an event ID was passed
-                const eventSnap = await getDoc(doc(db, 'upcoming_events', formId));
+                // Tier 2: Scan 'forms' collection for slug, formId, link, or title match
+                const allFormsSnap = await getDocs(collection(db, 'forms'));
+                if (!allFormsSnap.empty) {
+                    const clean = normalizeString(cleanTargetId);
+                    const cleanSlug = createSlug(cleanTargetId);
+                    const foundDoc = allFormsSnap.docs.find(d => {
+                        const data = d.data();
+                        return normalizeString(d.id) === clean ||
+                               normalizeString(data.slug) === clean ||
+                               normalizeString(data.formId) === clean ||
+                               (data.title && createSlug(data.title) === cleanSlug) ||
+                               (data.link && normalizeString(data.link).endsWith(`/${clean}`));
+                    });
+                    if (foundDoc) {
+                        if (isMounted) {
+                            setDirectForm({ id: foundDoc.id, ...foundDoc.data() });
+                            setIsFetchingDirect(false);
+                        }
+                        return;
+                    }
+                }
+
+                // Tier 3: Lookup 'upcoming_events'
+                const eventSnap = await getDoc(doc(db, 'upcoming_events', cleanTargetId));
                 if (eventSnap.exists()) {
                     const eventData = eventSnap.data();
-                    const extractedUrl = eventData.formUrl || eventData.link;
+                    const refFormId = eventData.formId || eventData.relatedArtistFormId;
+                    if (refFormId) {
+                        const refSnap = await getDoc(doc(db, 'forms', refFormId));
+                        if (refSnap.exists()) {
+                            if (isMounted) {
+                                setDirectForm({ id: refSnap.id, ...refSnap.data() });
+                                setIsFetchingDirect(false);
+                            }
+                            return;
+                        }
+                    }
+                    const extractedUrl = eventData.formUrl || (eventData.link?.startsWith('http') ? eventData.link : null);
                     if (extractedUrl) {
                         if (isMounted) {
                             setDirectForm({
@@ -153,11 +316,21 @@ const FormViewer = ({ formIdOverride }) => {
                     }
                 }
 
-                // Fallback: check 'volunteer_gigs'
-                const gigSnap = await getDoc(doc(db, 'volunteer_gigs', formId));
+                // Tier 4: Lookup 'volunteer_gigs'
+                const gigSnap = await getDoc(doc(db, 'volunteer_gigs', cleanTargetId));
                 if (gigSnap.exists()) {
                     const gigData = gigSnap.data();
-                    const extractedUrl = gigData.formUrl || gigData.applyLink || gigData.link;
+                    if (gigData.formId) {
+                        const refSnap = await getDoc(doc(db, 'forms', gigData.formId));
+                        if (refSnap.exists()) {
+                            if (isMounted) {
+                                setDirectForm({ id: refSnap.id, ...refSnap.data() });
+                                setIsFetchingDirect(false);
+                            }
+                            return;
+                        }
+                    }
+                    const extractedUrl = gigData.formUrl || gigData.applyLink || (gigData.link?.startsWith('http') ? gigData.link : null);
                     if (extractedUrl) {
                         if (isMounted) {
                             setDirectForm({
@@ -169,6 +342,52 @@ const FormViewer = ({ formIdOverride }) => {
                                 image: gigData.image,
                                 highlightColor: gigData.highlightColor || '#39FF14',
                                 bottomText: gigData.location || 'Gig Form'
+                            });
+                            setIsFetchingDirect(false);
+                        }
+                        return;
+                    }
+                }
+
+                // Tier 5: Lookup 'guestlists'
+                const glSnap = await getDoc(doc(db, 'guestlists', cleanTargetId));
+                if (glSnap.exists()) {
+                    const glData = glSnap.data();
+                    const extractedUrl = glData.formUrl || (glData.link?.startsWith('http') ? glData.link : null);
+                    if (extractedUrl) {
+                        if (isMounted) {
+                            setDirectForm({
+                                id: glSnap.id,
+                                title: glData.title,
+                                description: glData.description,
+                                formUrl: extractedUrl,
+                                activeLabel: glData.status || 'Live',
+                                image: glData.image,
+                                highlightColor: glData.highlightColor || '#39FF14',
+                                bottomText: glData.location || 'Guestlist Form'
+                            });
+                            setIsFetchingDirect(false);
+                        }
+                        return;
+                    }
+                }
+
+                // Tier 6: Lookup 'campaigns'
+                const campSnap = await getDoc(doc(db, 'campaigns', cleanTargetId));
+                if (campSnap.exists()) {
+                    const campData = campSnap.data();
+                    const extractedUrl = campData.formUrl || campData.applyLink || (campData.link?.startsWith('http') ? campData.link : null);
+                    if (extractedUrl) {
+                        if (isMounted) {
+                            setDirectForm({
+                                id: campSnap.id,
+                                title: campData.title,
+                                description: campData.description,
+                                formUrl: extractedUrl,
+                                activeLabel: campData.status || 'Live',
+                                image: campData.image,
+                                highlightColor: campData.highlightColor || '#BF00FF',
+                                bottomText: campData.brandName || 'Campaign Form'
                             });
                             setIsFetchingDirect(false);
                         }
@@ -189,7 +408,7 @@ const FormViewer = ({ formIdOverride }) => {
         return () => {
             isMounted = false;
         };
-    }, [formId, storeForm]);
+    }, [cleanTargetId, storeForm]);
 
     const activeForm = storeForm || directForm;
 
@@ -203,15 +422,19 @@ const FormViewer = ({ formIdOverride }) => {
     // Build the themed Google Form URL with user email pre-fill if available
     const themedFormUrl = useMemo(() => {
         if (!activeForm?.formUrl) return '';
+        let urlStr = activeForm.formUrl;
+        if (urlStr.includes('<iframe')) {
+            const match = urlStr.match(/src="([^"]+)"/);
+            if (match && match[1]) urlStr = match[1];
+        }
         try {
-            const url = new URL(activeForm.formUrl);
-            // If user is signed in and has an email, pre-fill via emailAddress param
+            const url = new URL(urlStr);
             if (user?.email) {
                 url.searchParams.set('emailAddress', user.email);
             }
             return url.toString();
         } catch {
-            return activeForm.formUrl;
+            return urlStr;
         }
     }, [activeForm?.formUrl, user?.email]);
 

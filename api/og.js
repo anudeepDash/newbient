@@ -24,7 +24,7 @@ try {
     console.warn('[OG] Firebase init warning:', e.message);
 }
 
-function getBaseHtml() {
+async function getBaseHtml(req) {
     const candidatePaths = [
         path.join(process.cwd(), 'dist', 'index.html'),
         path.join(__dirname, '..', 'dist', 'index.html'),
@@ -36,11 +36,25 @@ function getBaseHtml() {
         try {
             if (fs.existsSync(p)) {
                 const content = fs.readFileSync(p, 'utf8');
-                if (content && content.length > 50) {
+                if (content && content.length > 50 && content.includes('<div id="root">')) {
                     return { html: content, path: p };
                 }
             }
         } catch (e) {}
+    }
+
+    try {
+        const host = req?.headers?.['x-forwarded-host'] || req?.headers?.host || 'newbi.live';
+        const proto = req?.headers?.['x-forwarded-proto'] || (host.includes('localhost') ? 'http' : 'https');
+        const res = await fetch(`${proto}://${host}/index.html`);
+        if (res.ok) {
+            const fetched = await res.text();
+            if (fetched && fetched.length > 50 && fetched.includes('<div id="root">')) {
+                return { html: fetched, path: 'remote' };
+            }
+        }
+    } catch (e) {
+        console.warn('[OG] Remote index.html fetch failed:', e);
     }
 
     return { html: '', path: '' };
@@ -107,6 +121,7 @@ export default async function handler(req, res) {
             }
         } else if (formId || queryFormId) {
             const id = formId || queryFormId;
+            let found = false;
             const snap = await getDoc(doc(db, 'forms', id));
             if (snap.exists()) {
                 const data = snap.data();
@@ -114,6 +129,31 @@ export default async function handler(req, res) {
                 meta.description = data.description?.substring(0, 155) || `Participate in ${data.title} on Newbi Hub.`;
                 meta.image = data.image?.startsWith('http') ? data.image : `${baseUrl}${data.image || '/og-image.png'}`;
                 meta.url = formId ? `${baseUrl}/forms/${id}` : `${baseUrl}/community-join?form=${id}`;
+                found = true;
+            }
+
+            if (!found) {
+                const eventSnap = await getDoc(doc(db, 'upcoming_events', id));
+                if (eventSnap.exists()) {
+                    const data = eventSnap.data();
+                    meta.title = `${data.title} | Newbi Form`;
+                    meta.description = data.description?.substring(0, 155) || `Participate in ${data.title} on Newbi Hub.`;
+                    meta.image = data.image?.startsWith('http') ? data.image : `${baseUrl}${data.image || '/og-image.png'}`;
+                    meta.url = `${baseUrl}/forms/${id}`;
+                    found = true;
+                }
+            }
+
+            if (!found) {
+                const gigSnap = await getDoc(doc(db, 'volunteer_gigs', id));
+                if (gigSnap.exists()) {
+                    const data = gigSnap.data();
+                    meta.title = `${data.title} | Volunteer Form`;
+                    meta.description = data.description?.substring(0, 155) || `Participate in ${data.title} on Newbi Hub.`;
+                    meta.image = data.image?.startsWith('http') ? data.image : `${baseUrl}${data.image || '/og-image.png'}`;
+                    meta.url = `${baseUrl}/forms/${id}`;
+                    found = true;
+                }
             }
         } else if (gigId) {
             const snap = await getDoc(doc(db, 'volunteer_gigs', gigId));
@@ -195,12 +235,12 @@ export default async function handler(req, res) {
     }
 
     // Load base HTML from distribution
-    const { html: loadedHtml, path: loadedPath } = getBaseHtml();
+    const { html: loadedHtml } = await getBaseHtml(req);
     let html = loadedHtml;
 
     if (!html) {
-        // Safe minimal HTML that redirects to client app
-        html = `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>${meta.title}</title><meta http-equiv="refresh" content="0; url=/" /></head><body><div id="root"></div></body></html>`;
+        // Safe minimal fallback HTML for direct browser visits without premature redirects
+        html = `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>${meta.title}</title><script type="module" crossorigin src="/src/main.jsx"></script></head><body><div id="root"></div></body></html>`;
     }
 
     // Inject dynamic Meta Tags into Head
