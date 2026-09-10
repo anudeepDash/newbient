@@ -54,6 +54,22 @@ const ConcertManager = () => {
         sector: ''
     });
 
+    const [portfolioPreviewUrl, setPortfolioPreviewUrl] = useState('');
+
+    useEffect(() => {
+        if (!selectedFile) {
+            setPortfolioPreviewUrl(newPortfolio.image || '');
+            return;
+        }
+        let isMounted = true;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            if (isMounted) setPortfolioPreviewUrl(e.target?.result || '');
+        };
+        reader.readAsDataURL(selectedFile);
+        return () => { isMounted = false; };
+    }, [selectedFile, newPortfolio.image]);
+
     const resetForms = () => {
         setNewPortfolio({ title: '', date: '', category: '', image: '', highlightUrl: '', imageTransform: { scale: 1, x: 0, y: 0 }, year: new Date().getFullYear(), sector: '' });
         setIsAdding(false); setEditingId(null); setSelectedFile(null); setUploading(false); setShowPreviewMobile(false);
@@ -172,7 +188,7 @@ const ConcertManager = () => {
                                 <AnimatePresence mode="wait">
                                     {showPreviewMobile ? (
                                         <motion.div key="mobile-preview" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="lg:hidden">
-                                            <LivePreview type="portfolio" categories={portfolioCategories} data={{ ...newPortfolio, image: selectedFile ? URL.createObjectURL(selectedFile) : newPortfolio.image }} />
+                                            <LivePreview type="portfolio" categories={portfolioCategories} data={{ ...newPortfolio, image: portfolioPreviewUrl }} />
                                         </motion.div>
                                     ) : (
                                         <Card className="p-4 md:p-8 bg-gray-100 dark:bg-zinc-900/40 backdrop-blur-3xl border-black/10 dark:border-white/5 rounded-[2.5rem]">
@@ -296,7 +312,7 @@ const ConcertManager = () => {
                             {/* Live Preview */}
                             <div className="lg:col-span-5 hidden lg:block lg:sticky lg:top-32">
                                 <LivePreview type="portfolio" categories={portfolioCategories}
-                                    data={{ ...newPortfolio, image: selectedFile ? URL.createObjectURL(selectedFile) : newPortfolio.image }} />
+                                    data={{ ...newPortfolio, image: portfolioPreviewUrl }} />
                             </div>
                         </div>
                     ) : (
