@@ -231,16 +231,20 @@ const CommunityJoin = () => {
     };
 
     const handleCardAction = (item) => {
+        const type = item.type || '';
+        
+        if (type === 'form') {
+            navigate(`/forms/${item.id}`);
+            return;
+        }
+
         if (!user) {
             setAuthModal(true);
             return;
         }
-        const type = item.type || '';
         
         if (type === 'gl' || type === 'gl_embed') {
             handleGLJoin(item);
-        } else if (type === 'form') {
-            navigate(`/forms/${item.id}`);
         } else if (type === 'campaign') {
             navigate(`/campaign/${item.id}`);
         } else if (type === 'gig') {
