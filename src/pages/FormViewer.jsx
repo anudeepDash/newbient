@@ -6,87 +6,36 @@ import FileText from 'lucide-react/dist/esm/icons/file-text';
 import ArrowLeft from 'lucide-react/dist/esm/icons/arrow-left';
 import ExternalLink from 'lucide-react/dist/esm/icons/external-link';
 import MapPin from 'lucide-react/dist/esm/icons/map-pin';
-import ShieldCheck from 'lucide-react/dist/esm/icons/shield-check';
-import LogIn from 'lucide-react/dist/esm/icons/log-in';
 import Home from 'lucide-react/dist/esm/icons/home';
-import RefreshCw from 'lucide-react/dist/esm/icons/refresh-cw';
 import { useStore } from '../lib/store';
 import { db } from '../lib/firebase';
 import { useStoreSubscription } from '../hooks/useStoreSubscription';
 import { Button } from '../components/ui/Button';
 import useDynamicMeta from '../hooks/useDynamicMeta';
 
-// Custom Animated Form Loader with floating Icon & Shimmer Bar
-const FormLoadingAnimation = ({ label = "Loading Form" }) => (
+// Minimalist Clean Floating Form Icon Loader
+const FormLoadingAnimation = () => (
     <div className="flex flex-col items-center justify-center p-8 text-center select-none">
-        {/* Animated Form Icon Container */}
-        <div className="relative w-24 h-24 mb-6 flex items-center justify-center">
-            {/* Glowing Aura Rings */}
-            <motion.div
-                animate={{ scale: [1, 1.35, 1], opacity: [0.25, 0.6, 0.25] }}
-                transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
-                className="absolute inset-0 rounded-3xl bg-gradient-to-tr from-neon-pink/25 via-neon-blue/20 to-neon-green/25 blur-xl pointer-events-none"
-            />
+        <motion.div
+            animate={{ 
+                y: [-6, 6, -6],
+                rotate: [-1.5, 1.5, -1.5]
+            }}
+            transition={{ 
+                duration: 2.4, 
+                repeat: Infinity, 
+                ease: "easeInOut" 
+            }}
+            className="relative"
+        >
+            {/* Ambient Glow */}
+            <div className="absolute inset-0 bg-neon-pink/20 rounded-2xl blur-xl" />
             
-            {/* Outer Rotating Dashed Ring */}
-            <motion.div
-                animate={{ rotate: 360 }}
-                transition={{ duration: 12, repeat: Infinity, ease: "linear" }}
-                className="absolute -inset-1.5 rounded-3xl border border-dashed border-neon-pink/30 dark:border-white/20"
-            />
-
-            {/* Main Form Icon Box */}
-            <motion.div
-                animate={{ y: [-4, 4, -4] }}
-                transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
-                className="relative z-10 w-20 h-20 rounded-2xl bg-white dark:bg-zinc-900 border border-black/10 dark:border-white/10 shadow-2xl flex flex-col items-center justify-center overflow-hidden"
-            >
-                {/* Decorative Top Accent Line */}
-                <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-neon-pink via-neon-blue to-neon-green" />
-
-                {/* Animated Form Icon */}
-                <div className="relative mb-1">
-                    <FileText size={28} className="text-neon-pink" />
-                    <motion.div
-                        animate={{ scale: [0.8, 1.2, 0.8], opacity: [0.6, 1, 0.6] }}
-                        transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
-                        className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-neon-green shadow-[0_0_8px_#39FF14]"
-                    />
-                </div>
-
-                {/* Animated Form input skeleton lines inside the icon */}
-                <div className="w-10 space-y-1">
-                    <motion.div 
-                        animate={{ width: ["40%", "100%", "40%"] }} 
-                        transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }} 
-                        className="h-1 rounded-full bg-neon-blue/70" 
-                    />
-                    <motion.div 
-                        animate={{ width: ["100%", "55%", "100%"] }} 
-                        transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut", delay: 0.3 }} 
-                        className="h-1 rounded-full bg-neon-pink/70" 
-                    />
-                </div>
-            </motion.div>
-        </div>
-
-        {/* Status Label & Shimmer Track */}
-        <div className="space-y-3">
-            <div className="flex items-center justify-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-neon-pink animate-pulse" />
-                <p className="text-[11px] font-black uppercase tracking-[0.25em] text-gray-900 dark:text-white font-heading">
-                    {label}
-                </p>
+            {/* Floating Form Icon Surface */}
+            <div className="relative w-16 h-16 rounded-2xl bg-gray-100 dark:bg-white/5 border border-black/10 dark:border-white/10 flex items-center justify-center shadow-xl backdrop-blur-md">
+                <FileText size={28} className="text-neon-pink" />
             </div>
-            
-            <div className="w-40 h-1 bg-black/5 dark:bg-white/10 rounded-full overflow-hidden mx-auto">
-                <motion.div
-                    animate={{ x: [-160, 160] }}
-                    transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
-                    className="w-20 h-full bg-gradient-to-r from-transparent via-neon-pink to-transparent"
-                />
-            </div>
-        </div>
+        </motion.div>
     </div>
 );
 
@@ -103,8 +52,7 @@ const FormViewer = ({ formIdOverride }) => {
         volunteerGigs = [], 
         guestlists = [], 
         campaigns = [], 
-        user, 
-        setAuthModal 
+        user 
     } = useStore();
 
     // Extract form identifier from params, search queries, or path
@@ -251,112 +199,106 @@ const FormViewer = ({ formIdOverride }) => {
         let isMounted = true;
 
         const fetchDirect = async () => {
-            // If already resolved from store or initial SSR window cache, stop direct query
             if (storeForm || (isMatchingInitialData && directForm)) {
                 if (isMounted) setIsFetchingDirect(false);
                 return;
             }
 
             try {
-                // Tier 1: Direct 'forms' document ID lookup via client Firestore
+                // Tier 1: Direct Firestore Document Query on 'forms'
                 if (cleanTargetId && db) {
-                    try {
-                        const formSnap = await getDoc(doc(db, 'forms', cleanTargetId));
-                        if (formSnap.exists()) {
-                            if (isMounted) {
-                                setDirectForm({ id: formSnap.id, ...formSnap.data() });
-                                setIsFetchingDirect(false);
-                            }
-                            return;
-                        }
-                    } catch (clientErr) {
-                        console.warn("[FormViewer] Client Firestore lookup restricted, trying API fallback:", clientErr.message);
-                    }
-                }
-
-                // Tier 2: Scan 'forms' collection for slug, formId, link, or title match
-                if (cleanTargetId && db) {
-                    try {
-                        const allFormsSnap = await getDocs(collection(db, 'forms'));
-                        if (!allFormsSnap.empty) {
-                            const clean = normalizeString(cleanTargetId);
-                            const cleanSlug = createSlug(cleanTargetId);
-                            const foundDoc = allFormsSnap.docs.find(d => {
-                                const data = d.data();
-                                return normalizeString(d.id) === clean ||
-                                       normalizeString(data.slug) === clean ||
-                                       normalizeString(data.formId) === clean ||
-                                       (data.title && createSlug(data.title) === cleanSlug) ||
-                                       (data.link && normalizeString(data.link).endsWith(`/${clean}`));
-                            });
-                            if (foundDoc) {
-                                if (isMounted) {
-                                    setDirectForm({ id: foundDoc.id, ...foundDoc.data() });
-                                    setIsFetchingDirect(false);
-                                }
-                                return;
-                            }
-                        }
-                    } catch (clientErr) {
-                        console.warn("[FormViewer] Client Firestore scan notice:", clientErr.message);
-                    }
-                }
-
-                // Tier 3: Lookup 'upcoming_events'
-                if (cleanTargetId && db) {
-                    try {
-                        const eventSnap = await getDoc(doc(db, 'upcoming_events', cleanTargetId));
-                        if (eventSnap.exists()) {
-                            const eventData = eventSnap.data();
-                            const refFormId = eventData.formId || eventData.relatedArtistFormId;
-                            if (refFormId) {
-                                const refSnap = await getDoc(doc(db, 'forms', refFormId));
-                                if (refSnap.exists()) {
-                                    if (isMounted) {
-                                        setDirectForm({ id: refSnap.id, ...refSnap.data() });
-                                        setIsFetchingDirect(false);
-                                    }
-                                    return;
-                                }
-                            }
-                            const extractedUrl = eventData.formUrl || (eventData.link?.startsWith('http') ? eventData.link : null);
-                            if (extractedUrl) {
-                                if (isMounted) {
-                                    setDirectForm({
-                                        id: eventSnap.id,
-                                        title: eventData.title,
-                                        description: eventData.description,
-                                        formUrl: extractedUrl,
-                                        activeLabel: eventData.status || 'Live',
-                                        image: eventData.image,
-                                        highlightColor: eventData.highlightColor || '#2ebfff',
-                                        bottomText: eventData.location || 'Event Form'
-                                    });
-                                    setIsFetchingDirect(false);
-                                }
-                                return;
-                            }
-                        }
-                    } catch (clientErr) {
-                        console.warn("[FormViewer] Event lookup notice:", clientErr.message);
-                    }
-                }
-
-                // Tier 4: Serverless API fallback via Firebase Admin (Always works for unauthenticated guests)
-                const apiTarget = cleanTargetId || 'latest';
-                const res = await fetch(`/api/forms?id=${encodeURIComponent(apiTarget)}`);
-                if (res.ok) {
-                    const json = await res.json();
-                    if (json.success && json.form) {
+                    const formDocRef = doc(db, 'forms', cleanTargetId);
+                    const formSnap = await getDoc(formDocRef);
+                    if (formSnap.exists()) {
                         if (isMounted) {
-                            setDirectForm(json.form);
+                            setDirectForm({ id: formSnap.id, ...formSnap.data() });
                             setIsFetchingDirect(false);
                         }
                         return;
                     }
                 }
+
+                // Tier 2: Check 'upcoming_events' in Firestore
+                if (cleanTargetId && db) {
+                    const eventDocRef = doc(db, 'upcoming_events', cleanTargetId);
+                    const eventSnap = await getDoc(eventDocRef);
+                    if (eventSnap.exists()) {
+                        const data = eventSnap.data();
+                        const extractedUrl = data.formUrl || (data.link && data.link.startsWith('http') ? data.link : null);
+                        if (extractedUrl) {
+                            if (isMounted) {
+                                setDirectForm({
+                                    id: eventSnap.id,
+                                    title: data.title,
+                                    description: data.description,
+                                    formUrl: extractedUrl,
+                                    activeLabel: data.status || 'Live',
+                                    image: data.image,
+                                    highlightColor: data.highlightColor || '#2ebfff',
+                                    bottomText: data.location || 'Event Form'
+                                });
+                                setIsFetchingDirect(false);
+                            }
+                            return;
+                        }
+                    }
+                }
+
+                // Tier 3: Check 'volunteer_gigs' in Firestore
+                if (cleanTargetId && db) {
+                    const gigDocRef = doc(db, 'volunteer_gigs', cleanTargetId);
+                    const gigSnap = await getDoc(gigDocRef);
+                    if (gigSnap.exists()) {
+                        const data = gigSnap.data();
+                        const extractedUrl = data.formUrl || data.applyLink || (data.link && data.link.startsWith('http') ? data.link : null);
+                        if (extractedUrl) {
+                            if (isMounted) {
+                                setDirectForm({
+                                    id: gigSnap.id,
+                                    title: data.title,
+                                    description: data.description,
+                                    formUrl: extractedUrl,
+                                    activeLabel: data.status || 'Live',
+                                    image: data.image,
+                                    highlightColor: data.highlightColor || '#39FF14',
+                                    bottomText: data.location || 'Gig Form'
+                                });
+                                setIsFetchingDirect(false);
+                            }
+                            return;
+                        }
+                    }
+                }
+
+                // Tier 4: Fetch entire forms collection from Firestore
+                if (db) {
+                    const formsColRef = collection(db, 'forms');
+                    const allFormsSnap = await getDocs(formsColRef);
+                    const allForms = allFormsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+                    if (cleanTargetId) {
+                        const clean = normalizeString(cleanTargetId);
+                        const cleanSlug = createSlug(cleanTargetId);
+                        const found = allForms.find(f => 
+                            normalizeString(f.id) === clean ||
+                            normalizeString(f.slug) === clean ||
+                            normalizeString(f.formId) === clean ||
+                            (f.title && createSlug(f.title) === cleanSlug) ||
+                            (f.link && normalizeString(f.link).endsWith(`/${clean}`))
+                        );
+                        if (found && isMounted) {
+                            setDirectForm(found);
+                            setIsFetchingDirect(false);
+                            return;
+                        }
+                    } else if (allForms.length > 0 && isMounted) {
+                        setDirectForm(allForms[0]);
+                        setIsFetchingDirect(false);
+                        return;
+                    }
+                }
             } catch (err) {
-                console.warn("[FormViewer] All lookup tiers completed with notice:", err);
+                console.warn("[FormViewer] Firestore lookup warning:", err);
             }
 
             if (isMounted) {
@@ -369,7 +311,7 @@ const FormViewer = ({ formIdOverride }) => {
         return () => {
             isMounted = false;
         };
-    }, [cleanTargetId, storeForm, isMatchingInitialData]);
+    }, [cleanTargetId, storeForm, isMatchingInitialData, directForm]);
 
     const activeForm = storeForm || directForm;
 
@@ -393,6 +335,7 @@ const FormViewer = ({ formIdOverride }) => {
         }
         try {
             const url = new URL(urlStr);
+            // Pre-fill email silently if user is logged in
             if (user?.email) {
                 url.searchParams.set('emailAddress', user.email);
             }
@@ -402,15 +345,16 @@ const FormViewer = ({ formIdOverride }) => {
         }
     }, [rawFormUrl, user?.email]);
 
-    // Show custom animated form loader while querying Firestore & API
+    // Clean Minimalist Loading State
     if (isFetchingDirect && !activeForm) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-dark text-gray-900 dark:text-white">
-                <FormLoadingAnimation label="Opening Form" />
+                <FormLoadingAnimation />
             </div>
         );
     }
 
+    // Form Not Found State
     if (!activeForm) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-dark text-gray-900 dark:text-white px-4">
@@ -517,43 +461,6 @@ const FormViewer = ({ formIdOverride }) => {
                     )}
                 </motion.div>
 
-                {/* Signed-in User Indicator */}
-                {user && (
-                    <motion.div 
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.15 }}
-                        className="mb-6 p-4 bg-gray-100 dark:bg-white/[0.03] border border-black/5 dark:border-white/5 rounded-2xl flex items-center gap-3"
-                    >
-                        <div className="w-8 h-8 rounded-lg bg-neon-green/10 border border-neon-green/20 flex items-center justify-center">
-                            <ShieldCheck size={14} className="text-neon-green" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                            <p className="text-[10px] font-bold uppercase tracking-widest text-gray-500">Signed in as</p>
-                            <p className="text-xs font-bold text-gray-900 dark:text-white truncate">{user.displayName || user.email}</p>
-                        </div>
-                    </motion.div>
-                )}
-
-                {/* Sign-in Prompt for guests */}
-                {!user && (
-                    <motion.div 
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.15 }}
-                        className="mb-6 p-4 bg-gray-100 dark:bg-white/[0.03] border border-black/5 dark:border-white/5 rounded-2xl flex items-center gap-3"
-                    >
-                        <div className="w-8 h-8 rounded-lg bg-neon-blue/10 border border-neon-blue/20 flex items-center justify-center">
-                            <LogIn size={14} className="text-neon-blue" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                            <p className="text-xs font-medium text-gray-600 dark:text-gray-400">
-                                <button onClick={() => setAuthModal(true)} className="text-neon-blue hover:text-gray-900 dark:hover:text-white font-bold transition-colors">Sign in</button> to auto-fill your details in the form.
-                            </p>
-                        </div>
-                    </motion.div>
-                )}
-
                 {/* Form Container */}
                 <motion.div 
                     initial={{ opacity: 0, y: 30 }}
@@ -595,10 +502,10 @@ const FormViewer = ({ formIdOverride }) => {
                             </div>
                         ) : (
                             <div className="relative">
-                                {/* Loading State with Custom Form Icon Animation */}
+                                {/* Loading State with Minimalist Floating Form Icon */}
                                 {!iframeLoaded && (
                                     <div className="absolute inset-0 z-10 flex items-center justify-center bg-white dark:bg-zinc-950 min-h-[400px]">
-                                        <FormLoadingAnimation label="Loading Form Content" />
+                                        <FormLoadingAnimation />
                                     </div>
                                 )}
                                 
