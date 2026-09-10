@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { db, storage } from './firebase';
-import { collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, getDocs, where, setDoc, getDoc, increment, arrayUnion, collectionGroup, serverTimestamp, limit } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, getDocs, where, setDoc, getDoc, increment, arrayUnion, collectionGroup, serverTimestamp, limit, getCountFromServer, startAfter } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { sendBookingConfirmation, sendCreatorWelcomeEmail, sendNewCampaignNotificationEmail, sendCreatorApprovedEmail, sendWhatsAppVerification } from './email';
 import { normalizePhoneNumber } from './utils';
@@ -318,6 +318,8 @@ export const useStore = create((set, get) => ({
     clientRequests: [], // Artistant Client Onboarding
     notifications: [], // Notifications System
     emailTemplates: [], // Mailing Manager Templates
+    emailCampaigns: [], // Email Broadcasts & Analytics
+    emailEvents: [], // Realtime email tracking stream
     unreadNotificationsCount: 0,
     fcmToken: null,
     paymentDetails: { upiId: '', qrCodeUrl: '' }, // New state
@@ -484,6 +486,8 @@ export const useStore = create((set, get) => ({
             return timeB - timeA;
         });
     }),
+    subscribeToEmailCampaigns: () => get().subscribeToKey('emailCampaigns', 'email_campaigns', (data) => data.sort((a, b) => new Date(b.sentAt || 0) - new Date(a.sentAt || 0))),
+    subscribeToEmailEvents: () => get().subscribeToKey('emailEvents', 'email_events', (data) => data.sort((a, b) => new Date(b.timestamp || b.createdAt || 0) - new Date(a.timestamp || a.createdAt || 0))),
 
     subscribeToAnnouncements: () => get().subscribeToKey('announcements', 'announcements', (data) => data.sort((a, b) => {
         if (a.isPinned !== b.isPinned) return b.isPinned ? -1 : 1;
@@ -2984,7 +2988,49 @@ export const useStore = create((set, get) => ({
         return data;
     },
 
+    // Members — server-side count (accurate, bypasses listener limits)
+    fetchMembersCount: async () => {
+        try {
+            const snapshot = await getCountFromServer(collection(db, 'users'));
+            return snapshot.data().count;
+        } catch (error) {
+            console.error('[Store] fetchMembersCount error:', error);
+            return null;
+        }
+    },
+
+    // Members — cursor-paginated fetch (bypasses Firestore listener 300-doc cap)
+    fetchMembersPage: async (pageSize = 24, lastDoc = null) => {
+        try {
+            let q;
+            if (lastDoc) {
+                q = query(
+                    collection(db, 'users'),
+                    orderBy('createdAt', 'desc'),
+                    startAfter(lastDoc),
+                    limit(pageSize)
+                );
+            } else {
+                q = query(
+                    collection(db, 'users'),
+                    orderBy('createdAt', 'desc'),
+                    limit(pageSize)
+                );
+            }
+            const snapshot = await getDocs(q);
+            const docs = snapshot.docs;
+            const data = docs.map(d => ({ ...d.data(), id: d.id }));
+            const lastVisible = docs[docs.length - 1] || null;
+            const hasMore = docs.length === pageSize;
+            return { data, lastVisible, hasMore };
+        } catch (error) {
+            console.error('[Store] fetchMembersPage error:', error);
+            return { data: [], lastVisible: null, hasMore: false };
+        }
+    },
+
     // Maintenance Actions
+
     toggleMaintenanceFeature: async (category, key) => {
         const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
         const maintenanceDocId = isLocal ? 'maintenance_local' : 'maintenance';
@@ -3318,6 +3364,19 @@ export const useStore = create((set, get) => ({
             }
         } catch (err) {
             console.warn("Delete template error:", err);
+        }
+    },
+    deleteEmailCampaign: async (id) => {
+        try {
+            if (id) {
+                await deleteDoc(doc(db, 'email_campaigns', id));
+            }
+            set(state => ({
+                emailCampaigns: (state.emailCampaigns || []).filter(c => c.id !== id)
+            }));
+        } catch (err) {
+            console.warn("Delete email campaign error:", err);
+            throw err;
         }
     }
 }));

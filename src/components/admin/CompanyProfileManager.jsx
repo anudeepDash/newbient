@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import Building2 from 'lucide-react/dist/esm/icons/building-2';
 import Plus from 'lucide-react/dist/esm/icons/plus';
 import X from 'lucide-react/dist/esm/icons/x';
@@ -70,74 +71,78 @@ const CompanyProfileManager = ({ onInsert }) => {
                 </div>
             </div>
 
-            <AnimatePresence>
-                {isEditing && (
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-[200] flex items-center justify-center p-4 md:p-8"
-                    >
-                        <motion.div 
+            {createPortal(
+                <AnimatePresence>
+                    {isEditing && (
+                        <motion.div
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
-                            onClick={() => !isSaving && setIsEditing(false)}
-                            className="absolute inset-0 bg-white dark:bg-black/90 backdrop-blur-sm" 
-                        />
-                        <motion.div
-                            initial={{ scale: 0.95, y: 20 }}
-                            animate={{ scale: 1, y: 0 }}
-                            exit={{ scale: 0.95, y: 20 }}
-                            className="w-full max-w-4xl bg-gray-100 dark:bg-zinc-950 border border-black/10 dark:border-white/10 rounded-2xl shadow-2xl relative z-10 flex flex-col max-h-[90vh]"
+                            className="fixed inset-0 z-[200] flex items-center justify-center p-4 md:p-8"
                         >
-                            <div className="flex items-center justify-between p-6 border-b border-black/10 dark:border-white/5 shrink-0">
-                                <div className="flex items-center gap-3">
-                                    <div className="p-2 bg-neon-blue/10 border border-neon-blue/20 rounded-xl text-neon-blue">
-                                        <Building2 size={20} />
+                            <motion.div 
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                onClick={() => !isSaving && setIsEditing(false)}
+                                className="absolute inset-0 bg-white dark:bg-black/90 backdrop-blur-sm" 
+                            />
+                            <motion.div
+                                initial={{ scale: 0.95, y: 20 }}
+                                animate={{ scale: 1, y: 0 }}
+                                exit={{ scale: 0.95, y: 20 }}
+                                className="w-full max-w-4xl bg-gray-100 dark:bg-zinc-950 border border-black/10 dark:border-white/10 rounded-2xl shadow-2xl relative z-10 flex flex-col max-h-[90vh]"
+                            >
+                                <div className="flex items-center justify-between p-6 border-b border-black/10 dark:border-white/5 shrink-0">
+                                    <div className="flex items-center gap-3">
+                                        <div className="p-2 bg-neon-blue/10 border border-neon-blue/20 rounded-xl text-neon-blue">
+                                            <Building2 size={20} />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-widest">Edit Company Profile</h3>
+                                            <p className="text-[10px] text-gray-500 uppercase tracking-widest">Update the global company profile template</p>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <h3 className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-widest">Edit Company Profile</h3>
-                                        <p className="text-[10px] text-gray-500 uppercase tracking-widest">Update the global company profile template</p>
-                                    </div>
+                                    <button
+                                        onClick={() => !isSaving && setIsEditing(false)}
+                                        className="w-10 h-10 flex items-center justify-center rounded-xl bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
+                                    >
+                                        <X size={16} />
+                                    </button>
                                 </div>
-                                <button
-                                    onClick={() => !isSaving && setIsEditing(false)}
-                                    className="w-10 h-10 flex items-center justify-center rounded-xl bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
-                                >
-                                    <X size={16} />
-                                </button>
-                            </div>
 
-                            <div className="flex-1 overflow-y-auto p-6 scrollbar-hide">
-                                <StudioRichEditor 
-                                    value={tempContent}
-                                    onChange={setTempContent}
-                                    placeholder="Write your company profile here..."
-                                    minHeight="400px"
-                                    accentColor="neon-blue"
-                                />
-                            </div>
+                                <div className="flex-1 overflow-y-auto p-6 scrollbar-hide">
+                                    <StudioRichEditor 
+                                        value={tempContent}
+                                        onChange={setTempContent}
+                                        placeholder="Write your company profile here..."
+                                        minHeight="400px"
+                                        accentColor="neon-blue"
+                                        isInline={false}
+                                    />
+                                </div>
 
-                            <div className="p-6 border-t border-black/10 dark:border-white/5 shrink-0 flex justify-end gap-3">
-                                <Button
-                                    onClick={() => !isSaving && setIsEditing(false)}
-                                    className="bg-transparent border border-black/10 dark:border-white/10 text-gray-900 dark:text-white font-black text-[10px] uppercase tracking-widest hover:bg-black/5 dark:hover:bg-white/5"
-                                >
-                                    Cancel
-                                </Button>
-                                <Button
-                                    onClick={handleSave}
-                                    disabled={isSaving}
-                                    className="bg-neon-blue text-black font-black text-[10px] uppercase tracking-widest hover:bg-neon-blue/80 disabled:opacity-50 flex items-center gap-2"
-                                >
-                                    {isSaving ? 'Saving...' : <><Check size={14} /> Save Template</>}
-                                </Button>
-                            </div>
+                                <div className="p-6 border-t border-black/10 dark:border-white/5 shrink-0 flex justify-end gap-3">
+                                    <Button
+                                        onClick={() => !isSaving && setIsEditing(false)}
+                                        className="bg-transparent border border-black/10 dark:border-white/10 text-gray-900 dark:text-white font-black text-[10px] uppercase tracking-widest hover:bg-black/5 dark:hover:bg-white/5"
+                                    >
+                                        Cancel
+                                    </Button>
+                                    <Button
+                                        onClick={handleSave}
+                                        disabled={isSaving}
+                                        className="bg-neon-blue text-black font-black text-[10px] uppercase tracking-widest hover:bg-neon-blue/80 disabled:opacity-50 flex items-center gap-2"
+                                    >
+                                        {isSaving ? 'Saving...' : <><Check size={14} /> Save Template</>}
+                                    </Button>
+                                </div>
+                            </motion.div>
                         </motion.div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
+                    )}
+                </AnimatePresence>,
+                document.body
+            )}
         </>
     );
 };

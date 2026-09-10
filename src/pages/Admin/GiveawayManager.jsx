@@ -450,8 +450,9 @@ const GiveawayManager = () => {
                     </div>
                 )}
 
-            <AnimatePresence>
-                {isCreating && (
+            {createPortal(
+                <AnimatePresence>
+                    {isCreating && (
                     <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
                         <motion.div 
                             initial={{ opacity: 0 }} 
@@ -722,7 +723,9 @@ const GiveawayManager = () => {
                         </motion.div>
                     </div>
                 )}
-            </AnimatePresence>
+            </AnimatePresence>,
+            document.body
+        )}
         </AdminCommunityHubLayout>
     );
 };

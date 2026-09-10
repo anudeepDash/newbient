@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
     X, Calendar, MapPin, Users, ArrowRight, Share2, 
@@ -82,7 +83,7 @@ const EventHubModal = ({ event, isOpen, onClose }) => {
         useStore.getState().addToast("Event link copied to clipboard!", 'success');
     };
 
-    return (
+    return createPortal(
         <AnimatePresence>
             {isOpen && (
                 <div className="fixed inset-0 z-[150] flex items-center justify-center p-0 md:p-6 overflow-hidden">
@@ -406,7 +407,8 @@ const EventHubModal = ({ event, isOpen, onClose }) => {
                     </motion.div>
                 </div>
             )}
-        </AnimatePresence>
+        </AnimatePresence>,
+        document.body
     );
 };
 

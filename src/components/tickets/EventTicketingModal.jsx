@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
     X, Calendar, MapPin, Ticket, Plus, Minus, ArrowRight, 
@@ -1761,7 +1762,7 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
 
     if (isEmbedded) return isOpen ? modalContent : null;
 
-    return (
+    return createPortal(
         <AnimatePresence>
             {isOpen && (
                 <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 md:p-6 overflow-hidden">
@@ -1777,7 +1778,8 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
                     {modalContent}
                 </div>
             )}
-        </AnimatePresence>
+        </AnimatePresence>,
+        document.body
     );
 };
 

@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Type, PenTool, Upload, Trash2, Check, RefreshCw } from 'lucide-react';
 import SignaturePad from './SignaturePad';
@@ -49,7 +50,7 @@ const SignatureModal = ({ isOpen, onClose, onSave, initialName = '' }) => {
 
     if (!isOpen) return null;
 
-    return (
+    return createPortal(
         <AnimatePresence>
             <div className="fixed inset-0 z-[1000] flex items-center justify-center p-2 sm:p-4 bg-black/60 backdrop-blur-md">
                 <motion.div 
@@ -58,103 +59,101 @@ const SignatureModal = ({ isOpen, onClose, onSave, initialName = '' }) => {
                     exit={{ opacity: 0, scale: 0.95, y: 20 }}
                     className="w-full max-w-2xl bg-white dark:bg-[#0a0a0a] border border-black/10 dark:border-white/10 rounded-[2rem] sm:rounded-[2.5rem] overflow-hidden shadow-2xl flex flex-col max-h-[95vh]"
                 >
-                    <div className="overflow-y-auto">
-                    {/* Header */}
-                    <div className="p-6 sm:p-8 border-b border-black/10 dark:border-white/5 flex items-center justify-between">
-                        <div className="space-y-1">
-                            <h3 className="text-xl sm:text-2xl font-black text-gray-900 dark:text-white uppercase tracking-tighter italic">Digital Signature.</h3>
-                            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Authorize and execute this instrument</p>
-                        </div>
-                        <button onClick={onClose} className="p-2 sm:p-3 hover:bg-black/5 dark:hover:bg-white/5 rounded-full text-gray-500 hover:text-gray-900 dark:hover:text-white transition-all">
-                            <X size={20} className="sm:w-6 sm:h-6" />
-                        </button>
-                    </div>
-
-                    {/* Name Input - Always Visible */}
-                    <div className="px-6 sm:px-10 pt-4 sm:pt-8">
-                        <div className="space-y-2">
-                            <label className="text-[10px] font-black text-neon-green uppercase tracking-[0.3em] pl-1">Signatory Full Name</label>
-                            <input
-                                type="text"
-                                value={typedName}
-                                onChange={(e) => setTypedName(e.target.value)}
-                                className="w-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 h-12 sm:h-14 rounded-xl px-4 sm:px-6 text-lg sm:text-xl font-bold text-gray-900 dark:text-white outline-none focus:border-neon-green/40 transition-all placeholder:text-gray-400 dark:placeholder:text-white/10"
-                                placeholder="Legal name for record..."
-                            />
-                        </div>
-                    </div>
-
-                    {/* Tabs */}
-                    <div className="flex border-b border-black/10 dark:border-white/5 mt-2 sm:mt-4">
-                        {[
-                            { id: 'type', label: 'Type', icon: Type },
-                            { id: 'draw', label: 'Draw', icon: PenTool },
-                            { id: 'upload', label: 'Upload', icon: Upload }
-                        ].map(tab => (
-                            <button
-                                key={tab.id}
-                                onClick={() => setActiveTab(tab.id)}
-                                className={cn(
-                                    "flex-1 py-4 sm:py-6 flex items-center justify-center gap-2 sm:gap-3 text-[10px] font-black uppercase tracking-[0.2em] transition-all relative",
-                                    activeTab === tab.id ? "text-neon-green" : "text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
-                                )}
-                            >
-                                <tab.icon size={14} className="sm:w-4 sm:h-4" />
-                                {tab.label}
-                                {activeTab === tab.id && (
-                                    <motion.div layoutId="activeTab" className="absolute bottom-0 left-0 right-0 h-1 bg-neon-green" />
-                                )}
+                    <div className="overflow-y-auto flex-1 flex flex-col">
+                        {/* Header */}
+                        <div className="p-6 sm:p-8 border-b border-black/10 dark:border-white/5 flex items-center justify-between">
+                            <div className="space-y-1">
+                                <h3 className="text-xl sm:text-2xl font-black text-gray-900 dark:text-white uppercase tracking-tighter italic">Digital Signature.</h3>
+                                <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Authorize and execute this instrument</p>
+                            </div>
+                            <button onClick={onClose} className="p-2 sm:p-3 hover:bg-black/5 dark:hover:bg-white/5 rounded-full text-gray-500 hover:text-gray-900 dark:hover:text-white transition-all">
+                                <X size={20} className="sm:w-6 sm:h-6" />
                             </button>
-                        ))}
-                    </div>
+                        </div>
 
-                    {/* Content */}
-                    <div className="p-6 sm:p-10 min-h-[180px] sm:min-h-[250px] flex flex-col justify-center">
-                        {activeTab === 'type' && (
-                            <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500 text-center">
-                                <p className="text-3xl sm:text-6xl font-signature text-gray-900 dark:text-white min-h-[60px] sm:min-h-[80px] flex items-center justify-center">
-                                    {typedName || "Preview"}
-                                </p>
-                                <p className="text-[10px] text-gray-500 italic">This font style will be used for your signature.</p>
+                        {/* Name Input - Always Visible */}
+                        <div className="px-6 sm:px-10 pt-4 sm:pt-8">
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black text-neon-green uppercase tracking-[0.3em] pl-1">Signatory Full Name</label>
+                                <input
+                                    type="text"
+                                    value={typedName}
+                                    onChange={(e) => setTypedName(e.target.value)}
+                                    className="w-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 h-12 sm:h-14 rounded-xl px-4 sm:px-6 text-lg sm:text-xl font-bold text-gray-900 dark:text-white outline-none focus:border-neon-green/40 transition-all placeholder:text-gray-400 dark:placeholder:text-white/10"
+                                    placeholder="Legal name for record..."
+                                />
                             </div>
-                        )}
+                        </div>
 
-                        {activeTab === 'draw' && (
-                            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-                                <SignaturePad onSave={(sig) => setDrawnSignature(sig)} onClear={() => setDrawnSignature(null)} />
-                                <p className="text-center text-[10px] text-gray-500 italic mt-6">Draw within the pad above.</p>
-                            </div>
-                        )}
+                        {/* Tabs */}
+                        <div className="flex border-b border-black/10 dark:border-white/5 mt-2 sm:mt-4">
+                            {[
+                                { id: 'type', label: 'Type', icon: Type },
+                                { id: 'draw', label: 'Draw', icon: PenTool },
+                                { id: 'upload', label: 'Upload', icon: Upload }
+                            ].map(tab => (
+                                <button
+                                    key={tab.id}
+                                    onClick={() => setActiveTab(tab.id)}
+                                    className={cn(
+                                        "flex-1 py-4 sm:py-6 flex items-center justify-center gap-2 sm:gap-3 text-[10px] font-black uppercase tracking-[0.2em] transition-all relative",
+                                        activeTab === tab.id ? "text-neon-green" : "text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+                                    )}
+                                >
+                                    <tab.icon size={14} className="sm:w-4 sm:h-4" />
+                                    {tab.label}
+                                    {activeTab === tab.id && (
+                                        <motion.div layoutId="activeTab" className="absolute bottom-0 left-0 right-0 h-1 bg-neon-green" />
+                                    )}
+                                </button>
+                            ))}
+                        </div>
 
-                        {activeTab === 'upload' && (
-                            <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                                {uploadedImage ? (
-                                    <div className="relative group aspect-video bg-white rounded-2xl flex items-center justify-center p-8 overflow-hidden">
-                                        <img src={uploadedImage} alt="Uploaded Signature" className="max-h-full object-contain" />
-                                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center gap-4">
-                                            <button onClick={() => setUploadedImage(null)} className="p-4 bg-red-500 text-white rounded-full hover:scale-110 transition-all">
-                                                <Trash2 size={24} />
+                        {/* Content */}
+                        <div className="p-6 sm:p-10 min-h-[180px] sm:min-h-[250px] flex flex-col justify-center flex-1">
+                            {/* Signature Area */}
+                            {activeTab === 'type' && (
+                                <div className="h-40 sm:h-48 rounded-2xl border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 flex items-center justify-center p-6 text-center">
+                                    {typedName ? (
+                                        <span className="font-serif italic text-3xl sm:text-5xl text-gray-900 dark:text-white select-none">{typedName}</span>
+                                    ) : (
+                                        <span className="text-gray-500 italic text-sm">Enter your name above to see signature preview</span>
+                                    )}
+                                </div>
+                            )}
+
+                            {activeTab === 'draw' && (
+                                <div className="space-y-2">
+                                    <SignaturePad onSave={(data) => setDrawnSignature(data)} />
+                                </div>
+                            )}
+
+                            {activeTab === 'upload' && (
+                                <div className="space-y-4">
+                                    {uploadedImage ? (
+                                        <div className="relative h-40 sm:h-48 rounded-2xl border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 flex items-center justify-center p-4">
+                                            <img src={uploadedImage} alt="Uploaded Signature" className="max-h-full max-w-full object-contain filter dark:invert" />
+                                            <button 
+                                                onClick={() => setUploadedImage(null)}
+                                                className="absolute top-3 right-3 p-2 bg-red-500/20 text-red-500 rounded-xl hover:bg-red-500/30 transition-all"
+                                            >
+                                                <Trash2 size={16} />
                                             </button>
                                         </div>
-                                    </div>
-                                ) : (
-                                    <div 
-                                        onClick={() => document.getElementById('sig-upload').click()}
-                                        className="aspect-video border-2 border-dashed border-black/10 dark:border-white/10 rounded-[2rem] flex flex-col items-center justify-center gap-4 cursor-pointer hover:bg-black/[0.02] dark:hover:bg-white/[0.02] hover:border-neon-green/20 transition-all group"
-                                    >
-                                        <div className="w-16 h-16 bg-black/5 dark:bg-white/5 rounded-full flex items-center justify-center group-hover:scale-110 transition-all">
-                                            <Upload size={24} className="text-gray-600 dark:text-gray-400 group-hover:text-neon-green" />
-                                        </div>
-                                        <div className="text-center">
-                                            <p className="text-[10px] font-black text-gray-900 dark:text-white uppercase tracking-widest">Upload Signature Image</p>
+                                    ) : (
+                                        <div 
+                                            onClick={() => document.getElementById('sig-upload').click()}
+                                            className="h-40 sm:h-48 rounded-2xl border-2 border-dashed border-black/10 dark:border-white/10 hover:border-neon-purple/50 bg-black/5 dark:bg-white/5 flex flex-col items-center justify-center p-6 text-center cursor-pointer transition-all group"
+                                        >
+                                            <Upload size={32} className="text-gray-400 group-hover:text-neon-purple transition-all mb-2" />
+                                            <p className="text-xs font-black uppercase tracking-widest text-gray-600 dark:text-gray-400">Click to upload signature image</p>
                                             <p className="text-[9px] text-gray-500 mt-1">PNG, JPG or SVG with clear background</p>
                                         </div>
-                                        <input id="sig-upload" type="file" accept="image/*" className="hidden" onChange={handleFileUpload} />
-                                    </div>
-                                )}
-                            </div>
-                        )}
-                    </div>
+                                    )}
+                                    <input id="sig-upload" type="file" accept="image/*" className="hidden" onChange={handleFileUpload} />
+                                </div>
+                            )}
+                        </div>
                     </div>
                     
                     {/* Footer */}
@@ -175,7 +174,8 @@ const SignatureModal = ({ isOpen, onClose, onSave, initialName = '' }) => {
                     </div>
                 </motion.div>
             </div>
-        </AnimatePresence>
+        </AnimatePresence>,
+        document.body
     );
 };
 

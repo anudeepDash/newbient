@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 
 import Printer from 'lucide-react/dist/esm/icons/printer';
@@ -1358,9 +1359,10 @@ const SpendsManagement = () => {
         </AdminCommunityHubLayout>
 
             {/* Add Spend Modal - Glassmorphic Overlay Overhaul */}
-            <AnimatePresence>
-                {showAddModal && (
-                    <>
+            {createPortal(
+                <AnimatePresence>
+                    {showAddModal && (
+                        <>
                         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowAddModal(false)} className="fixed inset-0 bg-white dark:bg-black/60 backdrop-blur-sm z-[100]" />
                         <motion.div 
                             initial={{ x: '100%' }} 
@@ -1733,12 +1735,15 @@ const SpendsManagement = () => {
                         </motion.div>
                     </>
                 )}
-            </AnimatePresence>
+            </AnimatePresence>,
+            document.body
+        )}
 
             {/* Edit Spend Modal - Overhauled */}
-            <AnimatePresence>
-                {showEditModal && (
-                    <>
+            {createPortal(
+                <AnimatePresence>
+                    {showEditModal && (
+                        <>
                         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowEditModal(null)} className="fixed inset-0 bg-white dark:bg-black/60 backdrop-blur-sm z-[100]" />
                         <motion.div 
                             initial={{ x: '100%' }} 
@@ -2011,12 +2016,15 @@ const SpendsManagement = () => {
                         </motion.div>
                     </>
                 )}
-            </AnimatePresence>
+            </AnimatePresence>,
+            document.body
+        )}
 
             {/* Bulk Payout Wizard Modal */}
-            <AnimatePresence>
-                {showBulkModal && (
-                    <>
+            {createPortal(
+                <AnimatePresence>
+                    {showBulkModal && (
+                        <>
                         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowBulkModal(false)} className="fixed inset-0 bg-white dark:bg-black/60 backdrop-blur-sm z-[100]" />
                         <motion.div 
                             initial={{ x: '100%' }} 
@@ -2319,10 +2327,13 @@ const SpendsManagement = () => {
                         </motion.div>
                     </>
                 )}
-            </AnimatePresence>
+            </AnimatePresence>,
+            document.body
+        )}
 
-            <AnimatePresence>
-                {showPrinterModal && activeSlipData && (
+            {createPortal(
+                <AnimatePresence>
+                    {showPrinterModal && activeSlipData && (
                     <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
                         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowPrinterModal(false)} className="absolute inset-0 bg-white dark:bg-black/85 backdrop-blur-xl" />
                         
@@ -2794,7 +2805,9 @@ const SpendsManagement = () => {
                         </motion.div>
                     </div>
                 )}
-            </AnimatePresence>
+            </AnimatePresence>,
+            document.body
+        )}
 
             {/* Receipt Email Modal */}
             <AnimatePresence>

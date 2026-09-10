@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
     X, 
@@ -196,7 +197,7 @@ const UnifiedGuestlistModal = ({ isOpen, onClose, guestlist }) => {
     const capacityPercentage = maxSpots ? (currentSpots / maxSpots) * 100 : 0;
     const isFull = maxSpots > 0 && currentSpots >= maxSpots;
 
-    return (
+    return createPortal(
         <AnimatePresence>
             {isOpen && (
                 <div className="fixed inset-0 z-[100] flex items-end md:items-center justify-center overflow-hidden">
@@ -555,7 +556,8 @@ const UnifiedGuestlistModal = ({ isOpen, onClose, guestlist }) => {
                     </motion.div>
                 </div>
             )}
-        </AnimatePresence>
+        </AnimatePresence>,
+        document.body
     );
 };
 

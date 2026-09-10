@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { Link, useNavigate } from 'react-router-dom';
 import Plus from 'lucide-react/dist/esm/icons/plus';
 import Search from 'lucide-react/dist/esm/icons/search';
@@ -334,197 +335,206 @@ const ContractManagement = () => {
                 </AnimatePresence>
 
                 {/* Delete Modal */}
-                <AnimatePresence>
-                    {showDeleteModal && (
-                        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowDeleteModal(null)} className="absolute inset-0 bg-white dark:bg-black/90 backdrop-blur-sm" />
-                            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="relative w-full max-w-md bg-gray-100 dark:bg-zinc-900 border border-black/10 dark:border-white/10 rounded-[2rem] md:rounded-[2.5rem] p-6 sm:p-10 text-center space-y-6 md:space-y-8">
-                                <div className="w-16 h-16 md:w-20 md:h-20 bg-red-500/10 rounded-full flex items-center justify-center mx-auto text-red-500 border border-red-500/20"><Trash2 size={24} /></div>
-                                <div><h3 className="text-xl md:text-2xl font-black uppercase tracking-tighter italic">Purge Contract?</h3><p className="text-gray-500 text-[11px] md:text-sm mt-2 md:mt-4">This action permanently removes this contract from the vault. This is irreversible.</p></div>
-                                <div className="flex flex-col sm:flex-row gap-3 md:gap-4">
-                                    <button onClick={() => setShowDeleteModal(null)} className="flex-1 h-12 md:h-14 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-gray-600 dark:text-gray-400 font-black uppercase tracking-widest text-[10px] md:text-xs rounded-xl">Cancel</button>
-                                    <button onClick={() => handleDelete(showDeleteModal)} className="flex-1 h-12 md:h-14 bg-red-500 text-gray-900 dark:text-white font-black uppercase tracking-widest text-[10px] md:text-xs rounded-xl shadow-lg shadow-red-500/20">Purge</button>
-                                </div>
-                            </motion.div>
-                        </div>
-                    )}
-                </AnimatePresence>
+                {createPortal(
+                    <AnimatePresence>
+                        {showDeleteModal && (
+                            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowDeleteModal(null)} className="absolute inset-0 bg-white dark:bg-black/90 backdrop-blur-sm" />
+                                <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="relative w-full max-w-md bg-gray-100 dark:bg-zinc-900 border border-black/10 dark:border-white/10 rounded-[2rem] md:rounded-[2.5rem] p-6 sm:p-10 text-center space-y-6 md:space-y-8">
+                                    <div className="w-16 h-16 md:w-20 md:h-20 bg-red-500/10 rounded-full flex items-center justify-center mx-auto text-red-500 border border-red-500/20"><Trash2 size={24} /></div>
+                                    <div><h3 className="text-xl md:text-2xl font-black uppercase tracking-tighter italic">Purge Contract?</h3><p className="text-gray-500 text-[11px] md:text-sm mt-2 md:mt-4">This action permanently removes this contract from the vault. This is irreversible.</p></div>
+                                    <div className="flex flex-col sm:flex-row gap-3 md:gap-4">
+                                        <button onClick={() => setShowDeleteModal(null)} className="flex-1 h-12 md:h-14 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-gray-600 dark:text-gray-400 font-black uppercase tracking-widest text-[10px] md:text-xs rounded-xl">Cancel</button>
+                                        <button onClick={() => handleDelete(showDeleteModal)} className="flex-1 h-12 md:h-14 bg-red-500 text-gray-900 dark:text-white font-black uppercase tracking-widest text-[10px] md:text-xs rounded-xl shadow-lg shadow-red-500/20">Purge</button>
+                                    </div>
+                                </motion.div>
+                            </div>
+                        )}
+                    </AnimatePresence>,
+                    document.body
+                )}
 
                 {/* Analytics Modal */}
-                <AnimatePresence>
-                    {selectedAnalytics && (
-                        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setSelectedAnalytics(null)} className="absolute inset-0 bg-white dark:bg-black/90 backdrop-blur-sm" />
-                            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="relative w-full max-w-2xl bg-gray-100 dark:bg-zinc-900 border border-black/10 dark:border-white/10 rounded-[2rem] md:rounded-[2.5rem] overflow-hidden max-h-[90vh] flex flex-col">
-                                <div className="p-6 md:p-8 border-b border-black/10 dark:border-white/5 flex justify-between items-center shrink-0">
-                                    <div><h3 className="text-xl md:text-2xl font-black uppercase tracking-tighter italic">Contract Analytics.</h3><p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-1">{selectedAnalytics.agreementNumber}</p></div>
-                                    <button onClick={() => setSelectedAnalytics(null)} className="p-2 md:p-3 hover:bg-black/5 dark:hover:bg-white/5 rounded-full"><X size={18} /></button>
-                                </div>
-                                <div className="p-6 md:p-8 overflow-y-auto space-y-6 scrollbar-hide">
-                                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 md:gap-4">
-                                        {[{ l: 'Status', v: selectedAnalytics.status, icon: ShieldCheck }, { l: 'Risk', v: selectedAnalytics.risk || 'N/A', icon: AlertCircle }, { l: 'Type', v: selectedAnalytics.template || selectedAnalytics.type || 'Service', icon: FileText }].map((s, i) => (
-                                            <div key={i} className="p-4 md:p-5 bg-white dark:bg-black/40 border border-black/10 dark:border-white/5 rounded-2xl"><s.icon className="text-neon-purple mb-2 md:mb-3" size={14} /><p className="text-[8px] font-black text-gray-600 uppercase tracking-widest mb-1">{s.l}</p><p className="text-[11px] md:text-sm font-black uppercase">{s.v}</p></div>
-                                        ))}
+                {createPortal(
+                    <AnimatePresence>
+                        {selectedAnalytics && (
+                            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setSelectedAnalytics(null)} className="absolute inset-0 bg-white dark:bg-black/90 backdrop-blur-sm" />
+                                <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="relative w-full max-w-2xl bg-gray-100 dark:bg-zinc-900 border border-black/10 dark:border-white/10 rounded-[2rem] md:rounded-[2.5rem] overflow-hidden max-h-[90vh] flex flex-col">
+                                    <div className="p-6 md:p-8 border-b border-black/10 dark:border-white/5 flex justify-between items-center shrink-0">
+                                        <div><h3 className="text-xl md:text-2xl font-black uppercase tracking-tighter italic">Contract Analytics.</h3><p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-1">{selectedAnalytics.agreementNumber}</p></div>
+                                        <button onClick={() => setSelectedAnalytics(null)} className="p-2 md:p-3 hover:bg-black/5 dark:hover:bg-white/5 rounded-full"><X size={18} /></button>
                                     </div>
-                                    {selectedAnalytics.status === 'Executed' && selectedAnalytics.approvalMetadata && (
-                                        <>
-                                            <div className="p-4 md:p-6 bg-emerald-500/5 border border-emerald-500/20 rounded-2xl flex items-start gap-3 md:gap-4">
-                                                <ShieldCheck className="text-emerald-500 shrink-0" size={20} />
-                                                <div>
-                                                    <p className="text-[9px] md:text-[10px] font-black text-emerald-500 uppercase tracking-widest mb-1">Authorization Details</p>
-                                                    <p className="text-[11px] md:text-sm font-bold text-gray-900 dark:text-white mb-2">Signed by {selectedAnalytics.approvalMetadata.signedBy}</p>
-                                                    <div className="flex flex-wrap gap-2 md:gap-4 text-[8px] md:text-[9px] font-bold text-gray-500 uppercase tracking-widest">
-                                                        <span className="flex items-center gap-1"><Calendar size={10} /> {new Date(selectedAnalytics.approvalMetadata.signedAt).toLocaleString()}</span>
-                                                        <span className="flex items-center gap-1"><Globe size={10} /> {selectedAnalytics.approvalMetadata.ip}</span>
+                                    <div className="p-6 md:p-8 overflow-y-auto space-y-6 scrollbar-hide">
+                                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 md:gap-4">
+                                            {[{ l: 'Status', v: selectedAnalytics.status, icon: ShieldCheck }, { l: 'Risk', v: selectedAnalytics.risk || 'N/A', icon: AlertCircle }, { l: 'Type', v: selectedAnalytics.template || selectedAnalytics.type || 'Service', icon: FileText }].map((s, i) => (
+                                                <div key={i} className="p-4 md:p-5 bg-white dark:bg-black/40 border border-black/10 dark:border-white/5 rounded-2xl"><s.icon className="text-neon-purple mb-2 md:mb-3" size={14} /><p className="text-[8px] font-black text-gray-600 uppercase tracking-widest mb-1">{s.l}</p><p className="text-[11px] md:text-sm font-black uppercase">{s.v}</p></div>
+                                            ))}
+                                        </div>
+                                        {selectedAnalytics.status === 'Executed' && selectedAnalytics.approvalMetadata && (
+                                            <>
+                                                <div className="p-4 md:p-6 bg-emerald-500/5 border border-emerald-500/20 rounded-2xl flex items-start gap-3 md:gap-4">
+                                                    <ShieldCheck className="text-emerald-500 shrink-0" size={20} />
+                                                    <div>
+                                                        <p className="text-[9px] md:text-[10px] font-black text-emerald-500 uppercase tracking-widest mb-1">Authorization Details</p>
+                                                        <p className="text-[11px] md:text-sm font-bold text-gray-900 dark:text-white mb-2">Signed by {selectedAnalytics.approvalMetadata.signedBy}</p>
+                                                        <div className="flex flex-wrap gap-2 md:gap-4 text-[8px] md:text-[9px] font-bold text-gray-500 uppercase tracking-widest">
+                                                            <span className="flex items-center gap-1"><Calendar size={10} /> {new Date(selectedAnalytics.approvalMetadata.signedAt).toLocaleString()}</span>
+                                                            <span className="flex items-center gap-1"><Globe size={10} /> {selectedAnalytics.approvalMetadata.ip}</span>
+                                                        </div>
                                                     </div>
                                                 </div>
+                                                <button 
+                                                    onClick={() => handleRevokeSignature(selectedAnalytics.id)}
+                                                    className="w-full py-3 md:py-4 bg-red-500/10 hover:bg-red-500/20 text-red-500 text-[9px] md:text-[10px] font-black uppercase tracking-widest rounded-xl md:rounded-2xl border border-red-500/10 transition-all"
+                                                >
+                                                    Revoke Authorization
+                                                </button>
+                                            </>
+                                        )}
+                                        <div className="space-y-4">
+                                            <p className="text-[9px] md:text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest">Access Logs</p>
+                                            
+                                            <div className="flex border-b border-black/10 dark:border-white/10">
+                                                <button 
+                                                    onClick={() => setActiveAnalyticsTab('email')}
+                                                    className={cn(
+                                                        "flex-1 py-3 text-[10px] font-black uppercase tracking-widest transition-all border-b-2",
+                                                        activeAnalyticsTab === 'email' 
+                                                            ? "border-neon-purple text-neon-purple bg-neon-purple/5" 
+                                                            : "border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                                                    )}
+                                                >
+                                                    Email Opens (Personalized)
+                                                </button>
+                                                <button 
+                                                    onClick={() => setActiveAnalyticsTab('general')}
+                                                    className={cn(
+                                                        "flex-1 py-3 text-[10px] font-black uppercase tracking-widest transition-all border-b-2",
+                                                        activeAnalyticsTab === 'general' 
+                                                            ? "border-neon-purple text-neon-purple bg-neon-purple/5" 
+                                                            : "border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                                                    )}
+                                                >
+                                                    Direct / Link Opens
+                                                </button>
                                             </div>
-                                            <button 
-                                                onClick={() => handleRevokeSignature(selectedAnalytics.id)}
-                                                className="w-full py-3 md:py-4 bg-red-500/10 hover:bg-red-500/20 text-red-500 text-[9px] md:text-[10px] font-black uppercase tracking-widest rounded-xl md:rounded-2xl border border-red-500/10 transition-all"
-                                            >
-                                                Revoke Authorization
-                                            </button>
-                                        </>
-                                    )}
-                                    <div className="space-y-4">
-                                        <p className="text-[9px] md:text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest">Access Logs</p>
-                                        
-                                        <div className="flex border-b border-black/10 dark:border-white/10">
-                                            <button 
-                                                onClick={() => setActiveAnalyticsTab('email')}
-                                                className={cn(
-                                                    "flex-1 py-3 text-[10px] font-black uppercase tracking-widest transition-all border-b-2",
-                                                    activeAnalyticsTab === 'email' 
-                                                        ? "border-neon-purple text-neon-purple bg-neon-purple/5" 
-                                                        : "border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
-                                                )}
-                                            >
-                                                Email Opens (Personalized)
-                                            </button>
-                                            <button 
-                                                onClick={() => setActiveAnalyticsTab('general')}
-                                                className={cn(
-                                                    "flex-1 py-3 text-[10px] font-black uppercase tracking-widest transition-all border-b-2",
-                                                    activeAnalyticsTab === 'general' 
-                                                        ? "border-neon-purple text-neon-purple bg-neon-purple/5" 
-                                                        : "border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
-                                                )}
-                                            >
-                                                Direct / Link Opens
-                                            </button>
-                                        </div>
 
-                                        {(() => {
-                                            const logs = selectedAnalytics.accessLogs || [];
-                                            const emailLogs = logs.filter(log => log.via === 'email');
-                                            const generalLogs = logs.filter(log => log.via !== 'email');
-                                            const activeLogs = activeAnalyticsTab === 'email' ? emailLogs : generalLogs;
+                                            {(() => {
+                                                const logs = selectedAnalytics.accessLogs || [];
+                                                const emailLogs = logs.filter(log => log.via === 'email');
+                                                const generalLogs = logs.filter(log => log.via !== 'email');
+                                                const activeLogs = activeAnalyticsTab === 'email' ? emailLogs : generalLogs;
 
-                                            if (activeLogs.length > 0) {
-                                                return (
-                                                    <div className="space-y-3">
-                                                        {[...activeLogs].reverse().map((log, i) => {
-                                                            const browserName = getBrowserName(log.userAgent);
-                                                            return (
-                                                                <div key={i} className="p-4 bg-white/[0.02] border border-black/10 dark:border-white/5 rounded-xl space-y-3 group hover:bg-white/[0.05] transition-all">
-                                                                    <div className="flex items-start justify-between">
-                                                                        <div className="flex items-center gap-3">
-                                                                            <div className="p-2 bg-black/5 dark:bg-white/5 rounded-lg text-gray-600 dark:text-gray-400">
-                                                                                {activeAnalyticsTab === 'email' ? <Mail size={14} /> : <Globe size={14} />}
+                                                if (activeLogs.length > 0) {
+                                                    return (
+                                                        <div className="space-y-3">
+                                                            {[...activeLogs].reverse().map((log, i) => {
+                                                                const browserName = getBrowserName(log.userAgent);
+                                                                return (
+                                                                    <div key={i} className="p-4 bg-white/[0.02] border border-black/10 dark:border-white/5 rounded-xl space-y-3 group hover:bg-white/[0.05] transition-all">
+                                                                        <div className="flex items-start justify-between">
+                                                                            <div className="flex items-center gap-3">
+                                                                                <div className="p-2 bg-black/5 dark:bg-white/5 rounded-lg text-gray-600 dark:text-gray-400">
+                                                                                    {activeAnalyticsTab === 'email' ? <Mail size={14} /> : <Globe size={14} />}
+                                                                                </div>
+                                                                                <div>
+                                                                                    {activeAnalyticsTab === 'email' ? (
+                                                                                        <>
+                                                                                            <p className="text-[11px] font-bold text-gray-900 dark:text-white">
+                                                                                                {log.shareName || 'Anonymous Email Recipient'}
+                                                                                            </p>
+                                                                                            <p className="text-[9px] font-semibold text-gray-600 dark:text-gray-400 mt-0.5">
+                                                                                                {log.shareEmail || 'No email log'}
+                                                                                            </p>
+                                                                                        </>
+                                                                                    ) : (
+                                                                                        <>
+                                                                                            <p className="text-[11px] font-bold text-gray-900 dark:text-white">
+                                                                                                {log.via === 'whatsapp' ? 'WhatsApp Link Share' : log.via === 'link' ? 'Direct Copy Link' : log.via === 'share' ? 'Native Device Share' : 'General Link Access'}
+                                                                                            </p>
+                                                                                            <p className="text-[9px] font-semibold text-gray-600 dark:text-gray-400 mt-0.5">
+                                                                                                Anonymous Client View
+                                                                                            </p>
+                                                                                        </>
+                                                                                    )}
+                                                                                </div>
+                                                                            </div>
+                                                                            <div className="text-right">
+                                                                                <p className="text-[10px] font-black text-neon-purple uppercase tracking-widest">
+                                                                                    {new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                                                </p>
+                                                                                <p className="text-[8px] font-bold text-gray-500 uppercase tracking-widest mt-0.5">
+                                                                                    {new Date(log.timestamp).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })}
+                                                                                </p>
+                                                                            </div>
+                                                                        </div>
+                                                                        <div className="grid grid-cols-2 gap-2 pt-2 border-t border-black/10 dark:border-white/5 text-[9px] text-gray-600 dark:text-gray-400 font-semibold uppercase tracking-wider">
+                                                                            <div>
+                                                                                <span className="text-gray-600 font-bold block text-[8px]">IP ADDRESS</span>
+                                                                                <span className="text-gray-900 dark:text-white font-mono">{log.ip || 'Protected'}</span>
                                                                             </div>
                                                                             <div>
-                                                                                {activeAnalyticsTab === 'email' ? (
-                                                                                    <>
-                                                                                        <p className="text-[11px] font-bold text-gray-900 dark:text-white">
-                                                                                            {log.shareName || 'Anonymous Email Recipient'}
-                                                                                        </p>
-                                                                                        <p className="text-[9px] font-semibold text-gray-600 dark:text-gray-400 mt-0.5">
-                                                                                            {log.shareEmail || 'No email log'}
-                                                                                        </p>
-                                                                                    </>
-                                                                                ) : (
-                                                                                    <>
-                                                                                        <p className="text-[11px] font-bold text-gray-900 dark:text-white">
-                                                                                            {log.via === 'whatsapp' ? 'WhatsApp Link Share' : log.via === 'link' ? 'Direct Copy Link' : log.via === 'share' ? 'Native Device Share' : 'General Link Access'}
-                                                                                        </p>
-                                                                                        <p className="text-[9px] font-semibold text-gray-600 dark:text-gray-400 mt-0.5">
-                                                                                            Anonymous Client View
-                                                                                        </p>
-                                                                                    </>
-                                                                                )}
+                                                                                <span className="text-gray-600 font-bold block text-[8px]">DEVICE / RESOLUTION</span>
+                                                                                <span>{browserName} on {log.platform || 'OS'} ({log.screen || 'N/A'})</span>
                                                                             </div>
                                                                         </div>
-                                                                        <div className="text-right">
-                                                                            <p className="text-[10px] font-black text-neon-purple uppercase tracking-widest">
-                                                                                {new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                                                            </p>
-                                                                            <p className="text-[8px] font-bold text-gray-500 uppercase tracking-widest mt-0.5">
-                                                                                {new Date(log.timestamp).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })}
-                                                                            </p>
-                                                                        </div>
                                                                     </div>
-                                                                    <div className="grid grid-cols-2 gap-2 pt-2 border-t border-black/10 dark:border-white/5 text-[9px] text-gray-600 dark:text-gray-400 font-semibold uppercase tracking-wider">
-                                                                        <div>
-                                                                            <span className="text-gray-600 font-bold block text-[8px]">IP ADDRESS</span>
-                                                                            <span className="text-gray-900 dark:text-white font-mono">{log.ip || 'Protected'}</span>
-                                                                        </div>
-                                                                        <div>
-                                                                            <span className="text-gray-600 font-bold block text-[8px]">DEVICE / RESOLUTION</span>
-                                                                            <span>{browserName} on {log.platform || 'OS'} ({log.screen || 'N/A'})</span>
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            );
-                                                        })}
-                                                    </div>
-                                                );
-                                            } else {
-                                                return (
-                                                    <div className="py-12 text-center border border-dashed border-black/10 dark:border-white/10 rounded-2xl">
-                                                        <p className="text-[10px] font-black text-gray-600 uppercase tracking-widest">
-                                                            {activeAnalyticsTab === 'email' ? 'No email opens recorded.' : 'No general link views recorded.'}
-                                                        </p>
-                                                    </div>
-                                                );
-                                            }
-                                        })()}
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    );
+                                                } else {
+                                                    return (
+                                                        <div className="py-12 text-center border border-dashed border-black/10 dark:border-white/10 rounded-2xl">
+                                                            <p className="text-[10px] font-black text-gray-600 uppercase tracking-widest">
+                                                                 {activeAnalyticsTab === 'email' ? 'No email opens recorded.' : 'No general link views recorded.'}
+                                                            </p>
+                                                        </div>
+                                                    );
+                                                }
+                                            })()}
+                                        </div>
                                     </div>
-                                </div>
-                            </motion.div>
-                        </div>
-                    )}
-                </AnimatePresence>
+                                </motion.div>
+                            </div>
+                        )}
+                    </AnimatePresence>,
+                    document.body
+                )}
 
                 {/* Share Modal */}
-                <AnimatePresence>
-                    {sharingAgreement && (
-                        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setSharingAgreement(null)} className="absolute inset-0 bg-white dark:bg-black/90 backdrop-blur-sm" />
-                            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="relative w-full max-w-sm bg-gray-100 dark:bg-zinc-900 border border-black/10 dark:border-white/10 rounded-[3rem] overflow-hidden">
-                                <div className="p-8 text-center space-y-1 border-b border-black/10 dark:border-white/5">
-                                    <h3 className="text-2xl font-black uppercase tracking-[0.2em] italic">SHARE</h3>
-                                    <p className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">{sharingAgreement.parties?.secondParty?.name}</p>
-                                </div>
-                                <div className="p-8 grid grid-cols-1 gap-3">
-                                    <button onClick={() => { handleCopyLink(sharingAgreement.id); setSharingAgreement(null); }} className="p-4 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 border border-black/10 dark:border-white/5 rounded-2xl flex items-center gap-4 group">
-                                        <div className="w-10 h-10 rounded-xl bg-neon-purple/10 flex items-center justify-center text-neon-purple group-hover:scale-110 transition-transform"><Copy size={16} /></div>
-                                        <p className="text-[11px] font-black uppercase tracking-widest">Copy Link</p>
-                                    </button>
-                                    <button onClick={() => { handleWhatsApp(sharingAgreement); setSharingAgreement(null); }} className="p-4 bg-black/5 dark:bg-white/5 hover:bg-[#25D366]/10 border border-black/10 dark:border-white/5 rounded-2xl flex items-center gap-4 group">
-                                        <div className="w-10 h-10 rounded-xl bg-[#25D366]/10 flex items-center justify-center text-[#25D366] group-hover:scale-110 transition-transform"><MessageCircle size={16} /></div>
-                                        <p className="text-[11px] font-black uppercase tracking-widest">WhatsApp</p>
-                                    </button>
-                                    <button onClick={() => { handleSendEmail(sharingAgreement); setSharingAgreement(null); }} className="p-4 bg-black/5 dark:bg-white/5 hover:bg-neon-purple/10 border border-black/10 dark:border-white/5 rounded-2xl flex items-center gap-4 group">
-                                        <div className="w-10 h-10 rounded-xl bg-neon-purple/10 flex items-center justify-center text-neon-purple group-hover:scale-110 transition-transform"><Send size={16} /></div>
-                                        <p className="text-[11px] font-black uppercase tracking-widest">Email</p>
-                                    </button>
-                                </div>
-                                <button onClick={() => setSharingAgreement(null)} className="w-full py-5 text-[9px] font-black uppercase tracking-[0.4em] text-gray-600 hover:text-gray-900 dark:hover:text-white bg-white/[0.02]">Cancel</button>
-                            </motion.div>
-                        </div>
-                    )}
-                </AnimatePresence>
+                {createPortal(
+                    <AnimatePresence>
+                        {sharingAgreement && (
+                            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setSharingAgreement(null)} className="absolute inset-0 bg-white dark:bg-black/90 backdrop-blur-sm" />
+                                <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="relative w-full max-w-sm bg-gray-100 dark:bg-zinc-900 border border-black/10 dark:border-white/10 rounded-[3rem] overflow-hidden">
+                                    <div className="p-8 text-center space-y-1 border-b border-black/10 dark:border-white/5">
+                                        <h3 className="text-2xl font-black uppercase tracking-[0.2em] italic">SHARE</h3>
+                                        <p className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">{sharingAgreement.parties?.secondParty?.name}</p>
+                                    </div>
+                                    <div className="p-8 grid grid-cols-1 gap-3">
+                                        <button onClick={() => { handleCopyLink(sharingAgreement.id); setSharingAgreement(null); }} className="p-4 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 border border-black/10 dark:border-white/5 rounded-2xl flex items-center gap-4 group">
+                                            <div className="w-10 h-10 rounded-xl bg-neon-purple/10 flex items-center justify-center text-neon-purple group-hover:scale-110 transition-transform"><Copy size={16} /></div>
+                                            <p className="text-[11px] font-black uppercase tracking-widest">Copy Link</p>
+                                        </button>
+                                        <button onClick={() => { handleWhatsApp(sharingAgreement); setSharingAgreement(null); }} className="p-4 bg-black/5 dark:bg-white/5 hover:bg-[#25D366]/10 border border-black/10 dark:border-white/5 rounded-2xl flex items-center gap-4 group">
+                                            <div className="w-10 h-10 rounded-xl bg-[#25D366]/10 flex items-center justify-center text-neon-purple group-hover:scale-110 transition-transform"><MessageCircle size={16} /></div>
+                                            <p className="text-[11px] font-black uppercase tracking-widest">WhatsApp</p>
+                                        </button>
+                                        <button onClick={() => { handleSendEmail(sharingAgreement); setSharingAgreement(null); }} className="p-4 bg-black/5 dark:bg-white/5 hover:bg-neon-purple/10 border border-black/10 dark:border-white/5 rounded-2xl flex items-center gap-4 group">
+                                            <div className="w-10 h-10 rounded-xl bg-neon-purple/10 flex items-center justify-center text-neon-purple group-hover:scale-110 transition-transform"><Send size={16} /></div>
+                                            <p className="text-[11px] font-black uppercase tracking-widest">Email</p>
+                                        </button>
+                                    </div>
+                                    <button onClick={() => setSharingAgreement(null)} className="w-full py-5 text-[9px] font-black uppercase tracking-[0.4em] text-gray-600 hover:text-gray-900 dark:hover:text-white bg-white/[0.02]">Cancel</button>
+                                </motion.div>
+                            </div>
+                        )}
+                    </AnimatePresence>,
+                    document.body
+                )}
             </div>
 
             {/* Agreement Email Modal */}

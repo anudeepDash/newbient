@@ -185,7 +185,9 @@ const AdminCommunityHubLayout = ({ children, title, description, action, studioH
                 </div>
 
                 {/* Content Container (Redesigned with Premium Glassmorphism) */}
-                <div className="admin-hub-content-container bg-white dark:bg-zinc-950/35 border border-gray-200/80 dark:border-white/5 rounded-3xl p-4 sm:p-6 md:p-10 backdrop-blur-3xl min-h-[60vh] shadow-sm dark:shadow-[0_30px_70px_rgba(0,0,0,0.8)] relative overflow-visible">
+                <div className="admin-hub-content-container relative bg-white dark:bg-zinc-950/35 border border-gray-200/80 dark:border-white/5 rounded-3xl p-4 sm:p-6 md:p-10 min-h-[60vh] shadow-sm dark:shadow-[0_30px_70px_rgba(0,0,0,0.8)] overflow-visible">
+                    {/* Glassmorphic backdrop blur layer - decoupled so fixed modals are not trapped */}
+                    <div className="absolute inset-0 rounded-3xl backdrop-blur-3xl -z-10 pointer-events-none" />
                     {/* Decorative radial gradient */}
                     <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-gray-200 dark:via-white/5 to-transparent" />
                     

@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import X from 'lucide-react/dist/esm/icons/x';
 import CheckCircle from 'lucide-react/dist/esm/icons/check-circle';
@@ -148,7 +149,7 @@ export default function MarkAsPaidModal({ isOpen, onClose, invoice, onSubmit }) 
     }).format(amount);
   };
 
-  return (
+  return createPortal(
     <AnimatePresence>
       {isOpen && (
         <motion.div
@@ -380,6 +381,7 @@ export default function MarkAsPaidModal({ isOpen, onClose, invoice, onSubmit }) 
           </motion.div>
         </motion.div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 }

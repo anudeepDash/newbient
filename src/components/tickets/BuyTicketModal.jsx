@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, QrCode, CheckCircle, ArrowRight, Loader, Minus, Plus, ChevronDown, ChevronUp, Info, Map as MapIcon } from 'lucide-react';
 import { useStore } from '../../lib/store';
@@ -123,7 +124,7 @@ const BuyTicketModal = ({ event, isOpen, onClose }) => {
 
     if (!isOpen) return null;
 
-    return (
+    return createPortal(
         <AnimatePresence>
             <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-8 bg-white dark:bg-black/90 backdrop-blur-md overflow-y-auto">
                 <motion.div
@@ -132,150 +133,173 @@ const BuyTicketModal = ({ event, isOpen, onClose }) => {
                     exit={{ opacity: 0, scale: 0.95, y: 20 }}
                     className="bg-gray-100 dark:bg-zinc-900 border border-black/10 dark:border-white/10 rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl relative flex flex-col max-h-[90vh] shrink-0"
                 >
-                    {/* Progress Bar */}
-                    <div className="h-1 bg-black/5 dark:bg-white/5 w-full flex">
-                        <div className={`h-full bg-neon-green transition-all duration-500`} style={{ width: `${(step / 4) * 100}%` }}></div>
-                    </div>
-
                     {/* Header */}
                     <div className="flex justify-between items-start p-6 pb-2">
                         <div>
                             <h2 className="text-xl font-bold font-heading text-gray-900 dark:text-white leading-tight">
                                 {step === 4 ? 'Order Place Successfully!' : event.title}
                             </h2>
-                            {step < 4 && <p className="text-xs text-gray-600 dark:text-gray-400 font-bold uppercase tracking-widest mt-1">
-                                {step === 0 && 'Venue Layout'}
-                                {step === 1 && 'Select Tickets'}
-                                {step === 2 && 'Your Details'}
-                                {step === 3 && 'Payment'}
-                            </p>}
+                            <p className="text-xs text-gray-500 mt-1">
+                                {step === 0 && 'Venue Seating Layout'}
+                                {step === 1 && 'Select your passes'}
+                                {step === 2 && 'Enter attendee details'}
+                                {step === 3 && 'Scan & Pay via UPI'}
+                                {step === 4 && 'Booking Confirmed'}
+                            </p>
                         </div>
-                        <button onClick={onClose} className="p-2 bg-black/5 dark:bg-white/5 rounded-full text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-black/10 dark:hover:bg-white/10 transition-colors">
+                        <button onClick={onClose} className="text-gray-500 hover:text-gray-900 dark:hover:text-white">
                             <X size={20} />
                         </button>
                     </div>
 
-                    <div className="p-4 md:p-6 pt-2 overflow-y-auto custom-scrollbar flex-1 flex flex-col min-h-[400px]">
-
-                        {/* Step 0: Venue Layout */}
-                        {step === 0 && hasLayout && (
-                            <div className="flex flex-col h-full">
-                                <div className="flex-1 bg-white dark:bg-black rounded-xl overflow-hidden border border-black/10 dark:border-white/10 relative group">
-                                    <img src={event.venueLayout} alt="Venue Map" className="w-full h-full object-contain" />
-                                    <div className="absolute inset-0 bg-white dark:bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
-                                        <p className="text-gray-900 dark:text-white font-bold"><MapIcon className="inline mr-2" />Venue Map</p>
-                                    </div>
+                    {/* Body Content */}
+                    <div className="p-6 flex-1 overflow-y-auto">
+                        {/* Step 0: Venue Layout Map */}
+                        {step === 0 && (
+                            <div className="space-y-6">
+                                <div className="rounded-2xl overflow-hidden border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 p-2">
+                                    <img 
+                                        src={event.venueLayout} 
+                                        alt="Venue Layout" 
+                                        className="w-full h-auto max-h-[50vh] object-contain rounded-xl"
+                                    />
                                 </div>
-                                <Button onClick={handleNext} className="w-full mt-6 bg-white text-black hover:bg-gray-200">
-                                    Proceed to Select Tickets <ArrowRight size={16} className="ml-2" />
-                                </Button>
+                                <div className="flex items-center justify-between gap-4">
+                                    <Button onClick={onClose} variant="ghost" className="flex-1">
+                                        Cancel
+                                    </Button>
+                                    <Button onClick={() => setStep(1)} className="flex-1 bg-neon-green text-black font-bold">
+                                        Select Passes <ArrowRight size={16} className="ml-2" />
+                                    </Button>
+                                </div>
                             </div>
                         )}
 
-                        {/* Step 1: Selection */}
+                        {/* Step 1: Selection (Multi-Category vs Flat) */}
                         {step === 1 && (
-                            <div className="flex flex-col h-full">
-                                <div className="flex-1 space-y-4 overflow-y-auto max-h-[50vh] pr-2 custom-scrollbar">
-                                    {hasCategories ? (
-                                        event.ticketCategories.map(cat => (
-                                            <div key={cat.id} className="bg-black/5 dark:bg-white/5 p-4 rounded-xl border border-black/10 dark:border-white/10 flex justify-between items-center">
+                            <div className="space-y-6">
+                                {isCustomPriceActive && (
+                                    <div className="p-3 bg-neon-purple/10 border border-neon-purple/30 rounded-xl mb-4">
+                                        <p className="text-[10px] font-black text-neon-purple uppercase tracking-widest text-center">Special Negotiated Discount Applied</p>
+                                    </div>
+                                )}
+
+                                {hasCategories ? (
+                                    <div className="space-y-4">
+                                        {event.ticketCategories.map(cat => (
+                                            <div key={cat.id} className="p-4 rounded-2xl border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 flex justify-between items-center">
                                                 <div>
-                                                    <h3 className="font-bold text-gray-900 dark:text-white capitalize">{cat.name}</h3>
-                                                    {cat.description && <p className="text-xs text-gray-600 dark:text-gray-400 max-w-[150px]">{cat.description}</p>}
-                                                    <p className="text-neon-green font-bold mt-1">₹{cat.price}</p>
+                                                    <h3 className="font-bold text-gray-900 dark:text-white">{cat.name}</h3>
+                                                    <p className="text-xs text-gray-500">{cat.description}</p>
+                                                    <p className="text-sm font-bold text-neon-green mt-1">₹{cat.price}</p>
                                                 </div>
-                                                <div className="flex items-center gap-3 bg-white dark:bg-black rounded-lg p-1 border border-black/10 dark:border-white/10">
-                                                    <button
+                                                <div className="flex items-center gap-3">
+                                                    <button 
                                                         onClick={() => updateCart(cat.id, -1)}
-                                                        className="w-8 h-8 flex items-center justify-center rounded bg-black/5 dark:bg-white/5 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-black/10 dark:hover:bg-white/10"
+                                                        disabled={!cart[cat.id]}
+                                                        className="w-8 h-8 rounded-full border border-black/10 dark:border-white/10 flex items-center justify-center disabled:opacity-30"
                                                     >
                                                         <Minus size={14} />
                                                     </button>
-                                                    <span className="w-6 text-center font-bold">{cart[cat.id] || 0}</span>
-                                                    <button
+                                                    <span className="font-bold min-w-[20px] text-center">{cart[cat.id] || 0}</span>
+                                                    <button 
                                                         onClick={() => updateCart(cat.id, 1)}
-                                                        className="w-8 h-8 flex items-center justify-center rounded bg-black/10 dark:bg-white/10 text-gray-900 dark:text-white hover:bg-black/20 dark:hover:bg-white/20"
+                                                        className="w-8 h-8 rounded-full border border-black/10 dark:border-white/10 flex items-center justify-center"
                                                     >
                                                         <Plus size={14} />
                                                     </button>
                                                 </div>
                                             </div>
-                                        ))
-                                    ) : (
-                                        <div className="bg-black/5 dark:bg-white/5 p-6 rounded-xl border border-black/10 dark:border-white/10 text-center relative overflow-hidden">
-                                            {isCustomPriceActive && (
-                                                <div className="absolute top-0 inset-x-0 bg-neon-blue text-black text-[10px] font-black uppercase tracking-widest py-1">
-                                                    Custom Offer Applied
-                                                </div>
-                                            )}
-                                            <h3 className={cn("font-bold text-lg mb-4", isCustomPriceActive && "mt-4 text-neon-blue")}>
-                                                {isCustomPriceActive ? "Negotiated Access" : "Standard Entry"}
-                                            </h3>
-                                            <div className="flex items-center justify-center gap-6">
-                                                <button
-                                                    onClick={() => setFormData(p => ({ ...p, count: Math.max(1, p.count - 1) }))}
-                                                    className="w-12 h-12 rounded-xl bg-black/5 dark:bg-white/5 flex items-center justify-center hover:bg-black/10 dark:hover:bg-white/10 border border-black/10 dark:border-white/10"
-                                                >
-                                                    <Minus />
-                                                </button>
-                                                <span className="text-3xl font-bold font-heading w-12">{formData.count}</span>
-                                                <button
-                                                    onClick={() => setFormData(p => ({ ...p, count: Math.min(10, p.count + 1) }))}
-                                                    className="w-12 h-12 rounded-xl bg-neon-green/20 text-neon-green flex items-center justify-center hover:bg-neon-green/30 border border-neon-green/30"
-                                                >
-                                                    <Plus />
-                                                </button>
-                                            </div>
-                                            <p className="text-gray-600 dark:text-gray-400 mt-4 text-sm">Price per ticket: <span className={cn("font-bold", isCustomPriceActive ? "text-neon-blue" : "text-gray-900 dark:text-white")}>₹{baseTicketPrice}</span></p>
-                                            {isCustomPriceActive && <p className="text-[10px] text-gray-500 line-through mt-1">Standard: ₹{event.ticketPrice}</p>}
-                                        </div>
-                                    )}
-                                </div>
-
-                                <div className="mt-6 pt-6 border-t border-black/10 dark:border-white/10">
-                                    <div className="flex justify-between items-center mb-4">
-                                        <span className="text-gray-600 dark:text-gray-400">Total ({cartTotalCount} tickets)</span>
-                                        <span className="text-2xl font-bold text-neon-green">₹{totalAmount}</span>
+                                        ))}
                                     </div>
-                                    <Button
-                                        onClick={handleNext}
-                                        disabled={cartTotalCount === 0}
-                                        className="w-full bg-neon-green text-black hover:bg-neon-green/90"
+                                ) : (
+                                    <div className="p-6 rounded-2xl border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 text-center space-y-4">
+                                        <p className="text-sm text-gray-500 uppercase tracking-wider font-bold">Standard Admission</p>
+                                        <p className="text-4xl font-extrabold text-neon-green">₹{baseTicketPrice}</p>
+                                        <div className="flex items-center justify-center gap-4 pt-2">
+                                            <button 
+                                                onClick={() => setFormData(p => ({ ...p, count: Math.max(1, p.count - 1) }))}
+                                                disabled={formData.count <= 1}
+                                                className="w-10 h-10 rounded-full border border-black/10 dark:border-white/10 flex items-center justify-center disabled:opacity-30"
+                                            >
+                                                <Minus size={16} />
+                                            </button>
+                                            <span className="text-xl font-bold min-w-[30px] text-center">{formData.count}</span>
+                                            <button 
+                                                onClick={() => setFormData(p => ({ ...p, count: p.count + 1 }))}
+                                                className="w-10 h-10 rounded-full border border-black/10 dark:border-white/10 flex items-center justify-center"
+                                            >
+                                                <Plus size={16} />
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {hasLayout && (
+                                    <button 
+                                        onClick={() => setStep(0)} 
+                                        className="text-xs text-neon-blue flex items-center justify-center gap-1.5 w-full py-2 hover:underline"
                                     >
-                                        Enter Details <ArrowRight size={16} className="ml-2" />
+                                        <MapIcon size={14} /> View Seating Layout
+                                    </button>
+                                )}
+
+                                <div className="border-t border-black/10 dark:border-white/10 pt-4 flex justify-between items-center">
+                                    <div>
+                                        <p className="text-xs text-gray-500">Total ({cartTotalCount} tickets)</p>
+                                        <p className="text-2xl font-black text-neon-green">₹{totalAmount}</p>
+                                    </div>
+                                    <Button 
+                                        onClick={() => setStep(2)}
+                                        disabled={cartTotalCount === 0}
+                                        className="bg-neon-green text-black font-bold"
+                                    >
+                                        Continue <ArrowRight size={16} className="ml-2" />
                                     </Button>
-                                    {hasLayout && (
-                                        <button onClick={() => setStep(0)} className="w-full text-center text-xs text-gray-500 mt-3 hover:text-gray-900 dark:hover:text-white">
-                                            View Venue Layout
-                                        </button>
-                                    )}
                                 </div>
                             </div>
                         )}
 
-                        {/* Step 2: Details */}
+                        {/* Step 2: Contact Form */}
                         {step === 2 && (
-                            <form onSubmit={handleNext} className="flex flex-col h-full space-y-4">
+                            <form onSubmit={(e) => { e.preventDefault(); setStep(3); }} className="space-y-4">
                                 <div>
-                                    <label className="block text-xs font-bold uppercase tracking-widest text-gray-500 mb-2">Full Name</label>
-                                    <Input required value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} placeholder="e.g. Rahul Verma" />
+                                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Full Name</label>
+                                    <Input 
+                                        required
+                                        value={formData.name}
+                                        onChange={(e) => setFormData(p => ({ ...p, name: e.target.value }))}
+                                        placeholder="John Doe"
+                                    />
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-bold uppercase tracking-widest text-gray-500 mb-2">Email Address</label>
-                                    <Input required type="email" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} placeholder="rahul@example.com" />
+                                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Email Address</label>
+                                    <Input 
+                                        required
+                                        type="email"
+                                        value={formData.email}
+                                        onChange={(e) => setFormData(p => ({ ...p, email: e.target.value }))}
+                                        placeholder="john@example.com"
+                                    />
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-bold uppercase tracking-widest text-gray-500 mb-2">Phone Number</label>
-                                    <Input required type="tel" value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} placeholder="+91 98765 43210" />
+                                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Phone Number</label>
+                                    <Input 
+                                        required
+                                        type="tel"
+                                        value={formData.phone}
+                                        onChange={(e) => setFormData(p => ({ ...p, phone: e.target.value }))}
+                                        placeholder="+91 9876543210"
+                                    />
                                 </div>
 
-                                <div className="mt-auto pt-6">
-                                    <Button type="submit" className="w-full bg-white text-black hover:bg-gray-200">
-                                        Proceed to Pay ₹{totalAmount}
+                                <div className="border-t border-black/10 dark:border-white/10 pt-4 flex justify-between gap-4 mt-6">
+                                    <Button type="button" onClick={() => setStep(1)} variant="ghost" className="flex-1">
+                                        Back
                                     </Button>
-                                    <button type="button" onClick={() => setStep(1)} className="w-full text-center text-xs text-gray-500 mt-3 hover:text-gray-900 dark:hover:text-white">
-                                        Back curb selection
-                                    </button>
+                                    <Button type="submit" className="flex-1 bg-neon-green text-black font-bold">
+                                        Proceed to Pay
+                                    </Button>
                                 </div>
                             </form>
                         )}
@@ -396,7 +420,8 @@ const BuyTicketModal = ({ event, isOpen, onClose }) => {
                     </div>
                 </motion.div>
             </div>
-        </AnimatePresence>
+        </AnimatePresence>,
+        document.body
     );
 };
 

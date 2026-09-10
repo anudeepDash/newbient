@@ -1,9 +1,68 @@
-import { auth } from './firebase';
+import { auth, db } from './firebase';
+import { doc, setDoc, updateDoc } from 'firebase/firestore';
+
 export const NEWBI_GREEN = '#39FF14';
 export const CONCERT_ZONE_CYAN = '#00f2ff';
+
 const getBaseUrl = () => {
-    return window.location.origin;
+    return typeof window !== 'undefined' && window.location?.origin 
+        ? window.location.origin 
+        : 'https://newbi.live';
 };
+
+/**
+ * Injects 1x1 open tracking pixel and rewrites outbound hyperlinks to route through link click tracking.
+ */
+export const injectEmailTracking = ({ 
+    html, 
+    trackingId = '', 
+    recipientEmail = '', 
+    campaignId = '', 
+    subject = '', 
+    baseUrl = null 
+}) => {
+    if (!html || typeof html !== 'string') return html;
+
+    const rootUrl = baseUrl || getBaseUrl();
+    const safeBaseUrl = (rootUrl || 'https://newbi.live').replace(/\/+$/, '');
+    const encodedTid = encodeURIComponent(trackingId || '');
+    const encodedEmail = encodeURIComponent(recipientEmail || '');
+    const encodedCid = encodeURIComponent(campaignId || '');
+    const encodedSub = encodeURIComponent(subject || '');
+
+    // 1. Rewrite <a href="..."> links to route through click tracking
+    let processedHtml = html.replace(/<a\b([^>]*?)href=(["'])(.*?)\2([^>]*?)>/gi, (match, prefix, quote, originalHref, suffix) => {
+        const trimmedHref = (originalHref || '').trim();
+        // Do not wrap internal anchors, mailto, tel, javascript, or already-tracked links
+        if (
+            !trimmedHref || 
+            trimmedHref === '#' || 
+            trimmedHref.startsWith('#') || 
+            trimmedHref.startsWith('mailto:') || 
+            trimmedHref.startsWith('tel:') || 
+            trimmedHref.startsWith('javascript:') ||
+            trimmedHref.includes('/api/track')
+        ) {
+            return match;
+        }
+
+        const trackingUrl = `${safeBaseUrl}/api/track?type=click&url=${encodeURIComponent(trimmedHref)}&tid=${encodedTid}&email=${encodedEmail}&cid=${encodedCid}`;
+        return `<a${prefix}href=${quote}${trackingUrl}${quote}${suffix}>`;
+    });
+
+    // 2. Inject transparent 1x1 open tracking pixel
+    const pixelUrl = `${safeBaseUrl}/api/track?type=open&tid=${encodedTid}&email=${encodedEmail}&cid=${encodedCid}&sub=${encodedSub}`;
+    const trackingPixel = `\n<!-- Email Tracking Pixel -->\n<img src="${pixelUrl}" width="1" height="1" alt="" style="display:none !important; max-height:0; width:0; height:0; opacity:0; visibility:hidden; mso-hide:all;" border="0" />\n`;
+
+    if (processedHtml.includes('</body>')) {
+        processedHtml = processedHtml.replace('</body>', `${trackingPixel}</body>`);
+    } else {
+        processedHtml += trackingPixel;
+    }
+
+    return processedHtml;
+};
+
 
 /**
  * Ensures all images in email body content are responsive and stay constrained within the email container width.
@@ -192,7 +251,7 @@ export const sendTicketEmail = async (toName, toEmail, ticketUrl, eventName, boo
     try {
         const ticketLink = Array.isArray(ticketUrl) ? ticketUrl[0] : ticketUrl;
         
-        const html = generateOfficialHTML({
+        const rawHtml = generateOfficialHTML({
             headerText: 'Your Tickets are Ready!',
             messageBody: `
                 <p>Hi <strong>${toName}</strong>,</p>
@@ -204,6 +263,14 @@ export const sendTicketEmail = async (toName, toEmail, ticketUrl, eventName, boo
             ctaText: 'View Your Tickets',
             ctaUrl: ticketLink,
             theme: 'light'
+        });
+
+        const html = injectEmailTracking({
+            html: rawHtml,
+            trackingId: `ticket_${bookingRef}`,
+            recipientEmail: toEmail,
+            campaignId: `TICKET_${eventName}`,
+            subject: `Your Tickets for ${eventName}`
         });
 
         const result = await apiFetch('/api/mail', {
@@ -284,12 +351,21 @@ export const sendGuestlistConfirmation = async (guestlistData) => {
             });
         }
 
+        const subject = isRSVPOnly ? `RSVP Confirmed: ${eventName}` : `Guestlist Access Confirmed: ${eventName}`;
+        const trackedHtml = injectEmailTracking({
+            html: htmlContent,
+            trackingId: `guestlist_${bookingRef}`,
+            recipientEmail: toEmail,
+            campaignId: `GUESTLIST_${eventName}`,
+            subject
+        });
+
         const result = await apiFetch('/api/mail', {
             to: toEmail,
-            subject: isRSVPOnly ? `RSVP Confirmed: ${eventName}` : `Guestlist Access Confirmed: ${eventName}`,
+            subject,
             fromName: 'Newbi Bookings',
             fromEmail: 'booking@newbi.live',
-            html: htmlContent
+            html: trackedHtml
         });
 
         if (result.success) return { success: true };
@@ -372,7 +448,7 @@ export const sendBookingConfirmation = async (bookingData) => {
             `;
         }
 
-        const html = generateOfficialHTML({
+        const rawHtml = generateOfficialHTML({
             headerText: 'Booking Confirmed!',
             messageBody: `
                 <p>Hi <strong>${to_name}</strong>,</p>
@@ -396,9 +472,18 @@ export const sendBookingConfirmation = async (bookingData) => {
             theme: 'light'
         });
 
+        const subject = `Booking Confirmed: ${event_name}`;
+        const html = injectEmailTracking({
+            html: rawHtml,
+            trackingId: `booking_${booking_ref}`,
+            recipientEmail: to_email,
+            campaignId: `BOOKING_${event_name}`,
+            subject
+        });
+
         const result = await apiFetch('/api/mail', {
             to: to_email,
-            subject: `Booking Confirmed: ${event_name}`,
+            subject,
             fromName: 'Newbi Bookings',
             fromEmail: 'booking@newbi.live',
             html
@@ -417,21 +502,31 @@ export const sendBookingConfirmation = async (bookingData) => {
  */
 export const sendContactAutoReply = async (name, email, message) => {
     try {
+        const rawHtml = `
+            <div style="font-family: sans-serif; padding: 20px;">
+                <h2>Hello ${name},</h2>
+                <p>We've received your message and our team will get back to you shortly.</p>
+                <div style="background: #f5f5f5; padding: 15px; border-left: 4px solid #39FF14; margin: 20px 0;">
+                    <p style="font-style: italic;">"${message}"</p>
+                </div>
+                <p>Best regards,<br/>The Newbi Team</p>
+            </div>
+        `;
+        const subject = `Thanks for reaching out, ${name}`;
+        const html = injectEmailTracking({
+            html: rawHtml,
+            trackingId: `contact_${Date.now()}`,
+            recipientEmail: email,
+            campaignId: 'CONTACT_AUTOREPLY',
+            subject
+        });
+
         const result = await apiFetch('/api/mail', {
             to: email,
-            subject: `Thanks for reaching out, ${name}`,
+            subject,
             fromName: 'Newbi Support',
             fromEmail: 'noreply@newbi.live',
-            html: `
-                <div style="font-family: sans-serif; padding: 20px;">
-                    <h2>Hello ${name},</h2>
-                    <p>We've received your message and our team will get back to you shortly.</p>
-                    <div style="background: #f5f5f5; padding: 15px; border-left: 4px solid #39FF14; margin: 20px 0;">
-                        <p style="font-style: italic;">"${message}"</p>
-                    </div>
-                    <p>Best regards,<br/>The Newbi Team</p>
-                </div>
-            `
+            html
         });
         return result.success ? { success: true } : { success: false, error: result.error };
     } catch (error) {
@@ -445,21 +540,31 @@ export const sendContactAutoReply = async (name, email, message) => {
  */
 export const sendInvoiceEmail = async (toEmail, invoiceNumber, amount, invoiceUrl) => {
     try {
+        const rawHtml = `
+            <div style="font-family: sans-serif; padding: 20px;">
+                <h2>Invoice Ready</h2>
+                <p>Your invoice <strong>${invoiceNumber}</strong> for <strong>₹${amount}</strong> is ready for review.</p>
+                <div style="margin: 30px 0;">
+                    <a href="${invoiceUrl}" style="background: #000; color: #fff; padding: 12px 25px; text-decoration: none; border-radius: 8px; font-weight: bold;">View Invoice</a>
+                </div>
+                <p>Thank you for your business!</p>
+            </div>
+        `;
+        const subject = `Invoice Ready: ${invoiceNumber}`;
+        const html = injectEmailTracking({
+            html: rawHtml,
+            trackingId: `inv_${invoiceNumber}`,
+            recipientEmail: toEmail,
+            campaignId: `INVOICE_${invoiceNumber}`,
+            subject
+        });
+
         const result = await apiFetch('/api/mail', {
             to: toEmail,
-            subject: `Invoice Ready: ${invoiceNumber}`,
+            subject,
             fromName: 'Newbi Finance',
             fromEmail: 'partnership@newbi.live',
-            html: `
-                <div style="font-family: sans-serif; padding: 20px;">
-                    <h2>Invoice Ready</h2>
-                    <p>Your invoice <strong>${invoiceNumber}</strong> for <strong>₹${amount}</strong> is ready for review.</p>
-                    <div style="margin: 30px 0;">
-                        <a href="${invoiceUrl}" style="background: #000; color: #fff; padding: 12px 25px; text-decoration: none; border-radius: 8px; font-weight: bold;">View Invoice</a>
-                    </div>
-                    <p>Thank you for your business!</p>
-                </div>
-            `
+            html
         });
         return result.success ? { success: true } : { success: false, error: result.error };
     } catch (error) {
@@ -473,21 +578,31 @@ export const sendInvoiceEmail = async (toEmail, invoiceNumber, amount, invoiceUr
  */
 export const sendProposalEmail = async (toEmail, proposalTitle, proposalUrl) => {
     try {
+        const rawHtml = `
+            <div style="font-family: sans-serif; padding: 20px;">
+                <h2>Strategic Proposal</h2>
+                <p>A new strategic proposal "<strong>${proposalTitle}</strong>" has been prepared for your review.</p>
+                <div style="margin: 30px 0;">
+                    <a href="${proposalUrl}" style="background: #39FF14; color: #000; padding: 12px 25px; text-decoration: none; border-radius: 8px; font-weight: bold;">Review Proposal</a>
+                </div>
+                <p>Best regards,<br/>Newbi Entertainment</p>
+            </div>
+        `;
+        const subject = `New Proposal: ${proposalTitle}`;
+        const html = injectEmailTracking({
+            html: rawHtml,
+            trackingId: `prop_${Date.now()}`,
+            recipientEmail: toEmail,
+            campaignId: `PROPOSAL_${proposalTitle}`,
+            subject
+        });
+
         const result = await apiFetch('/api/mail', {
             to: toEmail,
-            subject: `New Proposal: ${proposalTitle}`,
+            subject,
             fromName: 'Newbi Partnerships',
             fromEmail: 'partnership@newbi.live',
-            html: `
-                <div style="font-family: sans-serif; padding: 20px;">
-                    <h2>Strategic Proposal</h2>
-                    <p>A new strategic proposal "<strong>${proposalTitle}</strong>" has been prepared for your review.</p>
-                    <div style="margin: 30px 0;">
-                        <a href="${proposalUrl}" style="background: #39FF14; color: #000; padding: 12px 25px; text-decoration: none; border-radius: 8px; font-weight: bold;">Review Proposal</a>
-                    </div>
-                    <p>Best regards,<br/>Newbi Entertainment</p>
-                </div>
-            `
+            html
         });
         return result.success ? { success: true } : { success: false, error: result.error };
     } catch (error) {
@@ -711,7 +826,7 @@ export const generateInvoiceEmailHTML = (data) => {
  */
 export const sendPaymentApprovedEmail = async (toEmail, clientName, invoiceNumber, invoiceUrl) => {
     try {
-        const html = generateOfficialHTML({
+        const rawHtml = generateOfficialHTML({
             headerText: 'Payment Verified Successfully',
             messageBody: `
                 <p>Hi <strong>${clientName}</strong>,</p>
@@ -724,9 +839,17 @@ export const sendPaymentApprovedEmail = async (toEmail, clientName, invoiceNumbe
             ctaUrl: invoiceUrl,
             theme: 'light'
         });
+        const subject = `Payment Confirmed: Invoice #${invoiceNumber}`;
+        const html = injectEmailTracking({
+            html: rawHtml,
+            trackingId: `pay_approved_${invoiceNumber}`,
+            recipientEmail: toEmail,
+            campaignId: `PAYMENT_${invoiceNumber}`,
+            subject
+        });
         const result = await apiFetch('/api/mail', {
             to: toEmail,
-            subject: `Payment Confirmed: Invoice #${invoiceNumber}`,
+            subject,
             fromName: 'Newbi Finance',
             fromEmail: 'partnership@newbi.live',
             html
@@ -743,7 +866,7 @@ export const sendPaymentApprovedEmail = async (toEmail, clientName, invoiceNumbe
  */
 export const sendPaymentDeclinedEmail = async (toEmail, clientName, invoiceNumber, invoiceUrl) => {
     try {
-        const html = generateOfficialHTML({
+        const rawHtml = generateOfficialHTML({
             headerText: 'Payment Verification Update',
             messageBody: `
                 <p>Hi <strong>${clientName}</strong>,</p>
@@ -757,9 +880,17 @@ export const sendPaymentDeclinedEmail = async (toEmail, clientName, invoiceNumbe
             ctaUrl: invoiceUrl,
             theme: 'light'
         });
+        const subject = `Payment Update: Invoice #${invoiceNumber}`;
+        const html = injectEmailTracking({
+            html: rawHtml,
+            trackingId: `pay_declined_${invoiceNumber}`,
+            recipientEmail: toEmail,
+            campaignId: `PAYMENT_${invoiceNumber}`,
+            subject
+        });
         const result = await apiFetch('/api/mail', {
             to: toEmail,
-            subject: `Payment Update: Invoice #${invoiceNumber}`,
+            subject,
             fromName: 'Newbi Finance',
             fromEmail: 'partnership@newbi.live',
             html
@@ -1043,6 +1174,49 @@ export const sendMassEmail = async (
         return { success: false, error: 'No valid recipients' };
     }
 
+    // Generate unique Campaign ID for tracking and analytics
+    const campaignId = 'camp_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7);
+    const campaignSentAt = new Date().toISOString();
+    const effectiveCategory = mailData?.category === 'CUSTOM' 
+        ? (mailData?.customCategory || 'CUSTOM') 
+        : (mailData?.category || (accountType === 'weekly' ? 'NEWSLETTER' : 'OFFICIAL'));
+
+    const senderDisplayName = fromName || (accountType === 'weekly' ? 'Weekly by Concert Zone' : 'Newbi Entertainment');
+    const senderEmailAddress = fromEmail || (accountType === 'weekly' ? 'weekly@newbi.live' : 'partnership@newbi.live');
+
+    // Create tracking campaign record in Firestore
+    if (db) {
+        try {
+            const campaignRecord = {
+                id: campaignId,
+                subject: subject || 'Untitled Broadcast',
+                category: effectiveCategory,
+                senderName: senderDisplayName,
+                senderEmail: senderEmailAddress,
+                accountType: accountType || 'official',
+                recipientType: mailData?.recipientType || (accountType === 'weekly' ? 'subscribers' : 'custom'),
+                totalRecipients: uniqueRecipients.length,
+                recipients: uniqueRecipients.map(r => ({ email: r.email, name: r.name || '' })),
+                sentAt: campaignSentAt,
+                status: 'sending',
+                opensCount: 0,
+                uniqueOpens: 0,
+                openedEmails: [],
+                clicksCount: 0,
+                uniqueClicks: 0,
+                clickedEmails: [],
+                clickedUrls: [],
+                headerText: mailData?.headerText || '',
+                ctaText: mailData?.ctaText || '',
+                ctaUrl: mailData?.ctaUrl || '',
+                theme: mailData?.theme || 'light'
+            };
+            await setDoc(doc(db, 'email_campaigns', campaignId), campaignRecord, { merge: true });
+        } catch (dbErr) {
+            console.warn('[Mass Mail] Could not initialize Firestore campaign record:', dbErr.message);
+        }
+    }
+
     // Check if subject, htmlContent, or mailData contains merge tags (e.g. {{name}}, {{first_name}}, {{email}}, {{role}})
     const tagRegex = /\{\{?\s*(name|first_name|email|role)\s*\}?\}/i;
     const hasTags = tagRegex.test(subject || '') || 
@@ -1050,7 +1224,7 @@ export const sendMassEmail = async (
                      (mailData && (tagRegex.test(mailData.headerText || '') || tagRegex.test(mailData.messageBody || '')));
 
     if (hasTags) {
-        console.log(`[Mass Mail] Personalized Mode enabled for ${uniqueRecipients.length} recipient(s)`);
+        console.log(`[Mass Mail] Personalized Mode enabled for ${uniqueRecipients.length} recipient(s) with Tracking ID: ${campaignId}`);
         let successCount = 0;
         let failCount = 0;
         const errors = [];
@@ -1086,11 +1260,20 @@ export const sendMassEmail = async (
                 personalizedHtml = replaceUserTags(htmlContent);
             }
 
+            // Inject open tracking pixel and link click tracking for this specific recipient
+            const trackedHtml = injectEmailTracking({
+                html: personalizedHtml,
+                trackingId: campaignId,
+                recipientEmail: userEmail,
+                campaignId: campaignId,
+                subject: personalizedSubject
+            });
+
             try {
                 const result = await apiFetch('/api/mail', {
                     to: userEmail,
                     subject: personalizedSubject,
-                    html: personalizedHtml,
+                    html: trackedHtml,
                     accountType: accountType,
                     fromName: fromName,
                     fromEmail: fromEmail,
@@ -1130,8 +1313,22 @@ export const sendMassEmail = async (
         }
 
         const allSucceeded = failCount === 0;
+
+        // Update campaign status in Firestore
+        if (db) {
+            try {
+                await updateDoc(doc(db, 'email_campaigns', campaignId), {
+                    status: allSucceeded ? 'completed' : 'partially_failed',
+                    sentCount: successCount,
+                    failedCount: failCount,
+                    errors: errors.length > 0 ? errors.slice(0, 50) : []
+                });
+            } catch (e) {}
+        }
+
         return {
             success: allSucceeded,
+            campaignId,
             sent: successCount,
             failed: failCount,
             total: uniqueRecipients.length,
@@ -1147,11 +1344,20 @@ export const sendMassEmail = async (
         batches.push(uniqueEmails.slice(i, i + BATCH_SIZE));
     }
 
-    console.log(`[Mass Mail] Standard BCC Mode: Sending to ${uniqueEmails.length} recipients in ${batches.length} batch(es) via ${accountType}`);
+    console.log(`[Mass Mail] Standard BCC Mode: Sending to ${uniqueEmails.length} recipients in ${batches.length} batch(es) with Tracking ID: ${campaignId}`);
 
     let successCount = 0;
     let failCount = 0;
     const errors = [];
+
+    // Inject open tracking and click tracking for campaign
+    const trackedHtml = injectEmailTracking({
+        html: htmlContent,
+        trackingId: campaignId,
+        recipientEmail: '',
+        campaignId: campaignId,
+        subject: subject
+    });
 
     for (let i = 0; i < batches.length; i++) {
         const batch = batches[i];
@@ -1160,7 +1366,7 @@ export const sendMassEmail = async (
                 to: toAddress,
                 bcc: batch.join(','),
                 subject: subject,
-                html: htmlContent,
+                html: trackedHtml,
                 accountType: accountType,
                 fromName: fromName,
                 fromEmail: fromEmail,
@@ -1199,8 +1405,22 @@ export const sendMassEmail = async (
     }
 
     const allSucceeded = failCount === 0;
+
+    // Update campaign status in Firestore
+    if (db) {
+        try {
+            await updateDoc(doc(db, 'email_campaigns', campaignId), {
+                status: allSucceeded ? 'completed' : 'partially_failed',
+                sentCount: successCount,
+                failedCount: failCount,
+                errors: errors.length > 0 ? errors.slice(0, 50) : []
+            });
+        } catch (e) {}
+    }
+
     return {
         success: allSucceeded,
+        campaignId,
         sent: successCount,
         failed: failCount,
         total: uniqueEmails.length,
@@ -2130,10 +2350,18 @@ export const generateCampaignNotificationHTML = (campaign) => {
  */
 export const sendCreatorApprovedEmail = async (toEmail, creatorName) => {
     try {
-        const html = generateCreatorApprovedHTML(creatorName);
+        const rawHtml = generateCreatorApprovedHTML(creatorName);
+        const subject = `Congratulations! Your Creator Profile is Verified 🚀`;
+        const html = injectEmailTracking({
+            html: rawHtml,
+            trackingId: `creator_approved_${Date.now()}`,
+            recipientEmail: toEmail,
+            campaignId: `CREATOR_APPROVED`,
+            subject
+        });
         const result = await apiFetch('/api/mail', {
             to: toEmail,
-            subject: `Congratulations! Your Creator Profile is Verified 🚀`,
+            subject,
             fromName: 'Newbii Creators',
             fromEmail: 'creators@newbi.live',
             html
@@ -2252,10 +2480,18 @@ export const generateCreatorApprovedHTML = (creatorName) => {
  */
 export const sendStaffAuthorizedEmail = async (toEmail, role) => {
     try {
-        const html = generateStaffAuthorizedHTML(role);
+        const rawHtml = generateStaffAuthorizedHTML(role);
+        const subject = `Command Access Granted: New Role Assigned 🚀`;
+        const html = injectEmailTracking({
+            html: rawHtml,
+            trackingId: `staff_auth_${Date.now()}`,
+            recipientEmail: toEmail,
+            campaignId: `STAFF_AUTHORIZED_${role}`,
+            subject
+        });
         const result = await apiFetch('/api/mail', {
             to: toEmail,
-            subject: `Command Access Granted: New Role Assigned 🚀`,
+            subject,
             fromName: 'Newbi Security',
             fromEmail: 'security@newbi.live',
             html
@@ -2385,7 +2621,7 @@ export const generateStaffAuthorizedHTML = (role) => {
  */
 export const sendCreatorDirectEmail = async (toEmail, subject, messageBody, creatorName = 'Creator') => {
     try {
-        const html = generateOfficialHTML({
+        const rawHtml = generateOfficialHTML({
             headerText: subject,
             messageBody: `
                 <p>Hi <strong>${creatorName}</strong>,</p>
@@ -2395,6 +2631,13 @@ export const sendCreatorDirectEmail = async (toEmail, subject, messageBody, crea
             `,
             category: 'DIRECT MESSAGE',
             theme: 'light'
+        });
+        const html = injectEmailTracking({
+            html: rawHtml,
+            trackingId: `creator_direct_${Date.now()}`,
+            recipientEmail: toEmail,
+            campaignId: 'CREATOR_DIRECT',
+            subject
         });
         const result = await apiFetch('/api/mail', {
             to: toEmail,

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Link, useNavigate } from 'react-router-dom';
 import Edit from 'lucide-react/dist/esm/icons/edit';
 import Trash2 from 'lucide-react/dist/esm/icons/trash-2';
@@ -554,266 +555,257 @@ const InvoiceManagement = () => {
             </div>
 
             {/* Quick Import Modal */}
-            <AnimatePresence>
-                {showQuickUpload && (
-                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowQuickUpload(false)} className="absolute inset-0 bg-white dark:bg-black/90 backdrop-blur-sm" />
-                        <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="relative w-full max-w-lg shrink-0">
-                            <Card className="p-10 bg-gray-100 dark:bg-zinc-900 border-black/10 dark:border-white/10 rounded-[3rem] shadow-2xl">
-                                <button onClick={() => setShowQuickUpload(false)} className="absolute -top-3 -right-3 w-10 h-10 rounded-full bg-zinc-800 border border-black/10 dark:border-white/10 flex items-center justify-center hover:bg-white hover:text-black transition-all z-10"><X size={20} /></button>
-                                <h2 className="text-4xl font-black font-heading tracking-tighter uppercase italic text-gray-900 dark:text-white mb-2">IMPORT <span className="text-neon-blue">INVOICE.</span></h2>
-                                <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-10">Sync external billing documents</p>
-                                <form onSubmit={handleQuickUpload} className="space-y-8">
-                                    <div className="space-y-3">
-                                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Client Entity</label>
-                                        <Input value={quickClientName} onChange={(e) => setQuickClientName(e.target.value)} placeholder="e.g. RedBull Global" className="h-14 bg-white dark:bg-black/50 border-black/10 dark:border-white/5 rounded-2xl" required />
-                                    </div>
-                                    <div className="space-y-3">
-                                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">PDF Document</label>
-                                        <div className="relative group cursor-pointer h-32 border-2 border-dashed border-black/10 dark:border-white/10 rounded-2xl flex flex-col items-center justify-center gap-3 bg-white dark:bg-black/30 group-hover:border-neon-blue/40 transition-all">
-                                            <input type="file" accept="application/pdf" onChange={(e) => setQuickFile(e.target.files[0])} className="absolute inset-0 opacity-0 cursor-pointer z-10" required />
-                                            <Upload className="text-gray-500 group-hover:text-neon-blue" size={24} />
-                                            <span className="text-[10px] font-black text-gray-500 group-hover:text-gray-900 dark:group-hover:text-white uppercase tracking-widest">{quickFile ? quickFile.name : 'Select PDF File'}</span>
+            {createPortal(
+                <AnimatePresence>
+                    {showQuickUpload && (
+                        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowQuickUpload(false)} className="absolute inset-0 bg-white dark:bg-black/90 backdrop-blur-sm" />
+                            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="relative w-full max-w-lg shrink-0">
+                                <Card className="p-10 bg-gray-100 dark:bg-zinc-900 border-black/10 dark:border-white/10 rounded-[3rem] shadow-2xl">
+                                    <button onClick={() => setShowQuickUpload(false)} className="absolute -top-3 -right-3 w-10 h-10 rounded-full bg-zinc-800 border border-black/10 dark:border-white/10 flex items-center justify-center hover:bg-white hover:text-black transition-all z-10"><X size={20} /></button>
+                                    <h2 className="text-4xl font-black font-heading tracking-tighter uppercase italic text-gray-900 dark:text-white mb-2">IMPORT <span className="text-neon-blue">INVOICE.</span></h2>
+                                    <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-10">Sync external billing documents</p>
+                                    <form onSubmit={handleQuickUpload} className="space-y-8">
+                                        <div className="space-y-3">
+                                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Client Entity</label>
+                                            <Input value={quickClientName} onChange={(e) => setQuickClientName(e.target.value)} placeholder="e.g. RedBull Global" className="h-14 bg-white dark:bg-black/50 border-black/10 dark:border-white/5 rounded-2xl" required />
                                         </div>
-                                    </div>
-                                    <Button type="submit" className="w-full h-16 bg-neon-blue text-black font-black font-heading uppercase tracking-[0.2em] text-xs rounded-2xl shadow-xl" disabled={uploading}>{uploading ? 'PROCESSING...' : 'IMPORT INVOICE'}</Button>
-                                </form>
-                            </Card>
-                        </motion.div>
-                    </div>
-                )}
-            </AnimatePresence>
+                                        <div className="space-y-3">
+                                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">PDF Document</label>
+                                            <div className="relative group cursor-pointer h-32 border-2 border-dashed border-black/10 dark:border-white/10 rounded-2xl flex flex-col items-center justify-center gap-3 bg-white dark:bg-black/30 group-hover:border-neon-blue/40 transition-all">
+                                                <input type="file" accept="application/pdf" onChange={(e) => setQuickFile(e.target.files[0])} className="absolute inset-0 opacity-0 cursor-pointer z-10" required />
+                                                <Upload className="text-gray-500 group-hover:text-neon-blue" size={24} />
+                                                <span className="text-[10px] font-black text-gray-500 group-hover:text-gray-900 dark:group-hover:text-white uppercase tracking-widest">{quickFile ? quickFile.name : 'Select PDF File'}</span>
+                                            </div>
+                                        </div>
+                                        <Button type="submit" className="w-full h-16 bg-neon-blue text-black font-black font-heading uppercase tracking-[0.2em] text-xs rounded-2xl shadow-xl" disabled={uploading}>{uploading ? 'PROCESSING...' : 'IMPORT INVOICE'}</Button>
+                                    </form>
+                                </Card>
+                            </motion.div>
+                        </div>
+                    )}
+                </AnimatePresence>,
+                document.body
+            )}
 
             {/* Analytics Side Panel */}
-            <AnimatePresence>
-                {selectedAnalytics && (
-                    <div className="fixed inset-0 z-[100] flex justify-end">
-                        <motion.div 
-                            initial={{ opacity: 0 }} 
-                            animate={{ opacity: 1 }} 
-                            exit={{ opacity: 0 }} 
-                            onClick={() => setSelectedAnalytics(null)} 
-                            className="absolute inset-0 bg-white dark:bg-black/80 backdrop-blur-sm" 
-                        />
-                        <motion.div 
-                            initial={{ x: '100%' }} 
-                            animate={{ x: 0 }} 
-                            exit={{ x: '100%' }} 
-                            transition={{ type: 'spring', damping: 25, stiffness: 200 }} 
-                            className="relative w-full max-w-xl bg-gray-100 dark:bg-zinc-950 border-l border-black/10 dark:border-white/10 h-full shadow-[-20px_0_60px_rgba(0,0,0,0.8)] flex flex-col"
-                        >
-                            <div className="p-8 border-b border-black/10 dark:border-white/5 flex justify-between items-center shrink-0">
-                                <div>
-                                    <h3 className="text-2xl font-black uppercase tracking-tighter italic text-neon-blue">Billing Intel.</h3>
-                                    <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-1">Activity Log for {selectedAnalytics.clientName}</p>
+            {createPortal(
+                <AnimatePresence>
+                    {selectedAnalytics && (
+                        <div className="fixed inset-0 z-[100] flex justify-end">
+                            <motion.div 
+                                initial={{ opacity: 0 }} 
+                                animate={{ opacity: 1 }} 
+                                exit={{ opacity: 0 }} 
+                                onClick={() => setSelectedAnalytics(null)} 
+                                className="absolute inset-0 bg-white dark:bg-black/80 backdrop-blur-sm" 
+                            />
+                            <motion.div 
+                                initial={{ x: '100%' }} 
+                                animate={{ x: 0 }} 
+                                exit={{ x: '100%' }} 
+                                transition={{ type: 'spring', damping: 25, stiffness: 200 }} 
+                                className="relative w-full max-w-xl bg-gray-100 dark:bg-zinc-950 border-l border-black/10 dark:border-white/10 h-full shadow-[-20px_0_60px_rgba(0,0,0,0.8)] flex flex-col"
+                            >
+                                <div className="p-8 border-b border-black/10 dark:border-white/5 flex justify-between items-center shrink-0">
+                                    <div>
+                                        <h3 className="text-2xl font-black uppercase tracking-tighter italic text-neon-blue">Billing Intel.</h3>
+                                        <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-1">Activity Log for {selectedAnalytics.clientName}</p>
+                                    </div>
+                                    <button onClick={() => setSelectedAnalytics(null)} className="p-3 hover:bg-black/5 dark:hover:bg-white/5 rounded-full transition-colors text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"><X size={20} /></button>
                                 </div>
-                                <button onClick={() => setSelectedAnalytics(null)} className="p-3 hover:bg-black/5 dark:hover:bg-white/5 rounded-full transition-colors text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"><X size={20} /></button>
-                            </div>
-                            <div className="flex-1 overflow-y-auto p-8 space-y-8 scrollbar-hide">
-                                <div className="space-y-4">
-                                    <div className="flex items-center justify-between">
-                                        <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest">Access Timeline</p>
-                                        <div className="px-3 py-1 rounded-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10">
-                                            <span className="text-[8px] font-black text-neon-blue uppercase tracking-widest">Live Tracking Active</span>
+                                <div className="flex-1 overflow-y-auto p-8 space-y-8 scrollbar-hide">
+                                    <div className="space-y-4">
+                                        <div className="flex items-center justify-between">
+                                            <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest">Access Timeline</p>
+                                            <div className="px-3 py-1 rounded-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10">
+                                                <span className="text-[8px] font-black text-neon-blue uppercase tracking-widest">Live Tracking Active</span>
+                                            </div>
                                         </div>
-                                    </div>
 
-                                    {/* Tabs */}
-                                    <div className="flex border-b border-black/10 dark:border-white/10">
-                                        <button 
-                                            onClick={() => setActiveAnalyticsTab('email')}
-                                            className={cn(
-                                                "flex-1 py-3 text-[9px] font-black uppercase tracking-widest transition-all border-b-2 text-center",
-                                                activeAnalyticsTab === 'email' 
-                                                    ? "border-neon-blue text-neon-blue bg-neon-blue/5" 
-                                                    : "border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
-                                            )}
-                                        >
-                                            Email Shared
-                                        </button>
-                                        <button 
-                                            onClick={() => setActiveAnalyticsTab('whatsapp')}
-                                            className={cn(
-                                                "flex-1 py-3 text-[9px] font-black uppercase tracking-widest transition-all border-b-2 text-center",
-                                                activeAnalyticsTab === 'whatsapp' 
-                                                    ? "border-neon-blue text-neon-blue bg-neon-blue/5" 
-                                                    : "border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
-                                            )}
-                                        >
-                                            WhatsApp
-                                        </button>
-                                        <button 
-                                            onClick={() => setActiveAnalyticsTab('general')}
-                                            className={cn(
-                                                "flex-1 py-3 text-[9px] font-black uppercase tracking-widest transition-all border-b-2 text-center",
-                                                activeAnalyticsTab === 'general' 
-                                                    ? "border-neon-blue text-neon-blue bg-neon-blue/5" 
-                                                    : "border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
-                                            )}
-                                        >
-                                            Direct Links
-                                        </button>
-                                    </div>
+                                        {/* Tabs */}
+                                        <div className="flex border-b border-black/10 dark:border-white/10">
+                                            <button 
+                                                onClick={() => setActiveAnalyticsTab('email')}
+                                                className={cn(
+                                                    "flex-1 py-3 text-[9px] font-black uppercase tracking-widest transition-all border-b-2 text-center",
+                                                    activeAnalyticsTab === 'email' 
+                                                        ? "border-neon-blue text-neon-blue bg-neon-blue/5" 
+                                                        : "border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                                                )}
+                                            >
+                                                Email Shared
+                                            </button>
+                                            <button 
+                                                onClick={() => setActiveAnalyticsTab('whatsapp')}
+                                                className={cn(
+                                                    "flex-1 py-3 text-[9px] font-black uppercase tracking-widest transition-all border-b-2 text-center",
+                                                    activeAnalyticsTab === 'whatsapp' 
+                                                        ? "border-neon-blue text-neon-blue bg-neon-blue/5" 
+                                                        : "border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                                                )}
+                                            >
+                                                WhatsApp
+                                            </button>
+                                            <button 
+                                                onClick={() => setActiveAnalyticsTab('general')}
+                                                className={cn(
+                                                    "flex-1 py-3 text-[9px] font-black uppercase tracking-widest transition-all border-b-2 text-center",
+                                                    activeAnalyticsTab === 'general' 
+                                                        ? "border-neon-blue text-neon-blue bg-neon-blue/5" 
+                                                        : "border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                                                )}
+                                            >
+                                                General Opens
+                                            </button>
+                                        </div>
 
-                                    {(() => {
-                                        const logs = selectedAnalytics.accessLogs || [];
-                                        const emailLogs = logs.filter(log => log.via === 'email');
-                                        const whatsappLogs = logs.filter(log => log.via === 'whatsapp');
-                                        const generalLogs = logs.filter(log => log.via !== 'email' && log.via !== 'whatsapp');
-                                        
-                                        const activeLogs = activeAnalyticsTab === 'email' 
-                                            ? emailLogs 
-                                            : activeAnalyticsTab === 'whatsapp' 
-                                                ? whatsappLogs 
-                                                : generalLogs;
+                                        {(() => {
+                                            const logs = selectedAnalytics.accessLogs || [];
+                                            const emailLogs = logs.filter(log => log.via === 'email');
+                                            const whatsappLogs = logs.filter(log => log.via === 'whatsapp');
+                                            const generalLogs = logs.filter(log => log.via !== 'email' && log.via !== 'whatsapp');
+                                            
+                                            let activeLogs = generalLogs;
+                                            if (activeAnalyticsTab === 'email') activeLogs = emailLogs;
+                                            if (activeAnalyticsTab === 'whatsapp') activeLogs = whatsappLogs;
 
-                                        if (activeLogs.length > 0) {
-                                            return (
-                                                <div className="space-y-3">
-                                                    {[...activeLogs].reverse().map((log, i) => {
-                                                        const browserName = getBrowserName(log.userAgent);
-                                                        return (
-                                                            <div key={i} className="p-4 bg-white/[0.02] border border-black/10 dark:border-white/5 rounded-xl space-y-3 group hover:bg-white/[0.05] transition-all">
-                                                                <div className="flex items-start justify-between">
-                                                                    <div className="flex items-center gap-3">
-                                                                        <div className="p-2 bg-black/5 dark:bg-white/5 rounded-lg text-gray-600 dark:text-gray-400">
-                                                                            {activeAnalyticsTab === 'email' ? <Mail size={14} /> : activeAnalyticsTab === 'whatsapp' ? <MessageCircle size={14} /> : <Globe size={14} />}
+                                            if (activeLogs.length > 0) {
+                                                return (
+                                                    <div className="space-y-3">
+                                                        {[...activeLogs].reverse().map((log, i) => {
+                                                            const browserName = getBrowserName(log.userAgent);
+                                                            return (
+                                                                <div key={i} className="p-4 bg-white/[0.02] border border-black/10 dark:border-white/5 rounded-2xl space-y-3">
+                                                                    <div className="flex items-start justify-between">
+                                                                        <div className="flex items-center gap-3">
+                                                                            <div className="p-2 bg-black/5 dark:bg-white/5 rounded-xl text-gray-600 dark:text-gray-400">
+                                                                                {activeAnalyticsTab === 'email' ? <Mail size={16} /> : activeAnalyticsTab === 'whatsapp' ? <MessageCircle size={16} /> : <Globe size={16} />}
+                                                                            </div>
+                                                                            <div>
+                                                                                <p className="text-xs font-bold text-gray-900 dark:text-white">
+                                                                                    {activeAnalyticsTab === 'email' ? (log.shareName || 'Email Recipient') : activeAnalyticsTab === 'whatsapp' ? 'WhatsApp Recipient' : (log.via === 'link' ? 'Direct Link Click' : 'Client Access')}
+                                                                                </p>
+                                                                                <p className="text-[10px] text-gray-500 font-mono mt-0.5">
+                                                                                    {activeAnalyticsTab === 'email' ? (log.shareEmail || 'No email registered') : (log.ip || 'Anonymous IP')}
+                                                                                </p>
+                                                                            </div>
+                                                                        </div>
+                                                                        <div className="text-right">
+                                                                            <p className="text-[10px] font-black text-neon-blue uppercase tracking-widest">
+                                                                                {new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                                            </p>
+                                                                            <p className="text-[8px] font-bold text-gray-500 uppercase tracking-widest mt-0.5">
+                                                                                {new Date(log.timestamp).toLocaleDateString([], { month: 'short', day: 'numeric' })}
+                                                                            </p>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div className="grid grid-cols-2 gap-2 pt-2 border-t border-black/10 dark:border-white/5 text-[9px] text-gray-600 dark:text-gray-400 font-semibold uppercase tracking-wider">
+                                                                        <div>
+                                                                            <span className="text-gray-600 font-bold block text-[8px]">DEVICE</span>
+                                                                            <span>{browserName} / {log.platform || 'Desktop'}</span>
                                                                         </div>
                                                                         <div>
-                                                                            {activeAnalyticsTab === 'email' ? (
-                                                                                <>
-                                                                                    <p className="text-[11px] font-bold text-gray-900 dark:text-white">
-                                                                                        {log.shareName || 'Anonymous Email Recipient'}
-                                                                                    </p>
-                                                                                    <p className="text-[9px] font-semibold text-gray-600 dark:text-gray-400 mt-0.5">
-                                                                                        {log.shareEmail || 'No email log'}
-                                                                                    </p>
-                                                                                </>
-                                                                            ) : (
-                                                                                <>
-                                                                                    <p className="text-[11px] font-bold text-gray-900 dark:text-white">
-                                                                                        {log.via === 'whatsapp' ? 'WhatsApp Share View' : log.via === 'link' ? 'Direct Copy Link' : log.via === 'share' ? 'Native Device Share' : 'General Link Access'}
-                                                                                    </p>
-                                                                                    <p className="text-[9px] font-semibold text-gray-600 dark:text-gray-400 mt-0.5">
-                                                                                        Anonymous Client View
-                                                                                    </p>
-                                                                                </>
-                                                                            )}
+                                                                            <span className="text-gray-600 font-bold block text-[8px]">SCREEN RESOLUTION</span>
+                                                                            <span>{log.screen || 'Unknown'}</span>
                                                                         </div>
                                                                     </div>
-                                                                    <div className="text-right">
-                                                                        <p className="text-[10px] font-black text-neon-blue uppercase tracking-widest">
-                                                                            {new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                                                        </p>
-                                                                        <p className="text-[8px] font-bold text-gray-500 uppercase tracking-widest mt-0.5">
-                                                                            {new Date(log.timestamp).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })}
-                                                                        </p>
-                                                                    </div>
                                                                 </div>
-                                                                <div className="grid grid-cols-2 gap-2 pt-2 border-t border-black/10 dark:border-white/5 text-[9px] text-gray-600 dark:text-gray-400 font-semibold uppercase tracking-wider">
-                                                                    <div>
-                                                                        <span className="text-gray-600 font-bold block text-[8px]">IP ADDRESS</span>
-                                                                        <span className="text-gray-900 dark:text-white font-mono">{log.ip || 'Protected'}</span>
-                                                                    </div>
-                                                                    <div>
-                                                                        <span className="text-gray-600 font-bold block text-[8px]">DEVICE / RESOLUTION</span>
-                                                                        <span>{browserName} on {log.platform || 'OS'} ({log.screen || 'N/A'})</span>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        );
-                                                    })}
-                                                </div>
-                                            );
-                                        } else {
-                                            return (
-                                                <div className="py-12 text-center border border-dashed border-black/10 dark:border-white/10 rounded-2xl">
-                                                    <p className="text-[10px] font-black text-gray-600 uppercase tracking-widest">
-                                                        {activeAnalyticsTab === 'email' ? 'No email opens recorded.' : activeAnalyticsTab === 'whatsapp' ? 'No WhatsApp opens recorded.' : 'No direct link views recorded.'}
-                                                    </p>
-                                                </div>
-                                            );
-                                        }
-                                    })()}
-                                </div>
-
-                                {/* Payment Claim Review */}
-                                {selectedAnalytics.paymentClaim && (
-                                    <div className="pt-8 border-t border-black/10 dark:border-white/5">
-                                        <PaymentClaimReview
-                                            invoice={selectedAnalytics}
-                                            onApprove={() => handleApprovePaymentClaim(selectedAnalytics)}
-                                            onDecline={() => handleDeclinePaymentClaim(selectedAnalytics)}
-                                        />
-                                    </div>
-                                )}
-
-                                {/* Payment Ledger */}
-                                <div className="space-y-4 pt-8 border-t border-black/10 dark:border-white/5">
-                                    <div className="flex items-center justify-between">
-                                        <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest">Payment Ledger</p>
-                                        {(selectedAnalytics.status === 'Pending' || selectedAnalytics.status === 'Verification Pending') && (
-                                            <button 
-                                                onClick={async () => {
-                                                    if(window.confirm('Manually verify and mark this invoice as PAID?')) {
-                                                        const logs = selectedAnalytics.paymentLogs || [];
-                                                        await updateInvoice(selectedAnalytics.id, { 
-                                                            status: 'Paid',
-                                                            paymentLogs: [...logs, {
-                                                                type: 'Manual Verification',
-                                                                timestamp: new Date().toISOString(),
-                                                                amount: selectedAnalytics.total || selectedAnalytics.amount
-                                                            }]
-                                                        });
-                                                        setSelectedAnalytics({...selectedAnalytics, status: 'Paid'});
-                                                    }
-                                                }}
-                                                className="text-[9px] font-black text-neon-blue uppercase tracking-widest hover:underline"
-                                            >
-                                                Verify Manually
-                                            </button>
-                                        )}
-                                    </div>
-                                    {(selectedAnalytics.paymentLogs || []).length > 0 ? (
-                                        <div className="space-y-3">
-                                            {selectedAnalytics.paymentLogs.map((log, i) => (
-                                                <div key={i} className="p-5 bg-neon-green/5 border border-neon-green/20 rounded-2xl flex items-center justify-between">
-                                                    <div className="flex items-center gap-4">
-                                                        <div className="w-10 h-10 bg-neon-green/20 rounded-xl flex items-center justify-center text-neon-green"><CheckCircle size={16} /></div>
-                                                        <div>
-                                                            <p className="text-xs font-bold text-gray-900 dark:text-white">{log.type}</p>
-                                                            <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest mt-1">ID: {log.transactionId || 'INTERNAL'}</p>
-                                                        </div>
+                                                            );
+                                                        })}
                                                     </div>
-                                                    <div className="text-right">
-                                                        <p className="text-[10px] font-black text-neon-green uppercase tracking-widest">SUCCESS</p>
-                                                        <p className="text-[8px] font-bold text-gray-600 uppercase tracking-widest mt-1">{new Date(log.timestamp).toLocaleDateString()}</p>
+                                                );
+                                            } else {
+                                                return (
+                                                    <div className="py-12 text-center border border-dashed border-black/10 dark:border-white/10 rounded-2xl">
+                                                        <p className="text-[10px] font-black text-gray-600 uppercase tracking-widest">
+                                                            No {activeAnalyticsTab} access events recorded yet.
+                                                        </p>
                                                     </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    ) : (
-                                        <div className="p-6 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/5 rounded-2xl">
-                                            <p className="text-[9px] font-black text-gray-600 uppercase tracking-widest text-center">No transaction records found.</p>
+                                                );
+                                            }
+                                        })()}
+                                    </div>
+
+                                    {/* Payment Claim Review */}
+                                    {selectedAnalytics.paymentClaim && (
+                                        <div className="pt-8 border-t border-black/10 dark:border-white/5">
+                                            <PaymentClaimReview
+                                                invoice={selectedAnalytics}
+                                                onApprove={() => handleApprovePaymentClaim(selectedAnalytics)}
+                                                onDecline={() => handleDeclinePaymentClaim(selectedAnalytics)}
+                                            />
                                         </div>
                                     )}
-                                </div>
-                            </div>
-                            <div className="p-8 border-t border-black/10 dark:border-white/5 bg-white dark:bg-black/40 shrink-0">
-                                <div className="p-6 rounded-2xl bg-neon-blue/5 border border-neon-blue/10 flex items-center gap-4">
-                                    <div className="w-10 h-10 rounded-xl bg-neon-blue/10 flex items-center justify-center text-neon-blue">
-                                        <ShieldCheck size={20} />
+
+                                    {/* Payment Ledger */}
+                                    <div className="space-y-4 pt-8 border-t border-black/10 dark:border-white/5">
+                                        <div className="flex items-center justify-between">
+                                            <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest">Payment Ledger</p>
+                                            {(selectedAnalytics.status === 'Pending' || selectedAnalytics.status === 'Verification Pending') && (
+                                                <button 
+                                                    onClick={async () => {
+                                                        if(window.confirm('Manually verify and mark this invoice as PAID?')) {
+                                                            const logs = selectedAnalytics.paymentLogs || [];
+                                                            await updateInvoice(selectedAnalytics.id, { 
+                                                                status: 'Paid',
+                                                                paymentLogs: [...logs, {
+                                                                    type: 'Manual Verification',
+                                                                    timestamp: new Date().toISOString(),
+                                                                    amount: selectedAnalytics.total || selectedAnalytics.amount
+                                                                }]
+                                                            });
+                                                            setSelectedAnalytics({...selectedAnalytics, status: 'Paid'});
+                                                        }
+                                                    }}
+                                                    className="text-[9px] font-black text-neon-blue uppercase tracking-widest hover:underline"
+                                                >
+                                                    Verify Manually
+                                                </button>
+                                            )}
+                                        </div>
+                                        {(selectedAnalytics.paymentLogs || []).length > 0 ? (
+                                            <div className="space-y-3">
+                                                {selectedAnalytics.paymentLogs.map((log, i) => (
+                                                    <div key={i} className="p-5 bg-neon-green/5 border border-neon-green/20 rounded-2xl flex items-center justify-between">
+                                                        <div className="flex items-center gap-4">
+                                                            <div className="w-10 h-10 bg-neon-green/20 rounded-xl flex items-center justify-center text-neon-green"><CheckCircle size={16} /></div>
+                                                            <div>
+                                                                <p className="text-xs font-bold text-gray-900 dark:text-white">{log.type}</p>
+                                                                <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest mt-1">ID: {log.transactionId || 'INTERNAL'}</p>
+                                                            </div>
+                                                        </div>
+                                                        <div className="text-right">
+                                                            <p className="text-[10px] font-black text-neon-green uppercase tracking-widest">SUCCESS</p>
+                                                            <p className="text-[8px] font-bold text-gray-600 uppercase tracking-widest mt-1">{new Date(log.timestamp).toLocaleDateString()}</p>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <div className="p-6 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/5 rounded-2xl">
+                                                <p className="text-[9px] font-black text-gray-600 uppercase tracking-widest text-center">No transaction records found.</p>
+                                            </div>
+                                        )}
                                     </div>
-                                    <div>
-                                        <p className="text-[10px] font-black text-gray-900 dark:text-white uppercase tracking-widest">Real-time Security</p>
-                                        <p className="text-[9px] font-medium text-gray-500 mt-1">All access attempts are logged with IP & browser fingerprints.</p>
+                                </div>
+                                <div className="p-8 border-t border-black/10 dark:border-white/5 bg-white dark:bg-black/40 shrink-0">
+                                    <div className="p-6 rounded-2xl bg-neon-blue/5 border border-neon-blue/10 flex items-center gap-4">
+                                        <div className="w-10 h-10 rounded-xl bg-neon-blue/10 flex items-center justify-center text-neon-blue">
+                                            <ShieldCheck size={20} />
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] font-black text-gray-900 dark:text-white uppercase tracking-widest">Real-time Security</p>
+                                            <p className="text-[9px] font-medium text-gray-500 mt-1">All access attempts are logged with IP & browser fingerprints.</p>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        </motion.div>
-                    </div>
-                )}
-            </AnimatePresence>
+                            </motion.div>
+                        </div>
+                    )}
+                </AnimatePresence>,
+                document.body
+            )}
 
             {/* Invoice Email Modal */}
             <AnimatePresence>

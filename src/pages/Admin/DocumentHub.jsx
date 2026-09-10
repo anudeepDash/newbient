@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import FileText from 'lucide-react/dist/esm/icons/file-text';
 import Plus from 'lucide-react/dist/esm/icons/plus';
 import Search from 'lucide-react/dist/esm/icons/search';
@@ -618,8 +619,9 @@ const DocumentHub = () => {
             )}
 
             {/* ── Add Document Modal ─────────────────────────────────────────── */}
-            <AnimatePresence>
-                {showAddModal && (
+            {createPortal(
+                <AnimatePresence>
+                    {showAddModal && (
                     <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
@@ -1056,11 +1058,14 @@ const DocumentHub = () => {
                         </motion.div>
                     </motion.div>
                 )}
-            </AnimatePresence>
+            </AnimatePresence>,
+            document.body
+        )}
 
             {/* ── Preview Modal ───────────────────────────────────────────────── */}
-            <AnimatePresence>
-                {previewDoc && (
+            {createPortal(
+                <AnimatePresence>
+                    {previewDoc && (
                     <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
@@ -1136,7 +1141,9 @@ const DocumentHub = () => {
                         </div>
                     </motion.div>
                 )}
-            </AnimatePresence>
+            </AnimatePresence>,
+            document.body
+        )}
         </AdminCommunityHubLayout>
     );
 };

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import Shield from 'lucide-react/dist/esm/icons/shield';
@@ -439,44 +440,50 @@ const SystemControlCenter = () => {
                 </div>
 
                 {/* Kill Switch Modal */}
-                {showKillConfirm && (
-                    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
-                        <motion.div 
-                            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-                            animate={{ opacity: 1, scale: 1, y: 0 }}
-                            className="bg-white dark:bg-zinc-900 rounded-3xl p-6 md:p-8 max-w-md w-full border border-red-500/30 shadow-2xl"
-                        >
-                            <div className="text-center space-y-4">
-                                <div className="w-20 h-20 mx-auto rounded-full bg-red-500/10 flex items-center justify-center">
-                                    <AlertTriangle size={40} className="text-red-500" />
-                                </div>
-                                <h3 className="text-2xl font-black text-gray-900 dark:text-white uppercase italic tracking-tighter">
-                                    {maintenanceState.global ? 'Deactivate Lockdown?' : 'Activate Lockdown?'}
-                                </h3>
-                                <p className="text-sm text-gray-600 dark:text-gray-400">
-                                    {maintenanceState.global 
-                                        ? 'This will immediately bring the site back online and allow public traffic.'
-                                        : 'This will immediately lock down the entire site. All non-developer users will see the maintenance page.'}
-                                </p>
-                                <div className="flex flex-col sm:flex-row gap-3 pt-6">
-                                    <button 
-                                        onClick={() => setShowKillConfirm(false)}
-                                        className="flex-1 px-6 py-4 rounded-2xl bg-gray-100 dark:bg-zinc-800 text-gray-900 dark:text-white font-black uppercase tracking-widest text-[10px] hover:bg-gray-200 dark:hover:bg-zinc-700 transition-colors"
-                                    >
-                                        Cancel
-                                    </button>
-                                    <button 
-                                        onClick={() => { toggleGlobalMaintenance(); setShowKillConfirm(false); }}
-                                        className={`flex-1 px-6 py-4 rounded-2xl font-black uppercase tracking-widest text-[10px] text-white transition-all shadow-lg ${
-                                            maintenanceState.global ? 'bg-neon-green text-black hover:scale-105' : 'bg-red-600 hover:bg-red-500 hover:scale-105'
-                                        }`}
-                                    >
-                                        {maintenanceState.global ? 'Bring Online' : 'Activate Lockdown'}
-                                    </button>
-                                </div>
+                {createPortal(
+                    <AnimatePresence>
+                        {showKillConfirm && (
+                            <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
+                                <motion.div 
+                                    initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                                    exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                                    className="bg-white dark:bg-zinc-900 rounded-3xl p-6 md:p-8 max-w-md w-full border border-red-500/30 shadow-2xl"
+                                >
+                                    <div className="text-center space-y-4">
+                                        <div className="w-20 h-20 mx-auto rounded-full bg-red-500/10 flex items-center justify-center">
+                                            <AlertTriangle size={40} className="text-red-500" />
+                                        </div>
+                                        <h3 className="text-2xl font-black text-gray-900 dark:text-white uppercase italic tracking-tighter">
+                                            {maintenanceState.global ? 'Deactivate Lockdown?' : 'Activate Lockdown?'}
+                                        </h3>
+                                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                                            {maintenanceState.global 
+                                                ? 'This will immediately bring the site back online and allow public traffic.'
+                                                : 'This will immediately lock down the entire site. All non-developer users will see the maintenance page.'}
+                                        </p>
+                                        <div className="flex flex-col sm:flex-row gap-3 pt-6">
+                                            <button 
+                                                onClick={() => setShowKillConfirm(false)}
+                                                className="flex-1 px-6 py-4 rounded-2xl bg-gray-100 dark:bg-zinc-800 text-gray-900 dark:text-white font-black uppercase tracking-widest text-[10px] hover:bg-gray-200 dark:hover:bg-zinc-700 transition-colors"
+                                            >
+                                                Cancel
+                                            </button>
+                                            <button 
+                                                onClick={() => { toggleGlobalMaintenance(); setShowKillConfirm(false); }}
+                                                className={`flex-1 px-6 py-4 rounded-2xl font-black uppercase tracking-widest text-[10px] text-white transition-all shadow-lg ${
+                                                    maintenanceState.global ? 'bg-neon-green text-black hover:scale-105' : 'bg-red-600 hover:bg-red-500 hover:scale-105'
+                                                }`}
+                                            >
+                                                {maintenanceState.global ? 'Bring Online' : 'Activate Lockdown'}
+                                            </button>
+                                        </div>
+                                    </div>
+                                </motion.div>
                             </div>
-                        </motion.div>
-                    </div>
+                        )}
+                    </AnimatePresence>,
+                    document.body
                 )}
             </div>
         </AdminCommunityHubLayout>
