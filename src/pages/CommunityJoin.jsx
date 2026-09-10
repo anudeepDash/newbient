@@ -20,6 +20,7 @@ import { cn } from '../lib/utils';
 import CommunityCard from '../components/community/CommunityCard';
 import EventTicketingModal from '../components/tickets/EventTicketingModal';
 import useDynamicMeta from '../hooks/useDynamicMeta';
+import html2canvas from 'html2canvas';
 
 const CommunityJoin = () => {
     useStoreSubscription(['volunteerGigs', 'guestlists', 'giveaways', 'campaigns', 'forms']);
@@ -76,15 +77,17 @@ const CommunityJoin = () => {
     const glId = params.get('gl');
     const formId = params.get('form');
     const campaignId = params.get('campaign');
+    const eventId = params.get('event');
     
-    const directType = gigId ? 'gig' : (glId ? 'gl' : (formId ? 'form' : (campaignId ? 'campaign' : null)));
-    const directId = gigId || glId || formId || campaignId;
+    const directType = gigId ? 'gig' : (glId ? 'gl' : (formId ? 'form' : (campaignId ? 'campaign' : (eventId ? 'event' : null))));
+    const directId = gigId || glId || formId || campaignId || eventId;
 
     const directItem = directId ? (
         directType === 'gig' ? (volunteerGigs || []).find(i => i.id === directId) :
         directType === 'gl' ? (guestlists || []).find(i => i.id === directId) :
         directType === 'form' ? (forms || []).find(i => i.id === directId) :
-        directType === 'campaign' ? (campaigns || []).find(i => i.id === directId) : null
+        directType === 'campaign' ? (campaigns || []).find(i => i.id === directId) :
+        ((forms || []).find(i => i.id === directId) || (guestlists || []).find(i => i.id === directId) || (volunteerGigs || []).find(i => i.id === directId) || null)
     ) : null;
 
     useDynamicMeta({
@@ -102,68 +105,113 @@ const CommunityJoin = () => {
     ];
 
     useEffect(() => {
-        if (user && hasJoined) {
-            const type = directType;
-            const id = directId;
+        const type = directType;
+        const id = directId;
 
-            if (type && id) {
-                const targetId = `${type}-${id}`;
-                const attemptScroll = () => {
-                    const element = document.getElementById(targetId);
-                    if (element) {
-                        setTimeout(() => {
-                            element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                        }, 100);
-                        return true;
-                    }
-                    return false;
-                };
+        if (type && id) {
+            const targetId = `${type}-${id}`;
+            const attemptScroll = () => {
+                const element = document.getElementById(targetId);
+                if (element) {
+                    setTimeout(() => {
+                        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }, 200);
+                    return true;
+                }
+                return false;
+            };
 
-                if (attemptScroll()) return;
-                const interval = setInterval(() => {
-                    if (attemptScroll()) clearInterval(interval);
-                }, 200);
-                const timeout = setTimeout(() => clearInterval(interval), 5000);
-                return () => {
-                    clearInterval(interval);
-                    clearTimeout(timeout);
-                };
-            }
+            if (attemptScroll()) return;
+            const interval = setInterval(() => {
+                if (attemptScroll()) clearInterval(interval);
+            }, 250);
+            const timeout = setTimeout(() => clearInterval(interval), 5000);
+            return () => {
+                clearInterval(interval);
+                clearTimeout(timeout);
+            };
         }
-    }, [user, hasJoined, location.search, volunteerGigs, guestlists, forms, campaigns]);
+    }, [directType, directId, location.search, volunteerGigs, guestlists, forms, campaigns]);
 
     const handleShare = async (type, id) => {
         const isFormType = type === 'form';
         const url = isFormType ? `${window.location.origin}/forms/${id}` : `${window.location.origin}/community?${type}=${id}`;
         
-        let shareTitle = 'Newbi Tribe Access';
-        let shareText = 'Exclusive community opportunity at Newbi Entertainment.';
+        let shareTitle = 'Newbi Tribe Opportunity';
+        let shareDesc = 'Exclusive community opportunity at Newbi Entertainment.';
 
+        let targetItem = null;
         if (isFormType) {
-            const targetForm = (forms || []).find(f => f.id === id);
-            if (targetForm) {
-                shareTitle = `${targetForm.title} | Newbi Forms`;
-                shareText = targetForm.description || 'Fill out this form with Newbi Entertainment.';
+            targetItem = (forms || []).find(f => f.id === id);
+        } else if (type === 'gig') {
+            targetItem = (volunteerGigs || []).find(g => g.id === id);
+        } else if (type === 'gl') {
+            targetItem = (guestlists || []).find(g => g.id === id);
+        } else if (type === 'campaign') {
+            targetItem = (campaigns || []).find(c => c.id === id);
+        }
+
+        if (targetItem) {
+            shareTitle = `${targetItem.title} | Newbi`;
+            if (targetItem.description) {
+                shareDesc = targetItem.description;
             }
         }
-        
+
+        const shareMessage = `${shareTitle}\n\n${shareDesc}\n\nDirect Link: ${url}`;
+
+        // Always copy link to clipboard first so user can paste it anywhere
         try {
+            await navigator.clipboard.writeText(url);
+            setShowShareToast(true);
+            setTimeout(() => setShowShareToast(null), 3000);
+        } catch (clipErr) {
+            console.warn("Clipboard copy warning:", clipErr);
+        }
+
+        // Attempt rich image capture and file share
+        try {
+            const targetDomId = `${type}-${id}`;
+            const cardElement = document.getElementById(targetDomId);
+            let imageFile = null;
+
+            if (cardElement) {
+                try {
+                    const canvas = await html2canvas(cardElement, {
+                        useCORS: true,
+                        scale: 2,
+                        backgroundColor: '#020202',
+                        logging: false
+                    });
+                    const imageBlob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png', 0.95));
+                    if (imageBlob) {
+                        const cleanFileName = (targetItem?.title || 'newbi_community').replace(/[^a-zA-Z0-9]/g, '_');
+                        imageFile = new File([imageBlob], `${cleanFileName}.png`, { type: 'image/png' });
+                    }
+                } catch (canvasErr) {
+                    console.warn("Canvas capture warning:", canvasErr);
+                }
+            }
+
             if (navigator.share) {
-                await navigator.share({
-                    title: shareTitle,
-                    text: shareText,
-                    url: url,
-                });
-            } else {
-                await navigator.clipboard.writeText(url);
-                setShowShareToast(true);
-                setTimeout(() => setShowShareToast(null), 3000);
+                if (imageFile && navigator.canShare && navigator.canShare({ files: [imageFile] })) {
+                    await navigator.share({
+                        title: shareTitle,
+                        text: shareMessage,
+                        url: url,
+                        files: [imageFile]
+                    });
+                } else {
+                    await navigator.share({
+                        title: shareTitle,
+                        text: shareMessage,
+                        url: url
+                    });
+                }
             }
         } catch (err) {
             if (err.name !== 'AbortError') {
-                navigator.clipboard.writeText(url);
-                setShowShareToast(true);
-                setTimeout(() => setShowShareToast(null), 3000);
+                console.warn("Share error:", err);
             }
         }
     };
