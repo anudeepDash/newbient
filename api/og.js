@@ -1,5 +1,5 @@
-import { initializeApp, getApps, getApp } from "firebase/app";
-import { getFirestore, doc, getDoc, collection, query, where, getDocs } from "firebase/firestore";
+import { initializeApp, getApps, cert } from 'firebase-admin/app';
+import { getFirestore } from 'firebase-admin/firestore';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -7,29 +7,59 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const firebaseConfig = {
-    apiKey: process.env.VITE_FIREBASE_API_KEY || process.env.FIREBASE_API_KEY,
-    authDomain: process.env.VITE_FIREBASE_AUTH_DOMAIN || "newbi-ent-v2.firebaseapp.com",
-    projectId: process.env.VITE_FIREBASE_PROJECT_ID || "newbi-ent-v2",
-    storageBucket: process.env.VITE_FIREBASE_STORAGE_BUCKET || "newbi-ent-v2.firebasestorage.app",
-    messagingSenderId: process.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "860370467784",
-    appId: process.env.VITE_FIREBASE_APP_ID || "1:860370467784:web:d7b4dfc66336f6da50defd"
-};
+let adminDb = null;
 
-let db = null;
 try {
-    const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
-    db = getFirestore(app);
+    if (!getApps().length) {
+        const projectId = (process.env.FIREBASE_PROJECT_ID || process.env.VITE_FIREBASE_PROJECT_ID || "newbi-ent-v2")?.trim();
+        const clientEmail = process.env.FIREBASE_CLIENT_EMAIL?.trim();
+        let privateKey = process.env.FIREBASE_PRIVATE_KEY?.trim();
+
+        if (projectId && clientEmail && privateKey) {
+            let formattedKey = privateKey.trim();
+            if ((formattedKey.startsWith('"') && formattedKey.endsWith('"')) || 
+                (formattedKey.startsWith("'") && formattedKey.endsWith("'"))) {
+                formattedKey = formattedKey.slice(1, -1).trim();
+            }
+            const header = '-----BEGIN PRIVATE KEY-----';
+            const footer = '-----END PRIVATE KEY-----';
+            let rawBase64 = formattedKey;
+            if (rawBase64.includes(header)) rawBase64 = rawBase64.replace(header, '');
+            if (rawBase64.includes(footer)) rawBase64 = rawBase64.replace(footer, '');
+            rawBase64 = rawBase64.replace(/\\n/g, '').replace(/\s+/g, '');
+            const pemLines = [];
+            for (let i = 0; i < rawBase64.length; i += 64) {
+                pemLines.push(rawBase64.substring(i, i + 64));
+            }
+            formattedKey = `${header}\n${pemLines.join('\n')}\n${footer}`;
+
+            const app = initializeApp({
+                credential: cert({
+                    projectId,
+                    clientEmail,
+                    privateKey: formattedKey,
+                }),
+            });
+            adminDb = getFirestore(app);
+        } else if (projectId) {
+            const app = initializeApp({ projectId });
+            adminDb = getFirestore(app);
+        }
+    } else {
+        adminDb = getFirestore(getApps()[0]);
+    }
 } catch (e) {
-    console.warn('[OG] Firebase init warning:', e.message);
+    console.warn('[OG] Firebase Admin init warning:', e.message);
 }
+
+const normalizeString = (str) => String(str || '').trim().toLowerCase();
+const createSlug = (str) => String(str || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 
 async function getBaseHtml(req) {
     const candidatePaths = [
         path.join(process.cwd(), 'dist', 'index.html'),
         path.join(__dirname, '..', 'dist', 'index.html'),
-        path.join(__dirname, 'dist', 'index.html'),
-        path.join(process.cwd(), 'index.html')
+        path.join(__dirname, 'dist', 'index.html')
     ];
 
     for (const p of candidatePaths) {
@@ -57,6 +87,17 @@ async function getBaseHtml(req) {
         console.warn('[OG] Remote index.html fetch failed:', e);
     }
 
+    // Fallback: Check root index.html
+    const rootPath = path.join(process.cwd(), 'index.html');
+    try {
+        if (fs.existsSync(rootPath)) {
+            const content = fs.readFileSync(rootPath, 'utf8');
+            if (content && content.includes('<div id="root">')) {
+                return { html: content, path: rootPath };
+            }
+        }
+    } catch (e) {}
+
     return { html: '', path: '' };
 }
 
@@ -65,6 +106,8 @@ export default async function handler(req, res) {
     const origin = req.headers.origin;
     if (allowedOrigins.includes(origin)) {
         res.setHeader('Access-Control-Allow-Origin', origin);
+    } else {
+        res.setHeader('Access-Control-Allow-Origin', '*');
     }
     res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS');
 
@@ -96,13 +139,15 @@ export default async function handler(req, res) {
         type: 'website'
     };
 
+    let initialData = null;
+
     // Metadata fetch with 2500ms safety timeout to avoid blocking page loads
     const fetchMetadata = async () => {
-        if (!db) return;
+        if (!adminDb) return;
 
         if (eventId) {
-            const snap = await getDoc(doc(db, 'upcoming_events', eventId));
-            if (snap.exists()) {
+            const snap = await adminDb.collection('upcoming_events').doc(eventId).get();
+            if (snap.exists) {
                 const data = snap.data();
                 meta.title = `${data.title}${data.city ? ` | ${data.city}` : ''}`;
                 meta.description = `Featuring ${Array.isArray(data.artists) ? data.artists.join(', ') : 'Exclusive Artists'}. ${data.description || ''}`.substring(0, 155);
@@ -110,8 +155,7 @@ export default async function handler(req, res) {
                 meta.url = `${baseUrl}/?event=${eventId}`;
             }
         } else if (giveawaySlug) {
-            const q = query(collection(db, 'giveaways'), where('slug', '==', giveawaySlug));
-            const snaps = await getDocs(q);
+            const snaps = await adminDb.collection('giveaways').where('slug', '==', giveawaySlug).get();
             if (!snaps.empty) {
                 const data = snaps.docs[0].data();
                 meta.title = `${data.name} | Newbi Giveaway`;
@@ -120,62 +164,115 @@ export default async function handler(req, res) {
                 meta.url = `${baseUrl}/giveaway/${giveawaySlug}`;
             }
         } else if (formId || queryFormId) {
-            const id = formId || queryFormId;
-            let found = false;
-            const snap = await getDoc(doc(db, 'forms', id));
-            if (snap.exists()) {
+            const id = (formId || queryFormId || '').trim();
+            const clean = normalizeString(id);
+            const cleanSlug = createSlug(id);
+
+            // Tier 1: Look in 'forms' collection by ID
+            const snap = await adminDb.collection('forms').doc(id).get();
+            if (snap.exists) {
                 const data = snap.data();
+                initialData = { id: snap.id, ...data };
                 meta.title = `${data.title} | Newbi Forms`;
                 meta.description = data.description?.substring(0, 155) || `Participate in ${data.title} on Newbi Hub.`;
                 meta.image = data.image?.startsWith('http') ? data.image : `${baseUrl}${data.image || '/og-image.png'}`;
-                meta.url = formId ? `${baseUrl}/forms/${id}` : `${baseUrl}/community-join?form=${id}`;
-                found = true;
-            }
+                meta.url = formId ? `${baseUrl}/forms/${id}` : `${baseUrl}/community?form=${id}`;
+            } else {
+                // Scan forms for slug or title
+                const allFormsSnap = await adminDb.collection('forms').get();
+                let foundDoc = null;
+                allFormsSnap.forEach(d => {
+                    if (foundDoc) return;
+                    const dData = d.data();
+                    if (
+                        normalizeString(d.id) === clean ||
+                        normalizeString(dData.slug) === clean ||
+                        normalizeString(dData.formId) === clean ||
+                        (dData.title && createSlug(dData.title) === cleanSlug) ||
+                        (dData.link && normalizeString(dData.link).endsWith(`/${clean}`))
+                    ) {
+                        foundDoc = { id: d.id, ...dData };
+                    }
+                });
 
-            if (!found) {
-                const eventSnap = await getDoc(doc(db, 'upcoming_events', id));
-                if (eventSnap.exists()) {
-                    const data = eventSnap.data();
-                    meta.title = `${data.title} | Newbi Form`;
-                    meta.description = data.description?.substring(0, 155) || `Participate in ${data.title} on Newbi Hub.`;
-                    meta.image = data.image?.startsWith('http') ? data.image : `${baseUrl}${data.image || '/og-image.png'}`;
-                    meta.url = `${baseUrl}/forms/${id}`;
-                    found = true;
-                }
-            }
-
-            if (!found) {
-                const gigSnap = await getDoc(doc(db, 'volunteer_gigs', id));
-                if (gigSnap.exists()) {
-                    const data = gigSnap.data();
-                    meta.title = `${data.title} | Volunteer Form`;
-                    meta.description = data.description?.substring(0, 155) || `Participate in ${data.title} on Newbi Hub.`;
-                    meta.image = data.image?.startsWith('http') ? data.image : `${baseUrl}${data.image || '/og-image.png'}`;
-                    meta.url = `${baseUrl}/forms/${id}`;
-                    found = true;
+                if (foundDoc) {
+                    initialData = foundDoc;
+                    meta.title = `${foundDoc.title} | Newbi Forms`;
+                    meta.description = foundDoc.description?.substring(0, 155) || `Participate in ${foundDoc.title} on Newbi Hub.`;
+                    meta.image = foundDoc.image?.startsWith('http') ? foundDoc.image : `${baseUrl}${foundDoc.image || '/og-image.png'}`;
+                    meta.url = formId ? `${baseUrl}/forms/${foundDoc.id}` : `${baseUrl}/community?form=${foundDoc.id}`;
+                } else {
+                    // Check upcoming_events
+                    const eventSnap = await adminDb.collection('upcoming_events').doc(id).get();
+                    if (eventSnap.exists) {
+                        const data = eventSnap.data();
+                        const refFormId = data.formId || data.relatedArtistFormId;
+                        if (refFormId) {
+                            const refSnap = await adminDb.collection('forms').doc(refFormId).get();
+                            if (refSnap.exists) {
+                                initialData = { id: refSnap.id, ...refSnap.data() };
+                            }
+                        }
+                        if (!initialData) {
+                            initialData = {
+                                id: eventSnap.id,
+                                title: data.title,
+                                description: data.description,
+                                formUrl: data.formUrl || data.link,
+                                activeLabel: data.status || 'Live',
+                                image: data.image,
+                                highlightColor: data.highlightColor || '#2ebfff',
+                                bottomText: data.location || 'Event Form'
+                            };
+                        }
+                        meta.title = `${data.title} | Newbi Form`;
+                        meta.description = data.description?.substring(0, 155) || `Participate in ${data.title} on Newbi Hub.`;
+                        meta.image = data.image?.startsWith('http') ? data.image : `${baseUrl}${data.image || '/og-image.png'}`;
+                        meta.url = `${baseUrl}/forms/${id}`;
+                    } else {
+                        // Check volunteer_gigs
+                        const gigSnap = await adminDb.collection('volunteer_gigs').doc(id).get();
+                        if (gigSnap.exists) {
+                            const data = gigSnap.data();
+                            initialData = {
+                                id: gigSnap.id,
+                                title: data.title,
+                                description: data.description,
+                                formUrl: data.formUrl || data.applyLink || data.link,
+                                activeLabel: data.status || 'Live',
+                                image: data.image,
+                                highlightColor: data.highlightColor || '#39FF14',
+                                bottomText: data.location || 'Gig Form'
+                            };
+                            meta.title = `${data.title} | Volunteer Form`;
+                            meta.description = data.description?.substring(0, 155) || `Participate in ${data.title} on Newbi Hub.`;
+                            meta.image = data.image?.startsWith('http') ? data.image : `${baseUrl}${data.image || '/og-image.png'}`;
+                            meta.url = `${baseUrl}/forms/${id}`;
+                        }
+                    }
                 }
             }
         } else if (gigId) {
-            const snap = await getDoc(doc(db, 'volunteer_gigs', gigId));
-            if (snap.exists()) {
+            const snap = await adminDb.collection('volunteer_gigs').doc(gigId).get();
+            if (snap.exists) {
                 const data = snap.data();
                 meta.title = `${data.title} | Volunteer Gig`;
                 meta.description = data.description?.substring(0, 155) || `Join the Newbi Tribe as a volunteer for ${data.title}.`;
                 meta.image = data.image?.startsWith('http') ? data.image : `${baseUrl}${data.image || '/og-image.png'}`;
-                meta.url = `${baseUrl}/community-join?gig=${gigId}`;
+                meta.url = `${baseUrl}/community?gig=${gigId}`;
             }
         } else if (glId) {
-            const snap = await getDoc(doc(db, 'guestlists', glId));
-            if (snap.exists()) {
+            const snap = await adminDb.collection('guestlists').doc(glId).get();
+            if (snap.exists) {
                 const data = snap.data();
                 meta.title = `${data.title} | VIP Guestlist`;
                 meta.description = data.description?.substring(0, 155) || `Get on the exclusive guestlist for ${data.title}.`;
                 meta.image = data.image?.startsWith('http') ? data.image : `${baseUrl}${data.image || '/og-image.png'}`;
-                meta.url = `${baseUrl}/community-join?gl=${glId}`;
+                meta.url = `${baseUrl}/community?gl=${glId}`;
             }
         } else if (proposalId) {
-            const snap = await getDoc(doc(db, 'proposals', proposalId));
-            if (snap.exists()) {
+            const snap = await adminDb.collection('proposals').doc(proposalId).get();
+            if (snap.exists) {
                 const data = snap.data();
                 meta.title = `${data.proposalNumber || 'Strategic Quote'} | ${data.clientName || 'Valued Partner'} | Newbi Ent.`;
                 meta.description = `Strategic Proposal for ${data.campaignName || 'Campaign'}. Status: ${data.status || 'Draft'}.`;
@@ -183,8 +280,8 @@ export default async function handler(req, res) {
                 meta.url = `${baseUrl}/proposal/${proposalId}`;
             }
         } else if (invoiceId) {
-            const snap = await getDoc(doc(db, 'invoices', invoiceId));
-            if (snap.exists()) {
+            const snap = await adminDb.collection('invoices').doc(invoiceId).get();
+            if (snap.exists) {
                 const data = snap.data();
                 meta.title = `${data.invoiceNumber || 'Tax Invoice'} | ${data.clientName || 'Valued Partner'} | Newbi Ent.`;
                 meta.description = `Tax Invoice for ${data.campaignName || 'Services'}. Status: ${data.status || 'Unpaid'}.`;
@@ -192,8 +289,8 @@ export default async function handler(req, res) {
                 meta.url = `${baseUrl}/invoice/${invoiceId}`;
             }
         } else if (agreementId) {
-            const snap = await getDoc(doc(db, 'agreements', agreementId));
-            if (snap.exists()) {
+            const snap = await adminDb.collection('agreements').doc(agreementId).get();
+            if (snap.exists) {
                 const data = snap.data();
                 meta.title = `${data.agreementNumber || 'Agreement'} | ${data.clientName || 'Valued Partner'} | Newbi Ent.`;
                 meta.description = `Service Agreement for ${data.campaignName || 'Services'}. Status: ${data.status || 'Draft'}.`;
@@ -201,8 +298,7 @@ export default async function handler(req, res) {
                 meta.url = `${baseUrl}/agreement/${agreementId}`;
             }
         } else if (blogSlug) {
-            const q = query(collection(db, 'posts'), where('slug', '==', blogSlug));
-            const snaps = await getDocs(q);
+            const snaps = await adminDb.collection('posts').where('slug', '==', blogSlug).get();
             if (!snaps.empty) {
                 const data = snaps.docs[0].data();
                 meta.title = `${data.title} | Concert Zone | Newbi Ent.`;
@@ -239,11 +335,15 @@ export default async function handler(req, res) {
     let html = loadedHtml;
 
     if (!html) {
-        // Safe minimal fallback HTML for direct browser visits without premature redirects
-        html = `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>${meta.title}</title><script type="module" crossorigin src="/src/main.jsx"></script></head><body><div id="root"></div></body></html>`;
+        html = `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>${meta.title}</title></head><body><div id="root"></div></body></html>`;
     }
 
-    // Inject dynamic Meta Tags into Head
+    // Inject dynamic Meta Tags & Initial Data into Head
+    let initialScript = '';
+    if (initialData) {
+        initialScript = `<script>window.__INITIAL_FORM_DATA__ = ${JSON.stringify(initialData)};</script>`;
+    }
+
     const metaTags = `
         <title>${meta.title}</title>
         <meta name="description" content="${meta.description}" />
@@ -258,6 +358,7 @@ export default async function handler(req, res) {
         <meta name="twitter:image" content="${meta.image}" />
         <link rel="icon" type="image/png" href="${baseUrl}/favicon.png" />
         <link rel="shortcut icon" type="image/png" href="${baseUrl}/favicon.png" />
+        ${initialScript}
     `;
 
     // Strip static title and duplicate meta tags to avoid conflicting tags
@@ -273,4 +374,3 @@ export default async function handler(req, res) {
     res.setHeader('Cache-Control', 's-maxage=60, stale-while-revalidate=300');
     res.status(200).send(html);
 }
-

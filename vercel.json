@@ -2,6 +2,9 @@
     "functions": {
         "api/og.js": {
             "includeFiles": "dist/**"
+        },
+        "api/forms.js": {
+            "includeFiles": "dist/**"
         }
     },
     "redirects": [
@@ -58,6 +61,10 @@
     ],
     "rewrites": [
         {
+            "source": "/api/forms",
+            "destination": "/api/forms.js"
+        },
+        {
             "source": "/",
             "has": [{ "type": "host", "value": "artistant.in" }],
             "destination": "/artistant"
@@ -76,6 +83,10 @@
             "destination": "/api/og?formId=:id"
         },
         {
+            "source": "/form/:id",
+            "destination": "/api/og?formId=:id"
+        },
+        {
             "source": "/proposal/:id",
             "destination": "/api/og?proposalId=:id"
         },
@@ -90,6 +101,21 @@
         {
             "source": "/concertzone/:category/:slug",
             "destination": "/api/og?blogSlug=:slug"
+        },
+        {
+            "source": "/community",
+            "has": [{ "type": "query", "key": "gig" }],
+            "destination": "/api/og"
+        },
+        {
+            "source": "/community",
+            "has": [{ "type": "query", "key": "gl" }],
+            "destination": "/api/og"
+        },
+        {
+            "source": "/community",
+            "has": [{ "type": "query", "key": "form" }],
+            "destination": "/api/og"
         },
         {
             "source": "/community-join",
@@ -121,5 +147,4 @@
             "destination": "/index.html"
         }
     ]
-
 }

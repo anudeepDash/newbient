@@ -358,8 +358,24 @@ export const useStore = create((set, get) => ({
                     data = sortFn(data);
                 }
                 set({ [stateKey]: data });
-            }, (error) => {
+            }, async (error) => {
                 console.error(`Error fetching ${stateKey} (${colName}):`, error);
+                // Graceful fallback for public endpoints if client Firestore rules reject unauthenticated access
+                if (stateKey === 'forms') {
+                    try {
+                        const res = await fetch('/api/forms');
+                        if (res.ok) {
+                            const json = await res.json();
+                            if (json.success && Array.isArray(json.forms)) {
+                                let data = json.forms;
+                                if (sortFn) data = sortFn(data);
+                                set({ forms: data });
+                            }
+                        }
+                    } catch (apiErr) {
+                        console.warn('[Store] Forms API fallback notice:', apiErr);
+                    }
+                }
             });
             activeListeners[stateKey] = { unsub, count: 1, timeoutId: null };
         } else {
@@ -397,10 +413,28 @@ export const useStore = create((set, get) => ({
         return (a.order || 0) - (b.order || 0);
     })),
     subscribeToPortfolioCategories: () => get().subscribeToKey('portfolioCategories', 'portfolio_categories'),
-    subscribeToForms: () => get().subscribeToKey('forms', 'forms', (data) => data.sort((a, b) => {
-        if (a.isPinned !== b.isPinned) return b.isPinned ? -1 : 1;
-        return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
-    })),
+    subscribeToForms: () => {
+        // Proactive API fetch for instantaneous guest access without waiting on Firestore
+        if ((get().forms || []).length === 0) {
+            fetch('/api/forms')
+                .then(r => r.json())
+                .then(json => {
+                    if (json.success && Array.isArray(json.forms) && json.forms.length > 0) {
+                        set(state => {
+                            if ((state.forms || []).length === 0) {
+                                return { forms: json.forms };
+                            }
+                            return {};
+                        });
+                    }
+                })
+                .catch(() => {});
+        }
+        return get().subscribeToKey('forms', 'forms', (data) => data.sort((a, b) => {
+            if (a.isPinned !== b.isPinned) return b.isPinned ? -1 : 1;
+            return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
+        }));
+    },
     subscribeToVolunteerGigs: () => get().subscribeToKey('volunteerGigs', 'volunteer_gigs', (data) => data.sort((a, b) => {
         if (a.isPinned !== b.isPinned) return b.isPinned ? -1 : 1;
         return (a.order || 0) - (b.order || 0);

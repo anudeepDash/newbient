@@ -57,6 +57,28 @@ const CommunityJoin = () => {
     const [registrationLoaded, setRegistrationLoaded] = useState(false);
     const hasJoined = user && user.hasJoinedTribe;
 
+    const [fallbackForms, setFallbackForms] = useState([]);
+    const activeFormsList = forms && forms.length > 0 ? forms : fallbackForms;
+
+    useEffect(() => {
+        if (!forms || forms.length === 0) {
+            fetch('/api/forms')
+                .then(r => r.json())
+                .then(json => {
+                    if (json.success && Array.isArray(json.forms)) {
+                        setFallbackForms(json.forms);
+                        useStore.setState(state => {
+                            if (!state.forms || state.forms.length === 0) {
+                                return { forms: json.forms };
+                            }
+                            return {};
+                        });
+                    }
+                })
+                .catch(err => console.warn('[CommunityJoin] API forms fallback notice:', err));
+        }
+    }, [forms]);
+
     // Build tribe registration URL with email pre-fill
     const tribeFormUrl = useMemo(() => {
         const base = 'https://docs.google.com/forms/d/e/1FAIpQLScQv55cT-hPBqTtw7PFqOZND6QfPkmjzT8_4Sf4G53_UYwSQg/viewform?embedded=true';
@@ -85,9 +107,9 @@ const CommunityJoin = () => {
     const directItem = directId ? (
         directType === 'gig' ? (volunteerGigs || []).find(i => i.id === directId) :
         directType === 'gl' ? (guestlists || []).find(i => i.id === directId) :
-        directType === 'form' ? (forms || []).find(i => i.id === directId) :
+        directType === 'form' ? (activeFormsList || []).find(i => i.id === directId) :
         directType === 'campaign' ? (campaigns || []).find(i => i.id === directId) :
-        ((forms || []).find(i => i.id === directId) || (guestlists || []).find(i => i.id === directId) || (volunteerGigs || []).find(i => i.id === directId) || null)
+        ((activeFormsList || []).find(i => i.id === directId) || (guestlists || []).find(i => i.id === directId) || (volunteerGigs || []).find(i => i.id === directId) || null)
     ) : null;
 
     useDynamicMeta({
@@ -101,7 +123,7 @@ const CommunityJoin = () => {
     const featuredItems = [
         ...(volunteerGigs || []).filter(i => i.isPinned).map(item => ({ ...item, type: 'gig' })),
         ...(guestlists || []).filter(i => i.isPinned).map(item => ({ ...item, type: 'gl' })),
-        ...(forms || []).filter(i => i.isPinned).map(item => ({ ...item, type: 'form' }))
+        ...(activeFormsList || []).filter(i => i.isPinned).map(item => ({ ...item, type: 'form' }))
     ];
 
     useEffect(() => {
@@ -142,7 +164,7 @@ const CommunityJoin = () => {
 
         let targetItem = null;
         if (isFormType) {
-            targetItem = (forms || []).find(f => f.id === id);
+            targetItem = (activeFormsList || []).find(f => f.id === id);
         } else if (type === 'gig') {
             targetItem = (volunteerGigs || []).find(g => g.id === id);
         } else if (type === 'gl') {
@@ -291,7 +313,7 @@ const CommunityJoin = () => {
             show: true, 
             subtitleText: 'verified entry' 
         },
-        { id: 'community-pulse', title: 'Community Forms', icon: FileText, accent: 'neon-pink', items: (forms || []), type: 'form', label: null, show: true, subtitleText: 'active entry portals' }
+        { id: 'community-pulse', title: 'Community Forms', icon: FileText, accent: 'neon-pink', items: (activeFormsList || []), type: 'form', label: null, show: true, subtitleText: 'active entry portals' }
     ].filter(s => s.show);
 
     return (
