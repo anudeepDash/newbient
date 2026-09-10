@@ -4,7 +4,7 @@ import {
     X, User, Shield, Briefcase, Ticket, LogOut, ExternalLink, Settings, 
     Calendar, Zap, AlertCircle, ArrowRight, Key, RefreshCw, Mail, Check, 
     Edit2, Loader2, Info, Instagram, ShieldCheck, 
-    LayoutDashboard, CreditCard, History, ChevronRight, Image as ImageIcon,
+    LayoutDashboard, CreditCard, History, ChevronRight, ChevronLeft, Image as ImageIcon,
     Sparkles, Trash2, MapPin, Phone, CheckCircle2, Upload, Camera, Building, Award, Clock
 } from 'lucide-react';
 import { useStore } from '../lib/store';
@@ -28,6 +28,25 @@ const ProfilePanel = ({ isOpen: propIsOpen, onClose: propOnClose }) => {
     const onClose = () => {
         if (propOnClose) propOnClose();
         closeProfilePanel();
+    };
+
+    const tabsContainerRef = useRef(null);
+    const [canScrollLeft, setCanScrollLeft] = useState(false);
+    const [canScrollRight, setCanScrollRight] = useState(false);
+    const [scrollProgress, setScrollProgress] = useState(0);
+
+    const updateScrollMetrics = () => {
+        const el = tabsContainerRef.current;
+        if (!el) return;
+        const { scrollLeft, scrollWidth, clientWidth } = el;
+        const maxScroll = scrollWidth - clientWidth;
+        setCanScrollLeft(scrollLeft > 6);
+        setCanScrollRight(maxScroll > 6 && scrollLeft < maxScroll - 6);
+        if (maxScroll > 0) {
+            setScrollProgress(scrollLeft / maxScroll);
+        } else {
+            setScrollProgress(0);
+        }
     };
 
     const [activeTab, setActiveTab] = useState(profilePanelTab || 'overview'); // 'overview', 'creator', 'tickets', 'settings', 'security'
@@ -132,15 +151,13 @@ const ProfilePanel = ({ isOpen: propIsOpen, onClose: propOnClose }) => {
         };
     }, [isOpen, user?.uid, user?.email]);
 
-    if (!user) return null;
-
-    const userPhoneNorm = user.phoneNumber ? normalizePhoneNumber(user.phoneNumber) : null;
-    const userEmailNorm = user.email ? user.email.toLowerCase() : null;
-    const creatorProfile = creators?.find(c => 
+    const userPhoneNorm = user?.phoneNumber ? normalizePhoneNumber(user.phoneNumber) : null;
+    const userEmailNorm = user?.email ? user.email.toLowerCase() : null;
+    const creatorProfile = user ? creators?.find(c => 
         c.uid === user.uid || 
         (userEmailNorm && c.email && c.email.toLowerCase() === userEmailNorm) ||
         (userPhoneNorm && c.phone && normalizePhoneNumber(c.phone) === userPhoneNorm)
-    );
+    ) : null;
     const isCreator = !!creatorProfile;
     const isApprovedCreator = creatorProfile?.profileStatus === 'approved';
 
@@ -159,7 +176,7 @@ const ProfilePanel = ({ isOpen: propIsOpen, onClose: propOnClose }) => {
         };
     });
 
-    const mappedTicketOrders = (ticketOrders?.filter(order => order.userId === user.uid) || [])
+    const mappedTicketOrders = (ticketOrders?.filter(order => user && order.userId === user.uid) || [])
         .map(order => {
             const event = allPossibleEvents.find(e => e.id === order.eventId);
             return {
@@ -208,11 +225,26 @@ const ProfilePanel = ({ isOpen: propIsOpen, onClose: propOnClose }) => {
     // Universal navigation tabs - Creator Hub is present for all users
     const tabs = [
         { id: 'overview', label: 'Overview', icon: LayoutDashboard },
-        { id: 'creator', label: 'Creator Hub', icon: Zap },
-        { id: 'tickets', label: 'Ticket Vault', icon: Ticket },
+        { id: 'creator', label: 'Creator', icon: Zap },
+        { id: 'tickets', label: 'Tickets', icon: Ticket },
         { id: 'settings', label: 'Settings', icon: User },
         { id: 'security', label: 'Security', icon: Shield },
     ];
+
+    useEffect(() => {
+        if (!isOpen) return;
+        const timer = setTimeout(updateScrollMetrics, 120);
+        const el = tabsContainerRef.current;
+        if (el) {
+            el.addEventListener('scroll', updateScrollMetrics, { passive: true });
+        }
+        window.addEventListener('resize', updateScrollMetrics);
+        return () => {
+            clearTimeout(timer);
+            if (el) el.removeEventListener('scroll', updateScrollMetrics);
+            window.removeEventListener('resize', updateScrollMetrics);
+        };
+    }, [isOpen, activeTab]);
 
     const handleLogout = async () => {
         await logout();
@@ -346,8 +378,10 @@ const ProfilePanel = ({ isOpen: propIsOpen, onClose: propOnClose }) => {
         }
     };
 
-    const avatarInitial = user.displayName ? user.displayName.charAt(0).toUpperCase() : (user.email ? user.email.charAt(0).toUpperCase() : 'U');
+    const avatarInitial = user?.displayName ? user.displayName.charAt(0).toUpperCase() : (user?.email ? user.email.charAt(0).toUpperCase() : 'U');
     const avatarPic = creatorProfile?.profilePicture || user?.photoURL || null;
+
+    if (!user) return null;
 
     return (
         <AnimatePresence>
@@ -463,43 +497,99 @@ const ProfilePanel = ({ isOpen: propIsOpen, onClose: propOnClose }) => {
                             </div>
                         </div>
 
-                        {/* Navigation Tabs - Capsule Switcher */}
-                        <div 
-                            onWheel={(e) => {
-                                if (e.currentTarget && e.deltaY !== 0) {
-                                    e.currentTarget.scrollLeft += e.deltaY;
-                                }
-                            }}
-                            className="px-4 md:px-6 py-3 border-b border-gray-100 dark:border-white/5 relative z-10 bg-white/80 dark:bg-black/20 backdrop-blur-xl shrink-0 overflow-x-auto custom-scrollbar"
-                        >
-                            <div className="flex w-full p-1 bg-gray-100 dark:bg-white/5 rounded-2xl border border-gray-200/80 dark:border-white/10 gap-1">
-                                {tabs.map((tab) => {
-                                    const Icon = tab.icon;
-                                    const isActive = activeTab === tab.id;
-                                    return (
-                                        <button
-                                            key={tab.id}
-                                            onClick={() => setActiveTab(tab.id)}
-                                            className={cn(
-                                                "flex-1 min-w-[80px] md:min-w-0 relative flex items-center justify-center gap-1.5 px-2 md:px-3 py-2 rounded-xl transition-all font-heading text-[9.5px] md:text-[10.5px] font-black uppercase tracking-tight sm:tracking-wider whitespace-nowrap",
-                                                isActive 
-                                                    ? "text-gray-900 dark:text-white shadow-sm" 
-                                                    : "text-gray-500 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-white"
-                                            )}
-                                        >
-                                            {isActive && (
-                                                <motion.div 
-                                                    layoutId="profileActiveTabIndicator"
-                                                    className="absolute inset-0 bg-white dark:bg-white/15 rounded-xl border border-gray-200 dark:border-white/20 shadow-sm"
-                                                    transition={{ type: "spring", bounce: 0.15, duration: 0.5 }}
-                                                />
-                                            )}
-                                            <Icon size={14} className={cn("relative z-10 transition-transform shrink-0", isActive && "text-neon-green scale-110")} />
-                                            <span className="relative z-10 truncate">{tab.label}</span>
-                                        </button>
-                                    );
-                                })}
+                        {/* Navigation Tabs - Capsule Switcher with Scroll Indicators */}
+                        <div className="relative border-b border-gray-100 dark:border-white/5 z-10 bg-white/80 dark:bg-black/20 backdrop-blur-xl shrink-0 px-4 md:px-6 py-2.5">
+                            {/* Left Scroll Arrow */}
+                            <AnimatePresence>
+                                {canScrollLeft && (
+                                    <motion.button
+                                        initial={{ opacity: 0, scale: 0.8 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        exit={{ opacity: 0, scale: 0.8 }}
+                                        onClick={() => {
+                                            tabsContainerRef.current?.scrollBy({ left: -140, behavior: 'smooth' });
+                                        }}
+                                        className="absolute left-2 top-1/2 -translate-y-1/2 z-20 w-7 h-7 rounded-full bg-white/95 dark:bg-zinc-900/95 border border-black/10 dark:border-white/10 shadow-lg flex items-center justify-center text-gray-700 dark:text-zinc-200 hover:text-neon-green hover:scale-110 active:scale-95 transition-all backdrop-blur-md"
+                                        aria-label="Scroll left"
+                                    >
+                                        <ChevronLeft size={14} />
+                                    </motion.button>
+                                )}
+                            </AnimatePresence>
+
+                            {/* Right Scroll Arrow */}
+                            <AnimatePresence>
+                                {canScrollRight && (
+                                    <motion.button
+                                        initial={{ opacity: 0, scale: 0.8 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        exit={{ opacity: 0, scale: 0.8 }}
+                                        onClick={() => {
+                                            tabsContainerRef.current?.scrollBy({ left: 140, behavior: 'smooth' });
+                                        }}
+                                        className="absolute right-2 top-1/2 -translate-y-1/2 z-20 w-7 h-7 rounded-full bg-white/95 dark:bg-zinc-900/95 border border-black/10 dark:border-white/10 shadow-lg flex items-center justify-center text-gray-700 dark:text-zinc-200 hover:text-neon-green hover:scale-110 active:scale-95 transition-all backdrop-blur-md"
+                                        aria-label="Scroll right"
+                                    >
+                                        <ChevronRight size={14} className="animate-pulse" />
+                                    </motion.button>
+                                )}
+                            </AnimatePresence>
+
+                            {/* Scrollable Track */}
+                            <div 
+                                ref={tabsContainerRef}
+                                onWheel={(e) => {
+                                    if (e.currentTarget && e.deltaY !== 0) {
+                                        e.currentTarget.scrollLeft += e.deltaY;
+                                    }
+                                }}
+                                className="overflow-x-auto no-scrollbar scroll-smooth w-full"
+                            >
+                                <div className="inline-flex min-w-full w-max md:w-full p-1 bg-gray-100/90 dark:bg-white/5 rounded-2xl border border-gray-200/80 dark:border-white/10 gap-1">
+                                    {tabs.map((tab) => {
+                                        const Icon = tab.icon;
+                                        const isActive = activeTab === tab.id;
+                                        return (
+                                            <button
+                                                key={tab.id}
+                                                onClick={(e) => {
+                                                    setActiveTab(tab.id);
+                                                    e.currentTarget?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+                                                }}
+                                                className={cn(
+                                                    "flex-shrink-0 md:flex-1 relative flex items-center justify-center gap-1.5 px-3.5 md:px-3 py-2 rounded-xl transition-all font-heading text-[10px] md:text-[10.5px] font-black uppercase tracking-wider whitespace-nowrap active:scale-95",
+                                                    isActive 
+                                                        ? "text-gray-900 dark:text-white shadow-sm" 
+                                                        : "text-gray-500 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-white"
+                                                )}
+                                            >
+                                                {isActive && (
+                                                    <motion.div 
+                                                        layoutId="profileActiveTabIndicator"
+                                                        className="absolute inset-0 bg-white dark:bg-white/15 rounded-xl border border-gray-200 dark:border-white/20 shadow-sm"
+                                                        transition={{ type: "spring", bounce: 0.15, duration: 0.5 }}
+                                                    />
+                                                )}
+                                                <Icon size={14} className={cn("relative z-10 transition-transform shrink-0", isActive && "text-neon-green scale-110")} />
+                                                <span className="relative z-10 whitespace-nowrap">{tab.label}</span>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
                             </div>
+
+                            {/* Micro Scroll Indicator Bar (Visible on Mobile when Scrollable) */}
+                            {(canScrollLeft || canScrollRight) && (
+                                <div className="w-16 h-1 bg-gray-200 dark:bg-white/10 rounded-full mx-auto mt-1.5 overflow-hidden md:hidden">
+                                    <div 
+                                        className="h-full bg-neon-green/80 rounded-full transition-all duration-150"
+                                        style={{ 
+                                            width: '40%',
+                                            transform: `translateX(${scrollProgress * 150}%)`
+                                        }}
+                                    />
+                                </div>
+                            )}
                         </div>
 
                         {/* Scrollable Content Container */}
