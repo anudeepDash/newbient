@@ -1448,13 +1448,85 @@ export const useStore = create((set, get) => ({
 
     // Forms
     addForm: async (form) => {
-        await addDoc(collection(db, 'forms'), form);
+        const { alsoPostToUpcomingEvents, ...formData } = form;
+        const docRef = await addDoc(collection(db, 'forms'), {
+            ...formData,
+            createdAt: form.createdAt || new Date().toISOString()
+        });
+
+        if (alsoPostToUpcomingEvents) {
+            const eventData = {
+                title: formData.title,
+                description: formData.description || '',
+                image: formData.image || '',
+                link: `/forms/${docRef.id}`,
+                buttonText: formData.buttonText || 'FILL FORM',
+                highlightColor: formData.highlightColor || '#FF4F8B',
+                category: 'form',
+                formId: docRef.id,
+                relatedArtistFormId: docRef.id,
+                date: new Date().toISOString(),
+                location: 'Online Form',
+                status: formData.activeLabel || 'Live',
+                isForm: true
+            };
+            const currentEvents = get().upcomingEvents;
+            const maxOrder = currentEvents.reduce((max, i) => Math.max(max, i.order || 0), 0);
+            await addDoc(collection(db, 'upcoming_events'), {
+                ...eventData,
+                order: maxOrder + 1
+            });
+        }
+
+        return docRef.id;
     },
     updateForm: async (id, updates) => {
-        await updateDoc(doc(db, 'forms', id), updates);
+        const { alsoPostToUpcomingEvents, ...formData } = updates;
+        await updateDoc(doc(db, 'forms', id), formData);
+
+        // Sync mirrored Upcoming Event if any
+        const eventQ = query(collection(db, 'upcoming_events'), where('formId', '==', id));
+        const eventSnap = await getDocs(eventQ);
+        if (!eventSnap.empty) {
+            eventSnap.forEach(async (d) => {
+                await updateDoc(doc(db, 'upcoming_events', d.id), {
+                    title: updates.title,
+                    description: updates.description || '',
+                    image: updates.image || '',
+                    buttonText: updates.buttonText || 'FILL FORM',
+                    highlightColor: updates.highlightColor || '#FF4F8B',
+                    status: updates.activeLabel || 'Live'
+                });
+            });
+        } else if (alsoPostToUpcomingEvents) {
+            const currentEvents = get().upcomingEvents;
+            const maxOrder = currentEvents.reduce((max, i) => Math.max(max, i.order || 0), 0);
+            await addDoc(collection(db, 'upcoming_events'), {
+                title: updates.title,
+                description: updates.description || '',
+                image: updates.image || '',
+                link: `/forms/${id}`,
+                buttonText: updates.buttonText || 'FILL FORM',
+                highlightColor: updates.highlightColor || '#FF4F8B',
+                category: 'form',
+                formId: id,
+                relatedArtistFormId: id,
+                date: new Date().toISOString(),
+                location: 'Online Form',
+                status: updates.activeLabel || 'Live',
+                isForm: true,
+                order: maxOrder + 1
+            });
+        }
     },
     deleteForm: async (id) => {
         await deleteDoc(doc(db, 'forms', id));
+        // Delete mirrored Upcoming Event if any
+        const eventQ = query(collection(db, 'upcoming_events'), where('formId', '==', id));
+        const eventSnap = await getDocs(eventQ);
+        eventSnap.forEach(async (d) => {
+            await deleteDoc(doc(db, 'upcoming_events', d.id));
+        });
     },
 
 
@@ -1473,9 +1545,25 @@ export const useStore = create((set, get) => ({
     },
     updateVolunteerGig: async (id, updates) => {
         await updateDoc(doc(db, 'volunteer_gigs', id), updates);
+        const eventQ = query(collection(db, 'upcoming_events'), where('gigId', '==', id));
+        const eventSnap = await getDocs(eventQ);
+        eventSnap.forEach(async (d) => {
+            await updateDoc(doc(db, 'upcoming_events', d.id), {
+                title: updates.title,
+                description: updates.description || '',
+                image: updates.image || '',
+                location: updates.location || 'GLOBAL',
+                highlightColor: updates.highlightColor || '#39FF14'
+            });
+        });
     },
     deleteVolunteerGig: async (id) => {
         await deleteDoc(doc(db, 'volunteer_gigs', id));
+        const eventQ = query(collection(db, 'upcoming_events'), where('gigId', '==', id));
+        const eventSnap = await getDocs(eventQ);
+        eventSnap.forEach(async (d) => {
+            await deleteDoc(doc(db, 'upcoming_events', d.id));
+        });
     },
 
     // Guestlists
@@ -1518,6 +1606,11 @@ export const useStore = create((set, get) => ({
     },
     deleteGuestlist: async (id) => {
         await deleteDoc(doc(db, 'guestlists', id));
+        const eventQ = query(collection(db, 'upcoming_events'), where('guestlistId', '==', id));
+        const eventSnap = await getDocs(eventQ);
+        eventSnap.forEach(async (d) => {
+            await deleteDoc(doc(db, 'upcoming_events', d.id));
+        });
     },
 
     addGuestlistEntry: async (id, entry) => {

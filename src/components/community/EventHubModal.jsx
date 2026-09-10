@@ -53,12 +53,13 @@ const EventHubModal = ({ event, isOpen, onClose }) => {
     if (!isOpen || !event) return null;
 
     // Resolve Hub Connections
-    const volunteerGig = volunteerGigs.find(g => g.id === event.relatedVolunteerGigId);
+    const volunteerGig = volunteerGigs.find(g => g.id === event.relatedVolunteerGigId || g.id === event.gigId);
     const campaign = campaigns.find(c => c.id === event.relatedCampaignId);
-    const artistForm = forms.find(f => f.id === event.relatedArtistFormId);
+    const artistForm = forms.find(f => f.id === event.relatedArtistFormId || f.id === event.formId);
 
     const hasInternalOps = event.isTicketed || event.isGuestlistEnabled;
     const hasExternalLinks = event.externalTicketingLinks && event.externalTicketingLinks.length > 0;
+    const directActionUrl = event.link || (event.formId ? `/forms/${event.formId}` : null);
     
     const handleInternalAction = () => {
         if (event.isTicketed && maintenanceState.features?.tickets) {
@@ -234,11 +235,19 @@ const EventHubModal = ({ event, isOpen, onClose }) => {
                                             {/* Right ticketing & opportunities panel */}
                                             <div className="md:col-span-5 space-y-6">
                                                 {/* Inline RSVP / Booking Card - PC Only */}
-                                                {(hasInternalOps || hasExternalLinks) && (
+                                                {(hasInternalOps || hasExternalLinks || directActionUrl) && (
                                                     <div className="hidden md:block p-6 bg-white/[0.02] border border-black/10 dark:border-white/10 rounded-2xl space-y-4">
                                                         <div className="text-left">
                                                             <p className="text-[8px] font-black text-neon-green uppercase tracking-widest mb-1">
-                                                                {event.isTicketed ? "Tickets Available" : (event.isGuestlistEnabled ? "Guestlist Open" : "External Booking")}
+                                                                {event.isTicketed 
+                                                                    ? "Tickets Available" 
+                                                                    : (event.isGuestlistEnabled 
+                                                                        ? "Guestlist Open" 
+                                                                        : (event.isForm || event.formId || (event.link && event.link.startsWith('/forms'))
+                                                                            ? "Online Form / Registration" 
+                                                                            : (event.isVolunteerGig 
+                                                                                ? "Volunteer Opportunity" 
+                                                                                : (hasExternalLinks ? "External Booking" : "Direct Access"))))}
                                                             </p>
                                                             <p className="text-sm font-bold text-gray-900 dark:text-white leading-tight">{event.title}</p>
                                                         </div>
@@ -250,7 +259,7 @@ const EventHubModal = ({ event, isOpen, onClose }) => {
                                                                 <Ticket size={16} />
                                                                 <span>{event.isTicketed ? "Book Tickets" : "Register / RSVP"}</span>
                                                             </button>
-                                                        ) : (
+                                                        ) : hasExternalLinks ? (
                                                             <a 
                                                                 href={event.externalTicketingLinks[0]?.url}
                                                                 target="_blank"
@@ -259,6 +268,16 @@ const EventHubModal = ({ event, isOpen, onClose }) => {
                                                             >
                                                                 <ExternalLink size={16} />
                                                                 <span>{event.externalTicketingLinks[0]?.platform || "Book Now"}</span>
+                                                            </a>
+                                                        ) : (
+                                                            <a 
+                                                                href={directActionUrl}
+                                                                target={directActionUrl?.startsWith('http') ? "_blank" : "_self"}
+                                                                rel="noopener noreferrer"
+                                                                className="w-full h-12 rounded-xl bg-white text-black font-black uppercase tracking-[0.15em] text-xs flex items-center justify-center gap-2 hover:bg-neon-green active:scale-95 transition-all shadow-lg shrink-0"
+                                                            >
+                                                                <ArrowRight size={16} />
+                                                                <span>{event.buttonText || (event.isForm ? "Fill Form" : (event.isVolunteerGig ? "Join Squad" : "Open Event"))}</span>
                                                             </a>
                                                         )}
                                                     </div>
@@ -273,7 +292,7 @@ const EventHubModal = ({ event, isOpen, onClose }) => {
                                                         </div>
                                                         <div className="space-y-3">
                                                             {volunteerGig && (
-                                                                <a href="/volunteer" className="p-4 rounded-xl bg-white/[0.01] border border-black/10 dark:border-white/10 hover:bg-neon-green/5 hover:border-neon-green/20 transition-all group flex items-center justify-between">
+                                                                <a href="/community" className="p-4 rounded-xl bg-white/[0.01] border border-black/10 dark:border-white/10 hover:bg-neon-green/5 hover:border-neon-green/20 transition-all group flex items-center justify-between">
                                                                     <div className="flex items-center gap-3">
                                                                         <div className="w-8 h-8 rounded-lg bg-neon-green/10 flex items-center justify-center text-neon-green"><Users size={14} /></div>
                                                                         <div className="text-left">
@@ -297,7 +316,7 @@ const EventHubModal = ({ event, isOpen, onClose }) => {
                                                                 </a>
                                                             )}
                                                             {artistForm && (
-                                                                <a href="/artist-ant" className="p-4 rounded-xl bg-white/[0.01] border border-black/10 dark:border-white/10 hover:bg-neon-green/5 hover:border-neon-green/20 transition-all group flex items-center justify-between">
+                                                                <a href={`/forms/${artistForm.id}`} className="p-4 rounded-xl bg-white/[0.01] border border-black/10 dark:border-white/10 hover:bg-neon-green/5 hover:border-neon-green/20 transition-all group flex items-center justify-between">
                                                                     <div className="flex items-center gap-3">
                                                                         <div className="w-8 h-8 rounded-lg bg-neon-green/10 flex items-center justify-center text-neon-green"><Zap size={14} /></div>
                                                                         <div className="text-left">
@@ -316,11 +335,19 @@ const EventHubModal = ({ event, isOpen, onClose }) => {
                                     </div>
 
                                     {/* Sticky Bottom Bar for mobile only */}
-                                    {(hasInternalOps || hasExternalLinks) && (
+                                    {(hasInternalOps || hasExternalLinks || directActionUrl) && (
                                         <div className="sticky bottom-0 left-0 right-0 p-4 sm:p-6 bg-gray-100 dark:bg-zinc-950/90 border-t border-black/10 dark:border-white/10 backdrop-blur-3xl z-40 flex items-center justify-between gap-4 shrink-0 shadow-[0_-10px_30px_rgba(0,0,0,0.8)] md:hidden">
                                             <div className="text-left min-w-0">
                                                 <p className="text-[8px] font-black text-zinc-500 uppercase tracking-widest mb-0.5">
-                                                    {event.isTicketed ? "Tickets Available" : (event.isGuestlistEnabled ? "Guestlist Open" : "External Booking")}
+                                                    {event.isTicketed 
+                                                        ? "Tickets Available" 
+                                                        : (event.isGuestlistEnabled 
+                                                            ? "Guestlist Open" 
+                                                            : (event.isForm || event.formId || (event.link && event.link.startsWith('/forms'))
+                                                                ? "Online Form" 
+                                                                : (event.isVolunteerGig 
+                                                                    ? "Volunteer Squad" 
+                                                                    : (hasExternalLinks ? "External Booking" : "Direct Access"))))}
                                                 </p>
                                                 <p className="text-xs sm:text-sm font-bold text-gray-900 dark:text-white truncate">{event.title}</p>
                                             </div>
@@ -332,7 +359,7 @@ const EventHubModal = ({ event, isOpen, onClose }) => {
                                                     <Ticket size={14} />
                                                     <span>{event.isTicketed ? "Book Tickets" : "Register / RSVP"}</span>
                                                 </button>
-                                            ) : (
+                                            ) : hasExternalLinks ? (
                                                 <a 
                                                     href={event.externalTicketingLinks[0]?.url}
                                                     target="_blank"
@@ -341,6 +368,16 @@ const EventHubModal = ({ event, isOpen, onClose }) => {
                                                 >
                                                     <ExternalLink size={14} />
                                                     <span>{event.externalTicketingLinks[0]?.platform || "Book Now"}</span>
+                                                </a>
+                                            ) : (
+                                                <a 
+                                                    href={directActionUrl}
+                                                    target={directActionUrl?.startsWith('http') ? "_blank" : "_self"}
+                                                    rel="noopener noreferrer"
+                                                    className="h-11 sm:h-12 px-5 sm:px-8 rounded-xl bg-white text-black font-black uppercase tracking-[0.15em] text-[9px] sm:text-xs flex items-center justify-center gap-2 hover:bg-neon-green active:scale-95 transition-all shadow-lg shrink-0"
+                                                >
+                                                    <ArrowRight size={14} />
+                                                    <span>{event.buttonText || (event.isForm ? "Fill Form" : (event.isVolunteerGig ? "Join Squad" : "Access"))}</span>
                                                 </a>
                                             )}
                                         </div>

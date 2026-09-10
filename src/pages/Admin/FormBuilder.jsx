@@ -9,6 +9,7 @@ import X from 'lucide-react/dist/esm/icons/x';
 import FileText from 'lucide-react/dist/esm/icons/file-text';
 import Loader from 'lucide-react/dist/esm/icons/loader';
 import Star from 'lucide-react/dist/esm/icons/star';
+import Calendar from 'lucide-react/dist/esm/icons/calendar';
 import Link2 from 'lucide-react/dist/esm/icons/link-2';
 import ImageIcon from 'lucide-react/dist/esm/icons/image';
 import Move from 'lucide-react/dist/esm/icons/move';
@@ -23,7 +24,7 @@ import { cn } from '../../lib/utils';
 import StudioSelect from '../../components/ui/StudioSelect';
 
 const FormBuilder = () => {
-    useStoreSubscription(['forms']);
+    useStoreSubscription(['forms', 'upcomingEvents']);
     const colorPresets = [
         { name: 'Neon Pink', value: '#FF4F8B' },
         { name: 'Neon Green', value: '#39FF14' },
@@ -33,7 +34,7 @@ const FormBuilder = () => {
 
     const { id } = useParams();
     const navigate = useNavigate();
-    const { forms, addForm, updateForm, uploadToCloudinary } = useStore();
+    const { forms, addForm, updateForm, uploadToCloudinary, upcomingEvents } = useStore();
 
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
@@ -48,6 +49,7 @@ const FormBuilder = () => {
     const [isUploading, setIsUploading] = useState(false);
     const [highlightColor, setHighlightColor] = useState('#FF4F8B');
     const [isPinned, setIsPinned] = useState(false);
+    const [alsoPostToUpcomingEvents, setAlsoPostToUpcomingEvents] = useState(false);
     const [imageTransform, setImageTransform] = useState({ scale: 1.05, x: 0, y: 0 });
     const [saving, setSaving] = useState(false);
 
@@ -66,9 +68,11 @@ const FormBuilder = () => {
                 setHighlightColor(form.highlightColor || '#FF4F8B');
                 setIsPinned(form.isPinned || false);
                 setImageTransform(form.imageTransform || { scale: 1.05, x: 0, y: 0 });
+                const isCurrentlyInUpcoming = (upcomingEvents || []).some(e => e.formId === id || e.link === `/forms/${id}`);
+                setAlsoPostToUpcomingEvents(isCurrentlyInUpcoming);
             }
         }
-    }, [id, forms]);
+    }, [id, forms, upcomingEvents]);
 
     const handleFileChange = async (e) => {
         const file = e.target.files[0];
@@ -111,6 +115,7 @@ const FormBuilder = () => {
             image,
             highlightColor,
             isPinned,
+            alsoPostToUpcomingEvents,
             imageTransform,
             updatedAt: new Date().toISOString()
         };
@@ -412,6 +417,32 @@ const FormBuilder = () => {
                                 className={cn("w-11 h-6 rounded-full relative transition-all", isPinned ? "bg-neon-pink" : "bg-black/10 dark:bg-white/10")}
                             >
                                 <div className={cn("absolute top-1 w-4 h-4 rounded-full transition-all shadow", isPinned ? "right-1 bg-white" : "left-1 bg-gray-400 dark:bg-gray-600")} />
+                            </button>
+                        </div>
+
+                        {/* Home Upcoming Events Toggle */}
+                        <div className={cn(
+                            "rounded-[1.5rem] border p-5 flex items-center justify-between transition-all duration-500", 
+                            alsoPostToUpcomingEvents ? "bg-neon-pink/[0.06] border-neon-pink/20" : "bg-white dark:bg-black/30 border-black/5 dark:border-white/5"
+                        )}>
+                            <div className="flex items-center gap-4">
+                                <div className={cn(
+                                    "w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-500", 
+                                    alsoPostToUpcomingEvents ? "bg-neon-pink text-black" : "bg-black/5 dark:bg-white/5 text-gray-500"
+                                )}>
+                                    <Calendar size={18} />
+                                </div>
+                                <div>
+                                    <h4 className="text-xs font-bold text-gray-900 dark:text-white">Post to Home Upcoming Events</h4>
+                                    <p className="text-[10px] text-gray-500 mt-0.5">Feature this form in the Upcoming Events carousel on the Home page</p>
+                                </div>
+                            </div>
+                            <button 
+                                type="button" 
+                                onClick={() => setAlsoPostToUpcomingEvents(!alsoPostToUpcomingEvents)} 
+                                className={cn("w-11 h-6 rounded-full relative transition-all", alsoPostToUpcomingEvents ? "bg-neon-pink" : "bg-black/10 dark:bg-white/10")}
+                            >
+                                <div className={cn("absolute top-1 w-4 h-4 rounded-full transition-all shadow", alsoPostToUpcomingEvents ? "right-1 bg-white" : "left-1 bg-gray-400 dark:bg-gray-600")} />
                             </button>
                         </div>
 

@@ -38,7 +38,13 @@ import { cn } from '../../lib/utils';
 import StudioDatePicker from '../../components/ui/StudioDatePicker';
 import StudioSelect from '../../components/ui/StudioSelect';
 
-const GuestlistCard = ({ gl, navigate, updateGuestlist, deleteGuestlist, handleEdit }) => {
+const GuestlistCard = ({ gl, navigate, updateGuestlist, deleteGuestlist, handleEdit, upcomingEvents, onToggleHomeEvent }) => {
+    const isPostedToUpcoming = (upcomingEvents || []).some(e => 
+        e.guestlistId === gl.id || 
+        e.id === gl.id || 
+        (e.title === gl.title && e.category === 'guestlist')
+    );
+
     return (
         <Card 
             onMouseMove={(e) => {
@@ -81,6 +87,12 @@ const GuestlistCard = ({ gl, navigate, updateGuestlist, deleteGuestlist, handleE
                         <div className="w-1.5 h-1.5 rounded-full bg-current animate-pulse shadow-[0_0_8px_currentColor]" />
                         {gl.status || 'ACTIVE'}
                     </div>
+                    {isPostedToUpcoming && (
+                        <div className="px-3 py-1 rounded-full border text-[8px] font-black uppercase tracking-widest flex items-center gap-1.5 backdrop-blur-3xl bg-neon-blue/10 border-neon-blue/30 text-neon-blue">
+                            <Calendar size={10} className="animate-pulse" />
+                            <span>HOME EVENT</span>
+                        </div>
+                    )}
                     {!gl.guestlistEnabled && (
                         <div className="px-3 py-1 rounded-full border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 text-gray-600 dark:text-gray-400 text-[8px] font-black uppercase tracking-widest flex items-center gap-1.5 backdrop-blur-3xl">
                             <LinkIcon size={10} /> EXTERNAL
@@ -138,6 +150,24 @@ const GuestlistCard = ({ gl, navigate, updateGuestlist, deleteGuestlist, handleE
                         <span className="text-[11px] font-black uppercase tracking-[0.3em] italic">MANAGE ENTRIES</span>
                     </Button>
 
+                    {/* Home Event Toggle Button */}
+                    <Button 
+                        variant="outline" 
+                        onClick={() => onToggleHomeEvent(gl)}
+                        className={cn(
+                            "w-full h-12 rounded-2xl border transition-all flex items-center justify-center gap-2.5",
+                            isPostedToUpcoming 
+                                ? "bg-neon-blue/10 text-neon-blue border-neon-blue/30 hover:bg-red-500/10 hover:text-red-400 hover:border-red-500/30" 
+                                : "bg-black/5 dark:bg-white/5 text-gray-700 dark:text-gray-300 border-black/10 dark:border-white/10 hover:bg-neon-blue hover:text-black hover:border-neon-blue"
+                        )}
+                        title={isPostedToUpcoming ? "Click to remove from Home Upcoming Events" : "Add this guestlist to Home Upcoming Events"}
+                    >
+                        <Calendar size={15} className={isPostedToUpcoming ? "text-neon-blue" : "text-neon-blue"} />
+                        <span className="text-[10px] font-black uppercase tracking-[0.15em]">
+                            {isPostedToUpcoming ? "On Home Events (Click to Remove)" : "Add to Home (Upcoming Events)"}
+                        </span>
+                    </Button>
+
                     <div className="flex items-center gap-3">
                         <Button 
                             variant="outline" 
@@ -183,7 +213,7 @@ const GuestlistCard = ({ gl, navigate, updateGuestlist, deleteGuestlist, handleE
 };
 
 const GuestlistManager = () => {
-    useStoreSubscription(['guestlists']);
+    useStoreSubscription(['guestlists', 'upcomingEvents']);
     const navigate = useNavigate();
     const colorPresets = [
         { name: 'Cyber Blue', value: '#2ebfff' },
@@ -192,7 +222,7 @@ const GuestlistManager = () => {
         { name: 'Electric Purple', value: '#BF00FF' },
     ];
 
-    const { guestlists, addGuestlist, updateGuestlist, deleteGuestlist, uploadToCloudinary } = useStore();
+    const { guestlists, addGuestlist, updateGuestlist, deleteGuestlist, uploadToCloudinary, upcomingEvents, addUpcomingEvent, deleteUpcomingEvent } = useStore();
     const [isAdding, setIsAdding] = useState(false);
     const [editingId, setEditingId] = useState(null);
     const [saving, setSaving] = useState(false);
@@ -302,6 +332,39 @@ const GuestlistManager = () => {
             useStore.getState().addToast("Couldn't save the guestlist. Please check your connection and try again.", 'error', 'GUEST-01');
         } finally {
             setSaving(false);
+        }
+    };
+
+    const handleToggleHomeUpcomingEvent = async (gl) => {
+        const existingEvent = (upcomingEvents || []).find(e => 
+            e.guestlistId === gl.id || 
+            e.id === gl.id || 
+            (e.title === gl.title && e.category === 'guestlist')
+        );
+
+        if (existingEvent) {
+            if (confirm(`Remove "${gl.title}" from Home Upcoming Events?`)) {
+                await deleteUpcomingEvent(existingEvent.id);
+                useStore.getState().addToast(`"${gl.title}" removed from Home Upcoming Events`, 'info');
+            }
+        } else {
+            const eventData = {
+                title: gl.title,
+                description: gl.description || '',
+                image: gl.image || '',
+                location: gl.location || 'VENUE',
+                date: gl.date || new Date().toISOString(),
+                buttonText: 'JOIN GUESTLIST',
+                highlightColor: gl.highlightColor || '#2ebfff',
+                isGuestlistEnabled: gl.guestlistEnabled !== undefined ? gl.guestlistEnabled : true,
+                guestlistMode: gl.guestlistMode || 'qr',
+                perUserLimit: gl.perUserLimit || 2,
+                category: 'guestlist',
+                guestlistId: gl.id,
+                link: `/ticket/${gl.id}`
+            };
+            await addUpcomingEvent(eventData);
+            useStore.getState().addToast(`"${gl.title}" added to Home Upcoming Events!`, 'success');
         }
     };
 
@@ -636,6 +699,8 @@ const GuestlistManager = () => {
                                 updateGuestlist={updateGuestlist} 
                                 deleteGuestlist={deleteGuestlist} 
                                 handleEdit={handleEdit} 
+                                upcomingEvents={upcomingEvents}
+                                onToggleHomeEvent={handleToggleHomeUpcomingEvent}
                             />
                         ))
                     ) : (
