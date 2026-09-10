@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { 
     LayoutGrid, Plus, Trash2, Edit, Save, Eye, EyeOff, Sparkles, Clock, MapPin, 
@@ -129,6 +129,30 @@ const UpcomingEventsManager = () => {
     const [mappingCategoryId, setMappingCategoryId] = useState(null);
     const [dragStart, setDragStart] = useState(null);
     const [currentDrag, setCurrentDrag] = useState(null);
+
+    const venueLayoutPreviewUrl = useMemo(() => {
+        if (venueLayoutFile) return URL.createObjectURL(venueLayoutFile);
+        return null;
+    }, [venueLayoutFile]);
+
+    useEffect(() => {
+        return () => {
+            if (venueLayoutPreviewUrl) URL.revokeObjectURL(venueLayoutPreviewUrl);
+        };
+    }, [venueLayoutPreviewUrl]);
+
+    useEffect(() => {
+        const handleGlobalMouseUp = () => {
+            setDragStart(null);
+            setCurrentDrag(null);
+        };
+        window.addEventListener('mouseup', handleGlobalMouseUp);
+        window.addEventListener('touchend', handleGlobalMouseUp);
+        return () => {
+            window.removeEventListener('mouseup', handleGlobalMouseUp);
+            window.removeEventListener('touchend', handleGlobalMouseUp);
+        };
+    }, []);
 
     const handleEdit = (item) => {
         setEditingId(item.id);
@@ -377,13 +401,13 @@ const UpcomingEventsManager = () => {
                                                                                             <span className="text-[8px] font-black text-gray-600 uppercase tracking-widest">Scale</span>
                                                                                             <input 
                                                                                                 type="number" 
-                                                                                                value={newEvent.imageTransform?.scale || 1} 
+                                                                                                value={newEvent.imageTransform?.scale ?? 1} 
                                                                                                 step="0.01"
                                                                                                 onChange={e => setNewEvent({...newEvent, imageTransform: {...newEvent.imageTransform, scale: parseFloat(e.target.value) || 1}})}
                                                                                                 className="w-12 h-5 bg-white dark:bg-black/40 border border-black/10 dark:border-white/10 rounded text-[8px] font-black text-gray-900 dark:text-white text-center focus:border-neon-blue/40 outline-none"
                                                                                             />
                                                                                         </div>
-                                                                                        <input type="range" min="1" max="3" step="0.01" value={newEvent.imageTransform?.scale || 1} onChange={e => setNewEvent({...newEvent, imageTransform: {...newEvent.imageTransform, scale: parseFloat(e.target.value)}})} className="w-full h-1 bg-black/5 dark:bg-white/5 rounded-full appearance-none accent-neon-blue" />
+                                                                                        <input type="range" min="-3" max="3" step="0.01" value={newEvent.imageTransform?.scale ?? 1} onChange={e => setNewEvent({...newEvent, imageTransform: {...newEvent.imageTransform, scale: parseFloat(e.target.value)}})} className="w-full h-1 bg-black/5 dark:bg-white/5 rounded-full appearance-none accent-neon-blue" />
                                                                                     </div>
                                                                                     <div className="grid grid-cols-2 gap-4">
                                                                                         <div className="space-y-2">
@@ -462,13 +486,13 @@ const UpcomingEventsManager = () => {
                                                                                             <span className="text-[8px] font-black text-gray-600 uppercase tracking-widest">Scale</span>
                                                                                             <input 
                                                                                                 type="number" 
-                                                                                                value={newEvent.hubImageTransform?.scale || 1} 
+                                                                                                value={newEvent.hubImageTransform?.scale ?? 1} 
                                                                                                 step="0.01"
                                                                                                 onChange={e => setNewEvent({...newEvent, hubImageTransform: {...newEvent.hubImageTransform, scale: parseFloat(e.target.value) || 1}})}
                                                                                                 className="w-12 h-5 bg-white dark:bg-black/40 border border-black/10 dark:border-white/10 rounded text-[8px] font-black text-gray-900 dark:text-white text-center focus:border-neon-pink/40 outline-none"
                                                                                             />
                                                                                         </div>
-                                                                                        <input type="range" min="1" max="3" step="0.01" value={newEvent.hubImageTransform?.scale || 1} onChange={e => setNewEvent({...newEvent, hubImageTransform: {...newEvent.hubImageTransform, scale: parseFloat(e.target.value)}})} className="w-full h-1 bg-black/5 dark:bg-white/5 rounded-full appearance-none accent-neon-pink" />
+                                                                                        <input type="range" min="-3" max="3" step="0.01" value={newEvent.hubImageTransform?.scale ?? 1} onChange={e => setNewEvent({...newEvent, hubImageTransform: {...newEvent.hubImageTransform, scale: parseFloat(e.target.value)}})} className="w-full h-1 bg-black/5 dark:bg-white/5 rounded-full appearance-none accent-neon-pink" />
                                                                                     </div>
                                                                                     <div className="grid grid-cols-2 gap-4">
                                                                                         <div className="space-y-2">
@@ -878,11 +902,33 @@ const UpcomingEventsManager = () => {
                                                                                         const y = ((e.clientY - rect.top) / rect.height) * 100;
                                                                                         setDragStart({ x, y });
                                                                                     }}
+                                                                                    onTouchStart={(e) => {
+                                                                                        const rect = e.currentTarget.getBoundingClientRect();
+                                                                                        const touch = e.touches[0];
+                                                                                        const x = ((touch.clientX - rect.left) / rect.width) * 100;
+                                                                                        const y = ((touch.clientY - rect.top) / rect.height) * 100;
+                                                                                        setDragStart({ x, y });
+                                                                                    }}
                                                                                     onMouseMove={(e) => {
                                                                                         if (!dragStart) return;
                                                                                         const rect = e.currentTarget.getBoundingClientRect();
                                                                                         const x = ((e.clientX - rect.left) / rect.width) * 100;
                                                                                         const y = ((e.clientY - rect.top) / rect.height) * 100;
+                                                                                        
+                                                                                        const width = Math.abs(x - dragStart.x);
+                                                                                        const height = Math.abs(y - dragStart.y);
+                                                                                        const left = Math.min(x, dragStart.x);
+                                                                                        const top = Math.min(y, dragStart.y);
+                                                                                        
+                                                                                        setCurrentDrag({ x: left, y: top, width, height });
+                                                                                    }}
+                                                                                    onTouchMove={(e) => {
+                                                                                        if (!dragStart) return;
+                                                                                        e.preventDefault();
+                                                                                        const rect = e.currentTarget.getBoundingClientRect();
+                                                                                        const touch = e.touches[0];
+                                                                                        const x = ((touch.clientX - rect.left) / rect.width) * 100;
+                                                                                        const y = ((touch.clientY - rect.top) / rect.height) * 100;
                                                                                         
                                                                                         const width = Math.abs(x - dragStart.x);
                                                                                         const height = Math.abs(y - dragStart.y);
@@ -906,9 +952,24 @@ const UpcomingEventsManager = () => {
                                                                                         setDragStart(null);
                                                                                         setCurrentDrag(null);
                                                                                     }}
+                                                                                    onTouchEnd={() => {
+                                                                                        if (!dragStart || !currentDrag) {
+                                                                                            setDragStart(null);
+                                                                                            setCurrentDrag(null);
+                                                                                            return;
+                                                                                        }
+                                                                                        
+                                                                                        const newCats = newEvent.ticketCategories.map(c => 
+                                                                                            c.id === mappingCategoryId ? { ...c, mapping: currentDrag } : c
+                                                                                        );
+                                                                                        setNewEvent({ ...newEvent, ticketCategories: newCats });
+                                                                                        setMappingCategoryId(null);
+                                                                                        setDragStart(null);
+                                                                                        setCurrentDrag(null);
+                                                                                    }}
                                                                                 >
                                                                                     <img 
-                                                                                        src={venueLayoutFile ? URL.createObjectURL(venueLayoutFile) : newEvent.venueLayout} 
+                                                                                        src={venueLayoutPreviewUrl || newEvent.venueLayout} 
                                                                                         alt="Mapping Surface" 
                                                                                         className="w-full h-auto opacity-80 group-hover:opacity-100 transition-opacity"
                                                                                     />

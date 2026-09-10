@@ -854,7 +854,7 @@ const ProposalGenerator = () => {
 
                 {/* Current Value Preview (if any) */}
                 {inlineRefineState.currentValue && (
-                    <div className="bg-white dark:bg-black/40 border border-black/10 dark:border-white/5 rounded-xl px-3 py-2 text-[10px] text-zinc-400 italic line-clamp-2">
+                    <div className="bg-white dark:bg-white border border-black/10 dark:border-white/5 rounded-xl px-3 py-2 text-[10px] text-zinc-400 italic line-clamp-2">
                         "{inlineRefineState.currentValue}"
                     </div>
                 )}
@@ -2525,7 +2525,7 @@ const ProposalGenerator = () => {
                                                             handleStudioSubmit();
                                                         }
                                                     }}
-                                                    className="w-full bg-white dark:bg-black/40 border border-black/10 dark:border-white/10 rounded-2xl p-5 text-sm text-gray-900 dark:text-white placeholder:text-gray-600 font-medium outline-none focus:border-neon-green/30 transition-all resize-none min-h-[120px] scrollbar-hide"
+                                                    className="w-full bg-white dark:bg-white border border-black/10 dark:border-white/10 rounded-2xl p-5 text-sm text-gray-900 dark:text-white placeholder:text-gray-600 font-medium outline-none focus:border-neon-green/30 transition-all resize-none min-h-[120px] scrollbar-hide"
                                                     placeholder={isBulkMode ? "Paste multiple proposals separated by --- or double line breaks..." : "e.g. Create a proposal for a 3-day music festival in Mumbai for XYZ Corp..."}
                                                 />
                                                 <div className="flex items-center justify-between">
@@ -2785,8 +2785,8 @@ const ProposalGenerator = () => {
                                                                 <button type="button" onClick={(e) => handleRefineClick(`deliverables[${idx}].item`, `Deliverable ${idx + 1}`, d.item, e)} className="absolute right-2 bottom-2 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-1 text-neon-green hover:text-gray-900 dark:hover:text-white rounded-lg hover:scale-105 z-10" title="Refine with AI"><Sparkles size={11} className="animate-pulse" /></button>
                                                             </div>
                                                             <div className="flex gap-4">
-                                                                <input value={d.qty} onChange={e => { const updated = [...formData.deliverables]; updated[idx] = {...d, qty: e.target.value}; setFormData({...formData, deliverables: updated}); }} className="w-32 bg-white dark:bg-black/40 border border-black/10 dark:border-white/10 h-10 px-4 rounded-lg text-[10px] font-bold outline-none focus:border-neon-green/40 text-gray-700 dark:text-gray-300 placeholder:text-gray-600" placeholder="Qty / Unit" />
-                                                                <input value={d.timeline} onChange={e => { const updated = [...formData.deliverables]; updated[idx] = {...d, timeline: e.target.value}; setFormData({...formData, deliverables: updated}); }} className="flex-1 bg-white dark:bg-black/40 border border-black/10 dark:border-white/10 h-10 px-4 rounded-lg text-[10px] font-bold outline-none focus:border-neon-green/40 text-gray-700 dark:text-gray-300 placeholder:text-gray-600" placeholder="Timeline (e.g. Week 1-2)" />
+                                                                <input value={d.qty} onChange={e => { const updated = [...formData.deliverables]; updated[idx] = {...d, qty: e.target.value}; setFormData({...formData, deliverables: updated}); }} className="w-32 bg-white dark:bg-white border border-black/10 dark:border-white/10 h-10 px-4 rounded-lg text-[10px] font-bold outline-none focus:border-neon-green/40 text-gray-700 dark:text-gray-300 placeholder:text-gray-600" placeholder="Qty / Unit" />
+                                                                <input value={d.timeline} onChange={e => { const updated = [...formData.deliverables]; updated[idx] = {...d, timeline: e.target.value}; setFormData({...formData, deliverables: updated}); }} className="flex-1 bg-white dark:bg-white border border-black/10 dark:border-white/10 h-10 px-4 rounded-lg text-[10px] font-bold outline-none focus:border-neon-green/40 text-gray-700 dark:text-gray-300 placeholder:text-gray-600" placeholder="Timeline (e.g. Week 1-2)" />
                                                             </div>
                                                         </div>
                                                         <button onClick={() => setFormData({...formData, deliverables: formData.deliverables.filter(x => x.id !== d.id)})} className="p-2 text-gray-600 hover:text-red-500 transition-colors hover:bg-red-500/10 rounded-lg mt-3"><Trash2 size={14} /></button>
@@ -3013,7 +3013,7 @@ const ProposalGenerator = () => {
                                                                                 return (
                                                                                     <div key={col.key} className="flex flex-col items-start w-20">
                                                                                         <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest mb-1.5">{col.label}</span>
-                                                                                        <input disabled={isHidden('inventory')} type="number" value={item.qty} onChange={e => { const newItems = [...items]; newItems[idx].qty = Number(e.target.value); setItems(newItems); }} className="w-full bg-white dark:bg-black/40 border border-black/10 dark:border-white/10 h-10 rounded-lg text-center text-xs font-black outline-none focus:border-neon-green/50 text-gray-900 dark:text-white" />
+                                                                                        <input disabled={isHidden('inventory')} type="number" value={item.qty} onChange={e => { const newItems = [...items]; newItems[idx].qty = Number(e.target.value); setItems(newItems); }} className="w-full bg-white dark:bg-white border border-black/10 dark:border-white/10 h-10 rounded-lg text-center text-xs font-black outline-none focus:border-neon-green/50 text-gray-900 dark:text-white" />
                                                                                     </div>
                                                                                 );
                                                                             }
@@ -3023,7 +3023,7 @@ const ProposalGenerator = () => {
                                                                                         <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest mb-1.5">{col.label}</span>
                                                                                         <div className="relative w-full">
                                                                                             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] font-black text-neon-green">₹</span>
-                                                                                            <input disabled={isHidden('inventory')} type="number" value={item.price} onChange={e => { const newItems = [...items]; newItems[idx].price = Number(e.target.value); setItems(newItems); }} className="w-full bg-white dark:bg-black/40 border border-black/10 dark:border-white/10 h-10 pl-7 pr-3 rounded-lg text-right text-xs font-black text-neon-green outline-none focus:border-neon-green/50" />
+                                                                                            <input disabled={isHidden('inventory')} type="number" value={item.price} onChange={e => { const newItems = [...items]; newItems[idx].price = Number(e.target.value); setItems(newItems); }} className="w-full bg-white dark:bg-white border border-black/10 dark:border-white/10 h-10 pl-7 pr-3 rounded-lg text-right text-xs font-black text-neon-green outline-none focus:border-neon-green/50" />
                                                                                         </div>
                                                                                     </div>
                                                                                 );
@@ -3045,7 +3045,7 @@ const ProposalGenerator = () => {
                                                                                                     newItems[idx][col.key] = e.target.value === '' ? '' : Number(e.target.value);
                                                                                                     setItems(newItems);
                                                                                                 }}
-                                                                                                className="w-full bg-white dark:bg-black/40 border border-black/10 dark:border-white/10 h-10 pl-7 pr-3 rounded-lg text-right text-xs font-black text-neon-green outline-none focus:border-neon-green/50"
+                                                                                                className="w-full bg-white dark:bg-white border border-black/10 dark:border-white/10 h-10 pl-7 pr-3 rounded-lg text-right text-xs font-black text-neon-green outline-none focus:border-neon-green/50"
                                                                                                 placeholder="0"
                                                                                             />
                                                                                         </div>
@@ -3059,7 +3059,7 @@ const ProposalGenerator = () => {
                                                                                                 newItems[idx][col.key] = e.target.value === '' ? '' : Number(e.target.value);
                                                                                                 setItems(newItems);
                                                                                             }}
-                                                                                            className="w-full bg-white dark:bg-black/40 border border-black/10 dark:border-white/10 h-10 rounded-lg text-center text-xs font-black outline-none focus:border-neon-green/50 text-gray-900 dark:text-white"
+                                                                                            className="w-full bg-white dark:bg-white border border-black/10 dark:border-white/10 h-10 rounded-lg text-center text-xs font-black outline-none focus:border-neon-green/50 text-gray-900 dark:text-white"
                                                                                             placeholder="0"
                                                                                         />
                                                                                     ) : (
@@ -3072,7 +3072,7 @@ const ProposalGenerator = () => {
                                                                                                 newItems[idx][col.key] = e.target.value;
                                                                                                 setItems(newItems);
                                                                                             }}
-                                                                                            className="w-full bg-white dark:bg-black/40 border border-black/10 dark:border-white/10 h-10 px-4 rounded-lg text-xs font-bold outline-none focus:border-neon-green/50 text-gray-900 dark:text-white placeholder:text-gray-700"
+                                                                                            className="w-full bg-white dark:bg-white border border-black/10 dark:border-white/10 h-10 px-4 rounded-lg text-xs font-bold outline-none focus:border-neon-green/50 text-gray-900 dark:text-white placeholder:text-gray-700"
                                                                                             placeholder={`${col.label}...`}
                                                                                         />
                                                                                     )}
@@ -3164,7 +3164,7 @@ const ProposalGenerator = () => {
                                                            </div>
 
                                                            <div className="flex flex-col gap-2 z-10 w-full">
-                                                               <div className="flex items-center justify-between bg-white dark:bg-black/40 border border-black/10 dark:border-white/5 rounded-xl px-3 py-1.5">
+                                                               <div className="flex items-center justify-between bg-white dark:bg-white border border-black/10 dark:border-white/5 rounded-xl px-3 py-1.5">
                                                                    <span className="text-[9px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-wider">GST Active</span>
                                                                    <button 
                                                                        type="button"
@@ -3214,7 +3214,7 @@ const ProposalGenerator = () => {
                                                                        </div>
                                                                    </div>
                                                                ) : (
-                                                                   <div className="w-full h-[58px] relative bg-white dark:bg-black/40 rounded-xl border border-dashed border-black/10 dark:border-white/5 flex items-center justify-center gap-1.5 overflow-hidden transition-all duration-300 group-hover/card:border-black/10 dark:card:border-white/10">
+                                                                   <div className="w-full h-[58px] relative bg-white dark:bg-white rounded-xl border border-dashed border-black/10 dark:border-white/5 flex items-center justify-center gap-1.5 overflow-hidden transition-all duration-300 group-hover/card:border-black/10 dark:card:border-white/10">
                                                                        <div className="absolute inset-0 bg-[radial-gradient(rgba(255,255,255,0.02)_1px,transparent_1px)] [background-size:8px_8px] pointer-events-none" />
                                                                        <Lock size={11} className="text-gray-600" />
                                                                        <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Tax Exempt</span>
@@ -3245,7 +3245,7 @@ const ProposalGenerator = () => {
                                                            </div>
 
                                                            <div className="flex flex-col gap-2 z-10 w-full">
-                                                               <div className="flex items-center justify-between bg-white dark:bg-black/40 border border-black/10 dark:border-white/5 rounded-xl px-3 py-1.5">
+                                                               <div className="flex items-center justify-between bg-white dark:bg-white border border-black/10 dark:border-white/5 rounded-xl px-3 py-1.5">
                                                                    <span className="text-[9px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-wider">Retainer</span>
                                                                    <span className="text-[9px] font-black text-neon-green bg-neon-green/10 border border-neon-green/20 px-2 py-0.5 rounded-lg select-none font-mono tracking-widest">
                                                                        {formData.advanceRequested}%
@@ -3308,7 +3308,7 @@ const ProposalGenerator = () => {
                                                              </div>
 
                                                              <div className="flex flex-col gap-2.5 z-10 w-full">
-                                                                 <div className="flex items-center justify-between bg-white dark:bg-black/40 border border-black/10 dark:border-white/5 rounded-xl px-3 py-1.5">
+                                                                 <div className="flex items-center justify-between bg-white dark:bg-white border border-black/10 dark:border-white/5 rounded-xl px-3 py-1.5">
                                                                      <span className="text-[9px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-wider">Hide Totals</span>
                                                                      <button 
                                                                          type="button"
@@ -3324,7 +3324,7 @@ const ProposalGenerator = () => {
                                                                          )} />
                                                                      </button>
                                                                  </div>
-                                                                 <div className="flex items-center justify-between bg-white dark:bg-black/40 border border-black/10 dark:border-white/5 rounded-xl px-3 py-1.5">
+                                                                 <div className="flex items-center justify-between bg-white dark:bg-white border border-black/10 dark:border-white/5 rounded-xl px-3 py-1.5">
                                                                      <span className="text-[9px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-wider">Hide Settlement</span>
                                                                      <button 
                                                                          type="button"
@@ -4272,10 +4272,10 @@ const ProposalGenerator = () => {
                                 {isExpandedPreview ? <Minimize2 size={12} /> : <Maximize2 size={12} />}
                                 <span>{isExpandedPreview ? "Collapse" : "Expand"}</span>
                             </button>
-                            <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Document Live View</p>
+                            <p className="hidden xl:block text-[10px] font-black text-gray-500 uppercase tracking-widest whitespace-nowrap">Document Live View</p>
                         </div>
                         <div className="flex items-center gap-4">
-                            <div className="flex items-center bg-white dark:bg-black/40 rounded-lg p-1 border border-black/10 dark:border-white/5">
+                            <div className="flex items-center bg-white dark:bg-white rounded-lg p-1 border border-black/10 dark:border-white/5">
                                 <button onClick={() => setUserZoom(Math.max(0.5, userZoom - 0.1))} className="p-1.5 hover:bg-black/5 dark:hover:bg-white/5 rounded text-gray-600 dark:text-gray-400 transition-colors"><Minus size={12} /></button>
                                 <span className="text-[10px] font-black text-gray-500 px-2 min-w-[40px] text-center">{Math.round(userZoom * 100)}%</span>
                                 <button onClick={() => setUserZoom(Math.min(2, userZoom + 0.1))} className="p-1.5 hover:bg-black/5 dark:hover:bg-white/5 rounded text-gray-600 dark:text-gray-400 transition-colors"><Plus size={12} /></button>

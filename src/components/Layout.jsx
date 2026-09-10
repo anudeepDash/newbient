@@ -22,7 +22,12 @@ const Layout = () => {
         location.pathname.startsWith('/doc/') ||
         location.pathname.includes('/admin/create-') ||
         location.pathname.includes('/admin/edit-') ||
-        location.pathname.includes('/admin/agreements/');
+        location.pathname.includes('/admin/agreements/') ||
+        location.pathname === '/admin/ai-studio' ||
+        location.pathname === '/admin/blog/create' ||
+        location.pathname === '/admin/forms/create' ||
+        location.pathname === '/admin/campaigns/create' ||
+        location.pathname.startsWith('/admin/campaigns/manage/');
 
     const isHeightLockedPage = 
         location.pathname.startsWith('/doc/') ||

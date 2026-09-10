@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import html2canvas from 'html2canvas';
+
 import Printer from 'lucide-react/dist/esm/icons/printer';
 import Share2 from 'lucide-react/dist/esm/icons/share-2';
 import Edit from 'lucide-react/dist/esm/icons/edit';
@@ -350,6 +350,7 @@ const SpendsManagement = () => {
         if (!receiptElement) return;
 
         try {
+            const html2canvas = (await import('html2canvas')).default;
             const canvas = await html2canvas(receiptElement, {
                 backgroundColor: '#ffffff',
                 scale: 2,
@@ -379,6 +380,7 @@ const SpendsManagement = () => {
         const receiptElement = document.getElementById('thermal-receipt-body');
         if (receiptElement && navigator.canShare) {
             try {
+                const html2canvas = (await import('html2canvas')).default;
                 const canvas = await html2canvas(receiptElement, {
                     backgroundColor: '#070b09',
                     scale: 2,

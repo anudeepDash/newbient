@@ -623,7 +623,7 @@ const InvoiceGenerator = () => {
                                         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 md:gap-4">
                                             {logoOptions.map(logo => (
                                                 <button key={logo.id} onClick={() => setFormData({...formData, selectedLogo: logo.id})} className={cn("p-4 rounded-2xl border transition-all text-[10px] font-black uppercase tracking-widest flex flex-col items-center gap-2 overflow-hidden relative group/btn", formData.selectedLogo === logo.id ? "bg-neon-blue border-neon-blue text-black scale-105 shadow-xl" : "bg-gray-50 dark:bg-zinc-900/60 border-black/10 dark:border-white/5 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:border-black/20 dark:hover:border-white/20")}>
-                                                    <div className="w-full aspect-[4/3] rounded-xl bg-white dark:bg-black/40 border border-black/5 dark:border-white/10 flex items-center justify-center p-3 relative overflow-hidden shadow-sm">
+                                                    <div className="w-full aspect-[4/3] rounded-xl bg-white dark:bg-white border border-black/5 dark:border-white/10 flex items-center justify-center p-3 relative overflow-hidden shadow-sm">
                                                         <img src={logo.path} alt={logo.label} className="w-full h-full object-contain" />
                                                     </div>
                                                     <span className="text-[8px] sm:text-[10px] font-black uppercase tracking-widest relative z-10 leading-tight">{logo.label}</span>
@@ -652,19 +652,19 @@ const InvoiceGenerator = () => {
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 md:p-8 bg-gray-50 dark:bg-zinc-900/40 border border-black/10 dark:border-white/5 rounded-[2.5rem]">
                                                 <div className="space-y-4">
                                                     <label className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest px-2">Entity Name</label>
-                                                    <input value={formData.senderName} onChange={e => setFormData({...formData, senderName: e.target.value})} className="w-full bg-white dark:bg-black/40 border border-black/10 dark:border-white/10 h-14 px-6 rounded-2xl font-bold text-sm text-gray-900 dark:text-white outline-none focus:border-neon-blue/60" />
+                                                    <input value={formData.senderName} onChange={e => setFormData({...formData, senderName: e.target.value})} className="w-full bg-white dark:bg-white border border-black/10 dark:border-white/10 h-14 px-6 rounded-2xl font-bold text-sm text-gray-900 dark:text-white outline-none focus:border-neon-blue/60" />
                                                 </div>
                                                 <div className="space-y-4">
                                                     <label className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest px-2">GSTIN / TAX ID</label>
-                                                    <input value={formData.senderGst} onChange={e => setFormData({...formData, senderGst: e.target.value})} className="w-full bg-white dark:bg-black/40 border border-black/10 dark:border-white/10 h-14 px-6 rounded-2xl font-bold text-sm text-gray-900 dark:text-white outline-none focus:border-neon-blue/60" />
+                                                    <input value={formData.senderGst} onChange={e => setFormData({...formData, senderGst: e.target.value})} className="w-full bg-white dark:bg-white border border-black/10 dark:border-white/10 h-14 px-6 rounded-2xl font-bold text-sm text-gray-900 dark:text-white outline-none focus:border-neon-blue/60" />
                                                 </div>
                                                 <div className="space-y-4">
                                                     <label className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest px-2">Contact Details</label>
-                                                    <input value={formData.senderContact} onChange={e => setFormData({...formData, senderContact: e.target.value})} className="w-full bg-white dark:bg-black/40 border border-black/10 dark:border-white/10 h-14 px-6 rounded-2xl font-bold text-sm text-gray-900 dark:text-white outline-none focus:border-neon-blue/60" />
+                                                    <input value={formData.senderContact} onChange={e => setFormData({...formData, senderContact: e.target.value})} className="w-full bg-white dark:bg-white border border-black/10 dark:border-white/10 h-14 px-6 rounded-2xl font-bold text-sm text-gray-900 dark:text-white outline-none focus:border-neon-blue/60" />
                                                 </div>
                                                 <div className="space-y-4">
                                                     <label className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest px-2">Corporate Email</label>
-                                                    <input value={formData.senderEmail} onChange={e => setFormData({...formData, senderEmail: e.target.value})} className="w-full bg-white dark:bg-black/40 border border-black/10 dark:border-white/10 h-14 px-6 rounded-2xl font-bold text-sm text-gray-900 dark:text-white outline-none focus:border-neon-blue/60" />
+                                                    <input value={formData.senderEmail} onChange={e => setFormData({...formData, senderEmail: e.target.value})} className="w-full bg-white dark:bg-white border border-black/10 dark:border-white/10 h-14 px-6 rounded-2xl font-bold text-sm text-gray-900 dark:text-white outline-none focus:border-neon-blue/60" />
                                                 </div>
                                             </div>
                                         </div>
@@ -716,8 +716,8 @@ const InvoiceGenerator = () => {
                                                             <textarea value={item.description} onChange={e => { const newItems = [...items]; newItems[idx].description = e.target.value; setItems(newItems); }} rows={1} className="w-full bg-transparent border-none p-0 text-[10px] font-bold uppercase tracking-widest outline-none resize-none scrollbar-hide text-gray-600 dark:text-gray-400 placeholder:text-gray-400 dark:placeholder:text-gray-600" placeholder="Detailed description..." />
                                                         </div>
                                                         <div className="flex flex-wrap items-center gap-4 md:gap-6 w-full md:w-auto">
-                                                            <div className="flex flex-col items-center"><span className="text-[8px] font-black text-gray-500 uppercase tracking-widest mb-1.5">Qty</span><input type="number" value={item.qty} onChange={e => { const newItems = [...items]; newItems[idx].qty = Number(e.target.value); setItems(newItems); }} className="w-16 bg-white dark:bg-black/40 border border-black/10 dark:border-white/10 h-10 rounded-lg text-center text-xs font-black text-gray-900 dark:text-white outline-none focus:border-neon-blue/50" /></div>
-                                                            <div className="flex flex-col items-end"><span className="text-[8px] font-black text-gray-500 uppercase tracking-widest mb-1.5 pr-2">Price</span><div className="relative"><span className="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] font-black text-neon-blue">₹</span><input type="number" value={item.price} onChange={e => { const newItems = [...items]; newItems[idx].price = Number(e.target.value); setItems(newItems); }} className="w-32 bg-white dark:bg-black/40 border border-black/10 dark:border-white/10 h-10 pl-7 pr-4 rounded-lg text-right text-xs font-black text-neon-blue outline-none focus:border-neon-blue/50" /></div></div>
+                                                            <div className="flex flex-col items-center"><span className="text-[8px] font-black text-gray-500 uppercase tracking-widest mb-1.5">Qty</span><input type="number" value={item.qty} onChange={e => { const newItems = [...items]; newItems[idx].qty = Number(e.target.value); setItems(newItems); }} className="w-16 bg-white dark:bg-white border border-black/10 dark:border-white/10 h-10 rounded-lg text-center text-xs font-black text-gray-900 dark:text-white outline-none focus:border-neon-blue/50" /></div>
+                                                            <div className="flex flex-col items-end"><span className="text-[8px] font-black text-gray-500 uppercase tracking-widest mb-1.5 pr-2">Price</span><div className="relative"><span className="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] font-black text-neon-blue">₹</span><input type="number" value={item.price} onChange={e => { const newItems = [...items]; newItems[idx].price = Number(e.target.value); setItems(newItems); }} className="w-32 bg-white dark:bg-white border border-black/10 dark:border-white/10 h-10 pl-7 pr-4 rounded-lg text-right text-xs font-black text-neon-blue outline-none focus:border-neon-blue/50" /></div></div>
                                                             <button onClick={() => setItems(items.filter(i => i.id !== item.id))} className="p-2.5 text-gray-400 hover:text-red-500 transition-colors hover:bg-red-500/10 rounded-lg"><Trash2 size={16} /></button>
                                                         </div>
                                                     </div>
@@ -832,7 +832,7 @@ const InvoiceGenerator = () => {
                                                     <h4 className="text-[10px] font-black text-neon-blue uppercase tracking-widest mb-1">PayU Checkout Gateway</h4>
                                                     <p className="text-[8px] font-bold text-gray-500 uppercase tracking-widest leading-relaxed">Automatic Payment Generation</p>
                                                 </div>
-                                                <button onClick={() => setFormData({...formData, showPaymentButton: !formData.showPaymentButton})} className={cn("w-14 h-8 rounded-full transition-all relative border", formData.showPaymentButton ? "bg-neon-blue border-neon-blue" : "bg-white dark:bg-black/40 border-black/10 dark:border-white/10")}>
+                                                <button onClick={() => setFormData({...formData, showPaymentButton: !formData.showPaymentButton})} className={cn("w-14 h-8 rounded-full transition-all relative border", formData.showPaymentButton ? "bg-neon-blue border-neon-blue" : "bg-white dark:bg-white border-black/10 dark:border-white/10")}>
                                                     <div className={cn("absolute top-1 w-6 h-6 rounded-full transition-all", formData.showPaymentButton ? "left-7 bg-white dark:bg-black" : "left-1 bg-gray-600")} />
                                                 </button>
                                             </div>
@@ -860,7 +860,7 @@ const InvoiceGenerator = () => {
                                                         <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest px-2">Final Checkout URL</label>
                                                         <div className="relative group">
                                                             <div className="absolute inset-0 bg-neon-blue/5 rounded-2xl blur-xl opacity-0 group-focus-within:opacity-100 transition-opacity" />
-                                                            <input value={formData.paymentLink} onChange={e => setFormData({...formData, paymentLink: e.target.value})} className="w-full bg-white dark:bg-black/40 border border-black/10 dark:border-white/10 h-16 px-6 rounded-2xl font-mono text-[10px] outline-none focus:border-neon-blue/40 relative z-10 text-gray-900 dark:text-white" placeholder="PayU or Custom Gateway URL..." />
+                                                            <input value={formData.paymentLink} onChange={e => setFormData({...formData, paymentLink: e.target.value})} className="w-full bg-white dark:bg-white border border-black/10 dark:border-white/10 h-16 px-6 rounded-2xl font-mono text-[10px] outline-none focus:border-neon-blue/40 relative z-10 text-gray-900 dark:text-white" placeholder="PayU or Custom Gateway URL..." />
                                                         </div>
                                                     </div>
                                                 </div>
@@ -907,7 +907,7 @@ const InvoiceGenerator = () => {
                                             </div>
 
                                             {formData.showSeal && (
-                                                <div className="flex justify-center p-12 bg-white dark:bg-black/40 rounded-[32px] border border-black/10 dark:border-white/5 overflow-hidden">
+                                                <div className="flex justify-center p-12 bg-white dark:bg-white rounded-[32px] border border-black/10 dark:border-white/5 overflow-hidden">
                                                     <DocumentSeal className="scale-75 origin-center" />
                                                 </div>
                                             )}
@@ -947,7 +947,7 @@ const InvoiceGenerator = () => {
                                                         </div>
                                                     </div>
                                                     
-                                                    <div className="relative h-48 bg-white dark:bg-black/40 rounded-[32px] border border-black/10 dark:border-white/5 flex items-center justify-center group overflow-hidden">
+                                                    <div className="relative h-48 bg-white dark:bg-white rounded-[32px] border border-black/10 dark:border-white/5 flex items-center justify-center group overflow-hidden">
                                                         {formData.providerSignature ? (
                                                             <div className="relative group w-full h-full flex items-center justify-center p-4 md:p-8">
                                                                 <img src={formData.providerSignature} alt="Provider Signature" className="max-h-full object-contain grayscale mix-blend-multiply dark:invert dark:brightness-200" />
@@ -1021,10 +1021,10 @@ const InvoiceGenerator = () => {
                                 {isExpandedPreview ? <Minimize2 size={12} /> : <Maximize2 size={12} />}
                                 <span>{isExpandedPreview ? "Collapse" : "Expand"}</span>
                             </button>
-                            <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Document Live View</p>
+                            <p className="hidden xl:block text-[10px] font-black text-gray-500 uppercase tracking-widest whitespace-nowrap">Document Live View</p>
                         </div>
                         <div className="flex items-center gap-4">
-                            <div className="flex items-center bg-white dark:bg-black/40 rounded-lg p-1 border border-black/10 dark:border-white/5">
+                            <div className="flex items-center bg-white dark:bg-white rounded-lg p-1 border border-black/10 dark:border-white/5">
                                 <button onClick={() => setUserZoom(Math.max(0.5, userZoom - 0.1))} className="p-1.5 hover:bg-black/5 dark:hover:bg-white/5 rounded text-gray-600 dark:text-gray-400 transition-colors"><Minus size={12} /></button>
                                 <span className="text-[10px] font-black text-gray-500 px-2 min-w-[40px] text-center">{Math.round(userZoom * 100)}%</span>
                                 <button onClick={() => setUserZoom(Math.min(2, userZoom + 0.1))} className="p-1.5 hover:bg-black/5 dark:hover:bg-white/5 rounded text-gray-600 dark:text-gray-400 transition-colors"><Plus size={12} /></button>

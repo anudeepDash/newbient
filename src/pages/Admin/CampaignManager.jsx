@@ -62,7 +62,7 @@ import Unlock from 'lucide-react/dist/esm/icons/unlock';
 import CheckCircle2 from 'lucide-react/dist/esm/icons/check-circle-2';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { motion, AnimatePresence } from 'framer-motion';
-import { downloadCSV, CSVUploadButton } from '../../components/admin/CSVHandler';
+
 import { cn } from '../../lib/utils';
 import LivePreview from '../../components/admin/LivePreview';
 import StudioDatePicker from '../../components/ui/StudioDatePicker';
@@ -493,7 +493,7 @@ const CampaignManager = () => {
         isPinned: false
     });
 
-    const [isProcessingCSV, setIsProcessingCSV] = useState(false);
+
 
     const filteredCampaigns = useMemo(() => {
         return campaigns.filter(c =>
@@ -1077,12 +1077,12 @@ const CampaignManager = () => {
                                     <div className="relative group/carousel">
                                         {/* Scroll Indicators */}
                                         <div className="absolute -left-4 top-1/2 -translate-y-1/2 z-20 hidden md:flex opacity-0 group-hover/carousel:opacity-100 transition-opacity pointer-events-none">
-                                            <button onClick={() => scrollContainer('campaign-grid', 'left')} className="w-12 h-12 rounded-2xl bg-white dark:bg-black/80 backdrop-blur-xl border border-black/10 dark:border-white/10 flex items-center justify-center text-gray-900 dark:text-white pointer-events-auto hover:bg-white hover:text-black transition-all shadow-2xl">
+                                            <button onClick={() => { const el = document.getElementById('campaign-grid'); if (el) el.scrollBy({ left: -300, behavior: 'smooth' }); }} className="w-12 h-12 rounded-2xl bg-white dark:bg-black/80 backdrop-blur-xl border border-black/10 dark:border-white/10 flex items-center justify-center text-gray-900 dark:text-white pointer-events-auto hover:bg-white hover:text-black transition-all shadow-2xl">
                                                 <ChevronRight className="rotate-180" size={24} />
                                             </button>
                                         </div>
                                         <div className="absolute -right-4 top-1/2 -translate-y-1/2 z-20 hidden md:flex opacity-0 group-hover/carousel:opacity-100 transition-opacity pointer-events-none">
-                                            <button onClick={() => scrollContainer('campaign-grid', 'right')} className="w-12 h-12 rounded-2xl bg-white dark:bg-black/80 backdrop-blur-xl border border-black/10 dark:border-white/10 flex items-center justify-center text-gray-900 dark:text-white pointer-events-auto hover:bg-white hover:text-black transition-all shadow-2xl">
+                                            <button onClick={() => { const el = document.getElementById('campaign-grid'); if (el) el.scrollBy({ left: 300, behavior: 'smooth' }); }} className="w-12 h-12 rounded-2xl bg-white dark:bg-black/80 backdrop-blur-xl border border-black/10 dark:border-white/10 flex items-center justify-center text-gray-900 dark:text-white pointer-events-auto hover:bg-white hover:text-black transition-all shadow-2xl">
                                                 <ChevronRight size={24} />
                                             </button>
                                         </div>

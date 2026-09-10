@@ -89,7 +89,7 @@ const CampaignPublicView = () => {
     useDynamicMeta({
         title: campaign ? campaign.title : "Creator Campaign",
         description: campaign ? campaign.description : "Join this exclusive creator campaign.",
-        image: campaign && campaign.image ? campaign.image : "/favicon.svg",
+        image: campaign?.image || "/og-image.png",
         url: window.location.href
     });
 

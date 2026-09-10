@@ -254,7 +254,7 @@ const ConcertManager = () => {
                                                 </div>
                                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                                     {[
-                                                        { label: 'Scale', key: 'scale', min: 1, max: 3, step: 0.01, unit: 'x', format: v => v.toFixed(2) },
+                                                        { label: 'Scale', key: 'scale', min: -3, max: 3, step: 0.01, unit: 'x', format: v => v.toFixed(2) },
                                                         { label: 'X-Pos', key: 'x', min: -100, max: 100, step: 1, unit: '%', format: v => v },
                                                         { label: 'Y-Pos', key: 'y', min: -100, max: 100, step: 1, unit: '%', format: v => v },
                                                     ].map(({ label, key, min, max, step, unit, format }) => (

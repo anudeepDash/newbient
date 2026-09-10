@@ -59,8 +59,8 @@
       line-height: 1.1 !important;
     }
     
-    h1, h2, .text-7xl, .text-8xl, .text-9xl {
-      line-height: 1.1 !important;
+    .text-7xl, .text-8xl, .text-9xl {
+      line-height: 1.15 !important;
     }
   }
 }
@@ -153,6 +153,27 @@
     }
   }
 
+  /* Themed Google Form iframe wrapper */
+  .form-iframe-wrapper {
+    position: relative;
+    background: #ffffff;
+    overflow: hidden;
+  }
+  .form-iframe-wrapper iframe {
+    display: block;
+    width: 100%;
+  }
+  .dark .form-iframe-wrapper {
+    background: #0a0a0a;
+  }
+  .dark .form-iframe-wrapper iframe {
+    filter: invert(0.88) hue-rotate(180deg) brightness(1.1) contrast(0.9);
+  }
+  /* Prevent double-inversion of images inside dark-themed Google Forms */
+  .dark .form-iframe-wrapper iframe img {
+    filter: invert(1) hue-rotate(180deg);
+  }
+
   .text-glow-green {
     text-shadow: 0 0 4px rgba(0, 230, 168, 0.6);
   }
@@ -183,10 +204,22 @@
   }
 
   /* 3D Transform Utilities */
-  .perspective-1000 { perspective: 1000px; }
-  .preserve-3d { transform-style: preserve-3d; }
-  .backface-hidden { backface-visibility: hidden; }
-  .rotate-y-180 { transform: rotateY(180deg); }
+  .perspective-1000 { 
+    perspective: 1000px; 
+    -webkit-perspective: 1000px;
+  }
+  .preserve-3d { 
+    transform-style: preserve-3d; 
+    -webkit-transform-style: preserve-3d;
+  }
+  .backface-hidden { 
+    backface-visibility: hidden !important; 
+    -webkit-backface-visibility: hidden !important;
+  }
+  .rotate-y-180 { 
+    transform: rotateY(180deg); 
+    -webkit-transform: rotateY(180deg);
+  }
 
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
@@ -289,12 +322,11 @@
   }
 
   /* Hide everything except root to avoid issues */
-  #root > *:not(main), 
   header, 
   nav, 
   footer, 
   .print-hidden,
-  button {
+  button:not(.print-visible) {
     display: none !important;
   }
 
@@ -306,7 +338,7 @@
   }
 
   /* Make sure generated PDF elements are shown */
-  [ref="invoiceRef"] {
+  .invoice-print-target {
     margin: 0 !important;
     box-shadow: none !important;
   }
@@ -408,26 +440,6 @@
 
 [contenteditable] img[data-selected="true"] {
   outline: 3px solid #39FF14 !important;
-}
-
-.article-content-force-white * {
-  color: inherit !important;
-}
-
-.article-content-force-white p, 
-.article-content-force-white span, 
-.article-content-force-white div, 
-.article-content-force-white li {
-  color: #e5e7eb !important; /* text-gray-200 */
-}
-
-.article-content-force-white h1,
-.article-content-force-white h2,
-.article-content-force-white h3,
-.article-content-force-white h4,
-.article-content-force-white strong,
-.article-content-force-white b {
-  color: #ffffff !important;
 }
 
 .article-content-force-white * {
@@ -614,7 +626,10 @@
 .proposal-page-render .article-content div,
 .agreement-page-render .article-content p,
 .agreement-page-render .article-content li,
-.agreement-page-render .article-content div {
+.agreement-page-render .article-content div,
+.invoice-page-render .article-content p,
+.invoice-page-render .article-content li,
+.invoice-page-render .article-content div {
   color: #374151 !important; /* Force readable text-gray-700 color */
   font-family: 'Outfit', sans-serif !important;
 }
@@ -949,11 +964,11 @@
 .admin-hub-content-container div[class*="bg-[#0a0a0a]"],
 .admin-hub-content-container div[class*="bg-[#050505]/"],
 .admin-hub-content-container div[class*="bg-zinc-900"] {
-  background: #ffffff !important;
-  backdrop-filter: blur(24px) !important;
-  border: 1px solid rgba(0, 0, 0, 0.08) !important;
-  border-radius: 1.5rem !important;
-  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05) !important;
+  background: var(--bg-primary, #ffffff);
+  backdrop-filter: blur(24px);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 1.5rem;
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
 }
 
 .dark .admin-hub-content-container div[class*="bg-[#0A0A0A]"],
@@ -961,14 +976,17 @@
 .dark .admin-hub-content-container div[class*="bg-[#0a0a0a]"],
 .dark .admin-hub-content-container div[class*="bg-[#050505]/"],
 .dark .admin-hub-content-container div[class*="bg-zinc-900"] {
-  background: rgba(9, 9, 11, 0.35) !important;
-  border: 1px solid rgba(255, 255, 255, 0.05) !important;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5) !important;
+  background: rgba(9, 9, 11, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
 }
 
 /* Form controls & Input groups glassmorphism */
 .admin-hub-content-container input[type="text"],
 .admin-hub-content-container input[type="email"],
+.admin-hub-content-container input[type="url"],
+.admin-hub-content-container input[type="password"],
+.admin-hub-content-container input[type="search"],
 .admin-hub-content-container input[type="tel"],
 .admin-hub-content-container input[type="number"],
 .admin-hub-content-container input[type="date"],
@@ -985,6 +1003,9 @@
 
 .dark .admin-hub-content-container input[type="text"],
 .dark .admin-hub-content-container input[type="email"],
+.dark .admin-hub-content-container input[type="url"],
+.dark .admin-hub-content-container input[type="password"],
+.dark .admin-hub-content-container input[type="search"],
 .dark .admin-hub-content-container input[type="tel"],
 .dark .admin-hub-content-container input[type="number"],
 .dark .admin-hub-content-container input[type="date"],
@@ -998,6 +1019,9 @@
 
 .admin-hub-content-container input[type="text"]:not([class*="rounded-"]),
 .admin-hub-content-container input[type="email"]:not([class*="rounded-"]),
+.admin-hub-content-container input[type="url"]:not([class*="rounded-"]),
+.admin-hub-content-container input[type="password"]:not([class*="rounded-"]),
+.admin-hub-content-container input[type="search"]:not([class*="rounded-"]),
 .admin-hub-content-container input[type="tel"]:not([class*="rounded-"]),
 .admin-hub-content-container input[type="number"]:not([class*="rounded-"]),
 .admin-hub-content-container input[type="date"]:not([class*="rounded-"]),
@@ -1009,6 +1033,9 @@
 
 .admin-hub-content-container input[type="text"]:not([class*="p-"]),
 .admin-hub-content-container input[type="email"]:not([class*="p-"]),
+.admin-hub-content-container input[type="url"]:not([class*="p-"]),
+.admin-hub-content-container input[type="password"]:not([class*="p-"]),
+.admin-hub-content-container input[type="search"]:not([class*="p-"]),
 .admin-hub-content-container input[type="tel"]:not([class*="p-"]),
 .admin-hub-content-container input[type="number"]:not([class*="p-"]),
 .admin-hub-content-container input[type="date"]:not([class*="p-"]),
@@ -1021,8 +1048,8 @@
 .admin-hub-content-container input:focus,
 .admin-hub-content-container select:focus,
 .admin-hub-content-container textarea:focus {
-  border-color: rgba(0, 0, 0, 0.3) !important;
-  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.05) !important;
+  border-color: rgba(0, 0, 0, 0.3);
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.05);
   background: #ffffff !important;
   outline: none !important;
 }
@@ -1030,8 +1057,8 @@
 .dark .admin-hub-content-container input:focus,
 .dark .admin-hub-content-container select:focus,
 .dark .admin-hub-content-container textarea:focus {
-  border-color: rgba(148, 163, 184, 0.4) !important;
-  box-shadow: 0 0 15px rgba(148, 163, 184, 0.05) !important;
+  border-color: rgba(148, 163, 184, 0.4);
+  box-shadow: 0 0 15px rgba(148, 163, 184, 0.05);
   background: rgba(2, 6, 23, 0.6) !important;
 }
 
@@ -1043,9 +1070,9 @@
 }
 
 .admin-hub-content-container table th {
-  padding: 1.25rem 1.5rem !important;
-  font-size: 9px !important;
-  font-weight: 700 !important;
+  padding: 0.75rem 1rem;
+  font-size: 11px;
+  font-weight: 700;
   font-family: 'Outfit', sans-serif !important;
   text-transform: uppercase !important;
   letter-spacing: 0.2em !important;
@@ -1059,9 +1086,9 @@
 }
 
 .admin-hub-content-container table td {
-  padding: 1.25rem 1.5rem !important;
-  font-size: 11px !important;
-  font-weight: 700 !important;
+  padding: 0.75rem 1rem;
+  font-size: 11px;
+  font-weight: 700;
   color: #1f2937 !important;
   border-bottom: 1px solid rgba(0, 0, 0, 0.04) !important;
   transition: all 0.2s ease !important;
@@ -1097,12 +1124,12 @@
 
 .admin-hub-content-container button:hover,
 .admin-hub-content-container input[type="submit"]:hover {
-  transform: translateY(-1px) scale(1.02) !important;
+  transform: translateY(-1px) scale(1.02);
 }
 
 .admin-hub-content-container button:active,
 .admin-hub-content-container input[type="submit"]:active {
-  transform: translateY(0) scale(0.98) !important;
+  transform: translateY(0) scale(0.98);
 }
 
 /* Exceptions for small toggle/close buttons and icon-only buttons */

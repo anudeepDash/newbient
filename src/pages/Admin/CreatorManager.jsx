@@ -29,6 +29,7 @@ import FileSpreadsheet from 'lucide-react/dist/esm/icons/file-spreadsheet';
 import Download from 'lucide-react/dist/esm/icons/download';
 import FileText from 'lucide-react/dist/esm/icons/file-text';
 import ChevronDown from 'lucide-react/dist/esm/icons/chevron-down';
+import ChevronUp from 'lucide-react/dist/esm/icons/chevron-up';
 import ChevronLeft from 'lucide-react/dist/esm/icons/chevron-left';
 import ChevronRight from 'lucide-react/dist/esm/icons/chevron-right';
 import TrendingUp from 'lucide-react/dist/esm/icons/trending-up';
@@ -44,8 +45,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { cn, normalizePhoneNumber } from '../../lib/utils';
 import AdminDashboardLink from '../../components/admin/AdminDashboardLink';
 import AdminCommunityHubLayout from '../../components/admin/AdminCommunityHubLayout';
-import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+
 import StudioSelect from '../../components/ui/StudioSelect';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import Plus from 'lucide-react/dist/esm/icons/plus';
@@ -737,12 +737,12 @@ const CreatorManager = ({ showLeaderboardOnly = false, isEmbedded = false }) => 
                                     <div className="relative group/carousel">
                                         {/* Scroll Indicators - Only visible on desktop hover or mobile always */}
                                         <div className="absolute -left-4 top-1/2 -translate-y-1/2 z-20 hidden md:flex opacity-0 group-hover/carousel:opacity-100 transition-opacity pointer-events-none">
-                                            <button onClick={() => scrollContainer('creator-grid', 'left')} className="w-12 h-12 rounded-2xl bg-white dark:bg-black/80 backdrop-blur-xl border border-black/10 dark:border-white/10 flex items-center justify-center text-gray-900 dark:text-white pointer-events-auto hover:bg-white hover:text-black transition-all shadow-2xl">
+                                            <button onClick={() => { const el = document.getElementById('creator-grid'); if (el) el.scrollBy({ left: -300, behavior: 'smooth' }); }} className="w-12 h-12 rounded-2xl bg-white dark:bg-black/80 backdrop-blur-xl border border-black/10 dark:border-white/10 flex items-center justify-center text-gray-900 dark:text-white pointer-events-auto hover:bg-white hover:text-black transition-all shadow-2xl">
                                                 <ChevronRight className="rotate-180" size={24} />
                                             </button>
                                         </div>
                                         <div className="absolute -right-4 top-1/2 -translate-y-1/2 z-20 hidden md:flex opacity-0 group-hover/carousel:opacity-100 transition-opacity pointer-events-none">
-                                            <button onClick={() => scrollContainer('creator-grid', 'right')} className="w-12 h-12 rounded-2xl bg-white dark:bg-black/80 backdrop-blur-xl border border-black/10 dark:border-white/10 flex items-center justify-center text-gray-900 dark:text-white pointer-events-auto hover:bg-white hover:text-black transition-all shadow-2xl">
+                                            <button onClick={() => { const el = document.getElementById('creator-grid'); if (el) el.scrollBy({ left: 300, behavior: 'smooth' }); }} className="w-12 h-12 rounded-2xl bg-white dark:bg-black/80 backdrop-blur-xl border border-black/10 dark:border-white/10 flex items-center justify-center text-gray-900 dark:text-white pointer-events-auto hover:bg-white hover:text-black transition-all shadow-2xl">
                                                 <ChevronRight size={24} />
                                             </button>
                                         </div>
@@ -1298,6 +1298,11 @@ const StatusPill = ({ status }) => {
     );
 };
 
+// Section heading component
+const SectionLabel = ({ children }) => (
+    <p className="text-[10px] font-bold text-gray-900 dark:text-white/30 uppercase tracking-[0.2em] mb-3">{children}</p>
+);
+
 const CreatorDetailModal = ({ creator, onClose, onUpdateStatus, onDelete, isUpdating, isDeleting }) => {
     const { updateCreator, addNotification, creators, campaigns } = useStore();
     
@@ -1418,9 +1423,6 @@ const CreatorDetailModal = ({ creator, onClose, onUpdateStatus, onDelete, isUpda
     ].filter(Boolean);
 
     // Section heading component
-    const SectionLabel = ({ children }) => (
-        <p className="text-[10px] font-bold text-gray-900 dark:text-white/30 uppercase tracking-[0.2em] mb-3">{children}</p>
-    );
 
     return createPortal(
         <div className="fixed inset-0 z-[99999] flex justify-end">

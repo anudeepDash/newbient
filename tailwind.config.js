@@ -5,6 +5,13 @@ export default {
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
+  safelist: [
+    'text-neon-green', 'text-neon-blue', 'text-neon-pink', 'text-neon-purple',
+    'text-yellow-400', 'text-white', 'text-red-400',
+    'bg-neon-green/10', 'bg-neon-blue/10', 'bg-neon-pink/10', 'bg-neon-purple/10',
+    'bg-yellow-400/10', 'border-neon-green/20', 'border-neon-blue/20',
+    'border-neon-pink/20', 'border-neon-purple/20', 'border-yellow-400/20',
+  ],
   theme: {
     extend: {
       colors: {
@@ -18,6 +25,7 @@ export default {
       fontFamily: {
         sans: ['Inter', 'sans-serif'],
         heading: ['Outfit', 'sans-serif'],
+        signature: ['Caveat', 'cursive'],
       },
       boxShadow: {
         'neon-green': '0 0 2px #39FF14, 0 0 6px rgba(57, 255, 20, 0.25)',

@@ -34,7 +34,7 @@ import { collection, query, orderBy, onSnapshot, deleteDoc, doc, updateDoc, incr
 
 const TicketingManagement = () => {
     useStoreSubscription(['upcomingEvents', 'portfolio', 'ticketOrders']);
-    const { upcomingEvents, portfolio = [], ticketOrders = [], updateTicketOrderStatus, user } = useStore();
+    const { upcomingEvents, portfolio = [], ticketOrders = [], updateTicketOrderStatus, user, coupons = [], volunteerGigs = [] } = useStore();
     const storeGuestlists = useStore(state => state.guestlists) || [];
     const isScanner = user?.role === 'scanner';
     
@@ -65,7 +65,7 @@ const TicketingManagement = () => {
         const upcoming = upcomingEvents?.filter(e => e.isTicketed || e.isGuestlistEnabled || e.guestlistEnabled) || [];
         const ports = portfolio?.filter(p => p.wasEvent && (p.isTicketed || p.isGuestlistEnabled || p.guestlistEnabled)) || [];
         const gls = storeGuestlists.map(gl => ({ ...gl, isGuestlistEnabled: true }));
-        const gigs = useStore.getState().volunteerGigs?.filter(g => g.guestlistEnabled || g.isGuestlistEnabled) || [];
+        const gigs = volunteerGigs?.filter(g => g.guestlistEnabled || g.isGuestlistEnabled) || [];
 
         const consolidated = new Map();
 
@@ -870,7 +870,7 @@ const TicketingManagement = () => {
                                     <div className="p-8 border-b border-black/10 dark:border-white/5 bg-white dark:bg-black/40 flex justify-between items-center">
                                         <h3 className="text-xl font-black italic uppercase tracking-tighter text-gray-900 dark:text-white">Active Coupons</h3>
                                         <div className="px-6 py-2 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-full text-[9px] font-black uppercase tracking-[0.2em] text-gray-600 dark:text-gray-400">
-                                            {useStore.getState().coupons.filter(c => c.eventId === selectedEventId).length} Active
+                                            {coupons.filter(c => c.eventId === selectedEventId).length} Active
                                         </div>
                                     </div>
                                     <div className="overflow-x-auto">
@@ -885,7 +885,7 @@ const TicketingManagement = () => {
                                             </thead>
                                             <tbody className="text-sm">
                                                 {(() => {
-                                                    const eventCoupons = useStore.getState().coupons.filter(c => c.eventId === selectedEventId);
+                                                    const eventCoupons = coupons.filter(c => c.eventId === selectedEventId);
                                                     if (eventCoupons.length === 0) return (
                                                         <tr>
                                                             <td colSpan="4" className="p-20 text-center text-gray-500 bg-white dark:bg-black/20">

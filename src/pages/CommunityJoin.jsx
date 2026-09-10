@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useLocation, Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import Users from 'lucide-react/dist/esm/icons/users';
@@ -22,7 +22,7 @@ import EventTicketingModal from '../components/tickets/EventTicketingModal';
 import useDynamicMeta from '../hooks/useDynamicMeta';
 
 const CommunityJoin = () => {
-    useStoreSubscription(['volunteerGigs', 'guestlists', 'giveaways', 'campaigns']);
+    useStoreSubscription(['volunteerGigs', 'guestlists', 'giveaways', 'campaigns', 'forms']);
     const scrollContainer = (id, direction) => {
         const container = document.getElementById(id);
         if (container) {
@@ -53,7 +53,22 @@ const CommunityJoin = () => {
     const [isGLModalOpen, setIsGLModalOpen] = useState(false);
     const [selectedGL, setSelectedGL] = useState(null);
     const [showShareToast, setShowShareToast] = useState(false);
+    const [registrationLoaded, setRegistrationLoaded] = useState(false);
     const hasJoined = user && user.hasJoinedTribe;
+
+    // Build tribe registration URL with email pre-fill
+    const tribeFormUrl = useMemo(() => {
+        const base = 'https://docs.google.com/forms/d/e/1FAIpQLScQv55cT-hPBqTtw7PFqOZND6QfPkmjzT8_4Sf4G53_UYwSQg/viewform?embedded=true';
+        try {
+            const url = new URL(base);
+            if (user?.email) {
+                url.searchParams.set('emailAddress', user.email);
+            }
+            return url.toString();
+        } catch {
+            return base;
+        }
+    }, [user?.email]);
 
     // Resolve Direct Link Item for Meta Tags
     const params = new URLSearchParams(location.search);
@@ -75,7 +90,7 @@ const CommunityJoin = () => {
     useDynamicMeta({
         title: directItem ? directItem.title : "Community Hub",
         description: directItem ? (directItem.description || "Join this exclusive opportunity at Newbi Entertainment.") : "Access exclusive gigs, campaigns, and forms.",
-        image: directItem && directItem.image ? directItem.image : "/favicon.svg",
+        image: directItem?.image || "/og-image.png",
         url: window.location.href
     });
 
@@ -85,15 +100,6 @@ const CommunityJoin = () => {
         ...(guestlists || []).filter(i => i.isPinned).map(item => ({ ...item, type: 'gl' })),
         ...(forms || []).filter(i => i.isPinned).map(item => ({ ...item, type: 'form' }))
     ];
-
-    useEffect(() => {
-        if (authInitialized && !user) {
-            const timer = setTimeout(() => {
-                setAuthModal(true);
-            }, 1000);
-            return () => clearTimeout(timer);
-        }
-    }, [authInitialized, user, setAuthModal]);
 
     useEffect(() => {
         if (user && hasJoined) {
@@ -127,13 +133,25 @@ const CommunityJoin = () => {
     }, [user, hasJoined, location.search, volunteerGigs, guestlists, forms, campaigns]);
 
     const handleShare = async (type, id) => {
-        const url = `${window.location.origin}/community?${type}=${id}`;
+        const isFormType = type === 'form';
+        const url = isFormType ? `${window.location.origin}/forms/${id}` : `${window.location.origin}/community?${type}=${id}`;
+        
+        let shareTitle = 'Newbi Tribe Access';
+        let shareText = 'Exclusive community opportunity at Newbi Entertainment.';
+
+        if (isFormType) {
+            const targetForm = (forms || []).find(f => f.id === id);
+            if (targetForm) {
+                shareTitle = `${targetForm.title} | Newbi Forms`;
+                shareText = targetForm.description || 'Fill out this form with Newbi Entertainment.';
+            }
+        }
         
         try {
             if (navigator.share) {
                 await navigator.share({
-                    title: 'Newbi Tribe Access',
-                    text: 'Exclusive community opportunity at Newbi.',
+                    title: shareTitle,
+                    text: shareText,
                     url: url,
                 });
             } else {
@@ -165,6 +183,10 @@ const CommunityJoin = () => {
     };
 
     const handleCardAction = (item) => {
+        if (!user) {
+            setAuthModal(true);
+            return;
+        }
         const type = item.type || '';
         
         if (type === 'gl' || type === 'gl_embed') {
@@ -256,50 +278,61 @@ const CommunityJoin = () => {
                     </motion.p>
                 </div>
 
-                {!user ? (
-                    <section className="flex flex-col items-center">
-                        <motion.div
-                            initial={{ opacity: 0, y: 30 }}
-                            whileInView={{ opacity: 1, y: 0 }}
-                            viewport={{ once: true }}
-                            className="p-8 md:p-20 bg-gray-100 dark:bg-slate-900/30 border border-black/10 dark:border-white/5 rounded-[2.5rem] md:rounded-[3rem] backdrop-blur-3xl text-center max-w-2xl shadow-2xl relative overflow-hidden group hover:border-black/10 dark:hover:border-white/10 transition-all duration-300"
-                        >
-                            <div className="absolute inset-0 bg-gradient-to-br from-neon-blue/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                            <Users className="w-16 h-16 md:w-24 md:h-24 text-neon-blue mx-auto mb-8 md:mb-12 relative z-10" />
-                            <h3 className="text-2xl md:text-4xl font-extrabold font-heading mb-4 md:mb-6 relative z-10">Get Started.</h3>
-                            <p className="text-gray-500 mb-8 md:mb-12 relative z-10 text-base md:text-lg font-medium tracking-tight">Join the ranks to access exclusive gigs, VIP guestlists, and more.</p>
-                            <Button
-                                onClick={() => setAuthModal(true)}
-                                className="w-full h-16 md:h-20 text-lg md:text-xl rounded-xl font-bold tracking-wider bg-white text-black hover:scale-[1.02] transition-all shadow-[0_20px_50px_rgba(255,255,255,0.1)]"
-                            >
-                                Identity Verification
-                            </Button>
-                        </motion.div>
-                    </section>
-                ) : (!hasJoined && siteSettings.enableTribeForm !== false) ? (
-                    <section className="space-y-20">
+                {(user && !hasJoined && siteSettings.enableTribeForm !== false) ? (
+                    <section className="space-y-12">
                         <div className="max-w-5xl mx-auto">
-                            <div className="flex items-center gap-6 mb-16">
+                            <div className="flex items-center gap-6 mb-8">
                                 <div className="w-16 h-16 rounded-2xl bg-neon-blue text-black flex items-center justify-center font-extrabold text-2xl shadow-[0_0_30px_rgba(0,255,255,0.3)]">01</div>
-                                <h2 className="text-3xl md:text-4xl font-extrabold font-heading tracking-tight text-gray-900 dark:text-white">Registration.</h2>
-                            </div>
-
-                            <div className="relative group">
-                                <div className="absolute -inset-2 bg-gradient-to-r from-neon-pink via-neon-blue to-neon-green rounded-[2.5rem] md:rounded-[3.5rem] blur-2xl opacity-10 group-hover:opacity-30 transition duration-1000" />
-                                <div className="relative w-full aspect-[4/5] md:aspect-[3/2] bg-gray-100 dark:bg-slate-950 rounded-[2rem] md:rounded-[3rem] overflow-hidden border border-black/10 dark:border-white/5 shadow-2xl">
-                                    <iframe
-                                        src="https://docs.google.com/forms/d/e/1FAIpQLScQv55cT-hPBqTtw7PFqOZND6QfPkmjzT8_4Sf4G53_UYwSQg/viewform?embedded=true"
-                                        className="w-full h-full border-0"
-                                        style={{ filter: 'invert(1) hue-rotate(180deg) brightness(0.8)', background: 'transparent' }}
-                                        title="Newbi Tribe Registration"
-                                    >Loading...</iframe>
+                                <div>
+                                    <h2 className="text-3xl md:text-4xl font-extrabold font-heading tracking-tight text-gray-900 dark:text-white">Registration.</h2>
+                                    <p className="text-xs font-bold text-gray-500 uppercase tracking-[0.2em] mt-1">Complete the form below to join the tribe</p>
                                 </div>
                             </div>
 
-                            <div className="mt-12 md:mt-20 p-8 md:p-12 bg-gray-100 dark:bg-slate-900/40 border border-black/10 dark:border-white/5 rounded-[2rem] md:rounded-[2.5rem] backdrop-blur-3xl text-center relative overflow-hidden shadow-2xl">
+                            {/* Signed-in User Badge */}
+                            <div className="mb-6 p-4 bg-gray-100 dark:bg-white/[0.03] border border-black/5 dark:border-white/5 rounded-2xl flex items-center gap-3">
+                                <div className="w-8 h-8 rounded-lg bg-neon-green/10 border border-neon-green/20 flex items-center justify-center">
+                                    <ShieldCheck size={14} className="text-neon-green" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <p className="text-[10px] font-bold uppercase tracking-widest text-gray-500">Signed in as</p>
+                                    <p className="text-xs font-bold text-gray-900 dark:text-white truncate">{user.displayName || user.email}</p>
+                                </div>
+                            </div>
+
+                            <div className="relative group">
+                                <div className="absolute -inset-2 bg-gradient-to-r from-neon-pink via-neon-blue to-neon-green rounded-[2.5rem] md:rounded-[3.5rem] blur-2xl opacity-5 group-hover:opacity-20 transition duration-1000" />
+                                <div className="relative bg-white dark:bg-zinc-950 rounded-[2rem] md:rounded-[2.5rem] overflow-hidden border border-black/10 dark:border-white/5 shadow-2xl">
+                                    {/* Loading State */}
+                                    {!registrationLoaded && (
+                                        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-white dark:bg-zinc-950 gap-4">
+                                            <Loader2 size={28} className="animate-spin text-gray-400" />
+                                            <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Loading Registration Form</p>
+                                        </div>
+                                    )}
+                                    <div className="form-iframe-wrapper">
+                                        <iframe
+                                            src={tribeFormUrl}
+                                            className="w-full border-0 transition-opacity duration-500"
+                                            style={{ 
+                                                minHeight: '80vh',
+                                                height: '900px',
+                                                opacity: registrationLoaded ? 1 : 0
+                                            }}
+                                            title="Newbi Tribe Registration"
+                                            onLoad={() => setRegistrationLoaded(true)}
+                                            allow="camera; microphone"
+                                            sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="mt-12 md:mt-16 p-8 md:p-12 bg-gray-100 dark:bg-slate-900/40 border border-black/10 dark:border-white/5 rounded-[2rem] md:rounded-[2.5rem] backdrop-blur-3xl text-center relative overflow-hidden shadow-2xl">
                                 <div className="absolute -bottom-20 -left-20 w-40 h-40 bg-neon-green blur-[80px] opacity-10" />
-                                <h3 className="text-2xl md:text-3xl font-extrabold font-heading text-gray-900 dark:text-white mb-4">Submitted the form?</h3>
-                                <p className="text-gray-600 dark:text-gray-400 mb-8 md:mb-10 max-w-sm mx-auto font-medium tracking-tight text-sm">Click below to finalize your entry and unlock the hub.</p>
+                                <CheckCircle2 size={36} className="text-neon-green mx-auto mb-4" />
+                                <h3 className="text-2xl md:text-3xl font-extrabold font-heading text-gray-900 dark:text-white mb-3">Submitted the form?</h3>
+                                <p className="text-gray-600 dark:text-gray-400 mb-8 md:mb-10 max-w-sm mx-auto font-medium tracking-tight text-sm">Click below to finalize your entry and unlock the community hub.</p>
                                 <Button
                                     onClick={handleJoinedConfirm}
                                     disabled={confirming}

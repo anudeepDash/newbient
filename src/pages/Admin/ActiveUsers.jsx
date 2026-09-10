@@ -18,6 +18,7 @@ import Star from 'lucide-react/dist/esm/icons/star';
 import GraduationCap from 'lucide-react/dist/esm/icons/graduation-cap';
 import Music from 'lucide-react/dist/esm/icons/music';
 import ArrowUpRight from 'lucide-react/dist/esm/icons/arrow-up-right';
+import RefreshCw from 'lucide-react/dist/esm/icons/refresh-cw';
 
 import { Card } from '../../components/ui/Card';
 import { useStore } from '../../lib/store';
@@ -25,6 +26,7 @@ import { useConsolidatedMembers } from '../../hooks/useConsolidatedMembers';
 import { cn } from '../../lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import AdminCommunityHubLayout from '../../components/admin/AdminCommunityHubLayout';
+import GlobalLoader from '../../components/ui/GlobalLoader';
 
 const getPageNumbers = (currentPage, totalPages) => {
     const pages = [];
@@ -54,17 +56,43 @@ const getPageNumbers = (currentPage, totalPages) => {
 };
 
 const ActiveUsers = () => {
-    const { user, blockUser, creators = [], artists = [] } = useStore();
-    const { activeMembers, totalCount } = useConsolidatedMembers();
+    const { user, blockUser, unblockUser, creators = [], artists = [], authInitialized } = useStore();
+    const { 
+        members, 
+        activeMembers, 
+        suspendedMembers, 
+        totalCount, 
+        activeCount, 
+        suspendedCount 
+    } = useConsolidatedMembers();
 
     const [searchTerm, setSearchTerm] = useState('');
     const [activeFilter, setActiveFilter] = useState('all');
     const [viewMode, setViewMode] = useState('grid');
     const [currentPage, setCurrentPage] = useState(1);
+    const [isSyncing, setIsSyncing] = useState(false);
     const itemsPerPage = 12;
 
-    const filteredActiveUsers = useMemo(() => {
-        return activeMembers.filter(m => {
+    const handleSyncAuthUsers = async () => {
+        if (!window.confirm("Synchronize all registered user accounts from Firebase Authentication into the Firestore member database?")) return;
+        setIsSyncing(true);
+        try {
+            const result = await useStore.getState().syncAuthUsers();
+            useStore.getState().addToast(result.message || `Successfully synced ${result.syncedCount} members!`, 'success');
+        } catch (error) {
+            console.error("Sync error:", error);
+            useStore.getState().addToast(error.message || "Failed to synchronize users.", 'error');
+        } finally {
+            setIsSyncing(false);
+        }
+    };
+
+    const filteredUsers = useMemo(() => {
+        let baseList = members;
+        if (activeFilter === 'active') baseList = activeMembers;
+        else if (activeFilter === 'suspended') baseList = suspendedMembers;
+
+        return baseList.filter(m => {
             const matchesSearch = ((m.email || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
                                    (m.displayName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
                                    (m.phone || '').toLowerCase().includes(searchTerm.toLowerCase()));
@@ -77,7 +105,7 @@ const ActiveUsers = () => {
 
             return true;
         });
-    }, [activeMembers, searchTerm, activeFilter, creators, artists]);
+    }, [members, activeMembers, suspendedMembers, searchTerm, activeFilter, creators, artists]);
 
     useEffect(() => {
         setCurrentPage(1);
@@ -85,10 +113,10 @@ const ActiveUsers = () => {
 
     const paginatedUsers = useMemo(() => {
         const start = (currentPage - 1) * itemsPerPage;
-        return filteredActiveUsers.slice(start, start + itemsPerPage);
-    }, [filteredActiveUsers, currentPage]);
+        return filteredUsers.slice(start, start + itemsPerPage);
+    }, [filteredUsers, currentPage]);
 
-    const totalPages = Math.ceil(filteredActiveUsers.length / itemsPerPage) || 1;
+    const totalPages = Math.ceil(filteredUsers.length / itemsPerPage) || 1;
 
     const handleBlockUser = async (member) => {
         if (window.confirm(`Suspend clearance for ${member.email}? They won't be able to access their account.`)) {
@@ -98,6 +126,15 @@ const ActiveUsers = () => {
             } catch (error) {
                 useStore.getState().addToast("Something went wrong. Please try again.", 'error');
             }
+        }
+    };
+
+    const handleUnblockUser = async (member) => {
+        try {
+            await unblockUser(member.id);
+            useStore.getState().addToast(`Reinstated clearance for ${member.displayName || member.email}.`, 'success');
+        } catch (error) {
+            useStore.getState().addToast("Something went wrong. Please try again.", 'error');
         }
     };
 
@@ -111,6 +148,8 @@ const ActiveUsers = () => {
             }
         }
     };
+
+    if (!authInitialized) return <GlobalLoader />;
 
     if (user?.role !== 'super_admin' && user?.role !== 'developer' && user?.role !== 'founder' && user?.role !== 'content_admin') {
         return (
@@ -136,22 +175,46 @@ const ActiveUsers = () => {
             accentColor="neon-green"
             hideTabs={true}
             action={
-                <Link
-                    to="/admin/manage-admins"
-                    className="w-full md:w-auto flex items-center justify-center gap-3 h-12 md:h-14 px-8 rounded-xl md:rounded-2xl bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-gray-900 dark:text-white border border-black/10 dark:border-white/10 font-black uppercase text-[10px] tracking-widest transition-all duration-300"
-                >
-                    <Users size={14} className="text-neon-blue" />
-                    View All Registered Members ({totalCount})
-                </Link>
+                <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
+                    <button
+                        onClick={handleSyncAuthUsers}
+                        disabled={isSyncing}
+                        className={cn(
+                            "w-full md:w-auto flex items-center justify-center gap-3 h-12 md:h-14 px-8 rounded-xl md:rounded-2xl font-black uppercase text-[10px] tracking-widest transition-all duration-300",
+                            isSyncing
+                                ? "bg-neon-blue/20 text-neon-blue border border-neon-blue/30 cursor-wait opacity-80"
+                                : "bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-gray-900 dark:text-white border border-black/10 dark:border-white/10 hover:border-neon-blue/40"
+                        )}
+                    >
+                        <RefreshCw size={14} className={cn("text-neon-blue", isSyncing && "animate-spin")} />
+                        {isSyncing ? 'Syncing Firebase Auth...' : 'Sync Auth Members'}
+                    </button>
+                    <Link
+                        to="/admin/manage-admins"
+                        className="w-full md:w-auto flex items-center justify-center gap-3 h-12 md:h-14 px-8 rounded-xl md:rounded-2xl bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-gray-900 dark:text-white border border-black/10 dark:border-white/10 font-black uppercase text-[10px] tracking-widest transition-all duration-300"
+                    >
+                        <Users size={14} className="text-neon-blue" />
+                        View All Registered Members ({totalCount})
+                    </Link>
+                </div>
             }
         >
             {/* Quick Metrics KPI Bar */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-10">
                 {[
                     { 
-                        label: 'Active Users', 
-                        count: activeMembers.length, 
-                        detail: `Out of ${totalCount} Registered`, 
+                        label: 'Total Members', 
+                        count: totalCount, 
+                        detail: `${activeCount} Active • ${suspendedCount} Suspended`, 
+                        color: 'text-neon-blue', 
+                        bgGlow: 'bg-neon-blue',
+                        hoverBorder: 'group-hover:border-neon-blue/30',
+                        topGradient: 'from-neon-blue to-blue-500'
+                    },
+                    { 
+                        label: 'Active Personnel', 
+                        count: activeCount, 
+                        detail: 'Verified Active Clearance', 
                         color: 'text-neon-green', 
                         bgGlow: 'bg-neon-green',
                         hoverBorder: 'group-hover:border-neon-green/30',
@@ -167,18 +230,9 @@ const ActiveUsers = () => {
                         topGradient: 'from-neon-pink to-purple-500'
                     },
                     { 
-                        label: 'Active Ticket Holders', 
-                        count: activeMembers.filter(m => m.isTicketHolder).length, 
-                        detail: 'Event Attendees', 
-                        color: 'text-neon-blue', 
-                        bgGlow: 'bg-neon-blue',
-                        hoverBorder: 'group-hover:border-neon-blue/30',
-                        topGradient: 'from-neon-blue to-blue-500'
-                    },
-                    { 
-                        label: 'Active Admins & Staff', 
-                        count: activeMembers.filter(m => m.isAdmin).length, 
-                        detail: 'Command Staff', 
+                        label: 'Ticket Holders', 
+                        count: members.filter(m => m.isTicketHolder).length, 
+                        detail: `${activeMembers.filter(m => m.isTicketHolder).length} Active Attendees`, 
                         color: 'text-yellow-400', 
                         bgGlow: 'bg-yellow-400',
                         hoverBorder: 'group-hover:border-yellow-400/30',
@@ -220,7 +274,7 @@ const ActiveUsers = () => {
                     <input 
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        placeholder="Search active personnel by name, email, or phone..."
+                        placeholder="Search personnel by name, email, or phone..."
                         className="w-full bg-transparent h-14 md:h-16 pl-16 md:pl-20 pr-12 rounded-full text-[9px] md:text-[11px] font-black uppercase tracking-widest outline-none transition-all placeholder:text-gray-600"
                     />
                     {searchTerm && (
@@ -238,11 +292,13 @@ const ActiveUsers = () => {
                     <div className="flex items-center bg-white dark:bg-black/40 p-1.5 rounded-full border border-black/10 dark:border-white/10 w-full md:w-auto overflow-x-auto no-scrollbar">
                         <div className="flex items-center gap-1 w-full">
                             {[
-                                { id: 'all', label: 'All Active' },
+                                { id: 'all', label: `All (${totalCount})` },
+                                { id: 'active', label: `Active (${activeCount})` },
+                                { id: 'suspended', label: `Suspended (${suspendedCount})` },
                                 { id: 'tribe', label: 'Tribe' },
                                 { id: 'creators', label: 'Creators' },
                                 { id: 'artists', label: 'Artists' },
-                                { id: 'tickets', label: 'Ticket Holders' }
+                                { id: 'tickets', label: 'Tickets' }
                             ].map((filter) => (
                                 <button
                                     key={filter.id}
@@ -296,10 +352,10 @@ const ActiveUsers = () => {
                     transition={{ duration: 0.3 }}
                     className="space-y-8"
                 >
-                    {filteredActiveUsers.length === 0 ? (
+                    {filteredUsers.length === 0 ? (
                         <div className="py-24 text-center bg-white/[0.01] border border-black/10 dark:border-white/5 rounded-[2rem]">
                             <UserCheck size={32} className="mx-auto text-gray-700 mb-4 animate-pulse" />
-                            <p className="text-xs font-black text-gray-500 uppercase tracking-widest">No matching active personnel found</p>
+                            <p className="text-xs font-black text-gray-500 uppercase tracking-widest">No matching personnel records found</p>
                         </div>
                     ) : (
                         viewMode === 'grid' ? (
@@ -318,9 +374,15 @@ const ActiveUsers = () => {
                                             className="group relative flex flex-col h-full"
                                         >
                                             {/* Hover Glow */}
-                                            <div className="absolute inset-0 rounded-[2.5rem] opacity-0 group-hover:opacity-10 transition-opacity blur-2xl duration-700 pointer-events-none bg-gradient-to-br from-neon-green/30 to-neon-blue/30" />
+                                            <div className={cn(
+                                                "absolute inset-0 rounded-[2.5rem] opacity-0 group-hover:opacity-10 transition-opacity blur-2xl duration-700 pointer-events-none bg-gradient-to-br",
+                                                member.isBlocked ? "from-red-500/30 to-orange-500/30" : "from-neon-green/30 to-neon-blue/30"
+                                            )} />
                                             
-                                            <Card className="relative p-6 sm:p-8 bg-gray-100 dark:bg-zinc-950/60 group-hover:bg-gray-100 dark:group-hover:bg-zinc-900/40 hover:border-black/10 dark:hover:border-white/10 border-black/10 dark:border-white/5 backdrop-blur-3xl rounded-[2.5rem] transition-all duration-500 shadow-xl flex flex-col justify-between h-full min-h-[380px] overflow-hidden border hover:-translate-y-1.5 hover:shadow-[0_20px_50px_rgba(0,0,0,0.8)] gap-6">
+                                            <Card className={cn(
+                                                "relative p-6 sm:p-8 bg-gray-100 dark:bg-zinc-950/60 group-hover:bg-gray-100 dark:group-hover:bg-zinc-900/40 hover:border-black/10 dark:hover:border-white/10 border-black/10 dark:border-white/5 backdrop-blur-3xl rounded-[2.5rem] transition-all duration-500 shadow-xl flex flex-col justify-between h-full min-h-[380px] overflow-hidden border hover:-translate-y-1.5 hover:shadow-[0_20px_50px_rgba(0,0,0,0.8)] gap-6",
+                                                member.isBlocked && "border-red-500/10 hover:border-red-500/30"
+                                            )}>
                                                 <div className="absolute inset-0 bg-gradient-to-br from-gray-900 dark:from-white/[0.01] via-transparent to-transparent opacity-100 pointer-events-none" />
                                                 
                                                 {/* Header Section */}
@@ -336,10 +398,17 @@ const ActiveUsers = () => {
                                                             {isArtist ? "Artist" : isCreator ? "Creator" : isTribe ? "Tribe" : "Standard"}
                                                         </span>
                                                         
-                                                        <span className="px-3 py-1 bg-neon-green/10 text-neon-green border border-neon-green/20 rounded-full text-[8px] font-black uppercase tracking-widest flex items-center gap-1.5">
-                                                            <span className="w-1.5 h-1.5 rounded-full bg-neon-green animate-pulse" />
-                                                            ACTIVE CLEARANCE
-                                                        </span>
+                                                        {member.isBlocked ? (
+                                                            <span className="px-3 py-1 bg-red-500/10 text-red-500 border border-red-500/20 rounded-full text-[8px] font-black uppercase tracking-widest flex items-center gap-1.5">
+                                                                <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                                                                SUSPENDED
+                                                            </span>
+                                                        ) : (
+                                                            <span className="px-3 py-1 bg-neon-green/10 text-neon-green border border-neon-green/20 rounded-full text-[8px] font-black uppercase tracking-widest flex items-center gap-1.5">
+                                                                <span className="w-1.5 h-1.5 rounded-full bg-neon-green animate-pulse" />
+                                                                ACTIVE CLEARANCE
+                                                            </span>
+                                                        )}
                                                     </div>
 
                                                     {/* Display Name */}
@@ -362,24 +431,39 @@ const ActiveUsers = () => {
                                                     </div>
                                                     <div className="flex items-center gap-2 text-gray-500 text-[9px] font-black uppercase tracking-[0.2em] bg-white/[0.02] px-4 py-2.5 rounded-2xl border border-black/10 dark:border-white/5 shadow-inner w-fit">
                                                         <span className="text-gray-600">STATUS:</span>
-                                                        <span className="text-neon-green font-mono">AUTHORIZED ONLINE</span>
+                                                        {member.isBlocked ? (
+                                                            <span className="text-red-500 font-mono">SUSPENDED</span>
+                                                        ) : (
+                                                            <span className="text-neon-green font-mono">AUTHORIZED ONLINE</span>
+                                                        )}
                                                     </div>
                                                 </div>
 
                                                 {/* Actions */}
                                                 <div className="pt-4 border-t border-black/10 dark:border-white/5 w-full mt-auto flex flex-col gap-2">
-                                                    <button 
-                                                        onClick={() => handleBlockUser(member)} 
-                                                        className="w-full h-12 bg-red-500/10 hover:bg-red-500 hover:text-black text-red-500 font-black uppercase tracking-widest text-[9px] rounded-xl border border-red-500/20 transition-all flex items-center justify-center gap-2 duration-300 active:scale-95"
-                                                    >
-                                                        <ShieldAlert size={12} /> Suspend Clearance
-                                                    </button>
-                                                    <button 
-                                                        onClick={() => handleRevokeSessions(member)}
-                                                        className="w-full h-12 bg-black/5 dark:bg-white/5 hover:bg-red-500/15 text-gray-600 dark:text-gray-400 hover:text-red-500 font-black uppercase tracking-widest text-[9px] rounded-xl border border-black/10 dark:border-white/5 hover:border-red-500/20 transition-all flex items-center justify-center gap-2 duration-300 active:scale-95"
-                                                    >
-                                                        <LogOut size={12} /> Log out all devices
-                                                    </button>
+                                                    {member.isBlocked ? (
+                                                        <button 
+                                                            onClick={() => handleUnblockUser(member)} 
+                                                            className="w-full h-12 bg-neon-green/10 hover:bg-neon-green hover:text-black text-neon-green font-black uppercase tracking-widest text-[9px] rounded-xl border border-neon-green/20 transition-all flex items-center justify-center gap-2 duration-300 active:scale-95"
+                                                        >
+                                                            <CheckCircle size={12} /> Reinstate Clearance
+                                                        </button>
+                                                    ) : (
+                                                        <>
+                                                            <button 
+                                                                onClick={() => handleBlockUser(member)} 
+                                                                className="w-full h-12 bg-red-500/10 hover:bg-red-500 hover:text-black text-red-500 font-black uppercase tracking-widest text-[9px] rounded-xl border border-red-500/20 transition-all flex items-center justify-center gap-2 duration-300 active:scale-95"
+                                                            >
+                                                                <ShieldAlert size={12} /> Suspend Clearance
+                                                            </button>
+                                                            <button 
+                                                                onClick={() => handleRevokeSessions(member)}
+                                                                className="w-full h-12 bg-black/5 dark:bg-white/5 hover:bg-red-500/15 text-gray-600 dark:text-gray-400 hover:text-red-500 font-black uppercase tracking-widest text-[9px] rounded-xl border border-black/10 dark:border-white/5 hover:border-red-500/20 transition-all flex items-center justify-center gap-2 duration-300 active:scale-95"
+                                                            >
+                                                                <LogOut size={12} /> Log out all devices
+                                                            </button>
+                                                        </>
+                                                    )}
                                                 </div>
                                             </Card>
                                         </motion.div>
@@ -387,12 +471,12 @@ const ActiveUsers = () => {
                                 })}
                             </div>
                         ) : (
-                            <div className="overflow-x-auto scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0 pb-36 -mb-36">
+                            <div className="overflow-x-auto scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0 pb-4">
                                 <Card className="min-w-[800px] bg-gray-100 dark:bg-zinc-900/40 backdrop-blur-3xl border-black/10 dark:border-white/5 rounded-[2rem] md:rounded-[2.5rem] p-0 border">
                                     <table className="w-full text-left">
                                         <thead>
                                             <tr className="border-b border-black/10 dark:border-white/5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">
-                                                <th className="p-6 md:p-8">Active Personnel</th>
+                                                <th className="p-6 md:p-8">Personnel</th>
                                                 <th className="p-6 md:p-8">Clearance</th>
                                                 <th className="p-6 md:p-8">Affiliation</th>
                                                 <th className="p-6 md:p-8">Registered</th>
@@ -409,7 +493,12 @@ const ActiveUsers = () => {
                                                     <tr key={member.id || member.email} className="group hover:bg-white/[0.02] transition-colors">
                                                         <td className="p-6 md:p-8">
                                                             <div className="flex items-center gap-4">
-                                                                <div className="w-10 h-10 rounded-xl bg-neon-green/10 border border-neon-green/30 text-neon-green flex items-center justify-center text-xs font-black italic tracking-tighter relative shadow-md shrink-0 select-none">
+                                                                <div className={cn(
+                                                                    "w-10 h-10 rounded-xl border flex items-center justify-center text-xs font-black italic tracking-tighter relative shadow-md shrink-0 select-none",
+                                                                    member.isBlocked 
+                                                                        ? "bg-red-500/10 border-red-500/30 text-red-500" 
+                                                                        : "bg-neon-green/10 border-neon-green/30 text-neon-green"
+                                                                )}>
                                                                     {member.displayName?.charAt(0) || 'U'}
                                                                 </div>
                                                                 <div>
@@ -421,7 +510,11 @@ const ActiveUsers = () => {
                                                             </div>
                                                         </td>
                                                         <td className="p-6 md:p-8">
-                                                            <span className="px-3 py-1 bg-neon-green/10 text-neon-green border border-neon-green/20 rounded-full text-[8px] font-black uppercase tracking-widest">AUTHORIZED</span>
+                                                            {member.isBlocked ? (
+                                                                <span className="px-3 py-1 bg-red-500/10 text-red-500 border border-red-500/20 rounded-full text-[8px] font-black uppercase tracking-widest">SUSPENDED</span>
+                                                            ) : (
+                                                                <span className="px-3 py-1 bg-neon-green/10 text-neon-green border border-neon-green/20 rounded-full text-[8px] font-black uppercase tracking-widest">AUTHORIZED</span>
+                                                            )}
                                                         </td>
                                                         <td className="p-6 md:p-8">
                                                             <span className={cn(
@@ -438,12 +531,21 @@ const ActiveUsers = () => {
                                                             {member.createdAt ? new Date(member.createdAt).toLocaleDateString(undefined, { dateStyle: 'medium' }) : 'N/A'}
                                                         </td>
                                                         <td className="p-6 md:p-8 text-right space-x-2">
-                                                            <button
-                                                                onClick={() => handleBlockUser(member)}
-                                                                className="px-4 py-2 bg-red-500/10 hover:bg-red-500 hover:text-black text-red-500 font-black uppercase tracking-widest text-[8px] rounded-lg border border-red-500/20 transition-all"
-                                                            >
-                                                                Suspend
-                                                            </button>
+                                                            {member.isBlocked ? (
+                                                                <button
+                                                                    onClick={() => handleUnblockUser(member)}
+                                                                    className="px-4 py-2 bg-neon-green/10 hover:bg-neon-green hover:text-black text-neon-green font-black uppercase tracking-widest text-[8px] rounded-lg border border-neon-green/20 transition-all"
+                                                                >
+                                                                    Reinstate
+                                                                </button>
+                                                            ) : (
+                                                                <button
+                                                                    onClick={() => handleBlockUser(member)}
+                                                                    className="px-4 py-2 bg-red-500/10 hover:bg-red-500 hover:text-black text-red-500 font-black uppercase tracking-widest text-[8px] rounded-lg border border-red-500/20 transition-all"
+                                                                >
+                                                                    Suspend
+                                                                </button>
+                                                            )}
                                                         </td>
                                                     </tr>
                                                 );
@@ -459,7 +561,7 @@ const ActiveUsers = () => {
                     {totalPages > 1 && (
                         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-6 border-t border-black/10 dark:border-white/5">
                             <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">
-                                Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, filteredActiveUsers.length)} of {filteredActiveUsers.length} active personnel
+                                Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, filteredUsers.length)} of {filteredUsers.length} members
                             </p>
                             <div className="flex items-center gap-1.5">
                                 <button

@@ -40,7 +40,9 @@ import { collection, query, where, onSnapshot, getDocs, addDoc } from 'firebase/
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, sendPasswordResetEmail, signInWithPopup } from 'firebase/auth';
 import { db, auth, googleProvider } from '../../lib/firebase';
 import { useStore } from '../../lib/store';
+import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
 import { useStoreSubscription } from '../../hooks/useStoreSubscription';
+import { useConsolidatedMembers } from '../../hooks/useConsolidatedMembers';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import AdminCarousel from '../../components/admin/AdminCarousel';
@@ -252,6 +254,7 @@ const Dashboard = () => {
         artists, clientRequests, upcomingEvents, ticketOrders,
         checkUserRole, maintenanceState, archivePastEvents 
     } = useStore();
+    const { totalCount: totalMembersCount, activeCount: activeMembersCount } = useConsolidatedMembers();
     const cards = maintenanceState?.features || {};
     const location = useLocation();
     
@@ -312,6 +315,7 @@ const Dashboard = () => {
     const [isRegistering, setIsRegistering] = useState(false);
     const [isResetting, setIsResetting] = useState(false);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
+    useBodyScrollLock(isMenuOpen);
 
     useEffect(() => {
         if (user && (user.role === 'super_admin' || user.role === 'developer' || user.role === 'founder')) {
@@ -576,7 +580,16 @@ const Dashboard = () => {
                             <ControlCard title="Artistant" desc="Artist roster and client onboarding hub." logo={artistantLogo} color="neon-blue" link="/admin/artistant" isNew isHidden={cards.artists} />
                             <ControlCard title="Mailing" desc="Mass communication and broadcast logs." icon={Megaphone} color="neon-blue" link="/admin/mailing" isNew isHidden={cards.mailing} />
                             {user.role !== 'editor' && user.role !== 'content_admin' && user.role !== 'blog_writer' && (
-                                <ControlCard title="Members" desc="Security clearance and administrative roles." icon={Shield} color="neon-blue" link="/admin/manage-admins" isHidden={cards.admins} />
+                                <ControlCard 
+                                    title="Members" 
+                                    desc="Security clearance and administrative roles." 
+                                    icon={Shield} 
+                                    color="neon-blue" 
+                                    link="/admin/manage-admins" 
+                                    count={totalMembersCount}
+                                    detail={`${activeMembersCount} Active / ${totalMembersCount} Total`}
+                                    isHidden={cards.admins} 
+                                />
                             )}
                         </DashboardSection>
                     )}
@@ -634,24 +647,16 @@ const Dashboard = () => {
                             animate={{ y: 0 }}
                             exit={{ y: '100%' }}
                             transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                            className="fixed inset-x-0 bottom-0 z-[90] h-[85vh] bg-[#0a0a0a] border-t border-black/10 dark:border-white/10 rounded-t-[2.5rem] md:hidden flex flex-col overflow-hidden shadow-[0_-20px_50px_rgba(0,0,0,0.5)]"
+                            className="fixed inset-x-0 bottom-0 z-[90] h-[85vh] bg-white/95 dark:bg-[#0a0a0a] border-t border-black/10 dark:border-white/10 rounded-t-[2.5rem] md:hidden flex flex-col overflow-hidden shadow-[0_-20px_50px_rgba(0,0,0,0.5)]"
                         >
                             {/* Handle */}
-                            <div className="w-full flex justify-center py-4 bg-[#0a0a0a] z-10 shrink-0">
+                            <div className="w-full flex justify-center py-4 bg-transparent z-10 shrink-0">
                                 <div className="w-12 h-1.5 bg-black/20 dark:bg-white/20 rounded-full" />
                             </div>
 
                             <div className="flex-1 overflow-y-auto px-6 pb-24 scrollbar-hide">
                                 {/* Search / Quick Stats */}
                                 <div className="mb-6 space-y-4">
-                                    <div className="relative">
-                                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 w-4 h-4" />
-                                        <input 
-                                            type="text" 
-                                            placeholder="Search modules..." 
-                                            className="w-full h-12 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-2xl pl-11 pr-4 text-sm font-medium text-gray-900 dark:text-white placeholder-gray-500 focus:outline-none focus:border-neon-blue/50 transition-colors"
-                                        />
-                                    </div>
                                     <div className="flex items-center justify-between gap-3 overflow-x-auto scrollbar-hide">
                                         <div className="flex-1 min-w-[120px] p-3 rounded-2xl bg-gradient-to-br from-neon-green/10 to-transparent border border-neon-green/20">
                                             <p className="text-[10px] text-gray-600 dark:text-gray-400 font-bold uppercase">Net Revenue</p>
@@ -687,6 +692,17 @@ const Dashboard = () => {
                                                     {visibleLinks.map((link) => {
                                                         const LinkIcon = link.icon;
                                                         const isActive = location.pathname === link.path;
+                                                        
+                                                        const colorClassMap = {
+                                                            'neon-green': 'text-neon-green',
+                                                            'neon-blue': 'text-neon-blue',
+                                                            'neon-pink': 'text-neon-pink',
+                                                            'neon-purple': 'text-neon-purple',
+                                                            'yellow-400': 'text-yellow-400',
+                                                            'white': 'text-white',
+                                                            'red-400': 'text-red-400',
+                                                        };
+
                                                         return (
                                                             <Link
                                                                 key={link.name}
@@ -699,7 +715,7 @@ const Dashboard = () => {
                                                                         : "bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-gray-700 dark:text-gray-300 border-black/10 dark:border-white/5"
                                                                 )}
                                                             >
-                                                                <LinkIcon size={18} className={isActive ? "text-black" : `text-${link.color}`} />
+                                                                <LinkIcon size={18} className={isActive ? "text-black" : (colorClassMap[link.color] || 'text-white')} />
                                                                 <span className="text-[11px] font-bold tracking-wide">{link.name}</span>
                                                             </Link>
                                                         );

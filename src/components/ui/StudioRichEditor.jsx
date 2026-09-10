@@ -864,7 +864,7 @@ const StudioRichEditor = ({
                             }
                         }}
                         className={cn(
-                            "w-full p-6 text-[11px] font-medium text-gray-900 dark:text-white/90 focus:outline-none leading-relaxed article-content prose prose-invert prose-sm max-w-none break-words article-content-force-white rounded-b-[2rem]",
+                            "w-full p-6 text-[11px] font-medium text-gray-900 dark:text-white/90 focus:outline-none leading-relaxed article-content prose prose-invert prose-sm max-w-none break-words rounded-b-[2rem]",
                             "min-h-[150px]",
                             isUploading && "opacity-50 pointer-events-none"
                         )}

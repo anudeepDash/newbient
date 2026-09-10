@@ -2823,6 +2823,40 @@ export const useStore = create((set, get) => ({
         return data;
     },
 
+    syncAuthUsers: async () => {
+        const { getAuth } = await import('firebase/auth');
+        const auth = getAuth();
+        const currentUser = auth.currentUser;
+        if (!currentUser) throw new Error("Authentication required to sync members");
+
+        const token = await currentUser.getIdToken(true);
+        const response = await fetch('/api/sync-users', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        if (response.status === 404) {
+            throw new Error("Sync endpoint (/api/sync-users) is not accessible (404). If testing locally, please restart the Vite dev server (npm run dev). If in production, ensure the new endpoint is deployed to Vercel.");
+        }
+
+        const text = await response.text();
+        let data;
+        try {
+            data = JSON.parse(text);
+        } catch (e) {
+            throw new Error(`Sync server returned non-JSON response (Status: ${response.status}). If running locally, check terminal console.`);
+        }
+
+        if (!response.ok) {
+            throw new Error(data.error || "Failed to synchronize users");
+        }
+
+        return data;
+    },
+
     // Maintenance Actions
     toggleMaintenanceFeature: async (category, key) => {
         const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';

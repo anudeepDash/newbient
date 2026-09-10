@@ -1063,57 +1063,7 @@ const ArtistDetailModal = ({ artist, onClose, onUpdateStatus, onDelete, onExport
 
 
 
-const ContactItem = ({ icon, label, value }) => (
-    <div className="group flex items-center justify-between p-6 bg-[#0A0A0A] border border-black/10 dark:border-white/5 rounded-3xl hover:border-black/20 dark:hover:border-white/20 transition-all shadow-xl">
-        <div className="flex items-center gap-5">
-            <div className="w-12 h-12 rounded-2xl bg-white dark:bg-black border border-black/10 dark:border-white/10 flex items-center justify-center text-gray-500 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">
-                {icon}
-            </div>
-            <div className="space-y-0.5">
-                <p className="text-[8px] font-black text-gray-600 uppercase tracking-[0.3em]">{label}</p>
-                <p className="text-sm font-black text-gray-900 dark:text-white tracking-tight">{value}</p>
-            </div>
-        </div>
-        <button className="w-10 h-10 rounded-full bg-black/5 dark:bg-white/5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white hover:text-black">
-            <ExternalLink size={14} />
-        </button>
-    </div>
-);
 
-const SocialLink = ({ href, icon, label, value, color }) => {
-    const themes = {
-        pink: 'hover:border-neon-pink/40 shadow-neon-pink/5',
-        red: 'hover:border-red-600/40 shadow-red-600/5'
-    };
-    
-    const iconBgs = {
-        pink: 'bg-gradient-to-tr from-yellow-400 via-neon-pink to-purple-600',
-        red: 'bg-red-600'
-    };
-
-    return (
-        <a 
-            href={href} 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className={cn(
-                "group flex items-center justify-between p-6 bg-[#0A0A0A] border border-black/10 dark:border-white/5 rounded-3xl transition-all duration-500 shadow-2xl",
-                themes[color]
-            )}
-        >
-            <div className="flex items-center gap-5">
-                <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center text-gray-900 dark:text-white shadow-lg", iconBgs[color])}>
-                    {icon}
-                </div>
-                <div className="space-y-0.5">
-                    <p className="text-[8px] font-black text-gray-600 uppercase tracking-[0.3em]">{label}</p>
-                    <p className="text-sm font-black text-gray-900 dark:text-white tracking-tight">{value}</p>
-                </div>
-            </div>
-            <ExternalLink size={16} className="text-gray-700 group-hover:text-gray-900 dark:group-hover:text-white transition-colors" />
-        </a>
-    );
-};
 
 const CastingBoardModal = ({ upcomingEvents, artists, onClose, onCast }) => {
     const [selectedEvent, setSelectedEvent] = useState(null);

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import LayoutGrid from 'lucide-react/dist/esm/icons/layout-grid';
 import Save from 'lucide-react/dist/esm/icons/save';
@@ -29,6 +29,19 @@ const SiteContentManager = () => {
     const navigate = useNavigate();
 
     const [formData, setFormData] = useState({ ...siteDetails });
+
+    useEffect(() => {
+        if (siteDetails && Object.keys(siteDetails).length > 0) {
+            setFormData(prev => {
+                // Only sync if form hasn't been modified by user
+                const hasUserEdits = Object.keys(prev).some(key => 
+                    prev[key] !== '' && prev[key] !== '#' && prev[key] !== false && prev[key] !== undefined
+                );
+                if (!hasUserEdits) return { ...siteDetails };
+                return prev;
+            });
+        }
+    }, [siteDetails]);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -226,7 +239,7 @@ const ToggleCard = ({ title, desc, icon: Icon, checked, onChange, variant = 'pri
                 onChange={(e) => onChange(e.target.checked)}
             />
             <div className={cn(
-                "w-12 h-6 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:bg-white dark:peer-checked:after:bg-black after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-gray-700 after:rounded-full after:h-4 after:w-4 after:transition-all",
+                "w-12 h-6 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-full peer peer-checked:after:translate-x-6 peer-checked:after:bg-white dark:peer-checked:after:bg-black after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-gray-700 after:rounded-full after:h-4 after:w-4 after:transition-all",
                 variant === 'danger' ? "peer-checked:bg-red-500 peer-checked:border-red-500" : "peer-checked:bg-emerald-500 dark:peer-checked:bg-neon-green peer-checked:border-emerald-500 dark:peer-checked:border-neon-green"
             )}></div>
         </label>

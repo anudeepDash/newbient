@@ -296,7 +296,7 @@ const DocumentPDFGenerator = () => {
                 <div className="flex items-center gap-6">
                     <button 
                         onClick={() => navigate('/admin/gen-documents')}
-                        className="p-3 bg-black/5 dark:bg-white/5 rounded-2xl border border-black/10 dark:border-white/5 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all hover:scale-105"
+                        className="p-3 bg-white dark:bg-white rounded-2xl border border-black/10 dark:border-white/5 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all hover:scale-105"
                     >
                         <ArrowLeft size={16} />
                     </button>
@@ -309,7 +309,7 @@ const DocumentPDFGenerator = () => {
                                 {id ? 'Edit Document' : 'New Document'}
                             </span>
                             {/* Autosave Indicator */}
-                            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded border border-black/10 dark:border-white/5 bg-black/5 dark:bg-white/5">
+                            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded border border-black/10 dark:border-white/5 bg-white dark:bg-white">
                                 {autosaveStatus === 'saving' && <><Loader size={10} className="animate-spin text-neon-blue" /><span className="text-[9px] font-bold text-neon-blue uppercase">Saving</span></>}
                                 {autosaveStatus === 'saved' && <><Check size={10} className="text-emerald-400" /><span className="text-[9px] font-bold text-emerald-400 uppercase">Saved</span></>}
                                 {autosaveStatus === 'error' && <><AlertCircle size={10} className="text-red-400" /><span className="text-[9px] font-bold text-red-400 uppercase">Save Error</span></>}
@@ -322,7 +322,7 @@ const DocumentPDFGenerator = () => {
                 <div className="flex items-center gap-4">
                     <button 
                         onClick={regenerateDocNumber}
-                        className="p-3 bg-black/5 dark:bg-white/5 rounded-2xl border border-black/10 dark:border-white/5 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all"
+                        className="p-3 bg-white dark:bg-white rounded-2xl border border-black/10 dark:border-white/5 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all"
                         title="Regenerate Document Number"
                     >
                         <RefreshCw size={16} />
@@ -358,7 +358,7 @@ const DocumentPDFGenerator = () => {
                                             : "bg-white dark:bg-black/60 border-black/10 dark:border-white/5 hover:border-black/20 dark:hover:border-white/20"
                                     )}
                                 >
-                                    <div className="h-8 flex items-center justify-center p-1 bg-black/5 dark:bg-white/5 rounded-lg w-full">
+                                    <div className="h-8 flex items-center justify-center p-1 bg-white dark:bg-white rounded-lg w-full">
                                         <img src={logo.path} alt={logo.label} className={cn("h-full w-auto object-contain transition-all", formData.selectedLogo === logo.id ? "" : "opacity-50 grayscale group-hover:grayscale-0 group-hover:opacity-100")} />
                                     </div>
                                     <p className={cn("text-[9px] font-black uppercase tracking-widest text-center line-clamp-1", formData.selectedLogo === logo.id ? "text-gray-900 dark:text-white" : "text-gray-600")}>

@@ -8,6 +8,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../../lib/utils';
 import { useStore } from '../../lib/store';
+import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
 import AdminDashboardLink from './AdminDashboardLink';
 
 const AdminCommunityHubLayout = ({ children, title, description, action, studioHeader, hideTabs = false, tabs: customTabs, accentColor = 'neon-green', hideMobileMenu = false }) => {
@@ -17,6 +18,7 @@ const AdminCommunityHubLayout = ({ children, title, description, action, studioH
     const unreadCount = messages?.filter(m => m.status === 'new').length || 0;
     
     const [isMenuOpen, setIsMenuOpen] = useState(false);
+    useBodyScrollLock(isMenuOpen);
 
     const defaultTabs = [
         { name: 'GIGS', path: '/admin/volunteer-gigs', icon: Users, color: 'text-neon-green' },
@@ -42,6 +44,16 @@ const AdminCommunityHubLayout = ({ children, title, description, action, studioH
 
     const bgGlowClass = bgGlowMap[accentColor] || 'bg-neon-green/5';
     const activeTextClass = textColorMap[accentColor] || 'text-neon-green';
+
+    const colorClassMap = {
+        'neon-green': 'text-neon-green',
+        'neon-blue': 'text-neon-blue', 
+        'neon-pink': 'text-neon-pink',
+        'neon-purple': 'text-neon-purple',
+        'yellow-400': 'text-yellow-400',
+        'white': 'text-white',
+        'red-400': 'text-red-400',
+    };
 
     // Grouped layout modules for switcher drawer
     const sections = [
@@ -173,7 +185,7 @@ const AdminCommunityHubLayout = ({ children, title, description, action, studioH
                 </div>
 
                 {/* Content Container (Redesigned with Premium Glassmorphism) */}
-                <div className="admin-hub-content-container bg-white dark:bg-zinc-950/35 border border-gray-200/80 dark:border-white/5 rounded-3xl p-4 sm:p-6 md:p-10 backdrop-blur-3xl min-h-[60vh] shadow-sm dark:shadow-[0_30px_70px_rgba(0,0,0,0.8)] relative overflow-hidden">
+                <div className="admin-hub-content-container bg-white dark:bg-zinc-950/35 border border-gray-200/80 dark:border-white/5 rounded-3xl p-4 sm:p-6 md:p-10 backdrop-blur-3xl min-h-[60vh] shadow-sm dark:shadow-[0_30px_70px_rgba(0,0,0,0.8)] relative overflow-visible">
                     {/* Decorative radial gradient */}
                     <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-gray-200 dark:via-white/5 to-transparent" />
                     
@@ -210,7 +222,7 @@ const AdminCommunityHubLayout = ({ children, title, description, action, studioH
             {/* Mobile Persistent Floating Control Bar */}
             {!hideMobileMenu && (
                 <div 
-                    className="fixed bottom-6 inset-x-0 mx-auto z-[100] w-[90%] max-w-[420px] h-16 bg-[#050505]/80 backdrop-blur-2xl border border-black/10 dark:border-white/10 rounded-full flex items-center justify-between p-2 shadow-2xl md:hidden"
+                    className="fixed bottom-6 inset-x-0 mx-auto z-[100] w-[90%] max-w-[420px] h-16 bg-white/80 dark:bg-[#050505]/80 backdrop-blur-2xl border border-black/10 dark:border-white/10 rounded-full flex items-center justify-between p-2 shadow-2xl md:hidden"
                     style={{ bottom: 'max(1.5rem, calc(0.75rem + env(safe-area-inset-bottom, 0px)))' }}
                 >
                 <Link
@@ -243,71 +255,86 @@ const AdminCommunityHubLayout = ({ children, title, description, action, studioH
             </div>
             )}
 
-            {/* Switcher Drawer Overlay */}
+            {/* Mobile Bottom Sheet Menu (Synced with Dashboard) */}
             <AnimatePresence>
                 {isMenuOpen && (
-                    <motion.div
-                        initial={{ opacity: 0, y: '100%' }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: '100%' }}
-                        transition={{ type: "spring", stiffness: 260, damping: 26 }}
-                        className="fixed inset-0 z-[90] bg-[#020202]/98 backdrop-blur-3xl overflow-y-auto px-6 pt-28 pb-32 md:hidden flex flex-col"
-                    >
-                        <div className="max-w-md mx-auto w-full space-y-8">
-                            <div className="text-center">
-                                <div className="inline-flex p-3 rounded-2xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 mb-4">
-                                    <LayoutGrid className="text-neon-green w-6 h-6" />
+                    <>
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={() => setIsMenuOpen(false)}
+                            className="fixed inset-0 z-[80] bg-white/20 dark:bg-black/60 backdrop-blur-sm md:hidden"
+                        />
+                        <motion.div
+                            initial={{ y: '100%' }}
+                            animate={{ y: 0 }}
+                            exit={{ y: '100%' }}
+                            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                            className="fixed inset-x-0 bottom-0 z-[90] h-[85vh] bg-white/95 dark:bg-[#0a0a0a] border-t border-black/10 dark:border-white/10 rounded-t-[2.5rem] md:hidden flex flex-col overflow-hidden shadow-[0_-20px_50px_rgba(0,0,0,0.5)]"
+                        >
+                            {/* Handle */}
+                            <div className="w-full flex justify-center py-4 bg-transparent z-10 shrink-0">
+                                <div className="w-12 h-1.5 bg-black/20 dark:bg-white/20 rounded-full" />
+                            </div>
+
+                            <div className="flex-1 overflow-y-auto px-6 pb-24 scrollbar-hide space-y-8">
+                                <div className="text-center mt-2 mb-6">
+                                    <div className="inline-flex p-3 rounded-2xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 mb-3">
+                                        <LayoutGrid className="text-neon-green w-5 h-5" />
+                                    </div>
+                                    <h2 className="text-xl font-black font-heading uppercase tracking-tighter text-gray-900 dark:text-white leading-none">ADMIN NAVIGATION</h2>
+                                    <p className="text-[8px] font-black uppercase tracking-[0.4em] text-gray-500 mt-1.5">Administrative Portal Modules</p>
                                 </div>
-                                <h2 className="text-2xl font-black font-heading uppercase tracking-tighter text-gray-900 dark:text-white leading-none">ADMIN NAVIGATION</h2>
-                                <p className="text-[8px] font-black uppercase tracking-[0.4em] text-gray-500 mt-2">Administrative Portal Modules</p>
-                            </div>
 
-                            <div className="space-y-6">
-                                {sections.map((section) => {
-                                    if (!section.visible) return null;
-                                    const visibleLinks = section.links.filter(l => l.show);
-                                    if (visibleLinks.length === 0) return null;
+                                <div className="space-y-6">
+                                    {sections.map((section) => {
+                                        if (!section.visible) return null;
+                                        const visibleLinks = section.links.filter(l => l.show);
+                                        if (visibleLinks.length === 0) return null;
 
-                                    return (
-                                        <div key={section.title} className="space-y-2">
-                                            <h4 className={cn("text-[9px] font-black uppercase tracking-[0.3em] pl-3", section.color)}>
-                                                {section.title}
-                                            </h4>
-                                            <div className="grid grid-cols-1 gap-2">
-                                                {visibleLinks.map((link) => {
-                                                    const LinkIcon = link.icon;
-                                                    const isActive = location.pathname === link.path;
-                                                    return (
-                                                        <Link
-                                                            key={link.name}
-                                                            to={link.path}
-                                                            onClick={() => setIsMenuOpen(false)}
-                                                            className={cn(
-                                                                "flex items-center justify-between p-3.5 rounded-2xl transition-all duration-300 border",
-                                                                isActive 
-                                                                    ? "bg-white text-black font-black border-white"
-                                                                    : "bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white border-black/10 dark:border-white/5"
-                                                            )}
-                                                        >
-                                                            <div className="flex items-center gap-3">
-                                                                <LinkIcon size={16} className={isActive ? "text-black" : `text-${link.color}`} />
-                                                                <span className="text-[10px] font-bold uppercase tracking-widest">{link.name}</span>
-                                                            </div>
-                                                            <ChevronRight size={14} className="opacity-40" />
-                                                        </Link>
-                                                    );
-                                                })}
+                                        return (
+                                            <div key={section.title} className="space-y-3">
+                                                <div className="flex items-center gap-2 pl-1">
+                                                    <div className={cn("w-2 h-2 rounded-full", 
+                                                        section.color.replace('text-', 'bg-')
+                                                    )} />
+                                                    <h4 className={cn("text-[10px] font-black uppercase tracking-[0.2em]", section.color)}>
+                                                        {section.title}
+                                                    </h4>
+                                                </div>
+                                                <div className="grid grid-cols-2 gap-2">
+                                                    {visibleLinks.map((link) => {
+                                                        const LinkIcon = link.icon;
+                                                        const isActive = location.pathname === link.path;
+                                                        return (
+                                                            <Link
+                                                                key={link.name}
+                                                                to={link.path}
+                                                                onClick={() => setIsMenuOpen(false)}
+                                                                className={cn(
+                                                                    "flex flex-col gap-2 p-3.5 rounded-2xl transition-all duration-300 border",
+                                                                    isActive 
+                                                                        ? "bg-white text-black font-black border-white shadow-md"
+                                                                        : "bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white border-black/10 dark:border-white/5"
+                                                                )}
+                                                            >
+                                                                <LinkIcon size={16} className={isActive ? "text-black" : (colorClassMap[link.color] || 'text-white')} />
+                                                                <span className="text-[9px] font-bold uppercase tracking-widest line-clamp-1">{link.name}</span>
+                                                            </Link>
+                                                        );
+                                                    })}
+                                                </div>
                                             </div>
-                                        </div>
-                                    );
-                                })}
+                                        );
+                                    })}
+                                </div>
                             </div>
-                        </div>
-                    </motion.div>
+                        </motion.div>
+                    </>
                 )}
             </AnimatePresence>
-        </div>
-    );
+        </div>    );
 };
 
 export default AdminCommunityHubLayout;

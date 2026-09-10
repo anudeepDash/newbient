@@ -925,7 +925,7 @@ const ContractGenerator = () => {
                             <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
                                 <div className="flex items-center gap-1">
                                     <span>Tone:</span>
-                                    <div className="flex bg-white dark:bg-black/40 rounded p-0.5 border border-black/10 dark:border-white/5">
+                                    <div className="flex bg-white dark:bg-white rounded p-0.5 border border-black/10 dark:border-white/5">
                                         {['balanced', 'creative', 'formal'].map(t => (
                                             <button
                                                 type="button"
@@ -944,7 +944,7 @@ const ContractGenerator = () => {
 
                                 <div className="flex items-center gap-1">
                                     <span>Length:</span>
-                                    <div className="flex bg-white dark:bg-black/40 rounded p-0.5 border border-black/10 dark:border-white/5">
+                                    <div className="flex bg-white dark:bg-white rounded p-0.5 border border-black/10 dark:border-white/5">
                                         {['concise', 'balanced', 'detailed'].map(l => (
                                             <button
                                                 type="button"
@@ -1012,7 +1012,7 @@ const ContractGenerator = () => {
             `}} />
 
             {/* Top Navigation */}
-            <nav className="h-16 md:h-20 border-b border-black/10 dark:border-white/5 flex items-center justify-between px-4 md:px-8 bg-white dark:bg-black/40 backdrop-blur-3xl sticky top-0 z-[60]">
+            <nav className="h-16 md:h-20 border-b border-black/10 dark:border-white/5 flex items-center justify-between px-4 md:px-8 bg-white dark:bg-white backdrop-blur-3xl sticky top-0 z-[60]">
                 <div className="flex items-center gap-2 md:gap-6 min-w-0">
                     <Link to="/admin/agreements" className="p-2.5 md:p-3 bg-black/5 dark:bg-white/5 rounded-2xl hover:bg-black/10 dark:hover:bg-white/10 transition-all border border-black/10 dark:border-white/5 shrink-0"><ArrowLeft size={16} /></Link>
                     <div className="min-w-0 flex flex-col justify-center">
@@ -1211,21 +1211,21 @@ const ContractGenerator = () => {
                                                 <h3 className="text-xl font-black uppercase tracking-tighter italic flex items-center gap-3"><Building2 size={16} /> First Party</h3>
                                                 <div className="space-y-4">
                                                     <div className="relative group/refine w-full">
-                                                        <Input value={formData.parties.firstParty.name} onChange={e => updateField('parties.firstParty.name', e.target.value)} placeholder="Provider Name" className="h-14 bg-white dark:bg-black/40 border-black/10 dark:border-white/10 pr-12" />
+                                                        <Input value={formData.parties.firstParty.name} onChange={e => updateField('parties.firstParty.name', e.target.value)} placeholder="Provider Name" className="h-14 bg-white dark:bg-white border-black/10 dark:border-white/10 pr-12" />
                                                         <button type="button" onClick={() => handleRefineClick('parties.firstParty.name', 'Provider Name', formData.parties.firstParty.name)} className="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-gray-100 dark:bg-zinc-950 border border-black/10 dark:border-white/10 text-[#A855F7] hover:text-gray-900 dark:hover:text-white rounded-xl hover:scale-105 z-10" title="Refine with AI"><Sparkles size={14} className="animate-pulse" /></button>
                                                     </div>
                                                     <div className="grid grid-cols-2 gap-4">
                                                         <div className="relative group/refine w-full">
-                                                            <Input value={formData.parties.firstParty.role} onChange={e => updateField('parties.firstParty.role', e.target.value)} placeholder="Role (e.g. Provider)" className="h-14 bg-white dark:bg-black/40 border-black/10 dark:border-white/10 pr-12" />
+                                                            <Input value={formData.parties.firstParty.role} onChange={e => updateField('parties.firstParty.role', e.target.value)} placeholder="Role (e.g. Provider)" className="h-14 bg-white dark:bg-white border-black/10 dark:border-white/10 pr-12" />
                                                             <button type="button" onClick={() => handleRefineClick('parties.firstParty.role', 'Provider Role', formData.parties.firstParty.role)} className="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-gray-100 dark:bg-zinc-950 border border-black/10 dark:border-white/10 text-[#A855F7] hover:text-gray-900 dark:hover:text-white rounded-xl hover:scale-105 z-10" title="Refine with AI"><Sparkles size={14} className="animate-pulse" /></button>
                                                         </div>
                                                         <div className="relative group/refine w-full">
-                                                            <Input value={formData.parties.firstParty.acronym} onChange={e => updateField('parties.firstParty.acronym', e.target.value)} placeholder="Acronym (e.g. NB)" className="h-14 bg-white dark:bg-black/40 border-black/10 dark:border-white/10 pr-12" />
+                                                            <Input value={formData.parties.firstParty.acronym} onChange={e => updateField('parties.firstParty.acronym', e.target.value)} placeholder="Acronym (e.g. NB)" className="h-14 bg-white dark:bg-white border-black/10 dark:border-white/10 pr-12" />
                                                             <button type="button" onClick={() => handleRefineClick('parties.firstParty.acronym', 'Provider Acronym', formData.parties.firstParty.acronym)} className="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-gray-100 dark:bg-zinc-950 border border-black/10 dark:border-white/10 text-[#A855F7] hover:text-gray-900 dark:hover:text-white rounded-xl hover:scale-105 z-10" title="Refine with AI"><Sparkles size={14} className="animate-pulse" /></button>
                                                         </div>
                                                     </div>
                                                     <div className="relative group/refine w-full">
-                                                        <Input value={formData.parties.firstParty.address} onChange={e => updateField('parties.firstParty.address', e.target.value)} placeholder="Provider Address" className="h-14 bg-white dark:bg-black/40 border-black/10 dark:border-white/10 pr-12" />
+                                                        <Input value={formData.parties.firstParty.address} onChange={e => updateField('parties.firstParty.address', e.target.value)} placeholder="Provider Address" className="h-14 bg-white dark:bg-white border-black/10 dark:border-white/10 pr-12" />
                                                         <button type="button" onClick={() => handleRefineClick('parties.firstParty.address', 'Provider Address', formData.parties.firstParty.address)} className="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-gray-100 dark:bg-zinc-950 border border-black/10 dark:border-white/10 text-[#A855F7] hover:text-gray-900 dark:hover:text-white rounded-xl hover:scale-105 z-10" title="Refine with AI"><Sparkles size={14} className="animate-pulse" /></button>
                                                     </div>
                                                 </div>
@@ -1234,21 +1234,21 @@ const ContractGenerator = () => {
                                                 <h3 className="text-xl font-black uppercase tracking-tighter italic flex items-center gap-3"><Users size={16} /> Second Party</h3>
                                                 <div className="space-y-4">
                                                     <div className="relative group/refine w-full">
-                                                        <Input value={formData.parties.secondParty.name} onChange={e => updateField('parties.secondParty.name', e.target.value)} placeholder="Client Name" className="h-14 bg-white dark:bg-black/40 border-black/10 dark:border-white/10 pr-12" />
+                                                        <Input value={formData.parties.secondParty.name} onChange={e => updateField('parties.secondParty.name', e.target.value)} placeholder="Client Name" className="h-14 bg-white dark:bg-white border-black/10 dark:border-white/10 pr-12" />
                                                         <button type="button" onClick={() => handleRefineClick('parties.secondParty.name', 'Client Name', formData.parties.secondParty.name)} className="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-gray-100 dark:bg-zinc-950 border border-black/10 dark:border-white/10 text-[#A855F7] hover:text-gray-900 dark:hover:text-white rounded-xl hover:scale-105 z-10" title="Refine with AI"><Sparkles size={14} className="animate-pulse" /></button>
                                                     </div>
                                                     <div className="grid grid-cols-2 gap-4">
                                                         <div className="relative group/refine w-full">
-                                                            <Input value={formData.parties.secondParty.role} onChange={e => updateField('parties.secondParty.role', e.target.value)} placeholder="Role (e.g. Client)" className="h-14 bg-white dark:bg-black/40 border-black/10 dark:border-white/10 pr-12" />
+                                                            <Input value={formData.parties.secondParty.role} onChange={e => updateField('parties.secondParty.role', e.target.value)} placeholder="Role (e.g. Client)" className="h-14 bg-white dark:bg-white border-black/10 dark:border-white/10 pr-12" />
                                                             <button type="button" onClick={() => handleRefineClick('parties.secondParty.role', 'Client Role', formData.parties.secondParty.role)} className="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-gray-100 dark:bg-zinc-950 border border-black/10 dark:border-white/10 text-[#A855F7] hover:text-gray-900 dark:hover:text-white rounded-xl hover:scale-105 z-10" title="Refine with AI"><Sparkles size={14} className="animate-pulse" /></button>
                                                         </div>
                                                         <div className="relative group/refine w-full">
-                                                            <Input value={formData.parties.secondParty.acronym} onChange={e => updateField('parties.secondParty.acronym', e.target.value)} placeholder="Acronym (e.g. TUM)" className="h-14 bg-white dark:bg-black/40 border-black/10 dark:border-white/10 pr-12" />
+                                                            <Input value={formData.parties.secondParty.acronym} onChange={e => updateField('parties.secondParty.acronym', e.target.value)} placeholder="Acronym (e.g. TUM)" className="h-14 bg-white dark:bg-white border-black/10 dark:border-white/10 pr-12" />
                                                             <button type="button" onClick={() => handleRefineClick('parties.secondParty.acronym', 'Client Acronym', formData.parties.secondParty.acronym)} className="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-gray-100 dark:bg-zinc-950 border border-black/10 dark:border-white/10 text-[#A855F7] hover:text-gray-900 dark:hover:text-white rounded-xl hover:scale-105 z-10" title="Refine with AI"><Sparkles size={14} className="animate-pulse" /></button>
                                                         </div>
                                                     </div>
                                                     <div className="relative group/refine w-full">
-                                                        <Input value={formData.parties.secondParty.address} onChange={e => updateField('parties.secondParty.address', e.target.value)} placeholder="Client Address" className="h-14 bg-white dark:bg-black/40 border-black/10 dark:border-white/10 pr-12" />
+                                                        <Input value={formData.parties.secondParty.address} onChange={e => updateField('parties.secondParty.address', e.target.value)} placeholder="Client Address" className="h-14 bg-white dark:bg-white border-black/10 dark:border-white/10 pr-12" />
                                                         <button type="button" onClick={() => handleRefineClick('parties.secondParty.address', 'Client Address', formData.parties.secondParty.address)} className="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-gray-100 dark:bg-zinc-950 border border-black/10 dark:border-white/10 text-[#A855F7] hover:text-gray-900 dark:hover:text-white rounded-xl hover:scale-105 z-10" title="Refine with AI"><Sparkles size={14} className="animate-pulse" /></button>
                                                     </div>
                                                 </div>
@@ -1261,11 +1261,11 @@ const ContractGenerator = () => {
                                     <div className="space-y-10">
                                         <div className="grid grid-cols-2 gap-8">
                                             <div className="relative group/refine w-full">
-                                                <Input value={formData.details.projectName} onChange={e => updateField('details.projectName', e.target.value)} placeholder="Project Name" className="h-14 bg-white dark:bg-black/40 border-black/10 dark:border-white/10 pr-12" />
+                                                <Input value={formData.details.projectName} onChange={e => updateField('details.projectName', e.target.value)} placeholder="Project Name" className="h-14 bg-white dark:bg-white border-black/10 dark:border-white/10 pr-12" />
                                                 <button type="button" onClick={() => handleRefineClick('details.projectName', 'Project Name', formData.details.projectName)} className="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-gray-100 dark:bg-zinc-950 border border-black/10 dark:border-white/10 text-[#A855F7] hover:text-gray-900 dark:hover:text-white rounded-xl hover:scale-105 z-10" title="Refine with AI"><Sparkles size={14} className="animate-pulse" /></button>
                                             </div>
                                             <div className="relative group/refine w-full">
-                                                <Input value={formData.details.territory} onChange={e => updateField('details.territory', e.target.value)} placeholder="Territory" className="h-14 bg-white dark:bg-black/40 border-black/10 dark:border-white/10 pr-12" />
+                                                <Input value={formData.details.territory} onChange={e => updateField('details.territory', e.target.value)} placeholder="Territory" className="h-14 bg-white dark:bg-white border-black/10 dark:border-white/10 pr-12" />
                                                 <button type="button" onClick={() => handleRefineClick('details.territory', 'Territory', formData.details.territory)} className="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-gray-100 dark:bg-zinc-950 border border-black/10 dark:border-white/10 text-[#A855F7] hover:text-gray-900 dark:hover:text-white rounded-xl hover:scale-105 z-10" title="Refine with AI"><Sparkles size={14} className="animate-pulse" /></button>
                                             </div>
                                         </div>
@@ -1288,10 +1288,10 @@ const ContractGenerator = () => {
                                         <div className="grid grid-cols-2 gap-8">
                                             <div className="relative group/refine w-full">
                                                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-neon-purple font-black text-xs">{formData.commercials.currency}</span>
-                                                <Input value={formData.commercials.totalValue} onChange={e => updateField('commercials.totalValue', e.target.value)} className="h-14 bg-white dark:bg-black/40 border-black/10 dark:border-white/10 pl-12 pr-12" placeholder="Total Value" />
+                                                <Input value={formData.commercials.totalValue} onChange={e => updateField('commercials.totalValue', e.target.value)} className="h-14 bg-white dark:bg-white border-black/10 dark:border-white/10 pl-12 pr-12" placeholder="Total Value" />
                                                 <button type="button" onClick={() => handleRefineClick('commercials.totalValue', 'Total Value', formData.commercials.totalValue)} className="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-gray-100 dark:bg-zinc-950 border border-black/10 dark:border-white/10 text-[#A855F7] hover:text-gray-900 dark:hover:text-white rounded-xl hover:scale-105 z-10" title="Refine with AI"><Sparkles size={14} className="animate-pulse" /></button>
                                             </div>
-                                            <select value={formData.commercials.currency} onChange={e => updateField('commercials.currency', e.target.value)} className="h-14 bg-white dark:bg-black/40 border border-black/10 dark:border-white/10 rounded-xl px-6 text-sm font-bold">
+                                            <select value={formData.commercials.currency} onChange={e => updateField('commercials.currency', e.target.value)} className="h-14 bg-white dark:bg-white border border-black/10 dark:border-white/10 rounded-xl px-6 text-sm font-bold">
                                                 <option value="INR">INR (₹)</option><option value="USD">USD ($)</option><option value="EUR">EUR (€)</option>
                                             </select>
                                         </div>
@@ -1462,14 +1462,14 @@ const ContractGenerator = () => {
 
                                             <div className="flex flex-col gap-6 w-full md:w-80 relative z-10">
                                                 <div className="grid grid-cols-2 gap-3">
-                                                    <div className="p-4 bg-white dark:bg-black/40 rounded-2xl border border-black/10 dark:border-white/5 space-y-1">
+                                                    <div className="p-4 bg-white dark:bg-white rounded-2xl border border-black/10 dark:border-white/5 space-y-1">
                                                         <div className="flex items-center gap-2">
                                                             <Lock size={12} className="text-emerald-500" />
                                                             <span className="text-[8px] font-black text-gray-900 dark:text-white uppercase tracking-widest">AES-256</span>
                                                         </div>
                                                         <p className="text-[7px] font-bold text-gray-500 uppercase">Secure</p>
                                                     </div>
-                                                    <div className="p-4 bg-white dark:bg-black/40 rounded-2xl border border-black/10 dark:border-white/5 space-y-1">
+                                                    <div className="p-4 bg-white dark:bg-white rounded-2xl border border-black/10 dark:border-white/5 space-y-1">
                                                         <div className="flex items-center gap-2">
                                                             <History size={12} className="text-[#A855F7]" />
                                                             <span className="text-[8px] font-black text-gray-900 dark:text-white uppercase tracking-widest">v{formData.version || '1.0'}</span>
@@ -1545,7 +1545,7 @@ const ContractGenerator = () => {
                             <span className="text-[10px] font-black uppercase tracking-widest text-gray-600 dark:text-gray-400">Live Preview</span>
                         </div>
                         <div className="flex items-center gap-4">
-                            <div className="flex items-center bg-white dark:bg-black/40 rounded-lg p-1 border border-black/10 dark:border-white/5">
+                            <div className="flex items-center bg-white dark:bg-white rounded-lg p-1 border border-black/10 dark:border-white/5">
                                 <button onClick={() => setUserZoom(Math.max(0.5, userZoom - 0.1))} className="p-1.5 hover:bg-black/5 dark:hover:bg-white/5 rounded text-gray-600 dark:text-gray-400 transition-colors"><Minus size={12} /></button>
                                 <span className="text-[10px] font-black text-gray-500 px-2 min-w-[40px] text-center">{Math.round(userZoom * 100)}%</span>
                                 <button onClick={() => setUserZoom(Math.min(2, userZoom + 0.1))} className="p-1.5 hover:bg-black/5 dark:hover:bg-white/5 rounded text-gray-600 dark:text-gray-400 transition-colors"><Plus size={12} /></button>
@@ -1624,7 +1624,7 @@ const ContractGenerator = () => {
                             <div className="p-6 space-y-4">
                                 <div className="space-y-1">
                                     <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest block">Current Content Preview</label>
-                                    <div className="p-4 bg-white dark:bg-black/40 border border-black/10 dark:border-white/5 rounded-2xl max-h-40 overflow-y-auto text-[11px] text-zinc-300 whitespace-pre-wrap leading-relaxed">
+                                    <div className="p-4 bg-white dark:bg-white border border-black/10 dark:border-white/5 rounded-2xl max-h-40 overflow-y-auto text-[11px] text-zinc-300 whitespace-pre-wrap leading-relaxed">
                                         {htmlToPlainText(refinementContext.currentValue) || <span className="italic text-gray-600">Field is currently empty</span>}
                                     </div>
                                 </div>
@@ -1635,7 +1635,7 @@ const ContractGenerator = () => {
                                         value={refinementPrompt}
                                         onChange={(e) => setRefinementPrompt(e.target.value)}
                                         placeholder="Tell AI how to refine this text (e.g., 'make it more formal', 'clarify payment deadlines', 'shorten to 1 sentence')..."
-                                        className="w-full h-28 bg-white dark:bg-black/40 border border-black/10 dark:border-white/5 focus:border-[#A855F7]/50 focus:shadow-[0_0_20px_rgba(168,85,247,0.1)] rounded-2xl p-4 text-[12px] font-medium text-gray-900 dark:text-white placeholder-gray-600 focus:outline-none transition-all resize-none"
+                                        className="w-full h-28 bg-white dark:bg-white border border-black/10 dark:border-white/5 focus:border-[#A855F7]/50 focus:shadow-[0_0_20px_rgba(168,85,247,0.1)] rounded-2xl p-4 text-[12px] font-medium text-gray-900 dark:text-white placeholder-gray-600 focus:outline-none transition-all resize-none"
                                         onKeyDown={(e) => {
                                             if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
                                                 e.preventDefault();
