@@ -724,6 +724,18 @@ const ProposalGenerator = () => {
         addToast("Page duplicated successfully", "success");
     };
 
+    const duplicateAllCustomPages = () => {
+        const pages = [...(formData.customPages || [])];
+        if (pages.length === 0) return;
+        const copies = pages.map((page, i) => ({
+            ...page,
+            id: String(Date.now()) + '-dup-all-' + i,
+            title: `${page.title} (Copy)`
+        }));
+        setFormData({ ...formData, customPages: [...pages, ...copies] });
+        addToast("All pages duplicated successfully", "success");
+    };
+
     // Chat popup resizer handlers
     const handleStartResize = (e) => {
         e.preventDefault();
