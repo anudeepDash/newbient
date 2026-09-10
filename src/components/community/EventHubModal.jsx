@@ -92,7 +92,7 @@ const EventHubModal = ({ event, isOpen, onClose }) => {
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         onClick={onClose}
-                        className="absolute inset-0 bg-white dark:bg-black/75 backdrop-blur-md"
+                        className="absolute inset-0 bg-black/60 dark:bg-black/75 backdrop-blur-md"
                     />
 
                     {/* Modal Content */}
@@ -101,7 +101,7 @@ const EventHubModal = ({ event, isOpen, onClose }) => {
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95, y: 20 }}
                         className={cn(
-                            "relative w-full max-w-4xl bg-[#020202]/60 backdrop-blur-3xl border border-black/10 dark:border-white/10 shadow-[0_30px_70px_rgba(0,0,0,0.8)] overflow-hidden flex flex-col h-full md:h-auto md:max-h-[92vh] md:rounded-3xl z-10 transition-[max-width] duration-300",
+                            "relative w-full max-w-4xl bg-white dark:bg-[#020202]/90 backdrop-blur-3xl border border-black/10 dark:border-white/10 shadow-2xl dark:shadow-[0_30px_70px_rgba(0,0,0,0.8)] overflow-hidden flex flex-col h-full md:h-auto md:max-h-[92vh] md:rounded-3xl z-10 transition-[max-width] duration-300",
                             activeView === 'ticketing' && "max-w-3xl"
                         )}
                     >
@@ -117,7 +117,7 @@ const EventHubModal = ({ event, isOpen, onClose }) => {
                                     {/* Top Cinematic Header Banner */}
                                     <div className="relative w-full overflow-hidden border-b border-black/10 dark:border-white/5 shrink-0 min-h-[160px] bg-zinc-950 flex items-center justify-center">
                                         {(event?.hubImage || event?.image) ? (
-                                            <img 
+                                             <img 
                                                 src={event.hubImage || event.image} 
                                                 alt={event?.title || 'Event Banner'} 
                                                 className="w-full h-auto block" 
@@ -135,7 +135,7 @@ const EventHubModal = ({ event, isOpen, onClose }) => {
                                         
                                         {/* Cinematic Title overlay */}
                                         <div className="absolute bottom-6 left-6 right-6 text-left flex flex-col justify-end">
-                                            <h2 className="text-2xl md:text-4xl font-extrabold font-heading text-gray-900 dark:text-white tracking-tight leading-tight">
+                                            <h2 className="text-2xl md:text-4xl font-extrabold font-heading text-white drop-shadow-md tracking-tight leading-tight">
                                                 {event.title}
                                             </h2>
                                         </div>
@@ -143,7 +143,7 @@ const EventHubModal = ({ event, isOpen, onClose }) => {
                                         {/* Close Button on Banner */}
                                         <button 
                                             onClick={onClose} 
-                                            className="absolute top-6 right-6 w-10 h-10 rounded-xl bg-white dark:bg-black/60 border border-black/10 dark:border-white/10 flex items-center justify-center text-zinc-400 hover:text-gray-900 dark:hover:text-white hover:bg-black/10 dark:hover:bg-white/10 hover:border-black/20 dark:hover:border-white/20 transition-all z-50 group"
+                                            className="absolute top-6 right-6 w-10 h-10 rounded-xl bg-black/40 border border-white/20 flex items-center justify-center text-white/80 hover:text-white hover:bg-black/70 hover:border-white/40 transition-all z-50 group backdrop-blur-md"
                                         >
                                             <X size={20} className="group-hover:rotate-90 transition-transform duration-300" />
                                         </button>
@@ -154,13 +154,13 @@ const EventHubModal = ({ event, isOpen, onClose }) => {
                                         {/* Meta Row: Date, Location, Share button */}
                                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-black/10 dark:border-white/5">
                                             <div className="flex flex-wrap gap-6 items-center">
-                                                <div className="flex items-center gap-2.5 text-zinc-400 text-xs font-semibold tracking-wider uppercase">
+                                                <div className="flex items-center gap-2.5 text-zinc-600 dark:text-zinc-400 text-xs font-semibold tracking-wider uppercase">
                                                     <Calendar size={14} className="text-neon-green shrink-0" /> 
                                                     <span>
                                                         {event.date ? new Date(event.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }) : 'TBA'}
                                                     </span>
                                                 </div>
-                                                <div className="flex items-center gap-2.5 text-zinc-400 text-xs font-semibold tracking-wider uppercase">
+                                                <div className="flex items-center gap-2.5 text-zinc-600 dark:text-zinc-400 text-xs font-semibold tracking-wider uppercase">
                                                     <MapPin size={14} className="text-neon-green shrink-0" /> 
                                                     <span>{event.location || 'VENUE TBA'}</span>
                                                 </div>
@@ -172,7 +172,7 @@ const EventHubModal = ({ event, isOpen, onClose }) => {
                                             </div>
                                             <button 
                                                 onClick={handleShare}
-                                                className="h-10 px-4 rounded-xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-gray-900 dark:text-white font-black uppercase tracking-widest text-[9px] hover:bg-white hover:text-black hover:border-white transition-all flex items-center justify-center gap-2 shrink-0 select-none"
+                                                className="h-10 px-4 rounded-xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-gray-900 dark:text-white font-black uppercase tracking-widest text-[9px] hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black hover:border-transparent transition-all flex items-center justify-center gap-2 shrink-0 select-none"
                                             >
                                                 <Share2 size={12} className="text-neon-green" />
                                                 <span>Share Event</span>
@@ -190,7 +190,7 @@ const EventHubModal = ({ event, isOpen, onClose }) => {
                                                         <span className="text-[9px] font-bold uppercase tracking-[0.3em]">Event Details</span>
                                                     </div>
                                                     <div className={cn(
-                                                        "text-zinc-300 text-sm leading-relaxed whitespace-pre-wrap font-medium border-l-2 border-neon-green/40 pl-5 transition-all duration-500",
+                                                        "text-zinc-700 dark:text-zinc-300 text-sm leading-relaxed whitespace-pre-wrap font-medium border-l-2 border-neon-green/60 pl-5 transition-all duration-500",
                                                         !isDescriptionExpanded && "line-clamp-6"
                                                     )}>
                                                         {event.description || "No detailed briefing provided for this event. Standard parameters apply."}
@@ -233,7 +233,7 @@ const EventHubModal = ({ event, isOpen, onClose }) => {
                                                             {event.artists.map((artist, idx) => (
                                                                 <div key={idx} className="px-4 py-2 rounded-xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 flex items-center gap-2 group/artist hover:border-neon-green/30 transition-colors">
                                                                     <div className="w-1.5 h-1.5 rounded-full bg-neon-green" />
-                                                                    <span className="text-[9px] font-bold uppercase tracking-widest text-zinc-300 group-hover/artist:text-gray-900 dark:artist:text-white transition-colors">{artist}</span>
+                                                                    <span className="text-[9px] font-bold uppercase tracking-widest text-zinc-800 dark:text-zinc-300 group-hover/artist:text-black dark:group-hover/artist:text-white transition-colors">{artist}</span>
                                                                 </div>
                                                             ))}
                                                         </div>
@@ -245,7 +245,7 @@ const EventHubModal = ({ event, isOpen, onClose }) => {
                                             <div className="md:col-span-5 space-y-6">
                                                 {/* Inline RSVP / Booking Card - PC Only */}
                                                 {(hasInternalOps || hasExternalLinks || directActionUrl) && (
-                                                    <div className="hidden md:block p-6 bg-white/[0.02] border border-black/10 dark:border-white/10 rounded-2xl space-y-4">
+                                                    <div className="hidden md:block p-6 bg-gray-50 dark:bg-white/[0.02] border border-black/10 dark:border-white/10 rounded-2xl space-y-4">
                                                         <div className="text-left">
                                                             <p className="text-[8px] font-black text-neon-green uppercase tracking-widest mb-1">
                                                                 {event.isTicketed 
@@ -263,7 +263,7 @@ const EventHubModal = ({ event, isOpen, onClose }) => {
                                                         {hasInternalOps ? (
                                                             <button 
                                                                 onClick={handleInternalAction}
-                                                                className="w-full h-12 rounded-xl bg-white text-black font-black uppercase tracking-[0.15em] text-xs flex items-center justify-center gap-2 hover:bg-neon-green active:scale-95 transition-all shadow-lg shrink-0"
+                                                                className="w-full h-12 rounded-xl bg-black text-white dark:bg-white dark:text-black font-black uppercase tracking-[0.15em] text-xs flex items-center justify-center gap-2 hover:bg-neon-green hover:text-black dark:hover:bg-neon-green dark:hover:text-black active:scale-95 transition-all shadow-lg shrink-0"
                                                             >
                                                                 <Ticket size={16} />
                                                                 <span>{event.isTicketed ? "Book Tickets" : "Register / RSVP"}</span>
@@ -273,7 +273,7 @@ const EventHubModal = ({ event, isOpen, onClose }) => {
                                                                 href={event.externalTicketingLinks[0]?.url}
                                                                 target="_blank"
                                                                 rel="noopener noreferrer"
-                                                                className="w-full h-12 rounded-xl bg-white text-black font-black uppercase tracking-[0.15em] text-xs flex items-center justify-center gap-2 hover:bg-neon-green active:scale-95 transition-all shadow-lg shrink-0"
+                                                                className="w-full h-12 rounded-xl bg-black text-white dark:bg-white dark:text-black font-black uppercase tracking-[0.15em] text-xs flex items-center justify-center gap-2 hover:bg-neon-green hover:text-black dark:hover:bg-neon-green dark:hover:text-black active:scale-95 transition-all shadow-lg shrink-0"
                                                             >
                                                                 <ExternalLink size={16} />
                                                                 <span>{event.externalTicketingLinks[0]?.platform || "Book Now"}</span>
@@ -283,7 +283,7 @@ const EventHubModal = ({ event, isOpen, onClose }) => {
                                                                 href={directActionUrl}
                                                                 target={directActionUrl?.startsWith('http') ? "_blank" : "_self"}
                                                                 rel="noopener noreferrer"
-                                                                className="w-full h-12 rounded-xl bg-white text-black font-black uppercase tracking-[0.15em] text-xs flex items-center justify-center gap-2 hover:bg-neon-green active:scale-95 transition-all shadow-lg shrink-0"
+                                                                className="w-full h-12 rounded-xl bg-black text-white dark:bg-white dark:text-black font-black uppercase tracking-[0.15em] text-xs flex items-center justify-center gap-2 hover:bg-neon-green hover:text-black dark:hover:bg-neon-green dark:hover:text-black active:scale-95 transition-all shadow-lg shrink-0"
                                                             >
                                                                 <ArrowRight size={16} />
                                                                 <span>{event.buttonText || (event.isForm ? "Fill Form" : (event.isVolunteerGig ? "Join Squad" : "Open Event"))}</span>
@@ -301,7 +301,7 @@ const EventHubModal = ({ event, isOpen, onClose }) => {
                                                         </div>
                                                         <div className="space-y-3">
                                                             {volunteerGig && (
-                                                                <a href="/community" className="p-4 rounded-xl bg-white/[0.01] border border-black/10 dark:border-white/10 hover:bg-neon-green/5 hover:border-neon-green/20 transition-all group flex items-center justify-between">
+                                                                <a href="/community" className="p-4 rounded-xl bg-gray-50 dark:bg-white/[0.01] border border-black/10 dark:border-white/10 hover:bg-neon-green/5 hover:border-neon-green/20 transition-all group flex items-center justify-between">
                                                                     <div className="flex items-center gap-3">
                                                                         <div className="w-8 h-8 rounded-lg bg-neon-green/10 flex items-center justify-center text-neon-green"><Users size={14} /></div>
                                                                         <div className="text-left">
@@ -313,7 +313,7 @@ const EventHubModal = ({ event, isOpen, onClose }) => {
                                                                 </a>
                                                             )}
                                                             {campaign && (
-                                                                <a href="/creator" className="p-4 rounded-xl bg-white/[0.01] border border-black/10 dark:border-white/10 hover:bg-neon-green/5 hover:border-neon-green/20 transition-all group flex items-center justify-between">
+                                                                <a href="/creator" className="p-4 rounded-xl bg-gray-50 dark:bg-white/[0.01] border border-black/10 dark:border-white/10 hover:bg-neon-green/5 hover:border-neon-green/20 transition-all group flex items-center justify-between">
                                                                     <div className="flex items-center gap-3">
                                                                         <div className="w-8 h-8 rounded-lg bg-neon-green/10 flex items-center justify-center text-neon-green"><Megaphone size={14} /></div>
                                                                         <div className="text-left">
@@ -325,7 +325,7 @@ const EventHubModal = ({ event, isOpen, onClose }) => {
                                                                 </a>
                                                             )}
                                                             {artistForm && (
-                                                                <a href={`/forms/${artistForm.id}`} className="p-4 rounded-xl bg-white/[0.01] border border-black/10 dark:border-white/10 hover:bg-neon-green/5 hover:border-neon-green/20 transition-all group flex items-center justify-between">
+                                                                <a href={`/forms/${artistForm.id}`} className="p-4 rounded-xl bg-gray-50 dark:bg-white/[0.01] border border-black/10 dark:border-white/10 hover:bg-neon-green/5 hover:border-neon-green/20 transition-all group flex items-center justify-between">
                                                                     <div className="flex items-center gap-3">
                                                                         <div className="w-8 h-8 rounded-lg bg-neon-green/10 flex items-center justify-center text-neon-green"><Zap size={14} /></div>
                                                                         <div className="text-left">
@@ -345,7 +345,7 @@ const EventHubModal = ({ event, isOpen, onClose }) => {
 
                                     {/* Sticky Bottom Bar for mobile only */}
                                     {(hasInternalOps || hasExternalLinks || directActionUrl) && (
-                                        <div className="sticky bottom-0 left-0 right-0 p-4 sm:p-6 bg-gray-100 dark:bg-zinc-950/90 border-t border-black/10 dark:border-white/10 backdrop-blur-3xl z-40 flex items-center justify-between gap-4 shrink-0 shadow-[0_-10px_30px_rgba(0,0,0,0.8)] md:hidden">
+                                        <div className="sticky bottom-0 left-0 right-0 p-4 sm:p-6 bg-white/95 dark:bg-zinc-950/90 border-t border-black/10 dark:border-white/10 backdrop-blur-3xl z-40 flex items-center justify-between gap-4 shrink-0 shadow-lg md:hidden">
                                             <div className="text-left min-w-0">
                                                 <p className="text-[8px] font-black text-zinc-500 uppercase tracking-widest mb-0.5">
                                                     {event.isTicketed 
@@ -363,7 +363,7 @@ const EventHubModal = ({ event, isOpen, onClose }) => {
                                             {hasInternalOps ? (
                                                 <button 
                                                     onClick={handleInternalAction}
-                                                    className="h-11 sm:h-12 px-5 sm:px-8 rounded-xl bg-white text-black font-black uppercase tracking-[0.15em] text-[9px] sm:text-xs flex items-center justify-center gap-2 hover:bg-neon-green active:scale-95 transition-all shadow-lg shrink-0 animate-pulse hover:animate-none"
+                                                    className="h-11 sm:h-12 px-5 sm:px-8 rounded-xl bg-black text-white dark:bg-white dark:text-black font-black uppercase tracking-[0.15em] text-[9px] sm:text-xs flex items-center justify-center gap-2 hover:bg-neon-green hover:text-black dark:hover:bg-neon-green dark:hover:text-black active:scale-95 transition-all shadow-lg shrink-0 animate-pulse hover:animate-none"
                                                 >
                                                     <Ticket size={14} />
                                                     <span>{event.isTicketed ? "Book Tickets" : "Register / RSVP"}</span>
@@ -373,7 +373,7 @@ const EventHubModal = ({ event, isOpen, onClose }) => {
                                                     href={event.externalTicketingLinks[0]?.url}
                                                     target="_blank"
                                                     rel="noopener noreferrer"
-                                                    className="h-11 sm:h-12 px-5 sm:px-8 rounded-xl bg-white text-black font-black uppercase tracking-[0.15em] text-[9px] sm:text-xs flex items-center justify-center gap-2 hover:bg-neon-green active:scale-95 transition-all shadow-lg shrink-0"
+                                                    className="h-11 sm:h-12 px-5 sm:px-8 rounded-xl bg-black text-white dark:bg-white dark:text-black font-black uppercase tracking-[0.15em] text-[9px] sm:text-xs flex items-center justify-center gap-2 hover:bg-neon-green hover:text-black dark:hover:bg-neon-green dark:hover:text-black active:scale-95 transition-all shadow-lg shrink-0"
                                                 >
                                                     <ExternalLink size={14} />
                                                     <span>{event.externalTicketingLinks[0]?.platform || "Book Now"}</span>
@@ -383,7 +383,7 @@ const EventHubModal = ({ event, isOpen, onClose }) => {
                                                     href={directActionUrl}
                                                     target={directActionUrl?.startsWith('http') ? "_blank" : "_self"}
                                                     rel="noopener noreferrer"
-                                                    className="h-11 sm:h-12 px-5 sm:px-8 rounded-xl bg-white text-black font-black uppercase tracking-[0.15em] text-[9px] sm:text-xs flex items-center justify-center gap-2 hover:bg-neon-green active:scale-95 transition-all shadow-lg shrink-0"
+                                                    className="h-11 sm:h-12 px-5 sm:px-8 rounded-xl bg-black text-white dark:bg-white dark:text-black font-black uppercase tracking-[0.15em] text-[9px] sm:text-xs flex items-center justify-center gap-2 hover:bg-neon-green hover:text-black dark:hover:bg-neon-green dark:hover:text-black active:scale-95 transition-all shadow-lg shrink-0"
                                                 >
                                                     <ArrowRight size={14} />
                                                     <span>{event.buttonText || (event.isForm ? "Fill Form" : (event.isVolunteerGig ? "Join Squad" : "Access"))}</span>
@@ -393,7 +393,7 @@ const EventHubModal = ({ event, isOpen, onClose }) => {
                                     )}
 
                                     {/* Footer */}
-                                    <div className="p-4 border-t border-black/10 dark:border-white/5 bg-[#020202]/40 flex items-center justify-center shrink-0">
+                                    <div className="p-4 border-t border-black/10 dark:border-white/5 bg-gray-50 dark:bg-[#020202]/40 flex items-center justify-center shrink-0">
                                         <span className="text-[8px] font-bold text-zinc-600 tracking-[0.5em] uppercase">NEWBI ENT.</span>
                                     </div>
                                 </motion.div>

@@ -13,11 +13,9 @@ const Layout = () => {
     
     // Identify document editors and viewers to hide global navigation
     const isSpecialPage = 
-        location.pathname === '/creator' ||
         location.pathname.startsWith('/invoice/') || 
         location.pathname.startsWith('/proposal/') ||
         location.pathname.startsWith('/artistant') ||
-        location.pathname.startsWith('/concertzone') ||
         location.pathname.startsWith('/campaign/') ||
         location.pathname.startsWith('/doc/') ||
         location.pathname.includes('/admin/create-') ||
@@ -46,7 +44,7 @@ const Layout = () => {
             <NotificationToast />
             <main className={cn(
                 "flex-grow transition-all duration-300", 
-                isSpecialPage ? "pb-0" : "pb-[calc(5rem+env(safe-area-inset-bottom))] md:pb-12",
+                isSpecialPage ? "pb-0" : "pb-[calc(5.75rem+env(safe-area-inset-bottom))] md:pb-12",
                 isHeightLockedPage && "h-full overflow-hidden flex flex-col"
             )}>
                 <Outlet />

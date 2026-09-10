@@ -505,16 +505,16 @@ const BlogPostDetail = () => {
                         exit={{ opacity: 0 }}
                         className="fixed inset-0 z-[1000] flex items-center justify-center p-6"
                     >
-                        <div className="absolute inset-0 bg-white dark:bg-black/90 backdrop-blur-3xl" onClick={() => setIsShareOpen(false)} />
+                        <div className="absolute inset-0 bg-black/60 dark:bg-black/90 backdrop-blur-md" onClick={() => setIsShareOpen(false)} />
                         <motion.div 
                             initial={{ scale: 0.9, y: 20 }}
                             animate={{ scale: 1, y: 0 }}
                             exit={{ scale: 0.9, y: 20 }}
-                            className="relative w-full max-w-xl bg-gray-100 dark:bg-zinc-900 border border-black/10 dark:border-white/10 rounded-[3rem] p-12 overflow-hidden"
+                            className="relative w-full max-w-xl bg-white dark:bg-zinc-900 border border-black/10 dark:border-white/10 rounded-[3rem] p-12 overflow-hidden shadow-2xl"
                         >
                             <div className="absolute top-0 right-0 w-64 h-64 bg-neon-blue/10 blur-[100px] -mr-32 -mt-32" />
                             
-                            <h2 className="text-4xl font-black font-heading tracking-tighter uppercase italic mb-4">SHARE ARTICLE</h2>
+                            <h2 className="text-4xl font-black font-heading tracking-tighter uppercase italic mb-4 text-gray-900 dark:text-white">SHARE ARTICLE</h2>
                             <p className="text-gray-500 text-sm font-medium mb-12 tracking-widest">TRANSMIT TO YOUR TRIBE</p>
 
                             <div className="grid grid-cols-2 gap-6 mb-12">
@@ -542,7 +542,7 @@ const BlogPostDetail = () => {
                                 ))}
                             </div>
 
-                            <button onClick={() => setIsShareOpen(false)} className="w-full h-16 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-2xl text-[10px] font-black uppercase tracking-[0.4em] hover:bg-black/10 dark:hover:bg-white/10 transition-all text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">
+                            <button onClick={() => setIsShareOpen(false)} className="w-full h-16 bg-black text-white dark:bg-white dark:text-black hover:bg-neon-blue hover:text-black dark:hover:bg-neon-blue dark:hover:text-black border border-black/10 dark:border-white/10 rounded-2xl text-[10px] font-black uppercase tracking-[0.4em] transition-all shadow-md">
                                 CLOSE
                             </button>
                         </motion.div>

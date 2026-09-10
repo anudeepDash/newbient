@@ -224,7 +224,7 @@ const UnifiedGuestlistModal = ({ isOpen, onClose, guestlist }) => {
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         onClick={onClose}
-                        className="absolute inset-0 bg-[#020202]/95 backdrop-blur-[60px]"
+                        className="absolute inset-0 bg-black/60 dark:bg-black/80 backdrop-blur-md"
                     />
 
                     {/* Modal Content: Mobile Drawer / Desktop Compact Card */}
@@ -234,7 +234,7 @@ const UnifiedGuestlistModal = ({ isOpen, onClose, guestlist }) => {
                         exit={window.innerWidth < 768 ? { y: "100%" } : { opacity: 0, scale: 0.9, y: 20 }}
                         transition={{ type: "spring", stiffness: 250, damping: 30 }}
                         className={cn(
-                            "relative w-full overflow-hidden bg-white dark:bg-black/40 border-black/10 dark:border-white/5 shadow-[0_50px_100px_rgba(0,0,0,0.9)] backdrop-blur-3xl flex flex-col sm:flex-row",
+                            "relative w-full overflow-hidden bg-white dark:bg-[#050505] border-black/10 dark:border-white/5 shadow-2xl flex flex-col sm:flex-row",
                             "md:max-w-3xl md:h-[480px] md:rounded-3xl md:border", // desktop: Balanced 4:5 card
                             "h-[92%] rounded-t-3xl border-t" // mobile: High bottom sheet
                         )}
@@ -270,20 +270,20 @@ const UnifiedGuestlistModal = ({ isOpen, onClose, guestlist }) => {
                                     >
                                         <Ticket size={14} /> GUESTLIST_ACCESS
                                     </div>
-                                    <h2 className="text-4xl sm:text-5xl font-black font-heading text-gray-900 dark:text-white italic tracking-tighter uppercase leading-[0.85] pr-4">
+                                    <h2 className="text-4xl sm:text-5xl font-black font-heading text-white drop-shadow-md italic tracking-tighter uppercase leading-[0.85] pr-4">
                                         JOIN <br /><span style={{ color: guestlist.highlightColor || '#2ebfff' }}>GUESTLIST.</span>
                                     </h2>
                                 </div>
-                                <div className="space-y-3 pt-4 border-t border-black/10 dark:border-white/10 sm:border-none sm:pt-0">
-                                    <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest leading-none">Event Details</p>
-                                    <p className="text-lg sm:text-xl font-black text-gray-900 dark:text-white italic uppercase tracking-tighter leading-none">{guestlist.title}</p>
+                                <div className="space-y-3 pt-4 border-t border-white/10 sm:border-none sm:pt-0">
+                                    <p className="text-[9px] font-black text-white/60 uppercase tracking-widest leading-none">Event Details</p>
+                                    <p className="text-lg sm:text-xl font-black text-white drop-shadow-md italic uppercase tracking-tighter leading-none">{guestlist.title}</p>
                                 </div>
                             </div>
                             
                             {/* Close Button (Mobile Top Floating) */}
                             <button 
                                 onClick={onClose} 
-                                className="sm:hidden absolute top-6 right-6 w-10 h-10 rounded-full bg-white dark:bg-black/60 border border-black/10 dark:border-white/10 flex items-center justify-center text-gray-900 dark:text-white/50 z-[60]"
+                                className="sm:hidden absolute top-6 right-6 w-10 h-10 rounded-full bg-black/40 border border-white/20 flex items-center justify-center text-white/80 hover:bg-black/60 hover:text-white z-[60]"
                             >
                                 <X size={20} />
                             </button>
@@ -313,27 +313,27 @@ const UnifiedGuestlistModal = ({ isOpen, onClose, guestlist }) => {
 
                                             {/* Unified Selection Tool */}
                                             <div className="space-y-8">
-                                                <div className="p-1.5 bg-white dark:bg-black/40 rounded-3xl border border-black/10 dark:border-white/5 flex items-center justify-between gap-4">
+                                                <div className="p-1.5 bg-gray-50 dark:bg-black/40 rounded-3xl border border-black/10 dark:border-white/5 flex items-center justify-between gap-4">
                                                     <button 
                                                         disabled={!canDecrement} 
                                                         onClick={() => setGuestsCount(g => g - 1)} 
                                                         className={cn(
                                                             "w-16 h-16 sm:w-20 sm:h-20 rounded-2xl flex items-center justify-center transition-all text-xl",
-                                                            canDecrement ? "bg-black/5 dark:bg-white/5 text-gray-900 dark:text-white hover:bg-black/10 dark:hover:bg-white/10" : "bg-transparent text-zinc-900 cursor-not-allowed"
+                                                            canDecrement ? "bg-black/5 dark:bg-white/5 text-gray-900 dark:text-white hover:bg-black/10 dark:hover:bg-white/10" : "bg-transparent text-gray-300 dark:text-zinc-800 cursor-not-allowed"
                                                         )}
                                                     >
                                                         <Minus size={24} />
                                                     </button>
                                                     <div className="flex-1 text-center">
                                                         <div className="text-6xl sm:text-8xl font-black italic tracking-tighter text-gray-900 dark:text-white tabular-nums">{guestsCount}</div>
-                                                        <span className="text-[8px] font-black text-gray-700 uppercase tracking-widest leading-none block -mt-2">GUESTS</span>
+                                                        <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest leading-none block -mt-2">GUESTS</span>
                                                     </div>
                                                     <button 
                                                         disabled={!canIncrement} 
                                                         onClick={() => setGuestsCount(g => g + 1)} 
                                                         className={cn(
                                                             "w-16 h-16 sm:w-20 sm:h-20 rounded-2xl flex items-center justify-center transition-all text-xl",
-                                                            canIncrement ? "text-black hover:scale-105" : "bg-transparent text-zinc-900 cursor-not-allowed"
+                                                            canIncrement ? "text-black hover:scale-105" : "bg-transparent text-gray-300 dark:text-zinc-800 cursor-not-allowed"
                                                         )}
                                                         style={{ 
                                                             backgroundColor: canIncrement ? (guestlist.highlightColor || '#2ebfff') : 'transparent',
@@ -344,8 +344,8 @@ const UnifiedGuestlistModal = ({ isOpen, onClose, guestlist }) => {
                                                     </button>
                                                 </div>
 
-                                                <div className="px-8 py-4 bg-white/[0.02] border border-black/10 dark:border-white/5 rounded-2xl flex items-center justify-between">
-                                                    <span className="text-[9px] font-black text-gray-600 uppercase tracking-widest">REGISTRY CAPACITY</span>
+                                                <div className="px-8 py-4 bg-gray-50 dark:bg-white/[0.02] border border-black/10 dark:border-white/5 rounded-2xl flex items-center justify-between">
+                                                    <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest">REGISTRY CAPACITY</span>
                                                     <span 
                                                         className="text-[9px] font-black uppercase tracking-widest"
                                                         style={{ color: capacityPercentage > 85 ? '#f97316' : (guestlist.highlightColor || '#39FF14') }}
@@ -358,7 +358,7 @@ const UnifiedGuestlistModal = ({ isOpen, onClose, guestlist }) => {
                                             <Button 
                                                 disabled={isFull} 
                                                 onClick={() => setStep('details')} 
-                                                className="w-full h-20 sm:h-24 rounded-2xl bg-white text-black font-black uppercase italic tracking-[0.3em] text-[10px] sm:text-xs hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-4 group"
+                                                className="w-full h-20 sm:h-24 rounded-2xl bg-black text-white dark:bg-white dark:text-black font-black uppercase italic tracking-[0.3em] text-[10px] sm:text-xs hover:bg-neon-blue hover:text-black dark:hover:bg-neon-blue dark:hover:text-black hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-4 group shadow-lg"
                                             >
                                                 {isFull ? 'FULL' : 'ENTER DETAILS'} <ArrowRight size={18} className="group-hover:translate-x-2 transition-transform" />
                                             </Button>
@@ -379,17 +379,17 @@ const UnifiedGuestlistModal = ({ isOpen, onClose, guestlist }) => {
                                             <form onSubmit={handleSubmit} className="space-y-6 sm:space-y-8">
                                                 <div className="grid grid-cols-1 gap-5">
                                                     <div className="space-y-2">
-                                                        <label className="text-[8px] font-black text-gray-600 uppercase tracking-widest pl-3">Full Legal Identity</label>
-                                                        <input required name="name" value={formData.name} onChange={handleInputChange} placeholder="ALEX_WAYNE" className="w-full h-16 sm:h-20 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/5 rounded-2xl px-8 text-xs font-black uppercase tracking-widest focus:border-neon-blue/40 focus:bg-black/10 dark:focus:bg-white/10 outline-none transition-all placeholder:text-gray-800 italic" />
+                                                        <label className="text-[8px] font-black text-gray-500 uppercase tracking-widest pl-3">Full Legal Identity</label>
+                                                        <input required name="name" value={formData.name} onChange={handleInputChange} placeholder="ALEX_WAYNE" className="w-full h-16 sm:h-20 bg-gray-50 dark:bg-white/5 border border-black/10 dark:border-white/5 rounded-2xl px-8 text-xs font-black uppercase tracking-widest text-gray-900 dark:text-white focus:border-neon-blue/40 focus:bg-white dark:focus:bg-white/10 outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-gray-600 italic" />
                                                     </div>
                                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                                                         <div className="space-y-2">
-                                                            <label className="text-[8px] font-black text-gray-600 uppercase tracking-widest pl-3">Digital Mail</label>
-                                                            <input required type="email" name="email" value={formData.email} onChange={handleInputChange} placeholder="ADDR@DOMAIN.COM" className="w-full h-14 sm:h-16 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/5 rounded-2xl px-6 text-[10px] font-black uppercase tracking-widest focus:border-neon-blue/40 outline-none transition-all placeholder:text-gray-800" />
+                                                            <label className="text-[8px] font-black text-gray-500 uppercase tracking-widest pl-3">Digital Mail</label>
+                                                            <input required type="email" name="email" value={formData.email} onChange={handleInputChange} placeholder="ADDR@DOMAIN.COM" className="w-full h-14 sm:h-16 bg-gray-50 dark:bg-white/5 border border-black/10 dark:border-white/5 rounded-2xl px-6 text-[10px] font-black uppercase tracking-widest text-gray-900 dark:text-white focus:border-neon-blue/40 outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-gray-600" />
                                                         </div>
                                                         <div className="space-y-2">
-                                                            <label className="text-[8px] font-black text-gray-600 uppercase tracking-widest pl-3">Contact Signal</label>
-                                                            <input required name="phone" value={formData.phone} onChange={handleInputChange} placeholder="+91 XXX XXX XXXX" className="w-full h-14 sm:h-16 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/5 rounded-2xl px-6 text-[10px] font-black uppercase tracking-widest focus:border-neon-blue/40 outline-none transition-all placeholder:text-gray-800" />
+                                                            <label className="text-[8px] font-black text-gray-500 uppercase tracking-widest pl-3">Contact Signal</label>
+                                                            <input required name="phone" value={formData.phone} onChange={handleInputChange} placeholder="+91 XXX XXX XXXX" className="w-full h-14 sm:h-16 bg-gray-50 dark:bg-white/5 border border-black/10 dark:border-white/5 rounded-2xl px-6 text-[10px] font-black uppercase tracking-widest text-gray-900 dark:text-white focus:border-neon-blue/40 outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-gray-600" />
                                                         </div>
                                                     </div>
                                                 </div>
@@ -406,7 +406,7 @@ const UnifiedGuestlistModal = ({ isOpen, onClose, guestlist }) => {
                                             <LoadingSpinner size="lg" color="#2ebfff" />
                                             <div className="space-y-2">
                                                 <h3 className="text-3xl font-black font-heading text-gray-900 dark:text-white italic tracking-tighter uppercase">PROCESSING...</h3>
-                                                <p className="text-[9px] font-black text-gray-700 uppercase tracking-[0.4em]">Securing your entry</p>
+                                                <p className="text-[9px] font-black text-gray-500 uppercase tracking-[0.4em]">Securing your entry</p>
                                             </div>
                                         </motion.div>
                                     )}
@@ -423,7 +423,7 @@ const UnifiedGuestlistModal = ({ isOpen, onClose, guestlist }) => {
                                                     <h3 className="text-2xl font-black font-heading text-gray-900 dark:text-white italic tracking-tighter uppercase leading-none">
                                                         REGISTRATION <span className={isRSVPOnly ? "text-neon-pink" : "text-neon-green"}>CONFIRMED.</span>
                                                     </h3>
-                                                    <p className="text-[9px] text-gray-600 font-bold uppercase tracking-widest px-4">
+                                                    <p className="text-[9px] text-gray-500 font-bold uppercase tracking-widest px-4">
                                                         {isRSVPOnly ? "Your RSVP is confirmed. No QR pass is required." : "Your entry is secured. Save your ticket below."}
                                                     </p>
                                                 </div>
@@ -437,7 +437,7 @@ const UnifiedGuestlistModal = ({ isOpen, onClose, guestlist }) => {
                                                         </div>
                                                         <Button 
                                                             onClick={onClose} 
-                                                            className="w-full h-12 bg-white text-black font-black uppercase tracking-[0.2em] text-[9px] rounded-xl hover:scale-[1.02] active:scale-95 transition-all"
+                                                            className="w-full h-12 bg-black text-white dark:bg-white dark:text-black font-black uppercase tracking-[0.2em] text-[9px] rounded-xl hover:scale-[1.02] active:scale-95 transition-all shadow-md"
                                                         >
                                                             CLOSE
                                                         </Button>
