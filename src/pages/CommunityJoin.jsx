@@ -351,11 +351,31 @@ const CommunityJoin = () => {
                             <div className="relative group">
                                 <div className="absolute -inset-2 bg-gradient-to-r from-neon-pink via-neon-blue to-neon-green rounded-[2.5rem] md:rounded-[3.5rem] blur-2xl opacity-5 group-hover:opacity-20 transition duration-1000" />
                                 <div className="relative bg-white dark:bg-zinc-950 rounded-[2rem] md:rounded-[2.5rem] overflow-hidden border border-black/10 dark:border-white/5 shadow-2xl">
-                                    {/* Loading State */}
+                                    {/* Loading State with Animated Form Icon */}
                                     {!registrationLoaded && (
-                                        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-white dark:bg-zinc-950 gap-4">
-                                            <Loader2 size={28} className="animate-spin text-gray-400" />
-                                            <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Loading Registration Form</p>
+                                        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-white dark:bg-zinc-950 p-8">
+                                            <div className="relative w-20 h-20 mb-4 flex items-center justify-center">
+                                                <motion.div
+                                                    animate={{ scale: [1, 1.3, 1], opacity: [0.3, 0.6, 0.3] }}
+                                                    transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
+                                                    className="absolute inset-0 rounded-2xl bg-gradient-to-tr from-neon-pink/25 to-neon-green/25 blur-lg pointer-events-none"
+                                                />
+                                                <motion.div
+                                                    animate={{ y: [-3, 3, -3] }}
+                                                    transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                                                    className="relative z-10 w-16 h-16 rounded-2xl bg-gray-50 dark:bg-zinc-900 border border-black/10 dark:border-white/10 flex flex-col items-center justify-center overflow-hidden shadow-xl"
+                                                >
+                                                    <FileText size={24} className="text-neon-pink mb-1" />
+                                                    <div className="w-8 space-y-1">
+                                                        <motion.div animate={{ width: ["40%", "100%", "40%"] }} transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }} className="h-0.5 rounded-full bg-neon-green" />
+                                                        <motion.div animate={{ width: ["100%", "60%", "100%"] }} transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut", delay: 0.2 }} className="h-0.5 rounded-full bg-neon-blue" />
+                                                    </div>
+                                                </motion.div>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <span className="w-1.5 h-1.5 rounded-full bg-neon-green animate-pulse" />
+                                                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-900 dark:text-white">Loading Tribe Form</p>
+                                            </div>
                                         </div>
                                     )}
                                     <div className="form-iframe-wrapper">
