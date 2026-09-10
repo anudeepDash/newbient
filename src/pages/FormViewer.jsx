@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { doc, getDoc, collection, getDocs, setDoc } from 'firebase/firestore';
 import { motion } from 'framer-motion';
@@ -54,8 +54,23 @@ const FormViewer = ({ formIdOverride }) => {
         guestlists = [], 
         campaigns = [], 
         user,
+        authInitialized,
         setAuthModal
     } = useStore();
+
+    // Automatically pop up sign-in on visit if user is not signed in
+    const hasPromptedAuthRef = useRef(false);
+    useEffect(() => {
+        if (!hasPromptedAuthRef.current && authInitialized !== false) {
+            if (!user) {
+                hasPromptedAuthRef.current = true;
+                const timer = setTimeout(() => {
+                    setAuthModal(true);
+                }, 400);
+                return () => clearTimeout(timer);
+            }
+        }
+    }, [authInitialized, user, setAuthModal]);
 
     // Extract form identifier from params, search queries, or path
     const searchParams = new URLSearchParams(window.location.search);
