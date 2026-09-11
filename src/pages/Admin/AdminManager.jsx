@@ -289,11 +289,14 @@ const AdminManager = () => {
         }
     }, []);
 
+    // Gate fetches on user being authenticated — getDocs returns 403 if auth token isn't ready yet.
+    // onSnapshot (used by subscribeToKey) auto-retries; getDocs does not, so we must wait for user.
     useEffect(() => {
+        if (!user?.uid) return;
         fetchAdmins();
         fetchMembersCount();
         loadMembersPage(1, [null]);
-    }, []);
+    }, [user?.uid]);
 
     // Fallback: when allUsers store listener loads (up to 444 docs), use it if paginated fetch returned nothing
     useEffect(() => {
