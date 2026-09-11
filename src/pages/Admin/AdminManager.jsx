@@ -192,8 +192,8 @@ const MemberCard = ({ member, creators, artists, onBlock, onUnblock, onRevokeSes
 // ─── Main Component ────────────────────────────────────────────────────────────
 
 const AdminManager = () => {
-    useStoreSubscription(['creators', 'artists', 'admins', 'subscribers']);
-    const { user, blockUser, unblockUser, creators = [], artists = [], subscribers = [], admins: storeAdmins = [] } = useStore();
+    useStoreSubscription(['creators', 'artists', 'admins', 'subscribers', 'allUsers']);
+    const { user, blockUser, unblockUser, creators = [], artists = [], subscribers = [], admins: storeAdmins = [], allUsers = [] } = useStore();
 
     const [activeTab, setActiveTab] = useState('members');
 
@@ -242,7 +242,13 @@ const AdminManager = () => {
 
     const fetchMembersCount = useCallback(async () => {
         const count = await useStore.getState().fetchMembersCount();
-        if (count !== null) setMembersTotal(count);
+        if (count !== null) {
+            setMembersTotal(count);
+        } else {
+            // Fallback: use allUsers length from the store listener
+            const storeUsers = useStore.getState().allUsers || [];
+            if (storeUsers.length > 0) setMembersTotal(storeUsers.length);
+        }
     }, []);
 
     const loadMembersPage = useCallback(async (page, cursorsArr) => {
@@ -250,15 +256,34 @@ const AdminManager = () => {
         try {
             const lastDoc = cursorsArr[page - 1] || null;
             const result = await useStore.getState().fetchMembersPage(PAGE_SIZE, lastDoc);
-            setMembersData(result.data);
-            setHasMore(result.hasMore);
-            if (result.lastVisible && page >= cursorsArr.length) {
-                setCursors(prev => {
-                    const next = [...prev];
-                    next[page] = result.lastVisible;
-                    return next;
-                });
+            if (result.data.length > 0) {
+                setMembersData(result.data);
+                setHasMore(result.hasMore);
+                if (result.lastVisible && page >= cursorsArr.length) {
+                    setCursors(prev => {
+                        const next = [...prev];
+                        next[page] = result.lastVisible;
+                        return next;
+                    });
+                }
+            } else {
+                // fetchMembersPage returned empty — fall back to allUsers store data (capped at 444 but better than nothing)
+                console.warn('[AdminManager] fetchMembersPage returned 0 docs, falling back to allUsers store');
+                const storeUsers = useStore.getState().allUsers || [];
+                if (storeUsers.length > 0) {
+                    const sorted = [...storeUsers].sort((a, b) => {
+                        const ta = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+                        const tb = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+                        return tb - ta;
+                    });
+                    setMembersData(sorted.slice(0, PAGE_SIZE));
+                    setHasMore(sorted.length > PAGE_SIZE);
+                    useStore.getState().addToast('Showing cached members — paginated fetch failed, check console.', 'warning');
+                }
             }
+        } catch (err) {
+            console.error('[AdminManager] loadMembersPage threw:', err);
+            useStore.getState().addToast('Failed to load members: ' + (err?.message || 'Unknown error'), 'error');
         } finally {
             setMembersLoading(false);
         }
@@ -269,6 +294,21 @@ const AdminManager = () => {
         fetchMembersCount();
         loadMembersPage(1, [null]);
     }, []);
+
+    // Fallback: when allUsers store listener loads (up to 444 docs), use it if paginated fetch returned nothing
+    useEffect(() => {
+        if (allUsers.length > 0 && membersData.length === 0 && !membersLoading) {
+            console.log('[AdminManager] Using allUsers store fallback:', allUsers.length, 'docs');
+            const sorted = [...allUsers].sort((a, b) => {
+                const ta = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+                const tb = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+                return tb - ta;
+            });
+            setMembersData(sorted.slice(0, PAGE_SIZE));
+            setHasMore(sorted.length > PAGE_SIZE);
+            if (membersTotal === null) setMembersTotal(allUsers.length);
+        }
+    }, [allUsers, membersLoading]);
 
     const handlePageChange = (newPage) => {
         setMembersPage(newPage);

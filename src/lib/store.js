@@ -2992,37 +2992,45 @@ export const useStore = create((set, get) => ({
     fetchMembersCount: async () => {
         try {
             const snapshot = await getCountFromServer(collection(db, 'users'));
-            return snapshot.data().count;
+            const count = snapshot.data().count;
+            console.log('[Store] fetchMembersCount:', count);
+            return count;
         } catch (error) {
-            console.error('[Store] fetchMembersCount error:', error);
-            return null;
+            console.error('[Store] fetchMembersCount error (getCountFromServer):', error);
+            // Fallback: count via getDocs (less efficient but always works)
+            try {
+                const snapshot = await getDocs(collection(db, 'users'));
+                const count = snapshot.size;
+                console.log('[Store] fetchMembersCount fallback count:', count);
+                return count;
+            } catch (fallbackError) {
+                console.error('[Store] fetchMembersCount fallback also failed:', fallbackError);
+                return null;
+            }
         }
     },
 
-    // Members — cursor-paginated fetch (bypasses Firestore listener 300-doc cap)
-    // NOTE: uses orderBy(__name__) so ALL docs are returned regardless of whether
-    // fields like createdAt exist. Docs missing createdAt are silently excluded
-    // when using orderBy('createdAt'), causing empty results.
+    // Members — paginated fetch using simple offset-style approach
+    // Uses the same plain query pattern as subscribeToKey (no orderBy) for maximum compatibility
     fetchMembersPage: async (pageSize = 24, lastDoc = null) => {
         try {
             let q;
             if (lastDoc) {
                 q = query(
                     collection(db, 'users'),
-                    orderBy('__name__'),
                     startAfter(lastDoc),
                     limit(pageSize)
                 );
             } else {
                 q = query(
                     collection(db, 'users'),
-                    orderBy('__name__'),
                     limit(pageSize)
                 );
             }
+            console.log('[Store] fetchMembersPage executing, lastDoc:', lastDoc ? lastDoc.id : 'none');
             const snapshot = await getDocs(q);
             const docs = snapshot.docs;
-            // Sort client-side by createdAt desc (handles missing field gracefully)
+            console.log('[Store] fetchMembersPage got', docs.length, 'docs');
             const data = docs
                 .map(d => ({ ...d.data(), id: d.id }))
                 .sort((a, b) => {
@@ -3038,6 +3046,7 @@ export const useStore = create((set, get) => ({
             return { data: [], lastVisible: null, hasMore: false };
         }
     },
+
 
     // Maintenance Actions
 
