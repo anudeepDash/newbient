@@ -2988,59 +2988,48 @@ export const useStore = create((set, get) => ({
         return data;
     },
 
-    // Members — server-side count (accurate, bypasses listener limits)
+    // ── Helper: get auth token for API calls ──────────────────────────────────
+    _getAuthToken: async () => {
+        const { getAuth } = await import('firebase/auth');
+        const currentUser = getAuth().currentUser;
+        if (!currentUser) throw new Error('Not authenticated');
+        return currentUser.getIdToken(true);
+    },
+
+    // Members — count via server-side API (bypasses Firestore rules + browser blockers)
     fetchMembersCount: async () => {
         try {
-            const snapshot = await getCountFromServer(collection(db, 'users'));
-            const count = snapshot.data().count;
-            console.log('[Store] fetchMembersCount:', count);
-            return count;
+            const token = await get()._getAuthToken();
+            const response = await fetch('/api/get-members', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ countOnly: true }),
+            });
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.error || 'Count failed');
+            console.log('[Store] fetchMembersCount (API):', data.count);
+            return data.count;
         } catch (error) {
-            console.error('[Store] fetchMembersCount error (getCountFromServer):', error);
-            // Fallback: count via getDocs (less efficient but always works)
-            try {
-                const snapshot = await getDocs(collection(db, 'users'));
-                const count = snapshot.size;
-                console.log('[Store] fetchMembersCount fallback count:', count);
-                return count;
-            } catch (fallbackError) {
-                console.error('[Store] fetchMembersCount fallback also failed:', fallbackError);
-                return null;
-            }
+            console.error('[Store] fetchMembersCount error:', error);
+            return null;
         }
     },
 
-    // Members — paginated fetch using simple offset-style approach
-    // Uses the same plain query pattern as subscribeToKey (no orderBy) for maximum compatibility
+    // Members — paginated fetch via server-side API (bypasses Firestore rules + browser blockers)
+    // lastDoc is now a document ID string (not a DocumentSnapshot) for easy serialization
     fetchMembersPage: async (pageSize = 24, lastDoc = null) => {
         try {
-            let q;
-            if (lastDoc) {
-                q = query(
-                    collection(db, 'users'),
-                    startAfter(lastDoc),
-                    limit(pageSize)
-                );
-            } else {
-                q = query(
-                    collection(db, 'users'),
-                    limit(pageSize)
-                );
-            }
-            console.log('[Store] fetchMembersPage executing, lastDoc:', lastDoc ? lastDoc.id : 'none');
-            const snapshot = await getDocs(q);
-            const docs = snapshot.docs;
-            console.log('[Store] fetchMembersPage got', docs.length, 'docs');
-            const data = docs
-                .map(d => ({ ...d.data(), id: d.id }))
-                .sort((a, b) => {
-                    const ta = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-                    const tb = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-                    return tb - ta;
-                });
-            const lastVisible = docs[docs.length - 1] || null;
-            const hasMore = docs.length === pageSize;
-            return { data, lastVisible, hasMore };
+            const token = await get()._getAuthToken();
+            const startAfterDocId = lastDoc ? (typeof lastDoc === 'string' ? lastDoc : lastDoc.id) : null;
+            const response = await fetch('/api/get-members', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ pageSize, startAfterDocId }),
+            });
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.error || 'Fetch failed');
+            console.log('[Store] fetchMembersPage (API): got', data.data?.length, 'docs, hasMore:', data.hasMore);
+            return { data: data.data || [], lastVisible: data.lastDocId || null, hasMore: data.hasMore || false };
         } catch (error) {
             console.error('[Store] fetchMembersPage error:', error);
             return { data: [], lastVisible: null, hasMore: false };
