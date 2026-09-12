@@ -1031,17 +1031,17 @@
   border-radius: 0.75rem;
 }
 
-.admin-hub-content-container input[type="text"]:not([class*="p-"]),
-.admin-hub-content-container input[type="email"]:not([class*="p-"]),
-.admin-hub-content-container input[type="url"]:not([class*="p-"]),
-.admin-hub-content-container input[type="password"]:not([class*="p-"]),
-.admin-hub-content-container input[type="search"]:not([class*="p-"]),
-.admin-hub-content-container input[type="tel"]:not([class*="p-"]),
-.admin-hub-content-container input[type="number"]:not([class*="p-"]),
-.admin-hub-content-container input[type="date"]:not([class*="p-"]),
-.admin-hub-content-container input[type="time"]:not([class*="p-"]),
-.admin-hub-content-container select:not([class*="p-"]),
-.admin-hub-content-container textarea:not([class*="p-"]) {
+.admin-hub-content-container input[type="text"]:not([class*="p-"]):not([class*="pl-"]):not([class*="pr-"]):not([class*="px-"]):not([class*="py-"]):not([class*="pt-"]):not([class*="pb-"]),
+.admin-hub-content-container input[type="email"]:not([class*="p-"]):not([class*="pl-"]):not([class*="pr-"]):not([class*="px-"]):not([class*="py-"]):not([class*="pt-"]):not([class*="pb-"]),
+.admin-hub-content-container input[type="url"]:not([class*="p-"]):not([class*="pl-"]):not([class*="pr-"]):not([class*="px-"]):not([class*="py-"]):not([class*="pt-"]):not([class*="pb-"]),
+.admin-hub-content-container input[type="password"]:not([class*="p-"]):not([class*="pl-"]):not([class*="pr-"]):not([class*="px-"]):not([class*="py-"]):not([class*="pt-"]):not([class*="pb-"]),
+.admin-hub-content-container input[type="search"]:not([class*="p-"]):not([class*="pl-"]):not([class*="pr-"]):not([class*="px-"]):not([class*="py-"]):not([class*="pt-"]):not([class*="pb-"]),
+.admin-hub-content-container input[type="tel"]:not([class*="p-"]):not([class*="pl-"]):not([class*="pr-"]):not([class*="px-"]):not([class*="py-"]):not([class*="pt-"]):not([class*="pb-"]),
+.admin-hub-content-container input[type="number"]:not([class*="p-"]):not([class*="pl-"]):not([class*="pr-"]):not([class*="px-"]):not([class*="py-"]):not([class*="pt-"]):not([class*="pb-"]),
+.admin-hub-content-container input[type="date"]:not([class*="p-"]):not([class*="pl-"]):not([class*="pr-"]):not([class*="px-"]):not([class*="py-"]):not([class*="pt-"]):not([class*="pb-"]),
+.admin-hub-content-container input[type="time"]:not([class*="p-"]):not([class*="pl-"]):not([class*="pr-"]):not([class*="px-"]):not([class*="py-"]):not([class*="pt-"]):not([class*="pb-"]),
+.admin-hub-content-container select:not([class*="p-"]):not([class*="pl-"]):not([class*="pr-"]):not([class*="px-"]):not([class*="py-"]):not([class*="pt-"]):not([class*="pb-"]),
+.admin-hub-content-container textarea:not([class*="p-"]):not([class*="pl-"]):not([class*="pr-"]):not([class*="px-"]):not([class*="py-"]):not([class*="pt-"]):not([class*="pb-"]) {
   padding: 0.75rem 1rem;
 }
 

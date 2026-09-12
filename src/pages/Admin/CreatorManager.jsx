@@ -243,11 +243,15 @@ const CreatorManager = ({ showLeaderboardOnly = false, isEmbedded = false }) => 
     }, [params.id, creators]);
 
     const filteredCreators = useMemo(() => {
+        const term = (searchTerm || '').trim().toLowerCase();
         return creators.filter(c => {
-            const specs = c.specializations || c.niches || [];
-            const matchesSearch = c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                (c.instagram && c.instagram.toLowerCase().includes(searchTerm.toLowerCase())) ||
-                specs.some(n => n.toLowerCase().includes(searchTerm.toLowerCase()));
+            const specs = Array.isArray(c.specializations) ? c.specializations : (Array.isArray(c.niches) ? c.niches : []);
+            const matchesSearch = !term ||
+                (c.name && c.name.toLowerCase().includes(term)) ||
+                (c.instagram && c.instagram.toLowerCase().includes(term)) ||
+                (c.email && c.email.toLowerCase().includes(term)) ||
+                (c.phone && c.phone.includes(term)) ||
+                specs.some(n => typeof n === 'string' && n.toLowerCase().includes(term));
             const matchesCity = filterCity === 'All' || c.city === filterCity;
             const matchesStatus = filterStatus === 'All' || 
                 (filterStatus === 'pending' && (!c.profileStatus || c.profileStatus === 'pending')) ||
@@ -414,18 +418,19 @@ const CreatorManager = ({ showLeaderboardOnly = false, isEmbedded = false }) => 
                     <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3">
                         {/* Search Input */}
                         <div className="relative flex-1 min-w-0">
-                            <Search className="absolute left-3.5 sm:left-4 top-1/2 -translate-y-1/2 text-gray-900 dark:text-white/20" size={14} />
+                            <Search className="absolute left-3.5 sm:left-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-white/40 pointer-events-none" size={15} />
                             <input
                                 type="text"
                                 placeholder="Search creators..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
-                                className="w-full h-10 pl-9 sm:pl-10 pr-9 bg-white dark:bg-black/30 border border-white/[0.06] focus:border-black/20 dark:focus:border-white/20 rounded-xl text-xs font-medium outline-none transition-all placeholder:text-gray-900 dark:placeholder:text-white/15 text-gray-900 dark:text-white min-w-0"
+                                className="w-full h-10 !pl-10 sm:!pl-11 !pr-9 bg-white dark:bg-black/30 border border-black/10 dark:border-white/[0.06] focus:border-black/30 dark:focus:border-white/20 rounded-xl text-xs font-medium outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-white/30 text-gray-900 dark:text-white min-w-0"
                             />
                             {searchTerm && (
                                 <button
                                     onClick={() => setSearchTerm('')}
-                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-900 dark:text-white/20 hover:text-gray-900 dark:hover:text-white transition-colors"
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-white/30 hover:text-gray-900 dark:hover:text-white transition-colors p-0.5"
+                                    aria-label="Clear search"
                                 >
                                     <X size={13} />
                                 </button>
@@ -2258,13 +2263,13 @@ const ReferralLeaderboard = ({ creators, onSelectCreator }) => {
 
             {/* Filter Search */}
             <div className="relative group">
-                <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-600 dark:text-gray-400 group-focus-within:text-pink-600 dark:group-focus-within:text-neon-pink transition-colors" size={16} />
+                <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 group-focus-within:text-pink-600 dark:group-focus-within:text-neon-pink transition-colors pointer-events-none" size={16} />
                 <input
                     type="text"
                     placeholder="SEARCH REFERRERS..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full h-14 pl-14 pr-6 bg-white dark:bg-black/60 border border-black/10 dark:border-white/10 group-hover:border-black/20 dark:group-hover:border-white/20 focus:border-neon-pink/60 rounded-full text-[10px] font-black uppercase tracking-[0.2em] outline-none transition-all placeholder:text-gray-700 text-gray-900 dark:text-white"
+                    className="w-full h-14 !pl-14 !pr-6 bg-white dark:bg-black/60 border border-black/10 dark:border-white/10 group-hover:border-black/20 dark:group-hover:border-white/20 focus:border-neon-pink/60 rounded-full text-[10px] font-black uppercase tracking-[0.2em] outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-white/30 text-gray-900 dark:text-white"
                 />
             </div>
 

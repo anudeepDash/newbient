@@ -66,7 +66,6 @@ const COUNTRY_OPTIONS = [
     { value: '+61', label: '🇦🇺 +61' }
 ];
 
-const RECAPTCHA_CONTAINER_ID = 'creator-phone-recaptcha';
 
 const slideVariants = {
     enter: (direction) => ({
@@ -130,6 +129,7 @@ const CreatorJoin = () => {
 
     // Phone OTP Verification States
     const [isPhoneVerified, setIsPhoneVerified] = useState(false);
+    const [smsFailed, setSmsFailed] = useState(false);
     const [otpSent, setOtpSent] = useState(false);
     const [isSendingOtp, setIsSendingOtp] = useState(false);
     const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
@@ -141,6 +141,7 @@ const CreatorJoin = () => {
 
     const otpInputRefs = useRef([]);
     const recaptchaVerifierRef = useRef(null);
+    const recaptchaContainerId = useRef(`recaptcha-creator-${Math.random().toString(36).slice(2, 9)}`).current;
     const countryCodeRef = useRef(null);
 
     // Auto-fill from logged in user if available
@@ -183,6 +184,10 @@ const CreatorJoin = () => {
                 recaptchaVerifierRef.current.clear();
             } catch (e) {}
             recaptchaVerifierRef.current = null;
+        }
+        const container = document.getElementById(recaptchaContainerId);
+        if (container) {
+            container.remove();
         }
     };
 
@@ -316,6 +321,8 @@ const CreatorJoin = () => {
                 setVerifiedPhoneNumber('');
                 setOtpSent(false);
             }
+            setSmsFailed(false);
+            setPhoneError('');
         }
         setFormData(prev => ({ ...prev, [name]: value }));
     };
@@ -358,7 +365,13 @@ const CreatorJoin = () => {
         try {
             cleanupRecaptcha();
 
-            recaptchaVerifierRef.current = new RecaptchaVerifier(auth, RECAPTCHA_CONTAINER_ID, {
+            // Create a clean, dynamic container element for RecaptchaVerifier
+            const container = document.createElement('div');
+            container.id = recaptchaContainerId;
+            container.className = "fixed bottom-4 right-4 z-[9999]";
+            document.body.appendChild(container);
+
+            recaptchaVerifierRef.current = new RecaptchaVerifier(auth, container, {
                 size: 'invisible',
                 callback: () => {},
                 'expired-callback': () => {
@@ -375,6 +388,7 @@ const CreatorJoin = () => {
             setOtpSent(true);
             setOtpCooldown(30);
             setOtpDigits(['', '', '', '', '', '']);
+            setSmsFailed(false);
             useStore.getState().addToast(`6-digit code sent to ${countryCode} ${cleanDigits}`, 'success');
             setTimeout(() => {
                 otpInputRefs.current[0]?.focus();
@@ -382,10 +396,27 @@ const CreatorJoin = () => {
         } catch (err) {
             console.error("Phone verification error:", err);
             cleanupRecaptcha();
-            let msg = "Could not send SMS code. Please verify your phone number format.";
-            if (err.code === 'auth/invalid-phone-number') msg = "Invalid phone number format.";
-            if (err.code === 'auth/too-many-requests') msg = "Too many attempts. Please wait a moment or try again later.";
-            if (err.code === 'auth/quota-exceeded') msg = "SMS service temporarily busy. Please try again in a moment.";
+            setSmsFailed(true);
+
+            let msg = "Could not send SMS code right now. You can continue and verify via email.";
+            const code = err?.code || err?.message || '';
+
+            if (code.includes('auth/invalid-phone-number')) {
+                msg = "Invalid phone number format. Please check your entered digits.";
+            } else if (code.includes('auth/captcha-check-failed') || code.includes('captcha') || code.includes('already rendered')) {
+                msg = "Security check could not be completed. You can tap 'Send Code' again or simply continue with email verification.";
+            } else if (code.includes('auth/too-many-requests')) {
+                msg = "Too many SMS requests sent. Please wait a few moments or continue with email verification.";
+            } else if (code.includes('auth/quota-exceeded')) {
+                msg = "SMS daily limit reached. You can continue and verify via email link upon submitting.";
+            } else if (code.includes('auth/network-request-failed')) {
+                msg = "Network connection error. Please check your internet connection.";
+            } else if (code.includes('auth/unauthorized-domain')) {
+                msg = "SMS domain issue. You can proceed and verify via email link.";
+            } else if (err.message && !err.message.includes('auth/')) {
+                msg = err.message;
+            }
+
             setPhoneError(msg);
             useStore.getState().addToast(msg, 'error');
         } finally {
@@ -480,8 +511,9 @@ const CreatorJoin = () => {
                 useStore.getState().addToast("Please enter a valid email address.", 'warning');
                 return;
             }
-            if (!isPhoneVerified) {
-                useStore.getState().addToast("Please verify your phone number with the 6-digit code.", 'warning');
+            const cleanDigits = formData.phone.replace(/\D/g, '').slice(-10);
+            if (!cleanDigits || cleanDigits.length < 10) {
+                useStore.getState().addToast("Please enter a valid 10-digit mobile number.", 'warning');
                 return;
             }
         }
@@ -513,7 +545,7 @@ const CreatorJoin = () => {
     const handleSubmit = async (e) => {
         if (e) e.preventDefault();
         
-        if (!formData.name.trim() || !formData.email.trim() || !isPhoneVerified || !formData.city || !formData.categories) {
+        if (!formData.name.trim() || !formData.email.trim() || !formData.phone.trim() || !formData.city || !formData.categories) {
             useStore.getState().addToast("Please complete all required fields.", 'error');
             return;
         }
@@ -540,8 +572,8 @@ const CreatorJoin = () => {
                 categories: finalNiche,
                 specializations: [finalNiche],
                 isVerified: false,
-                isPhoneVerified: true,
-                phoneVerifiedAt: new Date().toISOString()
+                isPhoneVerified: isPhoneVerified,
+                phoneVerifiedAt: isPhoneVerified ? new Date().toISOString() : null
             });
 
             setHasJoined(true);
@@ -569,7 +601,7 @@ const CreatorJoin = () => {
 
                     <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-neon-green/10 border border-neon-green/20 text-neon-green text-[10px] font-bold uppercase tracking-wider mb-3">
                         <ShieldCheck size={12} />
-                        <span>Profile & Contact Verified</span>
+                        <span>{isPhoneVerified ? "Profile & Contact Verified" : "Application Submitted"}</span>
                     </div>
 
                     <h2 className="text-2xl sm:text-3xl font-black font-heading tracking-tight text-gray-900 dark:text-white mb-2">
@@ -577,7 +609,11 @@ const CreatorJoin = () => {
                     </h2>
 
                     <p className="text-gray-600 dark:text-white/60 text-xs sm:text-sm leading-relaxed mb-6">
-                        Your creator profile is active for campaigns in <strong className="text-gray-900 dark:text-white">{formData.city}</strong>. Direct briefs will be sent to <span className="text-neon-green font-mono">{countryCode} {formData.phone.slice(-10)}</span>.
+                        {isPhoneVerified ? (
+                            <>Your creator profile is active for campaigns in <strong className="text-gray-900 dark:text-white">{formData.city}</strong>. Direct briefs will be sent to <span className="text-neon-green font-mono">{countryCode} {formData.phone.slice(-10)}</span>.</>
+                        ) : (
+                            <>Your application has been received! We sent a confirmation &amp; verification link to your email (<strong className="text-gray-900 dark:text-white">{formData.email}</strong>). Tap it to activate priority campaign matching. Direct briefs will be sent to <span className="text-neon-green font-mono">{countryCode} {formData.phone.slice(-10)}</span>.</>
+                        )}
                     </p>
 
                     <div className="p-4 bg-gray-50 dark:bg-black/40 border border-gray-200 dark:border-white/[0.05] rounded-2xl text-left text-xs text-gray-600 dark:text-white/50 space-y-2 mb-6">
@@ -611,8 +647,7 @@ const CreatorJoin = () => {
 
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-[#050505] text-gray-900 dark:text-white pt-24 pb-28 px-4 relative selection:bg-neon-pink selection:text-black transition-colors duration-300">
-            {/* Hidden Recaptcha Anchor */}
-            <div id={RECAPTCHA_CONTAINER_ID} className="invisible pointer-events-none fixed bottom-0 right-0 z-0"></div>
+
 
             {/* Ambient Background Glows */}
             <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
@@ -1030,7 +1065,23 @@ const CreatorJoin = () => {
                                             </AnimatePresence>
 
                                             {phoneError && (
-                                                <p className="text-xs text-red-400 font-medium">{phoneError}</p>
+                                                <div className="space-y-2.5 pt-1">
+                                                    <p className="text-xs text-red-400 font-medium">{phoneError}</p>
+                                                    <div className="p-3.5 bg-black/5 dark:bg-white/[0.04] border border-black/10 dark:border-white/10 rounded-2xl flex items-center justify-between gap-3">
+                                                        <div className="text-[11px] text-gray-600 dark:text-white/60 min-w-0">
+                                                            <span className="font-bold text-gray-900 dark:text-white block">SMS code not arriving?</span>
+                                                            <span className="text-[10px] text-gray-500 dark:text-white/40 block">No problem—you can tap Continue and verify your profile via the email confirmation link.</span>
+                                                        </div>
+                                                        <button
+                                                            type="button"
+                                                            onClick={nextStep}
+                                                            className="px-3.5 py-2 bg-white text-black hover:bg-neon-pink font-bold text-[10px] rounded-xl uppercase tracking-wider shrink-0 transition-all shadow-sm active:scale-95 flex items-center gap-1.5"
+                                                        >
+                                                            <span>Continue</span>
+                                                            <ArrowRight size={12} />
+                                                        </button>
+                                                    </div>
+                                                </div>
                                             )}
                                         </div>
                                     )}
