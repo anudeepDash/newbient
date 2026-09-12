@@ -85,8 +85,8 @@ const slideVariants = {
 const CreatorJoin = () => {
     useStoreSubscription(['creators']);
     useDynamicMeta({
-        title: "Join Newbi Creator Network",
-        description: "Apply to the Newbi Creator Network. Get connected with verified brand campaigns, campus gigs, and events across India.",
+        title: "Apply to Newbi Creator Network • 45-Second Onboarding",
+        description: "Connect with top brands and live events in your city. Fast creator onboarding with zero agency fees.",
         url: window.location.href
     });
 

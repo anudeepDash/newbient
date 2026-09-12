@@ -127,9 +127,76 @@ export default async function handler(req, res) {
         invoiceId,
         agreementId,
         blogSlug,
+        campaignId,
+        docId,
+        ticketId,
+        category,
         page
     } = req.query;
     const baseUrl = 'https://newbi.live';
+
+    // Fallback path detection if query parameters weren't explicitly supplied
+    let detectedPath = '';
+    const rawPath = req.headers['x-matched-path'] || req.headers['x-forwarded-uri'] || req.url || '';
+    if (rawPath) {
+        try {
+            detectedPath = new URL(rawPath, baseUrl).pathname;
+        } catch (e) {
+            detectedPath = rawPath.split('?')[0];
+        }
+    }
+
+    let effectivePage = page;
+    let effectiveCampaignId = campaignId;
+    let effectiveDocId = docId;
+    let effectiveTicketId = ticketId;
+    let effectiveCategory = category;
+    let effectiveBlogSlug = blogSlug;
+    let effectiveFormId = formId || queryFormId;
+    let effectiveGiveawaySlug = giveawaySlug;
+    let effectiveGigId = gigId;
+    let effectiveGlId = glId;
+    let effectiveProposalId = proposalId;
+    let effectiveInvoiceId = invoiceId;
+    let effectiveAgreementId = agreementId;
+    let effectiveEventId = eventId;
+
+    if (detectedPath) {
+        const cleanPath = detectedPath.replace(/\/+$/, '');
+        if (!effectivePage && !effectiveCampaignId && !effectiveBlogSlug && !effectiveFormId && !effectiveDocId && !effectiveTicketId) {
+            if (cleanPath === '/creator' || cleanPath === '/creator/landing') effectivePage = 'creator';
+            else if (cleanPath === '/creator/join') effectivePage = 'creator-join';
+            else if (cleanPath.startsWith('/creator-dashboard')) effectivePage = 'creator-dashboard';
+            else if (cleanPath === '/verify-creator') effectivePage = 'verify-creator';
+            else if (cleanPath === '/campaigns') effectivePage = 'campaigns';
+            else if (cleanPath.startsWith('/campaign/')) effectiveCampaignId = cleanPath.split('/')[2];
+            else if (cleanPath === '/concertzone') effectivePage = 'concertzone';
+            else if (cleanPath.startsWith('/concertzone/')) {
+                const parts = cleanPath.split('/').filter(Boolean);
+                if (parts.length >= 3) {
+                    effectiveBlogSlug = parts[2];
+                    effectiveCategory = parts[1];
+                } else if (parts.length === 2) {
+                    effectiveCategory = parts[1];
+                }
+            }
+            else if (cleanPath === '/community' || cleanPath === '/community-join') effectivePage = 'community';
+            else if (cleanPath === '/forms' || cleanPath === '/form') effectivePage = 'forms';
+            else if (cleanPath.startsWith('/forms/') || cleanPath.startsWith('/form/')) effectiveFormId = cleanPath.split('/')[2];
+            else if (cleanPath.startsWith('/giveaway/')) effectiveGiveawaySlug = cleanPath.split('/')[2];
+            else if (cleanPath.startsWith('/proposal/')) effectiveProposalId = cleanPath.split('/')[2];
+            else if (cleanPath.startsWith('/invoice/')) effectiveInvoiceId = cleanPath.split('/')[2];
+            else if (cleanPath.startsWith('/agreement/')) effectiveAgreementId = cleanPath.split('/')[2];
+            else if (cleanPath.startsWith('/doc/')) effectiveDocId = cleanPath.split('/')[2];
+            else if (cleanPath.startsWith('/ticket/')) effectiveTicketId = cleanPath.split('/')[2];
+            else if (cleanPath === '/artistant') effectivePage = 'artistant';
+            else if (cleanPath === '/contact') effectivePage = 'contact';
+            else if (cleanPath === '/terms') effectivePage = 'terms';
+            else if (cleanPath === '/privacy') effectivePage = 'privacy';
+            else if (cleanPath === '/verify-payout') effectivePage = 'verify-payout';
+            else if (cleanPath === '/register-payment') effectivePage = 'register-payment';
+        }
+    }
 
     let meta = {
         title: "Newbi Entertainment & Marketing",
@@ -143,28 +210,165 @@ export default async function handler(req, res) {
 
     // Metadata fetch with 2500ms safety timeout to avoid blocking page loads
     const fetchMetadata = async () => {
+        // Fast paths that do not require Firestore queries
+        if (effectivePage) {
+            if (effectivePage === 'creator' || effectivePage === 'creator-landing') {
+                meta.title = "Newbi Creator Network • Brand Campaigns & Live Gigs";
+                meta.description = "Discover verified brand collaborations, creator campaigns, and experiential gigs in Bengaluru, Mumbai, Delhi-NCR, and across India. 100% free to join.";
+                meta.image = `${baseUrl}/og-image.png`;
+                meta.url = `${baseUrl}/creator`;
+                return;
+            } else if (effectivePage === 'creator-join') {
+                meta.title = "Apply to Newbi Creator Network • 45-Second Onboarding";
+                meta.description = "Connect with top brands and live events in your city. Fast creator onboarding with zero agency fees.";
+                meta.image = `${baseUrl}/og-image.png`;
+                meta.url = `${baseUrl}/creator/join`;
+                return;
+            } else if (effectivePage === 'creator-dashboard') {
+                meta.title = "Creator Dashboard | Newbi Creator Network";
+                meta.description = "Manage your active brand campaigns, submit deliverables, track compensation, and access exclusive gig invites.";
+                meta.image = `${baseUrl}/og-image.png`;
+                meta.url = `${baseUrl}/creator-dashboard`;
+                return;
+            } else if (effectivePage === 'campaigns') {
+                meta.title = "Live Brand Campaigns & Creator Gigs | Newbi Creator Network";
+                meta.description = "Explore open creator campaigns, sponsorship briefs, and campus gigs. Apply directly to collaborate with top brands.";
+                meta.image = `${baseUrl}/og-image.png`;
+                meta.url = `${baseUrl}/campaigns`;
+                return;
+            } else if (effectivePage === 'community') {
+                meta.title = "Newbi Community Tribe • Exclusive Guestlists, Gigs & Events";
+                meta.description = "Join the ultimate entertainment tribe. Get VIP guestlist entries, backstage volunteer gigs, and exclusive live music community access.";
+                meta.image = `${baseUrl}/og-image.png`;
+                meta.url = `${baseUrl}/community`;
+                return;
+            } else if (effectivePage === 'forms') {
+                meta.title = "Newbi Forms & Community Registrations";
+                meta.description = "Submit applications and registrations for Newbi events, community initiatives, and creator opportunities.";
+                meta.image = `${baseUrl}/og-image.png`;
+                meta.url = `${baseUrl}/forms`;
+                return;
+            } else if (effectivePage === 'concertzone') {
+                meta.title = "Concert Zone • Music, Live Events & Tour Guides | Newbi Ent.";
+                meta.description = "Your backstage pass to concerts, live music festivals, artist spotlights, and gig guides across India.";
+                meta.image = `${baseUrl}/og-image.png`;
+                meta.url = `${baseUrl}/concertzone`;
+                return;
+            } else if (effectivePage === 'artistant') {
+                meta.title = "ArtistAnt • Premier Artist Bookings & Talent Agency";
+                meta.description = "Book top DJs, live bands, singers, and performing artists for college fests, corporate events, and live concerts.";
+                meta.image = `${baseUrl}/og-image.png`;
+                meta.url = `${baseUrl}/artistant`;
+                return;
+            } else if (effectivePage === 'contact') {
+                meta.title = "Contact Us | Newbi Entertainment & Marketing";
+                meta.description = "Get in touch with Newbi for brand partnerships, creator collaborations, event activations, and media inquiries.";
+                meta.image = `${baseUrl}/og-image.png`;
+                meta.url = `${baseUrl}/contact`;
+                return;
+            } else if (effectivePage === 'terms') {
+                meta.title = "Terms of Service | Newbi Entertainment";
+                meta.description = "Read the Terms of Service for Newbi Entertainment and its digital platforms.";
+                meta.image = `${baseUrl}/og-image.png`;
+                meta.url = `${baseUrl}/terms`;
+                return;
+            } else if (effectivePage === 'privacy') {
+                meta.title = "Privacy Policy | Newbi Entertainment";
+                meta.description = "Read the Privacy Policy for Newbi Entertainment.";
+                meta.image = `${baseUrl}/og-image.png`;
+                meta.url = `${baseUrl}/privacy`;
+                return;
+            } else if (effectivePage === 'verify-creator') {
+                meta.title = "Creator Verification | Newbi Creator Network";
+                meta.description = "Verify and activate your Newbi Creator profile to access brand deals and campaigns.";
+                meta.image = `${baseUrl}/og-image.png`;
+                meta.url = `${baseUrl}/verify-creator`;
+                return;
+            } else if (effectivePage === 'verify-payout') {
+                meta.title = "Verify Payout | Newbi Finance";
+                meta.description = "Securely verify and confirm payout disbursements from Newbi Entertainment.";
+                meta.image = `${baseUrl}/og-image.png`;
+                meta.url = `${baseUrl}/verify-payout`;
+                return;
+            } else if (effectivePage === 'register-payment') {
+                meta.title = "Payee Registration | Newbi Finance";
+                meta.description = "Register banking and payee details for seamless vendor and creator disbursements.";
+                meta.image = `${baseUrl}/og-image.png`;
+                meta.url = `${baseUrl}/register-payment`;
+                return;
+            }
+        }
+
+        if (effectiveTicketId) {
+            meta.title = "Digital Event Ticket | Newbi Live Pass";
+            meta.description = "View your verified digital entry pass, booking reference, and QR ticket on Newbi.";
+            meta.image = `${baseUrl}/og-image.png`;
+            meta.url = `${baseUrl}/ticket/${effectiveTicketId}`;
+            return;
+        }
+
+        if (effectiveCategory && !effectiveBlogSlug) {
+            const catFormatted = effectiveCategory.charAt(0).toUpperCase() + effectiveCategory.slice(1);
+            meta.title = `${catFormatted} Guides & Features • Concert Zone | Newbi Ent.`;
+            meta.description = `Explore the latest ${effectiveCategory.toLowerCase()} stories, concert updates, and live music guides on Newbi.`;
+            meta.image = `${baseUrl}/og-image.png`;
+            meta.url = `${baseUrl}/concertzone/${effectiveCategory}`;
+            return;
+        }
+
         if (!adminDb) return;
 
-        if (eventId) {
-            const snap = await adminDb.collection('upcoming_events').doc(eventId).get();
+        if (effectiveCampaignId) {
+            const snap = await adminDb.collection('campaigns').doc(effectiveCampaignId).get();
+            if (snap.exists) {
+                const data = snap.data();
+                meta.title = `${data.title || 'Brand Campaign'} | Newbi Creator Network`;
+                const brand = data.brandName ? `Brand: ${data.brandName}. ` : '';
+                const payout = data.payout || data.budget ? `Compensation: ${data.payout || data.budget}. ` : '';
+                meta.description = `${brand}${payout}${data.description || 'Join this verified brand campaign on Newbi Creator Network.'}`.substring(0, 155);
+                const img = data.thumbnail || data.image || data.coverImage;
+                meta.image = img?.startsWith('http') ? img : `${baseUrl}${img || '/og-image.png'}`;
+                meta.url = `${baseUrl}/campaign/${effectiveCampaignId}`;
+            } else {
+                meta.title = "Brand Campaign Brief | Newbi Creator Network";
+                meta.description = "Explore campaign requirements and apply to collaborate with verified brands on Newbi.";
+                meta.image = `${baseUrl}/og-image.png`;
+                meta.url = `${baseUrl}/campaign/${effectiveCampaignId}`;
+            }
+        } else if (effectiveDocId) {
+            const snap = await adminDb.collection('gen_documents').doc(effectiveDocId).get();
+            if (snap.exists) {
+                const data = snap.data();
+                meta.title = `${data.title || 'Official Document'} | Newbi Ent.`;
+                meta.description = `${data.documentType || 'Official Document'} #${data.docNumber || effectiveDocId}. Issued by Newbi Entertainment & Marketing.`;
+                meta.image = `${baseUrl}/og-image.png`;
+                meta.url = `${baseUrl}/doc/${effectiveDocId}`;
+            } else {
+                meta.title = "Official Document | Newbi Ent.";
+                meta.description = "View verified official document issued by Newbi Entertainment & Marketing.";
+                meta.image = `${baseUrl}/og-image.png`;
+                meta.url = `${baseUrl}/doc/${effectiveDocId}`;
+            }
+        } else if (effectiveEventId) {
+            const snap = await adminDb.collection('upcoming_events').doc(effectiveEventId).get();
             if (snap.exists) {
                 const data = snap.data();
                 meta.title = `${data.title}${data.city ? ` | ${data.city}` : ''}`;
                 meta.description = `Featuring ${Array.isArray(data.artists) ? data.artists.join(', ') : 'Exclusive Artists'}. ${data.description || ''}`.substring(0, 155);
                 meta.image = data.image?.startsWith('http') ? data.image : `${baseUrl}${data.image || '/og-image.png'}`;
-                meta.url = `${baseUrl}/?event=${eventId}`;
+                meta.url = `${baseUrl}/?event=${effectiveEventId}`;
             }
-        } else if (giveawaySlug) {
-            const snaps = await adminDb.collection('giveaways').where('slug', '==', giveawaySlug).get();
+        } else if (effectiveGiveawaySlug) {
+            const snaps = await adminDb.collection('giveaways').where('slug', '==', effectiveGiveawaySlug).get();
             if (!snaps.empty) {
                 const data = snaps.docs[0].data();
                 meta.title = `${data.name} | Newbi Giveaway`;
                 meta.description = data.description?.substring(0, 155) || `Join the ultimate giveaway to win ${data.name}!`;
                 meta.image = data.posterUrl?.startsWith('http') ? data.posterUrl : `${baseUrl}${data.posterUrl || '/og-image.png'}`;
-                meta.url = `${baseUrl}/giveaway/${giveawaySlug}`;
+                meta.url = `${baseUrl}/giveaway/${effectiveGiveawaySlug}`;
             }
-        } else if (formId || queryFormId) {
-            const id = (formId || queryFormId || '').trim();
+        } else if (effectiveFormId) {
+            const id = effectiveFormId.trim();
             const clean = normalizeString(id);
             const cleanSlug = createSlug(id);
 
@@ -252,71 +456,59 @@ export default async function handler(req, res) {
                     }
                 }
             }
-        } else if (gigId) {
-            const snap = await adminDb.collection('volunteer_gigs').doc(gigId).get();
+        } else if (effectiveGigId) {
+            const snap = await adminDb.collection('volunteer_gigs').doc(effectiveGigId).get();
             if (snap.exists) {
                 const data = snap.data();
                 meta.title = `${data.title} | Volunteer Gig`;
                 meta.description = data.description?.substring(0, 155) || `Join the Newbi Tribe as a volunteer for ${data.title}.`;
                 meta.image = data.image?.startsWith('http') ? data.image : `${baseUrl}${data.image || '/og-image.png'}`;
-                meta.url = `${baseUrl}/community?gig=${gigId}`;
+                meta.url = `${baseUrl}/community?gig=${effectiveGigId}`;
             }
-        } else if (glId) {
-            const snap = await adminDb.collection('guestlists').doc(glId).get();
+        } else if (effectiveGlId) {
+            const snap = await adminDb.collection('guestlists').doc(effectiveGlId).get();
             if (snap.exists) {
                 const data = snap.data();
                 meta.title = `${data.title} | VIP Guestlist`;
                 meta.description = data.description?.substring(0, 155) || `Get on the exclusive guestlist for ${data.title}.`;
                 meta.image = data.image?.startsWith('http') ? data.image : `${baseUrl}${data.image || '/og-image.png'}`;
-                meta.url = `${baseUrl}/community?gl=${glId}`;
+                meta.url = `${baseUrl}/community?gl=${effectiveGlId}`;
             }
-        } else if (proposalId) {
-            const snap = await adminDb.collection('proposals').doc(proposalId).get();
+        } else if (effectiveProposalId) {
+            const snap = await adminDb.collection('proposals').doc(effectiveProposalId).get();
             if (snap.exists) {
                 const data = snap.data();
                 meta.title = `${data.proposalNumber || 'Strategic Quote'} | ${data.clientName || 'Valued Partner'} | Newbi Ent.`;
                 meta.description = `Strategic Proposal for ${data.campaignName || 'Campaign'}. Status: ${data.status || 'Draft'}.`;
                 meta.image = `${baseUrl}/og-image.png`;
-                meta.url = `${baseUrl}/proposal/${proposalId}`;
+                meta.url = `${baseUrl}/proposal/${effectiveProposalId}`;
             }
-        } else if (invoiceId) {
-            const snap = await adminDb.collection('invoices').doc(invoiceId).get();
+        } else if (effectiveInvoiceId) {
+            const snap = await adminDb.collection('invoices').doc(effectiveInvoiceId).get();
             if (snap.exists) {
                 const data = snap.data();
                 meta.title = `${data.invoiceNumber || 'Tax Invoice'} | ${data.clientName || 'Valued Partner'} | Newbi Ent.`;
                 meta.description = `Tax Invoice for ${data.campaignName || 'Services'}. Status: ${data.status || 'Unpaid'}.`;
                 meta.image = `${baseUrl}/og-image.png`;
-                meta.url = `${baseUrl}/invoice/${invoiceId}`;
+                meta.url = `${baseUrl}/invoice/${effectiveInvoiceId}`;
             }
-        } else if (agreementId) {
-            const snap = await adminDb.collection('agreements').doc(agreementId).get();
+        } else if (effectiveAgreementId) {
+            const snap = await adminDb.collection('agreements').doc(effectiveAgreementId).get();
             if (snap.exists) {
                 const data = snap.data();
                 meta.title = `${data.agreementNumber || 'Agreement'} | ${data.clientName || 'Valued Partner'} | Newbi Ent.`;
                 meta.description = `Service Agreement for ${data.campaignName || 'Services'}. Status: ${data.status || 'Draft'}.`;
                 meta.image = `${baseUrl}/og-image.png`;
-                meta.url = `${baseUrl}/agreement/${agreementId}`;
+                meta.url = `${baseUrl}/agreement/${effectiveAgreementId}`;
             }
-        } else if (blogSlug) {
-            const snaps = await adminDb.collection('posts').where('slug', '==', blogSlug).get();
+        } else if (effectiveBlogSlug) {
+            const snaps = await adminDb.collection('posts').where('slug', '==', effectiveBlogSlug).get();
             if (!snaps.empty) {
                 const data = snaps.docs[0].data();
                 meta.title = `${data.title} | Concert Zone | Newbi Ent.`;
                 meta.description = data.excerpt?.substring(0, 155) || data.content?.replace(/<[^>]*>/g, '').substring(0, 155) || '';
                 meta.image = data.coverImage?.startsWith('http') ? data.coverImage : `${baseUrl}${data.coverImage || '/og-image.png'}`;
-                meta.url = `${baseUrl}/concertzone/${data.category || 'music'}/${blogSlug}`;
-            }
-        } else if (page) {
-            if (page === 'creator' || page === 'creator-landing') {
-                meta.title = "Newbi Creator Network • Brand Campaigns & Live Gigs";
-                meta.description = "Discover verified brand collaborations and experiential gigs in Bengaluru, Mumbai, Delhi-NCR, and across India. 100% free to join.";
-                meta.image = `${baseUrl}/og-image.png`;
-                meta.url = `${baseUrl}/creator`;
-            } else if (page === 'creator-join') {
-                meta.title = "Apply to Newbi Creator Network • 45-Second Onboarding";
-                meta.description = "Connect with top brands and live events in your city. Fast creator onboarding with zero agency fees.";
-                meta.image = `${baseUrl}/og-image.png`;
-                meta.url = `${baseUrl}/creator/join`;
+                meta.url = `${baseUrl}/concertzone/${data.category || 'music'}/${effectiveBlogSlug}`;
             }
         }
     };
@@ -347,12 +539,17 @@ export default async function handler(req, res) {
     const metaTags = `
         <title>${meta.title}</title>
         <meta name="description" content="${meta.description}" />
+        <meta property="og:site_name" content="Newbi Entertainment &amp; Marketing" />
         <meta property="og:title" content="${meta.title}" />
         <meta property="og:description" content="${meta.description}" />
         <meta property="og:image" content="${meta.image}" />
+        <meta property="og:image:secure_url" content="${meta.image}" />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
         <meta property="og:url" content="${meta.url}" />
         <meta property="og:type" content="${meta.type}" />
         <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:site" content="@newbi_live" />
         <meta name="twitter:title" content="${meta.title}" />
         <meta name="twitter:description" content="${meta.description}" />
         <meta name="twitter:image" content="${meta.image}" />

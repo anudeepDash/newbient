@@ -18,8 +18,8 @@ import NotificationBell from '../components/NotificationBell';
 const CreatorLanding = () => {
     useStoreSubscription(['creators', 'campaigns']);
     useDynamicMeta({
-        title: "Newbi Creator",
-        description: "Explore campaign opportunities and collaborate with local brands.",
+        title: "Newbi Creator Network • Brand Campaigns & Live Gigs",
+        description: "Discover verified brand collaborations, creator campaigns, and experiential gigs in Bengaluru, Mumbai, Delhi-NCR, and across India. 100% free to join.",
         url: window.location.href
     });
 

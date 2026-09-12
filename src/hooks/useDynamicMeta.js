@@ -45,7 +45,7 @@ const useDynamicMeta = ({ title, description, image, url }) => {
             if (el) el.setAttribute('content', content);
         };
 
-        const pageTitle = title ? `${title} | Newbi Ent.` : defaultTitle;
+        const pageTitle = title ? (title.includes('Newbi') ? title : `${title} | Newbi Ent.`) : defaultTitle;
         const pageDesc = description || defaultDesc;
 
         document.title = pageTitle;

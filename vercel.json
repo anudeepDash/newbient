@@ -151,6 +151,90 @@
             "destination": "/api/og"
         },
         {
+            "source": "/creator",
+            "destination": "/api/og?page=creator"
+        },
+        {
+            "source": "/creator/join",
+            "destination": "/api/og?page=creator-join"
+        },
+        {
+            "source": "/creator-dashboard",
+            "destination": "/api/og?page=creator-dashboard"
+        },
+        {
+            "source": "/creator-dashboard/:path*",
+            "destination": "/api/og?page=creator-dashboard"
+        },
+        {
+            "source": "/verify-creator",
+            "destination": "/api/og?page=verify-creator"
+        },
+        {
+            "source": "/campaigns",
+            "destination": "/api/og?page=campaigns"
+        },
+        {
+            "source": "/campaign/:id",
+            "destination": "/api/og?campaignId=:id"
+        },
+        {
+            "source": "/concertzone",
+            "destination": "/api/og?page=concertzone"
+        },
+        {
+            "source": "/concertzone/:category",
+            "destination": "/api/og?category=:category"
+        },
+        {
+            "source": "/community",
+            "destination": "/api/og?page=community"
+        },
+        {
+            "source": "/community-join",
+            "destination": "/api/og?page=community"
+        },
+        {
+            "source": "/forms",
+            "destination": "/api/og?page=forms"
+        },
+        {
+            "source": "/form",
+            "destination": "/api/og?page=forms"
+        },
+        {
+            "source": "/doc/:id",
+            "destination": "/api/og?docId=:id"
+        },
+        {
+            "source": "/ticket/:id",
+            "destination": "/api/og?ticketId=:id"
+        },
+        {
+            "source": "/artistant",
+            "destination": "/api/og?page=artistant"
+        },
+        {
+            "source": "/contact",
+            "destination": "/api/og?page=contact"
+        },
+        {
+            "source": "/terms",
+            "destination": "/api/og?page=terms"
+        },
+        {
+            "source": "/privacy",
+            "destination": "/api/og?page=privacy"
+        },
+        {
+            "source": "/verify-payout",
+            "destination": "/api/og?page=verify-payout"
+        },
+        {
+            "source": "/register-payment",
+            "destination": "/api/og?page=register-payment"
+        },
+        {
             "source": "/(.*)",
             "destination": "/index.html"
         }
