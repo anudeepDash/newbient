@@ -6,7 +6,7 @@ import logoLight from '../../assets/logo_light.png';
 
 const Hero = () => {
     return (
-        <section className="relative min-h-screen flex flex-col justify-center overflow-hidden pt-20 md:pt-40 pb-16 md:pb-24 bg-gray-50 dark:bg-dark transition-colors duration-300">
+        <section className="relative min-h-screen flex flex-col justify-center overflow-hidden pt-32 md:pt-40 pb-16 md:pb-24 bg-gray-50 dark:bg-dark transition-colors duration-300">
             {/* Immersive Background Effects */}
             <div className="absolute inset-0 z-0">
                 {/* Subtle Ambient Spotlights */}
@@ -44,7 +44,7 @@ const Hero = () => {
             </div>
 
             {/* Content Container */}
-            <div className="relative z-10 w-full max-w-[1400px] mx-auto px-4 sm:px-6 md:px-8 text-center pt-0 md:pt-4 pb-16 md:pb-20">
+            <div className="relative z-10 w-full max-w-[1400px] mx-auto px-4 sm:px-6 md:px-8 text-center pt-12 md:pt-4 pb-16 md:pb-20">
                 {/* Brand Logo with Premium Glow */}
                 <motion.div
                     initial={{ opacity: 0, y: -20 }}
