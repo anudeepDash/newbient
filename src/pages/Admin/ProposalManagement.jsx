@@ -49,13 +49,28 @@ const ProposalManagement = () => {
     const [sharingProposal, setSharingProposal] = useState(null);
     const [emailModalProposal, setEmailModalProposal] = useState(null);
 
-    const getBrowserName = (ua) => {
-        if (!ua) return 'Browser';
-        if (ua.includes('Firefox/')) return 'Firefox';
-        if (ua.includes('Edg/')) return 'Edge';
-        if (ua.includes('Chrome/')) return 'Chrome';
-        if (ua.includes('Safari/') && !ua.includes('Chrome')) return 'Safari';
-        return 'Browser';
+    const getDeviceDetails = (ua) => {
+        if (!ua) return { browser: 'Browser', os: 'OS', type: 'Device' };
+        
+        let browser = 'Browser';
+        if (ua.includes('Firefox/')) browser = 'Firefox';
+        else if (ua.includes('Edg/')) browser = 'Edge';
+        else if (ua.includes('Chrome/') || ua.includes('CriOS/')) browser = 'Chrome';
+        else if (ua.includes('Safari/')) browser = 'Safari';
+
+        let os = 'OS';
+        if (ua.includes('iPhone')) os = 'iOS';
+        else if (ua.includes('iPad')) os = 'iPadOS';
+        else if (ua.includes('Android')) os = 'Android';
+        else if (ua.includes('Windows')) os = 'Windows';
+        else if (ua.includes('Macintosh') || ua.includes('Mac OS X')) os = 'macOS';
+        else if (ua.includes('Linux')) os = 'Linux';
+
+        let type = 'Desktop';
+        if (os === 'iOS' || os === 'Android') type = 'Mobile';
+        else if (os === 'iPadOS') type = 'Tablet';
+
+        return { browser, os, type };
     };
 
     const vaultTabs = [
@@ -605,7 +620,7 @@ const ProposalManagement = () => {
                                                 return (
                                                     <div className="space-y-3">
                                                         {[...activeLogs].reverse().map((log, i) => {
-                                                            const browserName = getBrowserName(log.userAgent);
+                                                            const device = getDeviceDetails(log.userAgent);
                                                             return (
                                                                 <div key={i} className="p-4 bg-white/[0.02] border border-black/10 dark:border-white/5 rounded-xl space-y-3 group hover:bg-white/[0.05] transition-all">
                                                                     <div className="flex items-start justify-between">
@@ -628,9 +643,11 @@ const ProposalManagement = () => {
                                                                                         <p className="text-[11px] font-bold text-gray-900 dark:text-white">
                                                                                             {log.via === 'whatsapp' ? 'WhatsApp Link Share' : log.via === 'link' ? 'Direct Copy Link' : log.via === 'share' ? 'Native Device Share' : 'General Link Access'}
                                                                                         </p>
-                                                                                        <p className="text-[9px] font-semibold text-gray-600 dark:text-gray-400 mt-0.5">
-                                                                                            Anonymous Client View
-                                                                                        </p>
+                                                                                        {log.shareEmail && (
+                                                                                            <p className="text-[9px] font-semibold text-gray-500 dark:text-gray-400 mt-0.5">
+                                                                                                {log.shareEmail}
+                                                                                            </p>
+                                                                                        )}
                                                                                     </>
                                                                                 )}
                                                                             </div>
@@ -651,7 +668,7 @@ const ProposalManagement = () => {
                                                                         </div>
                                                                         <div>
                                                                             <span className="text-gray-600 font-bold block text-[8px]">DEVICE / RESOLUTION</span>
-                                                                            <span>{browserName} on {log.platform || 'OS'} ({log.screen || 'N/A'})</span>
+                                                                            <span>{device.type} ({device.os}) - {device.browser} - {log.screen || 'N/A'}</span>
                                                                         </div>
                                                                     </div>
                                                                 </div>
