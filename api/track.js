@@ -117,6 +117,22 @@ export default async function handler(req, res) {
             destination = `https://${destination}`;
         }
 
+        try {
+            const destUrl = new URL(destination, 'https://newbi.live');
+            if (destUrl.hostname.includes('newbi.live') || destUrl.hostname.includes('newbient.com') || destination.startsWith('/')) {
+                if (email) {
+                    destUrl.searchParams.set('email', email);
+                    destUrl.searchParams.set('via', 'email');
+                }
+                if (cid) destUrl.searchParams.set('cid', cid);
+                if (tid) destUrl.searchParams.set('tid', tid);
+                
+                destination = destination.startsWith('/') ? `${destUrl.pathname}${destUrl.search}${destUrl.hash}` : destUrl.href;
+            }
+        } catch (e) {
+            console.warn('[TRACK API] URL parse error:', e.message);
+        }
+
         // Asynchronously log the click event to Firestore
         if (adminDb) {
             try {

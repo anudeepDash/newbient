@@ -55,13 +55,28 @@ const InvoiceManagement = () => {
     const [activeAnalyticsTab, setActiveAnalyticsTab] = useState('email');
     const [emailModalInvoice, setEmailModalInvoice] = useState(null);
 
-    const getBrowserName = (ua) => {
-        if (!ua) return 'Browser';
-        if (ua.includes('Firefox/')) return 'Firefox';
-        if (ua.includes('Edg/')) return 'Edge';
-        if (ua.includes('Chrome/')) return 'Chrome';
-        if (ua.includes('Safari/') && !ua.includes('Chrome')) return 'Safari';
-        return 'Browser';
+    const getDeviceDetails = (ua) => {
+        if (!ua) return { browser: 'Browser', os: 'OS', type: 'Device' };
+        
+        let browser = 'Browser';
+        if (ua.includes('Firefox/')) browser = 'Firefox';
+        else if (ua.includes('Edg/')) browser = 'Edge';
+        else if (ua.includes('Chrome/') || ua.includes('CriOS/')) browser = 'Chrome';
+        else if (ua.includes('Safari/')) browser = 'Safari';
+
+        let os = 'OS';
+        if (ua.includes('iPhone')) os = 'iOS';
+        else if (ua.includes('iPad')) os = 'iPadOS';
+        else if (ua.includes('Android')) os = 'Android';
+        else if (ua.includes('Windows')) os = 'Windows';
+        else if (ua.includes('Macintosh') || ua.includes('Mac OS X')) os = 'macOS';
+        else if (ua.includes('Linux')) os = 'Linux';
+
+        let type = 'Desktop';
+        if (os === 'iOS' || os === 'Android') type = 'Mobile';
+        else if (os === 'iPadOS') type = 'Tablet';
+
+        return { browser, os, type };
     };
 
     const vaultTabs = [
@@ -674,7 +689,7 @@ const InvoiceManagement = () => {
                                                 return (
                                                     <div className="space-y-3">
                                                         {[...activeLogs].reverse().map((log, i) => {
-                                                            const browserName = getBrowserName(log.userAgent);
+                                                            const device = getDeviceDetails(log.userAgent);
                                                             return (
                                                                 <div key={i} className="p-4 bg-white/[0.02] border border-black/10 dark:border-white/5 rounded-2xl space-y-3">
                                                                     <div className="flex items-start justify-between">
@@ -703,7 +718,7 @@ const InvoiceManagement = () => {
                                                                     <div className="grid grid-cols-2 gap-2 pt-2 border-t border-black/10 dark:border-white/5 text-[9px] text-gray-600 dark:text-gray-400 font-semibold uppercase tracking-wider">
                                                                         <div>
                                                                             <span className="text-gray-600 font-bold block text-[8px]">DEVICE</span>
-                                                                            <span>{browserName} / {log.platform || 'Desktop'}</span>
+                                                                            <span>{device.type} ({device.os}) / {device.browser}</span>
                                                                         </div>
                                                                         <div>
                                                                             <span className="text-gray-600 font-bold block text-[8px]">SCREEN RESOLUTION</span>
