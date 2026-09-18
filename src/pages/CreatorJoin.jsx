@@ -12,6 +12,7 @@ import Instagram from 'lucide-react/dist/esm/icons/instagram';
 import Youtube from 'lucide-react/dist/esm/icons/youtube';
 import Linkedin from 'lucide-react/dist/esm/icons/linkedin';
 import Twitter from 'lucide-react/dist/esm/icons/twitter';
+import Globe from 'lucide-react/dist/esm/icons/globe';
 import Upload from 'lucide-react/dist/esm/icons/upload';
 import CheckCircle2 from 'lucide-react/dist/esm/icons/check-circle-2';
 import Check from 'lucide-react/dist/esm/icons/check';
@@ -33,17 +34,26 @@ import useDynamicMeta from '../hooks/useDynamicMeta';
 
 // Rich niche definitions with icons and descriptions
 const NICHE_OPTIONS = [
+    { id: 'City Pages', label: 'City Pages / Local Hubs', icon: '🏙️', color: 'from-sky-500/20 to-blue-500/10' },
+    { id: 'College Pages', label: 'College Pages / Hubs', icon: '🏫', color: 'from-teal-500/20 to-blue-500/10' },
+    { id: 'Student/Campus Creator', label: 'Campus & College', icon: '🎓', color: 'from-emerald-500/20 to-teal-500/10' },
     { id: 'Fashion & Luxury', label: 'Fashion & Luxury', icon: '👗', color: 'from-pink-500/20 to-purple-500/10' },
     { id: 'Tech & Gaming', label: 'Tech & Gaming', icon: '🎮', color: 'from-blue-500/20 to-cyan-500/10' },
     { id: 'Travel & Lifestyle', label: 'Travel & Lifestyle', icon: '✈️', color: 'from-amber-500/20 to-orange-500/10' },
-    { id: 'Beauty & Fitness', label: 'Beauty & Fitness', icon: '💄', color: 'from-rose-500/20 to-pink-500/10' },
+    { id: 'Beauty & Fitness', label: 'Beauty & Cosmetics', icon: '💄', color: 'from-rose-500/20 to-pink-500/10' },
+    { id: 'Fitness & Sports', label: 'Fitness & Athletics', icon: '🏋️‍♂️', color: 'from-emerald-500/20 to-lime-500/10' },
     { id: 'Food & Beverage', label: 'Food & Dining', icon: '🍔', color: 'from-yellow-500/20 to-amber-500/10' },
     { id: 'Comedy & Entertainment', label: 'Comedy & Memes', icon: '🎭', color: 'from-purple-500/20 to-indigo-500/10' },
-    { id: 'Student/Campus Creator', label: 'Campus & College', icon: '🎓', color: 'from-emerald-500/20 to-teal-500/10' },
-    { id: 'College Pages', label: 'College Pages / Hubs', icon: '🏫', color: 'from-teal-500/20 to-blue-500/10' },
+    { id: 'Real Estate', label: 'Real Estate & Living', icon: '🏡', color: 'from-amber-500/20 to-emerald-500/10' },
+    { id: 'Photography & Filmmaking', label: 'Photo & Filmmaking', icon: '📸', color: 'from-indigo-500/20 to-purple-500/10' },
+    { id: 'Automotive & Moto', label: 'Auto & Motovlogging', icon: '🏎️', color: 'from-red-500/20 to-orange-500/10' },
+    { id: 'Art & Design', label: 'Art, Design & DIY', icon: '🎨', color: 'from-pink-500/20 to-violet-500/10' },
+    { id: 'Music & Dance', label: 'Music & Dance', icon: '🎵', color: 'from-fuchsia-500/20 to-pink-500/10' },
+    { id: 'Parenting & Family', label: 'Parenting & Family', icon: '👨‍👩‍👧', color: 'from-amber-500/20 to-rose-500/10' },
+    { id: 'Podcasts & Media', label: 'Podcasts & Media', icon: '🎙️', color: 'from-purple-500/20 to-pink-500/10' },
+    { id: 'Meme & Pop Culture', label: 'Meme & Pop Culture', icon: '🔥', color: 'from-orange-500/20 to-red-500/10' },
     { id: 'Startup & Entrepreneurship', label: 'Startup & Founder', icon: '🚀', color: 'from-violet-500/20 to-purple-500/10' },
     { id: 'Finance & Business', label: 'Finance & Career', icon: '📈', color: 'from-green-500/20 to-emerald-500/10' },
-    { id: 'Music & Dance', label: 'Music & Dance', icon: '🎵', color: 'from-fuchsia-500/20 to-pink-500/10' },
     { id: 'Others', label: 'Other Specialization', icon: '✨', color: 'from-zinc-500/20 to-zinc-700/10' }
 ];
 
@@ -106,6 +116,7 @@ const CreatorJoin = () => {
         categories: '',
         customNiche: '',
         collegeName: '',
+        cityPageFocus: '',
         bio: '',
         doBarter: 'both',
         commercials: '',
@@ -116,9 +127,12 @@ const CreatorJoin = () => {
         twitter: '',
         linkedin: '',
         linkedinFollowers: '',
+        website: '',
         profilePicture: '',
         referredBy: ''
     });
+
+    const [showAllCities, setShowAllCities] = useState(false);
 
     const [countryCode, setCountryCode] = useState('+91');
     const [isCountryCodeOpen, setIsCountryCodeOpen] = useState(false);
@@ -556,6 +570,8 @@ const CreatorJoin = () => {
             const finalNiche = formData.categories === 'Others' ? formData.customNiche.trim() : formData.categories;
             const cleanInstagram = formData.instagram ? formData.instagram.trim().replace(/^@/, '') : '';
             const cleanLinkedin = formData.linkedin ? formData.linkedin.trim() : '';
+            const cleanTwitter = formData.twitter ? formData.twitter.trim() : '';
+            const cleanWebsite = formData.website ? formData.website.trim() : '';
             const cleanDigits = formData.phone.replace(/\D/g, '').slice(-10);
 
             await addCreator({
@@ -568,6 +584,9 @@ const CreatorJoin = () => {
                 phone: `${countryCode} ${cleanDigits}`,
                 instagram: cleanInstagram,
                 linkedin: cleanLinkedin,
+                twitter: cleanTwitter,
+                website: cleanWebsite,
+                cityPageFocus: formData.cityPageFocus ? formData.cityPageFocus.trim() : '',
                 city: finalCity,
                 categories: finalNiche,
                 specializations: [finalNiche],
@@ -724,20 +743,31 @@ const CreatorJoin = () => {
                 <div className="bg-gray-50/80 dark:bg-white/[0.02] border border-black/[0.08] dark:border-white/[0.06] rounded-3xl p-5 sm:p-8 backdrop-blur-2xl shadow-2xl space-y-6">
                     
                     {/* Progress Bar & Header */}
-                    <div className="space-y-4">
-                        <div className="flex items-center justify-between">
-                            <span className="text-[9px] font-bold text-neon-pink uppercase tracking-[0.2em] bg-neon-pink/10 border border-neon-pink/20 px-2.5 py-1 rounded-full">
-                                Step {step} of 4 • {step === 1 ? 'Identity' : step === 2 ? 'Verification' : step === 3 ? 'Creative Footprint' : 'Terms & Review'}
-                            </span>
-                            <span className="text-[10px] font-bold text-gray-900 dark:text-white/30 tracking-wider">
-                                {Math.round((step / 4) * 100)}% Complete
-                            </span>
+                    <div className="space-y-3.5">
+                        <div className="flex items-center justify-between gap-3 min-w-0">
+                            {/* Resilient, non-wrapping, non-overlapping pill badge */}
+                            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-neon-pink/10 border border-neon-pink/25 text-neon-pink shrink-0 shadow-sm max-w-[75%] sm:max-w-none">
+                                <span className="w-1.5 h-1.5 rounded-full bg-neon-pink shrink-0 animate-pulse" />
+                                <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider whitespace-nowrap truncate">
+                                    Step {step} of 4 • {step === 1 ? 'Identity' : step === 2 ? 'Verification' : step === 3 ? 'Creative Footprint' : 'Terms & Review'}
+                                </span>
+                            </div>
+
+                            {/* Percentage progress indicator */}
+                            <div className="flex items-center gap-1.5 shrink-0 text-right">
+                                <span className="text-xs sm:text-sm font-black font-mono tracking-tight text-gray-900 dark:text-white">
+                                    {Math.round((step / 4) * 100)}%
+                                </span>
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-white/40 hidden xs:inline">
+                                    Done
+                                </span>
+                            </div>
                         </div>
 
                         {/* Animated Progress Line */}
-                        <div className="w-full h-1 bg-black/[0.08] dark:bg-white/[0.06] rounded-full overflow-hidden">
+                        <div className="w-full h-1.5 bg-black/[0.08] dark:bg-white/[0.06] rounded-full overflow-hidden p-0.5">
                             <motion.div
-                                className="h-full bg-gradient-to-r from-neon-pink to-neon-green rounded-full"
+                                className="h-full bg-gradient-to-r from-neon-pink via-purple-500 to-neon-green rounded-full"
                                 initial={{ width: '25%' }}
                                 animate={{ width: `${(step / 4) * 100}%` }}
                                 transition={{ duration: 0.3 }}
@@ -806,11 +836,23 @@ const CreatorJoin = () => {
 
                                 {/* Operating City */}
                                 <div className="space-y-2">
-                                    <label className="text-[10px] font-bold text-gray-900 dark:text-white/40 uppercase tracking-wider">Operating City *</label>
+                                    <div className="flex items-center justify-between">
+                                        <label className="text-[10px] font-bold text-gray-900 dark:text-white/40 uppercase tracking-wider">Operating City *</label>
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowAllCities(!showAllCities)}
+                                            className="text-[10px] font-bold text-neon-pink hover:underline uppercase tracking-wider"
+                                        >
+                                            {showAllCities ? 'Show Top Hubs' : '+ View More Cities'}
+                                        </button>
+                                    </div>
                                     
                                     {/* Quick City Chips */}
                                     <div className="flex flex-wrap gap-1.5">
-                                        {POPULAR_CITIES.map(c => {
+                                        {(showAllCities 
+                                            ? PREDEFINED_CITIES.filter(c => c !== 'Others') 
+                                            : POPULAR_CITIES
+                                        ).map(c => {
                                             const isSelected = formData.city === c;
                                             return (
                                                 <button
@@ -828,12 +870,22 @@ const CreatorJoin = () => {
                                                 </button>
                                             );
                                         })}
+                                        
+                                        {!showAllCities && formData.city && !POPULAR_CITIES.includes(formData.city) && formData.city !== 'Others' && (
+                                            <button
+                                                type="button"
+                                                className="px-3.5 py-2 rounded-xl text-xs font-bold transition-all border bg-neon-green text-black border-neon-green font-black shadow-md shadow-neon-green/20 scale-[1.02]"
+                                            >
+                                                {formData.city}
+                                            </button>
+                                        )}
+
                                         <button
                                             type="button"
                                             onClick={() => setFormData(p => ({ ...p, city: 'Others' }))}
                                             className={cn(
                                                 "px-3.5 py-2 rounded-xl text-xs font-bold transition-all border",
-                                                formData.city === 'Others' || (!POPULAR_CITIES.includes(formData.city) && formData.city)
+                                                formData.city === 'Others' || (!PREDEFINED_CITIES.includes(formData.city) && formData.city)
                                                     ? "bg-neon-green text-black border-neon-green font-black shadow-md shadow-neon-green/20 scale-[1.02]"
                                                     : "bg-white dark:bg-white/[0.04] text-gray-800 dark:text-white/60 border-gray-200 dark:border-white/10 hover:border-gray-300 dark:hover:border-white/20 hover:text-black dark:hover:text-white"
                                             )}
@@ -843,7 +895,7 @@ const CreatorJoin = () => {
                                     </div>
 
                                     {/* Custom City Input */}
-                                    {(formData.city === 'Others' || (!POPULAR_CITIES.includes(formData.city) && formData.city)) && (
+                                    {(formData.city === 'Others' || (!PREDEFINED_CITIES.includes(formData.city) && formData.city)) && (
                                         <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} className="pt-2">
                                             <input
                                                 type="text"
@@ -1150,6 +1202,19 @@ const CreatorJoin = () => {
                                         </motion.div>
                                     )}
 
+                                    {formData.categories === 'City Pages' && (
+                                        <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} className="pt-2">
+                                            <input
+                                                type="text"
+                                                name="cityPageFocus"
+                                                value={formData.cityPageFocus}
+                                                onChange={handleChange}
+                                                placeholder="City / Locality or Page Focus (e.g. Bangalore Food & Nightlife, Delhi Events, So South Mumbai)"
+                                                className="w-full h-11 bg-white dark:bg-black/40 border border-black/[0.1] dark:border-white/[0.08] focus:border-black/30 dark:focus:border-white/30 rounded-xl px-4 text-xs font-medium text-gray-900 dark:text-white outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-white/20"
+                                            />
+                                        </motion.div>
+                                    )}
+
                                     {(formData.categories === 'Student/Campus Creator' || formData.categories === 'College Pages') && (
                                         <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} className="pt-2">
                                             <input
@@ -1226,6 +1291,28 @@ const CreatorJoin = () => {
                                                 onChange={handleChange}
                                                 placeholder="YouTube channel link"
                                                 className="w-full h-11 pl-9 pr-3 bg-white dark:bg-black/40 border border-black/[0.1] dark:border-white/[0.08] focus:border-red-400 rounded-xl text-xs font-medium text-gray-900 dark:text-white outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-white/20"
+                                            />
+                                        </div>
+                                        <div className="relative">
+                                            <Twitter className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sky-400" size={14} />
+                                            <input
+                                                type="text"
+                                                name="twitter"
+                                                value={formData.twitter}
+                                                onChange={handleChange}
+                                                placeholder="X / Twitter handle or link"
+                                                className="w-full h-11 pl-9 pr-3 bg-white dark:bg-black/40 border border-black/[0.1] dark:border-white/[0.08] focus:border-sky-400 rounded-xl text-xs font-medium text-gray-900 dark:text-white outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-white/20"
+                                            />
+                                        </div>
+                                        <div className="relative">
+                                            <Globe className="absolute left-3.5 top-1/2 -translate-y-1/2 text-emerald-400" size={14} />
+                                            <input
+                                                type="text"
+                                                name="website"
+                                                value={formData.website}
+                                                onChange={handleChange}
+                                                placeholder="Portfolio or Website link"
+                                                className="w-full h-11 pl-9 pr-3 bg-white dark:bg-black/40 border border-black/[0.1] dark:border-white/[0.08] focus:border-emerald-400 rounded-xl text-xs font-medium text-gray-900 dark:text-white outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-white/20"
                                             />
                                         </div>
                                     </div>
@@ -1345,7 +1432,9 @@ const CreatorJoin = () => {
                                                 <span className="text-[8px] font-bold text-gray-900 dark:text-white/30 uppercase tracking-wider">{formData.city || 'City'}</span>
                                             </div>
                                             <h4 className="text-sm sm:text-base font-black text-gray-900 dark:text-white uppercase tracking-tight truncate">{formData.name || 'Your Name'}</h4>
-                                            <p className="text-[10px] font-bold text-neon-pink/80 uppercase tracking-wider truncate">{formData.categories || 'Niche'}</p>
+                                            <p className="text-[10px] font-bold text-neon-pink/80 uppercase tracking-wider truncate">
+                                                {formData.categories === 'City Pages' && formData.cityPageFocus ? `City Pages • ${formData.cityPageFocus}` : (formData.categories || 'Niche')}
+                                            </p>
                                         </div>
                                     </div>
                                 </div>
