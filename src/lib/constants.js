@@ -17,6 +17,7 @@ export const PREDEFINED_CITIES = [
     "Bhubaneswar",
     "Bhopal",
     "Kolhapur",
+    "Pan-India / Remote",
     "Others"
 ];
 
@@ -36,18 +37,26 @@ export const ARTIST_CATEGORIES = [
 ];
 
 export const CREATOR_NICHES = [
+    'City Pages',
+    'College Pages',
     'Student/ Campus Creator',
     'Fashion & Luxury',
     'Tech & Gaming',
     'Travel & Lifestyle',
     'Beauty & Fitness',
     'Food & Beverage',
-    'College Pages',
-    'Startup',
-    'Finance',
-    'Business',
+    'Comedy & Entertainment',
+    'Music & Dance',
+    'Fitness & Sports',
     'Real Estate',
+    'Photography & Filmmaking',
+    'Automotive & Moto',
+    'Art & Design',
+    'Parenting & Family',
+    'Podcasts & Media',
+    'Meme & Pop Culture',
+    'Startup & Entrepreneurship',
+    'Finance & Business',
     'Career',
-    'Entrepreneurship',
     'Others'
 ];

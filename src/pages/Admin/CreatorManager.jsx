@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useStore } from '../../lib/store';
 import { useStoreSubscription } from '../../hooks/useStoreSubscription';
-import { PREDEFINED_CITIES } from '../../lib/constants';
+import { PREDEFINED_CITIES, CREATOR_NICHES } from '../../lib/constants';
 import Users from 'lucide-react/dist/esm/icons/users';
 import Search from 'lucide-react/dist/esm/icons/search';
 import MapPin from 'lucide-react/dist/esm/icons/map-pin';
@@ -1862,22 +1862,7 @@ const CreatorDetailModal = ({ creator, onClose, onUpdateStatus, onDelete, isUpda
     );
 };
 
-const NICHES = [
-    'Student/ Campus Creator',
-    'Fashion & Luxury',
-    'Tech & Gaming',
-    'Travel & Lifestyle',
-    'Beauty & Fitness',
-    'Food & Beverage',
-    'College Pages',
-    'Startup',
-    'Finance',
-    'Business',
-    'Real Estate',
-    'Career',
-    'Entrepreneurship',
-    'Others'
-];
+const NICHES = CREATOR_NICHES;
 
 const AddCreatorModal = ({ onClose }) => {
     const { addCreator } = useStore();
