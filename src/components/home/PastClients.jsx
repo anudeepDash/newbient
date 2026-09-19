@@ -1,13 +1,32 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import { useStore } from '../../lib/store';
+import { useStoreSubscription } from '../../hooks/useStoreSubscription';
+
+const DEFAULT_CLIENTS = [
+    { id: 'sp', name: 'Spotify' },
+    { id: 'rb', name: 'Red Bull' },
+    { id: 'lv', name: "Levi's" },
+    { id: 'tn', name: 'Tinder' },
+    { id: 'bm', name: 'Bumble' },
+    { id: 'me', name: 'Monster Energy' },
+    { id: 'jg', name: 'Jägermeister' },
+    { id: 'bc', name: 'Bacardi' },
+    { id: 'pu', name: 'Puma' },
+    { id: 'vn', name: 'Vans' },
+    { id: 'mt', name: 'MTV' },
+    { id: 'vh', name: 'VH1' },
+];
 
 const PastClients = () => {
-    const clients = [
-        "Spotify", "Red Bull", "Levi's", "Tinder", "Bumble", 
-        "Monster Energy", "Jägermeister", "Bacardi", "Puma", 
-        "Vans", "MTV", "VH1"
-    ];
+    useStoreSubscription(['pastClients']);
+    const { pastClients, siteSettings } = useStore();
 
+    if (siteSettings?.showPastClients === false) {
+        return null;
+    }
+
+    const clients = pastClients && pastClients.length > 0 ? pastClients : DEFAULT_CLIENTS;
     const duplicatedClients = [...clients, ...clients, ...clients];
 
     return (
@@ -15,7 +34,6 @@ const PastClients = () => {
             <div className="max-w-7xl mx-auto px-4 mb-10 md:mb-12">
                 <div className="flex flex-col md:flex-row md:items-end justify-between gap-8">
                     <div>
-
                         <motion.h2
                             initial={{ opacity: 0, y: 20 }}
                             whileInView={{ opacity: 1, y: 0 }}
@@ -44,12 +62,20 @@ const PastClients = () => {
                 <div className="flex animate-marquee whitespace-nowrap gap-12 md:gap-24 items-center">
                     {duplicatedClients.map((client, index) => (
                         <div
-                            key={index}
+                            key={`${client.id || client.name}-${index}`}
                             className="flex-shrink-0 flex items-center justify-center grayscale opacity-20 hover:grayscale-0 hover:opacity-100 transition-all duration-700 cursor-default group"
                         >
-                            <span className="text-3xl md:text-6xl font-black font-heading tracking-tighter text-gray-900 dark:text-white group-hover:scale-110 transition-transform duration-500">
-                                {client}
-                            </span>
+                            {client.logoUrl ? (
+                                <img
+                                    src={client.logoUrl}
+                                    alt={client.name}
+                                    className="h-10 md:h-16 w-auto object-contain group-hover:scale-110 transition-transform duration-500"
+                                />
+                            ) : (
+                                <span className="text-3xl md:text-6xl font-black font-heading tracking-tighter text-gray-900 dark:text-white group-hover:scale-110 transition-transform duration-500">
+                                    {client.name}
+                                </span>
+                            )}
                         </div>
                     ))}
                 </div>

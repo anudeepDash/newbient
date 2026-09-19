@@ -37,6 +37,33 @@ const VerifyCreator = () => {
             }
 
             try {
+                // Tier 1: Verify via serverless API (immune to client-side Firestore security rules)
+                try {
+                    const res = await fetch(`/api/creator-join?action=verify`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ id, token })
+                    });
+                    const json = await res.json();
+                    if (res.ok && json.success) {
+                        setCreatorData(json.creator);
+                        if (json.alreadyVerified) {
+                            setStatus('already_verified');
+                            return;
+                        }
+                        setStatus('success');
+                        try { confetti({ particleCount: 120, spread: 80, origin: { y: 0.5 } }); } catch (e) {}
+                        return;
+                    } else if (res.status === 400 || (json.error && json.error.includes('expired'))) {
+                        setStatus('error');
+                        setErrorMessage(json.error || 'This verification link is expired or invalid.');
+                        return;
+                    }
+                } catch (apiErr) {
+                    console.warn('[VerifyCreator] API verify notice, falling back to direct Firestore:', apiErr.message);
+                }
+
+                // Tier 2: Fallback to direct client Firestore
                 const creatorRef = doc(db, 'creators', id);
                 const snap = await getDoc(creatorRef);
 

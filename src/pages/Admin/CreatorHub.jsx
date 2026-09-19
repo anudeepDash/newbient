@@ -2,36 +2,57 @@ import React, { useState } from 'react';
 import Users from 'lucide-react/dist/esm/icons/users';
 import Target from 'lucide-react/dist/esm/icons/target';
 import Sparkles from 'lucide-react/dist/esm/icons/sparkles';
+import Settings from 'lucide-react/dist/esm/icons/settings';
 import LayoutDashboard from 'lucide-react/dist/esm/icons/layout-dashboard';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../../lib/utils';
 import AdminCommunityHubLayout from '../../components/admin/AdminCommunityHubLayout';
 import CreatorManager from './CreatorManager';
 import CampaignManager from './CampaignManager';
+import { CreatorSettingsContent } from './CreatorSettingsPage';
 
 import { useLocation } from 'react-router-dom';
 
 const CreatorHub = () => {
     const location = useLocation();
     const [activeTab, setActiveTab] = useState(
-        location.pathname.includes('campaigns') ? 'campaigns' : 'creators'
+        location.pathname.includes('campaigns') ? 'campaigns' : (location.pathname.includes('settings') || location.pathname.includes('groups')) ? 'settings' : 'creators'
     );
 
     const tabs = [
         { id: 'creators', label: 'CREATORS', icon: Users, description: 'Manage creator profiles and verification' },
-        { id: 'campaigns', label: 'CAMPAIGNS', icon: Target, description: 'Manage missions and task submissions' }
+        { id: 'campaigns', label: 'CAMPAIGNS', icon: Target, description: 'Manage missions and task submissions' },
+        { id: 'settings', label: 'SETTINGS', icon: Settings, description: 'Manage city groups, brand partners, testimonials & program rules' }
     ];
+
+    const getAccentClass = () => {
+        if (activeTab === 'creators') return 'text-neon-pink';
+        if (activeTab === 'campaigns') return 'text-neon-blue';
+        return 'text-neon-yellow dark:text-amber-400';
+    };
+
+    const getIcon = () => {
+        if (activeTab === 'creators') return Users;
+        if (activeTab === 'campaigns') return Target;
+        return Settings;
+    };
+
+    const getAccentColor = () => {
+        if (activeTab === 'creators') return 'neon-pink';
+        if (activeTab === 'campaigns') return 'neon-blue';
+        return 'neon-green';
+    };
 
     return (
         <AdminCommunityHubLayout
             studioHeader={{
                 title: 'CREATOR',
                 subtitle: 'ECOSYSTEM',
-                accentClass: activeTab === 'creators' ? 'text-neon-pink' : 'text-neon-blue',
-                icon: activeTab === 'creators' ? Users : Target
+                accentClass: getAccentClass(),
+                icon: getIcon()
             }}
             hideTabs={true}
-            accentColor={activeTab === 'creators' ? 'neon-pink' : 'neon-blue'}
+            accentColor={getAccentColor()}
             action={
                 <div className="bg-white dark:bg-black/40 backdrop-blur-3xl border border-black/10 dark:border-white/10 p-1.5 rounded-full flex items-center gap-1 shadow-[0_20px_50px_rgba(0,0,0,0.5)] overflow-x-auto no-scrollbar max-w-[calc(100vw-2rem)] sm:max-w-none">
                     {tabs.map(tab => (
@@ -50,12 +71,19 @@ const CreatorHub = () => {
                                     layoutId="creator-hub-active-pill"
                                     className={cn(
                                         "absolute inset-0 rounded-full -z-0",
-                                        tab.id === 'creators' ? "bg-gradient-to-r from-neon-pink/20 to-neon-pink/10 border border-neon-pink/30" : "bg-gradient-to-r from-neon-blue/20 to-neon-blue/10 border border-neon-blue/30"
+                                        tab.id === 'creators' && "bg-gradient-to-r from-neon-pink/20 to-neon-pink/10 border border-neon-pink/30",
+                                        tab.id === 'campaigns' && "bg-gradient-to-r from-neon-blue/20 to-neon-blue/10 border border-neon-blue/30",
+                                        tab.id === 'settings' && "bg-gradient-to-r from-neon-yellow/20 to-neon-yellow/10 border border-neon-yellow/30"
                                     )}
                                     transition={{ type: "spring", bounce: 0.15, duration: 0.6 }}
                                 />
                             )}
-                            <tab.icon size={14} className={cn("relative z-10 transition-transform duration-500 group-hover:scale-110 sm:size-[16px]", activeTab === tab.id && (tab.id === 'creators' ? "text-neon-pink" : "text-neon-blue"))} /> 
+                            <tab.icon size={14} className={cn(
+                                "relative z-10 transition-transform duration-500 group-hover:scale-110 sm:size-[16px]",
+                                activeTab === tab.id && (
+                                    tab.id === 'creators' ? "text-neon-pink" : tab.id === 'campaigns' ? "text-neon-blue" : "text-neon-yellow dark:text-amber-400"
+                                )
+                            )} /> 
                             <span className="relative z-10 text-[9px] sm:text-[11px] font-black uppercase tracking-[0.2em]">{tab.label}</span>
                         </button>
                     ))}
@@ -66,11 +94,11 @@ const CreatorHub = () => {
             <div className="fixed inset-0 pointer-events-none z-0">
                 <div className={cn(
                     "absolute top-[20%] left-[-10%] w-[40%] h-[40%] rounded-full blur-[150px] transition-all duration-1000 opacity-20",
-                    activeTab === 'creators' ? "bg-neon-pink" : "bg-neon-blue"
+                    activeTab === 'creators' ? "bg-neon-pink" : activeTab === 'campaigns' ? "bg-neon-blue" : "bg-neon-yellow/30"
                 )} />
                 <div className={cn(
                     "absolute bottom-[20%] right-[-10%] w-[30%] h-[30%] rounded-full blur-[150px] transition-all duration-1000 opacity-10",
-                    activeTab === 'creators' ? "bg-neon-blue" : "bg-neon-pink"
+                    activeTab === 'creators' ? "bg-neon-blue" : activeTab === 'campaigns' ? "bg-neon-pink" : "bg-neon-pink"
                 )} />
             </div>
 
@@ -90,8 +118,12 @@ const CreatorHub = () => {
                     >
                         {activeTab === 'creators' ? (
                             <CreatorManager isEmbedded />
-                        ) : (
+                        ) : activeTab === 'campaigns' ? (
                             <CampaignManager isEmbedded />
+                        ) : (
+                            <div className="max-w-7xl mx-auto py-4">
+                                <CreatorSettingsContent />
+                            </div>
                         )}
                     </motion.div>
                 </AnimatePresence>

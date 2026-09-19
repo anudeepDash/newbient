@@ -61,6 +61,7 @@ import FileSpreadsheet from 'lucide-react/dist/esm/icons/file-spreadsheet';
 import Lock from 'lucide-react/dist/esm/icons/lock';
 import Unlock from 'lucide-react/dist/esm/icons/unlock';
 import CheckCircle2 from 'lucide-react/dist/esm/icons/check-circle-2';
+import Settings from 'lucide-react/dist/esm/icons/settings';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -477,6 +478,7 @@ const CampaignManager = () => {
         { name: 'Creators', path: '/admin/creators', icon: Star },
         { name: 'Campaigns', path: '/admin/campaigns', icon: Target },
         { name: 'Leaderboard', path: '/admin/creators/leaderboard', icon: Trophy },
+        { name: 'Settings', path: '/admin/creators/settings', icon: Settings },
     ];
 
     const [formData, setFormData] = useState({

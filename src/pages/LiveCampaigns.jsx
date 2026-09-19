@@ -43,18 +43,9 @@ const LiveCampaigns = () => {
 
     // Filter active and past campaigns (exclude only Draft)
     const filteredCampaigns = useMemo(() => {
-        const visible = campaigns.filter(c => c.status && c.status !== 'Draft');
-        
-        // If store is empty or has no non-draft campaigns, provide premium fallback mockups
-        const baseList = visible.length > 0 ? visible : [
-            { id: '1', title: 'Luxury Lifestyle Summer Collab', description: 'Partner with a world-renowned luxury resort chain for their upcoming summer destination campaign.', targetCity: 'Mumbai', reward: '₹25,000 + Stay', minInstagramFollowers: 25000, platform: 'instagram', thumbnail: 'https://images.unsplash.com/photo-1539109136881-3be0616acf4b?auto=format&fit=crop&q=80&w=800', status: 'Open' },
-            { id: '2', title: 'Tech Flagship Smartphone Launch', description: 'Create unboxing and review content for the newest flagship smartphone release.', targetCity: 'Bangalore', reward: '₹40,000 + Device', minInstagramFollowers: 50000, platform: 'youtube', thumbnail: 'https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?auto=format&fit=crop&q=80&w=800', status: 'Open' },
-            { id: '3', title: 'Premium Streetwear Drop Vol. 4', description: 'Showcase urban streetwear aesthetics in high-energy reels and story sequences.', targetCity: 'Delhi', reward: '₹15,000 + Wardrobe', minInstagramFollowers: 10000, platform: 'instagram', thumbnail: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&q=80&w=800', status: 'Open' },
-            { id: '4', title: 'Gourmet Culinary Experience Invite', description: 'Attend an exclusive multi-course tasting menu event at a Michelin-starred restaurant.', targetCity: 'Mumbai', reward: '₹20,000 + Experience', minInstagramFollowers: 30000, platform: 'instagram', thumbnail: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&q=80&w=800', status: 'Open' },
-            { id: '5', title: 'Fintech Gen-Z Investment Masterclass', description: 'Educate young investors on smart SIPs and stock market fundamentals through engaging threads.', targetCity: 'Any', reward: '₹35,000', minInstagramFollowers: 40000, platform: 'twitter', thumbnail: 'https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?auto=format&fit=crop&q=80&w=800', status: 'Open' }
-        ];
+        const visible = (campaigns || []).filter(c => c.status && c.status !== 'Draft');
 
-        return baseList.filter(camp => {
+        return visible.filter(camp => {
             const matchesSearch = camp.title?.toLowerCase().includes(searchQuery.toLowerCase()) || 
                                   camp.description?.toLowerCase().includes(searchQuery.toLowerCase());
             

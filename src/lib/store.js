@@ -316,6 +316,9 @@ export const useStore = create((set, get) => ({
     artists: [], // Artist Onboarding state
     admins: [], // All Administrators
     clientRequests: [], // Artistant Client Onboarding
+    pastClients: [], // Past Client / Partner Brands
+    creatorGroups: [], // City-wise Creator Community Groups
+    creatorTestimonials: [], // Authentic Creator Testimonials
     notifications: [], // Notifications System
     emailTemplates: [], // Mailing Manager Templates
     emailCampaigns: [], // Email Broadcasts & Analytics
@@ -347,6 +350,7 @@ export const useStore = create((set, get) => ({
     authInitialized: initialUser !== null,
     user: initialUser,
     userListenerUnsubscribe: null,
+    subscriptionsLoaded: {},
 
     // Real-time Subscription Init
     // Reference-counted subscription helper
@@ -359,9 +363,15 @@ export const useStore = create((set, get) => ({
                 if (sortFn) {
                     data = sortFn(data);
                 }
-                set({ [stateKey]: data });
+                set((state) => ({
+                    [stateKey]: data,
+                    subscriptionsLoaded: { ...(state.subscriptionsLoaded || {}), [stateKey]: true }
+                }));
             }, async (error) => {
                 console.error(`Error fetching ${stateKey} (${colName}):`, error);
+                set((state) => ({
+                    subscriptionsLoaded: { ...(state.subscriptionsLoaded || {}), [stateKey]: true }
+                }));
                 // Graceful fallback for public endpoints if client Firestore rules reject unauthenticated access
                 if (stateKey === 'forms') {
                     try {
@@ -458,7 +468,23 @@ export const useStore = create((set, get) => ({
     subscribeToOtherIncomes: () => get().subscribeToKey('otherIncomes', 'other_incomes', (data) => data.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))),
     subscribeToFinancePayees: () => get().subscribeToKey('financePayees', 'finance_payees', (data) => data.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))),
     subscribeToMessages: () => get().subscribeToKey('messages', 'messages', (data) => data.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))),
-    subscribeToCreators: () => get().subscribeToKey('creators', 'creators'),
+    subscribeToCreators: () => get().subscribeToKey('creators', 'creators', (data) => {
+        const isBangaloreVariant = (city) => {
+            if (!city) return false;
+            const c = city.trim().toLowerCase();
+            return c === 'bangalore' || c === 'banglore' || c === 'bengaluru south' || c === 'bengaluru north' || c.includes('bangalore') || c.includes('banglore');
+        };
+        (data || []).forEach(creator => {
+            if (isBangaloreVariant(creator.city)) {
+                const docId = creator.uid || creator.id;
+                if (docId && creator.city !== 'Bengaluru') {
+                    updateDoc(doc(db, 'creators', docId), { city: 'Bengaluru' }).catch(err => console.error("Auto-migrated creator to Bengaluru:", err));
+                }
+                creator.city = 'Bengaluru';
+            }
+        });
+        return data;
+    }),
     subscribeToCampaigns: () => get().subscribeToKey('campaigns', 'campaigns'),
     subscribeToProposals: () => get().subscribeToKey('proposals', 'proposals', (data) => data.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))),
     subscribeToAgreements: () => get().subscribeToKey('agreements', 'agreements', (data) => data.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))),
@@ -467,6 +493,9 @@ export const useStore = create((set, get) => ({
     subscribeToArtists: () => get().subscribeToKey('artists', 'artists'),
     subscribeToAdmins: () => get().subscribeToKey('admins', 'admins'),
     subscribeToClientRequests: () => get().subscribeToKey('clientRequests', 'client_requests'),
+    subscribeToPastClients: () => get().subscribeToKey('pastClients', 'past_clients', (data) => data.sort((a, b) => (a.order || 0) - (b.order || 0))),
+    subscribeToCreatorGroups: () => get().subscribeToKey('creatorGroups', 'creator_groups', (data) => data.sort((a, b) => (a.order || 0) - (b.order || 0))),
+    subscribeToCreatorTestimonials: () => get().subscribeToKey('creatorTestimonials', 'creator_testimonials', (data) => data.sort((a, b) => (a.order || 0) - (b.order || 0))),
     subscribeToTicketOrders: () => get().subscribeToKey('ticketOrders', 'ticket_orders'),
     subscribeToCoupons: () => get().subscribeToKey('coupons', 'coupons'),
     subscribeToDocuments: () => get().subscribeToKey('documents', 'documents'),
@@ -973,6 +1002,77 @@ export const useStore = create((set, get) => ({
     },
     updateGeneralSettings: async (settings) => {
         await setDoc(doc(db, 'site_settings', 'general'), settings, { merge: true });
+    },
+
+    // Past Clients CRUD
+    addPastClient: async (client) => {
+        const currentItems = get().pastClients;
+        const maxOrder = currentItems.reduce((max, i) => Math.max(max, i.order || 0), 0);
+        await addDoc(collection(db, 'past_clients'), {
+            ...client,
+            order: maxOrder + 1,
+            createdAt: new Date().toISOString()
+        });
+    },
+    updatePastClient: async (id, updates) => {
+        await updateDoc(doc(db, 'past_clients', id), updates);
+    },
+    deletePastClient: async (id) => {
+        await deleteDoc(doc(db, 'past_clients', id));
+    },
+
+    // City-Wise Creator Groups CRUD
+    addCreatorGroup: async (group) => {
+        const currentItems = get().creatorGroups || [];
+        const maxOrder = currentItems.reduce((max, i) => Math.max(max, i.order || 0), 0);
+        await addDoc(collection(db, 'creator_groups'), {
+            ...group,
+            order: maxOrder + 1,
+            isActive: group.isActive !== false,
+            createdAt: new Date().toISOString()
+        });
+    },
+    updateCreatorGroup: async (id, updates) => {
+        await updateDoc(doc(db, 'creator_groups', id), updates);
+    },
+    deleteCreatorGroup: async (id) => {
+        await deleteDoc(doc(db, 'creator_groups', id));
+    },
+
+    // Creator Testimonials CRUD
+    addCreatorTestimonial: async (testimonial) => {
+        const currentItems = get().creatorTestimonials || [];
+        const maxOrder = currentItems.reduce((max, i) => Math.max(max, i.order || 0), 0);
+        await addDoc(collection(db, 'creator_testimonials'), {
+            ...testimonial,
+            order: maxOrder + 1,
+            isActive: testimonial.isActive !== false,
+            rating: testimonial.rating || 5,
+            createdAt: new Date().toISOString()
+        });
+    },
+    updateCreatorTestimonial: async (id, updates) => {
+        await updateDoc(doc(db, 'creator_testimonials', id), updates);
+    },
+    deleteCreatorTestimonial: async (id) => {
+        await deleteDoc(doc(db, 'creator_testimonials', id));
+    },
+
+    // Creator City Group Joined Status
+    markCreatorCityGroupJoined: async (creatorId) => {
+        if (!creatorId) return;
+        const docRef = doc(db, 'creators', creatorId);
+        await updateDoc(docRef, {
+            hasJoinedCityGroup: true,
+            joinedCityGroupAt: new Date().toISOString()
+        });
+        set(state => ({
+            creators: (state.creators || []).map(c => 
+                (c.id === creatorId || c.uid === creatorId) 
+                    ? { ...c, hasJoinedCityGroup: true, joinedCityGroupAt: new Date().toISOString() } 
+                    : c
+            )
+        }));
     },
     updateAiConfig: async (config) => {
         await setDoc(doc(db, 'site_settings', 'ai_config'), config, { merge: true });
@@ -1834,14 +1934,14 @@ export const useStore = create((set, get) => ({
     // Creators / Influencers
     addCreator: async (creator, sendWelcome = true) => {
         const { creators, user } = get();
-        const targetUid = creator.uid || user?.uid || doc(collection(db, 'creators')).id;
         const normPhone = normalizePhoneNumber(creator.phone);
         const normEmail = creator.email?.trim().toLowerCase();
         const cleanInsta = creator.instagram?.trim().replace(/^@/, '').toLowerCase();
+        const currentUid = creator.uid || user?.uid || null;
 
         // 1. Phone number deduplication
         if (normPhone) {
-            const existingPhone = creators.find(c => c.uid !== targetUid && normalizePhoneNumber(c.phone) === normPhone);
+            const existingPhone = creators.find(c => c.uid !== currentUid && normalizePhoneNumber(c.phone) === normPhone);
             if (existingPhone) {
                 throw new Error(`The mobile number ${creator.phone} is already linked to another Creator profile (${existingPhone.displayName || existingPhone.name || 'Existing Account'}). Multiple creator accounts for the same phone number are not allowed.`);
             }
@@ -1849,7 +1949,7 @@ export const useStore = create((set, get) => ({
 
         // 2. Email deduplication
         if (normEmail) {
-            const existingEmail = creators.find(c => c.uid !== targetUid && c.email && c.email.trim().toLowerCase() === normEmail);
+            const existingEmail = creators.find(c => c.uid !== currentUid && c.email && c.email.trim().toLowerCase() === normEmail);
             if (existingEmail) {
                 throw new Error(`The email address ${creator.email} is already registered to an existing Creator profile. Please sign in to access your dashboard.`);
             }
@@ -1857,12 +1957,74 @@ export const useStore = create((set, get) => ({
 
         // 3. Instagram handle deduplication
         if (cleanInsta) {
-            const existingInsta = creators.find(c => c.uid !== targetUid && c.instagram && c.instagram.trim().replace(/^@/, '').toLowerCase() === cleanInsta);
+            const existingInsta = creators.find(c => c.uid !== currentUid && c.instagram && c.instagram.trim().replace(/^@/, '').toLowerCase() === cleanInsta);
             if (existingInsta) {
                 throw new Error(`The Instagram handle @${cleanInsta} is already linked to an existing Creator profile.`);
             }
         }
 
+        // 4. Primary: Route submission through serverless API (Firebase Admin bypasses client Firestore rules)
+        try {
+            const { auth } = await import('./firebase');
+            let idToken = null;
+            if (auth?.currentUser) {
+                idToken = await auth.currentUser.getIdToken().catch(() => null);
+            }
+
+            const headers = { 'Content-Type': 'application/json' };
+            if (idToken) headers['Authorization'] = `Bearer ${idToken}`;
+
+            const res = await fetch('/api/creator-join', {
+                method: 'POST',
+                headers,
+                body: JSON.stringify({
+                    creator: {
+                        ...creator,
+                        uid: currentUid || auth?.currentUser?.uid || null
+                    },
+                    sendWelcome
+                })
+            });
+
+            const json = await res.json();
+            if (res.ok && json.success) {
+                if (json.creator) {
+                    set(state => {
+                        const existingList = state.creators || [];
+                        const exists = existingList.some(c => c.uid === json.id || c.id === json.id);
+                        if (exists) {
+                            return {
+                                creators: existingList.map(c => (c.uid === json.id || c.id === json.id) ? { ...c, ...json.creator } : c)
+                            };
+                        } else {
+                            return {
+                                creators: [json.creator, ...existingList]
+                            };
+                        }
+                    });
+                }
+
+                return {
+                    id: json.id,
+                    creatorId: json.creatorId,
+                    verificationToken: json.verificationToken
+                };
+            } else if (res.status === 409 || (json.error && !json.error.includes('Database service unavailable') && !json.error.includes('Failed to fetch'))) {
+                throw new Error(json.error || 'Failed to submit application.');
+            }
+        } catch (apiErr) {
+            if (apiErr.message && (
+                apiErr.message.includes('already linked') ||
+                apiErr.message.includes('already registered') ||
+                apiErr.message.includes('required fields')
+            )) {
+                throw apiErr;
+            }
+            console.warn('[Store] Creator join API notice, falling back to direct Firestore:', apiErr.message);
+        }
+
+        // 5. Fallback: Direct Firestore setDoc if API is unavailable (e.g. offline dev)
+        const targetUid = currentUid || doc(collection(db, 'creators')).id;
         const verificationToken = creator.verificationToken || `vt_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
         const creatorId = (creator.creatorId || targetUid.slice(0, 8)).toUpperCase();
         
@@ -1879,7 +2041,15 @@ export const useStore = create((set, get) => ({
             createdAt: new Date().toISOString()
         };
 
-        await setDoc(doc(db, 'creators', targetUid), finalCreator);
+        try {
+            await setDoc(doc(db, 'creators', targetUid), finalCreator);
+        } catch (firestoreErr) {
+            console.error('[Store] Firestore direct setDoc error:', firestoreErr);
+            if (firestoreErr.code === 'permission-denied' || firestoreErr.message?.includes('permission')) {
+                throw new Error("Unable to submit application due to security permissions. Please ensure your details are valid or try again shortly.");
+            }
+            throw firestoreErr;
+        }
 
         if (creator.referredBy) {
             const referredBy = creator.referredBy.trim();
@@ -1962,6 +2132,28 @@ export const useStore = create((set, get) => ({
     },
     deleteCreator: async (uid) => {
         await deleteDoc(doc(db, 'creators', uid));
+    },
+    mergeBangaloreCreatorsToBengaluru: async () => {
+        const { creators } = get();
+        const isBangaloreVariant = (city) => {
+            if (!city) return false;
+            const c = city.trim().toLowerCase();
+            return c === 'bangalore' || c === 'banglore' || c === 'bengaluru south' || c === 'bengaluru north' || c.includes('bangalore') || c.includes('banglore');
+        };
+        const affected = (creators || []).filter(c => isBangaloreVariant(c.city));
+        let updatedCount = 0;
+        for (const creator of affected) {
+            const docId = creator.uid || creator.id;
+            if (docId) {
+                try {
+                    await updateDoc(doc(db, 'creators', docId), { city: 'Bengaluru' });
+                    updatedCount++;
+                } catch (e) {
+                    console.error(`Failed to merge creator ${docId} to Bengaluru:`, e);
+                }
+            }
+        }
+        return { totalFound: affected.length, updatedCount };
     },
 
     // Artists Management

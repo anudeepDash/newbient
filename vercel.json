@@ -73,6 +73,10 @@
             "destination": "/api/forms.js"
         },
         {
+            "source": "/api/creator-join",
+            "destination": "/api/creator-join.js"
+        },
+        {
             "source": "/",
             "has": [{ "type": "host", "value": "artistant.in" }],
             "destination": "/artistant"

@@ -8,6 +8,8 @@ import ProfilePanel from './ProfilePanel';
 import { useStore } from '../lib/store';
 import logo from '../assets/logo.png';
 import logoLight from '../assets/logo_light.png';
+import newbiCreatorsLogoDark from '../assets/newbi-creators-logo.png';
+import newbiCreatorsLogoLight from '../assets/newbi-creators-logo-light.png';
 import { useTheme } from '../hooks/useTheme';
 
 const Navbar = () => {
@@ -18,10 +20,13 @@ const Navbar = () => {
     const location = useLocation();
     const { isDark, toggleTheme } = useTheme();
 
+    const isCreatorRoute = location.pathname.startsWith('/creator') || location.pathname === '/campaigns';
+
     const userPhoneNorm = user?.phoneNumber ? normalizePhoneNumber(user.phoneNumber) : null;
     const userEmailNorm = user?.email ? user.email.toLowerCase() : null;
     const isCreator = Boolean(creators?.some(c => 
         c.uid === user?.uid || 
+        c.id === user?.uid ||
         (userEmailNorm && c.email && c.email.toLowerCase() === userEmailNorm) ||
         (userPhoneNorm && c.phone && normalizePhoneNumber(c.phone) === userPhoneNorm)
     ));
@@ -32,8 +37,8 @@ const Navbar = () => {
         { name: 'COMMUNITY', path: '/community', featureId: 'community', icon: Users },
         { 
             name: 'CREATOR', 
-            path: isCreator ? '/creator-dashboard' : '/creator', 
-            matchPaths: ['/creator-dashboard', '/creator', '/campaigns'], 
+            path: '/creator', 
+            matchPaths: ['/creator', '/creator/join', '/campaigns', '/creator-dashboard'], 
             featureId: 'influencer', 
             icon: Zap 
         },
@@ -48,8 +53,8 @@ const Navbar = () => {
         { name: 'COMMUNITY', path: '/community', featureId: 'community', icon: Users },
         { 
             name: 'CREATOR', 
-            path: isCreator ? '/creator-dashboard' : '/creator', 
-            matchPaths: ['/creator-dashboard', '/creator', '/campaigns'], 
+            path: '/creator', 
+            matchPaths: ['/creator', '/creator/join', '/campaigns', '/creator-dashboard'], 
             featureId: 'influencer', 
             icon: Zap 
         },
@@ -67,7 +72,6 @@ const Navbar = () => {
 
     const hideTopNav = 
         location.pathname === '/creator' ||
-        location.pathname === '/creator/join' ||
         location.pathname.startsWith('/concertzone') ||
         location.pathname.toLowerCase().includes('/admin/create-') || 
         location.pathname.toLowerCase().includes('/admin/edit-') || 
@@ -121,16 +125,25 @@ const Navbar = () => {
                 (maintenanceState.global && user?.role === 'developer') 
                     ? "top-14" 
                     : pinnedAnnouncement 
-                        ? "top-14" 
-                        : "top-4 md:top-6"
+                    ? "top-14" 
+                    : "top-4 md:top-6"
             )}>
                 {/* Redesigned Floating Header Navigation - Unified Glassmorphic Capsule */}
                 <header className="w-full h-16 bg-white/70 dark:bg-zinc-950/35 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] rounded-2xl px-6 md:px-8 flex items-center justify-between shadow-[0_8px_30px_-15px_rgba(0,0,0,0.15)] dark:shadow-[0_25px_60px_-15px_rgba(0,0,0,0.8)] select-none">
                     {/* Left: Logo */}
                     <div className="flex items-center gap-3">
-                        <Link to="/" className="flex items-center gap-3 group">
-                            <img src={logo} alt="Newbi Entertainments" className="h-6 w-auto hidden dark:block" />
-                            <img src={logoLight} alt="Newbi Entertainments" className="h-6 w-auto block dark:hidden" />
+                        <Link to={isCreatorRoute ? "/creator" : "/"} className="flex items-center gap-3 group">
+                            {isCreatorRoute ? (
+                                <>
+                                    <img src={newbiCreatorsLogoDark} alt="Newbi Creators" className="h-6 w-auto hidden dark:block object-contain" />
+                                    <img src={newbiCreatorsLogoLight} alt="Newbi Creators" className="h-6 w-auto block dark:hidden object-contain" />
+                                </>
+                            ) : (
+                                <>
+                                    <img src={logo} alt="Newbi Entertainments" className="h-6 w-auto hidden dark:block" />
+                                    <img src={logoLight} alt="Newbi Entertainments" className="h-6 w-auto block dark:hidden" />
+                                </>
+                            )}
                         </Link>
                     </div>
 
@@ -549,7 +562,7 @@ const Navbar = () => {
                                                             </div>
                                                             <div className="flex flex-col">
                                                                 <span className="text-sm font-bold text-gray-800 dark:text-white">Creator Hub</span>
-                                                                <span className="text-[10px] text-neon-green uppercase tracking-widest font-black">Studio & Dossier</span>
+                                                                <span className="text-[10px] text-neon-green uppercase tracking-widest font-black">Studio & Profile</span>
                                                             </div>
                                                         </div>
                                                         <ChevronRight size={18} className="text-neon-green" />

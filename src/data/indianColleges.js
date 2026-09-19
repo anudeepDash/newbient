@@ -118,7 +118,7 @@ const INDIA_DATA = {
       name: 'Karnataka',
       cities: [
         {
-          name: 'Bangalore',
+          name: 'Bengaluru',
           colleges: [
             'IIM Bangalore',
             'IISc Bangalore',

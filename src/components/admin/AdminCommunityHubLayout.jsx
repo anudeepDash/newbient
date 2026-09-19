@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { 
     Users, ClipboardList, ListChecks, Sparkles, LayoutGrid, FolderOpen, 
     Menu, X, Mail, Compass, TrendingUp, Ticket, LayoutDashboard, Shield, UserCheck,
-    Calendar, Radio, FileText, Music, Settings, ChevronRight
+    Calendar, Radio, FileText, Music, Settings, ChevronRight, MapPin
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../../lib/utils';
@@ -73,6 +73,7 @@ const AdminCommunityHubLayout = ({ children, title, description, action, studioH
             color: "text-neon-pink",
             visible: user?.role !== 'scanner' && user?.role !== 'gate_manager',
             links: [
+                { name: "Site Content", path: "/admin/content", icon: LayoutGrid, color: "neon-pink", show: true },
                 { name: "Upcoming", path: "/admin/upcoming-events", icon: Calendar, color: "neon-green", show: !cards.upcoming_events },
                 { name: "Announcements", path: "/admin/announcements", icon: Radio, color: "neon-pink", show: !cards.blog_announcements },
                 { name: "Blog", path: "/admin/blog", icon: FileText, color: "neon-blue", show: !cards.blog_announcements },
@@ -95,6 +96,7 @@ const AdminCommunityHubLayout = ({ children, title, description, action, studioH
             links: [
                 { name: "Community Hub", path: "/admin/volunteer-gigs", icon: Users, color: "neon-green", show: !cards.community },
                 { name: "Creator Studio", path: "/admin/creators", icon: Sparkles, color: "neon-blue", show: !cards.influencer },
+                { name: "Creator Settings", path: "/admin/creators/settings", icon: Settings, color: "neon-pink", show: !cards.influencer },
                 { name: "Giveaways", path: "/admin/giveaways", icon: Sparkles, color: "neon-purple", show: !cards.giveaways },
                 { name: "Artistant", path: "/admin/artistant", icon: Music, color: "neon-blue", show: !cards.artists },
                 { name: "Mailing", path: "/admin/mailing", icon: Mail, color: "neon-blue", show: !cards.mailing },
