@@ -38,7 +38,7 @@ const CampaignCard = ({ campaign, profile, type, onOpenMission }) => {
             animate={{ opacity: 1, y: 0 }}
             whileTap={{ scale: 0.98 }}
             onClick={() => onOpenMission(campaign)}
-            className="bg-gray-100 dark:bg-zinc-950/45 border border-white/[0.08] backdrop-blur-3xl shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)] hover:border-black/20 dark:hover:border-white/20 hover:shadow-[inset_0_1px_1px_rgba(255,255,255,0.2),0_40px_80px_rgba(0,0,0,0.7)] rounded-3xl overflow-hidden flex flex-col group transition-[background-color,border-color,box-shadow] duration-500 h-full relative cursor-pointer"
+            className="bg-white dark:bg-[#0c0e14] border border-black/[0.08] dark:border-white/[0.08] shadow-sm hover:shadow-xl dark:shadow-[0_15px_35px_rgba(0,0,0,0.5)] hover:border-black/20 dark:hover:border-white/20 rounded-3xl overflow-hidden flex flex-col group transition-all duration-300 h-full relative cursor-pointer"
         >
             {/* Progress Strip */}
             {isJoined && (
@@ -132,7 +132,7 @@ const CampaignCard = ({ campaign, profile, type, onOpenMission }) => {
                 </div>
                 
                 {/* Key Metrics Grid */}
-                <div className="grid grid-cols-3 gap-1.5 sm:gap-3 p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-gray-100 dark:bg-zinc-950/40 border border-white/[0.06] shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)] mb-6 backdrop-blur-md">
+                <div className="grid grid-cols-3 gap-1.5 sm:gap-3 p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-black/[0.03] dark:bg-zinc-950/60 border border-black/[0.08] dark:border-white/[0.08] shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)] mb-6 backdrop-blur-md">
                     <div className="flex flex-col items-center justify-center text-center border-r border-black/10 dark:border-white/5 pr-1 sm:pr-2">
                         <span className="text-[7px] sm:text-[8px] font-black text-gray-500 uppercase tracking-widest mb-1 flex items-center gap-0.5 sm:gap-1">
                             <Award size={9} className="text-neon-green sm:w-2.5 sm:h-2.5" /> REWARD
@@ -158,12 +158,12 @@ const CampaignCard = ({ campaign, profile, type, onOpenMission }) => {
                 </div>
 
                 {/* Interactive Footer Button */}
-                <div className="mt-auto pt-4 border-t border-black/10 dark:border-white/5 flex items-center justify-between px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl bg-gray-100 dark:bg-zinc-950/40 border border-white/[0.06] shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)] group-hover:bg-neon-green group-hover:text-black transition-all duration-300 shadow-lg">
-                    <div className="text-[8px] sm:text-[9px] font-black uppercase tracking-[0.15em] sm:tracking-[0.2em] flex items-center gap-1.5 sm:gap-2 group-hover:text-black text-gray-600 dark:text-gray-400 transition-colors">
+                <div className="mt-auto flex items-center justify-between px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl bg-black/[0.03] dark:bg-zinc-950/60 border border-black/[0.08] dark:border-white/[0.08] group-hover:bg-neon-green group-hover:text-black group-hover:border-neon-green transition-all duration-300 shadow-sm">
+                    <div className="text-[8px] sm:text-[9px] font-black uppercase tracking-[0.15em] sm:tracking-[0.2em] flex items-center gap-1.5 sm:gap-2 group-hover:text-black text-gray-700 dark:text-gray-300 transition-colors">
                         <FileText size={10} className="sm:w-3 sm:h-3" /> 
                         {isJoined && isShortlisted ? 'Open Campaign Page' : 'View Opportunity'}
                     </div>
-                    <ArrowRight className="text-gray-600 group-hover:text-black group-hover:translate-x-1 transition-all" size={14} />
+                    <ArrowRight className="text-gray-600 dark:text-gray-400 group-hover:text-black group-hover:translate-x-1 transition-all" size={14} />
                 </div>
             </div>
         </motion.div>

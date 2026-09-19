@@ -77,6 +77,9 @@ const EventScanner = lazy(() => import('./pages/Admin/EventScanner'));
 const TicketingManagement = lazy(() => import('./pages/Admin/TicketingManagement'));
 const GuestlistManager = lazy(() => import('./pages/Admin/GuestlistManager'));
 const CreatorHub = lazy(() => import('./pages/Admin/CreatorHub'));
+const CreatorSettingsPage = lazy(() => import('./pages/Admin/CreatorSettingsPage'));
+const CityGroupPage = lazy(() => import('./pages/Admin/CityGroupPage'));
+const SiteContentManager = lazy(() => import('./pages/Admin/SiteContentManager'));
 const NewsletterStudio = lazy(() => import('./pages/Admin/NewsletterStudio'));
 const DocumentHub = lazy(() => import('./pages/Admin/DocumentHub'));
 
@@ -210,6 +213,12 @@ function AppContent() {
             <Route path="admin/creators" element={<AdminGuard><MaintenanceGuard featureId="influencer"><CreatorManager /></MaintenanceGuard></AdminGuard>} />
             <Route path="admin/creators/leaderboard" element={<AdminGuard><MaintenanceGuard featureId="influencer"><CreatorManager showLeaderboardOnly={true} /></MaintenanceGuard></AdminGuard>} />
             <Route path="admin/creators/:id" element={<AdminGuard><MaintenanceGuard featureId="influencer"><CreatorManager /></MaintenanceGuard></AdminGuard>} />
+            <Route path="admin/creators/settings" element={<AdminGuard><MaintenanceGuard featureId="influencer"><CreatorSettingsPage /></MaintenanceGuard></AdminGuard>} />
+            <Route path="admin/city-groups" element={<Navigate to="/admin/creators/settings" replace />} />
+            <Route path="admin/creators/groups" element={<Navigate to="/admin/creators/settings" replace />} />
+            <Route path="admin/creator-hub" element={<AdminGuard><MaintenanceGuard featureId="influencer"><CreatorHub /></MaintenanceGuard></AdminGuard>} />
+            <Route path="admin/content" element={<AdminGuard><SiteContentManager /></AdminGuard>} />
+            <Route path="admin/site-content" element={<Navigate to="/admin/content" replace />} />
             <Route path="admin/campaigns" element={<AdminGuard><MaintenanceGuard featureId="influencer"><CampaignManager /></MaintenanceGuard></AdminGuard>} />
             <Route path="admin/campaigns/create" element={<AdminGuard><MaintenanceGuard featureId="influencer"><CampaignManager /></MaintenanceGuard></AdminGuard>} />
             <Route path="admin/campaigns/edit/:id" element={<AdminGuard><MaintenanceGuard featureId="influencer"><CampaignManager /></MaintenanceGuard></AdminGuard>} />

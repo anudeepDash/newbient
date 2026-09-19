@@ -5,7 +5,8 @@ import {
     Calendar, Zap, AlertCircle, ArrowRight, Key, RefreshCw, Mail, Check, 
     Edit2, Loader2, Info, Instagram, ShieldCheck, 
     LayoutDashboard, CreditCard, History, ChevronRight, ChevronLeft, Image as ImageIcon,
-    Sparkles, Trash2, MapPin, Phone, CheckCircle2, Upload, Camera, Building, Award, Clock
+    Sparkles, Trash2, MapPin, Phone, CheckCircle2, Upload, Camera, Building, Award, Clock,
+    IndianRupee, Layers, Banknote, Handshake, Youtube, Twitter, Linkedin, Globe, Building2, GraduationCap
 } from 'lucide-react';
 import { useStore } from '../lib/store';
 import { cn, normalizePhoneNumber } from '../lib/utils';
@@ -628,7 +629,7 @@ const ProfilePanel = ({ isOpen: propIsOpen, onClose: propOnClose }) => {
                                                         <p className="text-[11px] text-gray-500 dark:text-zinc-400 font-medium mt-0.5">
                                                             {isCreator 
                                                                 ? `${(creatorProfile?.joinedCampaigns || []).length} Active Campaigns & Studio Rates` 
-                                                                : 'Get brand deals, VIP concert passes & payouts'}
+                                                                : 'Get brand deals, festival passes & payouts'}
                                                         </p>
                                                     </div>
                                                 </div>
@@ -1022,7 +1023,7 @@ const ProfilePanel = ({ isOpen: propIsOpen, onClose: propOnClose }) => {
                                                             <h5 className="text-xs font-black uppercase">Deactivate Creator Listing</h5>
                                                         </div>
                                                         <p className="text-[11px] text-gray-600 dark:text-zinc-400 leading-relaxed">
-                                                            Removes your public creator dossier and campaign applications. Your user account and tickets remain safe.
+                                                            Removes your public creator profile and campaign applications. Your user account and tickets remain safe.
                                                         </p>
                                                         <button 
                                                             onClick={() => setShowDeleteCreatorConfirm(true)}
@@ -1180,7 +1181,7 @@ const CreatorNonMemberView = ({ onClose, navigate }) => {
                         Monetize Your Influence With Newbi
                     </h4>
                     <p className="text-xs text-gray-600 dark:text-zinc-400 font-medium leading-relaxed">
-                        Connect with top brands, access paid gig opportunities, unlock VIP backstage concert passes, and track deliverables with automated payouts.
+                        Connect with top brands, access paid gig opportunities, unlock backstage festival passes, and track deliverables with automated payouts.
                     </p>
                 </div>
 
@@ -1192,7 +1193,7 @@ const CreatorNonMemberView = ({ onClose, navigate }) => {
                     </div>
                     <div className="flex items-center gap-2 p-2.5 rounded-xl bg-white/80 dark:bg-white/5 border border-gray-200/80 dark:border-white/5 text-[11px] font-bold text-gray-800 dark:text-zinc-200">
                         <CheckCircle2 size={14} className="text-neon-green shrink-0" />
-                        <span>Concert Passes & VIP Access</span>
+                        <span>Concert & Festival Passes</span>
                     </div>
                     <div className="flex items-center gap-2 p-2.5 rounded-xl bg-white/80 dark:bg-white/5 border border-gray-200/80 dark:border-white/5 text-[11px] font-bold text-gray-800 dark:text-zinc-200">
                         <CheckCircle2 size={14} className="text-neon-green shrink-0" />
@@ -1236,6 +1237,48 @@ const CreatorNonMemberView = ({ onClose, navigate }) => {
 
 /* --- Creator Profile & Settings Component Embedded in Profile Panel --- */
 
+const CREATOR_NICHE_OPTIONS = [
+    { id: 'City Pages', label: 'City Pages / Local Hubs' },
+    { id: 'College Pages', label: 'College Pages / Hubs' },
+    { id: 'Student/Campus Creator', label: 'Campus & College' },
+    { id: 'Fashion & Luxury', label: 'Fashion & Luxury' },
+    { id: 'Tech & Gaming', label: 'Tech & Gaming' },
+    { id: 'Travel & Lifestyle', label: 'Travel & Lifestyle' },
+    { id: 'Beauty & Fitness', label: 'Beauty & Cosmetics' },
+    { id: 'Fitness & Sports', label: 'Fitness & Athletics' },
+    { id: 'Food & Beverage', label: 'Food & Dining' },
+    { id: 'Comedy & Entertainment', label: 'Comedy & Memes' },
+    { id: 'Real Estate', label: 'Real Estate & Living' },
+    { id: 'Photography & Filmmaking', label: 'Photo & Filmmaking' },
+    { id: 'Automotive & Moto', label: 'Auto & Motovlogging' },
+    { id: 'Art & Design', label: 'Art, Design & DIY' },
+    { id: 'Music & Dance', label: 'Music & Dance' },
+    { id: 'Parenting & Family', label: 'Parenting & Family' },
+    { id: 'Podcasts & Media', label: 'Podcasts & Media' },
+    { id: 'Meme & Pop Culture', label: 'Meme & Pop Culture' },
+    { id: 'Startup & Entrepreneurship', label: 'Startup & Founder' },
+    { id: 'Finance & Business', label: 'Finance & Career' },
+    { id: 'Others', label: 'Other Specialization' }
+];
+
+const formatINR = (amt) => {
+    if (!amt && amt !== 0) return '₹0';
+    return `₹${amt.toLocaleString('en-IN')}`;
+};
+
+const parseRates = (str) => {
+    if (!str || str.toLowerCase().includes('flexible') || str.toLowerCase().includes('barter')) {
+        return { isFlexible: true, min: 5000, max: 25000 };
+    }
+    const numbers = str.match(/\d[\d,]*/g);
+    if (numbers && numbers.length >= 2) {
+        const min = parseInt(numbers[0].replace(/,/g, ''), 10) || 5000;
+        const max = parseInt(numbers[1].replace(/,/g, ''), 10) || 25000;
+        return { isFlexible: false, min, max };
+    }
+    return { isFlexible: false, min: 5000, max: 25000 };
+};
+
 const CreatorProfileManager = ({ 
     creatorProfile, 
     user, 
@@ -1252,25 +1295,46 @@ const CreatorProfileManager = ({
 }) => {
     const [subTab, setSubTab] = useState('overview'); // 'overview' | 'settings'
     const [isSaving, setIsSaving] = useState(false);
+    const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
 
     const rawSpecialization = (creatorProfile?.specializations || [creatorProfile?.categories] || [])[0] || '';
-    const initialSpecialization = rawSpecialization === 'Student Creator/ Campus Creator' ? 'Student/ Campus Creator' : rawSpecialization;
-    const isPredefinedNiche = CREATOR_NICHES.includes(initialSpecialization);
-    const isPredefinedCity = PREDEFINED_CITIES.includes(creatorProfile?.city || '');
+    const initialSpecialization = (rawSpecialization === 'Student Creator/ Campus Creator' || rawSpecialization === 'Student/ Campus Creator') 
+        ? 'Student/Campus Creator' 
+        : rawSpecialization;
+    const isPredefinedNiche = CREATOR_NICHE_OPTIONS.some(n => n.id === initialSpecialization);
+    const normalizedProfileCity = (/^bang[al]*o?re$/i.test((creatorProfile?.city || '').trim())) ? 'Bengaluru' : (creatorProfile?.city || '');
+    const isPredefinedCity = PREDEFINED_CITIES.includes(normalizedProfileCity);
+
+    const initialBarter = (creatorProfile?.doBarter === 'paid' || creatorProfile?.doBarter === 'No')
+        ? 'paid'
+        : (creatorProfile?.doBarter === 'barter' || creatorProfile?.doBarter === 'Yes')
+            ? 'barter'
+            : 'both';
+
+    const initialRates = parseRates(creatorProfile?.commercials);
+    const [rateMin, setRateMin] = useState(initialRates.min);
+    const [rateMax, setRateMax] = useState(initialRates.max);
+    const [isRateFlexible, setIsRateFlexible] = useState(initialRates.isFlexible);
 
     const [form, setForm] = useState({
         name: creatorProfile?.name || creatorProfile?.displayName || user?.displayName || '',
         phone: creatorProfile?.phone || user?.phoneNumber || '',
         email: creatorProfile?.email || user?.email || '',
-        city: isPredefinedCity ? (creatorProfile?.city || '') : (creatorProfile?.city ? 'Others' : ''),
-        customCity: isPredefinedCity ? '' : (creatorProfile?.city || ''),
-        specializations: isPredefinedNiche ? initialSpecialization : (initialSpecialization ? 'Others' : ''),
+        city: isPredefinedCity ? normalizedProfileCity : (normalizedProfileCity ? 'Others' : ''),
+        customCity: isPredefinedCity ? '' : normalizedProfileCity,
+        categories: isPredefinedNiche ? initialSpecialization : (initialSpecialization ? 'Others' : ''),
         customNiche: isPredefinedNiche ? '' : initialSpecialization,
+        cityPageFocus: creatorProfile?.cityPageFocus || '',
         collegeName: creatorProfile?.collegeName || '',
         instagram: creatorProfile?.instagram || '',
+        instagramFollowers: creatorProfile?.instagramFollowers || '',
+        youtube: creatorProfile?.youtube || '',
+        twitter: creatorProfile?.twitter || '',
+        linkedin: creatorProfile?.linkedin || '',
+        website: creatorProfile?.website || '',
         bio: creatorProfile?.bio || '',
-        doBarter: creatorProfile?.doBarter || '',
-        commercials: creatorProfile?.commercials || '',
+        doBarter: initialBarter,
+        commercials: creatorProfile?.commercials || '₹5,000 – ₹25,000 / Deliverable',
         profilePicture: creatorProfile?.profilePicture || ''
     });
 
@@ -1308,18 +1372,33 @@ const CreatorProfileManager = ({
         setForm(prev => ({ ...prev, [name]: value }));
     };
 
-    const handleImageUpload = (e) => {
+    const handleImageUpload = async (e) => {
         const file = e.target.files?.[0];
         if (!file) return;
-        if (file.size > 5 * 1024 * 1024) {
-            if (addToast) addToast("Image size must be under 5MB", "error");
+        if (file.size > 10 * 1024 * 1024) {
+            if (addToast) addToast("Image size must be under 10MB", "error");
             return;
         }
-        const reader = new FileReader();
-        reader.onloadend = () => {
-            setForm(prev => ({ ...prev, profilePicture: reader.result }));
-        };
-        reader.readAsDataURL(file);
+        const localPreview = URL.createObjectURL(file);
+        setForm(prev => ({ ...prev, profilePicture: localPreview }));
+        setIsUploadingPhoto(true);
+        try {
+            const uploadFn = useStore.getState().uploadToCloudinary;
+            if (uploadFn) {
+                const url = await uploadFn(file);
+                setForm(prev => ({ ...prev, profilePicture: url }));
+                if (addToast) addToast("Profile photo uploaded!", "success");
+            }
+        } catch (err) {
+            console.error("Cloudinary upload failed, using local preview fallback:", err);
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setForm(prev => ({ ...prev, profilePicture: reader.result }));
+            };
+            reader.readAsDataURL(file);
+        } finally {
+            setIsUploadingPhoto(false);
+        }
     };
 
     const handleSendOTP = async () => {
@@ -1401,14 +1480,15 @@ const CreatorProfileManager = ({
             }
             setIsPhoneVerified(true);
             setOtpSent(false);
-            if (addToast) addToast("Phone number verified successfully!", "success");
-            await updateCreator(creatorProfile.uid, {
+            if (addToast) addToast("Phone verified successfully!", "success");
+            await updateCreator(creatorProfile.uid, { 
+                isPhoneVerified: true, 
                 phone: form.phone,
-                isPhoneVerified: true
+                phoneVerifiedAt: new Date().toISOString()
             });
         } catch (err) {
-            console.error("Verification error:", err);
-            if (addToast) addToast(err.message || "Invalid verification code. Please try again.", "error");
+            console.error("OTP verification error:", err);
+            if (addToast) addToast(err.message || "Invalid verification code.", "error");
         } finally {
             setIsVerifyingOtp(false);
         }
@@ -1416,25 +1496,8 @@ const CreatorProfileManager = ({
 
     const handleOtpChange = (index, value) => {
         const clean = value.replace(/\D/g, '');
-        if (!clean && value !== '') return;
-
-        if (clean.length > 1) {
-            const digits = clean.slice(0, 6).split('');
-            const newOtp = [...otpValues];
-            digits.forEach((d, i) => {
-                if (index + i < 6) newOtp[index + i] = d;
-            });
-            setOtpValues(newOtp);
-            const nextIdx = Math.min(index + digits.length, 5);
-            otpRefs.current[nextIdx]?.focus();
-            if (newOtp.every(d => d !== '')) {
-                handleVerifyOTP(newOtp.join(''));
-            }
-            return;
-        }
-
         const newOtp = [...otpValues];
-        newOtp[index] = clean;
+        newOtp[index] = clean ? clean.slice(-1) : '';
         setOtpValues(newOtp);
 
         if (clean && index < 5) {
@@ -1452,23 +1515,53 @@ const CreatorProfileManager = ({
             if (addToast) addToast("Please enter your creator name", "error");
             return;
         }
+        if (!form.city) {
+            if (addToast) addToast("Please select your city", "error");
+            return;
+        }
+        if (form.city === 'Others' && !form.customCity?.trim()) {
+            if (addToast) addToast("Please specify your city name", "error");
+            return;
+        }
+        if (!form.categories) {
+            if (addToast) addToast("Please select your primary niche", "error");
+            return;
+        }
+        if (form.categories === 'Others' && !form.customNiche?.trim()) {
+            if (addToast) addToast("Please specify your custom niche", "error");
+            return;
+        }
+
         setIsSaving(true);
         try {
-            const finalCity = form.city === 'Others' ? (form.customCity?.trim() || 'Others') : form.city;
-            const finalNiche = form.specializations === 'Others' ? (form.customNiche?.trim() || 'Others') : form.specializations;
+            let finalCity = form.city === 'Others' ? (form.customCity?.trim() || 'Others') : form.city;
+            if (/^bang[al]*o?re$/i.test(finalCity.trim())) {
+                finalCity = 'Bengaluru';
+            }
+            const finalNiche = form.categories === 'Others' ? (form.customNiche?.trim() || 'Others') : form.categories;
+            const finalCommercials = isRateFlexible 
+                ? 'Flexible / Barter' 
+                : `${formatINR(rateMin)} – ${formatINR(rateMax)}${rateMax >= 100000 ? '+' : ''} / Deliverable`;
 
             const payload = {
                 name: form.name.trim(),
                 displayName: form.name.trim(),
-                instagram: form.instagram?.trim().replace(/^@/, '') || '',
+                email: form.email?.trim() || '',
                 phone: form.phone?.trim() || '',
                 city: finalCity,
-                specializations: [finalNiche],
                 categories: finalNiche,
-                collegeName: form.collegeName?.trim() || '',
+                specializations: [finalNiche],
+                cityPageFocus: form.categories === 'City Pages' ? (form.cityPageFocus?.trim() || '') : '',
+                collegeName: (form.categories === 'Student/Campus Creator' || form.categories === 'College Pages') ? (form.collegeName?.trim() || '') : '',
+                instagram: form.instagram?.trim().replace(/^@/, '') || '',
+                instagramFollowers: form.instagramFollowers || '',
+                linkedin: form.linkedin?.trim() || '',
+                youtube: form.youtube?.trim() || '',
+                twitter: form.twitter?.trim() || '',
+                website: form.website?.trim() || '',
                 bio: form.bio?.trim() || '',
-                commercials: form.commercials?.trim() || '',
-                doBarter: form.doBarter || '',
+                doBarter: form.doBarter || 'both',
+                commercials: finalCommercials,
                 profilePicture: form.profilePicture || '',
                 isPhoneVerified: isPhoneVerified
             };
@@ -1491,8 +1584,6 @@ const CreatorProfileManager = ({
         }
     };
 
-    const showCollegeField = form.specializations === 'Student/ Campus Creator' || form.specializations === 'Student Creator/ Campus Creator' || form.specializations === 'College Pages';
-
     if (subTab === 'settings') {
         return (
             <motion.div
@@ -1505,9 +1596,10 @@ const CreatorProfileManager = ({
                 <div className="flex items-center justify-between border-b border-gray-200 dark:border-white/5 pb-4">
                     <div>
                         <h3 className="text-xl font-black font-heading text-gray-900 dark:text-white uppercase italic tracking-tight">Edit Creator Profile</h3>
-                        <p className="text-[11px] text-gray-500 dark:text-zinc-400 font-medium">Update rates, contacts, and public dossier</p>
+                        <p className="text-[11px] text-gray-500 dark:text-zinc-400 font-medium">Update contact details, categories, bio &amp; rates</p>
                     </div>
                     <button
+                        type="button"
                         onClick={() => setSubTab('overview')}
                         className="px-3.5 py-1.5 rounded-xl bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white text-[10px] font-black uppercase tracking-wider transition-all"
                     >
@@ -1515,8 +1607,8 @@ const CreatorProfileManager = ({
                     </button>
                 </div>
 
-                <form onSubmit={handleSaveCreatorSettings} className="space-y-4">
-                    {/* Avatar Upload */}
+                <form onSubmit={handleSaveCreatorSettings} className="space-y-5">
+                    {/* Profile Photo */}
                     <div className="flex items-center gap-4 p-4 rounded-2xl bg-gray-50 dark:bg-zinc-900/60 border border-gray-200 dark:border-white/10">
                         <div className="relative w-16 h-16 rounded-2xl bg-gray-200 dark:bg-zinc-800 border border-gray-300 dark:border-white/10 overflow-hidden flex items-center justify-center shrink-0">
                             {form.profilePicture ? (
@@ -1524,18 +1616,23 @@ const CreatorProfileManager = ({
                             ) : (
                                 <span className="text-2xl font-black text-gray-900 dark:text-white">{form.name?.charAt(0) || 'C'}</span>
                             )}
+                            {isUploadingPhoto && (
+                                <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                                    <Loader2 size={16} className="text-neon-green animate-spin" />
+                                </div>
+                            )}
                         </div>
                         <div className="flex-1 min-w-0">
                             <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 dark:text-zinc-400 block mb-1">Profile Photo</label>
-                            <label className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white dark:bg-black/50 border border-gray-200 dark:border-white/10 text-[10px] font-bold text-gray-900 dark:text-white cursor-pointer hover:border-neon-green transition-all">
+                            <label className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white dark:bg-black/50 border border-gray-200 dark:border-white/10 text-[10px] font-bold text-gray-900 dark:text-white cursor-pointer hover:border-neon-green transition-all shadow-sm">
                                 <Upload size={12} className="text-neon-green" />
-                                <span>Upload New Picture</span>
-                                <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
+                                <span>{isUploadingPhoto ? "Uploading..." : "Upload New Picture"}</span>
+                                <input type="file" accept="image/*" onChange={handleImageUpload} disabled={isUploadingPhoto} className="hidden" />
                             </label>
                         </div>
                     </div>
 
-                    {/* Name & Instagram */}
+                    {/* Basic Info: Name & Email */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div className="space-y-1">
                             <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 dark:text-zinc-400">Creator Name *</label>
@@ -1550,18 +1647,15 @@ const CreatorProfileManager = ({
                             />
                         </div>
                         <div className="space-y-1">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 dark:text-zinc-400">Instagram Handle</label>
-                            <div className="relative">
-                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-xs">@</span>
-                                <input 
-                                    type="text"
-                                    name="instagram"
-                                    value={form.instagram.replace(/^@/, '')}
-                                    onChange={handleChange}
-                                    placeholder="username"
-                                    className="w-full h-11 pl-7 pr-3.5 rounded-xl bg-white dark:bg-black/50 border border-gray-200 dark:border-white/10 text-xs font-bold text-gray-900 dark:text-white focus:border-neon-green outline-none transition-all"
-                                />
-                            </div>
+                            <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 dark:text-zinc-400">Contact Email</label>
+                            <input 
+                                type="email"
+                                name="email"
+                                value={form.email}
+                                onChange={handleChange}
+                                placeholder="you@email.com"
+                                className="w-full h-11 px-3.5 rounded-xl bg-white dark:bg-black/50 border border-gray-200 dark:border-white/10 text-xs font-bold text-gray-900 dark:text-white focus:border-neon-green outline-none transition-all"
+                            />
                         </div>
                     </div>
 
@@ -1605,7 +1699,6 @@ const CreatorProfileManager = ({
                             )}
                         </div>
 
-                        {/* Inline OTP verification inputs if OTP was sent */}
                         {otpSent && !isPhoneVerified && (
                             <div className="pt-2 space-y-2 border-t border-gray-200 dark:border-white/5">
                                 <p className="text-[10px] font-bold uppercase tracking-wider text-gray-600 dark:text-zinc-400">Enter 6-digit Code sent via SMS:</p>
@@ -1639,10 +1732,10 @@ const CreatorProfileManager = ({
                         )}
                     </div>
 
-                    {/* City & Niche */}
+                    {/* Operating City & Primary Niche */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div className="space-y-1">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 dark:text-zinc-400">City / Region</label>
+                            <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 dark:text-zinc-400">Operating City *</label>
                             <select
                                 name="city"
                                 value={form.city}
@@ -1667,33 +1760,47 @@ const CreatorProfileManager = ({
                         </div>
 
                         <div className="space-y-1">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 dark:text-zinc-400">Primary Niche</label>
+                            <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 dark:text-zinc-400">Primary Niche *</label>
                             <select
-                                name="specializations"
-                                value={form.specializations}
+                                name="categories"
+                                value={form.categories}
                                 onChange={handleChange}
                                 className="w-full h-11 px-3 rounded-xl bg-white dark:bg-black/50 border border-gray-200 dark:border-white/10 text-xs font-bold text-gray-900 dark:text-white focus:border-neon-green outline-none transition-all"
                             >
                                 <option value="">Select Niche Category</option>
-                                {CREATOR_NICHES.map(n => (
-                                    <option key={n} value={n} className="bg-white dark:bg-zinc-900 text-gray-900 dark:text-white">{n}</option>
+                                {CREATOR_NICHE_OPTIONS.map(n => (
+                                    <option key={n.id} value={n.id} className="bg-white dark:bg-zinc-900 text-gray-900 dark:text-white">{n.label}</option>
                                 ))}
                             </select>
-                            {form.specializations === 'Others' && (
+                            {form.categories === 'Others' && (
                                 <input 
                                     type="text"
                                     name="customNiche"
                                     value={form.customNiche}
                                     onChange={handleChange}
-                                    placeholder="Enter your custom niche"
+                                    placeholder="Specify niche (e.g. Automotive, Podcasting, DIY)"
                                     className="w-full h-10 px-3.5 mt-2 rounded-xl bg-white dark:bg-black/50 border border-gray-200 dark:border-white/10 text-xs font-bold text-gray-900 dark:text-white focus:border-neon-green outline-none transition-all"
                                 />
                             )}
                         </div>
                     </div>
 
-                    {/* College Name (if Student/Campus Creator) */}
-                    {showCollegeField && (
+                    {/* Contextual Niche Fields */}
+                    {form.categories === 'City Pages' && (
+                        <div className="space-y-1">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 dark:text-zinc-400">City / Locality Page Focus</label>
+                            <input 
+                                type="text"
+                                name="cityPageFocus"
+                                value={form.cityPageFocus}
+                                onChange={handleChange}
+                                placeholder="e.g. Bangalore Food & Nightlife, South Delhi Events, SoBo Lifestyle"
+                                className="w-full h-11 px-3.5 rounded-xl bg-white dark:bg-black/50 border border-gray-200 dark:border-white/10 text-xs font-bold text-gray-900 dark:text-white focus:border-neon-green outline-none transition-all"
+                            />
+                        </div>
+                    )}
+
+                    {(form.categories === 'Student/Campus Creator' || form.categories === 'College Pages') && (
                         <div className="space-y-1">
                             <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 dark:text-zinc-400">College / University Name</label>
                             <input 
@@ -1701,53 +1808,249 @@ const CreatorProfileManager = ({
                                 name="collegeName"
                                 value={form.collegeName}
                                 onChange={handleChange}
-                                placeholder="e.g. Delhi University / IIT Bombay / Christ University"
+                                placeholder="e.g. Christ University / IIT Bombay / Delhi University"
                                 className="w-full h-11 px-3.5 rounded-xl bg-white dark:bg-black/50 border border-gray-200 dark:border-white/10 text-xs font-bold text-gray-900 dark:text-white focus:border-neon-green outline-none transition-all"
                             />
                         </div>
                     )}
 
+                    {/* Social Channels Section */}
+                    <div className="p-4 rounded-2xl bg-gray-50 dark:bg-zinc-900/60 border border-gray-200 dark:border-white/10 space-y-3">
+                        <div className="flex items-center gap-2 text-xs font-bold text-pink-500 uppercase tracking-wider">
+                            <Instagram size={14} />
+                            <span>Instagram &amp; Social Channels</span>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div className="space-y-1">
+                                <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 dark:text-zinc-400">Instagram Handle</label>
+                                <div className="relative">
+                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-xs">@</span>
+                                    <input 
+                                        type="text"
+                                        name="instagram"
+                                        value={form.instagram.replace(/^@/, '')}
+                                        onChange={handleChange}
+                                        placeholder="username"
+                                        className="w-full h-11 pl-7 pr-3.5 rounded-xl bg-white dark:bg-black/50 border border-gray-200 dark:border-white/10 text-xs font-bold text-gray-900 dark:text-white focus:border-pink-500 outline-none transition-all"
+                                    />
+                                </div>
+                            </div>
+                            <div className="space-y-1">
+                                <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 dark:text-zinc-400">Approx Followers</label>
+                                <input 
+                                    type="text"
+                                    name="instagramFollowers"
+                                    value={form.instagramFollowers}
+                                    onChange={handleChange}
+                                    placeholder="e.g. 15000"
+                                    className="w-full h-11 px-3.5 rounded-xl bg-white dark:bg-black/50 border border-gray-200 dark:border-white/10 text-xs font-bold text-gray-900 dark:text-white focus:border-pink-500 outline-none transition-all"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                            <div className="relative">
+                                <Linkedin className="absolute left-3.5 top-1/2 -translate-y-1/2 text-blue-500" size={14} />
+                                <input 
+                                    type="text"
+                                    name="linkedin"
+                                    value={form.linkedin}
+                                    onChange={handleChange}
+                                    placeholder="LinkedIn profile link"
+                                    className="w-full h-11 pl-9 pr-3.5 rounded-xl bg-white dark:bg-black/50 border border-gray-200 dark:border-white/10 text-xs font-bold text-gray-900 dark:text-white focus:border-blue-500 outline-none transition-all placeholder:text-gray-400"
+                                />
+                            </div>
+                            <div className="relative">
+                                <Youtube className="absolute left-3.5 top-1/2 -translate-y-1/2 text-red-500" size={14} />
+                                <input 
+                                    type="text"
+                                    name="youtube"
+                                    value={form.youtube}
+                                    onChange={handleChange}
+                                    placeholder="YouTube channel link"
+                                    className="w-full h-11 pl-9 pr-3.5 rounded-xl bg-white dark:bg-black/50 border border-gray-200 dark:border-white/10 text-xs font-bold text-gray-900 dark:text-white focus:border-red-500 outline-none transition-all placeholder:text-gray-400"
+                                />
+                            </div>
+                            <div className="relative">
+                                <Twitter className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sky-500" size={14} />
+                                <input 
+                                    type="text"
+                                    name="twitter"
+                                    value={form.twitter}
+                                    onChange={handleChange}
+                                    placeholder="X / Twitter handle or link"
+                                    className="w-full h-11 pl-9 pr-3.5 rounded-xl bg-white dark:bg-black/50 border border-gray-200 dark:border-white/10 text-xs font-bold text-gray-900 dark:text-white focus:border-sky-500 outline-none transition-all placeholder:text-gray-400"
+                                />
+                            </div>
+                            <div className="relative">
+                                <Globe className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neon-green" size={14} />
+                                <input 
+                                    type="text"
+                                    name="website"
+                                    value={form.website}
+                                    onChange={handleChange}
+                                    placeholder="Portfolio or Website link"
+                                    className="w-full h-11 pl-9 pr-3.5 rounded-xl bg-white dark:bg-black/50 border border-gray-200 dark:border-white/10 text-xs font-bold text-gray-900 dark:text-white focus:border-neon-green outline-none transition-all placeholder:text-gray-400"
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Collaboration Preferences */}
+                    <div className="space-y-2">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 dark:text-zinc-400 block">
+                            Collaboration Preferences
+                        </label>
+                        <div className="grid grid-cols-3 gap-2.5">
+                            {[
+                                { id: 'both', label: 'Open to Both', icon: Layers },
+                                { id: 'paid', label: 'Paid Only', icon: Banknote },
+                                { id: 'barter', label: 'Barter & Gigs', icon: Handshake }
+                            ].map(opt => {
+                                const isSelected = form.doBarter === opt.id;
+                                const IconComp = opt.icon;
+                                return (
+                                    <button
+                                        key={opt.id}
+                                        type="button"
+                                        onClick={() => setForm(p => ({ ...p, doBarter: opt.id }))}
+                                        className={cn(
+                                            "p-3 rounded-2xl border transition-all flex flex-col items-center justify-center gap-1.5",
+                                            isSelected
+                                                ? "bg-neon-green text-black border-neon-green font-black shadow-md shadow-neon-green/20 scale-[1.02]"
+                                                : "bg-white dark:bg-white/[0.03] text-gray-800 dark:text-white/60 border-gray-200 dark:border-white/10 hover:text-black dark:hover:text-white"
+                                        )}
+                                    >
+                                        <div className={cn(
+                                            "w-7 h-7 rounded-xl flex items-center justify-center transition-colors",
+                                            isSelected ? "bg-black text-neon-green" : "bg-black/5 dark:bg-white/5 text-gray-500 dark:text-zinc-400"
+                                        )}>
+                                            <IconComp size={14} />
+                                        </div>
+                                        <span className="text-[11px] font-bold leading-tight">{opt.label}</span>
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
+
+                    {/* Typical Rates Range Selector */}
+                    <div className="space-y-3 p-4 bg-gray-50 dark:bg-zinc-900/60 border border-gray-200 dark:border-white/10 rounded-2xl">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                            <div>
+                                <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 dark:text-zinc-400 block">
+                                    Typical Rates per Deliverable
+                                </label>
+                                <p className="text-[11px] text-gray-500 dark:text-zinc-400">
+                                    Expected price range for reels &amp; campaign briefs
+                                </p>
+                            </div>
+                            <div className="sm:text-right">
+                                <span className="text-xs sm:text-sm font-black font-mono text-neon-green bg-black px-3 py-1.5 rounded-xl border border-neon-green/30 shadow-[0_0_15px_rgba(57,255,20,0.15)] inline-flex items-center gap-1.5">
+                                    <IndianRupee size={12} className="text-neon-green shrink-0" />
+                                    {isRateFlexible ? "Flexible / Barter" : `${formatINR(rateMin)} – ${formatINR(rateMax)}${rateMax >= 100000 ? '+' : ''}`}
+                                </span>
+                            </div>
+                        </div>
+
+                        {/* Presets */}
+                        <div className="flex flex-wrap gap-1.5 pt-1">
+                            {[
+                                { label: 'Flexible / Barter', min: 0, max: 0, flex: true },
+                                { label: '₹2K – ₹8K', min: 2000, max: 8000 },
+                                { label: '₹8K – ₹20K', min: 8000, max: 20000 },
+                                { label: '₹20K – ₹50K', min: 20000, max: 50000 },
+                                { label: '₹50K – ₹1L+', min: 50000, max: 100000 }
+                            ].map(preset => {
+                                const isSelected = preset.flex ? isRateFlexible : (!isRateFlexible && rateMin === preset.min && rateMax === preset.max);
+                                return (
+                                    <button
+                                        key={preset.label}
+                                        type="button"
+                                        onClick={() => {
+                                            if (preset.flex) {
+                                                setIsRateFlexible(true);
+                                                setForm(p => ({ ...p, commercials: 'Flexible / Barter' }));
+                                            } else {
+                                                setIsRateFlexible(false);
+                                                setRateMin(preset.min);
+                                                setRateMax(preset.max);
+                                                setForm(p => ({ ...p, commercials: `${formatINR(preset.min)} – ${formatINR(preset.max)}${preset.max >= 100000 ? '+' : ''} / Deliverable` }));
+                                            }
+                                        }}
+                                        className={cn(
+                                            "px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all border",
+                                            isSelected
+                                                ? "bg-neon-green text-black border-neon-green font-black shadow-sm"
+                                                : "bg-white dark:bg-white/[0.04] text-gray-600 dark:text-zinc-400 border-gray-200 dark:border-white/10 hover:text-black dark:hover:text-white"
+                                        )}
+                                    >
+                                        {preset.label}
+                                    </button>
+                                );
+                            })}
+                        </div>
+
+                        {/* Dual Range Sliders */}
+                        {!isRateFlexible && (
+                            <div className="space-y-3 pt-2">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
+                                    <div className="space-y-1.5">
+                                        <div className="flex justify-between text-[10px] font-bold text-gray-500 dark:text-zinc-400 uppercase tracking-wider">
+                                            <span>From</span>
+                                            <span className="font-mono text-gray-900 dark:text-white font-black">{formatINR(rateMin)}</span>
+                                        </div>
+                                        <input
+                                            type="range"
+                                            min="1000"
+                                            max="60000"
+                                            step="1000"
+                                            value={rateMin}
+                                            onChange={(e) => {
+                                                const val = Number(e.target.value);
+                                                const newMin = Math.min(val, rateMax - 1000);
+                                                setRateMin(newMin);
+                                                setForm(p => ({ ...p, commercials: `${formatINR(newMin)} – ${formatINR(rateMax)}${rateMax >= 100000 ? '+' : ''} / Deliverable` }));
+                                            }}
+                                            className="w-full accent-neon-green cursor-pointer h-2 bg-black/10 dark:bg-white/10 rounded-lg appearance-none"
+                                        />
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        <div className="flex justify-between text-[10px] font-bold text-gray-500 dark:text-zinc-400 uppercase tracking-wider">
+                                            <span>Up To</span>
+                                            <span className="font-mono text-gray-900 dark:text-white font-black">{formatINR(rateMax)}{rateMax >= 100000 ? '+' : ''}</span>
+                                        </div>
+                                        <input
+                                            type="range"
+                                            min="2000"
+                                            max="100000"
+                                            step="2000"
+                                            value={rateMax}
+                                            onChange={(e) => {
+                                                const val = Number(e.target.value);
+                                                const newMax = Math.max(val, rateMin + 1000);
+                                                setRateMax(newMax);
+                                                setForm(p => ({ ...p, commercials: `${formatINR(rateMin)} – ${formatINR(newMax)}${newMax >= 100000 ? '+' : ''} / Deliverable` }));
+                                            }}
+                                            className="w-full accent-neon-green cursor-pointer h-2 bg-black/10 dark:bg-white/10 rounded-lg appearance-none"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
                     {/* Bio */}
                     <div className="space-y-1">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 dark:text-zinc-400">Creator Bio & Vibe</label>
+                        <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 dark:text-zinc-400">Creator Bio &amp; Vibe</label>
                         <textarea
                             name="bio"
                             value={form.bio}
                             onChange={handleChange}
                             rows={3}
-                            placeholder="Share your style, vibe, content themes, and key achievements..."
+                            placeholder="Share your content style, key milestones, audience vibe, and themes..."
                             className="w-full p-3 rounded-xl bg-white dark:bg-black/50 border border-gray-200 dark:border-white/10 text-xs font-medium text-gray-900 dark:text-white focus:border-neon-green outline-none transition-all resize-none"
                         />
-                    </div>
-
-                    {/* Commercials & Barter */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div className="space-y-1">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 dark:text-zinc-400">Starting Rate (Commercials)</label>
-                            <input 
-                                type="text"
-                                name="commercials"
-                                value={form.commercials}
-                                onChange={handleChange}
-                                placeholder="e.g. ₹5,000 / reel"
-                                className="w-full h-11 px-3.5 rounded-xl bg-white dark:bg-black/50 border border-gray-200 dark:border-white/10 text-xs font-bold text-gray-900 dark:text-white focus:border-neon-green outline-none transition-all"
-                            />
-                        </div>
-
-                        <div className="space-y-1">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 dark:text-zinc-400">Barter Preference</label>
-                            <select
-                                name="doBarter"
-                                value={form.doBarter}
-                                onChange={handleChange}
-                                className="w-full h-11 px-3 rounded-xl bg-white dark:bg-black/50 border border-gray-200 dark:border-white/10 text-xs font-bold text-gray-900 dark:text-white focus:border-neon-green outline-none transition-all"
-                            >
-                                <option value="">Select Barter Preference</option>
-                                <option value="Yes" className="bg-white dark:bg-zinc-900 text-gray-900 dark:text-white">Open to Barter & Products</option>
-                                <option value="No" className="bg-white dark:bg-zinc-900 text-gray-900 dark:text-white">Paid Commercials Only</option>
-                                <option value="Negotiable" className="bg-white dark:bg-zinc-900 text-gray-900 dark:text-white">Negotiable based on campaign</option>
-                            </select>
-                        </div>
                     </div>
 
                     {/* Action Bar */}
@@ -1778,7 +2081,7 @@ const CreatorProfileManager = ({
             <div className="flex items-center justify-between">
                 <div>
                     <h3 className="text-xl font-black font-heading text-gray-900 dark:text-white uppercase italic tracking-tight">Creator Hub</h3>
-                    <p className="text-[11px] text-gray-500 dark:text-zinc-400 font-medium">Unified Dossier & Campaign Studio</p>
+                    <p className="text-[11px] text-gray-500 dark:text-zinc-400 font-medium">Creator Profile &amp; Campaign Studio</p>
                 </div>
                 <div className="px-3.5 py-1.5 rounded-full bg-neon-green/10 border border-neon-green/30 text-neon-green text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 shadow-sm">
                     <ShieldCheck size={13} />
@@ -1825,18 +2128,58 @@ const CreatorProfileManager = ({
                                     <span className="truncate max-w-[140px]">{creatorProfile.collegeName}</span>
                                 </div>
                             )}
+                            {creatorProfile.cityPageFocus && (
+                                <div className="flex items-center gap-1">
+                                    <Building2 size={11} className="text-pink-400" />
+                                    <span className="truncate max-w-[140px]">{creatorProfile.cityPageFocus}</span>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
 
-                {/* Niches */}
-                {((creatorProfile.specializations || creatorProfile.categories || []).length > 0) && (
-                    <div className="flex flex-wrap gap-1.5 mt-4 pt-4 border-t border-gray-200 dark:border-white/5">
-                        {(Array.isArray(creatorProfile.specializations) ? creatorProfile.specializations : [creatorProfile.categories]).filter(Boolean).map((niche, idx) => (
-                            <span key={idx} className="px-2.5 py-1 rounded-lg bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 text-[9px] font-black uppercase tracking-wider text-gray-800 dark:text-zinc-200 shadow-sm">
-                                {niche}
-                            </span>
-                        ))}
+                {/* Niches & Commercials Chips */}
+                <div className="flex flex-wrap items-center gap-1.5 mt-4 pt-4 border-t border-gray-200 dark:border-white/5">
+                    {creatorProfile.categories && (
+                        <span className="px-2.5 py-1 rounded-lg bg-neon-green/15 text-emerald-800 dark:text-neon-green border border-neon-green/30 text-[9px] font-black uppercase tracking-wider font-mono">
+                            {creatorProfile.categories}
+                        </span>
+                    )}
+                    {creatorProfile.commercials && (
+                        <span className="px-2.5 py-1 rounded-lg bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 text-[9px] font-mono font-bold text-gray-700 dark:text-zinc-300">
+                            {creatorProfile.commercials}
+                        </span>
+                    )}
+                    {creatorProfile.doBarter && (
+                        <span className="px-2.5 py-1 rounded-lg bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 text-[9px] font-bold uppercase tracking-wider text-gray-600 dark:text-zinc-400">
+                            {creatorProfile.doBarter === 'both' ? 'Paid & Barter' : creatorProfile.doBarter === 'paid' ? 'Paid Only' : 'Barter Only'}
+                        </span>
+                    )}
+                </div>
+
+                {/* Social Channel Links */}
+                {(creatorProfile.linkedin || creatorProfile.youtube || creatorProfile.twitter || creatorProfile.website) && (
+                    <div className="flex flex-wrap items-center gap-3 mt-3 pt-3 border-t border-gray-200 dark:border-white/5 text-[11px]">
+                        {creatorProfile.linkedin && (
+                            <a href={creatorProfile.linkedin.startsWith('http') ? creatorProfile.linkedin : `https://${creatorProfile.linkedin}`} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline inline-flex items-center gap-1">
+                                <Linkedin size={12} /> <span>LinkedIn</span>
+                            </a>
+                        )}
+                        {creatorProfile.youtube && (
+                            <a href={creatorProfile.youtube.startsWith('http') ? creatorProfile.youtube : `https://${creatorProfile.youtube}`} target="_blank" rel="noopener noreferrer" className="text-red-500 hover:underline inline-flex items-center gap-1">
+                                <Youtube size={12} /> <span>YouTube</span>
+                            </a>
+                        )}
+                        {creatorProfile.twitter && (
+                            <a href={creatorProfile.twitter.startsWith('http') ? creatorProfile.twitter : `https://x.com/${creatorProfile.twitter.replace(/^@/, '')}`} target="_blank" rel="noopener noreferrer" className="text-sky-500 hover:underline inline-flex items-center gap-1">
+                                <Twitter size={12} /> <span>Twitter</span>
+                            </a>
+                        )}
+                        {creatorProfile.website && (
+                            <a href={creatorProfile.website.startsWith('http') ? creatorProfile.website : `https://${creatorProfile.website}`} target="_blank" rel="noopener noreferrer" className="text-neon-green hover:underline inline-flex items-center gap-1">
+                                <Globe size={12} /> <span>Portfolio</span>
+                            </a>
+                        )}
                     </div>
                 )}
             </div>

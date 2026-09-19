@@ -20,6 +20,9 @@ import Phone from 'lucide-react/dist/esm/icons/phone';
 import Mail from 'lucide-react/dist/esm/icons/mail';
 import MapPin from 'lucide-react/dist/esm/icons/map-pin';
 import ShieldCheck from 'lucide-react/dist/esm/icons/shield-check';
+import Clock from 'lucide-react/dist/esm/icons/clock';
+import ExternalLink from 'lucide-react/dist/esm/icons/external-link';
+import MessageCircle from 'lucide-react/dist/esm/icons/message-circle';
 import ChevronDown from 'lucide-react/dist/esm/icons/chevron-down';
 import User from 'lucide-react/dist/esm/icons/user';
 import FileText from 'lucide-react/dist/esm/icons/file-text';
@@ -27,34 +30,61 @@ import Sparkles from 'lucide-react/dist/esm/icons/sparkles';
 import Camera from 'lucide-react/dist/esm/icons/camera';
 import TrendingUp from 'lucide-react/dist/esm/icons/trending-up';
 import Award from 'lucide-react/dist/esm/icons/award';
+import Building2 from 'lucide-react/dist/esm/icons/building-2';
+import GraduationCap from 'lucide-react/dist/esm/icons/graduation-cap';
+import BookOpen from 'lucide-react/dist/esm/icons/book-open';
+import Shirt from 'lucide-react/dist/esm/icons/shirt';
+import Gamepad2 from 'lucide-react/dist/esm/icons/gamepad-2';
+import Compass from 'lucide-react/dist/esm/icons/compass';
+import Heart from 'lucide-react/dist/esm/icons/heart';
+import Dumbbell from 'lucide-react/dist/esm/icons/dumbbell';
+import Utensils from 'lucide-react/dist/esm/icons/utensils';
+import Smile from 'lucide-react/dist/esm/icons/smile';
+import Home from 'lucide-react/dist/esm/icons/home';
+import Video from 'lucide-react/dist/esm/icons/video';
+import Car from 'lucide-react/dist/esm/icons/car';
+import Palette from 'lucide-react/dist/esm/icons/palette';
+import Music from 'lucide-react/dist/esm/icons/music';
+import Users from 'lucide-react/dist/esm/icons/users';
+import Mic from 'lucide-react/dist/esm/icons/mic';
+import Flame from 'lucide-react/dist/esm/icons/flame';
+import Rocket from 'lucide-react/dist/esm/icons/rocket';
+import Layers from 'lucide-react/dist/esm/icons/layers';
+import Banknote from 'lucide-react/dist/esm/icons/banknote';
+import Handshake from 'lucide-react/dist/esm/icons/handshake';
+import Lock from 'lucide-react/dist/esm/icons/lock';
+import IndianRupee from 'lucide-react/dist/esm/icons/indian-rupee';
+import Sliders from 'lucide-react/dist/esm/icons/sliders';
 import { useNavigate, Link } from 'react-router-dom';
+import CreatorPassCard from '../components/creator/CreatorPassCard';
 import { cn, normalizePhoneNumber } from '../lib/utils';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
+import GlobalLoader from '../components/ui/GlobalLoader';
 import useDynamicMeta from '../hooks/useDynamicMeta';
 
 // Rich niche definitions with icons and descriptions
 const NICHE_OPTIONS = [
-    { id: 'City Pages', label: 'City Pages / Local Hubs', icon: '🏙️', color: 'from-sky-500/20 to-blue-500/10' },
-    { id: 'College Pages', label: 'College Pages / Hubs', icon: '🏫', color: 'from-teal-500/20 to-blue-500/10' },
-    { id: 'Student/Campus Creator', label: 'Campus & College', icon: '🎓', color: 'from-emerald-500/20 to-teal-500/10' },
-    { id: 'Fashion & Luxury', label: 'Fashion & Luxury', icon: '👗', color: 'from-pink-500/20 to-purple-500/10' },
-    { id: 'Tech & Gaming', label: 'Tech & Gaming', icon: '🎮', color: 'from-blue-500/20 to-cyan-500/10' },
-    { id: 'Travel & Lifestyle', label: 'Travel & Lifestyle', icon: '✈️', color: 'from-amber-500/20 to-orange-500/10' },
-    { id: 'Beauty & Fitness', label: 'Beauty & Cosmetics', icon: '💄', color: 'from-rose-500/20 to-pink-500/10' },
-    { id: 'Fitness & Sports', label: 'Fitness & Athletics', icon: '🏋️‍♂️', color: 'from-emerald-500/20 to-lime-500/10' },
-    { id: 'Food & Beverage', label: 'Food & Dining', icon: '🍔', color: 'from-yellow-500/20 to-amber-500/10' },
-    { id: 'Comedy & Entertainment', label: 'Comedy & Memes', icon: '🎭', color: 'from-purple-500/20 to-indigo-500/10' },
-    { id: 'Real Estate', label: 'Real Estate & Living', icon: '🏡', color: 'from-amber-500/20 to-emerald-500/10' },
-    { id: 'Photography & Filmmaking', label: 'Photo & Filmmaking', icon: '📸', color: 'from-indigo-500/20 to-purple-500/10' },
-    { id: 'Automotive & Moto', label: 'Auto & Motovlogging', icon: '🏎️', color: 'from-red-500/20 to-orange-500/10' },
-    { id: 'Art & Design', label: 'Art, Design & DIY', icon: '🎨', color: 'from-pink-500/20 to-violet-500/10' },
-    { id: 'Music & Dance', label: 'Music & Dance', icon: '🎵', color: 'from-fuchsia-500/20 to-pink-500/10' },
-    { id: 'Parenting & Family', label: 'Parenting & Family', icon: '👨‍👩‍👧', color: 'from-amber-500/20 to-rose-500/10' },
-    { id: 'Podcasts & Media', label: 'Podcasts & Media', icon: '🎙️', color: 'from-purple-500/20 to-pink-500/10' },
-    { id: 'Meme & Pop Culture', label: 'Meme & Pop Culture', icon: '🔥', color: 'from-orange-500/20 to-red-500/10' },
-    { id: 'Startup & Entrepreneurship', label: 'Startup & Founder', icon: '🚀', color: 'from-violet-500/20 to-purple-500/10' },
-    { id: 'Finance & Business', label: 'Finance & Career', icon: '📈', color: 'from-green-500/20 to-emerald-500/10' },
-    { id: 'Others', label: 'Other Specialization', icon: '✨', color: 'from-zinc-500/20 to-zinc-700/10' }
+    { id: 'City Pages', label: 'City Pages / Local Hubs', icon: Building2, color: 'from-sky-500/20 to-blue-500/10' },
+    { id: 'College Pages', label: 'College Pages / Hubs', icon: GraduationCap, color: 'from-teal-500/20 to-blue-500/10' },
+    { id: 'Student/Campus Creator', label: 'Campus & College', icon: BookOpen, color: 'from-emerald-500/20 to-teal-500/10' },
+    { id: 'Fashion & Luxury', label: 'Fashion & Luxury', icon: Shirt, color: 'from-pink-500/20 to-purple-500/10' },
+    { id: 'Tech & Gaming', label: 'Tech & Gaming', icon: Gamepad2, color: 'from-blue-500/20 to-cyan-500/10' },
+    { id: 'Travel & Lifestyle', label: 'Travel & Lifestyle', icon: Compass, color: 'from-amber-500/20 to-orange-500/10' },
+    { id: 'Beauty & Fitness', label: 'Beauty & Cosmetics', icon: Heart, color: 'from-rose-500/20 to-pink-500/10' },
+    { id: 'Fitness & Sports', label: 'Fitness & Athletics', icon: Dumbbell, color: 'from-emerald-500/20 to-lime-500/10' },
+    { id: 'Food & Beverage', label: 'Food & Dining', icon: Utensils, color: 'from-yellow-500/20 to-amber-500/10' },
+    { id: 'Comedy & Entertainment', label: 'Comedy & Memes', icon: Smile, color: 'from-purple-500/20 to-indigo-500/10' },
+    { id: 'Real Estate', label: 'Real Estate & Living', icon: Home, color: 'from-amber-500/20 to-emerald-500/10' },
+    { id: 'Photography & Filmmaking', label: 'Photo & Filmmaking', icon: Video, color: 'from-indigo-500/20 to-purple-500/10' },
+    { id: 'Automotive & Moto', label: 'Auto & Motovlogging', icon: Car, color: 'from-red-500/20 to-orange-500/10' },
+    { id: 'Art & Design', label: 'Art, Design & DIY', icon: Palette, color: 'from-pink-500/20 to-violet-500/10' },
+    { id: 'Music & Dance', label: 'Music & Dance', icon: Music, color: 'from-fuchsia-500/20 to-pink-500/10' },
+    { id: 'Parenting & Family', label: 'Parenting & Family', icon: Users, color: 'from-amber-500/20 to-rose-500/10' },
+    { id: 'Podcasts & Media', label: 'Podcasts & Media', icon: Mic, color: 'from-purple-500/20 to-pink-500/10' },
+    { id: 'Meme & Pop Culture', label: 'Meme & Pop Culture', icon: Flame, color: 'from-orange-500/20 to-red-500/10' },
+    { id: 'Startup & Entrepreneurship', label: 'Startup & Founder', icon: Rocket, color: 'from-violet-500/20 to-purple-500/10' },
+    { id: 'Finance & Business', label: 'Finance & Career', icon: TrendingUp, color: 'from-green-500/20 to-emerald-500/10' },
+    { id: 'Others', label: 'Other Specialization', icon: Layers, color: 'from-zinc-500/20 to-zinc-700/10' }
 ];
 
 const POPULAR_CITIES = [
@@ -69,11 +99,11 @@ const POPULAR_CITIES = [
 ];
 
 const COUNTRY_OPTIONS = [
-    { value: '+91', label: '🇮🇳 +91' },
-    { value: '+1', label: '🇺🇸 +1' },
-    { value: '+44', label: '🇬🇧 +44' },
-    { value: '+971', label: '🇦🇪 +971' },
-    { value: '+61', label: '🇦🇺 +61' }
+    { value: '+91', label: '+91 (India)' },
+    { value: '+1', label: '+1 (US)' },
+    { value: '+44', label: '+44 (UK)' },
+    { value: '+971', label: '+971 (UAE)' },
+    { value: '+61', label: '+61 (AU)' }
 ];
 
 
@@ -93,15 +123,18 @@ const slideVariants = {
 };
 
 const CreatorJoin = () => {
-    useStoreSubscription(['creators']);
+    useStoreSubscription(['creators', 'creatorGroups', 'siteSettings']);
     useDynamicMeta({
         title: "Apply to Newbi Creator Network • 45-Second Onboarding",
         description: "Connect with top brands and live events in your city. Fast creator onboarding with zero agency fees.",
         url: window.location.href
     });
 
-    const { user, addCreator, creators, uploadToCloudinary, setAuthModal } = useStore();
+    const { user, addCreator, creators, creatorGroups, siteSettings, markCreatorCityGroupJoined, uploadToCloudinary, setAuthModal, loginWithGoogle, subscriptionsLoaded } = useStore();
     const navigate = useNavigate();
+
+    const [hasMarkedGroupJoined, setHasMarkedGroupJoined] = useState(false);
+    const [registeredCreatorDocId, setRegisteredCreatorDocId] = useState(null);
 
     // Step state: 1: Identity, 2: Contact/OTP, 3: Niches & Socials, 4: Collab & Submit
     const [step, setStep] = useState(1);
@@ -119,7 +152,7 @@ const CreatorJoin = () => {
         cityPageFocus: '',
         bio: '',
         doBarter: 'both',
-        commercials: '',
+        commercials: '₹5,000 – ₹25,000 / Deliverable',
         primaryPlatform: 'instagram',
         instagram: '',
         instagramFollowers: '',
@@ -132,12 +165,22 @@ const CreatorJoin = () => {
         referredBy: ''
     });
 
+    const [rateMin, setRateMin] = useState(5000);
+    const [rateMax, setRateMax] = useState(25000);
+    const [isRateFlexible, setIsRateFlexible] = useState(false);
+
+    const formatINRFull = (amt) => {
+        if (!amt && amt !== 0) return '₹0';
+        return `₹${amt.toLocaleString('en-IN')}`;
+    };
+
     const [showAllCities, setShowAllCities] = useState(false);
 
     const [countryCode, setCountryCode] = useState('+91');
     const [isCountryCodeOpen, setIsCountryCodeOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+    const [isLoggingInWithGoogle, setIsLoggingInWithGoogle] = useState(false);
     const [hasJoined, setHasJoined] = useState(false);
     const [isReferralCodeLocked, setIsReferralCodeLocked] = useState(false);
 
@@ -165,6 +208,7 @@ const CreatorJoin = () => {
                 const updates = {};
                 if (!prev.email && user.email) updates.email = user.email;
                 if (!prev.name && user.displayName) updates.name = user.displayName;
+                if (!prev.profilePicture && user.photoURL) updates.profilePicture = user.photoURL;
                 if (!prev.phone && user.phoneNumber) {
                     const cleanPhone = user.phoneNumber.replace(/\D/g, '');
                     if (cleanPhone.length >= 10) {
@@ -181,6 +225,29 @@ const CreatorJoin = () => {
             });
         }
     }, [user]);
+
+    const handleGoogleFastTrack = async () => {
+        setIsLoggingInWithGoogle(true);
+        try {
+            const loggedInUser = await loginWithGoogle();
+            if (loggedInUser) {
+                setFormData(prev => ({
+                    ...prev,
+                    name: loggedInUser.displayName || prev.name,
+                    email: loggedInUser.email || prev.email,
+                    profilePicture: loggedInUser.photoURL || prev.profilePicture
+                }));
+                useStore.getState().addToast(`Connected as ${loggedInUser.displayName || loggedInUser.email}! Basic details pre-filled.`, 'success');
+            }
+        } catch (err) {
+            console.error("Google login error in CreatorJoin:", err);
+            if (err.code !== 'auth/popup-closed-by-user') {
+                useStore.getState().addToast("Could not complete Google sign-in. You can enter details manually.", 'error');
+            }
+        } finally {
+            setIsLoggingInWithGoogle(false);
+        }
+    };
 
     // Resend countdown timer
     useEffect(() => {
@@ -231,7 +298,7 @@ const CreatorJoin = () => {
                 (userPhoneNorm && normalizePhoneNumber(c.phone) === userPhoneNorm)
             );
             if (existing) {
-                navigate('/creator-dashboard');
+                navigate('/creator-dashboard', { replace: true });
             }
         }
     }, [user, creators, navigate]);
@@ -342,15 +409,17 @@ const CreatorJoin = () => {
     };
 
     const handleImageUpload = async (e) => {
-        const file = e.target.files[0];
+        const file = e.target.files?.[0];
         if (!file) return;
+        const localPreview = URL.createObjectURL(file);
+        setFormData(prev => ({ ...prev, profilePicture: localPreview }));
         setIsUploadingPhoto(true);
         try {
             const url = await uploadToCloudinary(file);
             setFormData(prev => ({ ...prev, profilePicture: url }));
             useStore.getState().addToast("Profile photo uploaded!", 'success');
         } catch (error) {
-            useStore.getState().addToast("Couldn't upload photo. You can continue without it.", 'error');
+            useStore.getState().addToast("Couldn't upload photo to cloud, but local preview is saved.", 'error');
         } finally {
             setIsUploadingPhoto(false);
         }
@@ -490,7 +559,7 @@ const CreatorJoin = () => {
             setIsPhoneVerified(true);
             setVerifiedPhoneNumber(fullFormattedPhone);
             setOtpSent(false);
-            useStore.getState().addToast("Phone verified successfully! 🎉", 'success');
+            useStore.getState().addToast("Phone verified successfully!", 'success');
             try { confetti({ particleCount: 50, spread: 60, origin: { y: 0.5 } }); } catch (e) {}
         } catch (err) {
             console.error("OTP confirmation error:", err);
@@ -566,7 +635,12 @@ const CreatorJoin = () => {
 
         setIsSubmitting(true);
         try {
-            const finalCity = formData.city === 'Others' ? formData.customCity.trim() : formData.city;
+            let finalCity = formData.city === 'Others' ? formData.customCity.trim() : formData.city;
+            if (/^bang[al]*o?re$/i.test(finalCity.trim())) {
+                finalCity = 'Bengaluru';
+            } else if (/^(visakhapatnam|vizag)$/i.test(finalCity.trim())) {
+                finalCity = 'Vizag';
+            }
             const finalNiche = formData.categories === 'Others' ? formData.customNiche.trim() : formData.categories;
             const cleanInstagram = formData.instagram ? formData.instagram.trim().replace(/^@/, '') : '';
             const cleanLinkedin = formData.linkedin ? formData.linkedin.trim() : '';
@@ -574,12 +648,12 @@ const CreatorJoin = () => {
             const cleanWebsite = formData.website ? formData.website.trim() : '';
             const cleanDigits = formData.phone.replace(/\D/g, '').slice(-10);
 
-            await addCreator({
-                uid: user?.uid || null,
+            const result = await addCreator({
+                uid: user?.uid || auth?.currentUser?.uid || null,
                 email: formData.email.trim(),
                 displayName: formData.name.trim(),
                 name: formData.name.trim(),
-                profileStatus: 'approved',
+                profileStatus: 'pending',
                 ...formData,
                 phone: `${countryCode} ${cleanDigits}`,
                 instagram: cleanInstagram,
@@ -595,11 +669,18 @@ const CreatorJoin = () => {
                 phoneVerifiedAt: isPhoneVerified ? new Date().toISOString() : null
             });
 
+            if (result?.id) {
+                setRegisteredCreatorDocId(result.id);
+            }
+
             setHasJoined(true);
             try { confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } }); } catch (err) {}
         } catch (error) {
             console.error("Error submitting application:", error);
-            useStore.getState().addToast(error.message || "Couldn't submit application. Please try again.", 'error');
+            const msg = error.message?.includes('permission')
+                ? "Unable to complete submission due to security permissions. Please ensure your contact details are valid or try again shortly."
+                : (error.message || "Couldn't submit application. Please try again.");
+            useStore.getState().addToast(msg, 'error');
         } finally {
             setIsSubmitting(false);
         }
@@ -607,61 +688,194 @@ const CreatorJoin = () => {
 
     // ── SUCCESS STATE ────────────────────────────────────────────────────────
     if (hasJoined) {
+        // Trigger celebration confetti
+        try {
+            confetti({ particleCount: 90, spread: 75, origin: { y: 0.55 } });
+        } catch (e) {
+            // ignore if blocked
+        }
+
+        const effectiveCity = (formData.city === 'Others' ? formData.customCity : formData.city) || '';
+        const normCity = effectiveCity.toLowerCase().trim();
+        const matchedCityGroup = (creatorGroups || []).find(g => 
+            g.isActive !== false && (
+                g.city?.toLowerCase() === normCity ||
+                (normCity.includes('bengaluru') && g.city?.toLowerCase().includes('bengaluru')) ||
+                (normCity.includes('bangalore') && g.city?.toLowerCase().includes('bengaluru')) ||
+                (normCity.includes('mumbai') && g.city?.toLowerCase().includes('mumbai')) ||
+                (normCity.includes('delhi') && g.city?.toLowerCase().includes('delhi'))
+            )
+        ) || (creatorGroups || []).find(g => g.isActive !== false && (
+            g.city?.toLowerCase().includes('pan-india') || 
+            g.city?.toLowerCase().includes('india') || 
+            g.city?.toLowerCase().includes('all')
+        ));
+
+        const handleJoinedGroupClick = async () => {
+            setHasMarkedGroupJoined(true);
+            const targetId = registeredCreatorDocId || user?.uid || matchedExistingCreator?.id;
+            if (targetId) {
+                try {
+                    await markCreatorCityGroupJoined(targetId);
+                    useStore.getState().addToast(`Joined ${matchedCityGroup?.city || 'city'} creator group!`, 'success');
+                } catch (e) {
+                    console.error('Error marking city group joined:', e);
+                }
+            } else {
+                useStore.getState().addToast('Welcome to your city community group!', 'success');
+            }
+        };
+
+        const newCreatorProfile = {
+            name: formData.name,
+            city: formData.city,
+            categories: formData.categories ? [formData.categories] : ["Content Creator"],
+            instagramHandle: formData.instagramHandle || formData.instagram,
+            profilePicture: formData.profilePicture,
+            profileStatus: "pending",
+            points: Number(siteSettings?.creatorWelcomePoints) || 100, // Welcome bonus points from settings
+            joinedCampaigns: [],
+            creatorId: `NB-${(formData.name || 'CRE').slice(0, 3).toUpperCase()}${Math.floor(1000 + Math.random() * 9000)}`
+        };
+
         return (
-            <div className="min-h-screen bg-gray-50 dark:bg-[#050505] text-gray-900 dark:text-white pt-24 pb-20 px-4 flex items-center justify-center transition-colors duration-300">
+            <div className="min-h-screen bg-gray-50 dark:bg-[#07090E] text-gray-900 dark:text-white pt-24 pb-20 px-4 flex items-center justify-center transition-colors duration-300">
                 <motion.div
                     initial={{ opacity: 0, scale: 0.95, y: 20 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
-                    className="max-w-lg w-full p-6 sm:p-10 bg-white dark:bg-white/[0.02] border border-gray-200 dark:border-white/[0.08] rounded-3xl text-center shadow-xl dark:shadow-2xl relative overflow-hidden backdrop-blur-2xl"
+                    className="max-w-xl w-full text-center space-y-6"
                 >
-                    <div className="w-16 h-16 sm:w-20 sm:h-20 bg-neon-green/10 border border-neon-green/30 rounded-2xl flex items-center justify-center mx-auto mb-5 text-neon-green">
-                        <CheckCircle2 size={36} />
-                    </div>
-
-                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-neon-green/10 border border-neon-green/20 text-neon-green text-[10px] font-bold uppercase tracking-wider mb-3">
-                        <ShieldCheck size={12} />
-                        <span>{isPhoneVerified ? "Profile & Contact Verified" : "Application Submitted"}</span>
-                    </div>
-
-                    <h2 className="text-2xl sm:text-3xl font-black font-heading tracking-tight text-gray-900 dark:text-white mb-2">
-                        Welcome to Newbi, {formData.name}!
-                    </h2>
-
-                    <p className="text-gray-600 dark:text-white/60 text-xs sm:text-sm leading-relaxed mb-6">
-                        {isPhoneVerified ? (
-                            <>Your creator profile is active for campaigns in <strong className="text-gray-900 dark:text-white">{formData.city}</strong>. Direct briefs will be sent to <span className="text-neon-green font-mono">{countryCode} {formData.phone.slice(-10)}</span>.</>
-                        ) : (
-                            <>Your application has been received! We sent a confirmation &amp; verification link to your email (<strong className="text-gray-900 dark:text-white">{formData.email}</strong>). Tap it to activate priority campaign matching. Direct briefs will be sent to <span className="text-neon-green font-mono">{countryCode} {formData.phone.slice(-10)}</span>.</>
-                        )}
-                    </p>
-
-                    <div className="p-4 bg-gray-50 dark:bg-black/40 border border-gray-200 dark:border-white/[0.05] rounded-2xl text-left text-xs text-gray-600 dark:text-white/50 space-y-2 mb-6">
-                        <div className="flex items-center gap-2 text-neon-green font-bold text-[11px] uppercase tracking-wider">
-                            <Sparkles size={13} /> Next Steps
+                    <div className="space-y-2">
+                        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-400 text-[10px] font-black uppercase tracking-widest font-mono">
+                            <Clock size={12} />
+                            <span>Application Submitted &bull; Pending Verification</span>
                         </div>
-                        <p>1. Talent managers match your niche ({formData.categories}) with active briefs.</p>
-                        <p>2. Direct invitations sent via WhatsApp for pan-India gigs & event passes.</p>
-                        <p>3. 100% payout directly to you with 0% commission.</p>
+                        <h2 className="text-3xl sm:text-4xl font-black font-heading tracking-tight text-gray-900 dark:text-white">
+                            Welcome to the Collective, {formData.name?.split(' ')[0]}!
+                        </h2>
+                        <p className="text-gray-600 dark:text-zinc-400 text-xs sm:text-sm max-w-md mx-auto leading-relaxed">
+                            Your application has been received and is under review with our talent team. Your temporary pass is reserved below.
+                        </p>
                     </div>
 
-                    <div className="flex flex-col sm:flex-row gap-2.5">
-                        <Link
-                            to="/campaigns"
-                            className="flex-1 h-11 bg-black text-white hover:bg-neutral-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200 font-bold rounded-xl flex items-center justify-center gap-2 text-xs uppercase tracking-wider transition-all shadow-lg"
+                    {/* The Creator Pass Card */}
+                    <div className="py-2">
+                        <CreatorPassCard profile={newCreatorProfile} />
+                    </div>
+
+                    {/* City-Wise Creator Community Group Banner */}
+                    {matchedCityGroup && (
+                        <motion.div
+                            initial={{ opacity: 0, y: 15 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.1 }}
+                            className="p-5 rounded-2xl bg-gradient-to-br from-emerald-500/10 via-neon-green/5 to-black/20 dark:to-black/40 border border-emerald-500/30 text-left space-y-3 relative overflow-hidden shadow-sm"
                         >
-                            <span>Browse Campaigns</span>
+                            <div className="flex items-center justify-between gap-2">
+                                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-700 dark:text-neon-green border border-emerald-500/30 text-[10px] font-black uppercase tracking-wider">
+                                    <MessageCircle size={12} />
+                                    <span>{matchedCityGroup.platform || 'Community'} Group &bull; {matchedCityGroup.city}</span>
+                                </div>
+                                {hasMarkedGroupJoined && (
+                                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600 dark:text-neon-green uppercase font-mono">
+                                        <Check size={12} /> Joined
+                                    </span>
+                                )}
+                            </div>
+
+                            <div>
+                                <h4 className="text-sm sm:text-base font-black text-gray-900 dark:text-white font-heading">
+                                    {matchedCityGroup.title || `${matchedCityGroup.city} Creator Hub`}
+                                </h4>
+                                <p className="text-xs text-gray-600 dark:text-zinc-400 mt-0.5 leading-relaxed">
+                                    {matchedCityGroup.description || `Join other creators in ${matchedCityGroup.city} for instant brief drops, festival guestlists, and local creator meetups.`}
+                                </p>
+                            </div>
+
+                            <div className="flex flex-col sm:flex-row gap-2.5 pt-1">
+                                <a
+                                    href={matchedCityGroup.groupUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex-1 h-11 px-4 rounded-xl bg-neon-green hover:brightness-105 text-black font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all shadow-[0_0_20px_rgba(57,255,20,0.3)]"
+                                >
+                                    <MessageCircle size={14} />
+                                    <span>Join {matchedCityGroup.platform || 'City'} Group</span>
+                                    <ExternalLink size={12} />
+                                </a>
+                                {!hasMarkedGroupJoined ? (
+                                    <button
+                                        type="button"
+                                        onClick={handleJoinedGroupClick}
+                                        className="h-11 px-5 rounded-xl bg-white dark:bg-white/10 hover:bg-black/5 dark:hover:bg-white/15 border border-black/10 dark:border-white/10 text-gray-900 dark:text-white font-bold text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 shrink-0"
+                                    >
+                                        <Check size={14} />
+                                        <span>I've Joined</span>
+                                    </button>
+                                ) : (
+                                    <div className="h-11 px-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-400 font-bold text-xs flex items-center justify-center gap-1.5 shrink-0">
+                                        <CheckCircle2 size={14} />
+                                        <span>Member Verified</span>
+                                    </div>
+                                )}
+                            </div>
+                        </motion.div>
+                    )}
+
+                    {/* Next Steps Info Box */}
+                    <div className="p-4 bg-white dark:bg-white/[0.02] border border-gray-200 dark:border-white/[0.08] rounded-2xl text-left text-xs text-gray-600 dark:text-zinc-400 space-y-2">
+                        <div className="flex items-center gap-2 text-neon-green font-bold text-[11px] uppercase tracking-wider">
+                            <Sparkles size={13} /> Your Creator Privileges
+                        </div>
+                        <p>&bull; <strong>Brand Collaborations:</strong> Verified briefs matching {formData.city} and {formData.categories || 'your niche'}.</p>
+                        <p>&bull; <strong>Festival &amp; Event Passes:</strong> Exclusive experiential access and festival drops.</p>
+                        <p>&bull; <strong>Newbi Points:</strong> {Number(siteSettings?.creatorWelcomePoints) || 100} welcome bonus points credited to your ID pass.</p>
+                    </div>
+
+                    {/* Direct Action Buttons */}
+                    <div className="flex flex-col sm:flex-row gap-3 pt-2">
+                        <Link
+                            to="/creator-dashboard"
+                            className="flex-1 h-12 bg-neon-green hover:brightness-105 text-black font-black rounded-xl flex items-center justify-center gap-2 text-xs uppercase tracking-wider transition-all shadow-[0_0_25px_rgba(57,255,20,0.3)]"
+                        >
+                            <span>Open Creator Dashboard</span>
                             <ArrowRight size={14} />
                         </Link>
                         <Link
                             to="/creator"
-                            className="flex-1 h-11 bg-white dark:bg-white/[0.05] hover:bg-gray-100 dark:hover:bg-white/10 text-gray-900 dark:text-white font-bold rounded-xl flex items-center justify-center text-xs uppercase tracking-wider transition-all border border-gray-200 dark:border-white/[0.08]"
+                            className="flex-1 h-12 bg-white dark:bg-white/[0.05] hover:bg-gray-100 dark:hover:bg-white/10 text-gray-900 dark:text-white font-bold rounded-xl flex items-center justify-center text-xs uppercase tracking-wider transition-all border border-gray-200 dark:border-white/[0.08]"
                         >
-                            Return to Hub
+                            Return to Creator Hub
                         </Link>
                     </div>
                 </motion.div>
             </div>
         );
+    }
+
+    const livePreviewProfile = {
+        displayName: formData.name?.trim() || user?.displayName || "Reserve Your Pass",
+        name: formData.name?.trim() || user?.displayName || "Reserve Your Pass",
+        city: (formData.city === 'Others' ? formData.customCity?.trim() : formData.city) || "Your City",
+        categories: [ (formData.categories === 'Others' ? formData.customNiche?.trim() : formData.categories) || "Content Creator" ],
+        instagramHandle: (formData.instagram || formData.instagramHandle || "").replace(/^@/, '') || "your.handle",
+        profilePicture: formData.profilePicture || user?.photoURL || null,
+        profileStatus: 'unclaimed',
+        points: 500,
+        joinedCampaigns: [],
+        creatorId: user?.uid ? `NB-${user.uid.slice(0, 5).toUpperCase()}` : "NB-88219"
+    };
+
+    // Suppress registration form flash if an authenticated user is currently verifying creator status or already registered
+    const isMatchingLoggedInCreator = Boolean(
+        user && matchedExistingCreator && (
+            user.uid === matchedExistingCreator.uid || 
+            (user.email && matchedExistingCreator.email && user.email.toLowerCase() === matchedExistingCreator.email.toLowerCase())
+        )
+    );
+
+    if (user && (!subscriptionsLoaded?.creators || isMatchingLoggedInCreator)) {
+        return <GlobalLoader color="#39ff14" />;
     }
 
     return (
@@ -674,7 +888,7 @@ const CreatorJoin = () => {
                 <div className="absolute bottom-10 right-1/4 w-[400px] h-[300px] bg-neon-green/[0.03] rounded-full blur-3xl" />
             </div>
 
-            <div className="relative z-10 w-full max-w-2xl mx-auto space-y-6">
+            <div className="relative z-10 w-full max-w-xl sm:max-w-2xl mx-auto space-y-6">
                 
                 {/* Top Nav Header */}
                 <div className="flex items-center justify-between">
@@ -739,7 +953,28 @@ const CreatorJoin = () => {
                     </motion.div>
                 )}
 
-                {/* Stepper Card */}
+                {/* Announcement Notice from Creator Settings */}
+                {siteSettings?.creatorAnnouncement && (
+                    <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-800 dark:text-amber-300 text-xs font-bold flex items-center gap-3">
+                        <Sparkles size={16} className="text-amber-500 shrink-0" />
+                        <span>{siteSettings.creatorAnnouncement}</span>
+                    </div>
+                )}
+
+                {/* Stepper Card or Intake Paused State */}
+                {siteSettings?.allowCreatorSignups === false ? (
+                    <div className="bg-gray-50/80 dark:bg-white/[0.02] border border-black/[0.08] dark:border-white/[0.06] rounded-3xl p-8 backdrop-blur-2xl text-center space-y-4">
+                        <div className="w-12 h-12 rounded-2xl bg-red-500/10 text-red-500 flex items-center justify-center mx-auto font-black text-lg">
+                            !
+                        </div>
+                        <h3 className="text-base font-black font-heading uppercase tracking-wider text-gray-900 dark:text-white">
+                            Applications Temporarily Paused
+                        </h3>
+                        <p className="text-xs text-gray-600 dark:text-zinc-400 max-w-sm mx-auto leading-relaxed">
+                            We are currently reviewing existing creator profiles. New admissions will reopen shortly. If you already have an account, sign in above.
+                        </p>
+                    </div>
+                ) : (
                 <div className="bg-gray-50/80 dark:bg-white/[0.02] border border-black/[0.08] dark:border-white/[0.06] rounded-3xl p-5 sm:p-8 backdrop-blur-2xl shadow-2xl space-y-6">
                     
                     {/* Progress Bar & Header */}
@@ -798,6 +1033,94 @@ const CreatorJoin = () => {
                                         Tell us your name, photo, and where you create content.
                                     </p>
                                 </div>
+
+                                {!user ? (
+                                    /* Google Fast-Track Option */
+                                    <div className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-white/[0.03] border border-black/10 dark:border-white/10 shadow-sm space-y-3.5">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-10 h-10 rounded-xl bg-gray-100 dark:bg-white/5 border border-black/5 dark:border-white/10 flex items-center justify-center shrink-0">
+                                                <svg className="w-5 h-5" viewBox="0 0 24 24">
+                                                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                                                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                                                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
+                                                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
+                                                </svg>
+                                            </div>
+                                            <div>
+                                                <h3 className="text-xs sm:text-sm font-black text-gray-900 dark:text-white uppercase tracking-wider">
+                                                    Fast-Track with Google
+                                                </h3>
+                                                <p className="text-[11px] sm:text-xs text-gray-500 dark:text-zinc-400">
+                                                    1-tap sign in to auto-fill your name, email & profile avatar
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        <button
+                                            type="button"
+                                            onClick={handleGoogleFastTrack}
+                                            disabled={isLoggingInWithGoogle}
+                                            className="w-full h-12 rounded-xl bg-black hover:bg-neutral-800 dark:bg-white dark:hover:bg-zinc-200 text-white dark:text-black font-black uppercase tracking-wider text-xs transition-all flex items-center justify-center gap-2.5 shadow-md active:scale-[0.99] disabled:opacity-50"
+                                        >
+                                            {isLoggingInWithGoogle ? (
+                                                <LoadingSpinner size="xs" color="currentColor" />
+                                            ) : (
+                                                <>
+                                                    <svg className="w-4 h-4" viewBox="0 0 24 24">
+                                                        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                                                        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                                                        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
+                                                        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
+                                                    </svg>
+                                                    <span>Continue with Google</span>
+                                                </>
+                                            )}
+                                        </button>
+
+                                        <div className="relative flex py-1 items-center">
+                                            <div className="flex-grow border-t border-black/10 dark:border-white/10" />
+                                            <span className="flex-shrink mx-3 text-[10px] uppercase font-bold tracking-widest text-gray-400 dark:text-zinc-500">
+                                                or fill details manually below
+                                            </span>
+                                            <div className="flex-grow border-t border-black/10 dark:border-white/10" />
+                                        </div>
+                                    </div>
+                                ) : (
+                                    /* Connected User Status Card */
+                                    <div className="p-4 rounded-2xl bg-neon-green/10 border border-neon-green/30 flex items-center justify-between gap-3 shadow-sm">
+                                        <div className="flex items-center gap-3 min-w-0">
+                                            <div className="w-11 h-11 rounded-xl bg-zinc-950 border border-neon-green/40 overflow-hidden shrink-0 flex items-center justify-center">
+                                                {formData.profilePicture ? (
+                                                    <img src={formData.profilePicture} alt={formData.name || 'User'} className="w-full h-full object-cover" />
+                                                ) : (
+                                                    <span className="text-neon-green font-black font-heading text-sm">
+                                                        {(formData.name || user.displayName || 'U').charAt(0)}
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <div className="min-w-0">
+                                                <div className="flex items-center gap-2">
+                                                    <p className="text-xs font-black text-gray-900 dark:text-white truncate">
+                                                        {formData.name || user.displayName || 'Connected Account'}
+                                                    </p>
+                                                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-neon-green/20 text-black dark:text-neon-green text-[9px] font-bold">
+                                                        <CheckCircle2 size={10} /> Pre-filled
+                                                    </span>
+                                                </div>
+                                                <p className="text-[11px] text-gray-500 dark:text-zinc-400 truncate mt-0.5">
+                                                    {formData.email || user.email}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => setAuthModal(true)}
+                                            className="text-[10px] font-bold uppercase tracking-wider text-gray-500 hover:text-black dark:hover:text-neon-green transition-colors shrink-0"
+                                        >
+                                            Switch
+                                        </button>
+                                    </div>
+                                )}
 
                                 {/* Profile Photo Upload */}
                                 <div className="flex items-center gap-4 p-4 bg-gray-50/80 dark:bg-white/[0.02] border border-black/[0.08] dark:border-white/[0.06] rounded-2xl">
@@ -1164,25 +1487,33 @@ const CreatorJoin = () => {
 
                                 {/* Visual Niche Selector */}
                                 <div className="space-y-2">
-                                    <label className="text-[10px] font-bold text-gray-900 dark:text-white/40 uppercase tracking-wider">Primary Content Niche *</label>
-                                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                    <label className="text-[10px] font-bold text-gray-900 dark:text-white/40 uppercase tracking-wider block">Primary Content Niche *</label>
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
                                         {NICHE_OPTIONS.map(niche => {
                                             const isSelected = formData.categories === niche.id;
+                                            const IconComponent = niche.icon;
                                             return (
                                                 <button
                                                     key={niche.id}
                                                     type="button"
                                                     onClick={() => setFormData(p => ({ ...p, categories: niche.id }))}
                                                     className={cn(
-                                                        "p-3.5 rounded-2xl text-left border transition-all flex flex-col justify-between gap-2 group",
+                                                        "p-3.5 rounded-2xl text-left border transition-all flex flex-col justify-between gap-3 group",
                                                         isSelected
                                                             ? "bg-neon-pink/15 dark:bg-neon-pink/20 border-neon-pink shadow-md scale-[1.02] ring-1 ring-neon-pink text-gray-900 dark:text-white"
                                                             : "bg-white dark:bg-white/[0.02] border-gray-200 dark:border-white/[0.06] hover:bg-gray-50 dark:hover:bg-white/[0.04] hover:border-gray-300 dark:hover:border-white/20 text-gray-700 dark:text-white/70"
                                                     )}
                                                 >
-                                                    <span className="text-xl">{niche.icon}</span>
+                                                    <div className={cn(
+                                                        "w-8 h-8 rounded-xl flex items-center justify-center transition-colors",
+                                                        isSelected
+                                                            ? "bg-neon-pink text-black"
+                                                            : "bg-black/5 dark:bg-white/5 text-gray-600 dark:text-zinc-400 group-hover:text-black dark:group-hover:text-white"
+                                                    )}>
+                                                        <IconComponent size={16} />
+                                                    </div>
                                                     <div>
-                                                        <p className={cn("text-xs font-bold", isSelected ? "text-neon-pink dark:text-neon-pink font-black" : "text-gray-900 dark:text-white")}>{niche.label}</p>
+                                                        <p className={cn("text-xs font-bold leading-tight", isSelected ? "text-neon-pink dark:text-neon-pink font-black" : "text-gray-900 dark:text-white")}>{niche.label}</p>
                                                     </div>
                                                 </button>
                                             );
@@ -1197,7 +1528,7 @@ const CreatorJoin = () => {
                                                 value={formData.customNiche}
                                                 onChange={handleChange}
                                                 placeholder="Specify niche (e.g. Automotive, Podcasting, DIY)"
-                                                className="w-full h-11 bg-white dark:bg-black/40 border border-black/[0.1] dark:border-white/[0.08] focus:border-black/30 dark:focus:border-white/30 rounded-xl px-4 text-xs font-medium text-gray-900 dark:text-white outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-white/20"
+                                                className="w-full h-12 bg-white dark:bg-black/40 border border-black/[0.1] dark:border-white/[0.08] focus:border-black/30 dark:focus:border-white/30 rounded-xl px-4 text-xs font-medium text-gray-900 dark:text-white outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-white/20"
                                             />
                                         </motion.div>
                                     )}
@@ -1210,7 +1541,7 @@ const CreatorJoin = () => {
                                                 value={formData.cityPageFocus}
                                                 onChange={handleChange}
                                                 placeholder="City / Locality or Page Focus (e.g. Bangalore Food & Nightlife, Delhi Events, So South Mumbai)"
-                                                className="w-full h-11 bg-white dark:bg-black/40 border border-black/[0.1] dark:border-white/[0.08] focus:border-black/30 dark:focus:border-white/30 rounded-xl px-4 text-xs font-medium text-gray-900 dark:text-white outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-white/20"
+                                                className="w-full h-12 bg-white dark:bg-black/40 border border-black/[0.1] dark:border-white/[0.08] focus:border-black/30 dark:focus:border-white/30 rounded-xl px-4 text-xs font-medium text-gray-900 dark:text-white outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-white/20"
                                             />
                                         </motion.div>
                                     )}
@@ -1223,7 +1554,7 @@ const CreatorJoin = () => {
                                                 value={formData.collegeName}
                                                 onChange={handleChange}
                                                 placeholder="College / University Name (e.g. Christ University, IIT Bombay)"
-                                                className="w-full h-11 bg-white dark:bg-black/40 border border-black/[0.1] dark:border-white/[0.08] focus:border-black/30 dark:focus:border-white/30 rounded-xl px-4 text-xs font-medium text-gray-900 dark:text-white outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-white/20"
+                                                className="w-full h-12 bg-white dark:bg-black/40 border border-black/[0.1] dark:border-white/[0.08] focus:border-black/30 dark:focus:border-white/30 rounded-xl px-4 text-xs font-medium text-gray-900 dark:text-white outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-white/20"
                                             />
                                         </motion.div>
                                     )}
@@ -1235,30 +1566,30 @@ const CreatorJoin = () => {
                                         <Instagram size={15} />
                                         <span>Instagram Profile *</span>
                                     </div>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                        <div className="space-y-1">
-                                            <label className="text-[10px] font-bold text-gray-900 dark:text-white/30 uppercase tracking-wider">Handle (without @)</label>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-start">
+                                        <div className="space-y-1.5">
+                                            <label className="text-[10px] font-bold text-gray-900 dark:text-white/40 uppercase tracking-wider block">Handle (without @)</label>
                                             <div className="relative">
-                                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-900 dark:text-white/30 font-bold text-xs">@</span>
+                                                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-900 dark:text-white/40 font-bold text-xs">@</span>
                                                 <input
                                                     type="text"
                                                     name="instagram"
                                                     value={formData.instagram}
                                                     onChange={handleChange}
                                                     placeholder="yourhandle"
-                                                    className="w-full h-11 pl-7 pr-3 bg-white dark:bg-black/40 border border-black/[0.1] dark:border-white/[0.08] focus:border-pink-500 rounded-xl text-xs font-medium text-gray-900 dark:text-white outline-none transition-all"
+                                                    className="w-full h-12 pl-8 pr-3 bg-white dark:bg-black/40 border border-black/[0.1] dark:border-white/[0.08] focus:border-pink-500 rounded-xl text-xs font-medium text-gray-900 dark:text-white outline-none transition-all"
                                                 />
                                             </div>
                                         </div>
-                                        <div className="space-y-1">
-                                            <label className="text-[10px] font-bold text-gray-900 dark:text-white/30 uppercase tracking-wider">Approx Followers</label>
+                                        <div className="space-y-1.5">
+                                            <label className="text-[10px] font-bold text-gray-900 dark:text-white/40 uppercase tracking-wider block">Approx Followers</label>
                                             <input
                                                 type="number"
                                                 name="instagramFollowers"
                                                 value={formData.instagramFollowers}
                                                 onChange={handleChange}
                                                 placeholder="e.g. 5000"
-                                                className="w-full h-11 px-3 bg-white dark:bg-black/40 border border-black/[0.1] dark:border-white/[0.08] focus:border-pink-500 rounded-xl text-xs font-medium text-gray-900 dark:text-white outline-none transition-all"
+                                                className="w-full h-12 px-4 bg-white dark:bg-black/40 border border-black/[0.1] dark:border-white/[0.08] focus:border-pink-500 rounded-xl text-xs font-medium text-gray-900 dark:text-white outline-none transition-all"
                                             />
                                         </div>
                                     </div>
@@ -1269,50 +1600,50 @@ const CreatorJoin = () => {
 
                                 {/* Optional Additional Channels */}
                                 <div className="space-y-2">
-                                    <label className="text-[10px] font-bold text-gray-900 dark:text-white/40 uppercase tracking-wider">Additional Channels (Optional)</label>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                    <label className="text-[10px] font-bold text-gray-900 dark:text-white/40 uppercase tracking-wider block">Additional Channels (Optional)</label>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-start">
                                         <div className="relative">
-                                            <Linkedin className="absolute left-3.5 top-1/2 -translate-y-1/2 text-blue-400" size={14} />
+                                            <Linkedin className="absolute left-3.5 top-1/2 -translate-y-1/2 text-blue-400" size={15} />
                                             <input
                                                 type="text"
                                                 name="linkedin"
                                                 value={formData.linkedin}
                                                 onChange={handleChange}
                                                 placeholder="LinkedIn profile link"
-                                                className="w-full h-11 pl-9 pr-3 bg-white dark:bg-black/40 border border-black/[0.1] dark:border-white/[0.08] focus:border-blue-400 rounded-xl text-xs font-medium text-gray-900 dark:text-white outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-white/20"
+                                                className="w-full h-12 pl-10 pr-3 bg-white dark:bg-black/40 border border-black/[0.1] dark:border-white/[0.08] focus:border-blue-400 rounded-xl text-xs font-medium text-gray-900 dark:text-white outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-white/20"
                                             />
                                         </div>
                                         <div className="relative">
-                                            <Youtube className="absolute left-3.5 top-1/2 -translate-y-1/2 text-red-400" size={14} />
+                                            <Youtube className="absolute left-3.5 top-1/2 -translate-y-1/2 text-red-400" size={15} />
                                             <input
                                                 type="text"
                                                 name="youtube"
                                                 value={formData.youtube}
                                                 onChange={handleChange}
                                                 placeholder="YouTube channel link"
-                                                className="w-full h-11 pl-9 pr-3 bg-white dark:bg-black/40 border border-black/[0.1] dark:border-white/[0.08] focus:border-red-400 rounded-xl text-xs font-medium text-gray-900 dark:text-white outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-white/20"
+                                                className="w-full h-12 pl-10 pr-3 bg-white dark:bg-black/40 border border-black/[0.1] dark:border-white/[0.08] focus:border-red-400 rounded-xl text-xs font-medium text-gray-900 dark:text-white outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-white/20"
                                             />
                                         </div>
                                         <div className="relative">
-                                            <Twitter className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sky-400" size={14} />
+                                            <Twitter className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sky-400" size={15} />
                                             <input
                                                 type="text"
                                                 name="twitter"
                                                 value={formData.twitter}
                                                 onChange={handleChange}
                                                 placeholder="X / Twitter handle or link"
-                                                className="w-full h-11 pl-9 pr-3 bg-white dark:bg-black/40 border border-black/[0.1] dark:border-white/[0.08] focus:border-sky-400 rounded-xl text-xs font-medium text-gray-900 dark:text-white outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-white/20"
+                                                className="w-full h-12 pl-10 pr-3 bg-white dark:bg-black/40 border border-black/[0.1] dark:border-white/[0.08] focus:border-sky-400 rounded-xl text-xs font-medium text-gray-900 dark:text-white outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-white/20"
                                             />
                                         </div>
                                         <div className="relative">
-                                            <Globe className="absolute left-3.5 top-1/2 -translate-y-1/2 text-emerald-400" size={14} />
+                                            <Globe className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neon-green" size={15} />
                                             <input
                                                 type="text"
                                                 name="website"
                                                 value={formData.website}
                                                 onChange={handleChange}
                                                 placeholder="Portfolio or Website link"
-                                                className="w-full h-11 pl-9 pr-3 bg-white dark:bg-black/40 border border-black/[0.1] dark:border-white/[0.08] focus:border-emerald-400 rounded-xl text-xs font-medium text-gray-900 dark:text-white outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-white/20"
+                                                className="w-full h-12 pl-10 pr-3 bg-white dark:bg-black/40 border border-black/[0.1] dark:border-white/[0.08] focus:border-neon-green rounded-xl text-xs font-medium text-gray-900 dark:text-white outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-white/20"
                                             />
                                         </div>
                                     </div>
@@ -1343,63 +1674,170 @@ const CreatorJoin = () => {
 
                                 {/* Collaboration Style Cards */}
                                 <div className="space-y-2">
-                                    <label className="text-[10px] font-bold text-gray-900 dark:text-white/40 uppercase tracking-wider">Collaboration Preferences</label>
-                                    <div className="grid grid-cols-3 gap-2">
+                                    <label className="text-[10px] font-bold text-gray-900 dark:text-white/40 uppercase tracking-wider block">
+                                        Collaboration Preferences
+                                    </label>
+                                    <div className="grid grid-cols-3 gap-2.5">
                                         {[
-                                            { id: 'both', label: 'Open to Both', icon: '✨' },
-                                            { id: 'paid', label: 'Paid Only', icon: '💰' },
-                                            { id: 'barter', label: 'Barter & Gigs', icon: '🎁' }
+                                            { id: 'both', label: 'Open to Both', icon: Layers },
+                                            { id: 'paid', label: 'Paid Only', icon: Banknote },
+                                            { id: 'barter', label: 'Barter & Gigs', icon: Handshake }
                                         ].map(opt => {
                                             const isSelected = formData.doBarter === opt.id;
+                                            const IconComp = opt.icon;
                                             return (
                                                 <button
                                                     key={opt.id}
                                                     type="button"
                                                     onClick={() => setFormData(p => ({ ...p, doBarter: opt.id }))}
                                                     className={cn(
-                                                        "p-3.5 rounded-2xl text-center border transition-all flex flex-col items-center gap-1.5",
+                                                        "p-3.5 rounded-2xl border transition-all flex flex-col items-center justify-center gap-2",
                                                         isSelected
                                                             ? "bg-neon-green text-black border-neon-green font-black shadow-md shadow-neon-green/20 scale-[1.02]"
                                                             : "bg-white dark:bg-white/[0.02] text-gray-800 dark:text-white/60 border-gray-200 dark:border-white/[0.06] hover:text-black dark:hover:text-white hover:border-gray-300 dark:hover:border-white/20"
                                                     )}
                                                 >
-                                                    <span className="text-base">{opt.icon}</span>
-                                                    <span className="text-xs">{opt.label}</span>
+                                                    <div className={cn(
+                                                        "w-8 h-8 rounded-xl flex items-center justify-center transition-colors",
+                                                        isSelected ? "bg-black text-neon-green" : "bg-black/5 dark:bg-white/5 text-gray-500 dark:text-zinc-400"
+                                                    )}>
+                                                        <IconComp size={16} />
+                                                    </div>
+                                                    <span className="text-xs font-bold leading-tight">{opt.label}</span>
                                                 </button>
                                             );
                                         })}
                                     </div>
                                 </div>
 
-                                {/* Short Bio & Commercials */}
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                    <div className="space-y-1.5 sm:col-span-2">
-                                        <label className="text-[10px] font-bold text-gray-900 dark:text-white/40 uppercase tracking-wider">Short Creator Statement</label>
+                                {/* Typical Rates Range Slider */}
+                                <div className="space-y-3 p-4 bg-gray-50/80 dark:bg-white/[0.02] border border-black/[0.08] dark:border-white/[0.06] rounded-2xl">
+                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                        <div>
+                                            <label className="text-[10px] font-bold text-gray-900 dark:text-white/40 uppercase tracking-wider block">
+                                                Typical Rates per Deliverable (Optional)
+                                            </label>
+                                            <p className="text-[11px] text-gray-500 dark:text-zinc-400">
+                                                Select your expected price range for reels & campaign posts
+                                            </p>
+                                        </div>
+                                        <div className="sm:text-right">
+                                            <span className="text-xs sm:text-sm font-black font-mono text-neon-green bg-black px-3 py-1.5 rounded-xl border border-neon-green/30 shadow-[0_0_15px_rgba(57,255,20,0.15)] inline-flex items-center gap-1.5">
+                                                <IndianRupee size={13} className="text-neon-green shrink-0" />
+                                                {isRateFlexible ? "Flexible / Barter" : `${formatINRFull(rateMin)} – ${formatINRFull(rateMax)}${rateMax >= 100000 ? '+' : ''}`}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    {/* Presets */}
+                                    <div className="flex flex-wrap gap-1.5 pt-1">
+                                        {[
+                                            { label: 'Flexible / Barter', min: 0, max: 0, flex: true },
+                                            { label: '₹2K – ₹8K', min: 2000, max: 8000 },
+                                            { label: '₹8K – ₹20K', min: 8000, max: 20000 },
+                                            { label: '₹20K – ₹50K', min: 20000, max: 50000 },
+                                            { label: '₹50K – ₹1L+', min: 50000, max: 100000 }
+                                        ].map(preset => {
+                                            const isSelected = preset.flex ? isRateFlexible : (!isRateFlexible && rateMin === preset.min && rateMax === preset.max);
+                                            return (
+                                                <button
+                                                    key={preset.label}
+                                                    type="button"
+                                                    onClick={() => {
+                                                        if (preset.flex) {
+                                                            setIsRateFlexible(true);
+                                                            setFormData(p => ({ ...p, commercials: 'Flexible / Barter' }));
+                                                        } else {
+                                                            setIsRateFlexible(false);
+                                                            setRateMin(preset.min);
+                                                            setRateMax(preset.max);
+                                                            setFormData(p => ({ ...p, commercials: `${formatINRFull(preset.min)} – ${formatINRFull(preset.max)}${preset.max >= 100000 ? '+' : ''} / Deliverable` }));
+                                                        }
+                                                    }}
+                                                    className={cn(
+                                                        "px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all border",
+                                                        isSelected
+                                                            ? "bg-neon-green text-black border-neon-green font-black shadow-sm"
+                                                            : "bg-white dark:bg-white/[0.04] text-gray-600 dark:text-zinc-400 border-black/10 dark:border-white/10 hover:border-black/20 dark:hover:border-white/20 hover:text-black dark:hover:text-white"
+                                                    )}
+                                                >
+                                                    {preset.label}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+
+                                    {/* Synchronized Range Sliders */}
+                                    {!isRateFlexible && (
+                                        <div className="space-y-3 pt-2">
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
+                                                <div className="space-y-1.5">
+                                                    <div className="flex justify-between text-[10px] font-bold text-gray-500 dark:text-zinc-400 uppercase tracking-wider">
+                                                        <span>From</span>
+                                                        <span className="font-mono text-gray-900 dark:text-white font-black">{formatINRFull(rateMin)}</span>
+                                                    </div>
+                                                    <input
+                                                        type="range"
+                                                        min="1000"
+                                                        max="60000"
+                                                        step="1000"
+                                                        value={rateMin}
+                                                        onChange={(e) => {
+                                                            const val = Number(e.target.value);
+                                                            const newMin = Math.min(val, rateMax - 1000);
+                                                            setRateMin(newMin);
+                                                            setFormData(p => ({ ...p, commercials: `${formatINRFull(newMin)} – ${formatINRFull(rateMax)}${rateMax >= 100000 ? '+' : ''} / Deliverable` }));
+                                                        }}
+                                                        className="w-full accent-neon-green cursor-pointer h-2 bg-black/10 dark:bg-white/10 rounded-lg appearance-none"
+                                                    />
+                                                </div>
+                                                <div className="space-y-1.5">
+                                                    <div className="flex justify-between text-[10px] font-bold text-gray-500 dark:text-zinc-400 uppercase tracking-wider">
+                                                        <span>Up To</span>
+                                                        <span className="font-mono text-gray-900 dark:text-white font-black">{formatINRFull(rateMax)}{rateMax >= 100000 ? '+' : ''}</span>
+                                                    </div>
+                                                    <input
+                                                        type="range"
+                                                        min="2000"
+                                                        max="100000"
+                                                        step="2000"
+                                                        value={rateMax}
+                                                        onChange={(e) => {
+                                                            const val = Number(e.target.value);
+                                                            const newMax = Math.max(val, rateMin + 1000);
+                                                            setRateMax(newMax);
+                                                            setFormData(p => ({ ...p, commercials: `${formatINRFull(rateMin)} – ${formatINRFull(newMax)}${newMax >= 100000 ? '+' : ''} / Deliverable` }));
+                                                        }}
+                                                        className="w-full accent-neon-green cursor-pointer h-2 bg-black/10 dark:bg-white/10 rounded-lg appearance-none"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Short Creator Statement & Invite Code */}
+                                <div className="space-y-3">
+                                    <div className="space-y-1.5">
+                                        <label className="text-[10px] font-bold text-gray-900 dark:text-white/40 uppercase tracking-wider block">Short Creator Statement</label>
                                         <textarea
                                             name="bio"
                                             value={formData.bio}
                                             onChange={handleChange}
                                             placeholder="e.g. Bangalore lifestyle creator focusing on aesthetics, cafes, and campus culture. High engagement reels."
                                             rows={2}
-                                            className="w-full bg-white dark:bg-black/40 border border-black/[0.1] dark:border-white/[0.08] focus:border-black/30 dark:focus:border-white/30 rounded-xl p-3 text-xs font-medium text-gray-900 dark:text-white outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-white/20 resize-none"
+                                            className="w-full bg-white dark:bg-black/40 border border-black/[0.1] dark:border-white/[0.08] focus:border-black/30 dark:focus:border-white/30 rounded-xl p-3.5 text-xs font-medium text-gray-900 dark:text-white outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-white/20 resize-none"
                                         />
                                     </div>
                                     <div className="space-y-1.5">
-                                        <label className="text-[10px] font-bold text-gray-900 dark:text-white/40 uppercase tracking-wider">Typical Rates (Optional)</label>
-                                        <input
-                                            type="text"
-                                            name="commercials"
-                                            value={formData.commercials}
-                                            onChange={handleChange}
-                                            placeholder="e.g. ₹5,000/Reel"
-                                            className="w-full h-11 bg-white dark:bg-black/40 border border-black/[0.1] dark:border-white/[0.08] focus:border-black/30 dark:focus:border-white/30 rounded-xl px-4 text-xs font-medium text-gray-900 dark:text-white outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-white/20"
-                                        />
-                                    </div>
-                                    <div className="space-y-1.5">
-                                        <label className="text-[10px] font-bold text-gray-900 dark:text-white/40 uppercase tracking-wider flex justify-between">
-                                            <span>Invite Code (Optional)</span>
-                                            {isReferralCodeLocked && <span className="text-neon-green">Applied 🔒</span>}
-                                        </label>
+                                        <div className="flex items-center justify-between">
+                                            <label className="text-[10px] font-bold text-gray-900 dark:text-white/40 uppercase tracking-wider">Invite Code (Optional)</label>
+                                            {isReferralCodeLocked && (
+                                                <span className="text-neon-green text-[10px] font-bold flex items-center gap-1 uppercase tracking-wider">
+                                                    <Lock size={11} /> Applied
+                                                </span>
+                                            )}
+                                        </div>
                                         <input
                                             type="text"
                                             name="referredBy"
@@ -1407,35 +1845,24 @@ const CreatorJoin = () => {
                                             onChange={handleChange}
                                             disabled={isReferralCodeLocked}
                                             placeholder="Friend or creator invite code"
-                                            className="w-full h-11 bg-white dark:bg-black/40 border border-black/[0.1] dark:border-white/[0.08] focus:border-black/30 dark:focus:border-white/30 rounded-xl px-4 text-xs font-medium text-gray-900 dark:text-white outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-white/20 disabled:opacity-50"
+                                            className="w-full h-12 bg-white dark:bg-black/40 border border-black/[0.1] dark:border-white/[0.08] focus:border-black/30 dark:focus:border-white/30 rounded-xl px-4 text-xs font-medium text-gray-900 dark:text-white outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-white/20 disabled:opacity-50"
                                         />
                                     </div>
                                 </div>
 
-                                {/* Live Creator Pass Preview Card */}
-                                <div className="space-y-2 pt-2">
-                                    <label className="text-[10px] font-bold text-gray-900 dark:text-white/40 uppercase tracking-wider flex items-center gap-1.5">
-                                        <Award size={13} className="text-neon-pink" />
-                                        <span>Your Newbi Creator Pass Preview</span>
-                                    </label>
-                                    <div className="p-4 sm:p-5 bg-gradient-to-br from-gray-100 dark:from-white/[0.05] to-gray-50 dark:to-white/[0.01] border border-black/[0.1] dark:border-white/[0.1] rounded-2xl relative overflow-hidden flex items-center gap-4">
-                                        <div className="w-14 h-14 rounded-2xl bg-white dark:bg-black border border-white/[0.1] overflow-hidden shrink-0 flex items-center justify-center">
-                                            {formData.profilePicture ? (
-                                                <img src={formData.profilePicture} alt="Avatar" className="w-full h-full object-cover" />
-                                            ) : (
-                                                <span className="text-lg font-black text-gray-900 dark:text-white/30">{formData.name ? formData.name.charAt(0).toUpperCase() : 'C'}</span>
-                                            )}
-                                        </div>
-                                        <div className="min-w-0 flex-1">
-                                            <div className="flex items-center gap-2 mb-1">
-                                                <span className="text-[8px] font-bold uppercase tracking-wider bg-neon-green/10 text-neon-green border border-neon-green/20 px-2 py-0.5 rounded-md">Verified</span>
-                                                <span className="text-[8px] font-bold text-gray-900 dark:text-white/30 uppercase tracking-wider">{formData.city || 'City'}</span>
-                                            </div>
-                                            <h4 className="text-sm sm:text-base font-black text-gray-900 dark:text-white uppercase tracking-tight truncate">{formData.name || 'Your Name'}</h4>
-                                            <p className="text-[10px] font-bold text-neon-pink/80 uppercase tracking-wider truncate">
-                                                {formData.categories === 'City Pages' && formData.cityPageFocus ? `City Pages • ${formData.cityPageFocus}` : (formData.categories || 'Niche')}
-                                            </p>
-                                        </div>
+                                {/* Official Creator Pass Preview in Step 4 */}
+                                <div className="space-y-3 pt-2">
+                                    <div className="flex items-center justify-between px-0.5">
+                                        <label className="text-[10px] font-bold text-gray-900 dark:text-white/40 uppercase tracking-wider flex items-center gap-1.5">
+                                            <ShieldCheck size={13} className="text-neon-green" />
+                                            <span>Your Official Newbi Creator Pass</span>
+                                        </label>
+                                    </div>
+                                    <div className="flex justify-center w-full">
+                                        <CreatorPassCard 
+                                            profile={livePreviewProfile}
+                                            isPreview={true}
+                                        />
                                     </div>
                                 </div>
                             </motion.div>
@@ -1488,11 +1915,12 @@ const CreatorJoin = () => {
                         )}
                     </div>
                 </div>
+                )}
 
                 {/* Trust Footer Notice */}
                 <div className="flex items-center justify-center gap-2 text-center text-[10px] font-bold text-gray-900 dark:text-white/30 uppercase tracking-wider">
                     <ShieldCheck size={13} className="text-neon-green" />
-                    <span>Official Newbi Influencer Roster • 0% Commission • Free Forever</span>
+                    <span>Official Newbi Creator Collective • 100% Creator Perks • Free Forever</span>
                 </div>
             </div>
         </div>

@@ -53,6 +53,7 @@ import Upload from 'lucide-react/dist/esm/icons/upload';
 import Trophy from 'lucide-react/dist/esm/icons/trophy';
 import MessageSquare from 'lucide-react/dist/esm/icons/message-square';
 import Send from 'lucide-react/dist/esm/icons/send';
+import Settings from 'lucide-react/dist/esm/icons/settings';
 import { getEarnedBadges, getVerifiedTasksCount, getReferralsForCreator } from '../../lib/badges';
 import { sendCreatorDirectEmail } from '../../lib/email';
 
@@ -93,7 +94,7 @@ const getPageNumbers = (currentPage, totalPages) => {
 
 const CreatorManager = ({ showLeaderboardOnly = false, isEmbedded = false }) => {
     useStoreSubscription(['creators', 'campaigns']);
-    const { creators, campaigns, updateCreator, deleteCreator } = useStore();
+    const { creators, campaigns, updateCreator, deleteCreator, mergeBangaloreCreatorsToBengaluru } = useStore();
     const navigate = useNavigate();
     const location = useLocation();
     const params = useParams();
@@ -128,6 +129,28 @@ const CreatorManager = ({ showLeaderboardOnly = false, isEmbedded = false }) => 
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [selectedUids, setSelectedUids] = useState([]);
     const [isBulkEmailModalOpen, setIsBulkEmailModalOpen] = useState(false);
+    const [isMergingBangalore, setIsMergingBangalore] = useState(false);
+
+    const bangaloreCreatorsCount = useMemo(() => {
+        return (creators || []).filter(c => {
+            const city = (c.city || '').trim().toLowerCase();
+            return city === 'bangalore' || city === 'banglore' || city.includes('bangalore') || city.includes('banglore');
+        }).length;
+    }, [creators]);
+
+    const handleMergeBangalore = async () => {
+        if (!mergeBangaloreCreatorsToBengaluru) return;
+        setIsMergingBangalore(true);
+        try {
+            const res = await mergeBangaloreCreatorsToBengaluru();
+            useStore.getState().addToast(`Successfully merged ${res?.updatedCount || 0} creators to Bengaluru.`, 'success');
+        } catch (err) {
+            console.error('Error merging Bangalore creators:', err);
+            useStore.getState().addToast('Failed to merge Bangalore creators.', 'error');
+        } finally {
+            setIsMergingBangalore(false);
+        }
+    };
 
     const handleToggleSelect = (uid) => {
         setSelectedUids(prev => 
@@ -169,7 +192,8 @@ const CreatorManager = ({ showLeaderboardOnly = false, isEmbedded = false }) => 
                 const name = row['name'] || row['full name'] || '';
                 const email = row['email'] || row['email id'] || '';
                 const phone = row['phone'] || row['mobile'] || row['contact'] || '';
-                const city = row['city'] || row['location'] || '';
+                const rawCity = row['city'] || row['location'] || '';
+                const city = /^bang[al]*o?re$/i.test(rawCity.trim()) ? 'Bengaluru' : rawCity.trim();
                 const instagram = row['instagram'] || row['handle'] || '';
                 const instagramFollowers = row['followers'] || row['instagram followers'] || '0';
                 const niche = row['niche'] || row['specialization'] || row['category'] || '';
@@ -227,6 +251,7 @@ const CreatorManager = ({ showLeaderboardOnly = false, isEmbedded = false }) => 
         { name: 'Creators', path: '/admin/creators', icon: Star },
         { name: 'Campaigns', path: '/admin/campaigns', icon: Target },
         { name: 'Leaderboard', path: '/admin/creators/leaderboard', icon: Trophy },
+        { name: 'Settings', path: '/admin/creators/settings', icon: Settings },
     ];
 
     const cities = ['All', ...new Set([...PREDEFINED_CITIES, ...creators.map(c => c.city)])];
@@ -252,7 +277,7 @@ const CreatorManager = ({ showLeaderboardOnly = false, isEmbedded = false }) => 
                 (c.email && c.email.toLowerCase().includes(term)) ||
                 (c.phone && c.phone.includes(term)) ||
                 specs.some(n => typeof n === 'string' && n.toLowerCase().includes(term));
-            const matchesCity = filterCity === 'All' || c.city === filterCity;
+            const matchesCity = filterCity === 'All' || c.city === filterCity || (filterCity === 'Bengaluru' && /^bang[al]*o?re$/i.test(c.city || ''));
             const matchesStatus = filterStatus === 'All' || 
                 (filterStatus === 'pending' && (!c.profileStatus || c.profileStatus === 'pending')) ||
                 c.profileStatus === filterStatus;
@@ -484,6 +509,19 @@ const CreatorManager = ({ showLeaderboardOnly = false, isEmbedded = false }) => 
                                     <input type="file" accept=".csv" onChange={handleImportCSV} className="hidden" />
                                 </label>
                             </div>
+
+                            {/* Merge Bangalore to Bengaluru */}
+                            {bangaloreCreatorsCount > 0 && (
+                                <button 
+                                    onClick={handleMergeBangalore}
+                                    disabled={isMergingBangalore}
+                                    className="h-10 px-3 sm:px-4 bg-amber-500/10 border border-amber-500/30 hover:bg-amber-500/20 text-amber-500 dark:text-amber-400 rounded-xl font-bold uppercase tracking-wider text-[9px] transition-all flex items-center justify-center gap-1.5 shrink-0"
+                                    title="Merge Bangalore creators to Bengaluru"
+                                >
+                                    <MapPin size={13} />
+                                    <span>{isMergingBangalore ? 'Merging...' : `Merge Bangalore (${bangaloreCreatorsCount})`}</span>
+                                </button>
+                            )}
 
                             {/* Add Creator */}
                             <button 
@@ -1643,9 +1681,9 @@ const CreatorDetailModal = ({ creator, onClose, onUpdateStatus, onDelete, isUpda
                             </div>
                         )}
 
-                        {/* ─── Bio / Strategic Dossier ─── */}
+                        {/* ─── Bio / Strategic Overview ─── */}
                         <div>
-                            <SectionLabel>Strategic Dossier</SectionLabel>
+                            <SectionLabel>Creator Bio &amp; Strategic Overview</SectionLabel>
                             <div className="px-4 py-4 bg-gray-50 dark:bg-white/[0.02] border border-black/10 dark:border-white/[0.05] rounded-xl">
                                 <p className="text-sm text-gray-700 dark:text-white/60 leading-relaxed italic">
                                     "{creator.bio || "No professional overview provided."}"
@@ -1931,7 +1969,10 @@ const AddCreatorModal = ({ onClose }) => {
 
         setIsSaving(true);
         try {
-            const finalCity = form.city === 'Others' ? form.customCity : form.city;
+            let finalCity = form.city === 'Others' ? form.customCity : form.city;
+            if (/^bang[al]*o?re$/i.test(finalCity?.trim())) {
+                finalCity = 'Bengaluru';
+            }
             const finalNiche = form.specializations === 'Others' ? form.customNiche : form.specializations;
             const generatedUid = `manual_${Math.random().toString(36).substring(2, 15)}`;
             const cleanInstagram = form.instagram ? form.instagram.trim().replace(/^@/, '') : '';
