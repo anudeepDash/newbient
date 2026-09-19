@@ -1,5 +1,5 @@
 import nodemailer from 'nodemailer';
-import { verifyToken } from './lib/auth.js';
+import { verifyToken } from './_lib/auth.js';
 
 if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
     throw new Error('CRITICAL: Missing default SMTP credentials. App refuses to start.');

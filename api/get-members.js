@@ -1,5 +1,5 @@
 import { getFirestore } from 'firebase-admin/firestore';
-import { verifyToken } from './lib/auth.js';
+import { verifyToken } from './_lib/auth.js';
 
 const CORS_HEADERS = {
     'Access-Control-Allow-Methods': 'GET,OPTIONS,POST',

@@ -1,5 +1,5 @@
 import nodemailer from 'nodemailer';
-import { auth } from './lib/auth.js';
+import { auth } from './_lib/auth.js';
 
 const rateLimitCache = new Map();
 const RATE_LIMIT_MAX_REQUESTS = 3;

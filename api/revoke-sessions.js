@@ -1,6 +1,6 @@
 import { getFirestore } from 'firebase-admin/firestore';
 import nodemailer from 'nodemailer';
-import { verifyToken, auth } from './lib/auth.js';
+import { verifyToken, auth } from './_lib/auth.js';
 
 const rateLimitCache = new Map();
 const RATE_LIMIT_MAX_REQUESTS = 3;

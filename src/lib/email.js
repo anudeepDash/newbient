@@ -2658,7 +2658,7 @@ export const sendCreatorDirectEmail = async (toEmail, subject, messageBody, crea
  */
 export const sendWhatsAppVerification = async (phone, creatorName, verificationUrl) => {
     try {
-        const response = await fetch('/api/whatsapp-verify', {
+        const response = await fetch('/api/creator-join?action=whatsapp-verify', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({

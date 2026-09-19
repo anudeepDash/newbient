@@ -1,5 +1,5 @@
-import { GoogleGenAI } from "@google/genai";
-import { verifyToken } from './lib/auth.js';
+import { GoogleGenAI } from '@google/genai';
+import { verifyToken } from './_lib/auth.js';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // NEWBI AI BACKEND PROXY v2.0
