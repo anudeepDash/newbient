@@ -1,5 +1,5 @@
 import { getFirestore } from 'firebase-admin/firestore';
-import { verifyToken, auth } from './lib/auth.js';
+import { verifyToken, auth } from './_lib/auth.js';
 
 export default async function handler(req, res) {
     if (!res.status) {

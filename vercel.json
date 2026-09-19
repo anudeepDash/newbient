@@ -77,6 +77,10 @@
             "destination": "/api/creator-join.js"
         },
         {
+            "source": "/api/whatsapp-verify",
+            "destination": "/api/creator-join.js?action=whatsapp-verify"
+        },
+        {
             "source": "/",
             "has": [{ "type": "host", "value": "artistant.in" }],
             "destination": "/artistant"
