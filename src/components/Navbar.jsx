@@ -20,7 +20,7 @@ const Navbar = () => {
     const location = useLocation();
     const { isDark, toggleTheme } = useTheme();
 
-    const isCreatorRoute = location.pathname.startsWith('/creator') || location.pathname === '/campaigns';
+    const isCreatorRoute = location.pathname.startsWith('/creator');
 
     const userPhoneNorm = user?.phoneNumber ? normalizePhoneNumber(user.phoneNumber) : null;
     const userEmailNorm = user?.email ? user.email.toLowerCase() : null;
@@ -38,7 +38,7 @@ const Navbar = () => {
         { 
             name: 'CREATOR', 
             path: '/creator', 
-            matchPaths: ['/creator', '/creator/join', '/campaigns', '/creator-dashboard'], 
+            matchPaths: ['/creator', '/creator/join', '/creator-dashboard'], 
             featureId: 'influencer', 
             icon: Zap 
         },
@@ -54,7 +54,7 @@ const Navbar = () => {
         { 
             name: 'CREATOR', 
             path: '/creator', 
-            matchPaths: ['/creator', '/creator/join', '/campaigns', '/creator-dashboard'], 
+            matchPaths: ['/creator', '/creator/join', '/creator-dashboard'], 
             featureId: 'influencer', 
             icon: Zap 
         },

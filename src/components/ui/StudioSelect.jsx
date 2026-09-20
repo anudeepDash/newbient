@@ -1,44 +1,130 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDown, Check, X } from 'lucide-react';
+import { ChevronDown, Check, X, Search } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
+/**
+ * StudioSelect
+ * Ultra-premium luxury custom dropdown component.
+ * Features glassmorphism, instant search filtering for long lists,
+ * smooth Framer Motion spring micro-animations, and full form compatibility.
+ */
 const StudioSelect = ({ 
+    name,
     value, 
     onChange, 
     options = [], 
-    placeholder = "SELECT OPTION", 
+    placeholder = "Select Option", 
     className,
     multi = false,
     accentColor = "neon-blue",
     disabled = false,
-    position = "bottom"
+    position = "bottom",
+    searchable = null, // Auto-enabled if options > 6 unless explicitly false
+    uppercase = false,
+    size = "md", // "sm", "md", "lg"
+    icon: LeadingIcon = null,
 }) => {
     const [isOpen, setIsOpen] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
     const containerRef = useRef(null);
+    const searchInputRef = useRef(null);
+
+    // Auto-enable search if there are more than 6 options
+    const isSearchable = searchable !== null ? searchable : options.length > 6;
 
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (containerRef.current && !containerRef.current.contains(event.target)) {
                 setIsOpen(false);
+                setSearchQuery('');
             }
         };
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, []);
+        const handleKeyDown = (event) => {
+            if (event.key === 'Escape') {
+                setIsOpen(false);
+                setSearchQuery('');
+            }
+        };
+
+        if (isOpen) {
+            document.addEventListener('mousedown', handleClickOutside);
+            document.addEventListener('keydown', handleKeyDown);
+        }
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+            document.removeEventListener('keydown', handleKeyDown);
+        };
+    }, [isOpen]);
+
+    // Focus search input when opened
+    useEffect(() => {
+        if (isOpen && isSearchable) {
+            const timer = setTimeout(() => {
+                searchInputRef.current?.focus();
+            }, 50);
+            return () => clearTimeout(timer);
+        }
+    }, [isOpen, isSearchable]);
+
+    // Normalize options format (supports array of strings or { value, label, icon, badge })
+    const normalizedOptions = useMemo(() => {
+        return options.map(opt => {
+            if (typeof opt === 'object' && opt !== null) {
+                return {
+                    value: opt.value,
+                    label: opt.label !== undefined ? opt.label : String(opt.value),
+                    icon: opt.icon || null,
+                    badge: opt.badge || null,
+                    description: opt.description || null,
+                };
+            }
+            return {
+                value: opt,
+                label: String(opt),
+                icon: null,
+                badge: null,
+                description: null,
+            };
+        });
+    }, [options]);
+
+    // Filter options based on search query
+    const filteredOptions = useMemo(() => {
+        if (!searchQuery.trim()) return normalizedOptions;
+        const query = searchQuery.toLowerCase().trim();
+        return normalizedOptions.filter(opt => 
+            opt.label.toLowerCase().includes(query) || 
+            String(opt.value).toLowerCase().includes(query) ||
+            (opt.description && opt.description.toLowerCase().includes(query))
+        );
+    }, [normalizedOptions, searchQuery]);
 
     const handleSelect = (optionValue) => {
         if (multi) {
             const currentValues = Array.isArray(value) ? value : [];
             const isSelected = currentValues.includes(optionValue);
-            if (isSelected) {
-                onChange(currentValues.filter(v => v !== optionValue));
-            } else {
-                onChange([...currentValues, optionValue]);
+            const nextValues = isSelected 
+                ? currentValues.filter(v => v !== optionValue)
+                : [...currentValues, optionValue];
+            
+            if (onChange) {
+                if (name) {
+                    onChange({ target: { name, value: nextValues } });
+                } else {
+                    onChange(nextValues);
+                }
             }
         } else {
-            onChange(optionValue);
+            if (onChange) {
+                if (name) {
+                    onChange({ target: { name, value: optionValue } });
+                } else {
+                    onChange(optionValue);
+                }
+            }
             setIsOpen(false);
+            setSearchQuery('');
         }
     };
 
@@ -47,13 +133,15 @@ const StudioSelect = ({
             const currentValues = Array.isArray(value) ? value : [];
             if (currentValues.length === 0) return placeholder;
             if (currentValues.length === 1) {
-                const opt = options.find(o => o.value === currentValues[0]);
+                const opt = normalizedOptions.find(o => o.value === currentValues[0]);
                 return opt ? opt.label : currentValues[0];
             }
-            return `${currentValues.length} SELECTED`;
+            return `${currentValues.length} Selected`;
         } else {
-            const opt = options.find(o => o.value === value);
-            return opt ? opt.label : (value || placeholder);
+            const opt = normalizedOptions.find(o => o.value === value);
+            if (opt) return opt.label;
+            if (value && value !== 'All' && value !== '') return value;
+            return placeholder;
         }
     };
 
@@ -64,83 +152,205 @@ const StudioSelect = ({
         return value === optionValue;
     };
 
-    const accentClasses = {
-        'neon-blue': 'text-neon-blue border-neon-blue/20 bg-neon-blue/10',
-        'neon-pink': 'text-neon-pink border-neon-pink/20 bg-neon-pink/10',
-        'neon-green': 'text-neon-green border-neon-green/20 bg-neon-green/10',
+    const isPlaceholder = (!value || (multi && (!Array.isArray(value) || value.length === 0)) || value === 'All' || value === '');
+
+    // Accent mappings for active states and highlights
+    const accentStyles = {
+        'neon-blue': {
+            activeItem: 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/25',
+            hoverItem: 'hover:bg-cyan-500/10 hover:text-cyan-300',
+            border: 'focus:border-cyan-400 border-cyan-500/30',
+            chevron: 'text-cyan-400',
+            check: 'text-cyan-400',
+            searchFocus: 'focus:border-cyan-400/50',
+        },
+        'neon-pink': {
+            activeItem: 'bg-pink-500/10 text-pink-400 border border-pink-500/25',
+            hoverItem: 'hover:bg-pink-500/10 hover:text-pink-300',
+            border: 'focus:border-pink-400 border-pink-500/30',
+            chevron: 'text-pink-400',
+            check: 'text-pink-400',
+            searchFocus: 'focus:border-pink-400/50',
+        },
+        'neon-green': {
+            activeItem: 'bg-emerald-500/15 text-emerald-600 dark:text-neon-green border border-emerald-500/30',
+            hoverItem: 'hover:bg-emerald-500/10 hover:text-emerald-700 dark:hover:text-neon-green',
+            border: 'focus:border-emerald-400 border-emerald-500/30',
+            chevron: 'text-emerald-500 dark:text-neon-green',
+            check: 'text-emerald-500 dark:text-neon-green',
+            searchFocus: 'focus:border-emerald-400/50',
+        },
+        'purple': {
+            activeItem: 'bg-purple-500/10 text-purple-400 border border-purple-500/25',
+            hoverItem: 'hover:bg-purple-500/10 hover:text-purple-300',
+            border: 'focus:border-purple-400 border-purple-500/30',
+            chevron: 'text-purple-400',
+            check: 'text-purple-400',
+            searchFocus: 'focus:border-purple-400/50',
+        },
     };
 
-    const hoverAccentClasses = {
-        'neon-blue': 'hover:bg-neon-blue hover:text-black',
-        'neon-pink': 'hover:bg-neon-pink hover:text-black',
-        'neon-green': 'hover:bg-neon-green hover:text-black',
-    };
+    const currentAccent = accentStyles[accentColor] || accentStyles['neon-blue'];
 
-    const activeAccentClasses = {
-        'neon-blue': 'bg-neon-blue text-black',
-        'neon-pink': 'bg-neon-pink text-black',
-        'neon-green': 'bg-neon-green text-black',
+    const sizeClasses = {
+        sm: "h-8 px-2.5 text-[10px]",
+        md: "h-10 sm:h-11 px-3 sm:px-3.5 text-xs",
+        lg: "h-12 px-4 text-sm",
     };
 
     return (
-        <div className={cn("relative w-full", isOpen ? "z-[60] select-open" : "z-10", className)} ref={containerRef}>
+        <div className={cn("relative w-full select-none", isOpen ? "z-[70]" : "z-10", className)} ref={containerRef}>
+            {/* Trigger Button */}
             <div 
+                role="button"
+                tabIndex={disabled ? -1 : 0}
                 onClick={() => !disabled && setIsOpen(!isOpen)}
+                onKeyDown={(e) => {
+                    if (!disabled && (e.key === 'Enter' || e.key === ' ')) {
+                        e.preventDefault();
+                        setIsOpen(!isOpen);
+                    }
+                }}
                 className={cn(
-                    "flex items-center justify-between h-full bg-white dark:bg-black/60 border border-black/10 dark:border-white/10 rounded-xl px-3 sm:px-4 transition-all group shadow-inner",
-                    disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer hover:border-black/20 dark:hover:border-white/20",
-                    isOpen && "border-black/20 dark:border-white/20"
+                    "w-full flex items-center justify-between rounded-xl transition-all outline-none font-medium",
+                    sizeClasses[size] || sizeClasses.md,
+                    // Light mode: Clean ceramic white with hairline border
+                    "bg-white text-gray-900 border border-black/10 hover:border-black/20 shadow-xs",
+                    // Dark mode: Matte obsidian with subtle glassmorphism
+                    "dark:bg-[#0c0e17]/80 dark:text-white dark:border-white/10 dark:hover:border-white/20 dark:shadow-inner",
+                    disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer",
+                    isOpen && cn("ring-1 ring-black/10 dark:ring-white/15", currentAccent.border)
                 )}
             >
-                <div className="flex items-center gap-2 flex-1 overflow-hidden">
+                <div className="flex items-center gap-2 flex-1 min-w-0 mr-1.5">
+                    {LeadingIcon && (
+                        <LeadingIcon size={14} className="shrink-0 text-gray-400 dark:text-zinc-500" />
+                    )}
                     <span className={cn(
-                        "text-[9px] font-bold uppercase tracking-wider truncate leading-none",
-                        (!value || (multi && value.length === 0) || value === 'All') ? "text-gray-900 dark:text-white/40" : "text-gray-900 dark:text-white"
+                        "truncate leading-tight block",
+                        uppercase ? "uppercase tracking-wider font-bold text-[10px] sm:text-[11px]" : "text-xs font-semibold",
+                        isPlaceholder ? "text-gray-400 dark:text-zinc-500 font-normal" : "text-gray-900 dark:text-white"
                     )}>
                         {getDisplayLabel()}
                     </span>
                 </div>
+                
                 <ChevronDown 
-                    size={12} 
+                    size={13} 
                     className={cn(
-                        "transition-all duration-300 shrink-0 ml-1.5", 
-                        isOpen ? cn("rotate-180", `text-${accentColor}`) : "text-gray-900 dark:text-white/30 group-hover:text-gray-900 dark:group-hover:text-white/50"
+                        "transition-transform duration-200 shrink-0", 
+                        isOpen ? cn("rotate-180", currentAccent.chevron) : "text-gray-400 dark:text-zinc-500"
                     )} 
                 />
             </div>
 
+            {/* Dropdown Menu Overlay */}
             <AnimatePresence>
                 {isOpen && (
                     <motion.div
-                        initial={{ opacity: 0, y: position === "top" ? -10 : 10, scale: 0.95 }}
+                        initial={{ opacity: 0, y: position === "top" ? -8 : 8, scale: 0.98 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: position === "top" ? -10 : 10, scale: 0.95 }}
+                        exit={{ opacity: 0, y: position === "top" ? -8 : 8, scale: 0.98 }}
+                        transition={{ duration: 0.15, ease: "easeOut" }}
                         className={cn(
-                            "absolute z-[100] left-0 w-full bg-white/95 dark:bg-[#0a0a0a]/95 backdrop-blur-[64px] border border-black/10 dark:border-white/10 rounded-2xl shadow-[0_30px_60px_rgba(0,0,0,0.8)] overflow-hidden",
-                            position === "top" ? "bottom-full mb-3" : "top-full mt-2"
+                            "absolute z-[100] left-0 w-full min-w-[200px] rounded-2xl p-1.5 shadow-2xl backdrop-blur-2xl border overflow-hidden",
+                            // Light mode: Clean glassmorphic card
+                            "bg-white/95 text-gray-900 border-black/10 shadow-[0_20px_45px_-10px_rgba(0,0,0,0.15)]",
+                            // Dark mode: Obsidian deep titanium
+                            "dark:bg-[#0c0e17]/95 dark:text-white dark:border-white/10 dark:shadow-[0_25px_60px_-15px_rgba(0,0,0,0.9)]",
+                            position === "top" ? "bottom-full mb-2" : "top-full mt-2"
                         )}
                     >
-                        <div className="max-h-[280px] sm:max-h-[320px] overflow-y-auto py-1.5 custom-scrollbar">
-                            {options.map((option) => {
+                        {/* Search Input for Long Option Lists */}
+                        {isSearchable && (
+                            <div className="p-1 mb-1 border-b border-black/5 dark:border-white/5">
+                                <div className="relative flex items-center">
+                                    <Search size={13} className="absolute left-2.5 text-gray-400 dark:text-zinc-500 pointer-events-none" />
+                                    <input
+                                        ref={searchInputRef}
+                                        type="text"
+                                        value={searchQuery}
+                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                        placeholder="Search options..."
+                                        className={cn(
+                                            "w-full h-8 pl-8 pr-7 rounded-lg text-xs outline-none transition-all",
+                                            "bg-black/[0.03] dark:bg-white/[0.05] border border-black/5 dark:border-white/5",
+                                            "text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-zinc-500",
+                                            currentAccent.searchFocus
+                                        )}
+                                        onClick={(e) => e.stopPropagation()}
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Escape') {
+                                                setIsOpen(false);
+                                            }
+                                        }}
+                                    />
+                                    {searchQuery && (
+                                        <button
+                                            type="button"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setSearchQuery('');
+                                                searchInputRef.current?.focus();
+                                            }}
+                                            className="absolute right-2 text-gray-400 hover:text-gray-700 dark:hover:text-white p-0.5"
+                                        >
+                                            <X size={11} />
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Options List */}
+                        <div className="max-h-[260px] sm:max-h-[300px] overflow-y-auto py-0.5 custom-scrollbar flex flex-col gap-0.5">
+                            {filteredOptions.map((option) => {
                                 const active = isSelected(option.value);
+                                const OptionIcon = option.icon;
                                 return (
                                     <div 
                                         key={option.value}
                                         onClick={() => handleSelect(option.value)}
                                         className={cn(
-                                            "px-4 py-2.5 sm:py-3 text-[9px] sm:text-[10px] font-bold uppercase tracking-wider cursor-pointer transition-all flex items-center justify-between",
-                                            active ? activeAccentClasses[accentColor] : "text-gray-600 dark:text-gray-400",
-                                            !active && hoverAccentClasses[accentColor]
+                                            "px-3 py-2 rounded-xl text-xs font-medium cursor-pointer transition-all flex items-center justify-between gap-2",
+                                            active 
+                                                ? currentAccent.activeItem 
+                                                : cn("text-gray-700 dark:text-zinc-300 hover:bg-black/[0.04] dark:hover:bg-white/[0.06]", currentAccent.hoverItem)
                                         )}
                                     >
-                                        <span>{option.label}</span>
-                                        {active && <Check size={13} />}
+                                        <div className="flex items-center gap-2 min-w-0 flex-1">
+                                            {OptionIcon && (
+                                                <OptionIcon size={14} className={cn("shrink-0", active ? currentAccent.chevron : "text-gray-400 dark:text-zinc-500")} />
+                                            )}
+                                            <div className="min-w-0 flex-1">
+                                                <div className="flex items-center gap-1.5">
+                                                    <span className={cn("truncate block", active && "font-bold", uppercase && "uppercase text-[10px] tracking-wider")}>
+                                                        {option.label}
+                                                    </span>
+                                                    {option.badge && (
+                                                        <span className="px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wider bg-black/5 dark:bg-white/10 text-gray-600 dark:text-zinc-400 shrink-0">
+                                                            {option.badge}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                {option.description && (
+                                                    <p className="text-[10px] text-gray-400 dark:text-zinc-500 truncate mt-0.5">
+                                                        {option.description}
+                                                    </p>
+                                                )}
+                                            </div>
+                                        </div>
+                                        
+                                        {active && (
+                                            <Check size={14} className={cn("shrink-0", currentAccent.check)} />
+                                        )}
                                     </div>
                                 );
                             })}
-                            {options.length === 0 && (
-                                <div className="px-6 py-8 text-[9px] font-black uppercase tracking-[0.3em] text-gray-700 text-center">
-                                    No Options Available
+                            
+                            {filteredOptions.length === 0 && (
+                                <div className="px-4 py-6 text-xs text-gray-400 dark:text-zinc-500 text-center font-medium">
+                                    No options match "{searchQuery}"
                                 </div>
                             )}
                         </div>

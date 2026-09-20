@@ -1,5 +1,5 @@
-import React, { useState, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { motion, AnimatePresence, useInView } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
 import { useStore } from '../lib/store';
 import { useStoreSubscription } from '../hooks/useStoreSubscription';
@@ -8,7 +8,7 @@ import { cn, normalizePhoneNumber } from '../lib/utils';
 import { 
     ArrowRight, ArrowLeft, Users, ShieldCheck, ChevronDown, 
     Briefcase, LayoutDashboard, Menu, X, Ticket, Coins, Sun, Moon,
-    Star, Quote, MapPin
+    Star, Quote, MapPin, TrendingUp, Zap, Globe, Sparkles, Target, Instagram, Youtube
 } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import useDynamicMeta from '../hooks/useDynamicMeta';
@@ -16,8 +16,58 @@ import ProfilePanel from '../components/ProfilePanel';
 import NotificationBell from '../components/NotificationBell';
 import PastClients from '../components/home/PastClients';
 import CreatorPassCard from '../components/creator/CreatorPassCard';
+import CampaignDetailModal from '../components/creator/CampaignDetailModal';
 import newbiCreatorsLogoDark from '../assets/newbi-creators-logo.png';
 import newbiCreatorsLogoLight from '../assets/newbi-creators-logo-light.png';
+
+/**
+ * Intelligent, warm, time-aware greetings in Claude's signature conversational style.
+ */
+const getClaudeGreeting = (name) => {
+    if (!name) return "India's Elite Creator Collective";
+    const firstName = name.trim().split(' ')[0] || name;
+    const hour = new Date().getHours();
+
+    const morningGreetings = [
+        `Good morning, ${firstName}`,
+        `Rise and shine, ${firstName}`,
+        `Ready to create today, ${firstName}?`,
+        `Great to see you this morning, ${firstName}`,
+        `Let's make something iconic today, ${firstName}`,
+        `Hope your morning is off to a great start, ${firstName}`,
+    ];
+    const afternoonGreetings = [
+        `Good afternoon, ${firstName}`,
+        `Hope your day is going great, ${firstName}`,
+        `Ready to make magic, ${firstName}?`,
+        `Back in the creative flow, ${firstName}`,
+        `Great to see you this afternoon, ${firstName}`,
+        `Hope you're having an inspired day, ${firstName}`,
+    ];
+    const eveningGreetings = [
+        `Good evening, ${firstName}`,
+        `Hope you had a productive day, ${firstName}`,
+        `Back in the creative zone, ${firstName}`,
+        `Great to see you tonight, ${firstName}`,
+        `Ready for your next big drop, ${firstName}?`,
+        `Evening, ${firstName} • Ready to make something iconic?`,
+    ];
+    const lateNightGreetings = [
+        `Late-night creativity hits different, ${firstName}`,
+        `Burning the midnight oil, ${firstName}?`,
+        `In the flow state, ${firstName}`,
+        `Quiet hours, big ideas, ${firstName}`,
+        `Great ideas happen after midnight, ${firstName}`,
+    ];
+
+    let pool = afternoonGreetings;
+    if (hour >= 5 && hour < 12) pool = morningGreetings;
+    else if (hour >= 12 && hour < 17) pool = afternoonGreetings;
+    else if (hour >= 17 && hour < 22) pool = eveningGreetings;
+    else pool = lateNightGreetings;
+
+    return pool[Math.floor(Math.random() * pool.length)];
+};
 
 const CreatorLanding = () => {
     useStoreSubscription(['creators', 'campaigns', 'pastClients', 'creatorTestimonials']);
@@ -28,15 +78,20 @@ const CreatorLanding = () => {
     });
 
     const navigate = useNavigate();
-    const { user, creators, siteSettings, creatorTestimonials } = useStore();
+    const { user, creators, campaigns, siteSettings, creatorTestimonials } = useStore();
     const { theme, toggleTheme } = useTheme();
     const isDark = theme === 'dark';
+
+    const activeCampaigns = useMemo(() => {
+        return (campaigns || []).filter(c => !c.status || c.status.toLowerCase() === 'open');
+    }, [campaigns]);
 
     const activeTestimonials = useMemo(() => (creatorTestimonials || []).filter(t => t.isActive !== false), [creatorTestimonials]);
 
     const [isProfileOpen, setIsProfileOpen] = useState(false);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [openFaq, setOpenFaq] = useState(null);
+    const [selectedCampaignForModal, setSelectedCampaignForModal] = useState(null);
 
     const activeCreator = useMemo(() => {
         if (!user) return null;
@@ -73,6 +128,13 @@ const CreatorLanding = () => {
     }, [user, creators]);
 
     const isActualCreator = Boolean(activeCreator && activeCreator.profileStatus !== 'unclaimed');
+
+    // Dynamic Claude-style greeting computed per session
+    const greetingText = useMemo(() => {
+        if (!activeCreator) return "India's Elite Creator Collective";
+        const firstName = (activeCreator.name || activeCreator.displayName || 'Creator').trim().split(' ')[0];
+        return getClaudeGreeting(firstName);
+    }, [activeCreator?.uid, activeCreator?.name, activeCreator?.displayName]);
 
     const faqs = [
         { 
@@ -168,10 +230,17 @@ const CreatorLanding = () => {
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-[#07090E] text-gray-900 dark:text-white selection:bg-neon-green selection:text-black font-heading transition-colors duration-300 relative overflow-x-hidden">
 
-            {/* Ambient Background Effects: Dark mode only, zero muddy haze in light mode */}
+            {/* Ambient Background Effects */}
             <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
-                <div className="hidden dark:block absolute top-[-10%] right-[-5%] w-[60%] h-[60%] bg-neon-green/5 rounded-full blur-[160px]" />
-                <div className="hidden dark:block absolute bottom-[-10%] left-[-5%] w-[50%] h-[50%] bg-purple-500/5 rounded-full blur-[160px]" />
+                {/* Primary glows - dark mode */}
+                <div className="hidden dark:block absolute top-[-15%] right-[-10%] w-[70%] h-[70%] bg-neon-green/8 rounded-full blur-[200px]" />
+                <div className="hidden dark:block absolute bottom-[-15%] left-[-10%] w-[60%] h-[60%] bg-purple-600/8 rounded-full blur-[200px]" />
+                <div className="hidden dark:block absolute top-[30%] left-[20%] w-[40%] h-[40%] bg-blue-500/4 rounded-full blur-[180px]" />
+                {/* Subtle grid overlay - dark mode */}
+                <div className="hidden dark:block absolute inset-0" style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px)', backgroundSize: '60px 60px' }} />
+                {/* Light mode glows */}
+                <div className="dark:hidden absolute top-[-10%] right-[-5%] w-[50%] h-[50%] bg-neon-green/6 rounded-full blur-[160px]" />
+                <div className="dark:hidden absolute bottom-[-10%] left-[-5%] w-[40%] h-[40%] bg-emerald-300/8 rounded-full blur-[140px]" />
             </div>
 
             {/* ===== FLOATING NAVBAR ===== */}
@@ -190,6 +259,7 @@ const CreatorLanding = () => {
 
                     {/* Navigation Pills */}
                     <nav className="hidden lg:flex items-center gap-1 bg-gray-100/80 dark:bg-white/5 p-1 rounded-full border border-gray-200/60 dark:border-white/5">
+                        <a href="#campaigns" className="px-4 py-2 text-[10px] font-black uppercase tracking-widest text-gray-600 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-white transition-colors rounded-full hover:bg-white dark:hover:bg-white/5">Campaigns</a>
                         <a href="#advantages" className="px-4 py-2 text-[10px] font-black uppercase tracking-widest text-gray-600 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-white transition-colors rounded-full hover:bg-white dark:hover:bg-white/5">Advantage</a>
                         <a href="#how-it-works" className="px-4 py-2 text-[10px] font-black uppercase tracking-widest text-gray-600 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-white transition-colors rounded-full hover:bg-white dark:hover:bg-white/5">Process</a>
                         <a href="#perks" className="px-4 py-2 text-[10px] font-black uppercase tracking-widest text-gray-600 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-white transition-colors rounded-full hover:bg-white dark:hover:bg-white/5">Privileges</a>
@@ -293,6 +363,7 @@ const CreatorLanding = () => {
                             </div>
                             <p className="text-[10px] font-black text-gray-400 dark:text-zinc-500 uppercase tracking-[0.3em] mb-4">Navigation</p>
                             {[
+                                { href: '#campaigns', label: 'Active Campaigns' },
                                 { href: '#advantages', label: 'The Advantage' },
                                 { href: '#how-it-works', label: 'How it Works' },
                                 { href: '#perks', label: 'Privileges' },
@@ -364,16 +435,23 @@ const CreatorLanding = () => {
                                 transition={{ duration: 0.5 }}
                                 className="lg:col-span-7 space-y-6 text-left"
                             >
-                                {/* Eyebrow Tag */}
-                                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-black/[0.04] dark:bg-white/[0.04] border border-black/[0.08] dark:border-white/[0.08] text-gray-700 dark:text-zinc-300 text-[11px] font-medium tracking-wide">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-neon-green" />
-                                    <span>{activeCreator ? `Welcome Back, ${activeCreator.name?.split(' ')[0]}` : "India's Elite Creator Collective"}</span>
-                                </div>
+                                {/* Warm Conversational Greeting (No pill, pure natural typography) */}
+                                <motion.div
+                                    initial={{ opacity: 0, y: -6 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ duration: 0.4 }}
+                                    className="flex items-center gap-2.5 text-sm sm:text-base font-semibold text-emerald-600 dark:text-neon-green tracking-tight"
+                                >
+                                    <span className="relative flex h-2 w-2">
+                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-neon-green opacity-75" />
+                                        <span className="relative inline-flex rounded-full h-2 w-2 bg-neon-green" />
+                                    </span>
+                                    <span>{greetingText}</span>
+                                </motion.div>
 
-                                {/* Refined Display Headline */}
-                                <h1 className="text-3xl sm:text-5xl lg:text-[3.5rem] font-bold tracking-tight leading-[1.12] text-gray-950 dark:text-white">
-                                    Turn Your Influence <br className="hidden sm:inline" />
-                                    Into Unforgettable{" "}
+                                {/* Refined Display Headline (Multi-line enabled) */}
+                                <h1 className="text-3xl sm:text-4xl lg:text-[3.25rem] font-bold tracking-tight leading-[1.14] text-gray-950 dark:text-white max-w-2xl">
+                                    Turn Your Influence Into Unforgettable{" "}
                                     <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-green to-emerald-400">
                                         Experiences.
                                     </span>
@@ -389,46 +467,57 @@ const CreatorLanding = () => {
                                     {isActualCreator ? (
                                         <button 
                                             onClick={() => navigate('/creator-dashboard')}
-                                            className="h-11 sm:h-12 px-6 rounded-xl bg-neon-green hover:bg-white text-black font-bold uppercase tracking-wider text-xs transition-all flex items-center justify-center gap-2 shadow-sm hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 group"
+                                            className="h-11 sm:h-12 px-6 rounded-xl bg-neon-green hover:bg-[#a8ff6f] text-black font-black uppercase tracking-wider text-xs transition-all flex items-center justify-center gap-2 shadow-[0_0_25px_rgba(57,255,20,0.45)] hover:shadow-[0_0_40px_rgba(57,255,20,0.6)] hover:-translate-y-0.5 active:translate-y-0 group"
                                         >
                                             <span>Open Creator Dashboard</span>
-                                            <ArrowRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
+                                            <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
                                         </button>
                                     ) : (
                                         <>
                                             <button 
                                                 onClick={() => navigate('/creator/join')}
-                                                className="h-11 sm:h-12 px-6 rounded-xl bg-neon-green hover:bg-white text-black font-bold uppercase tracking-wider text-xs transition-all flex items-center justify-center gap-2 shadow-sm hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 group"
+                                                className="h-11 sm:h-12 px-6 rounded-xl bg-neon-green hover:bg-[#a8ff6f] text-black font-black uppercase tracking-wider text-xs transition-all flex items-center justify-center gap-2 shadow-[0_0_25px_rgba(57,255,20,0.45)] hover:shadow-[0_0_40px_rgba(57,255,20,0.6)] hover:-translate-y-0.5 active:translate-y-0 group"
                                             >
                                                 <span>Apply as Creator</span>
-                                                <ArrowRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
+                                                <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
                                             </button>
                                             <a 
                                                 href="#advantages"
-                                                className="h-11 sm:h-12 px-5 rounded-xl bg-black/[0.04] hover:bg-black/[0.08] dark:bg-white/[0.04] dark:hover:bg-white/[0.08] border border-black/[0.08] dark:border-white/[0.08] text-gray-700 dark:text-zinc-300 font-semibold uppercase tracking-wider text-xs transition-colors flex items-center justify-center gap-2"
+                                                className="h-11 sm:h-12 px-5 rounded-xl bg-white dark:bg-white/[0.05] hover:bg-gray-100 dark:hover:bg-white/[0.1] border border-gray-200 dark:border-white/[0.1] text-gray-700 dark:text-zinc-300 font-semibold uppercase tracking-wider text-xs transition-all flex items-center justify-center gap-2 shadow-sm hover:-translate-y-0.5"
                                             >
+                                                <Zap size={12} className="text-neon-green" />
                                                 <span>Explore Perks</span>
                                             </a>
                                         </>
                                     )}
                                 </div>
 
-                                {/* Metric Chips */}
-                                <div className="pt-5 border-t border-gray-200/60 dark:border-white/[0.06] grid grid-cols-2 sm:grid-cols-4 gap-6">
+                                {/* Premium Metric Cards */}
+                                <div className="pt-5 border-t border-gray-200/60 dark:border-white/[0.06] grid grid-cols-2 sm:grid-cols-4 gap-3">
                                     {[
-                                        { val: '2,400+', label: 'Active Creators' },
-                                        { val: '60+', label: 'Brand Partners' },
-                                        { val: '12', label: 'Metros & Hubs' },
-                                        { val: '100%', label: 'Free to Join' },
+                                        { val: '2,400+', label: 'Active Creators', color: 'from-neon-green/20 to-emerald-400/5', borderColor: 'border-neon-green/20', glowColor: 'shadow-neon-green/10' },
+                                        { val: '60+', label: 'Brand Partners', color: 'from-blue-500/20 to-blue-400/5', borderColor: 'border-blue-400/20', glowColor: 'shadow-blue-400/10' },
+                                        { val: '12', label: 'Metros & Hubs', color: 'from-purple-500/20 to-purple-400/5', borderColor: 'border-purple-400/20', glowColor: 'shadow-purple-400/10' },
+                                        { val: '100%', label: 'Free to Join', color: 'from-amber-400/20 to-amber-300/5', borderColor: 'border-amber-400/20', glowColor: 'shadow-amber-400/10' },
                                     ].map((m, i) => (
-                                        <div key={i}>
-                                            <p className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-zinc-100 leading-none font-mono">
-                                                {m.val}
-                                            </p>
-                                            <p className="text-[10px] font-medium uppercase tracking-wider text-gray-500 dark:text-zinc-500 mt-1">
-                                                {m.label}
-                                            </p>
-                                        </div>
+                                        <motion.div
+                                            key={i}
+                                            initial={{ opacity: 0, y: 15 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            transition={{ duration: 0.4, delay: 0.5 + i * 0.1 }}
+                                            className={`relative p-3.5 sm:p-4 rounded-2xl bg-gradient-to-br ${m.color} border ${m.borderColor} backdrop-blur-sm shadow-lg ${m.glowColor} hover:scale-[1.03] transition-transform duration-300 overflow-hidden group`}
+                                        >
+                                            {/* Background shimmer */}
+                                            <div className="absolute inset-0 bg-white/50 dark:bg-black/20 rounded-2xl" />
+                                            <div className="relative z-10 flex flex-col justify-center">
+                                                <p className="text-xl sm:text-2xl font-black text-gray-900 dark:text-white leading-none tracking-tight">
+                                                    {m.val}
+                                                </p>
+                                                <p className="text-[10px] sm:text-[11px] font-bold uppercase tracking-widest text-gray-500 dark:text-zinc-400 mt-1.5 leading-tight whitespace-nowrap">
+                                                    {m.label}
+                                                </p>
+                                            </div>
+                                        </motion.div>
                                     ))}
                                 </div>
                             </motion.div>
@@ -438,6 +527,7 @@ const CreatorLanding = () => {
                                 <CreatorPassCard 
                                     profile={activeCreator} 
                                     isPreview={!activeCreator} 
+                                    showWhatsAppGroup={true}
                                 />
                             </div>
 
@@ -445,41 +535,192 @@ const CreatorLanding = () => {
                     </div>
                 </section>
 
-                {/* 2. CREATIVE ADVANTAGE (Pillars) */}
+                {/* 2. ACTIVE CAMPAIGNS SECTION */}
+                <section id="campaigns" className="py-20 md:py-28 relative border-t border-gray-200/80 dark:border-white/5 bg-gray-50/50 dark:bg-black/20">
+                    <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-12">
+                        {/* Section Header */}
+                        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
+                            <div className="space-y-3">
+                                <h2 className="text-3xl sm:text-5xl font-black tracking-tight text-gray-900 dark:text-white md:whitespace-nowrap">
+                                    Live brand briefs & drops.
+                                </h2>
+                                <p className="text-gray-600 dark:text-zinc-400 text-sm sm:text-base font-normal max-w-2xl">
+                                    {isActualCreator 
+                                        ? 'Curated campaigns matched to your creator profile. Apply directly with your Newbi Creator Pass.'
+                                        : 'Vetted collaborations across lifestyle, fashion, tech, and live entertainment with guaranteed rewards.'
+                                    }
+                                </p>
+                            </div>
+
+                            <div className="flex items-center gap-3 shrink-0">
+                                <Link 
+                                    to="/creator-dashboard"
+                                    className="h-11 px-5 rounded-xl bg-neon-green text-black font-black uppercase tracking-wider text-xs hover:bg-white transition-all flex items-center gap-2 shadow-[0_0_20px_rgba(57,255,20,0.3)]"
+                                >
+                                    <LayoutDashboard size={13} />
+                                    <span>{isActualCreator ? 'My Dashboard' : 'Creator Dashboard'}</span>
+                                </Link>
+                            </div>
+                        </div>
+
+                        {/* Campaigns Grid */}
+                        {activeCampaigns.length > 0 ? (
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
+                                {activeCampaigns.map((camp, idx) => (
+                                    <motion.div
+                                        key={camp.id || idx}
+                                        initial={{ opacity: 0, y: 20 }}
+                                        whileInView={{ opacity: 1, y: 0 }}
+                                        viewport={{ once: true }}
+                                        transition={{ delay: idx * 0.08 }}
+                                        onClick={() => setSelectedCampaignForModal(camp)}
+                                        className="relative rounded-3xl bg-white dark:bg-[#0C0E14] border border-gray-200/80 dark:border-white/[0.08] hover:border-neon-green/40 dark:hover:border-neon-green/40 transition-all duration-300 shadow-sm hover:shadow-[0_12px_40px_rgba(0,0,0,0.08)] dark:hover:shadow-[0_0_40px_rgba(57,255,20,0.08)] hover:-translate-y-1 flex flex-col justify-between overflow-hidden group cursor-pointer"
+                                    >
+                                        {/* Thumbnail & Badges */}
+                                        <div className="aspect-[16/10] relative overflow-hidden bg-gray-100 dark:bg-zinc-900">
+                                            <img 
+                                                src={camp.thumbnail || 'https://images.unsplash.com/photo-1539109136881-3be0616acf4b?auto=format&fit=crop&q=80&w=800'} 
+                                                alt={camp.title} 
+                                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
+                                            />
+                                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent pointer-events-none" />
+                                            
+                                            {/* Top badges */}
+                                            <div className="absolute top-4 left-4 right-4 flex items-center justify-between gap-2 z-10">
+                                                <span className="px-3 py-1 rounded-full bg-black/60 backdrop-blur-md border border-white/15 text-[10px] font-bold uppercase tracking-wider text-white flex items-center gap-1">
+                                                    <MapPin size={10} className="text-neon-green" /> {camp.targetCity || 'Universal'}
+                                                </span>
+                                                <span className="px-3 py-1 rounded-full bg-neon-green/90 text-black font-black text-[10px] uppercase tracking-wider shadow-lg">
+                                                    Active Brief
+                                                </span>
+                                            </div>
+
+                                            {/* Bottom Overlay Info */}
+                                            <div className="absolute bottom-3 left-4 right-4 z-10">
+                                                <p className="text-[10px] font-mono font-bold uppercase tracking-wider text-zinc-300">
+                                                    Reward Payout
+                                                </p>
+                                                <p className="text-base font-black text-neon-green truncate">
+                                                    {camp.reward || 'Curated Brand Perks'}
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        {/* Card Body */}
+                                        <div className="p-6 sm:p-7 flex-1 flex flex-col justify-between space-y-4">
+                                            <div className="space-y-2">
+                                                <h3 className="text-lg sm:text-xl font-black text-gray-950 dark:text-white tracking-tight group-hover:text-emerald-600 dark:group-hover:text-neon-green transition-colors line-clamp-1">
+                                                    {camp.title}
+                                                </h3>
+                                                <p className="text-xs sm:text-sm text-gray-600 dark:text-zinc-400 font-normal leading-relaxed line-clamp-2">
+                                                    {camp.description ? camp.description.replace(/<style[^>]*>[\s\S]*?<\/style>|<script[^>]*>[\s\S]*?<\/script>|<[^>]+>/gi, ' ').replace(/&nbsp;/gi, ' ').replace(/&amp;/gi, '&').replace(/&lt;/gi, '<').replace(/&gt;/gi, '>').replace(/&quot;/gi, '"').replace(/&#39;/gi, "'").replace(/\s+/g, ' ').trim() : 'Exclusive brand activation requiring authentic creator content and social engagement deliverables.'}
+                                                </p>
+                                            </div>
+
+                                            {/* Meta & CTA */}
+                                            <div className="pt-4 border-t border-gray-100 dark:border-white/[0.06] flex items-center justify-between gap-3">
+                                                <div className="flex items-center gap-1.5 text-[11px] font-mono font-semibold text-gray-500 dark:text-zinc-400">
+                                                    <Users size={12} className="text-neon-green" />
+                                                    <span>Min. {Number(camp.minInstagramFollowers || 0).toLocaleString()}</span>
+                                                </div>
+
+                                                <button
+                                                    type="button"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setSelectedCampaignForModal(camp);
+                                                    }}
+                                                    className="h-9 px-4 rounded-xl bg-gray-900 hover:bg-neon-green hover:text-black dark:bg-white/10 dark:hover:bg-neon-green dark:hover:text-black text-white font-bold uppercase tracking-wider text-[10px] transition-all flex items-center gap-1.5 shadow-sm"
+                                                >
+                                                    <span>View Brief</span>
+                                                    <ArrowRight size={11} />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </motion.div>
+                                ))}
+                            </div>
+                        ) : (
+                            /* Empty state if no active campaigns */
+                            <div className="rounded-3xl bg-white dark:bg-[#0C0E14] border border-gray-200/80 dark:border-white/[0.08] p-12 text-center max-w-2xl mx-auto space-y-4">
+                                <div className="w-14 h-14 rounded-2xl bg-neon-green/10 border border-neon-green/20 text-neon-green flex items-center justify-center mx-auto">
+                                    <Target size={28} />
+                                </div>
+                                <h3 className="text-xl font-black text-gray-900 dark:text-white">
+                                    New Brand Campaigns Dropping Soon
+                                </h3>
+                                <p className="text-sm text-gray-600 dark:text-zinc-400 max-w-md mx-auto leading-relaxed">
+                                    Brand briefs are updated frequently. Registered creators receive priority notifications and instant email alerts whenever new briefs launch.
+                                </p>
+                                {isActualCreator ? (
+                                    <button
+                                        onClick={() => navigate('/creator-dashboard')}
+                                        className="h-10 px-6 rounded-xl bg-neon-green text-black font-black uppercase tracking-wider text-xs hover:bg-white transition-all inline-flex items-center gap-2"
+                                    >
+                                        <LayoutDashboard size={13} />
+                                        <span>Check Creator Studio</span>
+                                    </button>
+                                ) : (
+                                    <button
+                                        onClick={() => navigate('/creator/join')}
+                                        className="h-10 px-6 rounded-xl bg-neon-green text-black font-black uppercase tracking-wider text-xs hover:bg-white transition-all inline-flex items-center gap-2"
+                                    >
+                                        <span>Join Creator Collective</span>
+                                        <ArrowRight size={13} />
+                                    </button>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                </section>
+
+                {/* 3. CREATIVE ADVANTAGE (Pillars) */}
                 <section id="advantages" className="py-20 md:py-28 relative border-t border-gray-200/80 dark:border-white/5">
                     <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-12">
                         <div className="text-center max-w-3xl mx-auto mb-16 space-y-3">
-                            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-black/[0.04] dark:bg-white/[0.04] border border-black/[0.08] dark:border-white/[0.08] text-gray-700 dark:text-zinc-300 text-[11px] font-medium tracking-wide">
-                                <span className="w-1.5 h-1.5 rounded-full bg-neon-green" />
-                                <span>The Newbi Standard</span>
-                            </div>
-                            <h2 className="text-3xl sm:text-5xl font-black tracking-tight text-gray-900 dark:text-white">
-                                Built for creators who define culture.
+                            <h2 className="text-3xl sm:text-5xl font-black tracking-tight text-gray-900 dark:text-white md:whitespace-nowrap">
+                                Built for creators who{' '}
+                                <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-green to-emerald-400">define culture.</span>
                             </h2>
                             <p className="text-gray-600 dark:text-zinc-400 text-sm sm:text-base font-normal">
                                 More than just sponsored posts. An ecosystem designed to elevate your creative portfolio and unlock real-world experiences.
                             </p>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
                             {[
                                 {
-                                    icon: Briefcase,
-                                    tag: 'Verified Briefs',
+                                    num: '01',
+                                    category: 'Brand Partnerships',
                                     title: 'Curated Brand Collabs',
-                                    desc: 'Direct partnerships with leading lifestyle, beverage, tech, and fashion brands. Authentic campaigns matched to your audience with zero agency cuts.'
+                                    desc: 'Direct partnerships with leading lifestyle, beverage, tech, and fashion brands. Authentic campaigns matched to your audience with zero agency cuts.',
+                                    stat: '0%',
+                                    statLabel: 'Agency Cut',
+                                    highlightTitle: 'Direct Payouts',
+                                    highlightSub: 'Tier-1 Brand Deals',
+                                    icon: Briefcase,
                                 },
                                 {
-                                    icon: Ticket,
-                                    tag: 'Front Row Access',
+                                    num: '02',
+                                    category: 'Live Experiences',
                                     title: 'Concert & Festival Access',
-                                    desc: 'Exclusive passes, experiential coverage gigs, and artist hospitality at India’s largest music festivals, stadium tours, and creative gatherings.'
+                                    desc: 'Exclusive passes, experiential coverage gigs, and artist hospitality at India’s largest music festivals, stadium tours, and creative gatherings.',
+                                    stat: 'ENTRY',
+                                    statLabel: 'Festival Guestlist',
+                                    highlightTitle: 'Artist Lounges',
+                                    highlightSub: 'Live Coverage Gigs',
+                                    icon: Ticket,
                                 },
                                 {
+                                    num: '03',
+                                    category: 'Loyalty Ecosystem',
+                                    title: 'Newbi Points & Drops',
+                                    desc: 'Earn points for community milestones, sign-up bonuses, and creator referrals. Redeem them for festival tickets, rare merchandise drops, and lifestyle vouchers.',
+                                    stat: '1:1',
+                                    statLabel: 'Instant Redemption',
+                                    highlightTitle: 'Merch Drops',
+                                    highlightSub: 'Exclusive Ticket Drops',
                                     icon: Coins,
-                                    tag: 'Rewards & Drops',
-                                    title: 'Newbi Points & Experiences',
-                                    desc: 'Earn points for community milestones, sign-up bonuses, and creator referrals. Redeem them for festival tickets, rare merchandise drops, and lifestyle vouchers.'
                                 }
                             ].map((pillar, i) => (
                                 <motion.div
@@ -488,23 +729,52 @@ const CreatorLanding = () => {
                                     whileInView={{ opacity: 1, y: 0 }}
                                     viewport={{ once: true }}
                                     transition={{ delay: i * 0.1 }}
-                                    className="p-8 rounded-3xl bg-white dark:bg-zinc-900/40 border border-gray-200 dark:border-white/5 hover:border-gray-300 dark:hover:border-white/15 transition-all duration-300 shadow-sm dark:shadow-none flex flex-col justify-between group"
+                                    className="relative p-8 sm:p-9 rounded-[2rem] bg-white dark:bg-[#0C0E14] border border-gray-200/80 dark:border-white/[0.08] hover:border-neon-green/40 dark:hover:border-neon-green/40 transition-all duration-300 shadow-sm hover:shadow-[0_12px_40px_rgba(0,0,0,0.08)] dark:hover:shadow-[0_0_50px_rgba(57,255,20,0.07)] hover:-translate-y-1.5 flex flex-col justify-between group overflow-hidden"
                                 >
-                                    <div className="space-y-5">
+                                    {/* Subtle Top Accent Glow */}
+                                    <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-neon-green/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                                    <div className="absolute -top-20 -right-20 w-44 h-44 bg-neon-green/5 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+
+                                    <div className="space-y-6 relative z-10">
+                                        {/* Header Row: Clean Mono Index + Icon */}
                                         <div className="flex items-center justify-between">
-                                            <div className="w-11 h-11 rounded-xl bg-black/[0.03] dark:bg-white/[0.05] border border-black/[0.06] dark:border-white/[0.08] flex items-center justify-center text-gray-800 dark:text-zinc-200 group-hover:border-neon-green/40 group-hover:text-neon-green transition-all">
-                                                <pillar.icon size={20} strokeWidth={1.8} />
+                                            <div className="w-12 h-12 rounded-2xl bg-gray-50 dark:bg-white/[0.04] border border-gray-200/80 dark:border-white/[0.08] flex items-center justify-center text-gray-900 dark:text-white group-hover:text-neon-green group-hover:border-neon-green/40 group-hover:bg-neon-green/5 transition-all duration-300">
+                                                <pillar.icon size={22} strokeWidth={1.8} />
                                             </div>
-                                            <span className="text-[10px] font-mono font-medium uppercase tracking-wider text-gray-500 dark:text-zinc-400 px-2.5 py-1 rounded-md bg-black/[0.03] dark:bg-white/[0.04] border border-black/[0.04] dark:border-white/[0.05]">
-                                                {pillar.tag}
+                                            <span className="text-[11px] font-mono font-bold uppercase tracking-widest text-gray-400 dark:text-zinc-500 group-hover:text-neon-green transition-colors">
+                                                {pillar.num} / {pillar.category}
                                             </span>
                                         </div>
-                                        <h3 className="text-xl font-black tracking-tight text-gray-900 dark:text-white">
-                                            {pillar.title}
-                                        </h3>
-                                        <p className="text-gray-600 dark:text-zinc-400 text-sm leading-relaxed font-normal">
-                                            {pillar.desc}
-                                        </p>
+
+                                        {/* Title & Description */}
+                                        <div className="space-y-3">
+                                            <h3 className="text-xl sm:text-2xl font-black tracking-tight text-gray-950 dark:text-white leading-tight">
+                                                {pillar.title}
+                                            </h3>
+                                            <p className="text-gray-600 dark:text-zinc-400 text-sm sm:text-[14.5px] leading-relaxed font-normal">
+                                                {pillar.desc}
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    {/* Bottom High-Impact Metric Anchor */}
+                                    <div className="pt-6 mt-8 border-t border-gray-100 dark:border-white/[0.06] flex items-end justify-between relative z-10">
+                                        <div>
+                                            <span className="text-3xl sm:text-4xl font-black tracking-tight text-gray-950 dark:text-white font-mono leading-none">
+                                                {pillar.stat}
+                                            </span>
+                                            <p className="text-[11px] font-mono font-bold uppercase tracking-wider text-gray-400 dark:text-zinc-500 mt-1.5">
+                                                {pillar.statLabel}
+                                            </p>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className="text-xs font-bold text-emerald-600 dark:text-neon-green">
+                                                {pillar.highlightTitle}
+                                            </p>
+                                            <p className="text-[11px] text-gray-400 dark:text-zinc-500 mt-0.5 font-medium">
+                                                {pillar.highlightSub}
+                                            </p>
+                                        </div>
                                     </div>
                                 </motion.div>
                             ))}
@@ -517,11 +787,7 @@ const CreatorLanding = () => {
                     <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-12">
                         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-14">
                             <div>
-                                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-black/[0.04] dark:bg-white/[0.04] border border-black/[0.08] dark:border-white/[0.08] text-gray-700 dark:text-zinc-300 text-[11px] font-medium tracking-wide mb-3">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-neon-green" />
-                                    <span>The Process</span>
-                                </div>
-                                <h2 className="text-3xl sm:text-5xl font-black tracking-tight text-gray-900 dark:text-white">
+                                <h2 className="text-3xl sm:text-5xl font-black tracking-tight text-gray-900 dark:text-white md:whitespace-nowrap">
                                     4 steps to real rewards.
                                 </h2>
                             </div>
@@ -566,11 +832,7 @@ const CreatorLanding = () => {
                 <section id="perks" className="py-20 md:py-28 relative">
                     <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-12">
                         <div className="text-center max-w-3xl mx-auto mb-16 space-y-3">
-                            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-black/[0.04] dark:bg-white/[0.04] border border-black/[0.08] dark:border-white/[0.08] text-gray-700 dark:text-zinc-300 text-[11px] font-medium tracking-wide">
-                                <span className="w-1.5 h-1.5 rounded-full bg-neon-green" />
-                                <span>Roster Privileges</span>
-                            </div>
-                            <h2 className="text-3xl sm:text-5xl font-black tracking-tight text-gray-900 dark:text-white">
+                            <h2 className="text-3xl sm:text-5xl font-black tracking-tight text-gray-900 dark:text-white md:whitespace-nowrap">
                                 Why creators love Newbi.
                             </h2>
                             <p className="text-gray-600 dark:text-zinc-400 text-sm sm:text-base font-normal">
@@ -619,7 +881,7 @@ const CreatorLanding = () => {
                                     <span className="w-1.5 h-1.5 rounded-full bg-neon-green" />
                                     <span>Creator Voices</span>
                                 </div>
-                                <h2 className="text-3xl sm:text-5xl font-black tracking-tight text-gray-900 dark:text-white">
+                                <h2 className="text-3xl sm:text-5xl font-black tracking-tight text-gray-900 dark:text-white md:whitespace-nowrap">
                                     Stories from our collective.
                                 </h2>
                                 <p className="text-gray-600 dark:text-zinc-400 text-sm sm:text-base font-normal">
@@ -695,7 +957,7 @@ const CreatorLanding = () => {
                                 <span className="w-1.5 h-1.5 rounded-full bg-neon-green" />
                                 <span>Clear Answers</span>
                             </div>
-                            <h2 className="text-3xl sm:text-5xl font-black tracking-tight text-gray-900 dark:text-white">
+                            <h2 className="text-3xl sm:text-5xl font-black tracking-tight text-gray-900 dark:text-white md:whitespace-nowrap">
                                 Frequently Asked Questions
                             </h2>
                         </div>
@@ -758,7 +1020,7 @@ const CreatorLanding = () => {
                                     <span>Exclusive Creator Roster</span>
                                 </div>
 
-                                <h2 className="text-3xl sm:text-5xl md:text-6xl font-black tracking-tight leading-[1.08]">
+                                <h2 className="text-3xl sm:text-5xl md:text-6xl font-black tracking-tight leading-[1.08] md:whitespace-nowrap">
                                     {isActualCreator ? "Your Creator Hub Awaits." : "Ready to Step Into the Spotlight?"}
                                 </h2>
 
@@ -797,6 +1059,16 @@ const CreatorLanding = () => {
             </main>
 
             <ProfilePanel isOpen={isProfileOpen} onClose={() => setIsProfileOpen(false)} />
+
+            {/* Campaign Detail Modal */}
+            <AnimatePresence>
+                {selectedCampaignForModal && (
+                    <CampaignDetailModal 
+                        campaign={selectedCampaignForModal}
+                        onClose={() => setSelectedCampaignForModal(null)}
+                    />
+                )}
+            </AnimatePresence>
         </div>
     );
 };

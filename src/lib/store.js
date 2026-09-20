@@ -1,10 +1,11 @@
 import { create } from 'zustand';
 import { db, storage } from './firebase';
-import { collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, getDocs, where, setDoc, getDoc, increment, arrayUnion, collectionGroup, serverTimestamp, limit, getCountFromServer, startAfter } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, getDocs, where, setDoc, getDoc, increment, arrayUnion, collectionGroup, serverTimestamp, limit, getCountFromServer, startAfter, writeBatch } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { sendBookingConfirmation, sendCreatorWelcomeEmail, sendNewCampaignNotificationEmail, sendCreatorApprovedEmail, sendWhatsAppVerification } from './email';
 import { normalizePhoneNumber } from './utils';
 import { safeLocalStorage } from './storage';
+import { DEFAULT_CREATOR_GROUPS } from './constants';
 
 const AUTH_CACHE_KEY = 'nb_auth_session';
 const getCachedSession = () => {
@@ -152,14 +153,47 @@ const notifyMatchingCreatorsOfCampaign = async (campaignData, creatorsList) => {
 
         const targetCity = (campaignData.targetCity || 'Any').trim().toLowerCase();
         const matchingCreators = allCreators.filter(creator => {
-            if (!creator.email) return false;
+            if (!creator.email && !creator.uid && !creator.id) return false;
             if (targetCity === 'any' || targetCity === 'all' || targetCity === 'universal') return true;
             return (creator.city || '').trim().toLowerCase() === targetCity;
         });
 
         if (matchingCreators.length > 0) {
-            const emails = matchingCreators.map(c => c.email);
-            await sendNewCampaignNotificationEmail(emails, campaignData);
+            // 1. Send mass email notifications to matching creators
+            const emails = matchingCreators.map(c => c.email).filter(Boolean);
+            if (emails.length > 0) {
+                await sendNewCampaignNotificationEmail(emails, campaignData);
+            }
+
+            // 2. Create in-app notification for each matching creator
+            const notificationPromises = matchingCreators.map(creator => {
+                const creatorUid = creator.uid || creator.userId || creator.id;
+                if (!creatorUid) return Promise.resolve();
+                return addDoc(collection(db, 'notifications'), {
+                    userId: creatorUid,
+                    title: `🔥 New Campaign: ${campaignData.title}`,
+                    message: `${campaignData.reward ? `Reward: ${campaignData.reward}. ` : ''}A new brand campaign is live in ${campaignData.targetCity || 'Universal'}. Check the brief and apply!`,
+                    type: 'campaign',
+                    link: `/campaign/${campaignData.id}`,
+                    campaignId: campaignData.id,
+                    isRead: false,
+                    createdAt: new Date().toISOString()
+                }).catch(e => console.error("Error creating creator in-app notification:", e));
+            });
+            await Promise.all(notificationPromises);
+        }
+
+        // 3. Broadcast in-app notification if campaign is open to all cities
+        if (targetCity === 'any' || targetCity === 'all' || targetCity === 'universal') {
+            await addDoc(collection(db, 'notifications'), {
+                title: `🔥 New Campaign Live: ${campaignData.title}`,
+                message: `${campaignData.reward ? `Reward: ${campaignData.reward}. ` : ''}New creator brief is now open for applications.`,
+                type: 'campaign',
+                link: `/campaign/${campaignData.id}`,
+                campaignId: campaignData.id,
+                isRead: false,
+                createdAt: new Date().toISOString()
+            }).catch(e => console.error("Error creating broadcast campaign notification:", e));
         }
     } catch (err) {
         console.error("Error notifying creators of campaign:", err);
@@ -313,11 +347,19 @@ export const useStore = create((set, get) => ({
     posts: [], // Blog Posts
     subscribers: [], // Newsletter Subscribers
     allUsers: [], // All Registered Users (Admin only context)
+    totalAuthUsers: (() => {
+        try {
+            const cached = localStorage.getItem('newbi_total_auth_users');
+            return cached ? Math.max(1387, parseInt(cached, 10)) : 1387;
+        } catch (e) {
+            return 1387;
+        }
+    })(),
     artists: [], // Artist Onboarding state
     admins: [], // All Administrators
     clientRequests: [], // Artistant Client Onboarding
     pastClients: [], // Past Client / Partner Brands
-    creatorGroups: [], // City-wise Creator Community Groups
+    creatorGroups: DEFAULT_CREATOR_GROUPS, // City-wise Creator Community Groups (defaults + remote)
     creatorTestimonials: [], // Authentic Creator Testimonials
     notifications: [], // Notifications System
     emailTemplates: [], // Mailing Manager Templates
@@ -332,6 +374,7 @@ export const useStore = create((set, get) => ({
     toasts: [], // Ephemeral UI notifications
     aiConfig: { geminiKey: '', defaultModel: 'gemini-3.5-flash' }, // Global AI Config
     activeModel: 'Gemini 3.5 Flash',
+    dashboardWidgets: ['total_members', 'active_users', 'administrators', 'ticket_sales'], // Configurable 4-card metric keys
     maintenanceState: {
         global: false,
         pages: {}, // e.g., gallery, concerts
@@ -494,7 +537,23 @@ export const useStore = create((set, get) => ({
     subscribeToAdmins: () => get().subscribeToKey('admins', 'admins'),
     subscribeToClientRequests: () => get().subscribeToKey('clientRequests', 'client_requests'),
     subscribeToPastClients: () => get().subscribeToKey('pastClients', 'past_clients', (data) => data.sort((a, b) => (a.order || 0) - (b.order || 0))),
-    subscribeToCreatorGroups: () => get().subscribeToKey('creatorGroups', 'creator_groups', (data) => data.sort((a, b) => (a.order || 0) - (b.order || 0))),
+    subscribeToCreatorGroups: () => get().subscribeToKey('creatorGroups', 'creator_groups', (data) => {
+        const firestoreList = Array.isArray(data) ? data : [];
+        const existingCityMap = new Map();
+        firestoreList.forEach(g => {
+            if (g.city) existingCityMap.set(g.city.toLowerCase().trim(), g);
+        });
+
+        const merged = [...firestoreList];
+        DEFAULT_CREATOR_GROUPS.forEach(defaultGroup => {
+            const key = defaultGroup.city.toLowerCase().trim();
+            if (!existingCityMap.has(key)) {
+                merged.push(defaultGroup);
+            }
+        });
+
+        return merged.sort((a, b) => (a.order || 0) - (b.order || 0));
+    }),
     subscribeToCreatorTestimonials: () => get().subscribeToKey('creatorTestimonials', 'creator_testimonials', (data) => data.sort((a, b) => (a.order || 0) - (b.order || 0))),
     subscribeToTicketOrders: () => get().subscribeToKey('ticketOrders', 'ticket_orders'),
     subscribeToCoupons: () => get().subscribeToKey('coupons', 'coupons'),
@@ -615,6 +674,16 @@ export const useStore = create((set, get) => ({
             }
         }, (error) => console.error(`Error fetching maintenance state (${maintenanceDocId}):`, error));
 
+        // Dashboard Widget Config Subscription
+        const unsubDashConfig = onSnapshot(doc(db, 'app_state', 'dashboard_config'), (docSnap) => {
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                if (Array.isArray(data.widgets) && data.widgets.length === 4) {
+                    set({ dashboardWidgets: data.widgets });
+                }
+            }
+        }, (error) => console.error('Error fetching dashboard config:', error));
+
         return () => {
             clearTimeout(loadingTimeout);
             unsubAnnouncements();
@@ -624,6 +693,7 @@ export const useStore = create((set, get) => ({
             unsub11();
             unsub12();
             unsubAI();
+            unsubDashConfig();
         };
     },
 
@@ -1025,18 +1095,76 @@ export const useStore = create((set, get) => ({
     addCreatorGroup: async (group) => {
         const currentItems = get().creatorGroups || [];
         const maxOrder = currentItems.reduce((max, i) => Math.max(max, i.order || 0), 0);
-        await addDoc(collection(db, 'creator_groups'), {
+        const newGroup = {
             ...group,
-            order: maxOrder + 1,
+            order: group.order || (maxOrder + 1),
             isActive: group.isActive !== false,
             createdAt: new Date().toISOString()
-        });
+        };
+
+        try {
+            await addDoc(collection(db, 'creator_groups'), newGroup);
+        } catch (fsErr) {
+            console.warn('[store] Direct addCreatorGroup failed, falling back to server API:', fsErr.message);
+            const res = await fetch('/api/creator-join?action=creator-group-add', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(newGroup)
+            });
+            if (!res.ok) {
+                const errJson = await res.json().catch(() => ({}));
+                throw new Error(errJson.error || fsErr.message || 'Failed to add creator group');
+            }
+        }
     },
     updateCreatorGroup: async (id, updates) => {
-        await updateDoc(doc(db, 'creator_groups', id), updates);
+        try {
+            await updateDoc(doc(db, 'creator_groups', id), updates);
+        } catch (fsErr) {
+            console.warn('[store] Direct updateCreatorGroup failed, falling back to server API:', fsErr.message);
+            const res = await fetch('/api/creator-join?action=creator-group-update', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id, updates })
+            });
+            if (!res.ok) {
+                const errJson = await res.json().catch(() => ({}));
+                throw new Error(errJson.error || fsErr.message || 'Failed to update creator group');
+            }
+        }
     },
     deleteCreatorGroup: async (id) => {
-        await deleteDoc(doc(db, 'creator_groups', id));
+        try {
+            await deleteDoc(doc(db, 'creator_groups', id));
+        } catch (fsErr) {
+            console.warn('[store] Direct deleteCreatorGroup failed, falling back to server API:', fsErr.message);
+            const res = await fetch('/api/creator-join?action=creator-group-delete', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id })
+            });
+            if (!res.ok) {
+                const errJson = await res.json().catch(() => ({}));
+                throw new Error(errJson.error || fsErr.message || 'Failed to delete creator group');
+            }
+        }
+    },
+    seedDefaultCreatorGroups: async () => {
+        try {
+            const res = await fetch('/api/creator-join?action=creator-groups-sync', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ groups: DEFAULT_CREATOR_GROUPS })
+            });
+            if (!res.ok) {
+                const errJson = await res.json().catch(() => ({}));
+                throw new Error(errJson.error || 'Failed to sync default creator groups');
+            }
+            return await res.json();
+        } catch (err) {
+            console.error('[store] seedDefaultCreatorGroups error:', err);
+            throw err;
+        }
     },
 
     // Creator Testimonials CRUD
@@ -1073,6 +1201,65 @@ export const useStore = create((set, get) => ({
                     : c
             )
         }));
+    },
+
+    bulkAddCreatorsToCityGroup: async (city, creatorIds = []) => {
+        if (!city && (!creatorIds || !creatorIds.length)) return { success: false, count: 0 };
+        const now = new Date().toISOString();
+
+        // 1. Try serverless backend API first (handles batching & admin permissions)
+        try {
+            const res = await fetch('/api/creator-join?action=creator-group-bulk-add', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ city, creatorIds })
+            });
+            if (res.ok) {
+                const data = await res.json();
+                set(state => ({
+                    creators: (state.creators || []).map(c => {
+                        const matchesId = creatorIds.includes(c.id) || creatorIds.includes(c.uid);
+                        const normC = (c.city || '').toLowerCase().trim();
+                        const normTarget = (city || '').toLowerCase().trim();
+                        const matchesCity = normC === normTarget || (normTarget === 'bengaluru' && /bang[al]*o?re/i.test(normC)) || normC.includes(normTarget);
+                        if (matchesId || (creatorIds.length === 0 && matchesCity)) {
+                            return { ...c, hasJoinedCityGroup: true, joinedCityGroupAt: now, cityGroupAddedBy: 'admin' };
+                        }
+                        return c;
+                    })
+                }));
+                return { success: true, count: data.count || creatorIds.length };
+            }
+        } catch (apiErr) {
+            console.warn('[store] Serverless bulk add error, attempting client writeBatch fallback:', apiErr);
+        }
+
+        // 2. Client SDK fallback using writeBatch
+        try {
+            const batch = writeBatch(db);
+            const targetIds = [...creatorIds];
+            targetIds.forEach(id => {
+                const docRef = doc(db, 'creators', id);
+                batch.update(docRef, {
+                    hasJoinedCityGroup: true,
+                    joinedCityGroupAt: now,
+                    cityGroupAddedBy: 'admin'
+                });
+            });
+            await batch.commit();
+
+            set(state => ({
+                creators: (state.creators || []).map(c => 
+                    targetIds.includes(c.id) || targetIds.includes(c.uid)
+                        ? { ...c, hasJoinedCityGroup: true, joinedCityGroupAt: now, cityGroupAddedBy: 'admin' }
+                        : c
+                )
+            }));
+            return { success: true, count: targetIds.length };
+        } catch (clientErr) {
+            console.error('[store] Client writeBatch bulk add error:', clientErr);
+            throw clientErr;
+        }
     },
     updateAiConfig: async (config) => {
         await setDoc(doc(db, 'site_settings', 'ai_config'), config, { merge: true });
@@ -2087,8 +2274,21 @@ export const useStore = create((set, get) => ({
         }
 
         if (sendWelcome && creator.email) {
-            sendCreatorWelcomeEmail(creator.email, creator.displayName || creator.name || 'Creator', verificationToken, targetUid)
-                .catch(err => console.error("Error sending welcome email to creator:", err));
+            sendCreatorWelcomeEmail(
+                creator.email, 
+                creator.displayName || creator.name || 'Creator', 
+                verificationToken, 
+                targetUid,
+                {
+                    city: creator.city,
+                    handle: creator.handle || creator.instagram,
+                    niche: creator.categories || creator.niche || creator.primaryNiche || creator.category,
+                    passId: creatorId || creator.creatorId,
+                    phone: creator.phone,
+                    avatar: creator.avatar || creator.profilePicture || creator.photoURL,
+                    points: creator.points || 500
+                }
+            ).catch(err => console.error("Error sending welcome email to creator:", err));
         }
 
         return { id: targetUid, creatorId, verificationToken };
@@ -3177,6 +3377,13 @@ export const useStore = create((set, get) => ({
             throw new Error(data.error || "Failed to synchronize users");
         }
 
+        if (data.totalAuthUsers) {
+            set({ totalAuthUsers: data.totalAuthUsers });
+            try {
+                localStorage.setItem('newbi_total_auth_users', String(data.totalAuthUsers));
+            } catch (e) {}
+        }
+
         return data;
     },
 
@@ -3230,6 +3437,17 @@ export const useStore = create((set, get) => ({
 
 
     // Maintenance Actions
+
+    saveDashboardWidgets: async (widgets) => {
+        try {
+            if (!Array.isArray(widgets) || widgets.length !== 4) throw new Error('Exactly 4 widgets required');
+            await setDoc(doc(db, 'app_state', 'dashboard_config'), { widgets, updatedAt: new Date().toISOString() });
+            set({ dashboardWidgets: widgets });
+        } catch (error) {
+            console.error('Error saving dashboard widgets:', error);
+            throw error;
+        }
+    },
 
     toggleMaintenanceFeature: async (category, key) => {
         const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';

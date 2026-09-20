@@ -23,6 +23,7 @@ import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { PREDEFINED_CITIES } from '../lib/constants';
 import StudioSelect from '../components/ui/StudioSelect';
+import CampaignDetailModal from '../components/creator/CampaignDetailModal';
 
 const PLATFORMS = {
     all: { label: 'All Platforms', icon: Globe },
@@ -40,6 +41,7 @@ const LiveCampaigns = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedPlatform, setSelectedPlatform] = useState('all');
     const [selectedCity, setSelectedCity] = useState('All');
+    const [selectedCampaignForModal, setSelectedCampaignForModal] = useState(null);
 
     // Filter active and past campaigns (exclude only Draft)
     const filteredCampaigns = useMemo(() => {
@@ -220,7 +222,7 @@ const LiveCampaigns = () => {
                                                     <p className="text-base font-black text-neon-green uppercase truncate max-w-[160px] italic">{camp.reward}</p>
                                                 </div>
                                                 <Button 
-                                                    onClick={() => navigate(`/campaign/${camp.id}`)}
+                                                    onClick={() => setSelectedCampaignForModal(camp)}
                                                     className={cn(
                                                         "w-full sm:w-auto h-12 sm:h-14 px-6 sm:px-8 rounded-full font-black uppercase tracking-widest text-[10px] transition-all duration-300 shadow-xl flex items-center justify-center gap-2 border-none",
                                                         (!camp.status || camp.status.toLowerCase() === 'open')
@@ -267,6 +269,16 @@ const LiveCampaigns = () => {
                     )}
                 </div>
             </div>
+
+            {/* Campaign Detail Modal */}
+            <AnimatePresence>
+                {selectedCampaignForModal && (
+                    <CampaignDetailModal 
+                        campaign={selectedCampaignForModal}
+                        onClose={() => setSelectedCampaignForModal(null)}
+                    />
+                )}
+            </AnimatePresence>
         </div>
     );
 };

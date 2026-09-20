@@ -176,7 +176,7 @@ const VerifyCreator = () => {
 
                         <div className="flex flex-col sm:flex-row gap-3 pt-2">
                             <Link
-                                to="/campaigns"
+                                to="/creator-dashboard"
                                 className="flex-1 h-12 bg-white hover:bg-zinc-200 text-zinc-950 font-bold rounded-xl flex items-center justify-center gap-2 text-sm transition-all"
                             >
                                 <span>Explore Live Briefs</span>
@@ -204,7 +204,7 @@ const VerifyCreator = () => {
                             </p>
                         </div>
                         <Link
-                            to="/campaigns"
+                            to="/creator-dashboard"
                             className="w-full h-12 bg-white hover:bg-zinc-200 text-zinc-950 font-bold rounded-xl flex items-center justify-center gap-2 text-sm transition-all"
                         >
                             <span>Browse Campaigns</span>

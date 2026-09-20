@@ -56,7 +56,7 @@ const getPageNumbers = (currentPage, totalPages) => {
 };
 
 const ActiveUsers = () => {
-    const { user, blockUser, unblockUser, creators = [], artists = [], authInitialized } = useStore();
+    const { user, blockUser, unblockUser, creators = [], artists = [], admins = [], authInitialized } = useStore();
     const { 
         members, 
         activeMembers, 
@@ -72,6 +72,14 @@ const ActiveUsers = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const [isSyncing, setIsSyncing] = useState(false);
     const itemsPerPage = 12;
+
+    const activeAdminsCount = useMemo(() => {
+        return (admins || []).filter(a => a.role !== 'pending').length;
+    }, [admins]);
+
+    const pendingAdminsCount = useMemo(() => {
+        return (admins || []).filter(a => a.role === 'pending').length;
+    }, [admins]);
 
     const handleSyncAuthUsers = async () => {
         if (!window.confirm("Synchronize all registered user accounts from Firebase Authentication into the Firestore member database?")) return;
@@ -91,21 +99,20 @@ const ActiveUsers = () => {
         let baseList = members;
         if (activeFilter === 'active') baseList = activeMembers;
         else if (activeFilter === 'suspended') baseList = suspendedMembers;
+        else if (activeFilter === 'admins') baseList = members.filter(m => m.isAdmin || admins.some(a => a.email === m.email));
+
+        const searchLower = searchTerm.trim().toLowerCase();
 
         return baseList.filter(m => {
-            const matchesSearch = ((m.email || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-                                   (m.displayName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-                                   (m.phone || '').toLowerCase().includes(searchTerm.toLowerCase()));
-            if (!matchesSearch) return false;
-
-            if (activeFilter === 'tribe') return m.hasJoinedTribe;
-            if (activeFilter === 'creators') return m.isCreator || creators.some(c => c.uid === m.id || c.email === m.email);
-            if (activeFilter === 'artists') return m.isArtist || artists.some(a => (a.uid === m.id || a.email === m.email) && a.profileStatus === 'approved');
-            if (activeFilter === 'tickets') return m.isTicketHolder;
-
-            return true;
+            if (!searchLower) return true;
+            return (
+                (m.email || '').toLowerCase().includes(searchLower) ||
+                (m.displayName || '').toLowerCase().includes(searchLower) ||
+                (m.phone || '').toLowerCase().includes(searchLower) ||
+                (m.role || '').toLowerCase().includes(searchLower)
+            );
         });
-    }, [members, activeMembers, suspendedMembers, searchTerm, activeFilter, creators, artists]);
+    }, [members, activeMembers, suspendedMembers, searchTerm, activeFilter, admins]);
 
     useEffect(() => {
         setCurrentPage(1);
@@ -190,80 +197,107 @@ const ActiveUsers = () => {
                         {isSyncing ? 'Syncing Firebase Auth...' : 'Sync Auth Members'}
                     </button>
                     <Link
-                        to="/admin/manage-admins"
+                        to="/admin/manage-admins?tab=members"
                         className="w-full md:w-auto flex items-center justify-center gap-3 h-12 md:h-14 px-8 rounded-xl md:rounded-2xl bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-gray-900 dark:text-white border border-black/10 dark:border-white/10 font-black uppercase text-[10px] tracking-widest transition-all duration-300"
                     >
                         <Users size={14} className="text-neon-blue" />
-                        View All Registered Members ({totalCount})
+                        Members & Access Command ({totalCount})
                     </Link>
                 </div>
             }
         >
-            {/* Quick Metrics KPI Bar */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-10">
-                {[
-                    { 
-                        label: 'Total Members', 
-                        count: totalCount, 
-                        detail: `${activeCount} Active • ${suspendedCount} Suspended`, 
-                        color: 'text-neon-blue', 
-                        bgGlow: 'bg-neon-blue',
-                        hoverBorder: 'group-hover:border-neon-blue/30',
-                        topGradient: 'from-neon-blue to-blue-500'
-                    },
-                    { 
-                        label: 'Active Personnel', 
-                        count: activeCount, 
-                        detail: 'Verified Active Clearance', 
-                        color: 'text-neon-green', 
-                        bgGlow: 'bg-neon-green',
-                        hoverBorder: 'group-hover:border-neon-green/30',
-                        topGradient: 'from-neon-green to-emerald-500'
-                    },
-                    { 
-                        label: 'Active Tribe & Creators', 
-                        count: activeMembers.filter(m => m.hasJoinedTribe || m.isCreator || m.isArtist).length, 
-                        detail: 'Verified Active Members', 
-                        color: 'text-neon-pink', 
-                        bgGlow: 'bg-neon-pink',
-                        hoverBorder: 'group-hover:border-neon-pink/30',
-                        topGradient: 'from-neon-pink to-purple-500'
-                    },
-                    { 
-                        label: 'Ticket Holders', 
-                        count: members.filter(m => m.isTicketHolder).length, 
-                        detail: `${activeMembers.filter(m => m.isTicketHolder).length} Active Attendees`, 
-                        color: 'text-yellow-400', 
-                        bgGlow: 'bg-yellow-400',
-                        hoverBorder: 'group-hover:border-yellow-400/30',
-                        topGradient: 'from-yellow-400 to-amber-500'
-                    }
-                ].map((stat, i) => (
-                    <motion.div
-                        key={stat.label}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: i * 0.05 }}
-                        className="group relative h-full flex flex-col items-stretch"
-                    >
-                        <div className={cn(
-                            "absolute inset-0 rounded-3xl opacity-0 group-hover:opacity-15 transition-all duration-700 blur-2xl pointer-events-none",
-                            stat.bgGlow
-                        )} />
-                        
-                        <div className={cn(
-                            "relative z-10 p-6 md:p-8 h-full bg-gray-100 dark:bg-zinc-950/35 backdrop-blur-3xl border border-white/[0.08] shadow-[0_20px_50px_rgba(0,0,0,0.5)] rounded-3xl transition-all duration-500 flex flex-col justify-between group-hover:-translate-y-1",
-                            stat.hoverBorder
-                        )}>
-                            <div className={cn("absolute top-0 left-0 w-full h-[2.5px] bg-gradient-to-r rounded-t-3xl", stat.topGradient)} />
-                            <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-3 leading-none relative z-10">{stat.label}</p>
-                            <div className="flex items-baseline gap-2.5 relative z-10">
-                                <span className={cn("text-3xl md:text-4xl font-extrabold font-heading tracking-tight leading-none", stat.color)}>{stat.count}</span>
-                                <span className="text-[10px] text-zinc-400 font-bold uppercase tracking-wide truncate">{stat.detail}</span>
-                            </div>
-                        </div>
-                    </motion.div>
-                ))}
+            {/* Dashboard-Style Metrics Widgets */}
+            <div className="relative mb-10 md:mb-14">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+                    {[
+                        {
+                            label: 'Total Registered',
+                            value: totalCount.toLocaleString(),
+                            icon: Users,
+                            color: 'neon-blue',
+                            detail: 'All platform registered accounts',
+                            filterId: 'all'
+                        },
+                        {
+                            label: 'Active Users',
+                            value: activeCount.toLocaleString(),
+                            icon: UserCheck,
+                            color: 'neon-green',
+                            detail: `${totalCount > 0 ? Math.round((activeCount / totalCount) * 100) : 100}% Active Clearance Rate`,
+                            filterId: 'active'
+                        },
+                        {
+                            label: 'Administrators',
+                            value: activeAdminsCount,
+                            icon: Shield,
+                            color: 'neon-pink',
+                            detail: `${pendingAdminsCount} Pending Clearance Requests`,
+                            filterId: 'admins'
+                        },
+                        {
+                            label: 'Suspended Access',
+                            value: suspendedCount,
+                            icon: ShieldAlert,
+                            color: 'neon-purple',
+                            detail: suspendedCount > 0 ? `${suspendedCount} Restricted Accounts` : 'Zero Restricted Accounts',
+                            filterId: 'suspended'
+                        }
+                    ].map((stat, i) => {
+                        const isSelected = activeFilter === stat.filterId;
+                        const hoverBorder = stat.color === 'neon-green' ? 'hover:border-emerald-500/50 dark:hover:border-neon-green/30' :
+                                            (stat.color === 'neon-blue' ? 'hover:border-sky-500/50 dark:hover:border-neon-blue/30' :
+                                            (stat.color === 'neon-pink' ? 'hover:border-rose-500/50 dark:hover:border-neon-pink/30' : 'hover:border-purple-500/50 dark:hover:border-neon-purple/30'));
+
+                        return (
+                            <motion.div
+                                key={stat.label}
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: i * 0.06 }}
+                                onClick={() => setActiveFilter(stat.filterId)}
+                                className="group relative w-full flex flex-col items-stretch cursor-pointer select-none"
+                            >
+                                <div className={cn("absolute -inset-px rounded-3xl opacity-0 group-hover:opacity-15 transition-opacity blur-xl bg-gradient-to-br", 
+                                    stat.color === 'neon-green' ? 'from-neon-green to-emerald-500' : 
+                                    (stat.color === 'neon-blue' ? 'from-neon-blue to-cyan-500' : 
+                                    (stat.color === 'neon-pink' ? 'from-neon-pink to-purple-500' : 'from-purple-500 to-indigo-500'))
+                                )} />
+                                <div className={cn(
+                                    "p-6 md:p-8 h-full bg-white dark:bg-zinc-950/35 backdrop-blur-3xl border transition-all duration-500 rounded-3xl flex flex-col justify-between overflow-hidden shadow-sm hover:shadow-xl dark:shadow-[0_20px_50px_rgba(0,0,0,0.5)]",
+                                    isSelected
+                                        ? "border-neon-green/40 shadow-[0_0_20px_rgba(57,255,20,0.15)] ring-1 ring-neon-green/30"
+                                        : "border-gray-200 dark:border-white/5",
+                                    hoverBorder
+                                )}>
+                                    <div className="flex items-start justify-between mb-8">
+                                        <div className={cn("p-4 rounded-2xl border flex items-center justify-center group-hover:scale-110 group-hover:rotate-3 transition-all duration-500", 
+                                            stat.color === 'neon-green' ? 'text-emerald-600 dark:text-[#39FF14] bg-emerald-50 dark:bg-[#39FF14]/5 border-emerald-200 dark:border-[#39FF14]/10 group-hover:border-emerald-400 dark:group-hover:border-[#39FF14]/30' : 
+                                            (stat.color === 'neon-blue' ? 'text-sky-600 dark:text-[#00F0FF] bg-sky-50 dark:bg-[#00F0FF]/5 border-sky-200 dark:border-[#00F0FF]/10 group-hover:border-sky-400 dark:group-hover:border-[#00F0FF]/30' : 
+                                            (stat.color === 'neon-pink' ? 'text-rose-600 dark:text-[#FF4F8B] bg-rose-50 dark:bg-[#FF4F8B]/5 border-rose-200 dark:border-[#FF4F8B]/10 group-hover:border-rose-400 dark:group-hover:border-[#FF4F8B]/30' : 'text-purple-600 dark:text-[#A855F7] bg-purple-50 dark:bg-[#A855F7]/5 border-purple-200 dark:border-[#A855F7]/10 group-hover:border-purple-400 dark:group-hover:border-[#A855F7]/30'))
+                                        )}>
+                                            <stat.icon size={24} />
+                                        </div>
+                                        {isSelected && (
+                                            <span className="px-2.5 py-1 rounded-full text-[8px] font-black uppercase tracking-widest bg-neon-green/10 text-neon-green border border-neon-green/30 animate-pulse">
+                                                FILTER ACTIVE
+                                            </span>
+                                        )}
+                                    </div>
+                                    <div>
+                                        <h3 className="text-4xl md:text-5xl font-extrabold font-heading tracking-tight text-gray-900 dark:text-white mb-2 leading-none">{stat.value}</h3>
+                                        <p className="text-gray-500 text-[10px] md:text-[9px] font-black uppercase tracking-[0.3em]">{stat.label}</p>
+                                        <div className="mt-6 pt-6 border-t border-gray-100 dark:border-white/5 flex items-center justify-between">
+                                            <p className="text-gray-600 dark:text-gray-400 text-[10px] md:text-[9px] font-bold uppercase tracking-widest">{stat.detail}</p>
+                                        </div>
+                                    </div>
+                                    <div className="absolute top-0 right-0 p-8 opacity-0 group-hover:opacity-[0.03] transition-opacity pointer-events-none transform translate-x-4 -translate-y-4">
+                                        <stat.icon size={160} />
+                                    </div>
+                                </div>
+                            </motion.div>
+                        );
+                    })}
+                </div>
             </div>
 
             {/* Combined Search & Filters Bar */}
@@ -274,7 +308,7 @@ const ActiveUsers = () => {
                     <input 
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        placeholder="Search personnel by name, email, or phone..."
+                        placeholder="Search personnel by name, email, role, phone..."
                         className="w-full bg-transparent h-14 md:h-16 pl-16 md:pl-20 pr-12 rounded-full text-[9px] md:text-[11px] font-black uppercase tracking-widest outline-none transition-all placeholder:text-gray-600"
                     />
                     {searchTerm && (
@@ -293,18 +327,15 @@ const ActiveUsers = () => {
                         <div className="flex items-center gap-1 w-full">
                             {[
                                 { id: 'all', label: `All (${totalCount})` },
-                                { id: 'active', label: `Active (${activeCount})` },
-                                { id: 'suspended', label: `Suspended (${suspendedCount})` },
-                                { id: 'tribe', label: 'Tribe' },
-                                { id: 'creators', label: 'Creators' },
-                                { id: 'artists', label: 'Artists' },
-                                { id: 'tickets', label: 'Tickets' }
+                                { id: 'active', label: `Active Users (${activeCount})` },
+                                { id: 'admins', label: `Administrators (${activeAdminsCount})` },
+                                { id: 'suspended', label: `Suspended (${suspendedCount})` }
                             ].map((filter) => (
                                 <button
                                     key={filter.id}
                                     onClick={() => setActiveFilter(filter.id)}
                                     className={cn(
-                                        "flex-1 px-4 sm:px-6 py-3.5 rounded-full text-[8px] sm:text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-300 min-w-[70px] sm:min-w-[90px] md:min-w-[110px] flex items-center justify-center text-center leading-none border",
+                                        "flex-1 px-4 sm:px-6 py-3.5 rounded-full text-[8px] sm:text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-300 min-w-[80px] sm:min-w-[100px] md:min-w-[120px] flex items-center justify-center text-center leading-none border",
                                         activeFilter === filter.id 
                                             ? "bg-neon-green/10 text-neon-green border-neon-green/20 font-extrabold scale-[1.02]" 
                                             : "text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 border-transparent"
