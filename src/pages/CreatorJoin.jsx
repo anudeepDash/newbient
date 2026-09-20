@@ -229,6 +229,38 @@ const CreatorJoin = () => {
     const recaptchaVerifierRef = useRef(null);
     const recaptchaContainerId = useRef(`recaptcha-creator-${Math.random().toString(36).slice(2, 9)}`).current;
     const countryCodeRef = useRef(null);
+    const formContainerRef = useRef(null);
+
+    // Scroll smoothly to top of form when navigating steps or mounting
+    const scrollToFormTop = useCallback((smooth = true) => {
+        if (formContainerRef.current) {
+            const yOffset = -90; // offset for sticky navbar
+            const y = formContainerRef.current.getBoundingClientRect().top + window.pageYOffset + yOffset;
+            window.scrollTo({
+                top: Math.max(0, y),
+                behavior: smooth ? 'smooth' : 'auto'
+            });
+        } else {
+            window.scrollTo({
+                top: 0,
+                behavior: smooth ? 'smooth' : 'auto'
+            });
+        }
+    }, []);
+
+    // Ensure user always starts from the top of the form on step change or submission
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            scrollToFormTop(true);
+        }, 50);
+        return () => clearTimeout(timer);
+    }, [step, scrollToFormTop]);
+
+    useEffect(() => {
+        if (hasJoined) {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    }, [hasJoined]);
 
     // Auto-fill from logged in user if available
     useEffect(() => {
@@ -647,11 +679,13 @@ const CreatorJoin = () => {
 
         setDirection(1);
         setStep(prev => Math.min(prev + 1, 4));
+        setTimeout(() => scrollToFormTop(true), 50);
     };
 
     const prevStep = () => {
         setDirection(-1);
         setStep(prev => Math.max(prev - 1, 1));
+        setTimeout(() => scrollToFormTop(true), 50);
     };
 
     const handleSubmit = async (e) => {
@@ -955,7 +989,10 @@ const CreatorJoin = () => {
                         </p>
                     </div>
                 ) : (
-                <div className="bg-gray-50/80 dark:bg-white/[0.02] border border-black/[0.08] dark:border-white/[0.06] rounded-3xl p-5 sm:p-8 backdrop-blur-2xl shadow-2xl space-y-6">
+                <div 
+                    ref={formContainerRef}
+                    className="bg-gray-50/80 dark:bg-white/[0.02] border border-black/[0.08] dark:border-white/[0.06] rounded-3xl p-5 sm:p-8 backdrop-blur-2xl shadow-2xl space-y-6"
+                >
                     
                     {/* Progress Bar & Header */}
                     <div className="space-y-3.5">
