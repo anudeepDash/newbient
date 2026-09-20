@@ -253,10 +253,10 @@ const CreatorPassCard = ({
                     </div>
 
                     {/* CENTERPIECE: Identity & Avatar */}
-                    <div className="flex items-center gap-4 relative z-20 my-auto" style={{ transform: "translateZ(24px)" }}>
+                    <div className="flex items-center gap-3.5 sm:gap-4 relative z-20 my-auto py-1" style={{ transform: "translateZ(24px)" }}>
                         {/* Avatar */}
-                        <div className="relative shrink-0">
-                            <div className="w-13 h-13 sm:w-14 sm:h-14 rounded-2xl bg-black text-white dark:bg-zinc-900 border border-black/[0.08] dark:border-white/10 overflow-hidden flex items-center justify-center shadow-sm">
+                        <div className="relative shrink-0 w-12 h-12 sm:w-14 sm:h-14">
+                            <div className="w-full h-full rounded-2xl bg-black text-white dark:bg-zinc-900 border border-black/[0.08] dark:border-white/10 overflow-hidden flex items-center justify-center shadow-sm">
                                 {data.avatar ? (
                                     <img src={data.avatar} alt={data.name} className="w-full h-full object-cover" />
                                 ) : (
@@ -281,21 +281,21 @@ const CreatorPassCard = ({
 
                         {/* Name & Handle */}
                         <div className="min-w-0 flex-1">
-                            <div className="flex items-center gap-2">
-                                <h3 className="text-lg sm:text-xl font-black tracking-tight text-gray-950 dark:text-white truncate font-heading">
+                            <div className="flex items-center gap-1.5 sm:gap-2">
+                                <h3 className="text-base sm:text-xl font-black tracking-tight text-gray-950 dark:text-white truncate font-heading">
                                     {data.name}
                                 </h3>
                                 {isVerified ? (
-                                    <div className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-neon-green/20 border border-neon-green/40 text-black dark:text-neon-green text-[8px] font-black uppercase tracking-wider font-mono">
+                                    <div className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-neon-green/20 border border-neon-green/40 text-black dark:text-neon-green text-[8px] font-black uppercase tracking-wider font-mono shrink-0">
                                         <CheckCircle2 size={10} /> VERIFIED
                                     </div>
                                 ) : (
-                                    <div className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-gray-500/20 border border-gray-500/40 text-gray-700 dark:text-gray-300 text-[8px] font-black uppercase tracking-wider font-mono">
+                                    <div className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-gray-500/20 border border-gray-500/40 text-gray-700 dark:text-gray-300 text-[8px] font-black uppercase tracking-wider font-mono shrink-0">
                                         UNVERIFIED
                                     </div>
                                 )}
                             </div>
-                            <p className="text-xs text-gray-500 dark:text-zinc-400 font-medium truncate mt-0.5">
+                            <p className="text-[11px] sm:text-xs text-gray-500 dark:text-zinc-400 font-medium truncate mt-0.5">
                                 @{data.handle} <span className="mx-1 text-gray-300 dark:text-zinc-700">&bull;</span> {data.city} <span className="mx-1 text-gray-300 dark:text-zinc-700">&bull;</span> {data.niche}
                             </p>
                         </div>
@@ -303,23 +303,23 @@ const CreatorPassCard = ({
 
                     {/* VIP MEMBERSHIP AUTHENTICATION STRIP */}
                     <div 
-                        className="flex items-center justify-between py-2 border-t border-black/[0.06] dark:border-white/[0.08] relative z-20"
+                        className="flex items-center justify-between py-1.5 sm:py-2 border-t border-black/[0.06] dark:border-white/[0.08] relative z-20"
                         style={{ transform: "translateZ(18px)" }}
                     >
-                        <div className="flex items-center gap-2">
-                            <span className="text-[9px] font-mono tracking-widest text-gray-500 dark:text-zinc-400 uppercase flex items-center gap-1.5">
+                        <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+                            <span className="text-[8px] sm:text-[9px] font-mono tracking-widest text-gray-500 dark:text-zinc-400 uppercase flex items-center gap-1.5 shrink-0">
                                 <span className="w-1.5 h-1.5 rounded-full bg-neon-green inline-block animate-pulse" />
                                 {isVerified ? "VERIFIED ROSTER" : isRegistered ? "REGISTERED CREATOR" : "ALL-ACCESS PASS"}
                             </span>
                             {data.niche && data.niche !== 'C' && (
-                                <span className="px-2 py-0.5 rounded-md bg-black/[0.03] dark:bg-white/[0.05] border border-black/[0.04] dark:border-white/[0.06] text-[9px] font-bold uppercase tracking-wider text-gray-600 dark:text-zinc-400">
+                                <span className="hidden xs:inline-block px-1.5 sm:px-2 py-0.5 rounded-md bg-black/[0.03] dark:bg-white/[0.05] border border-black/[0.04] dark:border-white/[0.06] text-[8px] sm:text-[9px] font-bold uppercase tracking-wider text-gray-600 dark:text-zinc-400 truncate max-w-[120px]">
                                     {data.niche}
                                 </span>
                             )}
                         </div>
 
                         {/* Monospace Barcode Aesthetic */}
-                        <div className="flex items-center gap-1 font-mono text-[9px] text-gray-300 dark:text-zinc-600 tracking-widest select-none">
+                        <div className="flex items-center gap-1 font-mono text-[8px] sm:text-[9px] text-gray-300 dark:text-zinc-600 tracking-widest select-none shrink-0">
                             <span>|||</span><span>|</span><span>||</span><span>||||</span><span>|</span><span>||</span>
                         </div>
                     </div>
@@ -332,21 +332,21 @@ const CreatorPassCard = ({
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 onClick={(e) => e.stopPropagation()}
-                                className="h-8 px-2.5 sm:px-3 rounded-xl bg-black/[0.04] hover:bg-[#25D366]/15 dark:bg-white/[0.06] dark:hover:bg-[#25D366]/20 border border-black/[0.08] dark:border-white/[0.08] hover:border-[#25D366]/30 dark:hover:border-[#25D366]/40 text-gray-800 dark:text-zinc-200 text-[10px] font-bold tracking-wide transition-all flex items-center gap-1.5 shadow-2xs group/wa shrink-0"
+                                className="h-7 sm:h-8 px-2.5 sm:px-3 rounded-xl bg-black/[0.04] hover:bg-[#25D366]/15 dark:bg-white/[0.06] dark:hover:bg-[#25D366]/20 border border-black/[0.08] dark:border-white/[0.08] hover:border-[#25D366]/30 dark:hover:border-[#25D366]/40 text-gray-800 dark:text-zinc-200 text-[9px] sm:text-[10px] font-bold tracking-wide transition-all flex items-center gap-1.5 shadow-2xs group/wa shrink-0"
                                 title={`Join ${currentGroup?.city || ''} Creators WhatsApp Group`}
                             >
-                                <WhatsAppIcon size={13} className="text-[#25D366]" />
+                                <WhatsAppIcon size={12} className="text-[#25D366]" />
                                 <span>Join WhatsApp</span>
                             </a>
                         ) : (
-                            <span className="text-[9px] font-mono tracking-widest text-gray-400 dark:text-zinc-500 uppercase flex items-center gap-1.5">
+                            <span className="text-[8px] sm:text-[9px] font-mono tracking-widest text-gray-400 dark:text-zinc-500 uppercase flex items-center gap-1.5">
                                 <span className="w-1.5 h-1.5 rounded-full bg-neon-green inline-block" />
                                 {isRegistered ? "Authorized Member" : "Official Creator Pass"}
                             </span>
                         )}
 
                         {hideAction ? (
-                            <div className="h-8 px-3 rounded-xl bg-neon-green/10 border border-neon-green/25 text-neon-green font-black text-[10px] uppercase tracking-wider flex items-center gap-1.5 font-mono">
+                            <div className="h-7 sm:h-8 px-2.5 sm:px-3 rounded-xl bg-neon-green/10 border border-neon-green/25 text-neon-green font-black text-[9px] sm:text-[10px] uppercase tracking-wider flex items-center gap-1.5 font-mono shrink-0">
                                 <span className="w-1.5 h-1.5 rounded-full bg-neon-green" />
                                 <span>{isVerified ? "Verified Pass" : "Active Member"}</span>
                             </div>
@@ -354,7 +354,7 @@ const CreatorPassCard = ({
                             <button
                                 type="button"
                                 onClick={() => navigate('/creator-dashboard')}
-                                className="h-8 px-3.5 sm:px-4 rounded-xl bg-neon-green hover:bg-black hover:text-white text-black font-black text-[10px] uppercase tracking-wider transition-all flex items-center gap-1.5 shadow-[0_0_15px_rgba(57,255,20,0.3)] active:scale-95 group/btn shrink-0"
+                                className="h-7 sm:h-8 px-3 sm:px-4 rounded-xl bg-neon-green hover:bg-black hover:text-white text-black font-black text-[9px] sm:text-[10px] uppercase tracking-wider transition-all flex items-center gap-1.5 shadow-[0_0_15px_rgba(57,255,20,0.3)] active:scale-95 group/btn shrink-0"
                             >
                                 <LayoutDashboard size={11} />
                                 <span>Dashboard</span>
@@ -364,7 +364,7 @@ const CreatorPassCard = ({
                             <button
                                 type="button"
                                 onClick={() => navigate('/creator/join')}
-                                className="h-8 px-3.5 sm:px-4 rounded-xl bg-neon-green hover:bg-black hover:text-white text-black font-black text-[10px] uppercase tracking-wider transition-all flex items-center gap-1.5 shadow-[0_0_15px_rgba(57,255,20,0.3)] active:scale-95 group/btn shrink-0"
+                                className="h-7 sm:h-8 px-3 sm:px-4 rounded-xl bg-neon-green hover:bg-black hover:text-white text-black font-black text-[9px] sm:text-[10px] uppercase tracking-wider transition-all flex items-center gap-1.5 shadow-[0_0_15px_rgba(57,255,20,0.3)] active:scale-95 group/btn shrink-0"
                             >
                                 <span>Claim Pass</span>
                                 <ArrowRight size={11} className="group-hover/btn:translate-x-0.5 transition-transform" />
@@ -373,7 +373,7 @@ const CreatorPassCard = ({
                             <button
                                 type="button"
                                 onClick={() => navigate('/creator/join')}
-                                className="h-8 px-3.5 sm:px-4 rounded-xl bg-neon-green hover:bg-black hover:text-white text-black font-black text-[10px] uppercase tracking-wider transition-all flex items-center gap-1.5 shadow-[0_0_15px_rgba(57,255,20,0.3)] active:scale-95 group/btn shrink-0"
+                                className="h-7 sm:h-8 px-3 sm:px-4 rounded-xl bg-neon-green hover:bg-black hover:text-white text-black font-black text-[9px] sm:text-[10px] uppercase tracking-wider transition-all flex items-center gap-1.5 shadow-[0_0_15px_rgba(57,255,20,0.3)] active:scale-95 group/btn shrink-0"
                             >
                                 <span>Claim Pass</span>
                                 <ArrowRight size={11} className="group-hover/btn:translate-x-0.5 transition-transform" />
@@ -390,12 +390,12 @@ const CreatorPassCard = ({
                     animate={{ opacity: 1, y: 0 }}
                     className="w-full mt-3.5"
                 >
-                    <div className="p-3 sm:p-3.5 rounded-2xl bg-white dark:bg-[#0c0e14] border border-black/[0.08] dark:border-white/[0.08] flex items-center justify-between gap-3 shadow-xs">
-                        <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="p-3 sm:p-3.5 rounded-2xl bg-white dark:bg-[#0c0e14] border border-black/[0.08] dark:border-white/[0.08] flex items-center justify-between gap-2.5 sm:gap-3 shadow-xs">
+                        <div className="flex items-center gap-2.5 min-w-0 flex-1">
                             <div className="w-8 h-8 rounded-xl bg-[#25D366]/15 text-[#25D366] flex items-center justify-center shrink-0">
                                 <WhatsAppIcon size={16} />
                             </div>
-                            <div className="min-w-0">
+                            <div className="min-w-0 flex-1">
                                 <div className="flex items-center gap-1.5">
                                     <p className="text-xs font-bold text-gray-900 dark:text-white truncate">
                                         {currentGroup?.city} Creators WhatsApp
@@ -410,7 +410,7 @@ const CreatorPassCard = ({
                             </div>
                         </div>
 
-                        <div className="flex items-center gap-2 shrink-0">
+                        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
                             {(!profile?.city || profile.city === 'Pan-India') && (
                                 <>
                                     <button
@@ -419,7 +419,7 @@ const CreatorPassCard = ({
                                         disabled={isLocating}
                                         title={isAutoDetected ? `Auto-detected: ${selectedCity}` : "Auto-detect my location"}
                                         className={cn(
-                                            "h-8 px-2.5 rounded-xl border flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer",
+                                            "h-8 px-2 sm:px-2.5 rounded-xl border flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer shrink-0",
                                             isAutoDetected
                                                 ? "bg-emerald-500/15 border-emerald-500/30 text-emerald-700 dark:text-neon-green"
                                                 : "bg-black/[0.03] dark:bg-white/[0.05] border-black/[0.08] dark:border-white/[0.08] text-gray-600 dark:text-zinc-400 hover:text-black dark:hover:text-white"
@@ -428,7 +428,7 @@ const CreatorPassCard = ({
                                         <MapPin size={11} className={isLocating ? "animate-pulse text-emerald-600 dark:text-neon-green" : ""} />
                                         <span className="hidden sm:inline">{isLocating ? "Locating..." : isAutoDetected ? "Auto" : "Detect"}</span>
                                     </button>
-                                    <div className="w-32 sm:w-36">
+                                    <div className="w-24 xs:w-28 sm:w-36 shrink-0">
                                         <StudioSelect
                                             value={selectedCity}
                                             onChange={(val) => {
@@ -447,7 +447,7 @@ const CreatorPassCard = ({
                                 href={currentGroup?.groupUrl}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="h-8 px-3.5 rounded-xl bg-gray-950 dark:bg-white text-white dark:text-black hover:bg-black dark:hover:bg-zinc-200 font-bold text-[10px] uppercase tracking-wider flex items-center gap-1 transition-all shadow-xs"
+                                className="h-8 px-3 sm:px-3.5 rounded-xl bg-gray-950 dark:bg-white text-white dark:text-black hover:bg-black dark:hover:bg-zinc-200 font-bold text-[10px] uppercase tracking-wider flex items-center gap-1 transition-all shadow-xs shrink-0"
                             >
                                 <span>Join</span>
                                 <ArrowRight size={11} />
