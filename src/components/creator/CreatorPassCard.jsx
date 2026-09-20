@@ -1,14 +1,45 @@
-import React, { useRef, useCallback } from 'react';
+import React, { useRef, useCallback, useState, useMemo, useEffect } from 'react';
 import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { 
     ShieldCheck, ArrowRight, LayoutDashboard, 
-    User, CheckCircle2
+    User, CheckCircle2, MapPin
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useTheme } from '../../hooks/useTheme';
+import { useStore } from '../../lib/store';
+import { useStoreSubscription } from '../../hooks/useStoreSubscription';
+import { DEFAULT_CREATOR_GROUPS } from '../../lib/constants';
+import { requestAutoLocation } from '../../lib/location';
 import newbiCreatorsLogoDark from '../../assets/newbi-creators-logo.png';
 import newbiCreatorsLogoLight from '../../assets/newbi-creators-logo-light.png';
+import StudioSelect from '../ui/StudioSelect';
+
+// Standard SVG for WhatsApp
+const WhatsAppIcon = ({ className = "w-4 h-4", size = 16 }) => (
+    <svg
+        viewBox="0 0 24 24"
+        width={size}
+        height={size}
+        fill="currentColor"
+        className={className}
+    >
+        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L0 24l6.335-1.662c1.746.953 3.71 1.456 5.711 1.457h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+    </svg>
+);
+
+const normalizeCity = (cityStr = '') => {
+    const raw = String(cityStr || '').trim().toLowerCase();
+    if (/^bang[al]*o?re$/i.test(raw) || raw.includes('bengaluru') || raw.includes('bangalore')) return 'bengaluru';
+    if (raw.includes('hyderabad')) return 'hyderabad';
+    if (raw.includes('chandigarh')) return 'chandigarh';
+    if (raw.includes('mumbai')) return 'mumbai';
+    if (raw.includes('pune')) return 'pune';
+    if (raw.includes('kolkata') || raw.includes('calcutta')) return 'kolkata';
+    if (raw.includes('kochi') || raw.includes('cochin')) return 'kochi';
+    if (raw.includes('delhi')) return 'delhi';
+    return raw;
+};
 
 /**
  * CreatorPassCard
@@ -20,19 +51,87 @@ const CreatorPassCard = ({
     profile = null, 
     isPreview = false,
     hideAction = false,
+    showWhatsAppGroup = false,
     className = "" 
 }) => {
     const navigate = useNavigate();
     const cardRef = useRef(null);
     const { isDark } = useTheme();
 
+    useStoreSubscription(['creatorGroups']);
+    const { creatorGroups } = useStore();
+
+    const [selectedCity, setSelectedCity] = useState(() => {
+        if (profile?.city && profile.city !== 'Pan-India') return profile.city;
+        return 'Bengaluru';
+    });
+
+    const [isLocating, setIsLocating] = useState(false);
+    const [isAutoDetected, setIsAutoDetected] = useState(false);
+
+    const handleAutoDetectLocation = useCallback(async (isSilent = false) => {
+        setIsLocating(true);
+        try {
+            const result = await requestAutoLocation({ onlyPrimaryHubs: true });
+            if (result?.city) {
+                setSelectedCity(result.city);
+                setIsAutoDetected(true);
+                if (!isSilent) {
+                    useStore.getState().addToast(`📍 Auto-selected ${result.city} based on your location`, 'success');
+                }
+            }
+        } catch {
+            if (!isSilent) {
+                useStore.getState().addToast('Location access denied or unavailable. Please pick your city.', 'info');
+            }
+        } finally {
+            setIsLocating(false);
+        }
+    }, []);
+
+    // Automatically request location access on mount if profile city is not already established
+    useEffect(() => {
+        if (profile?.city && profile.city !== 'Pan-India') return;
+        handleAutoDetectLocation(true);
+    }, [profile?.city, handleAutoDetectLocation]);
+
+    const activeGroups = useMemo(() => {
+        const remote = (creatorGroups || []).filter(g => g.isActive !== false);
+        const map = new Map();
+        remote.forEach(g => {
+            if (g.city) map.set(normalizeCity(g.city), g);
+        });
+
+        const list = [...remote];
+        DEFAULT_CREATOR_GROUPS.forEach(dg => {
+            const key = normalizeCity(dg.city);
+            if (!map.has(key)) {
+                list.push(dg);
+                map.set(key, dg);
+            }
+        });
+        return list;
+    }, [creatorGroups]);
+
+    const currentGroup = useMemo(() => {
+        const targetCity = (profile?.city && profile.city !== 'Pan-India') ? profile.city : selectedCity;
+        const targetKey = normalizeCity(targetCity);
+        const matched = activeGroups.find(g => normalizeCity(g.city) === targetKey)
+            || activeGroups.find(g => normalizeCity(g.city).includes(targetKey))
+            || activeGroups[0]
+            || DEFAULT_CREATOR_GROUPS[0];
+        return matched;
+    }, [activeGroups, profile?.city, selectedCity]);
+
     const isRegistered = Boolean(profile) && !isPreview && profile?.profileStatus !== 'unclaimed';
     const isVerified = isRegistered && (profile?.profileStatus === 'approved' || profile?.isVerified);
 
     const data = {
         name: profile?.displayName || profile?.name || "Reserve Your Pass",
-        city: profile?.city || "Pan-India",
-        niche: profile?.categories?.[0] || profile?.specializations?.[0] || "Culture & Lifestyle",
+        city: (profile?.city && profile.city !== 'Pan-India') ? profile.city : selectedCity,
+        niche: (Array.isArray(profile?.categories) ? profile.categories[0] : profile?.categories) || 
+               (Array.isArray(profile?.specializations) ? profile.specializations[0] : profile?.specializations) || 
+               "Culture & Lifestyle",
         handle: (profile?.instagramHandle || profile?.instagram || "your.handle").replace('@', ''),
         avatar: profile?.profilePicture || profile?.profileImage || profile?.avatar || profile?.photoURL || profile?.avatarUrl || null,
         status: isVerified ? "approved" : (profile?.profileStatus || (isRegistered ? "pending" : "unclaimed")),
@@ -162,8 +261,8 @@ const CreatorPassCard = ({
                                     <img src={data.avatar} alt={data.name} className="w-full h-full object-cover" />
                                 ) : (
                                     (isRegistered || (data.name && data.name !== "Reserve Your Pass")) ? (
-                                        <span className="font-black text-lg text-neon-green">
-                                            {data.name.charAt(0).toUpperCase()}
+                                        <span className="font-black text-[10px] sm:text-xs tracking-wider uppercase text-neon-green">
+                                            {data.niche.split(' ')[0].substring(0, 5)}
                                         </span>
                                     ) : (
                                         <div className="flex flex-col items-center justify-center text-zinc-300 dark:text-zinc-300">
@@ -187,11 +286,13 @@ const CreatorPassCard = ({
                                     {data.name}
                                 </h3>
                                 {isVerified ? (
-                                    <CheckCircle2 size={15} className="text-neon-green shrink-0" />
+                                    <div className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-neon-green/20 border border-neon-green/40 text-black dark:text-neon-green text-[8px] font-black uppercase tracking-wider font-mono">
+                                        <CheckCircle2 size={10} /> VERIFIED
+                                    </div>
                                 ) : (
-                                    <span className="px-1.5 py-0.5 rounded bg-neon-green/20 border border-neon-green/40 text-black dark:text-neon-green text-[8px] font-black uppercase tracking-wider font-mono">
-                                        RESERVED
-                                    </span>
+                                    <div className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-gray-500/20 border border-gray-500/40 text-gray-700 dark:text-gray-300 text-[8px] font-black uppercase tracking-wider font-mono">
+                                        UNVERIFIED
+                                    </div>
                                 )}
                             </div>
                             <p className="text-xs text-gray-500 dark:text-zinc-400 font-medium truncate mt-0.5">
@@ -200,43 +301,49 @@ const CreatorPassCard = ({
                         </div>
                     </div>
 
-                    {/* METRICS & STATUS: Clean borderless stat row with hairline dividers */}
+                    {/* VIP MEMBERSHIP AUTHENTICATION STRIP */}
                     <div 
-                        className="grid grid-cols-3 divide-x divide-black/[0.06] dark:divide-white/[0.08] py-2.5 border-y border-black/[0.06] dark:border-white/[0.08] relative z-20"
+                        className="flex items-center justify-between py-2 border-t border-black/[0.06] dark:border-white/[0.08] relative z-20"
                         style={{ transform: "translateZ(18px)" }}
                     >
-                        <div className="text-center px-2">
-                            <p className="text-sm sm:text-base font-black font-mono tracking-tight text-gray-950 dark:text-white">
-                                {data.points.toLocaleString()} <span className="text-[10px] font-normal text-gray-400 dark:text-zinc-500">PTS</span>
-                            </p>
-                            <span className="inline-block text-[8px] font-black uppercase tracking-widest text-black dark:text-neon-green bg-neon-green/25 dark:bg-transparent px-1.5 py-0.5 rounded mt-0.5">
-                                {isRegistered ? "Redeemable" : "Welcome Bonus"}
+                        <div className="flex items-center gap-2">
+                            <span className="text-[9px] font-mono tracking-widest text-gray-500 dark:text-zinc-400 uppercase flex items-center gap-1.5">
+                                <span className="w-1.5 h-1.5 rounded-full bg-neon-green inline-block animate-pulse" />
+                                {isVerified ? "VERIFIED ROSTER" : isRegistered ? "REGISTERED CREATOR" : "ALL-ACCESS PASS"}
                             </span>
+                            {data.niche && data.niche !== 'C' && (
+                                <span className="px-2 py-0.5 rounded-md bg-black/[0.03] dark:bg-white/[0.05] border border-black/[0.04] dark:border-white/[0.06] text-[9px] font-bold uppercase tracking-wider text-gray-600 dark:text-zinc-400">
+                                    {data.niche}
+                                </span>
+                            )}
                         </div>
-                        <div className="text-center px-2">
-                            <p className="text-sm sm:text-base font-black font-mono tracking-tight text-gray-950 dark:text-white">
-                                {data.collabs}
-                            </p>
-                            <span className="text-[8px] font-bold uppercase tracking-widest text-gray-400 dark:text-zinc-500 block mt-0.5">
-                                {isRegistered ? "Collaborations" : "Agency Cut"}
-                            </span>
-                        </div>
-                        <div className="text-center px-2">
-                            <p className="text-sm sm:text-base font-black tracking-tight text-gray-950 dark:text-neon-green">
-                                {isRegistered ? "Verified" : "Tier 1"}
-                            </p>
-                            <span className="text-[8px] font-bold uppercase tracking-widest text-gray-400 dark:text-zinc-500 block mt-0.5">
-                                All-Access Pass
-                            </span>
+
+                        {/* Monospace Barcode Aesthetic */}
+                        <div className="flex items-center gap-1 font-mono text-[9px] text-gray-300 dark:text-zinc-600 tracking-widest select-none">
+                            <span>|||</span><span>|</span><span>||</span><span>||||</span><span>|</span><span>||</span>
                         </div>
                     </div>
 
                     {/* BOTTOM ROW: Subtle Pass Indicator & Newbi Green Pill CTA */}
-                    <div className="flex items-center justify-between pt-1 relative z-20" style={{ transform: "translateZ(22px)" }}>
-                        <span className="text-[9px] font-mono tracking-widest text-gray-400 dark:text-zinc-500 uppercase flex items-center gap-1.5">
-                            <span className="w-1.5 h-1.5 rounded-full bg-neon-green inline-block" />
-                            {isRegistered ? "Authorized Member" : "Official Creator Pass"}
-                        </span>
+                    <div className="flex items-center justify-between pt-1 relative z-20 gap-2" style={{ transform: "translateZ(22px)" }}>
+                        {showWhatsAppGroup ? (
+                            <a
+                                href={currentGroup?.groupUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={(e) => e.stopPropagation()}
+                                className="h-8 px-2.5 sm:px-3 rounded-xl bg-black/[0.04] hover:bg-[#25D366]/15 dark:bg-white/[0.06] dark:hover:bg-[#25D366]/20 border border-black/[0.08] dark:border-white/[0.08] hover:border-[#25D366]/30 dark:hover:border-[#25D366]/40 text-gray-800 dark:text-zinc-200 text-[10px] font-bold tracking-wide transition-all flex items-center gap-1.5 shadow-2xs group/wa shrink-0"
+                                title={`Join ${currentGroup?.city || ''} Creators WhatsApp Group`}
+                            >
+                                <WhatsAppIcon size={13} className="text-[#25D366]" />
+                                <span>Join WhatsApp</span>
+                            </a>
+                        ) : (
+                            <span className="text-[9px] font-mono tracking-widest text-gray-400 dark:text-zinc-500 uppercase flex items-center gap-1.5">
+                                <span className="w-1.5 h-1.5 rounded-full bg-neon-green inline-block" />
+                                {isRegistered ? "Authorized Member" : "Official Creator Pass"}
+                            </span>
+                        )}
 
                         {hideAction ? (
                             <div className="h-8 px-3 rounded-xl bg-neon-green/10 border border-neon-green/25 text-neon-green font-black text-[10px] uppercase tracking-wider flex items-center gap-1.5 font-mono">
@@ -247,22 +354,26 @@ const CreatorPassCard = ({
                             <button
                                 type="button"
                                 onClick={() => navigate('/creator-dashboard')}
-                                className="h-8 px-4 rounded-xl bg-neon-green hover:bg-black hover:text-white text-black font-black text-[10px] uppercase tracking-wider transition-all flex items-center gap-1.5 shadow-[0_0_15px_rgba(57,255,20,0.3)] active:scale-95 group/btn"
+                                className="h-8 px-3.5 sm:px-4 rounded-xl bg-neon-green hover:bg-black hover:text-white text-black font-black text-[10px] uppercase tracking-wider transition-all flex items-center gap-1.5 shadow-[0_0_15px_rgba(57,255,20,0.3)] active:scale-95 group/btn shrink-0"
                             >
                                 <LayoutDashboard size={11} />
                                 <span>Dashboard</span>
                                 <ArrowRight size={11} className="group-hover/btn:translate-x-0.5 transition-transform" />
                             </button>
                         ) : isPreview ? (
-                            <div className="h-8 px-3.5 rounded-xl bg-neon-green/20 border border-neon-green/40 text-black dark:text-neon-green font-black text-[10px] uppercase tracking-wider flex items-center gap-1.5 font-mono">
-                                <span className="w-1.5 h-1.5 rounded-full bg-neon-green animate-pulse" />
-                                <span>Live Preview</span>
-                            </div>
+                            <button
+                                type="button"
+                                onClick={() => navigate('/creator/join')}
+                                className="h-8 px-3.5 sm:px-4 rounded-xl bg-neon-green hover:bg-black hover:text-white text-black font-black text-[10px] uppercase tracking-wider transition-all flex items-center gap-1.5 shadow-[0_0_15px_rgba(57,255,20,0.3)] active:scale-95 group/btn shrink-0"
+                            >
+                                <span>Claim Pass</span>
+                                <ArrowRight size={11} className="group-hover/btn:translate-x-0.5 transition-transform" />
+                            </button>
                         ) : (
                             <button
                                 type="button"
                                 onClick={() => navigate('/creator/join')}
-                                className="h-8 px-4 rounded-xl bg-neon-green hover:bg-black hover:text-white text-black font-black text-[10px] uppercase tracking-wider transition-all flex items-center gap-1.5 shadow-[0_0_15px_rgba(57,255,20,0.3)] active:scale-95 group/btn"
+                                className="h-8 px-3.5 sm:px-4 rounded-xl bg-neon-green hover:bg-black hover:text-white text-black font-black text-[10px] uppercase tracking-wider transition-all flex items-center gap-1.5 shadow-[0_0_15px_rgba(57,255,20,0.3)] active:scale-95 group/btn shrink-0"
                             >
                                 <span>Claim Pass</span>
                                 <ArrowRight size={11} className="group-hover/btn:translate-x-0.5 transition-transform" />
@@ -271,6 +382,80 @@ const CreatorPassCard = ({
                     </div>
                 </motion.div>
             </motion.div>
+
+            {/* Optional Companion City Group Join Card */}
+            {showWhatsAppGroup && (
+                <motion.div 
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="w-full mt-3.5"
+                >
+                    <div className="p-3 sm:p-3.5 rounded-2xl bg-white dark:bg-[#0c0e14] border border-black/[0.08] dark:border-white/[0.08] flex items-center justify-between gap-3 shadow-xs">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                            <div className="w-8 h-8 rounded-xl bg-[#25D366]/15 text-[#25D366] flex items-center justify-center shrink-0">
+                                <WhatsAppIcon size={16} />
+                            </div>
+                            <div className="min-w-0">
+                                <div className="flex items-center gap-1.5">
+                                    <p className="text-xs font-bold text-gray-900 dark:text-white truncate">
+                                        {currentGroup?.city} Creators WhatsApp
+                                    </p>
+                                    <span className="text-[9px] font-mono text-emerald-600 dark:text-neon-green font-bold shrink-0">
+                                        • Required
+                                    </span>
+                                </div>
+                                <p className="text-[10px] text-gray-500 dark:text-zinc-400 truncate">
+                                    Brand briefs, concert guestlists &amp; deliverables
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 shrink-0">
+                            {(!profile?.city || profile.city === 'Pan-India') && (
+                                <>
+                                    <button
+                                        type="button"
+                                        onClick={() => handleAutoDetectLocation(false)}
+                                        disabled={isLocating}
+                                        title={isAutoDetected ? `Auto-detected: ${selectedCity}` : "Auto-detect my location"}
+                                        className={cn(
+                                            "h-8 px-2.5 rounded-xl border flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer",
+                                            isAutoDetected
+                                                ? "bg-emerald-500/15 border-emerald-500/30 text-emerald-700 dark:text-neon-green"
+                                                : "bg-black/[0.03] dark:bg-white/[0.05] border-black/[0.08] dark:border-white/[0.08] text-gray-600 dark:text-zinc-400 hover:text-black dark:hover:text-white"
+                                        )}
+                                    >
+                                        <MapPin size={11} className={isLocating ? "animate-pulse text-emerald-600 dark:text-neon-green" : ""} />
+                                        <span className="hidden sm:inline">{isLocating ? "Locating..." : isAutoDetected ? "Auto" : "Detect"}</span>
+                                    </button>
+                                    <div className="w-32 sm:w-36">
+                                        <StudioSelect
+                                            value={selectedCity}
+                                            onChange={(val) => {
+                                                setSelectedCity(val);
+                                                setIsAutoDetected(false);
+                                            }}
+                                            options={DEFAULT_CREATOR_GROUPS.map(g => ({ value: g.city, label: g.city }))}
+                                            size="sm"
+                                            accentColor="neon-green"
+                                            searchable={false}
+                                        />
+                                    </div>
+                                </>
+                            )}
+                            <a
+                                href={currentGroup?.groupUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="h-8 px-3.5 rounded-xl bg-gray-950 dark:bg-white text-white dark:text-black hover:bg-black dark:hover:bg-zinc-200 font-bold text-[10px] uppercase tracking-wider flex items-center gap-1 transition-all shadow-xs"
+                            >
+                                <span>Join</span>
+                                <ArrowRight size={11} />
+                            </a>
+                        </div>
+                    </div>
+                </motion.div>
+            )}
         </div>
     );
 };

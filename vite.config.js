@@ -298,6 +298,27 @@ export default defineConfig(({ mode }) => {
             }
           });
         }
+      },
+      {
+        name: 'api-get-members-middleware',
+        configureServer(server) {
+          server.middlewares.use(async (req, res, next) => {
+            if (req.url.startsWith('/api/get-members')) {
+              try {
+                Object.assign(process.env, env);
+                const { default: handler } = await import('./api/get-members.js');
+                await handler(req, res);
+              } catch (err) {
+                console.error('[LOCAL GET-MEMBERS DEV PROXY] Error executing get-members:', err);
+                res.statusCode = 500;
+                res.setHeader('Content-Type', 'application/json');
+                res.end(JSON.stringify({ error: err.message || 'Internal local get-members error' }));
+              }
+            } else {
+              next();
+            }
+          });
+        }
       }
     ],
     optimizeDeps: {

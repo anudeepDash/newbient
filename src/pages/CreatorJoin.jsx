@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useStore } from '../lib/store';
 import { useStoreSubscription } from '../hooks/useStoreSubscription';
 import { auth } from '../lib/firebase';
 import { RecaptchaVerifier, signInWithPhoneNumber } from 'firebase/auth';
 import confetti from 'canvas-confetti';
 import { PREDEFINED_CITIES } from '../lib/constants';
+import { requestAutoLocation } from '../lib/location';
 import { motion, AnimatePresence } from 'framer-motion';
 import ArrowRight from 'lucide-react/dist/esm/icons/arrow-right';
 import ArrowLeft from 'lucide-react/dist/esm/icons/arrow-left';
@@ -57,6 +58,7 @@ import IndianRupee from 'lucide-react/dist/esm/icons/indian-rupee';
 import Sliders from 'lucide-react/dist/esm/icons/sliders';
 import { useNavigate, Link } from 'react-router-dom';
 import CreatorPassCard from '../components/creator/CreatorPassCard';
+import CreatorCityGroupCard from '../components/creator/CreatorCityGroupCard';
 import { cn, normalizePhoneNumber } from '../lib/utils';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import GlobalLoader from '../components/ui/GlobalLoader';
@@ -175,6 +177,33 @@ const CreatorJoin = () => {
     };
 
     const [showAllCities, setShowAllCities] = useState(false);
+    const [isLocatingCity, setIsLocatingCity] = useState(false);
+
+    const handleAutoDetectLocation = useCallback(async (isSilent = false) => {
+        setIsLocatingCity(true);
+        try {
+            const result = await requestAutoLocation({ onlyPrimaryHubs: false });
+            if (result?.city) {
+                setFormData(prev => ({ ...prev, city: result.city }));
+                if (!isSilent) {
+                    useStore.getState().addToast(`📍 Location auto-selected: ${result.city}`, 'success');
+                }
+            }
+        } catch {
+            if (!isSilent) {
+                useStore.getState().addToast('Could not access location. Please select your city manually.', 'info');
+            }
+        } finally {
+            setIsLocatingCity(false);
+        }
+    }, []);
+
+    // Automatically request location access on mount if city is not selected yet
+    useEffect(() => {
+        if (!formData.city) {
+            handleAutoDetectLocation(true);
+        }
+    }, [handleAutoDetectLocation]);
 
     const [countryCode, setCountryCode] = useState('+91');
     const [isCountryCodeOpen, setIsCountryCodeOpen] = useState(false);
@@ -763,64 +792,15 @@ const CreatorJoin = () => {
                         <CreatorPassCard profile={newCreatorProfile} />
                     </div>
 
-                    {/* City-Wise Creator Community Group Banner */}
-                    {matchedCityGroup && (
-                        <motion.div
-                            initial={{ opacity: 0, y: 15 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.1 }}
-                            className="p-5 rounded-2xl bg-gradient-to-br from-emerald-500/10 via-neon-green/5 to-black/20 dark:to-black/40 border border-emerald-500/30 text-left space-y-3 relative overflow-hidden shadow-sm"
-                        >
-                            <div className="flex items-center justify-between gap-2">
-                                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-700 dark:text-neon-green border border-emerald-500/30 text-[10px] font-black uppercase tracking-wider">
-                                    <MessageCircle size={12} />
-                                    <span>{matchedCityGroup.platform || 'Community'} Group &bull; {matchedCityGroup.city}</span>
-                                </div>
-                                {hasMarkedGroupJoined && (
-                                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600 dark:text-neon-green uppercase font-mono">
-                                        <Check size={12} /> Joined
-                                    </span>
-                                )}
-                            </div>
-
-                            <div>
-                                <h4 className="text-sm sm:text-base font-black text-gray-900 dark:text-white font-heading">
-                                    {matchedCityGroup.title || `${matchedCityGroup.city} Creator Hub`}
-                                </h4>
-                                <p className="text-xs text-gray-600 dark:text-zinc-400 mt-0.5 leading-relaxed">
-                                    {matchedCityGroup.description || `Join other creators in ${matchedCityGroup.city} for instant brief drops, festival guestlists, and local creator meetups.`}
-                                </p>
-                            </div>
-
-                            <div className="flex flex-col sm:flex-row gap-2.5 pt-1">
-                                <a
-                                    href={matchedCityGroup.groupUrl}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="flex-1 h-11 px-4 rounded-xl bg-neon-green hover:brightness-105 text-black font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all shadow-[0_0_20px_rgba(57,255,20,0.3)]"
-                                >
-                                    <MessageCircle size={14} />
-                                    <span>Join {matchedCityGroup.platform || 'City'} Group</span>
-                                    <ExternalLink size={12} />
-                                </a>
-                                {!hasMarkedGroupJoined ? (
-                                    <button
-                                        type="button"
-                                        onClick={handleJoinedGroupClick}
-                                        className="h-11 px-5 rounded-xl bg-white dark:bg-white/10 hover:bg-black/5 dark:hover:bg-white/15 border border-black/10 dark:border-white/10 text-gray-900 dark:text-white font-bold text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 shrink-0"
-                                    >
-                                        <Check size={14} />
-                                        <span>I've Joined</span>
-                                    </button>
-                                ) : (
-                                    <div className="h-11 px-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-400 font-bold text-xs flex items-center justify-center gap-1.5 shrink-0">
-                                        <CheckCircle2 size={14} />
-                                        <span>Member Verified</span>
-                                    </div>
-                                )}
-                            </div>
-                        </motion.div>
-                    )}
+                    {/* VIP City Creator WhatsApp Community Card */}
+                    <div className="py-2">
+                        <CreatorCityGroupCard
+                            initialCity={formData.city === 'Others' ? formData.customCity : formData.city}
+                            creatorId={registeredCreatorDocId || user?.uid || matchedExistingCreator?.id}
+                            isJoined={hasMarkedGroupJoined}
+                            onJoinMarked={() => setHasMarkedGroupJoined(true)}
+                        />
+                    </div>
 
                     {/* Next Steps Info Box */}
                     <div className="p-4 bg-white dark:bg-white/[0.02] border border-gray-200 dark:border-white/[0.08] rounded-2xl text-left text-xs text-gray-600 dark:text-zinc-400 space-y-2">
@@ -1160,7 +1140,18 @@ const CreatorJoin = () => {
                                 {/* Operating City */}
                                 <div className="space-y-2">
                                     <div className="flex items-center justify-between">
-                                        <label className="text-[10px] font-bold text-gray-900 dark:text-white/40 uppercase tracking-wider">Operating City *</label>
+                                        <div className="flex items-center gap-2.5">
+                                            <label className="text-[10px] font-bold text-gray-900 dark:text-white/40 uppercase tracking-wider">Operating City *</label>
+                                            <button
+                                                type="button"
+                                                onClick={() => handleAutoDetectLocation(false)}
+                                                disabled={isLocatingCity}
+                                                className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-600 dark:text-neon-green hover:underline cursor-pointer disabled:opacity-50"
+                                            >
+                                                <MapPin size={10} className={isLocatingCity ? "animate-pulse" : ""} />
+                                                <span>{isLocatingCity ? 'Locating...' : 'Auto-detect'}</span>
+                                            </button>
+                                        </div>
                                         <button
                                             type="button"
                                             onClick={() => setShowAllCities(!showAllCities)}

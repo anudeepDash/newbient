@@ -1,5 +1,6 @@
 import { auth, db } from './firebase';
 import { doc, setDoc, updateDoc } from 'firebase/firestore';
+import { DEFAULT_CREATOR_GROUPS } from './constants';
 
 export const NEWBI_GREEN = '#39FF14';
 export const CONCERT_ZONE_CYAN = '#00f2ff';
@@ -2066,17 +2067,70 @@ export const generateReceiptEmailHTML = (data) => {
 
 
 /**
- * Sends a welcome confirmation email to creators upon registration.
+ * Resolves the official WhatsApp Community Group for a given creator city.
  */
-export const sendCreatorWelcomeEmail = async (toEmail, creatorName, verificationToken = '', creatorId = '') => {
+export const resolveCityWhatsAppGroup = (city = '', customUrl = '') => {
+    if (customUrl) {
+        return {
+            id: 'custom_group',
+            city: city || 'Local',
+            platform: 'WhatsApp',
+            title: `${city || 'Community'} Creators Group`,
+            groupUrl: customUrl,
+            description: 'Official city hub for brand campaigns, concert access & creator meetups.'
+        };
+    }
+    const clean = String(city || '').trim().toLowerCase();
+    if (!clean || clean === 'pan-india' || clean === 'all') {
+        return DEFAULT_CREATOR_GROUPS[0];
+    }
+
+    if (clean.includes('bengaluru') || clean.includes('bangalore')) {
+        return DEFAULT_CREATOR_GROUPS.find(g => g.city.toLowerCase() === 'bengaluru') || DEFAULT_CREATOR_GROUPS[0];
+    }
+    if (clean.includes('hyderabad') || clean.includes('secunderabad')) {
+        return DEFAULT_CREATOR_GROUPS.find(g => g.city.toLowerCase() === 'hyderabad') || DEFAULT_CREATOR_GROUPS[1];
+    }
+    if (clean.includes('chandigarh') || clean.includes('mohali') || clean.includes('panchkula') || clean.includes('tricity')) {
+        return DEFAULT_CREATOR_GROUPS.find(g => g.city.toLowerCase() === 'chandigarh') || DEFAULT_CREATOR_GROUPS[2];
+    }
+    if (clean.includes('mumbai') || clean.includes('bombay') || clean.includes('navi mumbai') || clean.includes('thane')) {
+        return DEFAULT_CREATOR_GROUPS.find(g => g.city.toLowerCase() === 'mumbai') || DEFAULT_CREATOR_GROUPS[3];
+    }
+    if (clean.includes('pune') || clean.includes('poona')) {
+        return DEFAULT_CREATOR_GROUPS.find(g => g.city.toLowerCase() === 'pune') || DEFAULT_CREATOR_GROUPS[4];
+    }
+    if (clean.includes('kolkata') || clean.includes('calcutta')) {
+        return DEFAULT_CREATOR_GROUPS.find(g => g.city.toLowerCase() === 'kolkata') || DEFAULT_CREATOR_GROUPS[5];
+    }
+    if (clean.includes('kochi') || clean.includes('cochin') || clean.includes('kerala') || clean.includes('ernakulam')) {
+        return DEFAULT_CREATOR_GROUPS.find(g => g.city.toLowerCase() === 'kochi') || DEFAULT_CREATOR_GROUPS[6];
+    }
+    if (clean.includes('delhi') || clean.includes('ncr') || clean.includes('noida') || clean.includes('gurugram') || clean.includes('gurgaon') || clean.includes('ghaziabad') || clean.includes('faridabad')) {
+        return DEFAULT_CREATOR_GROUPS.find(g => g.city.toLowerCase() === 'delhi') || DEFAULT_CREATOR_GROUPS[7];
+    }
+
+    const partial = DEFAULT_CREATOR_GROUPS.find(g => clean.includes(g.city.toLowerCase()) || g.city.toLowerCase().includes(clean));
+    return partial || DEFAULT_CREATOR_GROUPS[0];
+};
+
+/**
+ * Sends a welcome confirmation email with Creator Pass & City WhatsApp group to creators upon registration.
+ */
+export const sendCreatorWelcomeEmail = async (toEmail, creatorName, verificationToken = '', creatorId = '', creatorData = {}) => {
     try {
         const verificationUrl = verificationToken && creatorId 
             ? `${getBaseUrl()}/verify-creator?id=${creatorId}&token=${verificationToken}` 
             : '';
-        const html = generateCreatorWelcomeHTML(creatorName, verificationUrl);
+        const mergedData = {
+            ...creatorData,
+            passId: creatorData.passId || creatorId || 'NWB-PASS'
+        };
+        const html = generateCreatorWelcomeHTML(creatorName, verificationUrl, mergedData);
+        const cityGroup = resolveCityWhatsAppGroup(mergedData.city, mergedData.customGroupUrl || mergedData.whatsappGroupUrl);
         const result = await apiFetch('/api/mail', {
             to: toEmail,
-            subject: `Welcome to Newbi Creators! Confirm your profile 🚀`,
+            subject: `🎟️ Your Newbi Creator Pass & ${cityGroup.city} Community Access!`,
             fromName: 'Newbi Creators',
             fromEmail: 'creators@newbi.live',
             html
@@ -2089,112 +2143,327 @@ export const sendCreatorWelcomeEmail = async (toEmail, creatorName, verification
 };
 
 /**
- * Generates the HTML for the creator welcome email.
+ * Generates high-impact HTML for the redesigned Creator Welcome Email,
+ * featuring an embedded luxury Creator Pass card, City WhatsApp Community CTA,
+ * 1-click verification, and creator perks.
  */
-export const generateCreatorWelcomeHTML = (creatorName, verificationUrl = '') => {
+export const generateCreatorWelcomeHTML = (creatorName, verificationUrl = '', creatorData = {}) => {
     const baseUrl = getBaseUrl();
+    const city = creatorData.city || 'Pan-India';
+    const cityGroup = resolveCityWhatsAppGroup(city, creatorData.customGroupUrl || creatorData.whatsappGroupUrl);
+    const passId = (creatorData.passId || creatorData.creatorId || 'NWB-PASS').toString().toUpperCase().replace(/^NWB-CR-/, '');
+    const fullPassId = `NWB-CR-${passId}`;
+    const handle = (creatorData.handle || creatorData.instagram || creatorName || 'creator').toString().replace(/^@/, '');
+    const niche = creatorData.niche || creatorData.primaryNiche || creatorData.category || 'Creator & Influencer';
+    const avatar = creatorData.avatar || creatorData.profilePicture || creatorData.photoURL || '';
+    const points = Number(creatorData.points || 500).toLocaleString();
+    const initialLetter = (creatorName ? creatorName.charAt(0) : 'C').toUpperCase();
+    const interactivePassUrl = `${baseUrl}/creator-dashboard`;
+
     return `
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <meta charset="utf-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <meta name="color-scheme" content="light dark">
-            <meta name="supported-color-schemes" content="light dark">
-            <style>
-                .preheader { display: none !important; visibility: hidden; opacity: 0; color: transparent; height: 0; width: 0; }
-                body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #000000; color: #ffffff; margin: 0; padding: 0; }
-                .container { width: 100%; max-width: 600px; margin: 40px auto; background-color: #0a0a0a; border: 1px solid #1a1a1a; border-radius: 24px; overflow: hidden; box-shadow: 0 20px 40px rgba(0,0,0,0.5); }
-                .header { padding: 40px; border-bottom: 1px solid #1a1a1a; text-align: left; background-color: #0a0a0a; }
-                .content { padding: 50px; text-align: left; }
-                .welcome-badge { display: inline-block; padding: 6px 12px; background: linear-gradient(90deg, #00f2ff, #FF4F8B); color: #000000; font-size: 10px; font-weight: 900; border-radius: 6px; letter-spacing: 2px; margin-bottom: 24px; text-transform: uppercase; }
-                .title { font-size: 32px; font-weight: 900; line-height: 1.2; letter-spacing: -1px; margin-bottom: 24px; color: #ffffff; text-transform: uppercase; font-style: italic; }
-                .pink-text { color: #FF4F8B; }
-                .blue-text { color: #00f2ff; }
-                .body-text { color: #a0a0a0; font-size: 16px; line-height: 1.6; font-weight: 400; margin-bottom: 30px; }
-                .body-text ul, .content ul { list-style-type: disc !important; padding-left: 20px !important; margin-top: 10px !important; margin-bottom: 10px !important; }
-                .body-text ol, .content ol { list-style-type: decimal !important; padding-left: 20px !important; margin-top: 10px !important; margin-bottom: 10px !important; }
-                .body-text li, .content li { margin-bottom: 5px !important; line-height: 1.6 !important; }
-                
-                .studio-card { background: #121212; border: 1px solid #222222; border-radius: 16px; padding: 24px; margin: 30px 0; }
-                .studio-card h3 { font-size: 18px; font-weight: 800; color: #00f2ff; margin-top: 0; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
-                .studio-card p { font-size: 14px; color: #888888; line-height: 1.5; margin: 0; }
-                
-                .cta-button { display: inline-block; padding: 18px 36px; background: linear-gradient(90deg, #00f2ff, #FF4F8B); color: #000000 !important; text-decoration: none; font-weight: 900; font-size: 13px; border-radius: 12px; letter-spacing: 1.5px; text-transform: uppercase; box-shadow: 0 0 20px rgba(0,242,255,0.3); }
-                .footer { padding: 40px 50px; background-color: #050505; border-top: 1px solid #1a1a1a; text-align: center; }
-                .footer-text { font-size: 10px; font-weight: 800; color: #555555; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 15px; }
-                .social-links { margin-bottom: 20px; }
-                .social-icon { display: inline-block; margin: 0 12px; }
-                .social-img { width: 18px; height: 18px; opacity: 0.5; filter: invert(1); }
-                
-                @media screen and (max-width: 600px) {
-                    .container { margin: 0 !important; border-radius: 0 !important; border: none !important; width: 100% !important; }
-                    .content { padding: 30px 20px !important; }
-                    .header { padding: 30px 20px !important; }
-                    .footer { padding: 30px 20px !important; }
-                    .title { font-size: 26px !important; margin-bottom: 18px !important; }
-                    .body-text { font-size: 14px !important; }
-                }
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="light dark">
+    <meta name="supported-color-schemes" content="light dark">
+    <title>Welcome to Newbi Creators - Your Creator Pass</title>
+    <style>
+        .preheader { display: none !important; visibility: hidden; opacity: 0; color: transparent; height: 0; width: 0; }
+        body { margin: 0; padding: 0; background-color: #07080C; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased; }
+        table { border-collapse: separate; }
+        a { text-decoration: none; }
+        @media only screen and (max-width: 600px) {
+            .email-container { width: 100% !important; border-radius: 0 !important; border: none !important; }
+            .content-padding { padding: 24px 18px !important; }
+            .header-padding { padding: 24px 18px !important; }
+            .pass-card { padding: 16px !important; }
+            .stats-col { display: table-cell !important; width: 33.33% !important; padding: 6px 2px !important; }
+            .stat-value { font-size: 13px !important; }
+            .stat-label { font-size: 7px !important; }
+            .wa-btn { padding: 14px 20px !important; font-size: 12px !important; }
+        }
+        @media (prefers-color-scheme: light) {
+            .dark-theme-wrapper { background-color: #07080C !important; }
+        }
+    </style>
+</head>
+<body class="dark-theme-wrapper" style="margin: 0; padding: 0; background-color: #07080C; color: #FFFFFF; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+    <span class="preheader">Your Newbi Creator Pass is ready. Join the ${cityGroup.city} WhatsApp community to unlock campaigns &amp; guestlists.</span>
 
-                @media (prefers-color-scheme: light) {
-                    body { background-color: #ffffff !important; color: #111111 !important; }
-                    .container { background-color: #ffffff !important; border-color: #e5e7eb !important; box-shadow: 0 20px 40px rgba(0,0,0,0.08) !important; }
-                    .welcome-badge { background: linear-gradient(90deg, #0099aa, #cc3366) !important; }
-                    .title { color: #111111 !important; }
-                    .body-text { color: #444444 !important; }
-                    .studio-card { background: #f8f9fa !important; border-color: #e5e7eb !important; }
-                    .studio-card h3 { color: #0099aa !important; }
-                    .studio-card p { color: #555555 !important; }
-                    .cta-button { box-shadow: 0 0 20px rgba(0,153,170,0.2) !important; }
-                    .footer { background-color: #fafafa !important; border-color: #e5e7eb !important; }
-                    .footer-text { color: #999999 !important; }
-                    .social-img { filter: none !important; opacity: 0.5 !important; }
-                }
-            </style>
-        </head>
-        <body>
-            <span class="preheader">Your creator application is received. Welcome to Newbi!</span>
-            <div class="container">
-                <div class="header">
-                    <!-- Brand Logo -->
-                    <img src="${baseUrl}/logo_full.png" alt="Newbi" style="display: block; margin: 0; height: 25px; width: auto; max-width: 180px;">
-                </div>
-                <div class="content">
-                    <div class="welcome-badge">CREATOR WORKSPACE</div>
-                    <h1 class="title">Welcome to <span class="blue-text">Newbi</span> <span class="pink-text">Creators</span></h1>
-                    <p class="body-text">Hi <strong>${creatorName}</strong>,</p>
-                    <p class="body-text">Your profile has been successfully submitted and is currently being reviewed by our partnerships team. We're excited to have you on board as we connect elite creators with top-tier brands.</p>
+    <!-- Outer Wrapper -->
+    <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #07080C; padding: 30px 10px;">
+        <tr>
+            <td align="center">
+                <!-- Main Container -->
+                <table role="presentation" class="email-container" width="600" border="0" cellspacing="0" cellpadding="0" style="max-width: 600px; width: 100%; background-color: #0D0F18; border: 1px solid #1E2333; border-radius: 24px; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.6);">
                     
-                    ${verificationUrl ? `
-                    <div style="background: rgba(57, 255, 20, 0.08); border: 1px solid rgba(57, 255, 20, 0.3); border-radius: 16px; padding: 24px; margin: 24px 0; text-align: center;">
-                        <h3 style="color: #39FF14; font-size: 16px; font-weight: 800; margin: 0 0 8px 0; text-transform: uppercase;">1-Click Profile & Phone Activation</h3>
-                        <p style="color: #cccccc; font-size: 14px; margin: 0 0 20px 0;">Tap below to automatically verify your contact number & activate priority matching for brand deals.</p>
-                        <a href="${verificationUrl}" style="display: inline-block; padding: 14px 30px; background: #ffffff; color: #000000 !important; text-decoration: none; font-weight: 900; font-size: 13px; border-radius: 12px; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 4px 14px rgba(255,255,255,0.2);">Activate Profile in 1 Click →</a>
-                    </div>
-                    ` : ''}
-                    
-                    <div class="studio-card">
-                        <h3>Creator Studio Workspace</h3>
-                        <p>In the meantime, you can explore your dashboard, link your social channels, track your deliverables, and get ready to join upcoming campaigns.</p>
-                    </div>
+                    <!-- Top Holographic Bar -->
+                    <tr>
+                        <td style="height: 4px; background: linear-gradient(90deg, #00F0FF 0%, #FF007A 50%, #39FF14 100%);"></td>
+                    </tr>
 
-                    <div style="text-align: center; margin: 30px 0;">
-                        <a href="${baseUrl}/creator-dashboard" class="cta-button">Go to Creator Dashboard</a>
-                    </div>
-                </div>
-                <div class="footer">
-                    <div class="social-links">
-                        <a href="https://www.instagram.com/newbi.live" class="social-icon"><img src="https://img.icons8.com/material-outlined/48/888888/instagram-new.png" class="social-img" alt="Instagram"></a>
-                        <a href="https://linkedin.com/company/newbi-ent" class="social-icon"><img src="https://img.icons8.com/material-outlined/48/888888/linkedin.png" class="social-img" alt="LinkedIn"></a>
-                        <a href="https://newbi.live" class="social-icon"><img src="https://img.icons8.com/material-outlined/48/888888/domain.png" class="social-img" alt="Website"></a>
-                    </div>
-                    <p class="footer-text">© ${new Date().getFullYear()} NEWBI ENTERTAINMENT & MARKETING LLP. ALL RIGHTS RESERVED.</p>
-                </div>
-            </div>
-        </body>
-        </html>
-    `;
+                    <!-- Header -->
+                    <tr>
+                        <td class="header-padding" style="padding: 32px 36px 20px 36px; border-bottom: 1px solid #181C2B;">
+                            <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0">
+                                <tr>
+                                    <td align="left" valign="middle">
+                                        <img src="${baseUrl}/logo_full.png" alt="Newbi" height="26" style="display: block; height: 26px; width: auto; max-width: 150px; border: 0;" />
+                                    </td>
+                                    <td align="right" valign="middle">
+                                        <span style="display: inline-block; padding: 5px 12px; background: rgba(0, 240, 255, 0.1); border: 1px solid rgba(0, 240, 255, 0.35); border-radius: 8px; color: #00F0FF; font-size: 9px; font-weight: 900; letter-spacing: 1.5px; text-transform: uppercase;">
+                                            CREATOR ROSTER
+                                        </span>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+
+                    <!-- Content Body -->
+                    <tr>
+                        <td class="content-padding" style="padding: 36px 36px 20px 36px;">
+                            
+                            <!-- Hero Title -->
+                            <div style="margin-bottom: 24px;">
+                                <span style="display: inline-block; padding: 4px 10px; background: rgba(57, 255, 20, 0.12); border: 1px solid rgba(57, 255, 20, 0.35); color: #39FF14; font-size: 9px; font-weight: 900; border-radius: 6px; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 14px;">
+                                    MEMBERSHIP ACTIVATED
+                                </span>
+                                <h1 style="margin: 0 0 10px 0; font-size: 26px; font-weight: 900; color: #FFFFFF; line-height: 1.25; letter-spacing: -0.5px; text-transform: uppercase;">
+                                    Welcome to Newbi, <span style="color: #00F0FF;">${creatorName.toUpperCase()}</span>!
+                                </h1>
+                                <p style="margin: 0; font-size: 14px; line-height: 1.6; color: #94A3B8; font-weight: 400;">
+                                    You are officially enrolled in the Newbi Creator Network. Your digital pass has been minted and linked to the <strong style="color: #FFFFFF;">${cityGroup.city}</strong> creator hub.
+                                </p>
+                            </div>
+
+                            <!-- ─── THE CREATOR PASS CARD (Embedded Visual Pass) ─── -->
+                            <table role="presentation" class="pass-card" width="100%" border="0" cellspacing="0" cellpadding="0" style="background: #0A0C13; border: 1px solid rgba(0, 240, 255, 0.35); border-radius: 20px; overflow: hidden; margin: 28px 0; box-shadow: 0 12px 36px rgba(0, 240, 255, 0.12);">
+                                
+                                <!-- Card Decorative Glow Strip -->
+                                <tr>
+                                    <td colspan="2" style="height: 3px; background: linear-gradient(90deg, #00F0FF 0%, #FF007A 50%, #39FF14 100%);"></td>
+                                </tr>
+
+                                <!-- Pass Header (Brand & Pass ID) -->
+                                <tr>
+                                    <td style="padding: 18px 22px 14px 22px;" align="left" valign="middle">
+                                        <span style="font-size: 11px; font-weight: 900; letter-spacing: 1.5px; color: #FFFFFF; text-transform: uppercase;">NEWBI CREATORS</span>
+                                        <span style="display: inline-block; width: 6px; height: 6px; background-color: #39FF14; border-radius: 50%; margin-left: 6px; vertical-align: middle;"></span>
+                                    </td>
+                                    <td style="padding: 18px 22px 14px 22px;" align="right" valign="middle">
+                                        <span style="font-family: monospace; font-size: 10px; font-weight: 700; letter-spacing: 1px; color: #00F0FF; background: rgba(0, 240, 255, 0.08); border: 1px solid rgba(0, 240, 255, 0.3); border-radius: 6px; padding: 4px 8px;">
+                                            ${fullPassId}
+                                        </span>
+                                    </td>
+                                </tr>
+
+                                <!-- Pass Identity Section -->
+                                <tr>
+                                    <td colspan="2" style="padding: 10px 22px 18px 22px;">
+                                        <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0">
+                                            <tr>
+                                                <!-- Avatar Box -->
+                                                <td width="60" valign="middle" style="width: 60px; padding-right: 16px;">
+                                                    ${avatar ? `
+                                                        <img src="${avatar}" alt="${creatorName}" width="54" height="54" style="width: 54px; height: 54px; border-radius: 14px; object-fit: cover; border: 2px solid #39FF14; display: block;" />
+                                                    ` : `
+                                                        <table role="presentation" width="54" height="54" border="0" cellspacing="0" cellpadding="0" style="width: 54px; height: 54px; background-color: #141824; border: 2px solid #39FF14; border-radius: 14px; text-align: center;">
+                                                            <tr>
+                                                                <td align="center" valign="middle" style="font-size: 22px; font-weight: 900; color: #39FF14;">${initialLetter}</td>
+                                                            </tr>
+                                                        </table>
+                                                    `}
+                                                </td>
+                                                <!-- Name & Handle Details -->
+                                                <td valign="middle">
+                                                    <div style="font-size: 18px; font-weight: 900; color: #FFFFFF; line-height: 1.2; letter-spacing: -0.3px;">
+                                                        ${creatorName}
+                                                    </div>
+                                                    <div style="font-size: 12px; font-weight: 500; color: #94A3B8; margin-top: 4px;">
+                                                        @${handle} <span style="color: #475569;">&bull;</span> ${cityGroup.city} <span style="color: #475569;">&bull;</span> ${niche}
+                                                    </div>
+                                                    <div style="margin-top: 6px;">
+                                                        <span style="display: inline-block; font-size: 8px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase; color: #39FF14; background: rgba(57, 255, 20, 0.12); border: 1px solid rgba(57, 255, 20, 0.35); border-radius: 4px; padding: 2px 7px;">
+                                                            ● OFFICIAL CREATOR PASS
+                                                        </span>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+
+                                <!-- Pass Authentication & Barcode Strip -->
+                                <tr>
+                                    <td colspan="2" style="border-top: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.015); padding: 12px 22px;">
+                                        <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0">
+                                            <tr>
+                                                <td align="left" valign="middle">
+                                                    <span style="font-family: monospace; font-size: 9px; font-weight: 700; letter-spacing: 1.5px; color: #94A3B8; text-transform: uppercase;">
+                                                        AUTHENTICATED PASS // ALL-ACCESS
+                                                    </span>
+                                                </td>
+                                                <td align="right" valign="middle">
+                                                    <span style="font-family: monospace; font-size: 10px; letter-spacing: 2px; color: #475569;">
+                                                        ||| |||| || ||||| ||||
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+
+                                <!-- Pass Footer: 3D Pass Link -->
+                                <tr>
+                                    <td colspan="2" style="padding: 10px 22px 14px 22px;" align="right" valign="middle">
+                                        <a href="${interactivePassUrl}" style="color: #00F0FF; font-size: 11px; font-weight: 800; letter-spacing: 0.5px; text-decoration: none;">
+                                            View 3D Pass Online &rarr;
+                                        </a>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <!-- ─── CITY WHATSAPP COMMUNITY SECTION (High Priority) ─── -->
+                            <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="background: linear-gradient(180deg, rgba(37, 211, 102, 0.12) 0%, rgba(37, 211, 102, 0.03) 100%); border: 1px solid rgba(37, 211, 102, 0.35); border-radius: 18px; overflow: hidden; margin: 26px 0 20px 0;">
+                                <tr>
+                                    <td style="padding: 26px 24px; text-align: center;">
+                                        <!-- WhatsApp Pill -->
+                                        <div style="margin-bottom: 12px;">
+                                            <span style="display: inline-block; background: rgba(37, 211, 102, 0.18); border: 1px solid #25D366; color: #25D366; font-size: 10px; font-weight: 900; letter-spacing: 1.5px; border-radius: 6px; padding: 4px 10px; text-transform: uppercase;">
+                                                💬 ${cityGroup.city.toUpperCase()} CREATOR HUB
+                                            </span>
+                                        </div>
+                                        <!-- Hub Title -->
+                                        <h2 style="margin: 0 0 10px 0; font-size: 20px; font-weight: 900; color: #FFFFFF; letter-spacing: -0.3px;">
+                                            Join the ${cityGroup.city} Creators WhatsApp Group
+                                        </h2>
+                                        <!-- Description -->
+                                        <p style="margin: 0 0 16px 0; font-size: 13px; line-height: 1.6; color: #CBD5E1; max-width: 480px; margin-left: auto; margin-right: auto;">
+                                            ${cityGroup.description}
+                                        </p>
+                                        <p style="margin: 0 0 22px 0; font-size: 12px; line-height: 1.5; color: #94A3B8;">
+                                            ⚡ <strong>Priority drops:</strong> Commercial brand deals, VIP festival guestlists, and backstage invites are posted here first.
+                                        </p>
+                                        <!-- Big WhatsApp Emerald CTA Button -->
+                                        <div style="margin-top: 10px;">
+                                            <a href="${cityGroup.groupUrl}" target="_blank" class="wa-btn" style="display: inline-block; padding: 16px 36px; background-color: #25D366; color: #000000 !important; font-weight: 900; font-size: 13px; text-decoration: none; border-radius: 12px; letter-spacing: 0.5px; text-transform: uppercase; box-shadow: 0 8px 24px rgba(37, 211, 102, 0.35);">
+                                                💬 JOIN ${cityGroup.city.toUpperCase()} WHATSAPP COMMUNITY &rarr;
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <!-- ─── 1-CLICK PROFILE ACTIVATION (If verification link present) ─── -->
+                            ${verificationUrl ? `
+                            <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="background: rgba(57, 255, 20, 0.05); border: 1px solid rgba(57, 255, 20, 0.28); border-radius: 16px; margin: 20px 0; overflow: hidden;">
+                                <tr>
+                                    <td style="padding: 22px; text-align: center;">
+                                        <div style="font-size: 11px; font-weight: 900; letter-spacing: 1.5px; color: #39FF14; text-transform: uppercase; margin-bottom: 6px;">
+                                            ⚡ FAST-TRACK ACTIVATION
+                                        </div>
+                                        <h3 style="margin: 0 0 8px 0; font-size: 17px; font-weight: 900; color: #FFFFFF;">
+                                            1-Click Profile &amp; Contact Verification
+                                        </h3>
+                                        <p style="margin: 0 0 16px 0; font-size: 13px; line-height: 1.5; color: #94A3B8;">
+                                            Confirm your registered mobile number to unlock instant payouts and priority brand matching.
+                                        </p>
+                                        <a href="${verificationUrl}" style="display: inline-block; padding: 13px 28px; background-color: #39FF14; color: #000000 !important; font-weight: 900; font-size: 12px; text-decoration: none; border-radius: 10px; letter-spacing: 1px; text-transform: uppercase; box-shadow: 0 4px 14px rgba(57, 255, 20, 0.25);">
+                                            VERIFY PROFILE &amp; CONTACT &rarr;
+                                        </a>
+                                    </td>
+                                </tr>
+                            </table>
+                            ` : ''}
+
+                            <!-- ─── 3 ECOSYSTEM PRIVILEGES ─── -->
+                            <div style="margin: 28px 0 20px 0;">
+                                <div style="font-size: 10px; font-weight: 900; letter-spacing: 2px; color: #64748B; text-transform: uppercase; margin-bottom: 14px; text-align: left;">
+                                    YOUR CREATOR PRIVILEGES
+                                </div>
+                                <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="background: #111420; border: 1px solid #1C2234; border-radius: 16px; padding: 18px 20px;">
+                                    <tr>
+                                        <td style="padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.06);">
+                                            <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0">
+                                                <tr>
+                                                    <td width="30" valign="top" style="font-size: 16px; padding-top: 1px;">💸</td>
+                                                    <td valign="top">
+                                                        <strong style="color: #FFFFFF; font-size: 13px;">0% Agency Commission</strong>
+                                                        <p style="margin: 3px 0 0 0; font-size: 12px; color: #94A3B8; line-height: 1.4;">Brands pay directly to your account. 100% of commercial budgets go to you.</p>
+                                                    </td>
+                                                </tr>
+                                            </table>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.06);">
+                                            <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0">
+                                                <tr>
+                                                    <td width="30" valign="top" style="font-size: 16px; padding-top: 1px;">🎟️</td>
+                                                    <td valign="top">
+                                                        <strong style="color: #FFFFFF; font-size: 13px;">VIP Festival &amp; Concert Guestlists</strong>
+                                                        <p style="margin: 3px 0 0 0; font-size: 12px; color: #94A3B8; line-height: 1.4;">Exclusive guestlist access &amp; backstage passes for concerts, tours, and nightlife in ${cityGroup.city}.</p>
+                                                    </td>
+                                                </tr>
+                                            </table>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding: 12px 0 4px 0;">
+                                            <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0">
+                                                <tr>
+                                                    <td width="30" valign="top" style="font-size: 16px; padding-top: 1px;">⚡</td>
+                                                    <td valign="top">
+                                                        <strong style="color: #FFFFFF; font-size: 13px;">Direct Brand Briefs</strong>
+                                                        <p style="margin: 3px 0 0 0; font-size: 12px; color: #94A3B8; line-height: 1.4;">Personalized campaign briefs matched to your niche, aesthetic, and follower demographic.</p>
+                                                    </td>
+                                                </tr>
+                                            </table>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </div>
+
+                            <!-- ─── CREATOR DASHBOARD CTA ─── -->
+                            <div style="text-align: center; margin: 32px 0 10px 0;">
+                                <a href="${interactivePassUrl}" style="display: inline-block; padding: 16px 36px; background: linear-gradient(90deg, #00F0FF, #FF007A); color: #FFFFFF !important; font-weight: 900; font-size: 13px; text-decoration: none; border-radius: 12px; letter-spacing: 1px; text-transform: uppercase; box-shadow: 0 4px 20px rgba(0, 240, 255, 0.25);">
+                                    GO TO CREATOR STUDIO DASHBOARD &rarr;
+                                </a>
+                            </div>
+
+                        </td>
+                    </tr>
+
+                    <!-- Footer -->
+                    <tr>
+                        <td style="padding: 30px 36px 36px 36px; background-color: #080A10; border-top: 1px solid #181C2B; text-align: center;">
+                            <!-- Social Icons -->
+                            <div style="margin-bottom: 16px;">
+                                <a href="https://www.instagram.com/newbi.live" style="display: inline-block; margin: 0 10px;"><img src="https://img.icons8.com/material-outlined/48/888888/instagram-new.png" width="18" height="18" style="opacity: 0.6; filter: invert(1); display: block;" alt="Instagram"></a>
+                                <a href="https://linkedin.com/company/newbi-ent" style="display: inline-block; margin: 0 10px;"><img src="https://img.icons8.com/material-outlined/48/888888/linkedin.png" width="18" height="18" style="opacity: 0.6; filter: invert(1); display: block;" alt="LinkedIn"></a>
+                                <a href="https://newbi.live" style="display: inline-block; margin: 0 10px;"><img src="https://img.icons8.com/material-outlined/48/888888/domain.png" width="18" height="18" style="opacity: 0.6; filter: invert(1); display: block;" alt="Website"></a>
+                            </div>
+                            <p style="margin: 0 0 6px 0; font-size: 10px; font-weight: 800; color: #64748B; text-transform: uppercase; letter-spacing: 1.5px;">
+                                &copy; ${new Date().getFullYear()} NEWBI ENTERTAINMENT &amp; MARKETING LLP. ALL RIGHTS RESERVED.
+                            </p>
+                            <p style="margin: 0; font-size: 10px; font-weight: 500; color: #475569;">
+                                Queries or campaign support: <a href="mailto:creators@newbi.live" style="color: #00F0FF; text-decoration: none;">creators@newbi.live</a>
+                            </p>
+                        </td>
+                    </tr>
+
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
+    `.trim();
 };
+
 
 /**
  * Sends a notification email to creators in matching target cities when a new campaign goes live.
@@ -2225,7 +2494,7 @@ export const sendNewCampaignNotificationEmail = async (bccEmails, campaign) => {
  */
 export const generateCampaignNotificationHTML = (campaign) => {
     const baseUrl = getBaseUrl();
-    const campaignUrl = `https://newbi.live/campaigns`;
+    const campaignUrl = `https://newbi.live/creator-dashboard`;
     const cityText = (campaign.targetCity || 'Any').toUpperCase();
     const rewardText = campaign.reward || 'Exclusive Rewards';
     const requirementsText = campaign.requirements || 'Check requirements in details page.';
@@ -2675,5 +2944,177 @@ export const sendWhatsAppVerification = async (phone, creatorName, verificationU
     }
 };
 
+/**
+ * Generates high-converting HTML announcement for Creator WhatsApp City Groups.
+ */
+export const generateCreatorGroupsBroadcastHTML = ({
+    creatorName = 'Creator',
+    city = 'Bengaluru',
+    groupUrl = 'https://chat.whatsapp.com/K6MtDAOlZ7s7AUtOFHxduU?mode=gi_t',
+    customMessage = '',
+    availableGroups = []
+} = {}) => {
+    const formattedCity = (city || 'Your City').toUpperCase();
+    const cleanName = creatorName && creatorName !== 'Creator' ? creatorName.split(' ')[0] : 'Creator';
+    
+    // Group buttons for other active hubs
+    const otherHubsHTML = (availableGroups || []).filter(g => g.groupUrl && g.isActive !== false).map(g => `
+        <a href="${g.groupUrl}" style="display: inline-block; margin: 4px; padding: 8px 16px; background: #18181b; border: 1px solid #27272a; border-radius: 8px; color: #ffffff; text-decoration: none; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">
+            📍 ${g.city}
+        </a>
+    `).join('');
 
+    return `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>${formattedCity} Creator WhatsApp Group</title>
+        </head>
+        <body style="margin: 0; padding: 0; background-color: #050507; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #ffffff;">
+            <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #050507;">
+                <tr>
+                    <td align="center" style="padding: 40px 16px;">
+                        <table role="presentation" width="100%" max-width="600" style="max-width: 600px; width: 100%; background: #0c0e14; border: 1px solid rgba(37,211,102,0.3); border-radius: 24px; overflow: hidden; box-shadow: 0 25px 60px rgba(0,0,0,0.7);">
+                            
+                            <!-- Top Ambient Banner -->
+                            <tr>
+                                <td style="padding: 32px 36px 20px 36px; background: linear-gradient(135deg, rgba(37,211,102,0.15) 0%, rgba(0,240,255,0.08) 100%); border-bottom: 1px solid rgba(255,255,255,0.08);">
+                                    <table width="100%" border="0" cellspacing="0" cellpadding="0">
+                                        <tr>
+                                            <td>
+                                                <div style="display: inline-block; padding: 5px 12px; background: rgba(37,211,102,0.2); border: 1px solid rgba(37,211,102,0.4); border-radius: 20px; color: #25D366; font-size: 10px; font-weight: 900; letter-spacing: 1.5px; text-transform: uppercase;">
+                                                    ● LIVE COMMUNITY • EXCLUSIVE INVITE
+                                                </div>
+                                                <h1 style="margin: 16px 0 6px 0; font-size: 26px; line-height: 1.25; font-weight: 900; letter-spacing: -0.5px; color: #ffffff; text-transform: uppercase;">
+                                                    ${formattedCity} CREATOR LOUNGE IS LIVE ⚡
+                                                </h1>
+                                                <p style="margin: 0; font-size: 13px; color: #a1a1aa; line-height: 1.5;">
+                                                    Official WhatsApp Community for Verified Newbi Creators
+                                                </p>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </td>
+                            </tr>
 
+                            <!-- Main Content Area -->
+                            <tr>
+                                <td style="padding: 36px;">
+                                    <p style="margin: 0 0 16px 0; font-size: 15px; color: #ffffff; font-weight: 700;">
+                                        Hey ${cleanName},
+                                    </p>
+                                    <p style="margin: 0 0 20px 0; font-size: 14px; line-height: 1.7; color: #d4d4d8;">
+                                        ${customMessage ? customMessage.replace(/\n/g, '<br />') : `We've opened the official <strong>${formattedCity} Creators WhatsApp Community</strong>. As an existing member of our Creator Network, you have priority access to connect with fellow local creators, receive instant brand brief drops, and unlock guestlist passes.`}
+                                    </p>
+
+                                    <!-- Value Props Card -->
+                                    <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; margin: 24px 0; padding: 18px 20px;">
+                                        <tr>
+                                            <td style="padding-bottom: 12px;">
+                                                <div style="font-size: 12px; font-weight: 800; color: #25D366; text-transform: uppercase; letter-spacing: 1px;">
+                                                    ⚡ WHAT'S WAITING INSIDE:
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td style="font-size: 13px; line-height: 1.8; color: #e4e4e7;">
+                                                • <strong>Instant Campaign Drops:</strong> Get notified first when paid brand missions go live in ${formattedCity}.<br />
+                                                • <strong>VIP Concert &amp; Festival Passes:</strong> Free guestlists &amp; festival passes reserved for creators.<br />
+                                                • <strong>Direct Support:</strong> Direct communication line with the Newbi talent team.<br />
+                                                • <strong>Zero Agency Commission:</strong> 100% direct payouts straight to you.
+                                            </td>
+                                        </tr>
+                                    </table>
+
+                                    <!-- Primary Action Button -->
+                                    <div style="text-align: center; margin: 32px 0 20px 0;">
+                                        <a href="${groupUrl}" target="_blank" rel="noopener noreferrer" style="display: inline-block; padding: 18px 36px; background: #25D366; color: #000000 !important; font-size: 14px; font-weight: 900; text-transform: uppercase; letter-spacing: 1px; text-decoration: none; border-radius: 14px; box-shadow: 0 0 30px rgba(37,211,102,0.4);">
+                                            💬 JOIN ${formattedCity} WHATSAPP GROUP &rarr;
+                                        </a>
+                                        <div style="margin-top: 10px; font-size: 11px; color: #71717a;">
+                                            1-Tap Invite Link • Official WhatsApp Group
+                                        </div>
+                                    </div>
+
+                                    ${otherHubsHTML ? `
+                                    <!-- Other Cities Section -->
+                                    <div style="margin-top: 36px; padding-top: 24px; border-top: 1px solid rgba(255,255,255,0.08);">
+                                        <p style="margin: 0 0 12px 0; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; color: #a1a1aa;">
+                                            Travelling or creating across other cities? Join other hubs:
+                                        </p>
+                                        <div style="text-align: left;">
+                                            ${otherHubsHTML}
+                                        </div>
+                                    </div>
+                                    ` : ''}
+
+                                    <!-- Creator Dashboard Link -->
+                                    <div style="margin-top: 28px; text-align: center; font-size: 12px; color: #a1a1aa;">
+                                        You can also view your live Creator ID and active briefs on your 
+                                        <a href="https://newbi.live/creator-dashboard" style="color: #00F0FF; text-decoration: underline; font-weight: 700;">Creator Dashboard</a>.
+                                    </div>
+                                </td>
+                            </tr>
+
+                            <!-- Footer -->
+                            <tr>
+                                <td style="padding: 24px 36px; background: #050507; border-top: 1px solid rgba(255,255,255,0.06); text-align: center;">
+                                    <p style="margin: 0 0 8px 0; font-size: 11px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; color: #71717a;">
+                                        NEWBI ENTERTAINMENT • CREATOR OPERATIONS
+                                    </p>
+                                    <p style="margin: 0; font-size: 10px; color: #52525b; line-height: 1.5;">
+                                        You received this email because you are a registered creator in the Newbi Creator Network.<br />
+                                        Bengaluru • Mumbai • Delhi NCR • Hyderabad • Pune • Kolkata • Kochi • Chandigarh
+                                    </p>
+                                </td>
+                            </tr>
+
+                        </table>
+                    </td>
+                </tr>
+            </table>
+        </body>
+        </html>
+    `;
+};
+
+/**
+ * Broadcasts the Creator WhatsApp Groups announcement email to a list of creators.
+ */
+export const sendCreatorGroupsBroadcastEmail = async (
+    recipientList, 
+    {
+        city = 'Bengaluru',
+        groupUrl = 'https://chat.whatsapp.com/K6MtDAOlZ7s7AUtOFHxduU?mode=gi_t',
+        customSubject = '',
+        customMessage = '',
+        availableGroups = [],
+        onProgress = null
+    } = {}
+) => {
+    try {
+        const subject = customSubject.trim() || `⚡ Official ${city ? `${city} ` : ''}Creator WhatsApp Community is Live!`;
+        const html = generateCreatorGroupsBroadcastHTML({
+            creatorName: 'Creator',
+            city,
+            groupUrl,
+            customMessage,
+            availableGroups
+        });
+
+        return await sendMassEmail(
+            recipientList,
+            subject,
+            html,
+            'official',
+            onProgress,
+            'Newbi Creators',
+            'creators@newbi.live'
+        );
+    } catch (error) {
+        console.error('Failed to send creator groups broadcast email:', error);
+        return { success: false, error: error.message || 'Broadcast failed' };
+    }
+};

@@ -30,7 +30,6 @@ const CampaignPublicView = lazy(() => import('./pages/CampaignPublicView'));
 const ArtistAnt = lazy(() => import('./pages/ArtistAnt'));
 const Terms = lazy(() => import('./pages/Terms'));
 const Privacy = lazy(() => import('./pages/Privacy'));
-const LiveCampaigns = lazy(() => import('./pages/LiveCampaigns'));
 const DigitalTicket = lazy(() => import('./pages/DigitalTicket'));
 const PayeeRegistration = lazy(() => import('./pages/PayeeRegistration'));
 const VerifyPayout = lazy(() => import('./pages/VerifyPayout'));
@@ -155,7 +154,7 @@ function AppContent() {
 
             <Route path="creator" element={<MaintenanceGuard isPage featureId="influencer_public"><CreatorLanding /></MaintenanceGuard>} />
             <Route path="creator/join" element={<MaintenanceGuard isPage featureId="influencer_public"><CreatorJoin /></MaintenanceGuard>} />
-            <Route path="campaigns" element={<MaintenanceGuard isPage featureId="influencer_public"><LiveCampaigns /></MaintenanceGuard>} />
+            <Route path="campaigns" element={<Navigate to="/creator-dashboard" replace />} />
             <Route path="creator-dashboard" element={<MaintenanceGuard isPage featureId="influencer_public"><CreatorDashboard /></MaintenanceGuard>} />
             <Route path="creator-dashboard/settings" element={<MaintenanceGuard isPage featureId="influencer_public"><CreatorDashboard /></MaintenanceGuard>} />
             <Route path="forms" element={<MaintenanceGuard isPage featureId="forms_public"><FormViewer /></MaintenanceGuard>} />
@@ -214,8 +213,8 @@ function AppContent() {
             <Route path="admin/creators/leaderboard" element={<AdminGuard><MaintenanceGuard featureId="influencer"><CreatorManager showLeaderboardOnly={true} /></MaintenanceGuard></AdminGuard>} />
             <Route path="admin/creators/:id" element={<AdminGuard><MaintenanceGuard featureId="influencer"><CreatorManager /></MaintenanceGuard></AdminGuard>} />
             <Route path="admin/creators/settings" element={<AdminGuard><MaintenanceGuard featureId="influencer"><CreatorSettingsPage /></MaintenanceGuard></AdminGuard>} />
-            <Route path="admin/city-groups" element={<Navigate to="/admin/creators/settings" replace />} />
-            <Route path="admin/creators/groups" element={<Navigate to="/admin/creators/settings" replace />} />
+            <Route path="admin/city-groups" element={<Navigate to="/admin/creators/settings?tab=groups" replace />} />
+            <Route path="admin/creators/groups" element={<Navigate to="/admin/creators/settings?tab=groups" replace />} />
             <Route path="admin/creator-hub" element={<AdminGuard><MaintenanceGuard featureId="influencer"><CreatorHub /></MaintenanceGuard></AdminGuard>} />
             <Route path="admin/content" element={<AdminGuard><SiteContentManager /></AdminGuard>} />
             <Route path="admin/site-content" element={<Navigate to="/admin/content" replace />} />

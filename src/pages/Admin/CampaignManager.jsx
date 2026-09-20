@@ -478,6 +478,7 @@ const CampaignManager = () => {
         { name: 'Creators', path: '/admin/creators', icon: Star },
         { name: 'Campaigns', path: '/admin/campaigns', icon: Target },
         { name: 'Leaderboard', path: '/admin/creators/leaderboard', icon: Trophy },
+        { name: 'City Groups', path: '/admin/creators/settings?tab=groups', icon: MapPin },
         { name: 'Settings', path: '/admin/creators/settings', icon: Settings },
     ];
 
@@ -624,7 +625,7 @@ const CampaignManager = () => {
                 await notifyAllUsers(
                     `NEW CAMPAIGN ACTIVE: ${formData.title.toUpperCase()}`,
                     `REWARD: ${formData.reward}. LOCATION: ${formData.targetCity}. VIEW DETAILS NOW.`,
-                    '/campaigns',
+                    '/creator-dashboard',
                     ''
                 );
             }

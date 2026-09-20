@@ -17,6 +17,13 @@ import MessageSquare from 'lucide-react/dist/esm/icons/message-square';
 import Search from 'lucide-react/dist/esm/icons/search';
 import Eye from 'lucide-react/dist/esm/icons/eye';
 import EyeOff from 'lucide-react/dist/esm/icons/eye-off';
+import Mail from 'lucide-react/dist/esm/icons/mail';
+import RefreshCw from 'lucide-react/dist/esm/icons/refresh-cw';
+import Users from 'lucide-react/dist/esm/icons/users';
+import UserPlus from 'lucide-react/dist/esm/icons/user-plus';
+import BroadcastGroupsModal from './BroadcastGroupsModal';
+import AddCityCreatorsModal from './AddCityCreatorsModal';
+import CreatorCityGroupCard from '../creator/CreatorCityGroupCard';
 
 const PLATFORM_OPTIONS = [
     { id: 'WhatsApp', label: 'WhatsApp Community', color: 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20' },
@@ -26,8 +33,12 @@ const PLATFORM_OPTIONS = [
 ];
 
 const CityGroupManager = () => {
-    useStoreSubscription(['creatorGroups']);
-    const { creatorGroups, addCreatorGroup, updateCreatorGroup, deleteCreatorGroup } = useStore();
+    useStoreSubscription(['creatorGroups', 'creators']);
+    const { creatorGroups, creators, addCreatorGroup, updateCreatorGroup, deleteCreatorGroup, seedDefaultCreatorGroups } = useStore();
+
+    const [isBroadcastModalOpen, setIsBroadcastModalOpen] = useState(false);
+    const [managingCityGroup, setManagingCityGroup] = useState(null);
+    const [isSyncingDefaults, setIsSyncingDefaults] = useState(false);
 
     const [form, setForm] = useState({
         city: 'Bengaluru',
@@ -116,6 +127,22 @@ const CityGroupManager = () => {
         setTimeout(() => setCopiedId(null), 2000);
     };
 
+    const handleSyncDefaults = async () => {
+        if (!window.confirm('Sync and push all 8 official WhatsApp community groups to Firestore?')) return;
+        setIsSyncingDefaults(true);
+        try {
+            if (seedDefaultCreatorGroups) {
+                await seedDefaultCreatorGroups();
+            }
+            useStore.getState().addToast('Successfully synced 8 official city groups to Firestore!', 'success');
+        } catch (err) {
+            console.error('Error syncing groups:', err);
+            useStore.getState().addToast('Failed to sync groups to database.', 'error');
+        } finally {
+            setIsSyncingDefaults(false);
+        }
+    };
+
     const filteredGroups = (creatorGroups || []).filter(g => {
         if (!filterQuery.trim()) return true;
         const q = filterQuery.toLowerCase();
@@ -136,8 +163,38 @@ const CityGroupManager = () => {
                     </h2>
                     <div className="flex-1 h-px bg-black/5 dark:bg-white/5" />
                 </div>
-                <div className="text-[10px] font-mono uppercase tracking-widest text-gray-500 dark:text-zinc-400 bg-black/[0.04] dark:bg-white/[0.05] px-3 py-1.5 rounded-xl border border-black/10 dark:border-white/10 shrink-0">
-                    {creatorGroups?.length || 0} Configured Cities
+                <div className="flex items-center gap-2.5 flex-wrap">
+                    <Button
+                        type="button"
+                        onClick={() => setManagingCityGroup(form.city === 'Others' ? (form.customCity || 'Bengaluru') : form.city)}
+                        className="h-10 px-4 rounded-xl bg-neon-blue/10 border border-neon-blue/30 text-neon-blue font-black text-[10px] uppercase tracking-wider hover:bg-neon-blue/20 flex items-center gap-1.5 transition-all"
+                        title="Bulk add creators of any city to WhatsApp group"
+                    >
+                        <UserPlus size={13} />
+                        <span>Add Creators to Group</span>
+                    </Button>
+                    <Button
+                        type="button"
+                        onClick={() => setIsBroadcastModalOpen(true)}
+                        className="h-10 px-4 rounded-xl bg-[#25D366] text-black font-black text-[10px] uppercase tracking-wider hover:brightness-110 flex items-center gap-1.5 shadow-[0_0_20px_rgba(37,211,102,0.3)]"
+                    >
+                        <Mail size={13} />
+                        <span>Broadcast via Email</span>
+                    </Button>
+                    <Button
+                        type="button"
+                        onClick={handleSyncDefaults}
+                        disabled={isSyncingDefaults}
+                        variant="outline"
+                        className="h-10 px-3.5 rounded-xl border-black/10 dark:border-white/10 text-gray-700 dark:text-zinc-300 font-bold text-[10px] uppercase tracking-wider flex items-center gap-1.5"
+                        title="Sync all 8 official WhatsApp groups to database"
+                    >
+                        <RefreshCw size={13} className={isSyncingDefaults ? 'animate-spin' : ''} />
+                        <span>Sync 8 Hubs</span>
+                    </Button>
+                    <div className="text-[10px] font-mono uppercase tracking-widest text-gray-500 dark:text-zinc-400 bg-black/[0.04] dark:bg-white/[0.05] px-3 py-2 rounded-xl border border-black/10 dark:border-white/10 shrink-0">
+                        {creatorGroups?.length || 0} Cities
+                    </div>
                 </div>
             </div>
 
@@ -297,6 +354,12 @@ const CityGroupManager = () => {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
                             {filteredGroups.map(group => {
                                 const platformInfo = PLATFORM_OPTIONS.find(p => p.id === group.platform) || PLATFORM_OPTIONS[0];
+                                const cityCreatorCount = (creators || []).filter(c => {
+                                    const normC = (c.city || '').toLowerCase().trim();
+                                    const normG = (group.city || '').toLowerCase().trim();
+                                    return normC === normG || (normG === 'bengaluru' && /bang[al]*o?re/i.test(normC)) || normC.includes(normG);
+                                }).length;
+
                                 return (
                                     <div
                                         key={group.id}
@@ -348,10 +411,19 @@ const CityGroupManager = () => {
                                                     className="inline-flex items-center gap-1 text-[11px] font-bold text-neon-blue hover:underline truncate"
                                                 >
                                                     <ExternalLink size={12} className="shrink-0" />
-                                                    <span className="truncate max-w-[180px] font-mono">{group.groupUrl}</span>
+                                                    <span className="truncate max-w-[150px] font-mono">{group.groupUrl}</span>
                                                 </a>
                                             </div>
                                             <div className="flex items-center gap-1.5 shrink-0">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setManagingCityGroup(group.city)}
+                                                    className="h-8 px-2.5 rounded-lg bg-[#25D366]/10 hover:bg-[#25D366]/20 text-[#25D366] text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 transition-colors border border-[#25D366]/20"
+                                                    title={`Add all ${group.city} creators to WhatsApp`}
+                                                >
+                                                    <UserPlus size={12} />
+                                                    <span>Add Creators ({cityCreatorCount})</span>
+                                                </button>
                                                 <button
                                                     type="button"
                                                     onClick={() => handleCopy(group.groupUrl, group.id)}
@@ -377,6 +449,35 @@ const CityGroupManager = () => {
                     )}
                 </div>
             </Card>
+
+            {/* Live Interactive Creator Banner Preview */}
+            <div className="space-y-3 pt-4">
+                <div className="flex items-center justify-between">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-gray-500">
+                        Live Creator View &bull; Clean City Community Banner Preview
+                    </p>
+                    <span className="text-[10px] font-mono text-neon-green">
+                        Displayed for creator's registered city
+                    </span>
+                </div>
+                <CreatorCityGroupCard initialCity={form.city === 'Others' ? (form.customCity || 'Bengaluru') : form.city} />
+            </div>
+
+            {/* Email Broadcast Modal */}
+            {isBroadcastModalOpen && (
+                <BroadcastGroupsModal
+                    onClose={() => setIsBroadcastModalOpen(false)}
+                />
+            )}
+
+            {/* Add City Creators to WhatsApp Modal */}
+            {managingCityGroup && (
+                <AddCityCreatorsModal
+                    isOpen={Boolean(managingCityGroup)}
+                    initialCity={managingCityGroup}
+                    onClose={() => setManagingCityGroup(null)}
+                />
+            )}
         </section>
     );
 };

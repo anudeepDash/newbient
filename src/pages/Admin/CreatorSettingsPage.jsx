@@ -121,6 +121,7 @@ const CreatorSettingsPage = () => {
         { name: 'Creators', path: '/admin/creators', icon: Star },
         { name: 'Campaigns', path: '/admin/campaigns', icon: Target },
         { name: 'Leaderboard', path: '/admin/creators/leaderboard', icon: Trophy },
+        { name: 'City Groups', path: '/admin/creators/settings?tab=groups', icon: MapPin },
         { name: 'Settings', path: '/admin/creators/settings', icon: Settings },
     ];
 

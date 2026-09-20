@@ -47,15 +47,20 @@ import AdminDashboardLink from '../../components/admin/AdminDashboardLink';
 import AdminCommunityHubLayout from '../../components/admin/AdminCommunityHubLayout';
 
 import StudioSelect from '../../components/ui/StudioSelect';
-import { useNavigate, useParams, useLocation } from 'react-router-dom';
+import { useNavigate, useParams, useLocation, Link } from 'react-router-dom';
 import Plus from 'lucide-react/dist/esm/icons/plus';
 import Upload from 'lucide-react/dist/esm/icons/upload';
 import Trophy from 'lucide-react/dist/esm/icons/trophy';
 import MessageSquare from 'lucide-react/dist/esm/icons/message-square';
 import Send from 'lucide-react/dist/esm/icons/send';
+import Ticket from 'lucide-react/dist/esm/icons/ticket';
 import Settings from 'lucide-react/dist/esm/icons/settings';
+import UserPlus from 'lucide-react/dist/esm/icons/user-plus';
+import BroadcastGroupsModal from '../../components/admin/BroadcastGroupsModal';
+import AddCityCreatorsModal from '../../components/admin/AddCityCreatorsModal';
 import { getEarnedBadges, getVerifiedTasksCount, getReferralsForCreator } from '../../lib/badges';
-import { sendCreatorDirectEmail } from '../../lib/email';
+import { sendCreatorDirectEmail, generateCreatorWelcomeHTML, resolveCityWhatsAppGroup } from '../../lib/email';
+import EmailPreviewIframe from '../../components/ui/EmailPreviewIframe';
 
 const getPageNumbers = (currentPage, totalPages) => {
     const pages = [];
@@ -92,6 +97,124 @@ const getPageNumbers = (currentPage, totalPages) => {
     return pages;
 };
 
+export const SEARCH_FIELDS = [
+    { id: 'all', label: 'All Fields', icon: Search, placeholder: 'Search by mobile, name, email, @instagram, UID, college, city, niche...' },
+    { id: 'phone', label: 'Mobile / WhatsApp', icon: Phone, placeholder: 'Enter mobile number (e.g. 98765 43210, +91...)' },
+    { id: 'name', label: 'Creator Name', icon: Users, placeholder: 'Search by creator name...' },
+    { id: 'instagram', label: 'Instagram Handle', icon: Instagram, placeholder: 'Search by @instagram handle...' },
+    { id: 'email', label: 'Email Address', icon: Mail, placeholder: 'Search by email address...' },
+    { id: 'id', label: 'Creator UID / ID', icon: Target, placeholder: 'Search by Creator UID, ID or Pass Number...' },
+    { id: 'college', label: 'College / Campus', icon: Mic2, placeholder: 'Search by college, university or campus...' },
+    { id: 'city', label: 'City Hub', icon: MapPin, placeholder: 'Search by city name...' },
+    { id: 'niche', label: 'Niche / Category', icon: Layers, placeholder: 'Search by niche or specialization...' },
+];
+
+export const matchesCreatorSearch = (c, term, field = 'all') => {
+    if (!term || !term.trim()) return true;
+    const cleanTerm = term.trim().toLowerCase();
+    const termDigits = cleanTerm.replace(/\D/g, '');
+
+    // Extract all phone fields
+    const rawPhones = [c.phone, c.mobile, c.whatsapp, c.contact, c.phoneNumber].filter(Boolean).map(String);
+    const phoneDigitsList = rawPhones.map(p => p.replace(/\D/g, ''));
+
+    const matchesPhone = () => {
+        if (rawPhones.some(p => p.toLowerCase().includes(cleanTerm))) return true;
+        if (termDigits.length >= 3) {
+            return phoneDigitsList.some(pDigits => pDigits.includes(termDigits) || termDigits.includes(pDigits));
+        }
+        return false;
+    };
+
+    const matchesName = () => {
+        const names = [c.name, c.displayName, c.fullName, c.artistName].filter(Boolean).map(s => String(s).toLowerCase());
+        return names.some(n => n.includes(cleanTerm));
+    };
+
+    const matchesEmail = () => {
+        return c.email && String(c.email).toLowerCase().includes(cleanTerm);
+    };
+
+    const matchesInstagram = () => {
+        const igs = [c.instagram, c.handle, c.instagramHandle].filter(Boolean).map(s => String(s).toLowerCase().replace(/^@/, ''));
+        const strippedTerm = cleanTerm.replace(/^@/, '');
+        return igs.some(ig => ig.includes(strippedTerm));
+    };
+
+    const matchesCity = () => {
+        return c.city && String(c.city).toLowerCase().includes(cleanTerm);
+    };
+
+    const matchesId = () => {
+        const ids = [c.uid, c.id, c.creatorId, c.passId, c.passNumber].filter(Boolean).map(s => String(s).toLowerCase());
+        return ids.some(id => id.includes(cleanTerm));
+    };
+
+    const matchesCollege = () => {
+        const colleges = [c.college, c.collegeName, c.university, c.campus, c.school].filter(Boolean).map(s => String(s).toLowerCase());
+        return colleges.some(col => col.includes(cleanTerm));
+    };
+
+    const matchesNiche = () => {
+        const specs = Array.isArray(c.specializations) ? c.specializations : (Array.isArray(c.niches) ? c.niches : []);
+        const cats = [c.category, c.niche].filter(Boolean);
+        return [...specs, ...cats].some(n => typeof n === 'string' && n.toLowerCase().includes(cleanTerm));
+    };
+
+    const matchesSocials = () => {
+        const socials = [c.youtube, c.youtubeChannel, c.youtubeHandle, c.linkedin, c.linkedinProfile, c.twitter, c.xHandle, c.portfolio, c.website].filter(Boolean).map(s => String(s).toLowerCase());
+        return socials.some(soc => soc.includes(cleanTerm));
+    };
+
+    const matchesFinance = () => {
+        const fin = [c.pan, c.panNumber, c.upiId, c.bankAccount, c.accountNumber, c.ifsc, c.gstNumber].filter(Boolean).map(s => String(s).toLowerCase());
+        return fin.some(f => f.includes(cleanTerm));
+    };
+
+    const matchesBio = () => {
+        const texts = [c.bio, c.about, c.description, c.notes, c.adminNotes].filter(Boolean).map(s => String(s).toLowerCase());
+        return texts.some(t => t.includes(cleanTerm));
+    };
+
+    switch (field) {
+        case 'phone':
+            return matchesPhone();
+        case 'name':
+            return matchesName();
+        case 'email':
+            return matchesEmail();
+        case 'instagram':
+            return matchesInstagram();
+        case 'id':
+            return matchesId();
+        case 'college':
+            return matchesCollege();
+        case 'city':
+            return matchesCity();
+        case 'niche':
+            return matchesNiche();
+        case 'socials':
+            return matchesSocials() || matchesInstagram();
+        case 'finance':
+            return matchesFinance();
+        case 'all':
+        default:
+            return (
+                matchesPhone() ||
+                matchesName() ||
+                matchesEmail() ||
+                matchesInstagram() ||
+                matchesId() ||
+                matchesCity() ||
+                matchesNiche() ||
+                matchesCollege() ||
+                matchesSocials() ||
+                matchesFinance() ||
+                matchesBio()
+            );
+    }
+};
+
 const CreatorManager = ({ showLeaderboardOnly = false, isEmbedded = false }) => {
     useStoreSubscription(['creators', 'campaigns']);
     const { creators, campaigns, updateCreator, deleteCreator, mergeBangaloreCreatorsToBengaluru } = useStore();
@@ -100,6 +223,7 @@ const CreatorManager = ({ showLeaderboardOnly = false, isEmbedded = false }) => 
     const params = useParams();
     const isLeaderboardRoute = location.pathname.includes('/leaderboard') || showLeaderboardOnly;
     const [searchTerm, setSearchTerm] = useState('');
+    const [searchField, setSearchField] = useState('all');
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 12;
 
@@ -129,7 +253,23 @@ const CreatorManager = ({ showLeaderboardOnly = false, isEmbedded = false }) => 
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [selectedUids, setSelectedUids] = useState([]);
     const [isBulkEmailModalOpen, setIsBulkEmailModalOpen] = useState(false);
+    const [isBroadcastModalOpen, setIsBroadcastModalOpen] = useState(false);
+    const [isAddCityCreatorsOpen, setIsAddCityCreatorsOpen] = useState(false);
+    const [cityForAddModal, setCityForAddModal] = useState('Bengaluru');
+    const [selectedUidsForAddModal, setSelectedUidsForAddModal] = useState(null);
     const [isMergingBangalore, setIsMergingBangalore] = useState(false);
+    const [isWhatsAppMenuOpen, setIsWhatsAppMenuOpen] = useState(false);
+    const whatsAppMenuRef = useRef(null);
+
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (whatsAppMenuRef.current && !whatsAppMenuRef.current.contains(event.target)) {
+                setIsWhatsAppMenuOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
 
     const bangaloreCreatorsCount = useMemo(() => {
         return (creators || []).filter(c => {
@@ -251,6 +391,7 @@ const CreatorManager = ({ showLeaderboardOnly = false, isEmbedded = false }) => 
         { name: 'Creators', path: '/admin/creators', icon: Star },
         { name: 'Campaigns', path: '/admin/campaigns', icon: Target },
         { name: 'Leaderboard', path: '/admin/creators/leaderboard', icon: Trophy },
+        { name: 'City Groups', path: '/admin/creators/settings?tab=groups', icon: MapPin },
         { name: 'Settings', path: '/admin/creators/settings', icon: Settings },
     ];
 
@@ -268,20 +409,14 @@ const CreatorManager = ({ showLeaderboardOnly = false, isEmbedded = false }) => 
     }, [params.id, creators]);
 
     const filteredCreators = useMemo(() => {
-        const term = (searchTerm || '').trim().toLowerCase();
         return creators.filter(c => {
-            const specs = Array.isArray(c.specializations) ? c.specializations : (Array.isArray(c.niches) ? c.niches : []);
-            const matchesSearch = !term ||
-                (c.name && c.name.toLowerCase().includes(term)) ||
-                (c.instagram && c.instagram.toLowerCase().includes(term)) ||
-                (c.email && c.email.toLowerCase().includes(term)) ||
-                (c.phone && c.phone.includes(term)) ||
-                specs.some(n => typeof n === 'string' && n.toLowerCase().includes(term));
+            const matchesSearch = matchesCreatorSearch(c, searchTerm, searchField);
             const matchesCity = filterCity === 'All' || c.city === filterCity || (filterCity === 'Bengaluru' && /^bang[al]*o?re$/i.test(c.city || ''));
             const matchesStatus = filterStatus === 'All' || 
                 (filterStatus === 'pending' && (!c.profileStatus || c.profileStatus === 'pending')) ||
                 c.profileStatus === filterStatus;
             
+            const specs = Array.isArray(c.specializations) ? c.specializations : (Array.isArray(c.niches) ? c.niches : []);
             const matchesNiche = filterNiche === 'All' || specs.some(n => {
                 const normalizedNiche = n === 'Student Creator/ Campus Creator' ? 'Student/ Campus Creator' : n;
                 return normalizedNiche === filterNiche;
@@ -299,7 +434,7 @@ const CreatorManager = ({ showLeaderboardOnly = false, isEmbedded = false }) => 
 
             return matchesSearch && matchesCity && matchesStatus && matchesNiche && matchesFollowers && matchesPlatform;
         });
-    }, [creators, searchTerm, filterCity, filterStatus, filterNiche, minFollowers, maxFollowers, filterPlatform]);
+    }, [creators, searchTerm, searchField, filterCity, filterStatus, filterNiche, minFollowers, maxFollowers, filterPlatform]);
 
     const getFollowersLabel = () => {
         if (!minFollowers && !maxFollowers) return 'FOLLOWERS (ANY)';
@@ -324,7 +459,7 @@ const CreatorManager = ({ showLeaderboardOnly = false, isEmbedded = false }) => 
 
     useEffect(() => {
         setCurrentPage(1);
-    }, [searchTerm, filterCity, filterStatus, filterNiche, minFollowers, maxFollowers, filterPlatform]);
+    }, [searchTerm, searchField, filterCity, filterStatus, filterNiche, minFollowers, maxFollowers, filterPlatform]);
 
     const stats = useMemo(() => {
         const approvedCount = creators.filter(c => c.profileStatus === 'approved').length;
@@ -398,6 +533,7 @@ const CreatorManager = ({ showLeaderboardOnly = false, isEmbedded = false }) => 
 
     const resetAllFilters = () => {
         setSearchTerm('');
+        setSearchField('all');
         setFilterCity('All');
         setFilterStatus('All');
         setFilterNiche('All');
@@ -408,6 +544,7 @@ const CreatorManager = ({ showLeaderboardOnly = false, isEmbedded = false }) => 
 
     const hasActiveFilters = Boolean(
         searchTerm ||
+        searchField !== 'all' ||
         filterCity !== 'All' ||
         filterStatus !== 'All' ||
         filterNiche !== 'All' ||
@@ -441,25 +578,41 @@ const CreatorManager = ({ showLeaderboardOnly = false, isEmbedded = false }) => 
                     
                     {/* Row 1: Search Engine & Action Bar */}
                     <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3">
-                        {/* Search Input */}
-                        <div className="relative flex-1 min-w-0">
-                            <Search className="absolute left-3.5 sm:left-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-white/40 pointer-events-none" size={15} />
-                            <input
-                                type="text"
-                                placeholder="Search creators..."
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                className="w-full h-10 !pl-10 sm:!pl-11 !pr-9 bg-white dark:bg-black/30 border border-black/10 dark:border-white/[0.06] focus:border-black/30 dark:focus:border-white/20 rounded-xl text-xs font-medium outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-white/30 text-gray-900 dark:text-white min-w-0"
-                            />
-                            {searchTerm && (
-                                <button
-                                    onClick={() => setSearchTerm('')}
-                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-white/30 hover:text-gray-900 dark:hover:text-white transition-colors p-0.5"
-                                    aria-label="Clear search"
-                                >
-                                    <X size={13} />
-                                </button>
-                            )}
+                        {/* Search Input with Scope Selector */}
+                        <div className="flex items-center gap-1.5 sm:gap-2 flex-1 min-w-0">
+                            {/* Field Scope Selector */}
+                            <div className="relative shrink-0 w-28 sm:w-36">
+                                <StudioSelect
+                                    value={searchField}
+                                    onChange={setSearchField}
+                                    options={SEARCH_FIELDS.map(f => ({ value: f.id, label: f.label }))}
+                                    size="sm"
+                                    accentColor="neon-blue"
+                                    searchable={false}
+                                    className="h-10"
+                                />
+                            </div>
+
+                            {/* Search Input Box */}
+                            <div className="relative flex-1 min-w-0">
+                                <Search className="absolute left-3.5 sm:left-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-white/40 pointer-events-none" size={15} />
+                                <input
+                                    type="text"
+                                    placeholder={SEARCH_FIELDS.find(f => f.id === searchField)?.placeholder || "Search creators..."}
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    className="w-full h-10 !pl-10 sm:!pl-11 !pr-9 bg-white dark:bg-black/30 border border-black/10 dark:border-white/[0.06] focus:border-neon-blue rounded-xl text-xs font-medium outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-white/30 text-gray-900 dark:text-white min-w-0"
+                                />
+                                {searchTerm && (
+                                    <button
+                                        onClick={() => setSearchTerm('')}
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-white/30 hover:text-gray-900 dark:hover:text-white transition-colors p-0.5"
+                                        aria-label="Clear search"
+                                    >
+                                        <X size={13} />
+                                    </button>
+                                )}
+                            </div>
                         </div>
 
                         {/* Action Controls Cluster */}
@@ -523,6 +676,121 @@ const CreatorManager = ({ showLeaderboardOnly = false, isEmbedded = false }) => 
                                 </button>
                             )}
 
+                            {/* WhatsApp Actions Dropdown */}
+                            <div className="relative shrink-0" ref={whatsAppMenuRef}>
+                                <button
+                                    type="button"
+                                    onClick={() => setIsWhatsAppMenuOpen(prev => !prev)}
+                                    className={cn(
+                                        "h-10 px-3 sm:px-4 rounded-xl font-black uppercase tracking-wider text-[9px] transition-all flex items-center justify-center gap-2 shrink-0 border",
+                                        isWhatsAppMenuOpen 
+                                            ? "bg-[#25D366] text-black border-[#25D366] shadow-[0_0_20px_rgba(37,211,102,0.35)]" 
+                                            : "bg-[#25D366]/10 border-[#25D366]/30 hover:bg-[#25D366]/20 text-[#25D366]"
+                                    )}
+                                    title="WhatsApp Groups & Broadcast Hub"
+                                >
+                                    <MessageSquare size={13} className="shrink-0" />
+                                    <span className="whitespace-nowrap">WhatsApp</span>
+                                    <ChevronDown 
+                                        size={12} 
+                                        className={cn("transition-transform duration-200 shrink-0", isWhatsAppMenuOpen && "rotate-180")} 
+                                    />
+                                </button>
+
+                                <AnimatePresence>
+                                    {isWhatsAppMenuOpen && (
+                                        <motion.div
+                                            initial={{ opacity: 0, y: 6, scale: 0.96 }}
+                                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                                            exit={{ opacity: 0, y: 6, scale: 0.96 }}
+                                            transition={{ duration: 0.15, ease: "easeOut" }}
+                                            className="absolute right-0 top-full mt-2 w-72 bg-white dark:bg-zinc-950 border border-black/10 dark:border-white/10 rounded-2xl shadow-2xl p-1.5 z-50 backdrop-blur-xl divide-y divide-black/5 dark:divide-white/5"
+                                        >
+                                            <div className="px-3 py-2">
+                                                <p className="text-[10px] font-black uppercase tracking-widest text-[#25D366]">
+                                                    WhatsApp Hub
+                                                </p>
+                                                <p className="text-[11px] text-gray-500 dark:text-zinc-400 font-medium">
+                                                    Manage city groups & member sync
+                                                </p>
+                                            </div>
+
+                                            <div className="py-1 flex flex-col gap-0.5">
+                                                {/* Option 1: Add City Creators to WhatsApp */}
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setCityForAddModal(filterCity !== 'All' ? filterCity : 'Bengaluru');
+                                                        setSelectedUidsForAddModal(null);
+                                                        setIsAddCityCreatorsOpen(true);
+                                                        setIsWhatsAppMenuOpen(false);
+                                                    }}
+                                                    className="w-full px-3 py-2.5 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 text-left flex items-start gap-3 transition-colors group"
+                                                >
+                                                    <div className="p-2 rounded-lg bg-[#25D366]/10 text-[#25D366] group-hover:bg-[#25D366] group-hover:text-black transition-all shrink-0 mt-0.5">
+                                                        <UserPlus size={14} />
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="flex items-center justify-between gap-1">
+                                                            <span className="text-[11px] font-bold text-gray-900 dark:text-white">
+                                                                Add City to WA
+                                                            </span>
+                                                            <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded-md bg-[#25D366]/10 text-[#25D366] border border-[#25D366]/20">
+                                                                {filterCity !== 'All' ? filterCity : 'City'}
+                                                            </span>
+                                                        </div>
+                                                        <p className="text-[10px] text-gray-500 dark:text-zinc-400 truncate mt-0.5">
+                                                            {filterCity !== 'All' ? `Add ${filterCity} creators to WA group` : 'Add all creators of a city to group'}
+                                                        </p>
+                                                    </div>
+                                                </button>
+
+                                                {/* Option 2: Broadcast Announcement */}
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setIsBroadcastModalOpen(true);
+                                                        setIsWhatsAppMenuOpen(false);
+                                                    }}
+                                                    className="w-full px-3 py-2.5 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 text-left flex items-start gap-3 transition-colors group"
+                                                >
+                                                    <div className="p-2 rounded-lg bg-neon-blue/10 text-neon-blue group-hover:bg-neon-blue group-hover:text-black transition-all shrink-0 mt-0.5">
+                                                        <Send size={14} />
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <span className="text-[11px] font-bold text-gray-900 dark:text-white block">
+                                                            Broadcast Groups
+                                                        </span>
+                                                        <p className="text-[10px] text-gray-500 dark:text-zinc-400 truncate mt-0.5">
+                                                            Send email announcement with links
+                                                        </p>
+                                                    </div>
+                                                </button>
+
+                                                {/* Option 3: City Groups Settings */}
+                                                <Link
+                                                    to="/admin/creators/settings?tab=groups"
+                                                    onClick={() => setIsWhatsAppMenuOpen(false)}
+                                                    className="w-full px-3 py-2.5 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 text-left flex items-start gap-3 transition-colors group"
+                                                >
+                                                    <div className="p-2 rounded-lg bg-purple-500/10 text-purple-400 group-hover:bg-purple-500 group-hover:text-white transition-all shrink-0 mt-0.5">
+                                                        <Settings size={14} />
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <span className="text-[11px] font-bold text-gray-900 dark:text-white block">
+                                                            City Groups Settings
+                                                        </span>
+                                                        <p className="text-[10px] text-gray-500 dark:text-zinc-400 truncate mt-0.5">
+                                                            Configure WhatsApp links & hubs
+                                                        </p>
+                                                    </div>
+                                                </Link>
+                                            </div>
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+                            </div>
+
                             {/* Add Creator */}
                             <button 
                                 onClick={() => setIsAddModalOpen(true)}
@@ -532,6 +800,38 @@ const CreatorManager = ({ showLeaderboardOnly = false, isEmbedded = false }) => 
                                 <span className="whitespace-nowrap">Add Creator</span>
                             </button>
                         </div>
+                    </div>
+
+                    {/* Quick Scope Filter Chips */}
+                    <div className="flex items-center gap-1.5 overflow-x-auto pb-1 pt-0.5 scrollbar-none text-[9px] font-bold border-t border-black/5 dark:border-white/[0.04]">
+                        <span className="text-gray-400 dark:text-zinc-500 uppercase tracking-widest text-[8px] shrink-0 mr-1 hidden xs:inline">
+                            Search By:
+                        </span>
+                        {SEARCH_FIELDS.map(f => {
+                            const isActive = searchField === f.id;
+                            const IconComponent = f.icon;
+                            return (
+                                <button
+                                    key={f.id}
+                                    type="button"
+                                    onClick={() => setSearchField(f.id)}
+                                    className={cn(
+                                        "px-2.5 py-1 rounded-lg shrink-0 transition-all flex items-center gap-1 border",
+                                        isActive
+                                            ? "bg-neon-blue text-black border-neon-blue font-black shadow-[0_0_10px_rgba(46,191,255,0.25)]"
+                                            : "bg-black/[0.03] dark:bg-white/[0.03] hover:bg-black/[0.06] dark:hover:bg-white/[0.06] text-gray-600 dark:text-zinc-400 border-black/5 dark:border-white/5"
+                                    )}
+                                >
+                                    <IconComponent size={10} className={isActive ? "text-black" : "text-gray-400"} />
+                                    <span>{f.label}</span>
+                                </button>
+                            );
+                        })}
+                        {searchTerm && (
+                            <span className="ml-auto text-[9px] font-mono text-neon-blue shrink-0 pl-2">
+                                {filteredCreators.length} match{filteredCreators.length === 1 ? '' : 'es'}
+                            </span>
+                        )}
                     </div>
 
                     {/* Row 2: Filter Toolbar (2-column balanced grid on mobile, inline flex on desktop) */}
@@ -760,12 +1060,47 @@ const CreatorManager = ({ showLeaderboardOnly = false, isEmbedded = false }) => 
                         ) : filteredCreators.length === 0 ? (
                             <motion.div 
                                 initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                                className="py-32 text-center flex flex-col items-center gap-6"
+                                className="py-24 text-center flex flex-col items-center gap-5"
                             >
-                                <Search size={64} className="text-gray-800" />
-                                <div className="space-y-2">
-                                    <h3 className="text-xl font-black uppercase tracking-[0.3em] text-gray-600">No matches found</h3>
-                                    <p className="text-gray-800 text-xs font-black uppercase tracking-widest">Try adjusting your filters or search terms</p>
+                                <div className="w-16 h-16 rounded-2xl bg-black/[0.03] dark:bg-white/[0.04] border border-black/10 dark:border-white/10 flex items-center justify-center text-gray-400">
+                                    <Search size={28} />
+                                </div>
+                                <div className="space-y-1.5 max-w-md mx-auto">
+                                    <h3 className="text-lg font-black uppercase tracking-tight text-gray-900 dark:text-white">
+                                        No Creators Found
+                                    </h3>
+                                    <p className="text-xs text-gray-500 dark:text-zinc-400">
+                                        {searchTerm ? (
+                                            <>
+                                                No results found for <span className="font-bold text-gray-900 dark:text-white">"{searchTerm}"</span>
+                                                {searchField !== 'all' && (
+                                                    <span> in <strong className="text-neon-blue">{SEARCH_FIELDS.find(f => f.id === searchField)?.label}</strong></span>
+                                                )}
+                                            </>
+                                        ) : (
+                                            "No creators match the current filter criteria."
+                                        )}
+                                    </p>
+                                </div>
+                                <div className="flex items-center gap-2 pt-1 flex-wrap justify-center">
+                                    {searchTerm && searchField !== 'all' && (
+                                        <button
+                                            type="button"
+                                            onClick={() => setSearchField('all')}
+                                            className="h-9 px-4 rounded-xl bg-neon-blue/10 border border-neon-blue/30 text-neon-blue text-[10px] font-black uppercase tracking-wider hover:bg-neon-blue/20 transition-all"
+                                        >
+                                            Search Across All Fields
+                                        </button>
+                                    )}
+                                    {hasActiveFilters && (
+                                        <button
+                                            type="button"
+                                            onClick={resetAllFilters}
+                                            className="h-9 px-4 rounded-xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-gray-700 dark:text-zinc-300 text-[10px] font-bold uppercase tracking-wider hover:bg-black/10 dark:hover:bg-white/10 transition-all"
+                                        >
+                                            Reset All Filters
+                                        </button>
+                                    )}
                                 </div>
                             </motion.div>
                         ) : (
@@ -956,6 +1291,20 @@ const CreatorManager = ({ showLeaderboardOnly = false, isEmbedded = false }) => 
                         }}
                     />
                 )}
+                {isBroadcastModalOpen && (
+                    <BroadcastGroupsModal onClose={() => setIsBroadcastModalOpen(false)} />
+                )}
+                {isAddCityCreatorsOpen && (
+                    <AddCityCreatorsModal
+                        isOpen={isAddCityCreatorsOpen}
+                        initialCity={cityForAddModal}
+                        preselectedUids={selectedUidsForAddModal}
+                        onClose={() => {
+                            setIsAddCityCreatorsOpen(false);
+                            setSelectedUidsForAddModal(null);
+                        }}
+                    />
+                )}
             </AnimatePresence>
             {createPortal(
                 <AnimatePresence>
@@ -996,10 +1345,21 @@ const CreatorManager = ({ showLeaderboardOnly = false, isEmbedded = false }) => 
                                     Deselect All
                                 </button>
                                 <button
+                                    onClick={() => {
+                                        setCityForAddModal(filterCity !== 'All' ? filterCity : 'Bengaluru');
+                                        setSelectedUidsForAddModal(selectedUids);
+                                        setIsAddCityCreatorsOpen(true);
+                                    }}
+                                    className="flex-1 md:flex-none h-9 sm:h-10 px-3.5 sm:px-5 bg-[#25D366] text-black hover:brightness-110 font-black text-[8px] sm:text-[9px] uppercase tracking-widest rounded-xl transition-all flex items-center justify-center gap-1.5 shadow-[0_0_20px_rgba(37,211,102,0.3)]"
+                                    title="Add selected creators to City WhatsApp group"
+                                >
+                                    <MessageSquare size={12} /> Add to WA
+                                </button>
+                                <button
                                     onClick={() => setIsBulkEmailModalOpen(true)}
                                     className="flex-1 md:flex-none h-9 sm:h-10 px-4 sm:px-6 bg-neon-pink text-black hover:bg-neon-pink/90 font-black text-[8px] sm:text-[9px] uppercase tracking-widest rounded-xl transition-all flex items-center justify-center gap-1.5 shadow-[0_0_20px_rgba(255,0,127,0.3)]"
                                 >
-                                    <Mail size={12} /> Email Selected
+                                    <Mail size={12} /> Email
                                 </button>
                             </div>
                         </motion.div>
@@ -1359,6 +1719,7 @@ const CreatorDetailModal = ({ creator, onClose, onUpdateStatus, onDelete, isUpda
     const [messageText, setMessageText] = useState('');
     const [sendingEmail, setSendingEmail] = useState(false);
     const [sendingMessage, setSendingMessage] = useState(false);
+    const [sendingWelcomePass, setSendingWelcomePass] = useState(false);
 
     useEffect(() => {
         setIsFeatured(creator.isFeatured || false);
@@ -1482,6 +1843,64 @@ const CreatorDetailModal = ({ creator, onClose, onUpdateStatus, onDelete, isUpda
             setSendingEmail(false);
         }
     };
+
+    // Handle sending/resending welcome email with creator pass and city WhatsApp group
+    const handleSendWelcomePassEmail = async () => {
+        if (!creator.email) {
+            useStore.getState().addToast("Creator does not have an email address", 'error');
+            return;
+        }
+        setSendingWelcomePass(true);
+        try {
+            const { sendCreatorWelcomeEmail } = await import('../../lib/email');
+            const result = await sendCreatorWelcomeEmail(
+                creator.email,
+                creator.displayName || creator.name || 'Creator',
+                creator.verificationToken || '',
+                creator.uid || creator.id || '',
+                {
+                    city: creator.city,
+                    handle: creator.instagram || creator.handle,
+                    niche: creator.primaryNiche || creator.niche || creator.categories || creator.category,
+                    passId: creator.creatorId || creator.uid?.slice(0, 8),
+                    avatar: creator.profilePicture || creator.avatar || creator.photoURL,
+                    phone: creator.phone,
+                    points: creator.points || 500
+                }
+            );
+            if (result && result.success) {
+                useStore.getState().addToast(`Creator Pass & Welcome Email sent to ${creator.email}!`, 'success');
+            } else {
+                throw new Error(result?.error || 'Failed to dispatch welcome email');
+            }
+        } catch (err) {
+            console.error("Error sending welcome pass email:", err);
+            useStore.getState().addToast(err.message || "Failed to send welcome pass email", 'error');
+        } finally {
+            setSendingWelcomePass(false);
+        }
+    };
+
+    const welcomePassPreviewHtml = useMemo(() => {
+        if (!creator) return '';
+        const origin = typeof window !== 'undefined' ? window.location.origin : 'https://newbi.live';
+        const verificationUrl = creator.verificationToken 
+            ? `${origin}/verify-creator?id=${creator.uid || creator.id}&token=${creator.verificationToken}`
+            : '';
+        return generateCreatorWelcomeHTML(
+            creator.displayName || creator.name || 'Creator',
+            verificationUrl,
+            {
+                city: creator.city,
+                handle: creator.instagram || creator.handle,
+                niche: creator.primaryNiche || creator.niche || creator.categories || creator.category,
+                passId: creator.creatorId || creator.uid?.slice(0, 8),
+                avatar: creator.profilePicture || creator.avatar || creator.photoURL,
+                phone: creator.phone,
+                points: creator.points || 500
+            }
+        );
+    }, [creator]);
 
     // Handle sending notification
     const handleSendMessage = async (e) => {
@@ -1762,22 +2181,54 @@ const CreatorDetailModal = ({ creator, onClose, onUpdateStatus, onDelete, isUpda
 
                         {/* ─── Direct Communication ─── */}
                         <div className="p-4 bg-gray-50 dark:bg-white/[0.02] border border-black/10 dark:border-white/[0.05] rounded-2xl space-y-4">
+                            {/* 1-Click Quick Resend Welcome Creator Pass Email */}
+                            <div className="p-3 bg-neon-cyan/5 border border-neon-cyan/20 dark:bg-neon-cyan/10 rounded-xl flex items-center justify-between gap-3">
+                                <div className="min-w-0">
+                                    <p className="text-[10px] font-black text-gray-900 dark:text-white uppercase tracking-wider flex items-center gap-1.5">
+                                        <Ticket size={12} className="text-neon-cyan" />
+                                        Official Creator Pass &amp; Welcome Email
+                                    </p>
+                                    <p className="text-[9px] text-gray-500 dark:text-zinc-400 mt-0.5 truncate">
+                                        Sends pass card, {creator.city || 'city'} WhatsApp hub link &amp; verification
+                                    </p>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={handleSendWelcomePassEmail}
+                                    disabled={sendingWelcomePass || !creator.email}
+                                    className="h-8 px-3 rounded-lg bg-neon-cyan text-black font-black text-[9px] uppercase tracking-wider shrink-0 flex items-center gap-1.5 hover:bg-neon-cyan/90 disabled:opacity-40 transition-all shadow-sm cursor-pointer"
+                                >
+                                    {sendingWelcomePass ? <LoadingSpinner size="xs" color="black" /> : (
+                                        <><Send size={10} /> Send Pass</>
+                                    )}
+                                </button>
+                            </div>
+
                             <div className="flex items-center justify-between">
                                 <p className="text-[10px] font-bold text-gray-500 dark:text-white/40 uppercase tracking-[0.2em]">Direct Communication</p>
                                 <div className="flex bg-black/5 dark:bg-black/40 p-0.5 rounded-lg border border-black/10 dark:border-white/[0.06] h-8 items-center">
                                     <button 
                                         onClick={() => setCommunicationTab('email')} 
                                         className={cn(
-                                            "px-3 h-7 rounded-md text-[8px] font-bold uppercase tracking-wider transition-all",
+                                            "px-2.5 h-7 rounded-md text-[8px] font-bold uppercase tracking-wider transition-all",
                                             communicationTab === 'email' ? "bg-white dark:bg-white/10 text-gray-900 dark:text-white shadow-sm" : "text-gray-500 dark:text-white/40 hover:text-gray-900 dark:hover:text-white"
                                         )}
                                     >
-                                        Email
+                                        Custom
+                                    </button>
+                                    <button 
+                                        onClick={() => setCommunicationTab('pass')} 
+                                        className={cn(
+                                            "px-2.5 h-7 rounded-md text-[8px] font-bold uppercase tracking-wider transition-all",
+                                            communicationTab === 'pass' ? "bg-white dark:bg-white/10 text-gray-900 dark:text-white shadow-sm" : "text-gray-500 dark:text-white/40 hover:text-gray-900 dark:hover:text-white"
+                                        )}
+                                    >
+                                        Pass Mail
                                     </button>
                                     <button 
                                         onClick={() => setCommunicationTab('message')} 
                                         className={cn(
-                                            "px-3 h-7 rounded-md text-[8px] font-bold uppercase tracking-wider transition-all",
+                                            "px-2.5 h-7 rounded-md text-[8px] font-bold uppercase tracking-wider transition-all",
                                             communicationTab === 'message' ? "bg-white dark:bg-white/10 text-gray-900 dark:text-white shadow-sm" : "text-gray-500 dark:text-white/40 hover:text-gray-900 dark:hover:text-white"
                                         )}
                                     >
@@ -1817,6 +2268,39 @@ const CreatorDetailModal = ({ creator, onClose, onUpdateStatus, onDelete, isUpda
                                         )}
                                     </button>
                                 </form>
+                            ) : communicationTab === 'pass' ? (
+                                <div className="space-y-3">
+                                    <div className="p-3 bg-neon-cyan/5 border border-neon-cyan/20 rounded-xl space-y-1.5">
+                                        <div className="flex items-center justify-between text-[10px]">
+                                            <span className="font-bold text-gray-500 dark:text-zinc-400 uppercase tracking-wider">City WhatsApp Hub</span>
+                                            <span className="font-black text-neon-cyan uppercase tracking-wider">
+                                                {resolveCityWhatsAppGroup(creator.city).city} Community
+                                            </span>
+                                        </div>
+                                        <div className="flex items-center justify-between text-[10px]">
+                                            <span className="font-bold text-gray-500 dark:text-zinc-400 uppercase tracking-wider">Recipient</span>
+                                            <span className="font-mono text-gray-900 dark:text-white truncate max-w-[200px]">
+                                                {creator.email || 'No email registered'}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    {/* Sandboxed live preview of the welcome email with creator pass */}
+                                    <div className="border border-black/10 dark:border-white/10 rounded-xl overflow-hidden max-h-80 overflow-y-auto custom-scrollbar bg-[#07080C]">
+                                        <EmailPreviewIframe html={welcomePassPreviewHtml} />
+                                    </div>
+
+                                    <button 
+                                        type="button"
+                                        onClick={handleSendWelcomePassEmail}
+                                        disabled={sendingWelcomePass || !creator.email}
+                                        className="w-full h-10 bg-neon-cyan text-black hover:bg-neon-cyan/90 font-black rounded-lg text-[9px] uppercase tracking-wider flex items-center justify-center gap-2 transition-all disabled:opacity-40 cursor-pointer shadow-sm"
+                                    >
+                                        {sendingWelcomePass ? <LoadingSpinner size="xs" color="black" /> : (
+                                            <><Send size={11} /> Dispatch Official Creator Pass Email</>
+                                        )}
+                                    </button>
+                                </div>
                             ) : (
                                 <form onSubmit={handleSendMessage} className="space-y-3">
                                     <div>
@@ -2221,11 +2705,7 @@ const ReferralLeaderboard = ({ creators, onSelectCreator }) => {
     }, [creators]);
 
     const filteredLeaderboard = useMemo(() => {
-        return leaderboard.filter(c => 
-            c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            (c.instagram && c.instagram.toLowerCase().includes(searchTerm.toLowerCase())) ||
-            (c.linkedin && c.linkedin.toLowerCase().includes(searchTerm.toLowerCase()))
-        );
+        return leaderboard.filter(c => matchesCreatorSearch(c, searchTerm, 'all'));
     }, [leaderboard, searchTerm]);
 
     const stats = useMemo(() => {

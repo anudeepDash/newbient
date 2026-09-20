@@ -8,6 +8,8 @@ import { useTheme } from '../hooks/useTheme';
 import GlobalLoader from '../components/ui/GlobalLoader';
 import CampaignCard from '../components/ui/CampaignCard';
 import useDynamicMeta from '../hooks/useDynamicMeta';
+import CreatorCityGroupCard from '../components/creator/CreatorCityGroupCard';
+import CampaignDetailModal from '../components/creator/CampaignDetailModal';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 
@@ -346,6 +348,19 @@ const CreatorDashboard = () => {
     const [activeTab, setActiveTab] = useState('opportunities');
     const [copiedId, setCopiedId] = useState(false);
     const [copiedPass, setCopiedPass] = useState(false);
+    const [selectedCampaignForModal, setSelectedCampaignForModal] = useState(null);
+
+    // Deep link or search param support for opening campaign modal
+    useEffect(() => {
+        const searchParams = new URLSearchParams(location.search);
+        const campaignId = searchParams.get('campaignId');
+        if (campaignId && campaigns && campaigns.length > 0) {
+            const found = campaigns.find(c => c.id === campaignId);
+            if (found) {
+                setSelectedCampaignForModal(found);
+            }
+        }
+    }, [location.search, campaigns]);
 
     const matchedCityGroup = useMemo(() => {
         if (!profile || profile.hasJoinedCityGroup) return null;
@@ -687,52 +702,21 @@ const CreatorDashboard = () => {
                     </motion.div>
                 )}
 
-                {/* City Community Group Invite Banner */}
-                {matchedCityGroup && !profile.hasJoinedCityGroup && (
-                    <motion.div 
-                        initial={{ opacity: 0, y: -10 }} 
-                        animate={{ opacity: 1, y: 0 }}
-                        className="p-4 sm:p-5 bg-gradient-to-r from-emerald-500/10 via-neon-green/5 to-black/20 dark:to-black/40 border border-emerald-500/30 rounded-2xl sm:rounded-3xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-sm"
-                    >
-                        <div className="flex items-start sm:items-center gap-3.5">
-                            <div className="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-600 dark:text-neon-green flex items-center justify-center shrink-0 mt-0.5 sm:mt-0">
-                                <MessageCircle size={18} />
-                            </div>
-                            <div>
-                                <div className="flex items-center gap-2 flex-wrap">
-                                    <h4 className="text-xs sm:text-sm font-black text-gray-900 dark:text-white flex items-center gap-2">
-                                        {matchedCityGroup.title || `${matchedCityGroup.city} Creator Hub`}
-                                    </h4>
-                                    <span className="text-[9px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-700 dark:text-neon-green font-extrabold uppercase tracking-wider font-mono">
-                                        {matchedCityGroup.platform || 'Community'} &bull; {matchedCityGroup.city}
-                                    </span>
-                                </div>
-                                <p className="text-[11px] text-gray-600 dark:text-zinc-400 mt-1 max-w-2xl leading-relaxed">
-                                    {matchedCityGroup.description || `Join local ${matchedCityGroup.city} creators for immediate brief alerts, festival guestlist drops, and peer collaborations.`}
-                                </p>
-                            </div>
-                        </div>
-                        <div className="flex items-center gap-2 w-full md:w-auto shrink-0 pt-1 md:pt-0">
-                            <a 
-                                href={matchedCityGroup.groupUrl} 
-                                target="_blank" 
-                                rel="noopener noreferrer" 
-                                className="flex-1 md:flex-initial px-4 py-2.5 bg-neon-green hover:brightness-105 text-black font-black text-[10px] uppercase tracking-wider rounded-xl transition-all shadow-[0_0_15px_rgba(57,255,20,0.25)] flex items-center justify-center gap-1.5"
-                            >
-                                <span>Join Group</span>
-                                <ExternalLink size={12} />
-                            </a>
-                            <button 
-                                type="button" 
-                                onClick={handleMarkCityGroupJoined} 
-                                className="flex-1 md:flex-initial px-4 py-2.5 bg-white dark:bg-white/10 hover:bg-black/5 dark:hover:bg-white/15 border border-black/10 dark:border-white/10 text-gray-900 dark:text-white font-bold text-[10px] uppercase tracking-wider rounded-xl transition-all flex items-center justify-center gap-1.5"
-                            >
-                                <Check size={13} />
-                                <span>I've Joined</span>
-                            </button>
-                        </div>
-                    </motion.div>
-                )}
+                {/* VIP City Creator WhatsApp Community Card */}
+                <div className="w-full">
+                    <CreatorCityGroupCard
+                        initialCity={profile?.city || 'Bengaluru'}
+                        creatorId={profile?.uid || profile?.id}
+                        isJoined={Boolean(profile?.hasJoinedCityGroup)}
+                        onJoinMarked={() => {
+                            setProfile(prev => ({
+                                ...prev,
+                                hasJoinedCityGroup: true,
+                                joinedCityGroupAt: new Date().toISOString()
+                            }));
+                        }}
+                    />
+                </div>
 
                 {/* 2. EXECUTIVE STUDIO METRICS GRID (Cleaner, Minimalist, High-Information Density) */}
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
@@ -838,7 +822,7 @@ const CreatorDashboard = () => {
                                     campaign={c} 
                                     profile={profile} 
                                     type="joined" 
-                                    onOpenMission={(camp) => navigate(`/campaign/${camp.id}`)} 
+                                    onOpenMission={(camp) => setSelectedCampaignForModal(camp)} 
                                 />
                             ))}
                         </div>
@@ -1118,37 +1102,37 @@ const CreatorDashboard = () => {
                                                     campaign={c} 
                                                     profile={profile} 
                                                     type="available" 
-                                                    onOpenMission={(camp) => navigate(`/campaign/${camp.id}`)} 
+                                                    onOpenMission={(camp) => setSelectedCampaignForModal(camp)} 
                                                 />
                                             </motion.div>
                                         ))}
                                     </AnimatePresence>
                                 </div>
                             ) : (
-                                <div className="bg-white dark:bg-[#0c0e14] border border-black/[0.08] dark:border-white/[0.08] rounded-3xl p-10 sm:p-14 text-center max-w-md mx-auto shadow-sm">
-                                    <div className="w-12 h-12 rounded-2xl bg-black/[0.03] dark:bg-white/[0.04] border border-black/[0.06] dark:border-white/[0.08] flex items-center justify-center text-neon-green mx-auto mb-4">
-                                        <Compass size={22} />
+                                <div className="w-full bg-white dark:bg-[#0c0e14] border border-black/[0.06] dark:border-white/[0.08] rounded-2xl py-12 sm:py-14 px-6 text-center shadow-xs transition-colors">
+                                    <div className="w-11 h-11 rounded-xl bg-black/[0.03] dark:bg-white/[0.05] border border-black/[0.06] dark:border-white/[0.08] flex items-center justify-center text-gray-700 dark:text-zinc-200 mx-auto mb-3.5 shadow-2xs">
+                                        <Compass size={20} strokeWidth={1.8} />
                                     </div>
-                                    <h4 className="text-base sm:text-lg font-black font-heading text-gray-950 dark:text-white tracking-tight">
+                                    <h4 className="text-sm sm:text-base font-semibold text-gray-900 dark:text-white tracking-tight">
                                         {briefFilter === 'city'
                                             ? `No Open Briefs in ${profile?.city || 'Your City'}`
                                             : briefSearch
                                                 ? 'No Matching Briefs Found'
                                                 : 'No Briefs Available Right Now'}
                                     </h4>
-                                    <p className="text-xs text-gray-500 dark:text-zinc-400 mt-2 leading-relaxed max-w-xs mx-auto">
+                                    <p className="text-xs text-gray-500 dark:text-zinc-400 mt-1.5 leading-relaxed max-w-sm mx-auto">
                                         {briefFilter === 'city'
-                                            ? `There are currently no exclusive briefs for ${profile?.city || 'your city'}. Explore Pan-India opportunities or reset your filter.`
+                                            ? `There are currently no active briefs exclusive to ${profile?.city || 'your city'}. Check back soon or browse Pan-India briefs.`
                                             : briefSearch
-                                                ? `No opportunities matched "${briefSearch}". Try adjusting keywords or clear your search.`
+                                                ? `No opportunities matched "${briefSearch}". Try clearing your search or using different keywords.`
                                                 : 'Brand campaigns and deliverables are refreshed frequently. Check back soon for new opportunities.'}
                                     </p>
-                                    <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-2.5">
+                                    <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
                                         {(briefFilter !== 'all' || briefSearch) && (
                                             <button
                                                 type="button"
                                                 onClick={() => { setBriefSearch(''); setBriefFilter('all'); }}
-                                                className="w-full sm:w-auto h-10 px-5 rounded-xl bg-neon-green hover:bg-emerald-400 text-black font-black text-xs uppercase tracking-wider transition-all inline-flex items-center justify-center gap-2 shadow-sm active:scale-95"
+                                                className="h-9 px-4 rounded-xl bg-gray-950 dark:bg-white text-white dark:text-black hover:bg-black dark:hover:bg-zinc-200 text-xs font-semibold tracking-wide transition-all inline-flex items-center justify-center gap-1.5 shadow-xs active:scale-95"
                                             >
                                                 <span>View All Briefs ({availableCampaigns.length})</span>
                                             </button>
@@ -1156,9 +1140,9 @@ const CreatorDashboard = () => {
                                         <button
                                             type="button"
                                             onClick={() => openProfilePanel('creator')}
-                                            className="w-full sm:w-auto h-10 px-4 rounded-xl bg-black/5 hover:bg-black/10 dark:bg-white/5 dark:hover:bg-white/10 border border-black/10 dark:border-white/10 text-gray-800 dark:text-zinc-200 text-xs font-bold uppercase tracking-wider transition-all inline-flex items-center justify-center gap-2 active:scale-95"
+                                            className="h-9 px-3.5 rounded-xl bg-black/[0.04] hover:bg-black/[0.07] dark:bg-white/[0.06] dark:hover:bg-white/[0.1] border border-black/[0.08] dark:border-white/[0.08] text-gray-700 dark:text-zinc-300 text-xs font-medium tracking-wide transition-all inline-flex items-center justify-center gap-1.5 active:scale-95"
                                         >
-                                            <Settings size={13} />
+                                            <Settings size={13} className="text-gray-400 dark:text-zinc-400" />
                                             <span>Edit Profile</span>
                                         </button>
                                     </div>
@@ -1182,10 +1166,10 @@ const CreatorDashboard = () => {
                                             type="button"
                                             onClick={() => setDeliverableFilter(filter.id)}
                                             className={cn(
-                                                "px-3.5 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all shrink-0",
+                                                "px-3.5 py-2 rounded-xl text-xs font-semibold tracking-wide transition-all shrink-0",
                                                 deliverableFilter === filter.id 
                                                     ? "bg-black text-white dark:bg-white dark:text-black shadow-sm" 
-                                                    : "bg-white dark:bg-[#0c0e14] border border-black/[0.08] dark:border-white/[0.08] text-gray-600 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-white"
+                                                    : "bg-white dark:bg-[#0c0e14] border border-black/[0.08] dark:border-white/[0.08] text-gray-600 dark:text-zinc-400 hover:text-gray-950 dark:hover:text-white"
                                             )}
                                         >
                                             {filter.label}
@@ -1209,32 +1193,32 @@ const CreatorDashboard = () => {
                                                     campaign={c} 
                                                     profile={profile} 
                                                     type="joined" 
-                                                    onOpenMission={(camp) => navigate(`/campaign/${camp.id}`)} 
+                                                    onOpenMission={(camp) => setSelectedCampaignForModal(camp)} 
                                                 />
                                             </motion.div>
                                         ))}
                                     </AnimatePresence>
                                 </div>
                             ) : (
-                                <div className="bg-white dark:bg-[#0c0e14] border border-black/[0.08] dark:border-white/[0.08] rounded-3xl p-10 sm:p-14 text-center max-w-md mx-auto shadow-sm">
-                                    <div className="w-12 h-12 rounded-2xl bg-black/[0.03] dark:bg-white/[0.04] border border-black/[0.06] dark:border-white/[0.08] flex items-center justify-center text-neon-green mx-auto mb-4">
-                                        <Briefcase size={22} />
+                                <div className="w-full bg-white dark:bg-[#0c0e14] border border-black/[0.06] dark:border-white/[0.08] rounded-2xl py-12 sm:py-14 px-6 text-center shadow-xs transition-colors">
+                                    <div className="w-11 h-11 rounded-xl bg-black/[0.03] dark:bg-white/[0.05] border border-black/[0.06] dark:border-white/[0.08] flex items-center justify-center text-gray-700 dark:text-zinc-200 mx-auto mb-3.5 shadow-2xs">
+                                        <Briefcase size={20} strokeWidth={1.8} />
                                     </div>
-                                    <h4 className="text-base sm:text-lg font-black font-heading text-gray-950 dark:text-white tracking-tight">
+                                    <h4 className="text-sm sm:text-base font-semibold text-gray-900 dark:text-white tracking-tight">
                                         {joinedCampaignsList.length === 0 ? 'No Active Campaigns Tracked' : 'No Campaigns in this Filter'}
                                     </h4>
-                                    <p className="text-xs text-gray-500 dark:text-zinc-400 mt-2 leading-relaxed max-w-xs mx-auto">
+                                    <p className="text-xs text-gray-500 dark:text-zinc-400 mt-1.5 leading-relaxed max-w-sm mx-auto">
                                         {joinedCampaignsList.length === 0 
-                                            ? 'Browse open curated briefs to join brand campaigns, submit deliverables, and claim your rewards.'
-                                            : 'Try selecting another status tab above to see your campaigns.'
+                                            ? 'Browse open curated briefs to join brand campaigns, submit deliverables, and claim rewards.'
+                                            : 'Try selecting another status filter above to view your campaigns.'
                                         }
                                     </p>
-                                    <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-2.5">
+                                    <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
                                         {joinedCampaignsList.length === 0 ? (
                                             <button
                                                 type="button"
                                                 onClick={() => setActiveTab('opportunities')}
-                                                className="w-full sm:w-auto h-10 px-5 rounded-xl bg-black/5 hover:bg-black/10 dark:bg-white/5 dark:hover:bg-white/10 border border-black/10 dark:border-white/10 text-gray-800 dark:text-zinc-200 text-xs font-bold uppercase tracking-wider transition-all inline-flex items-center justify-center gap-2 active:scale-95"
+                                                className="h-9 px-4 rounded-xl bg-gray-950 dark:bg-white text-white dark:text-black hover:bg-black dark:hover:bg-zinc-200 text-xs font-semibold tracking-wide transition-all inline-flex items-center justify-center gap-1.5 shadow-xs active:scale-95"
                                             >
                                                 <span>Explore Curated Briefs</span>
                                                 <ArrowRight size={13} />
@@ -1243,7 +1227,7 @@ const CreatorDashboard = () => {
                                             <button
                                                 type="button"
                                                 onClick={() => setDeliverableFilter('all')}
-                                                className="w-full sm:w-auto h-10 px-5 rounded-xl bg-black/5 hover:bg-black/10 dark:bg-white/5 dark:hover:bg-white/10 border border-black/10 dark:border-white/10 text-gray-800 dark:text-zinc-200 text-xs font-bold uppercase tracking-wider transition-all inline-flex items-center justify-center gap-2 active:scale-95"
+                                                className="h-9 px-3.5 rounded-xl bg-black/[0.04] hover:bg-black/[0.07] dark:bg-white/[0.06] dark:hover:bg-white/[0.1] border border-black/[0.08] dark:border-white/[0.08] text-gray-700 dark:text-zinc-300 text-xs font-medium tracking-wide transition-all inline-flex items-center justify-center gap-1.5 active:scale-95"
                                             >
                                                 <span>Show All Deliverables</span>
                                             </button>
@@ -1256,6 +1240,17 @@ const CreatorDashboard = () => {
                 </div>
 
             </div>
+
+            {/* Campaign Detail Modal */}
+            <AnimatePresence>
+                {selectedCampaignForModal && (
+                    <CampaignDetailModal 
+                        campaign={selectedCampaignForModal}
+                        onClose={() => setSelectedCampaignForModal(null)}
+                        initialTaskId={new URLSearchParams(location.search).get('taskId')}
+                    />
+                )}
+            </AnimatePresence>
         </div>
     );
 };

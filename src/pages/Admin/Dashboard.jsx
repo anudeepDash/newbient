@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import IndianRupee from 'lucide-react/dist/esm/icons/indian-rupee';
@@ -11,6 +12,7 @@ import Music from 'lucide-react/dist/esm/icons/music';
 import Mic2 from 'lucide-react/dist/esm/icons/mic-2';
 import Mail from 'lucide-react/dist/esm/icons/mail';
 import Shield from 'lucide-react/dist/esm/icons/shield';
+import ShieldAlert from 'lucide-react/dist/esm/icons/shield-alert';
 import UserCheck from 'lucide-react/dist/esm/icons/user-check';
 import Clock from 'lucide-react/dist/esm/icons/clock';
 import Radio from 'lucide-react/dist/esm/icons/radio';
@@ -35,6 +37,16 @@ import ChevronRight from 'lucide-react/dist/esm/icons/chevron-right';
 import Menu from 'lucide-react/dist/esm/icons/menu';
 import X from 'lucide-react/dist/esm/icons/x';
 import Compass from 'lucide-react/dist/esm/icons/compass';
+import Check from 'lucide-react/dist/esm/icons/check';
+import Pencil from 'lucide-react/dist/esm/icons/pencil';
+import ArrowUpRight from 'lucide-react/dist/esm/icons/arrow-up-right';
+import GripVertical from 'lucide-react/dist/esm/icons/grip-vertical';
+import Target from 'lucide-react/dist/esm/icons/target';
+import Layers from 'lucide-react/dist/esm/icons/layers';
+import Folder from 'lucide-react/dist/esm/icons/folder';
+import Tag from 'lucide-react/dist/esm/icons/tag';
+import MessageSquare from 'lucide-react/dist/esm/icons/message-square';
+import CheckCircle2 from 'lucide-react/dist/esm/icons/check-circle-2';
 
 import { collection, query, where, onSnapshot, getDocs, addDoc } from 'firebase/firestore';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, sendPasswordResetEmail, signInWithPopup } from 'firebase/auth';
@@ -248,13 +260,27 @@ const BootstrapAlert = ({ onClaim }) => (
 // --- Main Dashboard Component ---
 
 const Dashboard = () => {
-    useStoreSubscription(['invoices', 'spends', 'otherIncomes', 'proposals', 'agreements', 'concerts', 'portfolio', 'announcements', 'artists', 'clientRequests', 'upcomingEvents', 'ticketOrders']);
+    useStoreSubscription([
+        'invoices', 'spends', 'otherIncomes', 'proposals', 'agreements', 
+        'concerts', 'portfolio', 'announcements', 'artists', 'clientRequests', 
+        'upcomingEvents', 'ticketOrders', 'admins', 'creators', 'creatorGroups', 
+        'campaigns', 'giveaways', 'subscribers', 'posts', 'forms', 
+        'volunteerGigs', 'guestlists', 'messages', 'coupons', 'financePayees', 'documents'
+    ]);
     const { 
         invoices, spends, otherIncomes, proposals, agreements, concerts, portfolio, announcements, user, 
-        artists, clientRequests, upcomingEvents, ticketOrders,
-        checkUserRole, maintenanceState, archivePastEvents 
+        artists, clientRequests, upcomingEvents, ticketOrders, admins = [],
+        creators = [], creatorGroups = [], campaigns = [], giveaways = [], subscribers = [], posts = [],
+        forms = [], volunteerGigs = [], guestlists = [], messages = [], coupons = [], financePayees = [], documents = [],
+        checkUserRole, maintenanceState, archivePastEvents,
+        dashboardWidgets, saveDashboardWidgets
     } = useStore();
-    const { totalCount: totalMembersCount, activeCount: activeMembersCount } = useConsolidatedMembers();
+    const { 
+        totalCount: totalMembersCount, 
+        activeCount: activeMembersCount, 
+        suspendedCount: suspendedMembersCount 
+    } = useConsolidatedMembers();
+    const [isWidgetConfigOpen, setIsWidgetConfigOpen] = useState(false);
     const cards = maintenanceState?.features || {};
     const location = useLocation();
     
@@ -393,40 +419,402 @@ const Dashboard = () => {
         .filter(o => o.status === 'approved' || o.status === 'dispatched')
         .length;
 
-    const stats = [
-        { 
-            label: 'Artist Roster', 
-            value: artists?.length || 0, 
-            icon: Users, 
-            color: 'neon-blue', 
-            detail: `${pendingArtistRequests} Pending Onboarding Requests`, 
-            link: '/admin/artistant' 
+    const activeAdminsCount = (admins || []).filter(a => a.role !== 'pending').length;
+    const pendingAdminsCount = (admins || []).filter(a => a.role === 'pending').length;
+
+    // Creator computations
+    const approvedCreatorsCount = (creators || []).filter(c => c.profileStatus === 'approved').length;
+    const pendingCreatorsCount = (creators || []).filter(c => !c.profileStatus || c.profileStatus === 'pending').length;
+    const totalCreatorReach = (creators || []).reduce((sum, c) => sum + Math.max(Number(c.instagramFollowers || 0), Number(c.youtubeSubscribers || 0), Number(c.linkedinFollowers || 0)), 0);
+    const formatReach = (num) => {
+        if (!num || isNaN(num)) return '0';
+        if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+        if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+        return num.toLocaleString();
+    };
+
+    const unreadMessagesCount = (messages || []).filter(m => m.status === 'new' || !m.read).length;
+
+    // ── Comprehensive Metric Registry ──
+    // All available metrics across every admin module, categorized and keyed by ID
+    const METRIC_REGISTRY = useMemo(() => ({
+        // ── Personnel ──
+        total_members: { 
+            label: 'Total Members', value: totalMembersCount.toLocaleString(), icon: Users, color: 'neon-blue', 
+            detail: 'All authenticated platform accounts', link: '/admin/manage-admins', category: 'Personnel' 
         },
-        { 
-            label: 'Ticket Sales', 
-            value: ticketSalesCount, 
-            icon: Ticket, 
-            color: 'neon-pink', 
-            detail: ['developer', 'founder'].includes(user?.role) ? `₹${ticketSalesAmount.toLocaleString('en-IN')} Ticketing Revenue` : `${ticketSalesCount} Tickets Sold`, 
-            link: '/admin/ticketing' 
+        active_users: { 
+            label: 'Active Users', value: activeMembersCount.toLocaleString(), icon: UserCheck, color: 'neon-green', 
+            detail: `${totalMembersCount > 0 ? Math.round((activeMembersCount / totalMembersCount) * 100) : 100}% active clearance rate`, link: '/admin/active-users', category: 'Personnel' 
         },
-        ...(['developer', 'founder'].includes(user?.role) ? [{ 
-            label: 'Total Revenue', 
-            value: `₹${totalPaidRevenue.toLocaleString('en-IN')}`, 
-            icon: IndianRupee, 
-            color: 'neon-green', 
-            detail: `Net Cash Flow: ₹${netCashFlow.toLocaleString('en-IN')}`, 
-            link: '/admin/finance' 
-        }] : []),
-        { 
-            label: 'Contracts & Proposals', 
-            value: (proposals?.length || 0) + (agreements?.length || 0), 
-            icon: FileSpreadsheet, 
-            color: 'neon-purple', 
-            detail: `${proposals?.length || 0} Proposals | ${agreements?.length || 0} Contracts`, 
-            link: '/admin/proposals' 
+        administrators: { 
+            label: 'Administrators', value: activeAdminsCount, icon: Shield, color: 'neon-pink', 
+            detail: pendingAdminsCount > 0 ? `${pendingAdminsCount} pending clearance` : 'Full command staff', link: '/admin/manage-admins?tab=admins', category: 'Personnel' 
         },
-    ];
+        pending_clearances: { 
+            label: 'Pending Clearances', value: pendingAdminsCount, icon: Clock, color: 'yellow-400', 
+            detail: `${pendingAdminsCount} staff awaiting approval`, link: '/admin/manage-admins?tab=requests', category: 'Personnel' 
+        },
+        suspended_accounts: { 
+            label: 'Suspended', value: suspendedMembersCount, icon: ShieldAlert, color: 'neon-purple', 
+            detail: suspendedMembersCount > 0 ? `${suspendedMembersCount} restricted accounts` : 'Zero restricted accounts', link: '/admin/manage-admins?tab=members', category: 'Personnel' 
+        },
+
+        // ── Creators & Influencers ──
+        creators_total: {
+            label: 'Total Creators', value: (creators?.length || 0).toLocaleString(), icon: Star, color: 'neon-blue',
+            detail: `${approvedCreatorsCount} verified creators`, link: '/admin/creators', category: 'Creators'
+        },
+        creators_approved: {
+            label: 'Verified Creators', value: approvedCreatorsCount.toLocaleString(), icon: CheckCircle2, color: 'neon-green',
+            detail: `${pendingCreatorsCount} awaiting verification`, link: '/admin/creators', category: 'Creators'
+        },
+        creators_pending: {
+            label: 'Pending Creators', value: pendingCreatorsCount.toLocaleString(), icon: Clock, color: 'yellow-400',
+            detail: `${pendingCreatorsCount} applications to review`, link: '/admin/creators', category: 'Creators'
+        },
+        creator_groups: {
+            label: 'Creator Hubs', value: (creatorGroups?.length || 0).toLocaleString(), icon: Layers, color: 'neon-purple',
+            detail: 'City & regional community hubs', link: '/admin/creators', category: 'Creators'
+        },
+        campaigns_count: {
+            label: 'Live Campaigns', value: (campaigns?.length || 0).toLocaleString(), icon: Target, color: 'neon-pink',
+            detail: 'Brand & creator marketing campaigns', link: '/admin/campaigns', category: 'Creators'
+        },
+        creator_reach: {
+            label: 'Creator Reach', value: formatReach(totalCreatorReach), icon: Sparkles, color: 'neon-green',
+            detail: 'Aggregated creator audience', link: '/admin/creators', category: 'Creators'
+        },
+
+        // ── Commercial & Finance ──
+        total_revenue: { 
+            label: 'Total Revenue', value: `₹${totalPaidRevenue.toLocaleString('en-IN')}`, icon: IndianRupee, color: 'neon-green', 
+            detail: `Net flow: ₹${netCashFlow.toLocaleString('en-IN')}`, link: '/admin/finance', category: 'Finance' 
+        },
+        total_expenses: { 
+            label: 'Total Expenses', value: `₹${totalPaidExpenses.toLocaleString('en-IN')}`, icon: IndianRupee, color: 'neon-pink', 
+            detail: `${(spends || []).length} expense entries`, link: '/admin/finance', category: 'Finance' 
+        },
+        net_cashflow: { 
+            label: 'Net Cash Flow', value: `₹${netCashFlow.toLocaleString('en-IN')}`, icon: TrendingUp, color: netCashFlow >= 0 ? 'neon-green' : 'neon-pink', 
+            detail: `Revenue − Expenses`, link: '/admin/finance', category: 'Finance' 
+        },
+        invoices_count: { 
+            label: 'Invoices', value: (invoices?.length || 0).toLocaleString(), icon: FileText, color: 'neon-blue', 
+            detail: `${(invoices || []).filter(i => i.status === 'Paid').length} paid settlements`, link: '/admin/invoices', category: 'Finance' 
+        },
+        payees_count: {
+            label: 'Registered Payees', value: (financePayees?.length || 0).toLocaleString(), icon: Briefcase, color: 'yellow-400',
+            detail: 'Financial payee & vendor registry', link: '/admin/payees', category: 'Finance'
+        },
+
+        // ── Ticketing & Events ──
+        ticket_sales: { 
+            label: 'Ticket Sales', value: ticketSalesCount.toLocaleString(), icon: Ticket, color: 'neon-pink', 
+            detail: `₹${ticketSalesAmount.toLocaleString('en-IN')} ticket revenue`, link: '/admin/ticketing', category: 'Ticketing' 
+        },
+        ticket_revenue: { 
+            label: 'Ticket Revenue', value: `₹${ticketSalesAmount.toLocaleString('en-IN')}`, icon: Ticket, color: 'neon-green', 
+            detail: `${ticketSalesCount} tickets sold`, link: '/admin/ticketing', category: 'Ticketing' 
+        },
+        upcoming_events: { 
+            label: 'Upcoming Events', value: (upcomingEvents?.length || 0).toLocaleString(), icon: Calendar, color: 'neon-green', 
+            detail: 'Queued live event roster', link: '/admin/upcoming-events', category: 'Ticketing' 
+        },
+        guestlists_count: {
+            label: 'Event Guestlists', value: (guestlists?.length || 0).toLocaleString(), icon: ClipboardList, color: 'neon-blue',
+            detail: 'Active event RSVP guestlists', link: '/admin/guestlists', category: 'Ticketing'
+        },
+        coupons_count: {
+            label: 'Promo Coupons', value: (coupons?.length || 0).toLocaleString(), icon: Tag, color: 'neon-purple',
+            detail: 'Active discount & access codes', link: '/admin/ticketing', category: 'Ticketing'
+        },
+
+        // ── Community & Engagement ──
+        subscribers_count: {
+            label: 'Subscribers', value: (subscribers?.length || 0).toLocaleString(), icon: Megaphone, color: 'neon-blue',
+            detail: 'Newsletter email mailing list', link: '/admin/mailing', category: 'Community'
+        },
+        giveaways_count: {
+            label: 'Giveaways', value: (giveaways?.length || 0).toLocaleString(), icon: Gift, color: 'neon-purple',
+            detail: 'Fan rewards & raffle promotions', link: '/admin/giveaways', category: 'Community'
+        },
+        volunteer_gigs: {
+            label: 'Volunteer Gigs', value: (volunteerGigs?.length || 0).toLocaleString(), icon: Users, color: 'neon-green',
+            detail: 'Community volunteer roles', link: '/admin/volunteer-gigs', category: 'Community'
+        },
+        forms_count: {
+            label: 'Forms & Surveys', value: (forms?.length || 0).toLocaleString(), icon: ListChecks, color: 'yellow-400',
+            detail: 'Custom dynamic intake forms', link: '/admin/forms', category: 'Community'
+        },
+        inbox_messages: {
+            label: 'Inbox Messages', value: (messages?.length || 0).toLocaleString(), icon: MessageSquare, color: 'neon-pink',
+            detail: unreadMessagesCount > 0 ? `${unreadMessagesCount} unread inquiries` : 'All inquiries resolved', link: '/admin/messages', category: 'Community'
+        },
+
+        // ── Content & Media ──
+        announcements_count: { 
+            label: 'Announcements', value: (announcements?.length || 0).toLocaleString(), icon: Radio, color: 'neon-pink', 
+            detail: 'Published system broadcasts', link: '/admin/announcements', category: 'Content' 
+        },
+        blog_posts: {
+            label: 'Blog Posts', value: (posts?.length || 0).toLocaleString(), icon: FileText, color: 'neon-blue',
+            detail: 'Published editorial articles', link: '/admin/blog', category: 'Content'
+        },
+        portfolio_count: { 
+            label: 'Portfolio Vault', value: (portfolio?.length || 0).toLocaleString(), icon: Music, color: 'neon-purple', 
+            detail: 'Past concert & event archives', link: '/admin/concertzone', category: 'Content' 
+        },
+
+        // ── Legal & Documents ──
+        proposals_count: { 
+            label: 'Proposals', value: (proposals?.length || 0).toLocaleString(), icon: FileSpreadsheet, color: 'neon-blue', 
+            detail: 'Client commercial quotations', link: '/admin/proposals', category: 'Documents' 
+        },
+        contracts_count: { 
+            label: 'Contracts', value: (agreements?.length || 0).toLocaleString(), icon: Scale, color: 'neon-purple', 
+            detail: 'Active legal MOUs & agreements', link: '/admin/agreements', category: 'Documents' 
+        },
+        documents_vault: {
+            label: 'Document Vault', value: (documents?.length || 0).toLocaleString(), icon: Folder, color: 'neon-green',
+            detail: 'Secure centralized file storage', link: '/admin/documents', category: 'Documents'
+        },
+        artist_roster: { 
+            label: 'Artist Roster', value: (artists?.length || 0).toLocaleString(), icon: Mic2, color: 'neon-blue', 
+            detail: `${pendingArtistRequests} pending onboarding`, link: '/admin/artistant', category: 'Documents' 
+        },
+        client_requests: { 
+            label: 'Client Requests', value: (clientRequests?.length || 0).toLocaleString(), icon: Briefcase, color: 'neon-green', 
+            detail: `${pendingArtistRequests} pending approval`, link: '/admin/artistant', category: 'Documents' 
+        },
+    }), [
+        totalMembersCount, activeMembersCount, suspendedMembersCount, activeAdminsCount, pendingAdminsCount, 
+        creators, approvedCreatorsCount, pendingCreatorsCount, creatorGroups, campaigns, totalCreatorReach,
+        totalPaidRevenue, totalPaidExpenses, netCashFlow, invoices, spends, financePayees,
+        ticketSalesCount, ticketSalesAmount, upcomingEvents, guestlists, coupons,
+        subscribers, giveaways, volunteerGigs, forms, messages, unreadMessagesCount,
+        announcements, posts, portfolio,
+        proposals, agreements, documents, artists, clientRequests, pendingArtistRequests
+    ]);
+
+    // Resolve the 4 active widget definitions from the stored keys
+    const activeWidgets = useMemo(() => {
+        return (dashboardWidgets || ['total_members', 'active_users', 'administrators', 'ticket_sales']).map(key => ({
+            key,
+            ...(METRIC_REGISTRY[key] || METRIC_REGISTRY['total_members'])
+        }));
+    }, [dashboardWidgets, METRIC_REGISTRY]);
+
+    // ── Widget Config Modal (Rendered via Portal for perfect layout & scroll) ──
+    const WidgetConfigModal = () => {
+        const [selected, setSelected] = useState([...(dashboardWidgets || ['total_members', 'active_users', 'administrators', 'ticket_sales'])]);
+        const [saving, setSaving] = useState(false);
+
+        // Keep in sync when modal opens
+        useEffect(() => {
+            if (isWidgetConfigOpen) {
+                setSelected([...(dashboardWidgets || ['total_members', 'active_users', 'administrators', 'ticket_sales'])]);
+            }
+        }, [isWidgetConfigOpen, dashboardWidgets]);
+
+        const toggleMetric = (key) => {
+            if (selected.includes(key)) {
+                setSelected(selected.filter(k => k !== key));
+            } else if (selected.length < 4) {
+                setSelected([...selected, key]);
+            }
+        };
+
+        const handleSave = async () => {
+            if (selected.length !== 4) {
+                useStore.getState().addToast('Please select exactly 4 metrics', 'error');
+                return;
+            }
+            setSaving(true);
+            try {
+                await saveDashboardWidgets(selected);
+                useStore.getState().addToast('Dashboard widgets updated', 'success');
+                setIsWidgetConfigOpen(false);
+            } catch (err) {
+                useStore.getState().addToast('Failed to save config', 'error');
+            } finally {
+                setSaving(false);
+            }
+        };
+
+        // Group metrics by category
+        const categories = {};
+        Object.entries(METRIC_REGISTRY).forEach(([key, metric]) => {
+            if (!categories[metric.category]) categories[metric.category] = [];
+            categories[metric.category].push({ key, ...metric });
+        });
+
+        if (!isWidgetConfigOpen) return null;
+
+        const modalMarkup = (
+            <AnimatePresence>
+                {isWidgetConfigOpen && (
+                    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-6">
+                        {/* Backdrop */}
+                        <motion.div
+                            initial={{ opacity: 0 }} 
+                            animate={{ opacity: 1 }} 
+                            exit={{ opacity: 0 }}
+                            onClick={() => setIsWidgetConfigOpen(false)}
+                            className="fixed inset-0 bg-black/80 backdrop-blur-md"
+                        />
+
+                        {/* Modal Container */}
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95, y: 16 }} 
+                            animate={{ opacity: 1, scale: 1, y: 0 }} 
+                            exit={{ opacity: 0, scale: 0.95, y: 16 }}
+                            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+                            className="relative z-10 w-full max-w-2xl max-h-[85vh] bg-white dark:bg-zinc-950 border border-gray-200 dark:border-white/10 rounded-3xl overflow-hidden flex flex-col shadow-2xl"
+                        >
+                            {/* Header (Pinned) */}
+                            <div className="p-5 sm:p-6 border-b border-gray-100 dark:border-white/5 shrink-0 bg-white dark:bg-zinc-950">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <h2 className="text-xl sm:text-2xl font-extrabold font-heading text-gray-900 dark:text-white tracking-tight">Configure Widgets</h2>
+                                        <p className="text-gray-500 text-[10px] font-black uppercase tracking-[0.3em] mt-1.5">
+                                            Select exactly 4 metrics · {selected.length}/4 selected
+                                        </p>
+                                    </div>
+                                    <button 
+                                        type="button"
+                                        onClick={() => setIsWidgetConfigOpen(false)} 
+                                        className="p-2 hover:bg-black/5 dark:hover:bg-white/5 rounded-xl transition-colors text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                                    >
+                                        <X size={20} />
+                                    </button>
+                                </div>
+
+                                {/* 4-Slot Progress Bars */}
+                                <div className="grid grid-cols-4 gap-2 mt-4">
+                                    {[0, 1, 2, 3].map(i => (
+                                        <div 
+                                            key={i} 
+                                            className={cn(
+                                                "h-1.5 rounded-full transition-all duration-300",
+                                                i < selected.length ? "bg-neon-green shadow-[0_0_8px_rgba(57,255,20,0.5)]" : "bg-gray-200 dark:bg-white/10"
+                                            )} 
+                                        />
+                                    ))}
+                                </div>
+
+                                {/* Selected metric tags */}
+                                {selected.length > 0 && (
+                                    <div className="flex flex-wrap gap-1.5 mt-3">
+                                        {selected.map(k => {
+                                            const m = METRIC_REGISTRY[k];
+                                            if (!m) return null;
+                                            return (
+                                                <span 
+                                                    key={k} 
+                                                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-bold bg-neon-green/10 border border-neon-green/30 text-neon-green"
+                                                >
+                                                    <Check size={10} />
+                                                    {m.label}
+                                                    <button 
+                                                        type="button"
+                                                        onClick={(e) => { e.stopPropagation(); toggleMetric(k); }} 
+                                                        className="hover:text-red-400 ml-0.5"
+                                                    >
+                                                        <X size={10} />
+                                                    </button>
+                                                </span>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Scrollable Categories & Metrics Body */}
+                            <div className="flex-1 min-h-0 overflow-y-auto p-5 sm:p-6 space-y-6 custom-scrollbar">
+                                {Object.entries(categories).map(([category, metrics]) => (
+                                    <div key={category}>
+                                        <div className="flex items-center justify-between mb-3">
+                                            <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-400">{category}</h3>
+                                            <span className="text-[9px] font-bold text-gray-500">{metrics.length} available</span>
+                                        </div>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                            {metrics.map(metric => {
+                                                const isSelected = selected.includes(metric.key);
+                                                const isDisabled = !isSelected && selected.length >= 4;
+                                                return (
+                                                    <button
+                                                        key={metric.key}
+                                                        type="button"
+                                                        onClick={() => !isDisabled && toggleMetric(metric.key)}
+                                                        disabled={isDisabled}
+                                                        className={cn(
+                                                            "p-3 sm:p-3.5 rounded-2xl border text-left transition-all duration-200 group relative overflow-hidden",
+                                                            isSelected 
+                                                                ? "bg-neon-green/10 border-neon-green/40 dark:bg-neon-green/5 dark:border-neon-green/30 shadow-sm" 
+                                                                : isDisabled 
+                                                                    ? "bg-gray-50 dark:bg-white/[0.01] border-gray-100 dark:border-white/5 opacity-35 cursor-not-allowed" 
+                                                                    : "bg-white dark:bg-white/[0.02] border-gray-200 dark:border-white/5 hover:border-gray-300 dark:hover:border-white/15 hover:bg-gray-50 dark:hover:bg-white/5"
+                                                        )}
+                                                    >
+                                                        <div className="flex items-center gap-3">
+                                                            <div className={cn(
+                                                                "w-8 h-8 rounded-xl flex items-center justify-center border shrink-0 transition-all",
+                                                                isSelected 
+                                                                    ? "bg-neon-green/20 border-neon-green/30 text-neon-green" 
+                                                                    : "bg-gray-100 dark:bg-white/5 border-gray-200 dark:border-white/10 text-gray-400 group-hover:text-gray-200"
+                                                            )}>
+                                                                {isSelected ? <Check size={14} /> : <metric.icon size={14} />}
+                                                            </div>
+                                                            <div className="min-w-0 flex-1">
+                                                                <p className={cn("text-xs font-bold truncate", isSelected ? "text-gray-900 dark:text-white" : "text-gray-700 dark:text-gray-300")}>
+                                                                    {metric.label}
+                                                                </p>
+                                                                <p className="text-[10px] text-gray-400 font-medium mt-0.5 truncate">{metric.value}</p>
+                                                            </div>
+                                                            {isSelected && (
+                                                                <div className="w-1.5 h-1.5 rounded-full bg-neon-green shrink-0 shadow-[0_0_6px_#39FF14]" />
+                                                            )}
+                                                        </div>
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+
+                            {/* Footer (Pinned) */}
+                            <div className="p-4 sm:p-5 border-t border-gray-100 dark:border-white/5 shrink-0 flex items-center justify-between gap-4 bg-gray-50/80 dark:bg-black/40 backdrop-blur-sm">
+                                <button 
+                                    type="button"
+                                    onClick={() => setIsWidgetConfigOpen(false)} 
+                                    className="px-5 py-2.5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={handleSave}
+                                    disabled={selected.length !== 4 || saving}
+                                    className={cn(
+                                        "px-7 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center gap-2",
+                                        selected.length === 4 
+                                            ? "bg-gray-900 dark:bg-white text-white dark:text-black hover:scale-[1.02] active:scale-[0.98] shadow-lg font-extrabold" 
+                                            : "bg-gray-200 dark:bg-white/10 text-gray-400 cursor-not-allowed"
+                                    )}
+                                >
+                                    {saving ? 'Saving...' : 'Save 4 Widgets'}
+                                </button>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+        );
+
+        return createPortal(modalMarkup, document.body);
+    };
 
     if (authLoading) return <GlobalLoader color="#00F0FF" />;
 
@@ -488,17 +876,33 @@ const Dashboard = () => {
 
                 {isFirstRun && <BootstrapAlert onClaim={handleClaimOwnership} />}
 
-                {/* Metrics Hub Readouts - Optimized for Mobile Horizontal Scroll */}
+                {/* Configurable Metrics Hub */}
                 <div className="relative mb-16 md:mb-24">
+                    <div className="flex items-center justify-between gap-4 mb-6">
+                        <span className="text-[10px] md:text-xs font-black uppercase tracking-[0.25em] text-gray-500">
+                            Live Command Telemetry
+                        </span>
+                        {['developer', 'super_admin', 'founder'].includes(user?.role) && (
+                            <button
+                                onClick={() => setIsWidgetConfigOpen(true)}
+                                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 hover:bg-black/10 dark:hover:bg-white/10 transition-all group"
+                                title="Configure dashboard widgets"
+                            >
+                                <Pencil size={12} className="text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white transition-colors" />
+                                <span className="text-[9px] font-black uppercase tracking-[0.2em] text-gray-500 group-hover:text-gray-900 dark:group-hover:text-white transition-colors hidden sm:inline">Customize</span>
+                            </button>
+                        )}
+                    </div>
+
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-                    {stats.map((stat, i) => {
+                    {activeWidgets.map((stat, i) => {
                         const hoverBorder = stat.color === 'neon-green' ? 'hover:border-emerald-500/50 dark:group-hover:border-neon-green/30' :
                                             (stat.color === 'neon-blue' ? 'hover:border-sky-500/50 dark:group-hover:border-neon-blue/30' :
                                             (stat.color === 'neon-pink' ? 'hover:border-rose-500/50 dark:group-hover:border-neon-pink/30' :
                                             (stat.color === 'neon-purple' ? 'hover:border-purple-500/50 dark:group-hover:border-neon-purple/30' : 'hover:border-amber-500/50 dark:group-hover:border-yellow-400/30')));
                         return (
                             <motion.div
-                                key={stat.label}
+                                key={stat.key || stat.label}
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: i * 0.1 }}
@@ -543,6 +947,7 @@ const Dashboard = () => {
                     </div>
                 </div>
 
+                <WidgetConfigModal />
             {/* Operational Modules */}
             <div className="space-y-32">
                     {user?.role !== 'scanner' && user?.role !== 'gate_manager' && user?.role !== 'blog_writer' && (
@@ -581,13 +986,25 @@ const Dashboard = () => {
                             <ControlCard title="Mailing" desc="Mass communication and broadcast logs." icon={Megaphone} color="neon-blue" link="/admin/mailing" isNew isHidden={cards.mailing} />
                             {user.role !== 'editor' && user.role !== 'content_admin' && user.role !== 'blog_writer' && (
                                 <ControlCard 
+                                    title="Active Users" 
+                                    desc="Active clearance personnel and live session audits." 
+                                    icon={UserCheck} 
+                                    color="neon-green" 
+                                    link="/admin/active-users" 
+                                    count={activeMembersCount}
+                                    detail={`${totalMembersCount > 0 ? Math.round((activeMembersCount / totalMembersCount) * 100) : 100}% Active Clearance`}
+                                    isHidden={cards.admins} 
+                                />
+                            )}
+                            {user.role !== 'editor' && user.role !== 'content_admin' && user.role !== 'blog_writer' && (
+                                <ControlCard 
                                     title="Members" 
                                     desc="Security clearance and administrative roles." 
                                     icon={Shield} 
                                     color="neon-blue" 
                                     link="/admin/manage-admins" 
                                     count={totalMembersCount}
-                                    detail={`${activeMembersCount} Active / ${totalMembersCount} Total`}
+                                    detail={`${activeAdminsCount} Staff / ${totalMembersCount} Total`}
                                     isHidden={cards.admins} 
                                 />
                             )}

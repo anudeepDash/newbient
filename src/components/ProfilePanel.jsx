@@ -14,6 +14,7 @@ import { PREDEFINED_CITIES, CREATOR_NICHES } from '../lib/constants';
 import { useNavigate } from 'react-router-dom';
 import { db, auth } from '../lib/firebase';
 import { RecaptchaVerifier, PhoneAuthProvider, linkWithCredential } from 'firebase/auth';
+import StudioSelect from './ui/StudioSelect';
 
 const ProfilePanel = ({ isOpen: propIsOpen, onClose: propOnClose }) => {
     const { 
@@ -1225,7 +1226,7 @@ const CreatorNonMemberView = ({ onClose, navigate }) => {
                     <p className="text-[10px] text-gray-500 dark:text-zinc-400">Discover active campaign briefs open across India</p>
                 </div>
                 <button
-                    onClick={() => { navigate('/campaigns'); onClose(); }}
+                    onClick={() => { navigate('/creator-dashboard'); onClose(); }}
                     className="px-4 py-2 rounded-xl bg-gray-200 dark:bg-white/10 text-[10px] font-bold text-gray-800 dark:text-white hover:bg-gray-300"
                 >
                     Browse
@@ -1736,17 +1737,15 @@ const CreatorProfileManager = ({
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div className="space-y-1">
                             <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 dark:text-zinc-400">Operating City *</label>
-                            <select
+                            <StudioSelect
                                 name="city"
                                 value={form.city}
                                 onChange={handleChange}
-                                className="w-full h-11 px-3 rounded-xl bg-white dark:bg-black/50 border border-gray-200 dark:border-white/10 text-xs font-bold text-gray-900 dark:text-white focus:border-neon-green outline-none transition-all"
-                            >
-                                <option value="">Select Operating City</option>
-                                {PREDEFINED_CITIES.map(c => (
-                                    <option key={c} value={c} className="bg-white dark:bg-zinc-900 text-gray-900 dark:text-white">{c}</option>
-                                ))}
-                            </select>
+                                placeholder="Select Operating City"
+                                options={PREDEFINED_CITIES.map(c => ({ value: c, label: c }))}
+                                accentColor="neon-green"
+                                size="md"
+                            />
                             {form.city === 'Others' && (
                                 <input 
                                     type="text"
@@ -1761,17 +1760,15 @@ const CreatorProfileManager = ({
 
                         <div className="space-y-1">
                             <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 dark:text-zinc-400">Primary Niche *</label>
-                            <select
+                            <StudioSelect
                                 name="categories"
                                 value={form.categories}
                                 onChange={handleChange}
-                                className="w-full h-11 px-3 rounded-xl bg-white dark:bg-black/50 border border-gray-200 dark:border-white/10 text-xs font-bold text-gray-900 dark:text-white focus:border-neon-green outline-none transition-all"
-                            >
-                                <option value="">Select Niche Category</option>
-                                {CREATOR_NICHE_OPTIONS.map(n => (
-                                    <option key={n.id} value={n.id} className="bg-white dark:bg-zinc-900 text-gray-900 dark:text-white">{n.label}</option>
-                                ))}
-                            </select>
+                                placeholder="Select Niche Category"
+                                options={CREATOR_NICHE_OPTIONS.map(n => ({ value: n.id, label: n.label }))}
+                                accentColor="neon-green"
+                                size="md"
+                            />
                             {form.categories === 'Others' && (
                                 <input 
                                     type="text"
@@ -2254,7 +2251,7 @@ const CreatorProfileManager = ({
                 </button>
 
                 <button
-                    onClick={() => { navigate('/campaigns'); onClose(); }}
+                    onClick={() => { navigate('/creator-dashboard'); onClose(); }}
                     className="w-full p-4 rounded-2xl bg-gray-50 hover:bg-gray-100/90 dark:bg-white/[0.03] dark:hover:bg-white/[0.06] border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white transition-all flex items-center justify-between group active:scale-[0.99] shadow-sm"
                 >
                     <div className="flex items-center gap-3.5">

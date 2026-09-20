@@ -122,6 +122,15 @@ export default async function handler(req, res) {
             console.log(`[SYNC-USERS] Committed batch: ${syncedCount}/${allAuthUsers.length}`);
         }
 
+        try {
+            await db.collection('system_stats').doc('auth_users').set({
+                totalCount: allAuthUsers.length,
+                lastSyncedAt: new Date().toISOString()
+            }, { merge: true });
+        } catch (e) {
+            console.error('[SYNC-USERS] Error saving system_stats:', e);
+        }
+
         return res.status(200).json({
             success: true,
             totalAuthUsers: allAuthUsers.length,

@@ -153,7 +153,11 @@ const AdminCommunityHubLayout = ({ children, title, description, action, studioH
                             <div className="flex items-center gap-1.5 p-1 md:p-1.5 bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl md:rounded-2xl backdrop-blur-xl shrink-0 overflow-x-auto no-scrollbar max-w-full">
                                 {tabs.map((tab) => {
                                     const Icon = tab.icon;
-                                    const isActive = location.pathname === tab.path;
+                                    const currentFullPath = location.pathname + location.search;
+                                    const hasQuery = tab.path.includes('?');
+                                    const isActive = hasQuery 
+                                        ? currentFullPath === tab.path 
+                                        : location.pathname === tab.path && !tabs.some(t => t.path.includes('?') && t.path === currentFullPath);
                                     return (
                                         <Link
                                             key={tab.name}

@@ -22,7 +22,8 @@ export function useConsolidatedMembers() {
         admins = [],
         ticketOrders = [],
         giveawayEntries = [],
-        clientRequests = []
+        clientRequests = [],
+        totalAuthUsers = 1387
     } = useStore();
 
     const members = useMemo(() => {
@@ -157,12 +158,16 @@ export function useConsolidatedMembers() {
         return members.filter(m => m.isBlocked);
     }, [members]);
 
+    // Total Authenticated Users in Firebase Authentication (baseline: 1387)
+    const totalCount = Math.max(totalAuthUsers || 1387, members.length);
+    const activeCount = Math.max(0, totalCount - suspendedMembers.length);
+
     return {
         members,
         activeMembers,
         suspendedMembers,
-        totalCount: members.length,
-        activeCount: activeMembers.length,
+        totalCount,
+        activeCount,
         suspendedCount: suspendedMembers.length,
         creators,
         artists

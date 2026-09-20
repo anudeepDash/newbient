@@ -34,7 +34,7 @@ export function useTheme() {
   const [theme, setThemeState] = useState(resolveTheme);
   const [systemTheme, setSystemTheme] = useState(getSystemTheme);
 
-  // Apply the class on <html>
+  // Apply the class on <html> and update <meta name="theme-color"> for Safari & mobile browsers
   const applyTheme = useCallback((t) => {
     const root = document.documentElement;
     if (t === 'dark') {
@@ -42,6 +42,13 @@ export function useTheme() {
     } else {
       root.classList.remove('dark');
     }
+
+    // Dynamically update theme-color meta tags so Safari titlebar & mobile statusbars match instantly
+    const targetColor = t === 'dark' ? '#000000' : '#F8F9FA';
+    const metaThemes = document.querySelectorAll('meta[name="theme-color"]');
+    metaThemes.forEach((el) => {
+      el.setAttribute('content', targetColor);
+    });
   }, []);
 
   // On mount: apply initial theme + listen for OS changes and cross-instance theme changes
