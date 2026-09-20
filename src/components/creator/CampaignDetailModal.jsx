@@ -295,7 +295,7 @@ const CampaignDetailModal = ({
                     )}
 
                     {/* Full-Bleed Hero Banner with Crisp Image and Natural Ambient Presence */}
-                    <div className="relative w-full aspect-[16/10] sm:aspect-[2/1] min-h-[340px] sm:min-h-[440px] shrink-0 overflow-hidden z-10">
+                    <div className="relative w-full aspect-video sm:aspect-[2/1] sm:min-h-[440px] shrink-0 overflow-hidden z-10">
                         {campaign.thumbnail ? (
                             <>
                                 {/* Ambient Image Aura inside Banner */}
@@ -304,7 +304,7 @@ const CampaignDetailModal = ({
                                     style={{ backgroundImage: `url(${campaign.thumbnail})` }}
                                 />
 
-                                {/* Crisp Foreground Image - 100% visible, not cut off */}
+                                {/* Crisp Foreground Image - Full bleed edge-to-edge */}
                                 <img 
                                     src={campaign.thumbnail} 
                                     alt={campaign.title} 
@@ -321,11 +321,11 @@ const CampaignDetailModal = ({
                         {/* Subtle Top Vignette for Button Visibility */}
                         <div className="absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-black/25 to-transparent pointer-events-none z-10" />
 
-                        {/* Subtle Bottom Shadow for Card & Title Contrast */}
-                        <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-black/50 via-black/20 to-transparent pointer-events-none z-10" />
+                        {/* Subtle Bottom Shadow for Card & Title Contrast (Desktop only) */}
+                        <div className="hidden sm:block absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-black/50 via-black/20 to-transparent pointer-events-none z-10" />
 
-                        {/* Floating Hero Content Overlay - Positioned cleanly above the stat cards */}
-                        <div className="absolute bottom-16 sm:bottom-20 md:bottom-22 left-6 sm:left-8 right-6 sm:right-8 z-20 flex flex-col justify-end">
+                        {/* Floating Hero Content Overlay - Positioned cleanly above the stat cards (Desktop only) */}
+                        <div className="hidden sm:flex absolute bottom-20 md:bottom-22 left-8 right-8 z-20 flex-col justify-end">
                             <div className="flex items-center gap-2 mb-2.5">
                                 <div className="p-2 rounded-xl bg-black/60 backdrop-blur-xl border border-white/15 text-neon-green shadow-lg">
                                     <Instagram size={15} />
@@ -342,9 +342,24 @@ const CampaignDetailModal = ({
                     </div>
 
                     {/* Modal Content Body - Seamlessly Connected with Hero Banner */}
-                    <div className="px-6 sm:px-8 pb-8 space-y-8 flex-1 relative z-20">
-                        {/* Quick Stats Grid - Floating Seamlessly over Hero Bottom */}
-                        <div className="-mt-7 sm:-mt-10 grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div className="px-5 sm:px-8 pb-8 space-y-6 sm:space-y-8 flex-1 relative z-20">
+                        {/* Mobile Title & Badges Section */}
+                        <div className="sm:hidden pt-3 space-y-2">
+                            <div className="flex items-center gap-2">
+                                <div className="p-1.5 rounded-xl bg-black/[0.04] dark:bg-white/[0.06] border border-black/[0.08] dark:border-white/[0.1] text-emerald-600 dark:text-neon-green shadow-xs">
+                                    <Instagram size={14} />
+                                </div>
+                                <div className="px-2.5 py-1 rounded-xl bg-black/[0.04] dark:bg-white/[0.06] border border-black/[0.08] dark:border-white/[0.1] text-[10px] font-black uppercase tracking-widest text-gray-800 dark:text-white shadow-xs flex items-center gap-1.5 font-mono">
+                                    <MapPin size={10} className="text-emerald-600 dark:text-neon-green" /> {campaign.targetCity || 'Universal'}
+                                </div>
+                            </div>
+                            <h1 className="text-2xl font-black font-heading tracking-tight text-gray-950 dark:text-white uppercase italic leading-tight">
+                                {campaign.title}
+                            </h1>
+                        </div>
+
+                        {/* Quick Stats Grid */}
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:-mt-10">
                             <div className="p-4 rounded-2xl bg-white/90 dark:bg-[#121620]/90 border border-black/10 dark:border-white/10 backdrop-blur-2xl space-y-1.5 hover:border-black/20 dark:hover:border-white/20 transition-all shadow-xl group">
                                 <span className="text-[9px] font-black text-gray-500 dark:text-zinc-500 uppercase tracking-widest block font-mono">Target City</span>
                                 <div className="flex items-center gap-1.5 text-gray-950 dark:text-white font-bold text-xs truncate">
@@ -383,25 +398,25 @@ const CampaignDetailModal = ({
                             {/* Left Column: Briefing & Deliverables (7 Cols) */}
                             <div className="lg:col-span-7 space-y-8">
                                 {/* Campaign Briefing Card - Ultra-Premium Styling */}
-                                <div className="relative p-6 sm:p-8 rounded-3xl bg-gray-50/70 dark:bg-white/[0.025] border border-black/[0.08] dark:border-white/[0.08] backdrop-blur-xl space-y-5 shadow-xs dark:shadow-2xl overflow-hidden transition-colors">
+                                <div className="relative p-4 sm:p-7 rounded-3xl bg-gray-50/70 dark:bg-white/[0.025] border border-black/[0.08] dark:border-white/[0.08] backdrop-blur-xl space-y-4 sm:space-y-5 shadow-xs dark:shadow-2xl overflow-hidden transition-colors">
                                     {/* Ambient Corner Glow */}
                                     <div className="absolute -top-12 -right-12 w-44 h-44 bg-gradient-to-bl from-emerald-500/10 dark:from-neon-green/10 to-transparent rounded-full blur-2xl pointer-events-none" />
 
-                                    <div className="flex items-center justify-between pb-4 border-b border-black/[0.06] dark:border-white/[0.08] relative z-10">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-9 h-9 rounded-xl bg-black/[0.04] dark:bg-white/[0.06] border border-black/[0.08] dark:border-white/[0.1] flex items-center justify-center text-gray-800 dark:text-zinc-200 shadow-2xs">
-                                                <FileText size={16} />
+                                    <div className="flex items-center justify-between pb-3.5 sm:pb-4 border-b border-black/[0.06] dark:border-white/[0.08] relative z-10 gap-3">
+                                        <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+                                            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-black/[0.04] dark:bg-white/[0.06] border border-black/[0.08] dark:border-white/[0.1] flex items-center justify-center text-gray-800 dark:text-zinc-200 shadow-2xs shrink-0">
+                                                <FileText size={15} />
                                             </div>
-                                            <div>
-                                                <h4 className="text-xs font-black font-heading uppercase tracking-wider text-gray-950 dark:text-white">
+                                            <div className="min-w-0">
+                                                <h4 className="text-xs sm:text-sm font-black font-heading uppercase tracking-wider text-gray-950 dark:text-white truncate">
                                                     Campaign Briefing
                                                 </h4>
-                                                <p className="text-[10px] font-mono text-gray-500 dark:text-zinc-500 uppercase tracking-widest">
-                                                    Guidelines & Requirements
+                                                <p className="text-[9px] sm:text-[10px] font-mono text-gray-500 dark:text-zinc-500 uppercase tracking-wider truncate">
+                                                    Guidelines &amp; Requirements
                                                 </p>
                                             </div>
                                         </div>
-                                        <span className="px-2.5 py-1 rounded-lg bg-black/[0.04] dark:bg-white/[0.05] border border-black/[0.06] dark:border-white/[0.08] text-[9px] font-mono font-bold text-gray-500 dark:text-zinc-400 uppercase tracking-wider">
+                                        <span className="hidden sm:inline-flex px-2.5 py-1 rounded-lg bg-black/[0.04] dark:bg-white/[0.05] border border-black/[0.06] dark:border-white/[0.08] text-[9px] font-mono font-bold text-gray-500 dark:text-zinc-400 uppercase tracking-wider shrink-0 whitespace-nowrap">
                                             Official Brief
                                         </span>
                                     </div>

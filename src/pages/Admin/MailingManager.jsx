@@ -925,7 +925,7 @@ const MailingManager = () => {
                                                     const alias = ALIASES.find(a => a.key === e.target.value);
                                                     setSelectedAlias(alias);
                                                 }}
-                                                className="w-full h-13 px-4 bg-white dark:bg-black/60 border border-black/10 dark:border-white/10 rounded-2xl text-[11px] font-black uppercase tracking-widest focus:border-white/30 focus:outline-none text-gray-900 dark:text-white transition-all appearance-none cursor-pointer"
+                                                className="w-full h-12 px-4 bg-white dark:bg-black/60 border border-black/10 dark:border-white/10 rounded-2xl text-[11px] font-black uppercase tracking-widest focus:border-white/30 focus:outline-none text-gray-900 dark:text-white transition-all appearance-none cursor-pointer"
                                                 style={{
                                                     backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e")`,
                                                     backgroundRepeat: 'no-repeat',
