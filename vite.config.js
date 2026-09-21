@@ -319,6 +319,40 @@ export default defineConfig(({ mode }) => {
             }
           });
         }
+      },
+      {
+        name: 'api-creator-join-middleware',
+        configureServer(server) {
+          server.middlewares.use(async (req, res, next) => {
+            if (req.url.startsWith('/api/creator-join')) {
+              try {
+                Object.assign(process.env, env);
+                const { default: handler } = await import('./api/creator-join.js');
+                if (req.method === 'POST' && !req.body) {
+                  let body = '';
+                  req.on('data', chunk => { body += chunk; });
+                  req.on('end', async () => {
+                    try {
+                      req.body = body ? JSON.parse(body) : {};
+                    } catch (e) {
+                      req.body = {};
+                    }
+                    await handler(req, res);
+                  });
+                } else {
+                  await handler(req, res);
+                }
+              } catch (err) {
+                console.error('[LOCAL CREATOR-JOIN DEV PROXY] Error executing creator-join:', err);
+                res.statusCode = 500;
+                res.setHeader('Content-Type', 'application/json');
+                res.end(JSON.stringify({ error: err.message || 'Internal local creator-join error' }));
+              }
+            } else {
+              next();
+            }
+          });
+        }
       }
     ],
     optimizeDeps: {

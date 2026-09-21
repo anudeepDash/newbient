@@ -692,6 +692,105 @@ export default async function handler(req, res) {
         }
     }
 
+    // ── ACTION: CREATOR UPDATE ──────────────────────────────────────────────
+    if (action === 'creator-update') {
+        if (req.method !== 'POST') {
+            return res.status(405).json({ success: false, error: 'Method not allowed' });
+        }
+        try {
+            const { id, uid, creatorId, updates } = req.body || {};
+            const targetIdentifier = (id || uid || creatorId || '').trim();
+            if (!targetIdentifier) {
+                return res.status(400).json({ success: false, error: 'Creator ID or UID is required' });
+            }
+
+            let docRef = adminDb.collection('creators').doc(targetIdentifier);
+            let snap = await docRef.get();
+
+            // If not found by direct doc ID, try searching by uid or creatorId
+            if (!snap.exists) {
+                let querySnap = await adminDb.collection('creators')
+                    .where('uid', '==', targetIdentifier)
+                    .limit(1)
+                    .get();
+
+                if (querySnap.empty) {
+                    querySnap = await adminDb.collection('creators')
+                        .where('creatorId', '==', targetIdentifier.toUpperCase())
+                        .limit(1)
+                        .get();
+                }
+
+                if (!querySnap.empty) {
+                    snap = querySnap.docs[0];
+                    docRef = snap.ref;
+                }
+            }
+
+            if (!snap.exists) {
+                return res.status(404).json({ success: false, error: 'Creator profile not found.' });
+            }
+
+            const data = snap.data();
+            const prevStatus = data.profileStatus;
+            const now = new Date().toISOString();
+            const finalUpdates = {
+                ...updates,
+                updatedAt: now
+            };
+
+            await docRef.set(finalUpdates, { merge: true });
+
+            return res.status(200).json({ 
+                success: true, 
+                id: snap.id, 
+                prevStatus, 
+                email: data.email, 
+                name: data.displayName || data.name || 'Creator' 
+            });
+        } catch (err) {
+            console.error('[API/CREATOR-JOIN] Creator update error:', err);
+            return res.status(500).json({ success: false, error: err.message });
+        }
+    }
+
+    // ── ACTION: CREATOR DELETE ──────────────────────────────────────────────
+    if (action === 'creator-delete') {
+        if (req.method !== 'POST') {
+            return res.status(405).json({ success: false, error: 'Method not allowed' });
+        }
+        try {
+            const { id, uid } = req.body || {};
+            const targetIdentifier = (id || uid || '').trim();
+            if (!targetIdentifier) {
+                return res.status(400).json({ success: false, error: 'Creator ID is required' });
+            }
+
+            let docRef = adminDb.collection('creators').doc(targetIdentifier);
+            let snap = await docRef.get();
+
+            if (!snap.exists) {
+                const querySnap = await adminDb.collection('creators')
+                    .where('uid', '==', targetIdentifier)
+                    .limit(1)
+                    .get();
+                if (!querySnap.empty) {
+                    snap = querySnap.docs[0];
+                    docRef = snap.ref;
+                }
+            }
+
+            if (snap.exists) {
+                await docRef.delete();
+            }
+
+            return res.status(200).json({ success: true });
+        } catch (err) {
+            console.error('[API/CREATOR-JOIN] Delete creator error:', err);
+            return res.status(500).json({ success: false, error: err.message });
+        }
+    }
+
     // ── ACTION: CREATOR GROUPS SYNC / SEED ───────────────────────────────────
     if (action === 'creator-groups-sync') {
         if (req.method !== 'POST') {

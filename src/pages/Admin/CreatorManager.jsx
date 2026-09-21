@@ -399,7 +399,11 @@ const CreatorManager = ({ showLeaderboardOnly = false, isEmbedded = false }) => 
 
     useEffect(() => {
         if (params.id && creators.length > 0) {
-            const found = creators.find(c => c.uid === params.id);
+            const found = creators.find(c => 
+                c.uid === params.id || 
+                c.id === params.id || 
+                (c.creatorId && c.creatorId.toUpperCase() === params.id.toUpperCase())
+            );
             if (found) {
                 setSelectedCreator(found);
             }
@@ -477,11 +481,13 @@ const CreatorManager = ({ showLeaderboardOnly = false, isEmbedded = false }) => 
         setIsUpdating(true);
         try {
             await updateCreator(uid, { profileStatus: newStatus });
-            if (selectedCreator && selectedCreator.uid === uid) {
+            if (selectedCreator && (selectedCreator.uid === uid || selectedCreator.id === uid)) {
                 setSelectedCreator({ ...selectedCreator, profileStatus: newStatus });
             }
+            useStore.getState().addToast(`Creator ${newStatus === 'approved' ? 'verified' : newStatus} successfully!`, 'success');
         } catch (error) {
-            useStore.getState().addToast("Couldn't update the status. Please try again.", 'error');
+            console.error("Error updating creator status:", error);
+            useStore.getState().addToast(error?.message || "Couldn't update the status. Please try again.", 'error');
         } finally {
             setIsUpdating(false);
         }
@@ -493,8 +499,10 @@ const CreatorManager = ({ showLeaderboardOnly = false, isEmbedded = false }) => 
             try {
                 await deleteCreator(uid);
                 navigate('/admin/creators');
+                useStore.getState().addToast("Creator profile deleted successfully.", 'success');
             } catch (error) {
-                useStore.getState().addToast("Couldn't delete the creator. Please try again.", 'error');
+                console.error("Error deleting creator:", error);
+                useStore.getState().addToast(error?.message || "Couldn't delete the creator. Please try again.", 'error');
             } finally {
                 setIsDeleting(false);
             }
@@ -566,7 +574,7 @@ const CreatorManager = ({ showLeaderboardOnly = false, isEmbedded = false }) => 
             return (
                 <ReferralLeaderboard 
                     creators={creators} 
-                    onSelectCreator={(c) => navigate(`/admin/creators/${c.uid}`)} 
+                    onSelectCreator={(c) => navigate(`/admin/creators/${c.id || c.uid}`)} 
                 />
             );
         }
@@ -1131,7 +1139,7 @@ const CreatorManager = ({ showLeaderboardOnly = false, isEmbedded = false }) => 
                                         >
                                             {paginatedCreators.map((creator, idx) => (
                                                 <motion.div
-                                                    key={creator.uid}
+                                                    key={creator.id || creator.uid}
                                                     initial={{ opacity: 0, y: 20 }}
                                                     animate={{ opacity: 1, y: 0 }}
                                                     transition={{ delay: idx * 0.05 }}
@@ -1139,8 +1147,8 @@ const CreatorManager = ({ showLeaderboardOnly = false, isEmbedded = false }) => 
                                                 >
                                                     <CreatorBadgeCard 
                                                         creator={creator} 
-                                                        onSelect={() => navigate(`/admin/creators/${creator.uid}`)} 
-                                                        isSelected={selectedUids.includes(creator.uid)}
+                                                        onSelect={() => navigate(`/admin/creators/${creator.id || creator.uid}`)} 
+                                                        isSelected={selectedUids.includes(creator.id || creator.uid)}
                                                         onToggleSelect={handleToggleSelect}
                                                     />
                                                 </motion.div>
@@ -1161,15 +1169,15 @@ const CreatorManager = ({ showLeaderboardOnly = false, isEmbedded = false }) => 
 
                                         {paginatedCreators.map((creator, idx) => (
                                             <motion.div
-                                                key={creator.uid}
+                                                key={creator.id || creator.uid}
                                                 initial={{ opacity: 0, x: -20 }}
                                                 animate={{ opacity: 1, x: 0 }}
                                                 transition={{ delay: idx * 0.03 }}
                                             >
                                                 <CreatorListItem 
                                                     creator={creator} 
-                                                    onSelect={() => navigate(`/admin/creators/${creator.uid}`)} 
-                                                    isSelected={selectedUids.includes(creator.uid)}
+                                                    onSelect={() => navigate(`/admin/creators/${creator.id || creator.uid}`)} 
+                                                    isSelected={selectedUids.includes(creator.id || creator.uid)}
                                                     onToggleSelect={handleToggleSelect}
                                                 />
                                             </motion.div>
@@ -1453,7 +1461,7 @@ const CreatorBadgeCard = ({ creator, onSelect, isSelected, onToggleSelect }) => 
                     <input
                         type="checkbox"
                         checked={isSelected || false}
-                        onChange={() => onToggleSelect(creator.uid)}
+                        onChange={() => onToggleSelect(creator.id || creator.uid)}
                         className="w-4 h-4 rounded border-black/20 dark:border-white/20 bg-white dark:bg-black/60 text-neon-pink focus:ring-0 cursor-pointer"
                     />
                 </div>
@@ -1593,7 +1601,7 @@ const CreatorListItem = ({ creator, onSelect, isSelected, onToggleSelect }) => {
                     <input
                         type="checkbox"
                         checked={isSelected || false}
-                        onChange={() => onToggleSelect(creator.uid)}
+                        onChange={() => onToggleSelect(creator.id || creator.uid)}
                         className="w-4 h-4 rounded border-black/20 dark:border-white/20 bg-white dark:bg-black/60 text-neon-pink focus:ring-0 cursor-pointer"
                     />
                 </div>
@@ -1763,7 +1771,7 @@ const CreatorDetailModal = ({ creator, onClose, onUpdateStatus, onDelete, isUpda
         const next = !isFeatured;
         setIsFeatured(next);
         try {
-            await updateCreator(creator.uid, { isFeatured: next });
+            await updateCreator(creator.id || creator.uid, { isFeatured: next });
             useStore.getState().addToast(next ? "Marked as Featured Creator" : "Removed from Featured", 'success');
         } catch (err) {
             setIsFeatured(!next);
@@ -1784,7 +1792,7 @@ const CreatorDetailModal = ({ creator, onClose, onUpdateStatus, onDelete, isUpda
         setAdminBadges(updated);
         setCustomBadgeText('');
         try {
-            await updateCreator(creator.uid, { adminBadges: updated });
+            await updateCreator(creator.id || creator.uid, { adminBadges: updated });
             useStore.getState().addToast(`Added badge: ${trimmed}`, 'success');
         } catch (err) {
             setAdminBadges(adminBadges);
@@ -1797,7 +1805,7 @@ const CreatorDetailModal = ({ creator, onClose, onUpdateStatus, onDelete, isUpda
         const updated = adminBadges.filter(b => b !== badgeToRemove);
         setAdminBadges(updated);
         try {
-            await updateCreator(creator.uid, { adminBadges: updated });
+            await updateCreator(creator.id || creator.uid, { adminBadges: updated });
             useStore.getState().addToast(`Removed badge: ${badgeToRemove}`, 'success');
         } catch (err) {
             setAdminBadges(adminBadges);
@@ -2343,7 +2351,7 @@ const CreatorDetailModal = ({ creator, onClose, onUpdateStatus, onDelete, isUpda
                 {/* ─── Sticky Bottom Action Bar ─── */}
                 <div className="sticky bottom-0 z-50 px-4 sm:px-6 py-3 sm:py-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] bg-white/95 dark:bg-[#0A0A0A]/95 backdrop-blur-xl border-t border-black/10 dark:border-white/[0.06] flex items-center gap-2">
                     <button 
-                        onClick={() => onUpdateStatus(creator.uid, 'approved')}
+                        onClick={() => onUpdateStatus(creator.id || creator.uid, 'approved')}
                         disabled={isUpdating || creator.profileStatus === 'approved'}
                         className={cn(
                             "flex-1 h-10 sm:h-11 rounded-xl font-bold uppercase tracking-wider text-[9px] transition-all flex items-center justify-center gap-1.5",
@@ -2357,7 +2365,7 @@ const CreatorDetailModal = ({ creator, onClose, onUpdateStatus, onDelete, isUpda
                         )}
                     </button>
                     <button 
-                        onClick={() => onUpdateStatus(creator.uid, 'rejected')}
+                        onClick={() => onUpdateStatus(creator.id || creator.uid, 'rejected')}
                         disabled={isUpdating || creator.profileStatus === 'rejected'}
                         className={cn(
                             "flex-1 h-10 sm:h-11 rounded-xl font-bold uppercase tracking-wider text-[9px] transition-all border flex items-center justify-center gap-1.5",
@@ -2371,7 +2379,7 @@ const CreatorDetailModal = ({ creator, onClose, onUpdateStatus, onDelete, isUpda
                         )}
                     </button>
                     <button 
-                        onClick={() => onDelete(creator.uid)}
+                        onClick={() => onDelete(creator.id || creator.uid)}
                         disabled={isDeleting}
                         className="h-10 sm:h-11 px-3 sm:px-4 rounded-xl bg-transparent border border-red-500/20 text-red-400 hover:bg-red-500/10 transition-all active:scale-[0.98] flex items-center justify-center gap-1 font-bold uppercase tracking-wider text-[9px] shrink-0"
                     >
