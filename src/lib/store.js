@@ -518,8 +518,10 @@ export const useStore = create((set, get) => ({
             return c === 'bangalore' || c === 'banglore' || c === 'bengaluru south' || c === 'bengaluru north' || c.includes('bangalore') || c.includes('banglore');
         };
         (data || []).forEach(creator => {
+            if (!creator.uid && creator.id) creator.uid = creator.id;
+            if (!creator.id && creator.uid) creator.id = creator.uid;
             if (isBangaloreVariant(creator.city)) {
-                const docId = creator.uid || creator.id;
+                const docId = creator.id || creator.uid;
                 if (docId && creator.city !== 'Bengaluru') {
                     updateDoc(doc(db, 'creators', docId), { city: 'Bengaluru' }).catch(err => console.error("Auto-migrated creator to Bengaluru:", err));
                 }
@@ -2296,42 +2298,147 @@ export const useStore = create((set, get) => ({
 
 
     updateCreator: async (uid, updates) => {
+        if (!uid) {
+            throw new Error("Creator identifier is required to update creator.");
+        }
+
+        const { creators } = get();
+        const existingCreator = (creators || []).find(c => 
+            c.id === uid || 
+            c.uid === uid || 
+            (c.creatorId && String(c.creatorId).toUpperCase() === String(uid).toUpperCase())
+        );
+
         if (updates.phone) {
-            const { creators } = get();
             const normPhone = normalizePhoneNumber(updates.phone);
             if (normPhone) {
-                const existing = creators.find(c => c.uid !== uid && normalizePhoneNumber(c.phone) === normPhone);
-                if (existing) {
+                const conflict = (creators || []).find(c => 
+                    c.uid !== uid && c.id !== uid && normalizePhoneNumber(c.phone) === normPhone
+                );
+                if (conflict) {
                     throw new Error(`The mobile number ${updates.phone} is already registered to another Creator account.`);
                 }
             }
         }
 
-        const creatorRef = doc(db, 'creators', uid);
-        let prevStatus = null;
-        let email = null;
-        let name = null;
+        const docId = existingCreator?.id || existingCreator?.uid || uid;
+        let prevStatus = existingCreator?.profileStatus || null;
+        let email = existingCreator?.email || null;
+        let name = existingCreator?.displayName || existingCreator?.name || 'Creator';
+
+        let directSuccess = false;
+        let lastError = null;
+
+        // 1. Attempt direct client-side Firestore update
         try {
+            const creatorRef = doc(db, 'creators', docId);
             const snap = await getDoc(creatorRef);
             if (snap.exists()) {
                 const data = snap.data();
-                prevStatus = data.profileStatus;
-                email = data.email;
-                name = data.displayName || data.name || 'Creator';
+                prevStatus = prevStatus || data.profileStatus;
+                email = email || data.email;
+                name = name || data.displayName || data.name || 'Creator';
+                await updateDoc(creatorRef, updates);
+                directSuccess = true;
+            } else if (existingCreator?.uid && existingCreator.uid !== docId) {
+                const altRef = doc(db, 'creators', existingCreator.uid);
+                const altSnap = await getDoc(altRef);
+                if (altSnap.exists()) {
+                    await updateDoc(altRef, updates);
+                    directSuccess = true;
+                }
             }
-        } catch (e) {
-            console.error("Error fetching creator for status update check:", e);
+            if (!directSuccess) {
+                // Fallback to setDoc merge if doc does not exist yet under this key
+                await setDoc(doc(db, 'creators', docId), updates, { merge: true });
+                directSuccess = true;
+            }
+        } catch (fsErr) {
+            console.warn('[store] Direct Firestore updateCreator failed, attempting serverless fallback:', fsErr.message);
+            lastError = fsErr;
         }
 
-        await updateDoc(creatorRef, updates);
+        // 2. Server API fallback if direct Firestore write failed (e.g. security rules)
+        if (!directSuccess) {
+            try {
+                const res = await fetch('/api/creator-join?action=creator-update', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: docId, uid, updates })
+                });
+                if (res.ok) {
+                    const resJson = await res.json();
+                    if (resJson.success) {
+                        directSuccess = true;
+                        if (resJson.email) email = email || resJson.email;
+                        if (resJson.name) name = name || resJson.name;
+                        if (resJson.prevStatus) prevStatus = prevStatus || resJson.prevStatus;
+                    } else {
+                        throw new Error(resJson.error || 'Server failed to update creator');
+                    }
+                } else {
+                    const errJson = await res.json().catch(() => ({}));
+                    throw new Error(errJson.error || lastError?.message || 'Failed to update creator profile');
+                }
+            } catch (apiErr) {
+                console.error('[store] Both direct and serverless updateCreator failed:', apiErr);
+                throw apiErr;
+            }
+        }
 
+        // Optimistically update local Zustand store
+        set(state => ({
+            creators: (state.creators || []).map(c => 
+                (c.id === docId || c.uid === docId || c.uid === uid || c.id === uid)
+                    ? { ...c, ...updates }
+                    : c
+            )
+        }));
+
+        // Send approval email if verified
         if (updates.profileStatus === 'approved' && prevStatus !== 'approved' && email) {
             sendCreatorApprovedEmail(email, name)
                 .catch(err => console.error("Error sending creator approval email:", err));
         }
     },
     deleteCreator: async (uid) => {
-        await deleteDoc(doc(db, 'creators', uid));
+        if (!uid) return;
+        const { creators } = get();
+        const existingCreator = (creators || []).find(c => 
+            c.id === uid || c.uid === uid || (c.creatorId && String(c.creatorId).toUpperCase() === String(uid).toUpperCase())
+        );
+        const docId = existingCreator?.id || existingCreator?.uid || uid;
+
+        let deleteSuccess = false;
+        try {
+            await deleteDoc(doc(db, 'creators', docId));
+            deleteSuccess = true;
+        } catch (fsErr) {
+            console.warn('[store] Direct deleteCreator failed, falling back to server API:', fsErr.message);
+        }
+
+        if (!deleteSuccess) {
+            try {
+                const res = await fetch('/api/creator-join?action=creator-delete', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: docId, uid })
+                });
+                if (!res.ok) {
+                    const errJson = await res.json().catch(() => ({}));
+                    throw new Error(errJson.error || 'Failed to delete creator');
+                }
+            } catch (apiErr) {
+                console.error('[store] Both direct and server deleteCreator failed:', apiErr);
+                throw apiErr;
+            }
+        }
+
+        set(state => ({
+            creators: (state.creators || []).filter(c => 
+                c.id !== docId && c.uid !== docId && c.id !== uid && c.uid !== uid
+            )
+        }));
     },
     mergeBangaloreCreatorsToBengaluru: async () => {
         const { creators } = get();
@@ -2681,8 +2788,29 @@ export const useStore = create((set, get) => ({
 
     // Bulk Shortlist Helpers
     bulkUpdateCreatorStatus: async (uidArray, status) => {
-        const updatePromises = uidArray.map(uid => updateDoc(doc(db, 'creators', uid), { profileStatus: status }));
+        const { creators } = get();
+        const updatePromises = uidArray.map(async (uid) => {
+            const found = (creators || []).find(c => c.uid === uid || c.id === uid);
+            const docId = found?.id || found?.uid || uid;
+            try {
+                await updateDoc(doc(db, 'creators', docId), { profileStatus: status });
+            } catch (fsErr) {
+                console.warn('[store] Direct bulkUpdateCreatorStatus failed, falling back to server API:', fsErr.message);
+                await fetch('/api/creator-join?action=creator-update', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: docId, uid, updates: { profileStatus: status } })
+                }).catch(err => console.error('[store] Server fallback for bulkUpdateCreatorStatus error:', err));
+            }
+        });
         await Promise.all(updatePromises);
+        set(state => ({
+            creators: (state.creators || []).map(c => 
+                uidArray.includes(c.uid) || uidArray.includes(c.id)
+                    ? { ...c, profileStatus: status }
+                    : c
+            )
+        }));
     },
 
     bulkShortlistCreators: async (campaignId, uidArray, shouldShortlist = true) => {
