@@ -6,7 +6,7 @@ import {
     Target, Ban, Camera, Video, Eye, Star, Globe, Youtube, Twitter, 
     Calendar, CheckCircle2, Clock, MessageCircle, ChevronLeft, 
     ExternalLink, FileText, Check, X, AlertTriangle, Sparkles,
-    RefreshCw, AlertCircle, Lock
+    RefreshCw, AlertCircle, Lock, Pencil, User
 } from 'lucide-react';
 import { useStore } from '../../lib/store';
 import { cn, normalizePhoneNumber } from '../../lib/utils';
@@ -46,6 +46,7 @@ const CampaignDetailModal = ({
     const [isManualFollowerEntry, setIsManualFollowerEntry] = useState(false);
     const [isJoining, setIsJoining] = useState(false);
     const [joinSuccess, setJoinSuccess] = useState(false);
+    const [showEditDetails, setShowEditDetails] = useState(false);
 
     const [form, setForm] = useState({
         instagram: '',
@@ -80,8 +81,16 @@ const CampaignDetailModal = ({
                     
                     const minFollowers = Number(campaign?.minInstagramFollowers || 0);
                     const count = Number(existing.instagramFollowers || 0);
-                    // Auto-approve if they already meet the campaign requirement
-                    if (count && (minFollowers <= 0 || count >= minFollowers)) {
+                    
+                    // Registered creator who auto-verified during registration, has verified badge, or has approved status
+                    const isAutoVerifiedCreator = Boolean(
+                        existing.instagramVerified || 
+                        existing.isVerified || 
+                        (cleanExistingHandle && existing.profileStatus === 'approved')
+                    );
+                    
+                    // Auto-approve if they already auto-verified when registering OR if their followers meet the campaign requirement
+                    if (cleanExistingHandle && (isAutoVerifiedCreator || (count > 0 && (minFollowers <= 0 || count >= minFollowers)))) {
                         setVerificationStep('success');
                         setInstagramVerifiedData({
                             handle: cleanExistingHandle,
@@ -90,8 +99,10 @@ const CampaignDetailModal = ({
                             formattedFollowers: count.toLocaleString(),
                             profilePic: existing.profilePicture || existing.instagramProfilePic || user.photoURL || null,
                             isPrivate: false,
-                            isVerified: Boolean(existing.isVerified),
-                            meetsMinimumFollowers: true
+                            isVerified: Boolean(existing.isVerified || existing.instagramVerified),
+                            meetsMinimumFollowers: true,
+                            isRegisteredCreator: true,
+                            isAutoVerifiedCreator
                         });
                     }
                 }
@@ -176,12 +187,43 @@ const CampaignDetailModal = ({
         setInstagramVerificationError('');
         setIsManualFollowerEntry(false);
 
+        // Check if handle matches currently logged-in registered creator who auto-verified
+        const isRegisteredAutoVerified = Boolean(
+            profile &&
+            (profile.instagramVerified || profile.isVerified || profile.profileStatus === 'approved') &&
+            cleanHandle.toLowerCase() === String(profile.instagram || '').trim().replace(/^@/, '').toLowerCase()
+        );
+
         try {
             const isLocal = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
             const res = await fetch(`/api/creator-join?action=verify-instagram&handle=${encodeURIComponent(cleanHandle)}`);
             const data = await res.json();
 
             if (!res.ok || !data.success) {
+                if (isRegisteredAutoVerified) {
+                    const fallbackCount = Number(profile.instagramFollowers || 0);
+                    const verifiedPayload = {
+                        handle: cleanHandle,
+                        name: profile.name || cleanHandle,
+                        followers: fallbackCount,
+                        formattedFollowers: fallbackCount.toLocaleString(),
+                        profilePic: profile.profilePicture || profile.instagramProfilePic || user?.photoURL || null,
+                        isPrivate: false,
+                        isVerified: Boolean(profile.isVerified || profile.instagramVerified),
+                        meetsMinimumFollowers: true,
+                        isRegisteredCreator: true,
+                        isAutoVerifiedCreator: true
+                    };
+                    setInstagramVerifiedData(verifiedPayload);
+                    setForm(prev => ({
+                        ...prev,
+                        instagram: cleanHandle,
+                        followers: String(fallbackCount)
+                    }));
+                    setIsVerifying(false);
+                    setVerificationStep('success');
+                    return;
+                }
                 if (isLocal) {
                     const mockFollowers = Math.max(minFollowers || 1000, 2500);
                     const verifiedPayload = {
@@ -223,7 +265,7 @@ const CampaignDetailModal = ({
             }
 
             const count = Number(data.followers) || 0;
-            const meetsCriteria = minFollowers <= 0 || count >= minFollowers;
+            const meetsCriteria = minFollowers <= 0 || count >= minFollowers || isRegisteredAutoVerified;
 
             const verifiedPayload = {
                 handle: data.handle,
@@ -233,7 +275,9 @@ const CampaignDetailModal = ({
                 profilePic: data.profilePic || null,
                 isPrivate: data.isPrivate || false,
                 isVerified: data.isVerified || false,
-                meetsMinimumFollowers: meetsCriteria
+                meetsMinimumFollowers: meetsCriteria,
+                isRegisteredCreator: Boolean(profile),
+                isAutoVerifiedCreator: isRegisteredAutoVerified
             };
 
             setInstagramVerifiedData(verifiedPayload);
@@ -342,7 +386,7 @@ const CampaignDetailModal = ({
 
     if (!campaign) return null;
 
-    const isEligible = verificationStep === 'success' || (isManualFollowerEntry && Boolean(form.followers) && (minFollowers <= 0 || Number(form.followers) >= minFollowers));
+    const isEligible = Boolean(profile) || verificationStep === 'success' || (isManualFollowerEntry && Boolean(form.followers) && (minFollowers <= 0 || Number(form.followers) >= minFollowers));
 
     return createPortal(
         <motion.div 
@@ -896,10 +940,16 @@ const CampaignDetailModal = ({
                                                                     animate={{ opacity: 1, y: 0 }}
                                                                     className="p-4 rounded-2xl bg-gray-50/70 dark:bg-black/30 border border-black/[0.08] dark:border-white/[0.08] space-y-3"
                                                                 >
-                                                                    <div className="flex items-center justify-between">
-                                                                        <label className="text-[11px] sm:text-xs font-black text-gray-800 dark:text-gray-200 uppercase tracking-widest font-mono">
-                                                                            Manual Follower Count
-                                                                        </label>
+                                                                    <div className="flex items-center justify-between gap-2">
+                                                                        <div>
+                                                                            <label className="text-[11px] sm:text-xs font-black text-gray-800 dark:text-gray-200 uppercase tracking-widest font-mono flex items-center gap-1.5">
+                                                                                <Pencil size={12} className="text-pink-500 shrink-0" />
+                                                                                Manual Follower Count
+                                                                            </label>
+                                                                            <p className="text-[10px] text-gray-500 dark:text-zinc-400 mt-0.5 font-mono">
+                                                                                Enter your actual follower count if Instagram auto-sync is outdated or blocked.
+                                                                            </p>
+                                                                        </div>
                                                                         <button 
                                                                             type="button" 
                                                                             onClick={() => {
@@ -914,9 +964,10 @@ const CampaignDetailModal = ({
                                                                                     handleInstagramVerify();
                                                                                 }
                                                                             }}
-                                                                            className="text-[10px] font-bold text-pink-500 hover:text-pink-600 uppercase tracking-wider transition-colors cursor-pointer"
+                                                                            className="inline-flex items-center gap-1 text-[10px] font-bold text-pink-500 hover:text-pink-600 uppercase tracking-wider transition-colors cursor-pointer shrink-0"
                                                                         >
-                                                                            Back to Auto-Verify
+                                                                            <ChevronLeft size={12} />
+                                                                            Back to Auto-Sync
                                                                         </button>
                                                                     </div>
                                                                     <div className="relative group">
@@ -1041,7 +1092,9 @@ const CampaignDetailModal = ({
                                                                                     {instagramVerifiedData.meetsMinimumFollowers ? (
                                                                                         <div className="inline-flex items-center gap-1 sm:gap-1.5 text-[9px] sm:text-[10px] font-black uppercase tracking-wider px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl bg-emerald-500 text-black shadow-xs font-mono">
                                                                                             <CheckCircle2 size={11} className="stroke-[2.5] shrink-0" />
-                                                                                            <span className="hidden sm:inline">Eligible to Apply</span>
+                                                                                            <span className="hidden sm:inline">
+                                                                                                {instagramVerifiedData.isAutoVerifiedCreator ? "Verified Creator • Eligible" : "Eligible to Apply"}
+                                                                                            </span>
                                                                                             <span className="sm:hidden">Eligible</span>
                                                                                         </div>
                                                                                     ) : (
@@ -1083,8 +1136,8 @@ const CampaignDetailModal = ({
                                                                     )}
 
                                                                     {/* Action Bar & Metadata */}
-                                                                    <div className="pt-2 sm:pt-2.5 border-t border-black/[0.06] dark:border-white/[0.06] flex items-center justify-between gap-2">
-                                                                        <div className="flex items-center gap-1.5 sm:gap-2">
+                                                                    <div className="pt-2.5 border-t border-black/[0.06] dark:border-white/[0.06] flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                                                                        <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
                                                                             {instagramVerifiedData.meetsMinimumFollowers ? (
                                                                                 <>
                                                                                     <div className="px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-baseline gap-1">
@@ -1096,11 +1149,12 @@ const CampaignDetailModal = ({
                                                                                         </span>
                                                                                     </div>
                                                                                     <span className="inline-flex items-center gap-1 text-[8px] sm:text-[9px] font-black uppercase tracking-wider px-1.5 sm:px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 font-mono">
-                                                                                        <Check size={8} className="stroke-[3]" /> Auto-Verified
+                                                                                        <Check size={8} className="stroke-[3]" />
+                                                                                        {instagramVerifiedData.isAutoVerifiedCreator ? "Auto-Verified Creator" : "Auto-Verified"}
                                                                                     </span>
                                                                                 </>
                                                                             ) : (
-                                                                                <div className="flex items-center gap-1.5 sm:gap-2">
+                                                                                <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
                                                                                     <div className="px-2 py-0.5 rounded-md bg-black/[0.03] dark:bg-white/[0.05] border border-black/[0.06] dark:border-white/[0.08] flex items-baseline gap-1">
                                                                                         <span className="text-xs font-black font-mono text-gray-800 dark:text-zinc-200">
                                                                                             {Number(instagramVerifiedData.followers || 0).toLocaleString()}
@@ -1116,7 +1170,7 @@ const CampaignDetailModal = ({
                                                                             )}
                                                                         </div>
 
-                                                                        <div className="flex items-center gap-1.5 shrink-0">
+                                                                        <div className="flex items-center gap-2 flex-wrap self-end sm:self-auto shrink-0">
                                                                             {!instagramVerifiedData.meetsMinimumFollowers && (
                                                                                 <button
                                                                                     type="button"
@@ -1124,9 +1178,11 @@ const CampaignDetailModal = ({
                                                                                         setIsManualFollowerEntry(true);
                                                                                         setInstagramVerificationError('');
                                                                                     }}
-                                                                                    className="px-2 sm:px-2.5 py-1 rounded-lg bg-pink-500/10 hover:bg-pink-500/20 text-[10px] font-bold text-pink-600 dark:text-pink-400 uppercase tracking-wider transition-all active:scale-95 cursor-pointer"
+                                                                                    className="inline-flex items-center gap-1 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg bg-pink-500/10 hover:bg-pink-500/20 text-[10px] sm:text-[11px] font-bold text-pink-600 dark:text-pink-400 uppercase tracking-wider transition-all active:scale-95 cursor-pointer border border-pink-500/20 whitespace-nowrap"
+                                                                                    title="Enter your follower count manually if Instagram sync is outdated"
                                                                                 >
-                                                                                    Manual
+                                                                                    <Pencil size={11} className="shrink-0 stroke-[2.5]" />
+                                                                                    <span>Enter Manually</span>
                                                                                 </button>
                                                                             )}
                                                                             <button
@@ -1135,9 +1191,11 @@ const CampaignDetailModal = ({
                                                                                     setInstagramVerifiedData(null);
                                                                                     setVerificationStep('idle');
                                                                                 }}
-                                                                                className="px-2 sm:px-2.5 py-1 rounded-lg bg-black/[0.04] dark:bg-white/[0.06] hover:bg-black/[0.08] dark:hover:bg-white/[0.1] text-[10px] font-bold text-gray-500 hover:text-gray-700 dark:text-zinc-400 dark:hover:text-zinc-200 uppercase tracking-wider transition-all active:scale-95 cursor-pointer"
+                                                                                className="inline-flex items-center gap-1 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg bg-black/[0.04] dark:bg-white/[0.06] hover:bg-black/[0.08] dark:hover:bg-white/[0.1] text-[10px] sm:text-[11px] font-bold text-gray-600 hover:text-gray-800 dark:text-zinc-300 dark:hover:text-white uppercase tracking-wider transition-all active:scale-95 cursor-pointer border border-black/[0.06] dark:border-white/[0.08] whitespace-nowrap"
+                                                                                title="Switch to a different Instagram account"
                                                                             >
-                                                                                Change
+                                                                                <RefreshCw size={11} className="shrink-0 stroke-[2.5]" />
+                                                                                <span>Change Handle</span>
                                                                             </button>
                                                                         </div>
                                                                     </div>

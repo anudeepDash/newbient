@@ -31,6 +31,7 @@ import FileText from 'lucide-react/dist/esm/icons/file-text';
 import Sparkles from 'lucide-react/dist/esm/icons/sparkles';
 import AlertCircle from 'lucide-react/dist/esm/icons/alert-circle';
 import RefreshCw from 'lucide-react/dist/esm/icons/refresh-cw';
+import Pencil from 'lucide-react/dist/esm/icons/pencil';
 import Camera from 'lucide-react/dist/esm/icons/camera';
 import TrendingUp from 'lucide-react/dist/esm/icons/trending-up';
 import Award from 'lucide-react/dist/esm/icons/award';
@@ -1968,14 +1969,20 @@ const CreatorJoin = () => {
                                             animate={{ opacity: 1, y: 0 }}
                                             className="space-y-1.5 pt-2"
                                         >
-                                            <div className="flex items-center justify-between pl-1">
-                                                <label className="text-[11px] sm:text-xs font-black text-gray-700 dark:text-gray-300 uppercase tracking-widest">
-                                                    Manual Follower Count
-                                                </label>
+                                            <div className="flex items-center justify-between gap-2 pl-1">
+                                                <div>
+                                                    <label className="text-[11px] sm:text-xs font-black text-gray-700 dark:text-gray-300 uppercase tracking-widest flex items-center gap-1.5 font-mono">
+                                                        <Pencil size={12} className="text-brand-purple shrink-0" />
+                                                        Manual Follower Count
+                                                    </label>
+                                                    <p className="text-[10px] text-gray-500 dark:text-zinc-400 mt-0.5 font-mono">
+                                                        Enter your follower count manually if Instagram auto-sync is blocked or outdated.
+                                                    </p>
+                                                </div>
                                                 <button 
                                                     type="button" 
                                                     onClick={() => handleVerifyInstagram()}
-                                                    className="text-[10px] font-bold text-brand-purple hover:text-brand-purple/80 uppercase tracking-wider transition-colors"
+                                                    className="text-[10px] font-bold text-brand-purple hover:text-brand-purple/80 uppercase tracking-wider transition-colors shrink-0"
                                                 >
                                                     Retry Auto-Verify
                                                 </button>
@@ -2122,8 +2129,8 @@ const CreatorJoin = () => {
                                             )}
 
                                             {/* Follower Stats Bar & Action Buttons */}
-                                            <div className="pt-2 sm:pt-2.5 border-t border-black/[0.06] dark:border-white/[0.06] flex items-center justify-between gap-2">
-                                                <div className="flex items-center gap-1.5 sm:gap-2">
+                                            <div className="pt-2 sm:pt-2.5 border-t border-black/[0.06] dark:border-white/[0.06] flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                                                <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
                                                     {instagramVerifiedData.meetsMinimumFollowers ? (
                                                         <>
                                                             <div className="px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-baseline gap-1">
@@ -2139,7 +2146,7 @@ const CreatorJoin = () => {
                                                             </span>
                                                         </>
                                                     ) : (
-                                                        <div className="flex items-center gap-1.5 sm:gap-2">
+                                                        <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
                                                             <div className="px-2 py-0.5 rounded-md bg-black/[0.03] dark:bg-white/[0.05] border border-black/[0.06] dark:border-white/[0.08] flex items-baseline gap-1">
                                                                 <span className="text-xs font-black font-mono text-gray-800 dark:text-zinc-200">
                                                                     {Number(instagramVerifiedData.followers || 0).toLocaleString()}
@@ -2155,7 +2162,7 @@ const CreatorJoin = () => {
                                                     )}
                                                 </div>
 
-                                                <div className="flex items-center gap-1.5 shrink-0">
+                                                <div className="flex items-center gap-2 flex-wrap self-end sm:self-auto shrink-0">
                                                     {!instagramVerifiedData.meetsMinimumFollowers && (
                                                         <button
                                                             type="button"
@@ -2163,9 +2170,11 @@ const CreatorJoin = () => {
                                                                 setIsManualFollowerEntry(true);
                                                                 setInstagramVerificationError('');
                                                             }}
-                                                            className="px-2 sm:px-2.5 py-1 rounded-lg bg-brand-purple/10 hover:bg-brand-purple/20 text-[10px] font-bold text-brand-purple uppercase tracking-wider transition-all active:scale-95 cursor-pointer"
+                                                            className="inline-flex items-center gap-1 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg bg-brand-purple/10 hover:bg-brand-purple/20 text-[10px] sm:text-[11px] font-bold text-brand-purple uppercase tracking-wider transition-all active:scale-95 cursor-pointer border border-brand-purple/20 whitespace-nowrap"
+                                                            title="Enter your follower count manually if Instagram sync is outdated"
                                                         >
-                                                            Manual
+                                                            <Pencil size={11} className="shrink-0 stroke-[2.5]" />
+                                                            <span>Enter Manually</span>
                                                         </button>
                                                     )}
                                                     <button
@@ -2174,9 +2183,11 @@ const CreatorJoin = () => {
                                                             setInstagramVerifiedData(null);
                                                             setFormData(prev => ({ ...prev, instagram: '' }));
                                                         }}
-                                                        className="px-2 sm:px-2.5 py-1 rounded-lg bg-black/[0.04] dark:bg-white/[0.06] hover:bg-black/[0.08] dark:hover:bg-white/[0.1] text-[10px] font-bold text-gray-500 hover:text-gray-700 dark:text-zinc-400 dark:hover:text-zinc-200 uppercase tracking-wider transition-all active:scale-95 cursor-pointer"
+                                                        className="inline-flex items-center gap-1 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg bg-black/[0.04] dark:bg-white/[0.06] hover:bg-black/[0.08] dark:hover:bg-white/[0.1] text-[10px] sm:text-[11px] font-bold text-gray-600 hover:text-gray-800 dark:text-zinc-300 dark:hover:text-white uppercase tracking-wider transition-all active:scale-95 cursor-pointer border border-black/[0.06] dark:border-white/[0.08] whitespace-nowrap"
+                                                        title="Change Instagram handle"
                                                     >
-                                                        Change
+                                                        <RefreshCw size={11} className="shrink-0 stroke-[2.5]" />
+                                                        <span>Change Handle</span>
                                                     </button>
                                                 </div>
                                             </div>

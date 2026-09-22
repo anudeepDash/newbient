@@ -44,9 +44,9 @@ function parseAlias(fromStr) {
 function getEmailConfig(serviceKey, defaultName, defaultEmail) {
     const key = serviceKey.toUpperCase();
     
-    // SMTP credentials lookup (e.g. SMTP_USER_TICKETS, SMTP_PASS_TICKETS)
-    let smtpUser = process.env[`SMTP_USER_${key}`] || process.env.SMTP_USER;
-    let smtpPass = process.env[`SMTP_PASS_${key}`] || process.env.SMTP_PASS;
+    // SMTP credentials lookup (e.g. SMTP_USER_TICKETS, SMTP_PASS_TICKETS or CREATORS_SMTP_USER)
+    let smtpUser = process.env[`SMTP_USER_${key}`] || process.env[`${key}_SMTP_USER`] || process.env.SMTP_USER;
+    let smtpPass = process.env[`SMTP_PASS_${key}`] || process.env[`${key}_SMTP_PASS`] || process.env.SMTP_PASS;
     
     // Backward compatibility for weekly
     if (key === 'WEEKLY') {
@@ -58,7 +58,7 @@ function getEmailConfig(serviceKey, defaultName, defaultEmail) {
     let fromDisplayName = defaultName;
     let fromEmailAddress = defaultEmail;
     
-    let envFrom = process.env[`SMTP_FROM_${key}`];
+    let envFrom = process.env[`SMTP_FROM_${key}`] || process.env[`${key}_SMTP_FROM`];
     if (!envFrom && key === 'OFFICIAL') {
         envFrom = process.env.SMTP_FROM;
     }
@@ -134,9 +134,17 @@ export default async function handler(req, res) {
         serviceKey = 'WEEKLY';
         defaultName = fromName || 'Weekly by Concert Zone';
         defaultEmail = fromEmail || 'weekly@newbi.live';
+    } else if (accountType === 'creators' || accountType === 'creator') {
+        serviceKey = 'CREATORS';
+        defaultName = fromName || 'Newbi Creators';
+        defaultEmail = fromEmail || 'creators@newbi.live';
     } else if (fromEmail) {
         const emailLower = fromEmail.toLowerCase().trim();
-        if (emailLower.includes('tickets')) {
+        if (emailLower.includes('creator')) {
+            serviceKey = 'CREATORS';
+            defaultName = fromName || 'Newbi Creators';
+            defaultEmail = fromEmail || 'creators@newbi.live';
+        } else if (emailLower.includes('tickets')) {
             serviceKey = 'TICKETS';
             defaultName = fromName || 'Newbi Tickets';
             defaultEmail = 'noreply@newbi.live';
