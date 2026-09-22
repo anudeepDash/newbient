@@ -3,6 +3,7 @@ import { getFirestore } from 'firebase-admin/firestore';
 import { getAuth } from 'firebase-admin/auth';
 import nodemailer from 'nodemailer';
 
+export const maxDuration = 60;
 let adminDb = null;
 let adminAuth = null;
 
@@ -244,6 +245,43 @@ const fetchInstagramProfile = async (rawHandle) => {
             }
         } catch (err) {
             console.warn('[API/CREATOR-JOIN] RapidAPI notice:', err.message);
+        }
+    }
+
+    // Strategy 3: Apify integration if APIFY_API_TOKEN is provided
+    if (process.env.APIFY_API_TOKEN) {
+        try {
+            const apifyRes = await fetch(`https://api.apify.com/v2/acts/apify~instagram-profile-scraper/run-sync-get-dataset-items?token=${process.env.APIFY_API_TOKEN}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ usernames: [cleanHandle] })
+            });
+
+            if (apifyRes.ok) {
+                const dataset = await apifyRes.json();
+                if (dataset && dataset.length > 0) {
+                    const profile = dataset[0];
+                    const count = profile.followersCount;
+                    
+                    if (count !== undefined) {
+                        const parsedCount = Number(count) || 0;
+                        return {
+                            success: true,
+                            handle: cleanHandle,
+                            name: profile.fullName || cleanHandle,
+                            followers: parsedCount,
+                            formattedFollowers: formatFollowerCount(parsedCount),
+                            profilePic: profile.profilePicUrlHD || profile.profilePicUrl || null,
+                            isPrivate: Boolean(profile.isPrivate),
+                            isVerified: Boolean(profile.isVerified)
+                        };
+                    }
+                }
+            }
+        } catch (err) {
+            console.warn('[API/CREATOR-JOIN] Apify notice:', err.message);
         }
     }
 
