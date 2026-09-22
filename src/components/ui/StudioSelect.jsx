@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, Check, X, Search } from 'lucide-react';
 import { cn } from '../../lib/utils';
@@ -27,11 +28,41 @@ const StudioSelect = ({
 }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
+    const [dropdownStyles, setDropdownStyles] = useState({});
     const containerRef = useRef(null);
     const searchInputRef = useRef(null);
 
     // Auto-enable search if there are more than 6 options
     const isSearchable = searchable !== null ? searchable : options.length > 6;
+
+    // Track position for React Portal
+    useEffect(() => {
+        const updatePosition = () => {
+            if (isOpen && containerRef.current) {
+                const rect = containerRef.current.getBoundingClientRect();
+                setDropdownStyles({
+                    position: 'fixed',
+                    ...(position === 'top' 
+                        ? { bottom: `${window.innerHeight - rect.top + 8}px` } 
+                        : { top: `${rect.bottom + 8}px` }),
+                    left: `${rect.left}px`,
+                    width: `${rect.width}px`,
+                    zIndex: 99999, // Ensure it's above modals and panels
+                });
+            }
+        };
+
+        if (isOpen) {
+            updatePosition();
+            window.addEventListener('resize', updatePosition);
+            window.addEventListener('scroll', updatePosition, true);
+        }
+
+        return () => {
+            window.removeEventListener('resize', updatePosition);
+            window.removeEventListener('scroll', updatePosition, true);
+        };
+    }, [isOpen, position]);
 
     useEffect(() => {
         const handleClickOutside = (event) => {
@@ -244,23 +275,25 @@ const StudioSelect = ({
                 />
             </div>
 
-            {/* Dropdown Menu Overlay */}
-            <AnimatePresence>
-                {isOpen && (
-                    <motion.div
-                        initial={{ opacity: 0, y: position === "top" ? -8 : 8, scale: 0.98 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: position === "top" ? -8 : 8, scale: 0.98 }}
-                        transition={{ duration: 0.15, ease: "easeOut" }}
-                        className={cn(
-                            "absolute z-[100] left-0 w-full min-w-[200px] rounded-2xl p-1.5 shadow-2xl backdrop-blur-2xl border overflow-hidden",
-                            // Light mode: Clean glassmorphic card
-                            "bg-white/95 text-gray-900 border-black/10 shadow-[0_20px_45px_-10px_rgba(0,0,0,0.15)]",
-                            // Dark mode: Obsidian deep titanium
-                            "dark:bg-[#0c0e17]/95 dark:text-white dark:border-white/10 dark:shadow-[0_25px_60px_-15px_rgba(0,0,0,0.9)]",
-                            position === "top" ? "bottom-full mb-2" : "top-full mt-2"
-                        )}
-                    >
+            {/* Dropdown Menu Overlay - Rendered in Portal to prevent clipping */}
+            {typeof document !== 'undefined' && createPortal(
+                <AnimatePresence>
+                    {isOpen && (
+                        <motion.div
+                            initial={{ opacity: 0, y: position === "top" ? -8 : 8, scale: 0.98 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: position === "top" ? -8 : 8, scale: 0.98 }}
+                            transition={{ duration: 0.15, ease: "easeOut" }}
+                            style={dropdownStyles}
+                            className={cn(
+                                "shadow-2xl backdrop-blur-2xl border overflow-hidden",
+                                // Light mode: Clean glassmorphic card
+                                "bg-white/95 text-gray-900 border-black/10 shadow-[0_20px_45px_-10px_rgba(0,0,0,0.15)]",
+                                // Dark mode: Obsidian deep titanium
+                                "dark:bg-[#0c0e17]/95 dark:text-white dark:border-white/10 dark:shadow-[0_25px_60px_-15px_rgba(0,0,0,0.9)]",
+                                "rounded-2xl p-1.5"
+                            )}
+                        >
                         {/* Search Input for Long Option Lists */}
                         {isSearchable && (
                             <div className="p-1 mb-1 border-b border-black/5 dark:border-white/5">
@@ -356,7 +389,9 @@ const StudioSelect = ({
                         </div>
                     </motion.div>
                 )}
-            </AnimatePresence>
+                </AnimatePresence>,
+                document.body
+            )}
         </div>
     );
 };

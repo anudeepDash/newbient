@@ -13,6 +13,7 @@ import ExternalLink from 'lucide-react/dist/esm/icons/external-link';
 import Eye from 'lucide-react/dist/esm/icons/eye';
 import EyeOff from 'lucide-react/dist/esm/icons/eye-off';
 import Save from 'lucide-react/dist/esm/icons/save';
+import Instagram from 'lucide-react/dist/esm/icons/instagram';
 
 const CreatorProgramSettingsManager = () => {
     useStoreSubscription(['siteSettings']);
@@ -20,6 +21,8 @@ const CreatorProgramSettingsManager = () => {
 
     const [formData, setFormData] = useState({
         allowCreatorSignups: true,
+        minInstagramFollowersToJoin: 1000,
+        requireInstagramVerification: true,
         creatorWelcomePoints: 100,
         creatorReferralPoints: 200,
         showPastClients: true,
@@ -32,6 +35,8 @@ const CreatorProgramSettingsManager = () => {
         if (siteSettings) {
             setFormData({
                 allowCreatorSignups: siteSettings.allowCreatorSignups !== false,
+                minInstagramFollowersToJoin: siteSettings.minInstagramFollowersToJoin !== undefined ? Number(siteSettings.minInstagramFollowersToJoin) : 1000,
+                requireInstagramVerification: siteSettings.requireInstagramVerification !== false,
                 creatorWelcomePoints: siteSettings.creatorWelcomePoints !== undefined ? Number(siteSettings.creatorWelcomePoints) : 100,
                 creatorReferralPoints: siteSettings.creatorReferralPoints !== undefined ? Number(siteSettings.creatorReferralPoints) : 200,
                 showPastClients: siteSettings.showPastClients !== false,
@@ -47,6 +52,8 @@ const CreatorProgramSettingsManager = () => {
         try {
             await updateGeneralSettings({
                 allowCreatorSignups: formData.allowCreatorSignups,
+                minInstagramFollowersToJoin: Math.max(0, Number(formData.minInstagramFollowersToJoin) || 0),
+                requireInstagramVerification: formData.requireInstagramVerification,
                 creatorWelcomePoints: Number(formData.creatorWelcomePoints) || 100,
                 creatorReferralPoints: Number(formData.creatorReferralPoints) || 200,
                 showPastClients: formData.showPastClients,
@@ -112,6 +119,59 @@ const CreatorProgramSettingsManager = () => {
                                 >
                                     {formData.allowCreatorSignups ? <><Eye size={12} /> Intake Open</> : <><EyeOff size={12} /> Intake Paused</>}
                                 </button>
+                            </div>
+                        </div>
+
+                        <div className="h-px bg-black/5 dark:bg-white/5" />
+
+                        {/* Section: Instagram Follower Gate & Verification */}
+                        <div className="space-y-4">
+                            <div>
+                                <h3 className="text-sm font-black font-heading uppercase tracking-wide text-gray-950 dark:text-white flex items-center gap-2">
+                                    <Instagram size={16} className="text-pink-500" />
+                                    Instagram Verification &amp; Follower Gate
+                                </h3>
+                                <p className="text-xs text-gray-500 dark:text-zinc-400 mt-0.5">
+                                    Enforce automated follower checks and gate creator registration to talent above a follower threshold
+                                </p>
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div className="space-y-1.5">
+                                    <label className="text-[10px] font-black uppercase tracking-wider text-gray-700 dark:text-zinc-300">
+                                        Minimum Followers Required to Join
+                                    </label>
+                                    <Input
+                                        type="number"
+                                        min="0"
+                                        step="100"
+                                        value={formData.minInstagramFollowersToJoin}
+                                        onChange={(e) => setFormData(prev => ({ ...prev, minInstagramFollowersToJoin: e.target.value }))}
+                                        className="h-12 bg-white dark:bg-black/50 border-black/10 dark:border-white/10 rounded-xl text-xs font-mono font-bold"
+                                    />
+                                    <p className="text-[10px] text-gray-500 dark:text-zinc-500">
+                                        Creators with fewer than this number of verified followers cannot register. Set to 0 for open access.
+                                    </p>
+                                </div>
+
+                                <div className="p-4 rounded-2xl bg-white dark:bg-black/30 border border-black/10 dark:border-white/10 flex items-center justify-between">
+                                    <div className="space-y-0.5">
+                                        <div className="text-xs font-bold text-gray-900 dark:text-white">Auto-Verify Followers</div>
+                                        <div className="text-[10px] text-gray-500 dark:text-zinc-400">Lock follower numbers against manual entry</div>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => setFormData(prev => ({ ...prev, requireInstagramVerification: !prev.requireInstagramVerification }))}
+                                        className={cn(
+                                            "text-[9px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full border transition-all shrink-0",
+                                            formData.requireInstagramVerification
+                                                ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/30"
+                                                : "bg-amber-500/10 text-amber-500 border-amber-500/30"
+                                        )}
+                                    >
+                                        {formData.requireInstagramVerification ? 'Enforced' : 'Optional'}
+                                    </button>
+                                </div>
                             </div>
                         </div>
 

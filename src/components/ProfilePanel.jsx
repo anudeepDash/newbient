@@ -1833,14 +1833,14 @@ const CreatorProfileManager = ({
                                 </div>
                             </div>
                             <div className="space-y-1">
-                                <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 dark:text-zinc-400">Approx Followers</label>
+                                <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 dark:text-zinc-400">Auto-Verified Followers</label>
                                 <input 
-                                    type="text"
+                                    type="text" 
                                     name="instagramFollowers"
-                                    value={form.instagramFollowers}
-                                    onChange={handleChange}
-                                    placeholder="e.g. 15000"
-                                    className="w-full h-11 px-3.5 rounded-xl bg-white dark:bg-black/50 border border-gray-200 dark:border-white/10 text-xs font-bold text-gray-900 dark:text-white focus:border-pink-500 outline-none transition-all"
+                                    value={form.instagramFollowers ? `${Number(form.instagramFollowers).toLocaleString()} followers` : 'Unverified'}
+                                    readOnly
+                                    disabled
+                                    className="w-full h-11 px-3.5 rounded-xl bg-gray-100 dark:bg-black/30 border border-gray-200 dark:border-white/10 text-xs font-bold text-gray-500 dark:text-zinc-400 cursor-not-allowed outline-none"
                                 />
                             </div>
                         </div>

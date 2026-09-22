@@ -692,7 +692,7 @@ const CreatorDashboard = () => {
                 {/* VIP City Creator WhatsApp Community Card */}
                 <div className="w-full">
                     <CreatorCityGroupCard
-                        initialCity={profile?.city || 'Bengaluru'}
+                        initialCity={profile?.city || ''}
                         creatorId={profile?.uid || profile?.id}
                         isJoined={Boolean(profile?.hasJoinedCityGroup)}
                         onJoinMarked={() => {

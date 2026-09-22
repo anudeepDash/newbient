@@ -59,6 +59,220 @@ const normalizePhoneNumber = (phone) => {
     return digits.slice(-10);
 };
 
+const parseFollowerCount = (str) => {
+    if (!str && str !== 0) return 0;
+    if (typeof str === 'number') return Math.round(str);
+    const cleaned = String(str).trim().replace(/,/g, '');
+    const match = cleaned.match(/^([0-9.]+)\s*([kKmMbB])?$/i);
+    if (!match) {
+        const num = parseFloat(cleaned);
+        return isNaN(num) ? 0 : Math.round(num);
+    }
+    const val = parseFloat(match[1]);
+    const unit = (match[2] || '').toUpperCase();
+    if (unit === 'K') return Math.round(val * 1000);
+    if (unit === 'M') return Math.round(val * 1000000);
+    if (unit === 'B') return Math.round(val * 1000000000);
+    return Math.round(val);
+};
+
+const formatFollowerCount = (num) => {
+    const val = Number(num) || 0;
+    if (val >= 1000000) {
+        return (val / 1000000).toFixed(1).replace(/\.0$/, '') + 'M';
+    }
+    if (val >= 1000) {
+        return (val / 1000).toFixed(1).replace(/\.0$/, '') + 'K';
+    }
+    return val.toLocaleString();
+};
+
+const fetchInstagramProfile = async (rawHandle) => {
+    const cleanHandle = String(rawHandle || '').trim().replace(/^@/, '').toLowerCase();
+    if (!cleanHandle || !/^[a-zA-Z0-9._]{1,30}$/.test(cleanHandle)) {
+        return { success: false, error: 'Invalid Instagram username. Handles must be 1-30 characters containing only letters, numbers, periods, and underscores.' };
+    }
+
+    let lastError = null;
+
+    // Strategy 1: Instagram Web Profile Info JSON API
+    try {
+        const apiUrl = `https://www.instagram.com/api/v1/users/web_profile_info/?username=${cleanHandle}`;
+        const res = await fetch(apiUrl, {
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 Instagram 305.0.0.31.110',
+                'X-IG-App-ID': '936619743392459',
+                'Accept': '*/*',
+                'Accept-Language': 'en-US,en;q=0.9',
+                'Sec-Fetch-Mode': 'cors',
+                'Sec-Fetch-Site': 'same-origin'
+            }
+        });
+
+        if (res.status === 404) {
+            return { success: false, notFound: true, error: `@${cleanHandle} does not exist on Instagram. Please check the spelling.` };
+        }
+
+        if (res.ok) {
+            const data = await res.json();
+            const user = data?.data?.user;
+            if (user) {
+                const count = user.edge_followed_by?.count ?? 0;
+                return {
+                    success: true,
+                    handle: cleanHandle,
+                    name: user.full_name || user.username || cleanHandle,
+                    followers: count,
+                    formattedFollowers: formatFollowerCount(count),
+                    profilePic: user.profile_pic_url_hd || user.profile_pic_url || null,
+                    isPrivate: Boolean(user.is_private),
+                    isVerified: Boolean(user.is_verified),
+                    bio: user.biography || ''
+                };
+            }
+        }
+    } catch (err) {
+        lastError = err.message;
+    }
+
+    // Strategy 2: Instagram Public OpenGraph HTML Scraping
+    try {
+        const htmlUrl = `https://www.instagram.com/${cleanHandle}/`;
+        const res = await fetch(htmlUrl, {
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                'Accept-Language': 'en-US,en;q=0.9'
+            }
+        });
+
+        if (res.status === 404) {
+            return { success: false, notFound: true, error: `@${cleanHandle} does not exist on Instagram. Please check the spelling.` };
+        }
+
+        if (res.ok) {
+            const html = await res.text();
+            if (html.includes("Sorry, this page isn't available") || html.includes("The link you followed may be broken")) {
+                return { success: false, notFound: true, error: `@${cleanHandle} was not found on Instagram.` };
+            }
+
+            // Extract og:description or description meta tag
+            const descMatch = html.match(/<meta\s+(?:property|name)=["'](?:og:)?description["']\s+content=["']([^"']+)["']/i) ||
+                              html.match(/content=["']([^"']+)["']\s+(?:property|name)=["'](?:og:)?description["']/i);
+            
+            if (descMatch && descMatch[1]) {
+                const desc = descMatch[1];
+                const followerMatch = desc.match(/([0-9.,kKmMbB]+)\s+Followers/i);
+                if (followerMatch) {
+                    const parsedCount = parseFollowerCount(followerMatch[1]);
+                    
+                    const titleMatch = html.match(/<meta\s+(?:property|name)=["'](?:og:)?title["']\s+content=["']([^"']+)["']/i) ||
+                                       html.match(/content=["']([^"']+)["']\s+(?:property|name)=["'](?:og:)?title["']/i);
+                    let fullName = cleanHandle;
+                    if (titleMatch && titleMatch[1]) {
+                        const namePart = titleMatch[1].split('(@')[0].replace(/•.*/, '').trim();
+                        if (namePart) fullName = namePart;
+                    }
+
+                    const imgMatch = html.match(/<meta\s+(?:property|name)=["'](?:og:)?image["']\s+content=["']([^"']+)["']/i) ||
+                                     html.match(/content=["']([^"']+)["']\s+(?:property|name)=["'](?:og:)?image["']/i);
+                    const profilePic = imgMatch ? imgMatch[1] : null;
+
+                    return {
+                        success: true,
+                        handle: cleanHandle,
+                        name: fullName,
+                        followers: parsedCount,
+                        formattedFollowers: formatFollowerCount(parsedCount),
+                        profilePic,
+                        isPrivate: desc.toLowerCase().includes('private'),
+                        isVerified: false
+                    };
+                }
+            }
+        }
+    } catch (err) {
+        lastError = err.message;
+    }
+
+    // Strategy 3: Picuki Public Instagram Viewer Mirror
+    try {
+        const picukiUrl = `https://www.picuki.com/profile/${cleanHandle}`;
+        const res = await fetch(picukiUrl, {
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+            }
+        });
+
+        if (res.ok) {
+            const html = await res.text();
+            if (!html.includes('profile_not_found') && !html.includes('User not found')) {
+                const countMatch = html.match(/<span\s+class=["']followed_by["'][^>]*>([\s\S]*?)<\/span>/i);
+                if (countMatch && countMatch[1]) {
+                    const rawFollowers = countMatch[1].replace(/<[^>]*>/g, '').trim();
+                    const parsedCount = parseFollowerCount(rawFollowers);
+
+                    const nameMatch = html.match(/<h1\s+class=["']profile-name-bottom["'][^>]*>([\s\S]*?)<\/h1>/i);
+                    const name = nameMatch ? nameMatch[1].replace(/<[^>]*>/g, '').trim() : cleanHandle;
+
+                    const avatarMatch = html.match(/<div\s+class=["']profile-avatar["'][^>]*>[\s\S]*?<img\s+src=["']([^"']+)["']/i);
+                    const profilePic = avatarMatch ? avatarMatch[1] : null;
+
+                    return {
+                        success: true,
+                        handle: cleanHandle,
+                        name: name || cleanHandle,
+                        followers: parsedCount,
+                        formattedFollowers: formatFollowerCount(parsedCount),
+                        profilePic,
+                        isPrivate: html.includes('private-profile'),
+                        isVerified: html.includes('verified-icon')
+                    };
+                }
+            }
+        }
+    } catch (err) {
+        lastError = err.message;
+    }
+
+    // Strategy 4: External RapidAPI fallback if key provided
+    if (process.env.RAPIDAPI_KEY) {
+        try {
+            const rapidRes = await fetch(`https://instagram-data12.p.rapidapi.com/user/details?username=${cleanHandle}`, {
+                headers: {
+                    'x-rapidapi-key': process.env.RAPIDAPI_KEY,
+                    'x-rapidapi-host': 'instagram-data12.p.rapidapi.com'
+                }
+            });
+            if (rapidRes.ok) {
+                const rapidData = await rapidRes.json();
+                const count = rapidData?.follower_count || rapidData?.edge_followed_by?.count;
+                if (count !== undefined) {
+                    const parsedCount = Number(count) || 0;
+                    return {
+                        success: true,
+                        handle: cleanHandle,
+                        name: rapidData.full_name || cleanHandle,
+                        followers: parsedCount,
+                        formattedFollowers: formatFollowerCount(parsedCount),
+                        profilePic: rapidData.profile_pic_url || null,
+                        isPrivate: Boolean(rapidData.is_private),
+                        isVerified: Boolean(rapidData.is_verified)
+                    };
+                }
+            }
+        } catch (err) {
+            lastError = err.message;
+        }
+    }
+
+    return {
+        success: false,
+        error: `Could not auto-verify @${cleanHandle}. Please make sure your account is public and spelled correctly, or try again.`
+    };
+};
+
 // WhatsApp Meta Cloud API trigger helper
 const sendWhatsAppVerification = async (phone, creatorName, verificationUrl) => {
     const token = process.env.WHATSAPP_ACCESS_TOKEN;
@@ -583,6 +797,81 @@ export default async function handler(req, res) {
 
     const action = req.query.action || req.body?.action || 'join';
 
+    // ── ACTION: VERIFY INSTAGRAM PROFILE & FOLLOWERS ──────────────────────────
+    if (action === 'verify-instagram') {
+        const rawHandle = req.query.handle || req.body?.handle || '';
+        const cleanHandle = String(rawHandle).trim().replace(/^@/, '').toLowerCase();
+
+        if (!cleanHandle) {
+            return res.status(400).json({ success: false, error: 'Instagram handle is required.' });
+        }
+
+        try {
+            // Check deduplication / existing creator linkage
+            let alreadyRegistered = false;
+            let registeredTo = null;
+            if (adminDb) {
+                try {
+                    const matchSnap = await adminDb.collection('creators')
+                        .where('instagram', '==', cleanHandle)
+                        .limit(1)
+                        .get();
+                    if (!matchSnap.empty) {
+                        const conflictDoc = matchSnap.docs[0].data();
+                        alreadyRegistered = true;
+                        registeredTo = conflictDoc.displayName || conflictDoc.name || 'Existing Account';
+                    }
+                } catch (snapErr) {
+                    console.warn('[API/CREATOR-JOIN] Deduplication check notice:', snapErr.message);
+                }
+            }
+
+            // Fetch minimum follower threshold from site_settings/general
+            let minFollowersRequired = 1000;
+            let requireVerification = true;
+            if (adminDb) {
+                try {
+                    const settingsSnap = await adminDb.collection('site_settings').doc('general').get();
+                    if (settingsSnap.exists) {
+                        const sData = settingsSnap.data();
+                        if (sData.minInstagramFollowersToJoin !== undefined) {
+                            minFollowersRequired = Number(sData.minInstagramFollowersToJoin);
+                        }
+                        if (sData.requireInstagramVerification !== undefined) {
+                            requireVerification = Boolean(sData.requireInstagramVerification);
+                        }
+                    }
+                } catch (sErr) {
+                    console.warn('[API/CREATOR-JOIN] site_settings read notice:', sErr.message);
+                }
+            }
+
+            const result = await fetchInstagramProfile(cleanHandle);
+            if (!result.success) {
+                return res.status(result.notFound ? 404 : 422).json(result);
+            }
+
+            const followers = Number(result.followers) || 0;
+            const meetsMinimum = minFollowersRequired <= 0 || followers >= minFollowersRequired;
+
+            return res.status(200).json({
+                ...result,
+                minFollowersRequired,
+                requireVerification,
+                meetsMinimumFollowers: meetsMinimum,
+                alreadyRegistered,
+                registeredTo
+            });
+
+        } catch (err) {
+            console.error('[API/CREATOR-JOIN] verify-instagram error:', err);
+            return res.status(500).json({
+                success: false,
+                error: err.message || 'Failed to verify Instagram profile.'
+            });
+        }
+    }
+
     // ── ACTION: VERIFY CREATOR ──────────────────────────────────────────────
     if (action === 'verify') {
         const { id, creatorId, token } = req.body || req.query;
@@ -1093,6 +1382,36 @@ export default async function handler(req, res) {
             }
         }
 
+        // 4. Instagram Followers Threshold & Verification Check
+        let minInstagramFollowers = 1000;
+        let requireInstagramVerification = true;
+        if (adminDb) {
+            try {
+                const settingsSnap = await adminDb.collection('site_settings').doc('general').get();
+                if (settingsSnap.exists) {
+                    const sData = settingsSnap.data();
+                    if (sData.minInstagramFollowersToJoin !== undefined) {
+                        minInstagramFollowers = Number(sData.minInstagramFollowersToJoin);
+                    }
+                    if (sData.requireInstagramVerification !== undefined) {
+                        requireInstagramVerification = Boolean(sData.requireInstagramVerification);
+                    }
+                }
+            } catch (sErr) {
+                console.warn('[API/CREATOR-JOIN] settings read error:', sErr.message);
+            }
+        }
+
+        const submittedFollowers = Number(creatorData.instagramFollowers) || 0;
+        if (cleanInsta && requireInstagramVerification && minInstagramFollowers > 0) {
+            if (submittedFollowers < minInstagramFollowers) {
+                return res.status(400).json({
+                    success: false,
+                    error: `Newbi Creator Network requires a minimum of ${minInstagramFollowers.toLocaleString()} Instagram followers to register. Your account has ${submittedFollowers.toLocaleString()} followers.`
+                });
+            }
+        }
+
         const verificationToken = creatorData.verificationToken || `vt_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
         const creatorId = (creatorData.creatorId || targetUid.slice(0, 8)).toUpperCase();
         const now = new Date().toISOString();
@@ -1108,6 +1427,10 @@ export default async function handler(req, res) {
             verificationToken,
             profileStatus: creatorData.profileStatus || 'pending',
             isVerified: creatorData.isVerified || false,
+            instagram: cleanInsta,
+            instagramFollowers: submittedFollowers ? String(submittedFollowers) : (creatorData.instagramFollowers || '0'),
+            instagramVerified: Boolean(creatorData.instagramVerified || (cleanInsta && submittedFollowers >= minInstagramFollowers)),
+            instagramVerifiedAt: creatorData.instagramVerifiedAt || (cleanInsta ? now : null),
             isPhoneVerified,
             phoneVerifiedAt: isPhoneVerified ? (creatorData.phoneVerifiedAt || now) : null,
             isEmailVerified,

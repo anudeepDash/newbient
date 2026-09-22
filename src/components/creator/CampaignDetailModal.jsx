@@ -130,27 +130,45 @@ const CampaignDetailModal = ({
     }, [initialTaskId, campaignTasks, isJoined]);
 
     // Instagram verification eligibility check
-    const handleInstagramVerify = () => {
-        if (!form.instagram) {
+    const handleInstagramVerify = async () => {
+        const cleanHandle = String(form.instagram || '').trim().replace(/^@/, '');
+        if (!cleanHandle) {
             return useStore.getState().addToast("Please enter your Instagram handle to continue.", 'error');
         }
         setIsVerifying(true);
         setVerificationStep('verifying');
 
-        setTimeout(() => {
-            const count = parseInt(form.followers);
-            if (isNaN(count)) {
+        try {
+            const res = await fetch(`/api/creator-join?action=verify-instagram&handle=${encodeURIComponent(cleanHandle)}`);
+            const data = await res.json();
+
+            if (!res.ok || !data.success) {
                 setIsVerifying(false);
                 setVerificationStep('failed');
-                useStore.getState().addToast("Please enter your follower count so we can check eligibility.", 'error');
-            } else if (count < (campaign?.minInstagramFollowers || 0)) {
-                setIsVerifying(false);
+                useStore.getState().addToast(data.error || `Could not auto-verify @${cleanHandle}. Make sure profile is public.`, 'error');
+                return;
+            }
+
+            const count = Number(data.followers) || 0;
+            const required = Number(campaign?.minInstagramFollowers || 0);
+
+            setForm(prev => ({
+                ...prev,
+                instagram: data.handle,
+                followers: count.toString()
+            }));
+
+            setIsVerifying(false);
+            if (count < required) {
                 setVerificationStep('failed');
             } else {
-                setIsVerifying(false);
                 setVerificationStep('success');
             }
-        }, 1200);
+        } catch (err) {
+            setIsVerifying(false);
+            setVerificationStep('failed');
+            useStore.getState().addToast("Verification network error. Please try again.", 'error');
+        }
     };
 
     // Join Campaign Submission
@@ -634,14 +652,14 @@ const CampaignDetailModal = ({
 
                                                             <div className="space-y-1.5">
                                                                 <label className="text-[10px] font-black text-gray-500 dark:text-zinc-400 uppercase tracking-widest pl-1 font-mono">
-                                                                    Current Followers
+                                                                    Auto-Verified Followers
                                                                 </label>
                                                                 <Input 
-                                                                    type="number" 
-                                                                    value={form.followers} 
-                                                                    onChange={e => setForm({...form, followers: e.target.value})} 
-                                                                    placeholder="e.g. 5000" 
-                                                                    className="h-12 bg-white dark:bg-black/50 border-black/15 dark:border-white/10 rounded-2xl text-xs font-semibold text-gray-950 dark:text-white focus:border-neon-green font-mono placeholder-gray-400 dark:placeholder-zinc-500 shadow-2xs" 
+                                                                    type="text" 
+                                                                    readOnly
+                                                                    value={form.followers ? `${Number(form.followers).toLocaleString()} followers` : ''} 
+                                                                    placeholder="Auto-verified via Instagram check" 
+                                                                    className="h-12 bg-gray-50 dark:bg-black/30 border-black/15 dark:border-white/10 rounded-2xl text-xs font-bold text-gray-950 dark:text-white cursor-not-allowed font-mono placeholder-gray-400 dark:placeholder-zinc-500 shadow-2xs" 
                                                                     disabled={isEligible} 
                                                                 />
                                                             </div>
