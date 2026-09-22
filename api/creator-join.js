@@ -106,16 +106,17 @@ const fetchInstagramProfile = async (rawHandle) => {
             .replace(/&bull;/g, '•');
     };
 
-    // Strategy 1: Social Crawler Previews (Instagram serves complete OpenGraph data to social sharing agents)
+    // Strategy 1: Social Crawler Previews (Parallel execution for maximum speed)
     const crawlers = [
         'facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)',
         'Twitterbot/1.0',
-        'LinkedInBot/1.0 (compatible; Mozilla/5.0; Apache-HttpClient +http://www.linkedin.com)',
-        'TelegramBot (like TwitterBot)',
-        'WhatsApp/2.21.12.21 A'
+        'LinkedInBot/1.0 (compatible; Mozilla/5.0; Apache-HttpClient +http://www.linkedin.com)'
     ];
 
-    for (const ua of crawlers) {
+    const fetchWithUA = async (ua) => {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 2500); // 2.5s strict timeout
+
         try {
             const htmlUrl = `https://www.instagram.com/${cleanHandle}/`;
             const res = await fetch(htmlUrl, {
@@ -123,53 +124,62 @@ const fetchInstagramProfile = async (rawHandle) => {
                     'User-Agent': ua,
                     'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
                     'Accept-Language': 'en-US,en;q=0.9'
-                }
+                },
+                signal: controller.signal
             });
+            clearTimeout(timeoutId);
 
-            if (res.ok) {
-                const html = await res.text();
-                const descMatch = html.match(/<meta\s+property=["']og:description["']\s+content=["']([^"']+)["']/i) ||
-                                  html.match(/<meta\s+name=["']description["']\s+content=["']([^"']+)["']/i) ||
-                                  html.match(/content=["']([^"']+)["']\s+property=["']og:description["']/i);
+            if (!res.ok) throw new Error('Not ok');
 
-                if (descMatch && descMatch[1]) {
-                    const desc = decodeEntities(descMatch[1]);
-                    // Format: "542 Followers, 541 Following, 13 Posts - See Instagram photos and videos from Anudeep Dash (@anudeepdash)"
-                    const followerMatch = desc.match(/([0-9.,kKmMbB]+)\s+Followers/i);
-                    if (followerMatch) {
-                        const parsedCount = parseFollowerCount(followerMatch[1]);
+            const html = await res.text();
+            const descMatch = html.match(/<meta\s+property=["']og:description["']\s+content=["']([^"']+)["']/i) ||
+                              html.match(/<meta\s+name=["']description["']\s+content=["']([^"']+)["']/i) ||
+                              html.match(/content=["']([^"']+)["']\s+property=["']og:description["']/i);
 
-                        // Extract title for display name
-                        const titleMatch = html.match(/<meta\s+property=["']og:title["']\s+content=["']([^"']+)["']/i) ||
-                                           html.match(/content=["']([^"']+)["']\s+property=["']og:title["']/i);
-                        let fullName = cleanHandle;
-                        if (titleMatch && titleMatch[1]) {
-                            const rawTitle = decodeEntities(titleMatch[1]);
-                            const namePart = rawTitle.split('(@')[0].split('•')[0].trim();
-                            if (namePart) fullName = namePart;
-                        }
+            if (descMatch && descMatch[1]) {
+                const desc = decodeEntities(descMatch[1]);
+                const followerMatch = desc.match(/([0-9.,kKmMbB]+)\s+Followers/i);
+                if (followerMatch) {
+                    const parsedCount = parseFollowerCount(followerMatch[1]);
 
-                        // Extract profile image
-                        const imgMatch = html.match(/<meta\s+property=["']og:image["']\s+content=["']([^"']+)["']/i) ||
-                                         html.match(/content=["']([^"']+)["']\s+property=["']og:image["']/i);
-                        const profilePic = imgMatch ? decodeEntities(imgMatch[1]) : null;
-
-                        return {
-                            success: true,
-                            handle: cleanHandle,
-                            name: fullName,
-                            followers: parsedCount,
-                            formattedFollowers: formatFollowerCount(parsedCount),
-                            profilePic,
-                            isPrivate: desc.toLowerCase().includes('private'),
-                            isVerified: desc.includes('Verified') || html.includes('verified')
-                        };
+                    const titleMatch = html.match(/<meta\s+property=["']og:title["']\s+content=["']([^"']+)["']/i) ||
+                                       html.match(/content=["']([^"']+)["']\s+property=["']og:title["']/i);
+                    let fullName = cleanHandle;
+                    if (titleMatch && titleMatch[1]) {
+                        const rawTitle = decodeEntities(titleMatch[1]);
+                        const namePart = rawTitle.split('(@')[0].split('•')[0].trim();
+                        if (namePart) fullName = namePart;
                     }
+
+                    const imgMatch = html.match(/<meta\s+property=["']og:image["']\s+content=["']([^"']+)["']/i) ||
+                                     html.match(/content=["']([^"']+)["']\s+property=["']og:image["']/i);
+                    const profilePic = imgMatch ? decodeEntities(imgMatch[1]) : null;
+
+                    return {
+                        success: true,
+                        handle: cleanHandle,
+                        name: fullName,
+                        followers: parsedCount,
+                        formattedFollowers: formatFollowerCount(parsedCount),
+                        profilePic,
+                        isPrivate: desc.toLowerCase().includes('private'),
+                        isVerified: desc.includes('Verified') || html.includes('verified')
+                    };
                 }
             }
+            throw new Error('No valid profile data found');
         } catch (err) {
-            console.warn('[API/CREATOR-JOIN] Social crawler notice:', err.message);
+            clearTimeout(timeoutId);
+            throw err;
         }
+    };
+
+    try {
+        // Fire crawlers concurrently, first to succeed wins immediately
+        const result = await Promise.any(crawlers.map(ua => fetchWithUA(ua)));
+        return result;
+    } catch (err) {
+        console.warn('[API/CREATOR-JOIN] All concurrent social crawlers failed.');
     }
 
     // Strategy 2: External RapidAPI fallback if key provided
@@ -754,49 +764,44 @@ export default async function handler(req, res) {
         }
 
         try {
-            // Check deduplication / existing creator linkage
-            let alreadyRegistered = false;
-            let registeredTo = null;
-            if (adminDb) {
-                try {
-                    const matchSnap = await adminDb.collection('creators')
-                        .where('instagram', '==', cleanHandle)
-                        .limit(1)
-                        .get();
-                    if (!matchSnap.empty) {
-                        const conflictDoc = matchSnap.docs[0].data();
-                        alreadyRegistered = true;
-                        registeredTo = conflictDoc.displayName || conflictDoc.name || 'Existing Account';
-                    }
-                } catch (snapErr) {
-                    console.warn('[API/CREATOR-JOIN] Deduplication check notice:', snapErr.message);
-                }
-            }
-
-            // Fetch minimum follower threshold from site_settings/general
-            let minFollowersRequired = 1000;
-            let requireVerification = true;
-            if (adminDb) {
-                try {
-                    const settingsSnap = await adminDb.collection('site_settings').doc('general').get();
-                    if (settingsSnap.exists) {
-                        const sData = settingsSnap.data();
-                        if (sData.minInstagramFollowersToJoin !== undefined) {
-                            minFollowersRequired = Number(sData.minInstagramFollowersToJoin);
-                        }
-                        if (sData.requireInstagramVerification !== undefined) {
-                            requireVerification = Boolean(sData.requireInstagramVerification);
-                        }
-                    }
-                } catch (sErr) {
-                    console.warn('[API/CREATOR-JOIN] site_settings read notice:', sErr.message);
-                }
-            }
-
             const reqHost = req.headers?.host || '';
             const isLocal = reqHost.includes('localhost') || reqHost.includes('127.0.0.1');
 
-            const result = await fetchInstagramProfile(cleanHandle);
+            const fetchDedup = adminDb ? adminDb.collection('creators').where('instagram', '==', cleanHandle).limit(1).get().catch(e => {
+                console.warn('[API/CREATOR-JOIN] Deduplication check notice:', e.message);
+                return { empty: true };
+            }) : Promise.resolve({ empty: true });
+
+            const fetchSettings = adminDb ? adminDb.collection('site_settings').doc('general').get().catch(e => {
+                console.warn('[API/CREATOR-JOIN] site_settings read notice:', e.message);
+                return { exists: false };
+            }) : Promise.resolve({ exists: false });
+
+            const [matchSnap, settingsSnap, result] = await Promise.all([
+                fetchDedup,
+                fetchSettings,
+                fetchInstagramProfile(cleanHandle)
+            ]);
+
+            let alreadyRegistered = false;
+            let registeredTo = null;
+            if (!matchSnap.empty) {
+                const conflictDoc = matchSnap.docs[0].data();
+                alreadyRegistered = true;
+                registeredTo = conflictDoc.displayName || conflictDoc.name || 'Existing Account';
+            }
+
+            let minFollowersRequired = 1000;
+            let requireVerification = true;
+            if (settingsSnap.exists) {
+                const sData = settingsSnap.data();
+                if (sData.minInstagramFollowersToJoin !== undefined) {
+                    minFollowersRequired = Number(sData.minInstagramFollowersToJoin);
+                }
+                if (sData.requireInstagramVerification !== undefined) {
+                    requireVerification = Boolean(sData.requireInstagramVerification);
+                }
+            }
             if (!result.success) {
                 if (isLocal) {
                     return res.status(200).json({
