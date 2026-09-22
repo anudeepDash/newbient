@@ -205,6 +205,14 @@ const CampaignDetailModal = ({
                     useStore.getState().addToast(`Local dev mode: Instagram verification passed (${mockFollowers.toLocaleString()} followers).`, 'info');
                     return;
                 }
+                if (data.requiresManualEntry) {
+                    setIsVerifying(false);
+                    setVerificationStep('idle');
+                    setIsManualFollowerEntry(true);
+                    setInstagramVerificationError('');
+                    useStore.getState().addToast(`Instagram verification blocked by Meta. Please enter followers manually.`, 'info');
+                    return;
+                }
                 const errMsg = data.error || `Could not auto-verify @${cleanHandle}. Make sure profile is public.`;
                 setIsVerifying(false);
                 setVerificationStep('scraper_error');
@@ -243,10 +251,10 @@ const CampaignDetailModal = ({
             }
         } catch (err) {
             setIsVerifying(false);
-            setVerificationStep('scraper_error');
-            const errMsg = "Verification network error. Please try again.";
-            setInstagramVerificationError(errMsg);
-            useStore.getState().addToast(errMsg, 'error');
+            setVerificationStep('idle');
+            setIsManualFollowerEntry(true);
+            setInstagramVerificationError('');
+            useStore.getState().addToast(`Instagram verification blocked by Meta. Please enter followers manually.`, 'info');
         }
     };
 

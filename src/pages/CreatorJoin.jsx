@@ -268,6 +268,12 @@ const CreatorJoin = () => {
                     useStore.getState().addToast(`Local dev mode: Instagram verification passed (${mockFollowers.toLocaleString()} followers).`, 'info');
                     return;
                 }
+                if (data.requiresManualEntry) {
+                    setIsManualFollowerEntry(true);
+                    setInstagramVerificationError('');
+                    useStore.getState().addToast(`Instagram verification blocked by Meta. Please enter followers manually.`, 'info');
+                    return;
+                }
                 const errMsg = data.error || `Could not verify @${cleanHandle}. Make sure account is public.`;
                 setInstagramVerificationError(errMsg);
                 setInstagramVerifiedData(null);
@@ -327,8 +333,9 @@ const CreatorJoin = () => {
                 useStore.getState().addToast(`Local dev mode: Instagram verification passed (${mockFollowers.toLocaleString()} followers).`, 'info');
                 return;
             }
-            setInstagramVerificationError(err.message || 'Verification network error. Please try again.');
-            setInstagramVerifiedData(null);
+            setIsManualFollowerEntry(true);
+            setInstagramVerificationError('');
+            useStore.getState().addToast(`Instagram verification blocked by Meta. Please enter followers manually.`, 'info');
         } finally {
             setIsInstagramVerifying(false);
         }
