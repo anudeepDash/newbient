@@ -110,7 +110,9 @@ const fetchInstagramProfile = async (rawHandle) => {
     const crawlers = [
         'facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)',
         'Twitterbot/1.0',
-        'LinkedInBot/1.0 (compatible; Mozilla/5.0; Apache-HttpClient +http://www.linkedin.com)'
+        'LinkedInBot/1.0 (compatible; Mozilla/5.0; Apache-HttpClient +http://www.linkedin.com)',
+        'Googlebot/2.1 (+http://www.google.com/bot.html)',
+        'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)'
     ];
 
     const fetchWithUA = async (ua) => {
