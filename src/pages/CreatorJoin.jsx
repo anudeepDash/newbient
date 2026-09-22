@@ -784,10 +784,13 @@ const CreatorJoin = () => {
             }
         };
 
+        const displayCity = (formData.city === 'Others' ? formData.customCity?.trim() : formData.city) || 'Your City';
+        const displayNiche = (formData.categories === 'Others' ? formData.customNiche?.trim() : formData.categories) || 'Content Creator';
+
         const newCreatorProfile = {
             name: formData.name,
-            city: formData.city,
-            categories: formData.categories ? [formData.categories] : ["Content Creator"],
+            city: displayCity,
+            categories: [displayNiche],
             instagramHandle: formData.instagramHandle || formData.instagram,
             profilePicture: formData.profilePicture,
             profileStatus: "pending",
@@ -797,11 +800,17 @@ const CreatorJoin = () => {
         };
 
         return (
-            <div className="min-h-screen bg-gray-50 dark:bg-[#07090E] text-gray-900 dark:text-white pt-24 pb-20 px-4 flex items-center justify-center transition-colors duration-300">
+            <div className="w-full min-h-[calc(100vh-140px)] bg-gray-50 dark:bg-[#07090E] text-gray-900 dark:text-white pt-10 pb-16 px-4 flex flex-col items-center justify-start relative transition-colors duration-300">
+                {/* Ambient Background Glows */}
+                <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
+                    <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[350px] bg-gradient-to-b from-neon-pink/[0.04] to-transparent rounded-full blur-3xl" />
+                    <div className="absolute bottom-10 right-1/4 w-[400px] h-[300px] bg-neon-green/[0.03] rounded-full blur-3xl" />
+                </div>
+
                 <motion.div
                     initial={{ opacity: 0, scale: 0.95, y: 20 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
-                    className="max-w-xl w-full text-center space-y-6"
+                    className="relative z-10 max-w-xl sm:max-w-2xl w-full text-center space-y-6"
                 >
                     <div className="space-y-2">
                         <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-400 text-[10px] font-black uppercase tracking-widest font-mono">
@@ -824,7 +833,7 @@ const CreatorJoin = () => {
                     {/* VIP City Creator WhatsApp Community Card */}
                     <div className="py-2">
                         <CreatorCityGroupCard
-                            initialCity={formData.city === 'Others' ? formData.customCity : formData.city}
+                            initialCity={displayCity}
                             creatorId={registeredCreatorDocId || user?.uid || matchedExistingCreator?.id}
                             isJoined={hasMarkedGroupJoined}
                             onJoinMarked={() => setHasMarkedGroupJoined(true)}
@@ -832,11 +841,11 @@ const CreatorJoin = () => {
                     </div>
 
                     {/* Next Steps Info Box */}
-                    <div className="p-4 bg-white dark:bg-white/[0.02] border border-gray-200 dark:border-white/[0.08] rounded-2xl text-left text-xs text-gray-600 dark:text-zinc-400 space-y-2">
+                    <div className="p-4 sm:p-5 bg-white dark:bg-white/[0.02] border border-gray-200 dark:border-white/[0.08] rounded-2xl sm:rounded-3xl text-left text-xs text-gray-600 dark:text-zinc-400 space-y-2 shadow-xs">
                         <div className="flex items-center gap-2 text-neon-green font-bold text-[11px] uppercase tracking-wider">
                             <Sparkles size={13} /> Your Creator Privileges
                         </div>
-                        <p>&bull; <strong>Brand Collaborations:</strong> Verified briefs matching {formData.city} and {formData.categories || 'your niche'}.</p>
+                        <p>&bull; <strong>Brand Collaborations:</strong> Verified briefs matching <span className="text-gray-900 dark:text-white font-bold">{displayCity}</span> and <span className="text-gray-900 dark:text-white font-bold">{displayNiche}</span>.</p>
                         <p>&bull; <strong>Festival &amp; Event Passes:</strong> Exclusive experiential access and festival drops.</p>
                         <p>&bull; <strong>Newbi Points:</strong> {Number(siteSettings?.creatorWelcomePoints) || 100} welcome bonus points credited to your ID pass.</p>
                     </div>

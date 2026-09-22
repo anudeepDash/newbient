@@ -582,7 +582,7 @@ const CreatorManager = ({ showLeaderboardOnly = false, isEmbedded = false }) => 
             <div className={cn("relative z-10 max-w-[1700px] mx-auto pb-20", isEmbedded ? "px-4 md:px-12 pt-6" : "")}>
             <div>
                 {/* Control Panel */}
-                <div className="relative z-50 bg-white/[0.02] border border-white/[0.06] rounded-2xl p-3 sm:p-4 mb-6 md:mb-8 space-y-3">
+                <div className="relative z-50 bg-white dark:bg-[#0c0e14] border border-black/[0.08] dark:border-white/[0.08] rounded-3xl p-3 sm:p-4 mb-6 md:mb-8 space-y-3 shadow-sm">
                     
                     {/* Row 1: Search Engine & Action Bar */}
                     <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3">
@@ -603,13 +603,13 @@ const CreatorManager = ({ showLeaderboardOnly = false, isEmbedded = false }) => 
 
                             {/* Search Input Box */}
                             <div className="relative flex-1 min-w-0">
-                                <Search className="absolute left-3.5 sm:left-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-white/40 pointer-events-none" size={15} />
+                                <Search className="absolute left-3.5 sm:left-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-zinc-500 pointer-events-none" size={15} />
                                 <input
                                     type="text"
                                     placeholder={SEARCH_FIELDS.find(f => f.id === searchField)?.placeholder || "Search creators..."}
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
-                                    className="w-full h-10 !pl-10 sm:!pl-11 !pr-9 bg-white dark:bg-black/30 border border-black/10 dark:border-white/[0.06] focus:border-neon-blue rounded-xl text-xs font-medium outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-white/30 text-gray-900 dark:text-white min-w-0"
+                                    className="w-full h-12 !pl-10 sm:!pl-11 !pr-9 bg-white dark:bg-black/40 border border-black/[0.1] dark:border-white/[0.08] focus:border-neon-green/80 rounded-xl text-sm font-medium outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-white/20 text-gray-900 dark:text-white min-w-0"
                                 />
                                 {searchTerm && (
                                     <button
@@ -627,13 +627,13 @@ const CreatorManager = ({ showLeaderboardOnly = false, isEmbedded = false }) => 
                         <div className="flex items-center justify-between sm:justify-end gap-2 shrink-0">
                             <div className="flex items-center gap-1.5 sm:gap-2">
                                 {/* View Switcher */}
-                                <div className="flex bg-white dark:bg-black/30 p-0.5 rounded-xl border border-white/[0.06] shrink-0 h-10 items-center">
+                                <div className="flex bg-black/5 dark:bg-white/5 p-0.5 rounded-xl border border-black/10 dark:border-white/10 shrink-0 h-10 items-center">
                                     <button 
                                         onClick={() => setViewMode('grid')} 
                                         title="Grid View"
                                         className={cn(
                                             "w-9 h-9 rounded-lg flex items-center justify-center transition-all", 
-                                            viewMode === 'grid' ? "bg-black/10 dark:bg-white/10 text-gray-900 dark:text-white" : "text-gray-900 dark:text-white/25 hover:text-gray-900 dark:hover:text-white/50"
+                                            viewMode === 'grid' ? "bg-white dark:bg-white/10 text-black dark:text-white shadow-sm" : "text-gray-500 hover:text-black dark:hover:text-white"
                                         )}
                                     >
                                         <LayoutGrid size={14} />
@@ -643,7 +643,7 @@ const CreatorManager = ({ showLeaderboardOnly = false, isEmbedded = false }) => 
                                         title="List View"
                                         className={cn(
                                             "w-9 h-9 rounded-lg flex items-center justify-center transition-all", 
-                                            viewMode === 'list' ? "bg-black/10 dark:bg-white/10 text-gray-900 dark:text-white" : "text-gray-900 dark:text-white/25 hover:text-gray-900 dark:hover:text-white/50"
+                                            viewMode === 'list' ? "bg-white dark:bg-white/10 text-black dark:text-white shadow-sm" : "text-gray-500 hover:text-black dark:hover:text-white"
                                         )}
                                     >
                                         <FileSpreadsheet size={14} />
@@ -653,7 +653,7 @@ const CreatorManager = ({ showLeaderboardOnly = false, isEmbedded = false }) => 
                                 {/* Export CSV */}
                                 <button 
                                     onClick={exportToCSV}
-                                    className="h-10 px-2.5 sm:px-4 bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.08] text-gray-900 dark:text-white/60 hover:text-gray-900 dark:hover:text-white rounded-xl font-bold uppercase tracking-wider text-[9px] transition-all flex items-center justify-center gap-1.5 shrink-0"
+                                    className="h-10 px-2.5 sm:px-4 rounded-xl bg-white dark:bg-white/5 border border-black/10 dark:border-white/10 hover:border-black/20 dark:hover:border-white/20 text-gray-800 dark:text-zinc-200 font-bold uppercase tracking-wider text-[9px] sm:text-xs transition-all flex items-center justify-center gap-1.5 shrink-0"
                                     title="Export Creators to CSV"
                                 >
                                     <Download size={13} />
@@ -662,7 +662,7 @@ const CreatorManager = ({ showLeaderboardOnly = false, isEmbedded = false }) => 
 
                                 {/* Import Sheet */}
                                 <label 
-                                    className="h-10 px-2.5 sm:px-4 bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.08] text-gray-900 dark:text-white/60 hover:text-gray-900 dark:hover:text-white rounded-xl font-bold uppercase tracking-wider text-[9px] transition-all cursor-pointer flex items-center justify-center gap-1.5 shrink-0"
+                                    className="h-10 px-2.5 sm:px-4 rounded-xl bg-white dark:bg-white/5 border border-black/10 dark:border-white/10 hover:border-black/20 dark:hover:border-white/20 text-gray-800 dark:text-zinc-200 font-bold uppercase tracking-wider text-[9px] sm:text-xs transition-all cursor-pointer flex items-center justify-center gap-1.5 shrink-0"
                                     title="Import Creators from CSV"
                                 >
                                     <Upload size={13} />
@@ -802,16 +802,16 @@ const CreatorManager = ({ showLeaderboardOnly = false, isEmbedded = false }) => 
                             {/* Add Creator */}
                             <button 
                                 onClick={() => setIsAddModalOpen(true)}
-                                className="h-10 px-3.5 sm:px-5 bg-white text-black hover:bg-neon-pink rounded-xl font-bold uppercase tracking-wider text-[9px] transition-all flex items-center justify-center gap-1.5 shrink-0"
+                                className="h-12 px-6 rounded-xl bg-neon-green text-black font-black uppercase tracking-wider text-xs hover:bg-emerald-400 active:scale-95 transition-all shadow-[0_0_20px_rgba(57,255,20,0.25)] flex items-center justify-center gap-1.5 shrink-0"
                             >
-                                <Plus size={14} />
+                                <Plus size={16} />
                                 <span className="whitespace-nowrap">Add Creator</span>
                             </button>
                         </div>
                     </div>
 
                     {/* Quick Scope Filter Chips */}
-                    <div className="flex items-center gap-1.5 overflow-x-auto pb-1 pt-0.5 scrollbar-none text-[9px] font-bold border-t border-black/5 dark:border-white/[0.04]">
+                    <div className="flex items-center gap-1.5 overflow-x-auto pb-1 pt-0.5 scrollbar-none text-[9px] font-bold border-t border-black/[0.08] dark:border-white/[0.08]">
                         <span className="text-gray-400 dark:text-zinc-500 uppercase tracking-widest text-[8px] shrink-0 mr-1 hidden xs:inline">
                             Search By:
                         </span>
@@ -824,13 +824,13 @@ const CreatorManager = ({ showLeaderboardOnly = false, isEmbedded = false }) => 
                                     type="button"
                                     onClick={() => setSearchField(f.id)}
                                     className={cn(
-                                        "px-2.5 py-1 rounded-lg shrink-0 transition-all flex items-center gap-1 border",
+                                        "px-2.5 py-1 rounded-full shrink-0 transition-all flex items-center gap-1 border",
                                         isActive
-                                            ? "bg-neon-blue text-black border-neon-blue font-black shadow-[0_0_10px_rgba(46,191,255,0.25)]"
-                                            : "bg-black/[0.03] dark:bg-white/[0.03] hover:bg-black/[0.06] dark:hover:bg-white/[0.06] text-gray-600 dark:text-zinc-400 border-black/5 dark:border-white/5"
+                                            ? "bg-black text-white dark:bg-white dark:text-black shadow-sm font-black border-transparent"
+                                            : "bg-white dark:bg-[#0c0e14] border-black/[0.08] dark:border-white/[0.08] text-gray-600 dark:text-zinc-400 hover:border-black/20"
                                     )}
                                 >
-                                    <IconComponent size={10} className={isActive ? "text-black" : "text-gray-400"} />
+                                    <IconComponent size={10} className={isActive ? "text-white dark:text-black" : "text-gray-400"} />
                                     <span>{f.label}</span>
                                 </button>
                             );
@@ -1187,21 +1187,21 @@ const CreatorManager = ({ showLeaderboardOnly = false, isEmbedded = false }) => 
 
                                 {/* Pagination Controls */}
                                 {totalPages > 1 && (
-                                    <div className="flex items-center justify-center gap-3 mt-16 pb-12">
+                                    <div className="flex items-center justify-center gap-2 mt-10 pb-12">
                                         <button 
                                             disabled={currentPage === 1}
                                             onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                                            className="w-12 h-12 rounded-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 flex items-center justify-center text-gray-900 dark:text-white disabled:opacity-20 hover:bg-white hover:text-black transition-all"
+                                            className="w-10 h-10 rounded-xl bg-white dark:bg-[#0c0e14] border border-black/[0.08] dark:border-white/[0.08] flex items-center justify-center text-gray-900 dark:text-white disabled:opacity-20 hover:border-black/20 dark:hover:border-white/20 transition-all"
                                         >
-                                            <ChevronLeft size={20} />
+                                            <ChevronLeft size={18} />
                                         </button>
-                                        <div className="flex items-center gap-2">
+                                        <div className="flex items-center gap-1">
                                             {getPageNumbers(currentPage, totalPages).map((page, i) => {
                                                 if (page === '...') {
                                                     return (
                                                         <span 
                                                             key={`dots-${i}`} 
-                                                            className="w-12 h-12 flex items-center justify-center text-gray-500 font-black text-sm select-none"
+                                                            className="w-10 h-10 flex items-center justify-center text-gray-500 font-black text-xs select-none"
                                                         >
                                                             ...
                                                         </span>
@@ -1212,10 +1212,10 @@ const CreatorManager = ({ showLeaderboardOnly = false, isEmbedded = false }) => 
                                                         key={page}
                                                         onClick={() => setCurrentPage(page)}
                                                         className={cn(
-                                                            "w-12 h-12 rounded-full font-black text-xs transition-all border flex items-center justify-center",
+                                                            "w-10 h-10 rounded-xl font-black text-xs transition-all border flex items-center justify-center",
                                                             currentPage === page 
-                                                                ? "bg-white text-black border-white shadow-[0_0_20px_rgba(255,255,255,0.3)]" 
-                                                                : "bg-black/5 dark:bg-white/5 text-gray-500 border-black/10 dark:border-white/10 hover:border-white/30"
+                                                                ? "bg-black text-white dark:bg-white dark:text-black border-transparent shadow-sm" 
+                                                                : "bg-white dark:bg-[#0c0e14] text-gray-600 dark:text-gray-400 border-black/[0.08] dark:border-white/[0.08] hover:border-black/20 dark:hover:border-white/20"
                                                         )}
                                                     >
                                                         {page}
@@ -1226,9 +1226,9 @@ const CreatorManager = ({ showLeaderboardOnly = false, isEmbedded = false }) => 
                                         <button 
                                             disabled={currentPage === totalPages}
                                             onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                                            className="w-12 h-12 rounded-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 flex items-center justify-center text-gray-900 dark:text-white disabled:opacity-20 hover:bg-white hover:text-black transition-all"
+                                            className="w-10 h-10 rounded-xl bg-white dark:bg-[#0c0e14] border border-black/[0.08] dark:border-white/[0.08] flex items-center justify-center text-gray-900 dark:text-white disabled:opacity-20 hover:border-black/20 dark:hover:border-white/20 transition-all"
                                         >
-                                            <ChevronRight size={20} />
+                                            <ChevronRight size={18} />
                                         </button>
                                     </div>
                                 )}
@@ -1322,7 +1322,7 @@ const CreatorManager = ({ showLeaderboardOnly = false, isEmbedded = false }) => 
                             animate={{ y: 0, x: '-50%', opacity: 1 }}
                             exit={{ y: 100, x: '-50%', opacity: 0 }}
                             transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-                            className="fixed bottom-6 md:bottom-8 left-1/2 z-[100] w-[94%] sm:w-[90%] max-w-2xl bg-white dark:bg-black/80 backdrop-blur-2xl border border-black/10 dark:border-white/10 rounded-2xl sm:rounded-3xl px-4 sm:px-6 py-3 sm:py-4 flex flex-col md:flex-row items-center justify-between gap-3 sm:gap-4 shadow-[0_20px_50px_rgba(0,0,0,0.5)] border-t-white/20"
+                            className="fixed bottom-6 md:bottom-8 left-1/2 z-[100] w-[94%] sm:w-[90%] max-w-2xl bg-white/95 dark:bg-[#0c0e14]/95 backdrop-blur-2xl border border-black/[0.08] dark:border-white/[0.08] rounded-3xl px-4 sm:px-6 py-3 sm:py-4 flex flex-col md:flex-row items-center justify-between gap-3 sm:gap-4 shadow-xl"
                         >
                             <div className="flex items-center gap-2.5">
                                 <span className="w-2.5 h-2.5 rounded-full bg-neon-pink animate-pulse" />
@@ -1382,53 +1382,33 @@ const CreatorManager = ({ showLeaderboardOnly = false, isEmbedded = false }) => 
 /* --- Redesigned Sub-components --- */
 
 const StatCard = ({ icon, label, value, color, description, compact = false }) => {
-    const colorMap = {
-        blue: { bg: 'bg-neon-blue/10', border: 'border-neon-blue/20', text: 'text-neon-blue', glow: 'rgba(46,191,255,0.2)', gradient: 'from-neon-blue/20 to-transparent' },
-        green: { bg: 'bg-neon-green/10', border: 'border-neon-green/20', text: 'text-neon-green', glow: 'rgba(57,255,20,0.2)', gradient: 'from-neon-green/20 to-transparent' },
-        yellow: { bg: 'bg-yellow-500/10', border: 'border-yellow-500/20', text: 'text-yellow-500', glow: 'rgba(234,179,8,0.2)', gradient: 'from-yellow-500/20 to-transparent' },
-        purple: { bg: 'bg-purple-500/10', border: 'border-purple-500/20', text: 'text-purple-500', glow: 'rgba(168,85,247,0.2)', gradient: 'from-purple-500/20 to-transparent' },
-        pink: { bg: 'bg-neon-pink/10', border: 'border-neon-pink/20', text: 'text-neon-pink', glow: 'rgba(236,72,153,0.2)', gradient: 'from-neon-pink/20 to-transparent' }
-    };
-    
-    const theme = colorMap[color] || colorMap.purple;
-    
     return (
         <motion.div 
-            whileHover={{ y: -5, scale: 1.02 }}
+            whileHover={{ y: -2 }}
             className={cn(
-                "relative group overflow-hidden bg-[#0A0A0A] border transition-all duration-500 flex-1",
-                compact ? "p-4 md:p-5 rounded-[2rem] min-w-[200px]" : "p-8 rounded-[3rem] min-w-[280px]",
-                theme.border
+                "relative group overflow-hidden bg-white dark:bg-[#0c0e14] border border-black/[0.08] dark:border-white/[0.08] flex-1 transition-all",
+                compact ? "p-4 rounded-2xl min-w-[200px]" : "p-4 sm:p-6 rounded-3xl min-w-[280px]"
             )}
-            style={{ boxShadow: compact ? `0 10px 30px -10px ${theme.glow}` : `0 20px 50px -10px ${theme.glow}` }}
         >
-            <div className={cn("absolute top-0 right-0 w-40 h-40 bg-gradient-to-br blur-[80px] -mr-20 -mt-20 opacity-30 group-hover:opacity-50 transition-opacity", theme.gradient)} />
-            <div className={cn("relative z-10 flex h-full", compact ? "flex-row items-center gap-4" : "flex-col justify-between gap-8")}>
+            <div className={cn("relative z-10 flex h-full", compact ? "flex-row items-center gap-4" : "flex-col justify-between gap-6")}>
                 <div className="flex items-start justify-between">
                     <div className={cn(
-                        "rounded-2xl flex items-center justify-center shadow-inner border border-black/10 dark:border-white/5 shrink-0", 
-                        compact ? "w-10 h-10 md:w-12 md:h-12" : "w-16 h-16",
-                        theme.bg, theme.text
+                        "rounded-xl flex items-center justify-center shrink-0 bg-black/5 dark:bg-white/5 text-gray-700 dark:text-zinc-300", 
+                        compact ? "w-10 h-10" : "w-12 h-12"
                     )}>
-                        {React.cloneElement(icon, { size: compact ? 18 : 24 })}
+                        {React.cloneElement(icon, { size: compact ? 18 : 20 })}
                     </div>
-                    {!compact && (
-                        <div className="text-right">
-                            <TrendingUp size={16} className={cn("inline-block mr-2", theme.text)} />
-                            <span className="text-[10px] font-black text-gray-900 dark:text-white/40 uppercase tracking-widest">+8%</span>
-                        </div>
-                    )}
                 </div>
                 <div className={cn("space-y-1", compact ? "flex-1" : "")}>
-                    <p className={cn("font-black uppercase tracking-[0.4em] leading-tight text-gray-500", compact ? "text-[8px]" : "text-[10px]")}>{label}</p>
-                    <h3 className={cn("font-black text-gray-900 dark:text-white tracking-tighter tabular-nums leading-none", compact ? "text-2xl" : "text-6xl")}>{value}</h3>
+                    <p className="text-[9px] font-black uppercase tracking-widest text-gray-500">{label}</p>
+                    <h3 className={cn("font-black font-heading tracking-tight tabular-nums leading-none text-gray-900 dark:text-white", compact ? "text-2xl" : "text-2xl sm:text-4xl")}>{value}</h3>
                     {!compact && description && (
-                        <p className="text-[10px] font-bold text-gray-700 uppercase tracking-widest mt-2">{description}</p>
+                        <p className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mt-1">{description}</p>
                     )}
                 </div>
             </div>
             {!compact && (
-                <div className={cn("absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-current to-transparent opacity-20", theme.text)} />
+                <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-neon-green/0 group-hover:bg-neon-green/100 transition-colors shadow-[0_0_8px_#39FF14] opacity-0 group-hover:opacity-100" />
             )}
         </motion.div>
     );
@@ -1450,25 +1430,25 @@ const CreatorBadgeCard = ({ creator, onSelect, isSelected, onToggleSelect }) => 
             layout
             onClick={onSelect}
             className={cn(
-                "group relative bg-white/[0.02] border rounded-2xl cursor-pointer overflow-hidden transition-all duration-300 hover:bg-white/[0.04] hover:border-white/[0.12] flex flex-col",
-                isSelected ? "border-neon-pink/40 bg-neon-pink/[0.03]" : "border-white/[0.06]"
+                "group relative bg-white dark:bg-[#0c0e14] border rounded-3xl cursor-pointer overflow-hidden transition-all duration-300 flex flex-col hover:border-black/20 dark:hover:border-white/20",
+                isSelected ? "border-neon-green/40 bg-neon-green/[0.03]" : "border-black/[0.08] dark:border-white/[0.08]"
             )}
         >
             {/* Image */}
-            <div className="relative aspect-[4/3] overflow-hidden bg-white dark:bg-black/30">
+            <div className="relative aspect-[4/3] overflow-hidden bg-black/5 dark:bg-white/5">
                 {/* Checkbox */}
                 <div className="absolute top-3 left-3 z-30" onClick={(e) => e.stopPropagation()}>
                     <input
                         type="checkbox"
                         checked={isSelected || false}
                         onChange={() => onToggleSelect(creator.id || creator.uid)}
-                        className="w-4 h-4 rounded border-black/20 dark:border-white/20 bg-white dark:bg-black/60 text-neon-pink focus:ring-0 cursor-pointer"
+                        className="w-4 h-4 rounded border-black/20 dark:border-white/20 bg-white dark:bg-black/60 text-neon-green focus:ring-0 cursor-pointer"
                     />
                 </div>
                 {creator.profilePicture ? (
                     <img src={creator.profilePicture} alt={creator.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                 ) : (
-                    <div className="w-full h-full flex items-center justify-center text-5xl font-black text-black/[0.03] dark:text-white/[0.03] uppercase italic select-none">
+                    <div className="w-full h-full flex items-center justify-center text-5xl font-black text-black/5 dark:text-white/5 uppercase italic select-none">
                         {creator.name.charAt(0)}
                     </div>
                 )}
@@ -1476,7 +1456,7 @@ const CreatorBadgeCard = ({ creator, onSelect, isSelected, onToggleSelect }) => 
                     <StatusPill status={creator.profileStatus} />
                 </div>
                 {creator.profileStatus === 'approved' && (
-                    <div className="absolute bottom-3 right-3 w-8 h-8 bg-neon-green text-black rounded-xl flex items-center justify-center shadow-lg">
+                    <div className="absolute bottom-3 right-3 w-8 h-8 bg-neon-green text-black rounded-xl flex items-center justify-center shadow-sm">
                         <Check size={14} strokeWidth={3} />
                     </div>
                 )}
@@ -1486,8 +1466,8 @@ const CreatorBadgeCard = ({ creator, onSelect, isSelected, onToggleSelect }) => 
             <div className="flex-1 flex flex-col p-4 gap-3">
                 {/* Name & Niche */}
                 <div>
-                    <p className="text-[9px] font-bold text-neon-pink/70 uppercase tracking-wider mb-1">{(creator.niches || creator.specializations || [])[0] || 'Creator'}</p>
-                    <h3 className="text-lg font-black text-gray-900 dark:text-white tracking-tight uppercase leading-tight line-clamp-1">
+                    <p className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mb-1">{(creator.niches || creator.specializations || [])[0] || 'Creator'}</p>
+                    <h3 className="text-xl font-heading font-black text-gray-900 dark:text-white tracking-tight uppercase leading-tight line-clamp-1">
                         {creator.name}
                     </h3>
                 </div>
@@ -1499,7 +1479,7 @@ const CreatorBadgeCard = ({ creator, onSelect, isSelected, onToggleSelect }) => 
                             <span 
                                 key={badge.id} 
                                 title={badge.desc}
-                                className={cn("inline-flex items-center gap-0.5 px-2 py-0.5 rounded-md text-[7px] font-bold uppercase tracking-wider border", badge.bg)}
+                                className={cn("inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[7px] font-bold uppercase tracking-wider border", badge.bg)}
                             >
                                 <span>{badge.icon}</span>
                                 <span>{badge.label.split(' ')[0]}</span>
@@ -1508,7 +1488,7 @@ const CreatorBadgeCard = ({ creator, onSelect, isSelected, onToggleSelect }) => 
                         {customBadges.slice(0, 1).map((badge, idx) => (
                             <span 
                                 key={`custom-${idx}`} 
-                                className="inline-flex items-center gap-0.5 px-2 py-0.5 bg-purple-500/10 border border-purple-500/20 text-purple-400 rounded-md text-[7px] font-bold uppercase tracking-wider"
+                                className="inline-flex items-center gap-0.5 px-2 py-0.5 bg-black/5 dark:bg-white/5 border border-black/[0.06] dark:border-white/[0.06] text-gray-600 dark:text-zinc-400 rounded-full text-[7px] font-bold uppercase tracking-wider"
                             >
                                 🏅 <span className="truncate max-w-[40px]">{badge}</span>
                             </span>
@@ -1518,11 +1498,11 @@ const CreatorBadgeCard = ({ creator, onSelect, isSelected, onToggleSelect }) => 
 
                 {/* Meta pills */}
                 <div className="flex flex-wrap gap-1.5">
-                    <span className="flex items-center gap-1 text-[8px] font-bold text-gray-900 dark:text-white/30 uppercase tracking-wider bg-white/[0.03] px-2 py-1 rounded-md border border-white/[0.04]">
-                        <MapPin size={9} className="text-neon-pink/50" />{creator.city || 'Global'}
+                    <span className="flex items-center gap-1 text-[9px] font-bold text-gray-600 dark:text-zinc-400 uppercase tracking-wider bg-black/5 dark:bg-white/5 px-2.5 py-1 rounded-full border border-black/[0.06] dark:border-white/[0.06]">
+                        <MapPin size={10} className="text-gray-400" />{creator.city || 'Global'}
                     </span>
-                    <span className="flex items-center gap-1 text-[8px] font-bold text-gray-900 dark:text-white/30 uppercase tracking-wider bg-white/[0.03] px-2 py-1 rounded-md border border-white/[0.04]">
-                        <TrendingUp size={9} />{maxFollowers.toLocaleString()} flw
+                    <span className="flex items-center gap-1 text-[9px] font-bold text-gray-600 dark:text-zinc-400 uppercase tracking-wider bg-black/5 dark:bg-white/5 px-2.5 py-1 rounded-full border border-black/[0.06] dark:border-white/[0.06]">
+                        <TrendingUp size={10} className="text-gray-400" />{maxFollowers.toLocaleString()} flw
                     </span>
                 </div>
 
@@ -1536,8 +1516,8 @@ const CreatorBadgeCard = ({ creator, onSelect, isSelected, onToggleSelect }) => 
                             <Phone size={10} className="shrink-0 text-gray-900 dark:text-white/15" /><span className="truncate">{creator.phone || 'N/A'}</span>
                         </div>
                         {creator.isPhoneVerified && (
-                            <span className="flex items-center gap-0.5 text-neon-green text-[7px] tracking-wider shrink-0 bg-neon-green/10 border border-neon-green/20 px-1.5 py-0.5 rounded">
-                                <Check size={7} strokeWidth={3} /> OK
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/15 dark:bg-neon-green/15 text-emerald-700 dark:text-neon-green text-[9px] font-black uppercase font-mono">
+                                <Check size={8} strokeWidth={3} /> OK
                             </span>
                         )}
                     </div>
@@ -1550,21 +1530,21 @@ const CreatorBadgeCard = ({ creator, onSelect, isSelected, onToggleSelect }) => 
                             <a 
                                 href={instagramUrl} target="_blank" rel="noopener noreferrer"
                                 onClick={(e) => e.stopPropagation()}
-                                className="w-7 h-7 rounded-lg bg-pink-500/10 border border-pink-500/15 flex items-center justify-center text-pink-400 hover:bg-pink-500/20 transition-all"
+                                className="px-2 py-1 rounded-lg bg-black/5 dark:bg-white/5 border border-black/[0.06] dark:border-white/[0.06] flex items-center justify-center text-gray-700 dark:text-zinc-400 hover:bg-black/10 dark:hover:bg-white/10 transition-all"
                             ><Instagram size={11} /></a>
                         )}
                         {creator.linkedin && (
                             <a 
                                 href={creator.linkedin.includes('http') ? creator.linkedin : `https://${creator.linkedin}`} target="_blank" rel="noopener noreferrer"
                                 onClick={(e) => e.stopPropagation()}
-                                className="w-7 h-7 rounded-lg bg-blue-500/10 border border-blue-500/15 flex items-center justify-center text-blue-400 hover:bg-blue-500/20 transition-all"
+                                className="px-2 py-1 rounded-lg bg-black/5 dark:bg-white/5 border border-black/[0.06] dark:border-white/[0.06] flex items-center justify-center text-gray-700 dark:text-zinc-400 hover:bg-black/10 dark:hover:bg-white/10 transition-all"
                             ><Linkedin size={11} /></a>
                         )}
                         {creator.youtube && (
                             <a 
                                 href={creator.youtube.includes('http') ? creator.youtube : `https://${creator.youtube}`} target="_blank" rel="noopener noreferrer"
                                 onClick={(e) => e.stopPropagation()}
-                                className="w-7 h-7 rounded-lg bg-red-500/10 border border-red-500/15 flex items-center justify-center text-red-400 hover:bg-red-500/20 transition-all"
+                                className="px-2 py-1 rounded-lg bg-black/5 dark:bg-white/5 border border-black/[0.06] dark:border-white/[0.06] flex items-center justify-center text-gray-700 dark:text-zinc-400 hover:bg-black/10 dark:hover:bg-white/10 transition-all"
                             ><Youtube size={11} /></a>
                         )}
                         {!creator.instagram && !creator.linkedin && !creator.youtube && (
@@ -1592,8 +1572,8 @@ const CreatorListItem = ({ creator, onSelect, isSelected, onToggleSelect }) => {
         <div 
             onClick={onSelect}
             className={cn(
-                "group flex flex-col lg:flex-row items-start lg:items-center p-4 sm:p-5 bg-white/[0.02] border hover:border-white/[0.12] hover:bg-white/[0.04] rounded-2xl cursor-pointer transition-all duration-200 gap-4 sm:gap-6",
-                isSelected ? "border-neon-pink/40 bg-neon-pink/[0.03]" : "border-white/[0.06]"
+                "group flex flex-col lg:flex-row items-start lg:items-center p-4 bg-white dark:bg-[#0c0e14] border hover:border-black/20 dark:hover:border-white/20 rounded-2xl cursor-pointer transition-all duration-200 gap-4 sm:gap-6",
+                isSelected ? "border-neon-green/40 bg-neon-green/[0.03]" : "border-black/[0.08] dark:border-white/[0.08]"
             )}
         >
             <div className="flex items-center gap-3 sm:gap-4 w-full lg:w-auto min-w-0">
@@ -1602,10 +1582,10 @@ const CreatorListItem = ({ creator, onSelect, isSelected, onToggleSelect }) => {
                         type="checkbox"
                         checked={isSelected || false}
                         onChange={() => onToggleSelect(creator.id || creator.uid)}
-                        className="w-4 h-4 rounded border-black/20 dark:border-white/20 bg-white dark:bg-black/60 text-neon-pink focus:ring-0 cursor-pointer"
+                        className="w-4 h-4 rounded border-black/20 dark:border-white/20 bg-white dark:bg-black/60 text-neon-green focus:ring-0 cursor-pointer"
                     />
                 </div>
-                <div className="w-12 h-12 bg-white dark:bg-black/40 border border-white/[0.08] rounded-xl flex items-center justify-center font-black text-gray-900 dark:text-white overflow-hidden shrink-0">
+                <div className="w-12 h-12 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-xl flex items-center justify-center font-black text-gray-900 dark:text-white overflow-hidden shrink-0">
                     {creator.profilePicture ? (
                         <img src={creator.profilePicture} alt={creator.name} className="w-full h-full object-cover" />
                     ) : (
@@ -1616,25 +1596,25 @@ const CreatorListItem = ({ creator, onSelect, isSelected, onToggleSelect }) => {
                     <div className="flex items-center gap-2 flex-wrap">
                         <h4 className="text-base font-black text-gray-900 dark:text-white uppercase tracking-tight truncate">{creator.name}</h4>
                         {creator.isPhoneVerified && (
-                            <span className="flex items-center gap-0.5 text-neon-green text-[7px] font-bold tracking-wider bg-neon-green/10 border border-neon-green/20 px-1.5 py-0.5 rounded">
-                                <Check size={7} strokeWidth={3} /> OK
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/15 dark:bg-neon-green/15 text-emerald-700 dark:text-neon-green text-[9px] font-black uppercase font-mono">
+                                <Check size={8} strokeWidth={3} /> OK
                             </span>
                         )}
                     </div>
-                    <div className="flex flex-wrap items-center gap-y-1 gap-x-2 mt-0.5 text-[8px] text-gray-900 dark:text-white/30 font-bold tracking-wider uppercase">
+                    <div className="flex flex-wrap items-center gap-y-1 gap-x-2 mt-0.5 text-[9px] text-gray-500 font-bold tracking-wider uppercase">
                         <span className="truncate max-w-[150px]">{creator.email}</span>
-                        <span className="text-gray-900 dark:text-white/10">•</span>
-                        <span className="flex items-center gap-1"><Phone size={9} className="text-gray-900 dark:text-white/20" /> {creator.phone || 'N/A'}</span>
+                        <span className="text-gray-300 dark:text-gray-700">•</span>
+                        <span className="flex items-center gap-1"><Phone size={9} className="text-gray-400" /> {creator.phone || 'N/A'}</span>
                     </div>
                 </div>
             </div>
 
             <div className="flex flex-wrap gap-1.5 w-full lg:w-56 shrink-0">
-                <span className="text-[8px] font-bold uppercase tracking-wider text-gray-900 dark:text-white/40 bg-white/[0.03] border border-white/[0.04] px-2.5 py-1 rounded-lg">
+                <span className="text-[8px] font-bold uppercase tracking-wider text-gray-600 dark:text-zinc-400 bg-black/5 dark:bg-white/5 border border-black/[0.06] dark:border-white/[0.06] px-2.5 py-1 rounded-lg">
                     {(creator.niches || creator.specializations || [])[0] || 'Creator'}
                 </span>
                 {creator.collegeName && (
-                    <span className="text-[8px] font-bold uppercase tracking-wider text-purple-400/80 bg-purple-500/5 border border-purple-500/10 px-2.5 py-1 rounded-lg truncate max-w-[140px]">
+                    <span className="text-[8px] font-bold uppercase tracking-wider text-purple-600 dark:text-purple-400/80 bg-purple-500/10 dark:bg-purple-500/5 border border-purple-500/20 dark:border-purple-500/10 px-2.5 py-1 rounded-lg truncate max-w-[140px]">
                         {creator.collegeName}
                     </span>
                 )}
@@ -1647,7 +1627,7 @@ const CreatorListItem = ({ creator, onSelect, isSelected, onToggleSelect }) => {
                         target="_blank"
                         rel="noopener noreferrer"
                         onClick={(e) => e.stopPropagation()}
-                        className="w-7 h-7 rounded-lg bg-pink-500/10 border border-pink-500/15 flex items-center justify-center text-pink-400 hover:bg-pink-500/20 transition-all"
+                        className="px-2 py-1 rounded-lg bg-black/5 dark:bg-white/5 border border-black/[0.06] dark:border-white/[0.06] flex items-center justify-center text-gray-700 dark:text-zinc-400 hover:bg-black/10 dark:hover:bg-white/10 transition-all"
                         title={instagramHandle}
                     >
                         <Instagram size={11} />
@@ -1659,7 +1639,7 @@ const CreatorListItem = ({ creator, onSelect, isSelected, onToggleSelect }) => {
                         target="_blank"
                         rel="noopener noreferrer"
                         onClick={(e) => e.stopPropagation()}
-                        className="w-7 h-7 rounded-lg bg-blue-500/10 border border-blue-500/15 flex items-center justify-center text-blue-400 hover:bg-blue-500/20 transition-all"
+                        className="px-2 py-1 rounded-lg bg-black/5 dark:bg-white/5 border border-black/[0.06] dark:border-white/[0.06] flex items-center justify-center text-gray-700 dark:text-zinc-400 hover:bg-black/10 dark:hover:bg-white/10 transition-all"
                         title="LinkedIn Profile"
                     >
                         <Linkedin size={11} />
@@ -1671,7 +1651,7 @@ const CreatorListItem = ({ creator, onSelect, isSelected, onToggleSelect }) => {
                         target="_blank"
                         rel="noopener noreferrer"
                         onClick={(e) => e.stopPropagation()}
-                        className="w-7 h-7 rounded-lg bg-red-500/10 border border-red-500/15 flex items-center justify-center text-red-400 hover:bg-red-500/20 transition-all"
+                        className="px-2 py-1 rounded-lg bg-black/5 dark:bg-white/5 border border-black/[0.06] dark:border-white/[0.06] flex items-center justify-center text-gray-700 dark:text-zinc-400 hover:bg-black/10 dark:hover:bg-white/10 transition-all"
                         title="YouTube Channel"
                     >
                         <Youtube size={11} />
@@ -1957,10 +1937,10 @@ const CreatorDetailModal = ({ creator, onClose, onUpdateStatus, onDelete, isUpda
                 animate={{ x: 0 }}
                 exit={{ x: '100%' }}
                 transition={{ type: "spring", damping: 30, stiffness: 300 }}
-                className="relative w-full sm:max-w-xl md:max-w-2xl h-[100dvh] max-h-[100dvh] bg-white dark:bg-[#0A0A0A] sm:border-l border-black/10 dark:border-white/[0.06] flex flex-col z-10 shadow-[-20px_0_60px_rgba(0,0,0,0.2)] dark:shadow-[-20px_0_60px_rgba(0,0,0,0.5)]"
+                className="relative w-full sm:max-w-xl md:max-w-2xl h-[100dvh] max-h-[100dvh] bg-white dark:bg-[#0c0e14] sm:border-l border-black/[0.08] dark:border-white/[0.08] sm:rounded-l-3xl flex flex-col z-10 shadow-[-20px_0_60px_rgba(0,0,0,0.1)] dark:shadow-[-20px_0_60px_rgba(0,0,0,0.3)]"
             >
                 {/* Sticky Header */}
-                <div className="sticky top-0 z-50 flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 bg-white/95 dark:bg-[#0A0A0A]/95 backdrop-blur-xl border-b border-black/10 dark:border-white/[0.06]">
+                <div className="sticky top-0 z-50 flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 bg-white/95 dark:bg-[#0c0e14]/95 backdrop-blur-xl border-b border-black/[0.08] dark:border-white/[0.08]">
                     <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
                         <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl bg-black/5 dark:bg-white/[0.04] border border-black/10 dark:border-white/[0.06] flex items-center justify-center shrink-0">
                             <Users size={13} className="text-gray-500 dark:text-white/40" />
@@ -2212,35 +2192,44 @@ const CreatorDetailModal = ({ creator, onClose, onUpdateStatus, onDelete, isUpda
                                 </button>
                             </div>
 
-                            <div className="flex items-center justify-between">
-                                <p className="text-[10px] font-bold text-gray-500 dark:text-white/40 uppercase tracking-[0.2em]">Direct Communication</p>
-                                <div className="flex bg-black/5 dark:bg-black/40 p-0.5 rounded-lg border border-black/10 dark:border-white/[0.06] h-8 items-center">
+                            <div>
+                                <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Direct Communication</p>
+                                <div className="flex border-b border-black/[0.08] dark:border-white/[0.08]">
                                     <button 
                                         onClick={() => setCommunicationTab('email')} 
                                         className={cn(
-                                            "px-2.5 h-7 rounded-md text-[8px] font-bold uppercase tracking-wider transition-all",
-                                            communicationTab === 'email' ? "bg-white dark:bg-white/10 text-gray-900 dark:text-white shadow-sm" : "text-gray-500 dark:text-white/40 hover:text-gray-900 dark:hover:text-white"
+                                            "relative px-4 py-3 text-[10px] font-black uppercase tracking-widest transition-all",
+                                            communicationTab === 'email' ? "text-gray-900 dark:text-white" : "text-gray-500 hover:text-gray-900 dark:hover:text-white"
                                         )}
                                     >
                                         Custom
+                                        {communicationTab === 'email' && (
+                                            <motion.div layoutId="comm-tab-underline" className="absolute -bottom-px left-0 right-0 h-0.5 bg-neon-green" />
+                                        )}
                                     </button>
                                     <button 
                                         onClick={() => setCommunicationTab('pass')} 
                                         className={cn(
-                                            "px-2.5 h-7 rounded-md text-[8px] font-bold uppercase tracking-wider transition-all",
-                                            communicationTab === 'pass' ? "bg-white dark:bg-white/10 text-gray-900 dark:text-white shadow-sm" : "text-gray-500 dark:text-white/40 hover:text-gray-900 dark:hover:text-white"
+                                            "relative px-4 py-3 text-[10px] font-black uppercase tracking-widest transition-all",
+                                            communicationTab === 'pass' ? "text-gray-900 dark:text-white" : "text-gray-500 hover:text-gray-900 dark:hover:text-white"
                                         )}
                                     >
                                         Pass Mail
+                                        {communicationTab === 'pass' && (
+                                            <motion.div layoutId="comm-tab-underline" className="absolute -bottom-px left-0 right-0 h-0.5 bg-neon-green" />
+                                        )}
                                     </button>
                                     <button 
                                         onClick={() => setCommunicationTab('message')} 
                                         className={cn(
-                                            "px-2.5 h-7 rounded-md text-[8px] font-bold uppercase tracking-wider transition-all",
-                                            communicationTab === 'message' ? "bg-white dark:bg-white/10 text-gray-900 dark:text-white shadow-sm" : "text-gray-500 dark:text-white/40 hover:text-gray-900 dark:hover:text-white"
+                                            "relative px-4 py-3 text-[10px] font-black uppercase tracking-widest transition-all",
+                                            communicationTab === 'message' ? "text-gray-900 dark:text-white" : "text-gray-500 hover:text-gray-900 dark:hover:text-white"
                                         )}
                                     >
-                                        Notification
+                                        Message
+                                        {communicationTab === 'message' && (
+                                            <motion.div layoutId="comm-tab-underline" className="absolute -bottom-px left-0 right-0 h-0.5 bg-neon-green" />
+                                        )}
                                     </button>
                                 </div>
                             </div>
@@ -2381,9 +2370,9 @@ const CreatorDetailModal = ({ creator, onClose, onUpdateStatus, onDelete, isUpda
                     <button 
                         onClick={() => onDelete(creator.id || creator.uid)}
                         disabled={isDeleting}
-                        className="h-10 sm:h-11 px-3 sm:px-4 rounded-xl bg-transparent border border-red-500/20 text-red-400 hover:bg-red-500/10 transition-all active:scale-[0.98] flex items-center justify-center gap-1 font-bold uppercase tracking-wider text-[9px] shrink-0"
+                        className="h-10 px-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 text-xs font-bold uppercase tracking-wider transition-all active:scale-[0.98] flex items-center justify-center gap-1 shrink-0"
                     >
-                        <Trash2 size={13} />
+                        <Trash2 size={14} />
                     </button>
                 </div>
             </motion.div>
@@ -2509,7 +2498,7 @@ const AddCreatorModal = ({ onClose }) => {
             <motion.div 
                 initial={{ scale: 0.95, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                className="relative bg-white dark:bg-[#050505] border border-black/10 dark:border-white/10 rounded-2xl sm:rounded-[2.5rem] w-full max-w-2xl max-h-[92dvh] overflow-y-auto p-5 sm:p-8 md:p-10 shadow-2xl z-10 custom-scrollbar"
+                className="relative bg-white dark:bg-[#0c0e14] border border-black/[0.08] dark:border-white/[0.08] rounded-3xl w-full max-w-2xl max-h-[92dvh] overflow-y-auto p-5 sm:p-8 md:p-10 shadow-2xl z-10 custom-scrollbar"
             >
                 <button onClick={onClose} className="absolute top-6 right-6 w-10 h-10 rounded-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 flex items-center justify-center text-gray-600 dark:text-gray-400 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-all">
                     <X size={16} />
@@ -3093,7 +3082,7 @@ const BulkEmailModal = ({ selectedUids, creators, onClose }) => {
             <motion.div 
                 initial={{ scale: 0.95, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                className="relative bg-[#050505] border border-black/10 dark:border-white/10 rounded-2xl sm:rounded-[2.5rem] w-full max-w-2xl max-h-[92dvh] overflow-y-auto p-5 sm:p-8 md:p-10 shadow-2xl z-10 custom-scrollbar"
+                className="relative bg-white dark:bg-[#0c0e14] border border-black/[0.08] dark:border-white/[0.08] rounded-3xl w-full max-w-2xl max-h-[92dvh] overflow-y-auto p-5 sm:p-8 md:p-10 shadow-2xl z-10 custom-scrollbar"
             >
                 <div className="flex items-center justify-between border-b border-black/10 dark:border-white/5 pb-4 mb-5 sm:mb-6">
                     <div>

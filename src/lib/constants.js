@@ -19,6 +19,7 @@ export const PREDEFINED_CITIES = [
     "Shillong",
     "Bhubaneswar",
     "Cuttack",
+    "Bhubaneswar & Cuttack",
     "Bhopal",
     "Kolhapur",
     "Pan-India / Remote",
@@ -131,7 +132,7 @@ export const DEFAULT_CREATOR_GROUPS = [
         city: 'Kochi',
         platform: 'WhatsApp',
         title: 'Kochi Creators Community',
-        groupUrl: 'https://chat.whatsapp.com/HT64p5ex3Fm0nJr8znaR9Q?mode=gi_t',
+        groupUrl: 'https://chat.whatsapp.com/ELgsYWnoBavLHEzo3u1c63?mode=gi_t',
         description: 'Official Kochi & Kerala hub for live music events, creator meetups, regional brand deals & festival passes.',
         isActive: true,
         order: 7
@@ -145,5 +146,25 @@ export const DEFAULT_CREATOR_GROUPS = [
         description: 'Official Delhi NCR hub for mega arena tours, lifestyle campaigns, brand launches & creator networking.',
         isActive: true,
         order: 8
+    },
+    {
+        id: 'group_bhubaneswar_cuttack',
+        city: 'Bhubaneswar & Cuttack',
+        platform: 'WhatsApp',
+        title: 'Bhubaneswar & Cuttack Creators Community',
+        groupUrl: 'https://chat.whatsapp.com/HCDsLDRRx9003R7cppRnYr?mode=gi_t',
+        description: 'Official Odisha twin cities hub for college fests, cultural showcases, brand drops & creator meetups.',
+        isActive: true,
+        order: 9
+    },
+    {
+        id: 'group_vizag',
+        city: 'Vizag',
+        platform: 'WhatsApp',
+        title: 'Vizag Creators Community',
+        groupUrl: 'https://chat.whatsapp.com/CLPSGxEpBgYHCDYE3s87sr?mode=gi_t',
+        description: 'Official Vizag & Coastal Andhra hub for beach festivals, youth events, brand briefs & creator collaborations.',
+        isActive: true,
+        order: 10
     }
 ];

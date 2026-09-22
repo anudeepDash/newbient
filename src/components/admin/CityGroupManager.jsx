@@ -49,6 +49,7 @@ const CityGroupManager = () => {
         description: '',
         isActive: true
     });
+    const [previewCity, setPreviewCity] = useState('Bengaluru');
     const [submitting, setSubmitting] = useState(false);
     const [copiedId, setCopiedId] = useState(null);
     const [filterQuery, setFilterQuery] = useState('');
@@ -82,6 +83,7 @@ const CityGroupManager = () => {
                 isActive: form.isActive !== false
             });
 
+            setPreviewCity(targetCity);
             setForm({
                 city: 'Bengaluru',
                 customCity: '',
@@ -452,15 +454,36 @@ const CityGroupManager = () => {
 
             {/* Live Interactive Creator Banner Preview */}
             <div className="space-y-3 pt-4">
-                <div className="flex items-center justify-between">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-gray-500">
-                        Live Creator View &bull; Clean City Community Banner Preview
-                    </p>
-                    <span className="text-[10px] font-mono text-neon-green">
-                        Displayed for creator's registered city
-                    </span>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div>
+                        <p className="text-[10px] font-black uppercase tracking-widest text-gray-500">
+                            Live Creator View &bull; Clean City Community Banner Preview
+                        </p>
+                        <span className="text-[10px] font-mono text-neon-green">
+                            Previewing banner for: <strong>{previewCity}</strong>
+                        </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-bold text-gray-500 dark:text-zinc-400 uppercase tracking-wider">Preview City:</span>
+                        <select
+                            value={previewCity}
+                            onChange={(e) => setPreviewCity(e.target.value)}
+                            className="h-8 px-2.5 rounded-lg bg-white dark:bg-black/50 border border-black/10 dark:border-white/10 text-xs font-bold text-gray-900 dark:text-white outline-none focus:border-neon-blue"
+                        >
+                            {PREDEFINED_CITIES.filter(c => c !== 'Others').map(c => (
+                                <option key={c} value={c} className="bg-white dark:bg-zinc-900 text-gray-900 dark:text-white">
+                                    {c}
+                                </option>
+                            ))}
+                            {(creatorGroups || []).filter(g => g.city && !PREDEFINED_CITIES.includes(g.city)).map(g => (
+                                <option key={g.city} value={g.city} className="bg-white dark:bg-zinc-900 text-gray-900 dark:text-white">
+                                    {g.city}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
                 </div>
-                <CreatorCityGroupCard initialCity={form.city === 'Others' ? (form.customCity || 'Bengaluru') : form.city} />
+                <CreatorCityGroupCard initialCity={previewCity} />
             </div>
 
             {/* Email Broadcast Modal */}

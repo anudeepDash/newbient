@@ -159,17 +159,27 @@ const DEFAULT_CREATOR_GROUPS = [
     },
     {
         city: 'Kochi',
-        groupUrl: 'https://chat.whatsapp.com/HT64p5ex3Fm0nJr8znaR9Q?mode=gi_t',
+        groupUrl: 'https://chat.whatsapp.com/ELgsYWnoBavLHEzo3u1c63?mode=gi_t',
         description: 'Official Kochi & Kerala hub for live music events, creator meetups, regional brand deals & festival passes.'
     },
     {
         city: 'Delhi',
         groupUrl: 'https://chat.whatsapp.com/I3TM6ZGFz0X2YNd2YgLjZD?mode=gi_t',
         description: 'Official Delhi NCR hub for mega arena tours, lifestyle campaigns, brand launches & creator networking.'
+    },
+    {
+        city: 'Bhubaneswar & Cuttack',
+        groupUrl: 'https://chat.whatsapp.com/HCDsLDRRx9003R7cppRnYr?mode=gi_t',
+        description: 'Official Odisha twin cities hub for college fests, cultural showcases, brand drops & creator meetups.'
+    },
+    {
+        city: 'Vizag',
+        groupUrl: 'https://chat.whatsapp.com/CLPSGxEpBgYHCDYE3s87sr?mode=gi_t',
+        description: 'Official Vizag & Coastal Andhra hub for beach festivals, youth events, brand briefs & creator collaborations.'
     }
 ];
 
-const resolveCityWhatsAppGroup = (city = '', customUrl = '') => {
+const resolveCityWhatsAppGroup = async (city = '', customUrl = '') => {
     if (customUrl) {
         return {
             city: city || 'Local',
@@ -178,6 +188,28 @@ const resolveCityWhatsAppGroup = (city = '', customUrl = '') => {
         };
     }
     const clean = String(city || '').trim().toLowerCase();
+
+    // Check dynamic creator_groups collection in Firestore
+    try {
+        const snap = await adminDb.collection('creator_groups').get();
+        const dynamicGroups = [];
+        snap.forEach(d => {
+            const data = d.data();
+            if (data.isActive !== false) dynamicGroups.push({ id: d.id, ...data });
+        });
+        if (dynamicGroups.length > 0) {
+            const exact = dynamicGroups.find(g => (g.city || '').toLowerCase().trim() === clean);
+            if (exact) return exact;
+            const partial = dynamicGroups.find(g => {
+                const gc = (g.city || '').toLowerCase().trim();
+                return clean.includes(gc) || gc.includes(clean);
+            });
+            if (partial) return partial;
+        }
+    } catch (err) {
+        console.warn('[API/CREATOR-JOIN] Error reading dynamic creator_groups:', err.message);
+    }
+
     if (!clean || clean === 'pan-india' || clean === 'all') return DEFAULT_CREATOR_GROUPS[0];
 
     if (clean.includes('bengaluru') || clean.includes('bangalore')) return DEFAULT_CREATOR_GROUPS[0];
@@ -188,6 +220,8 @@ const resolveCityWhatsAppGroup = (city = '', customUrl = '') => {
     if (clean.includes('kolkata') || clean.includes('calcutta')) return DEFAULT_CREATOR_GROUPS[5];
     if (clean.includes('kochi') || clean.includes('cochin') || clean.includes('kerala') || clean.includes('ernakulam')) return DEFAULT_CREATOR_GROUPS[6];
     if (clean.includes('delhi') || clean.includes('ncr') || clean.includes('noida') || clean.includes('gurugram') || clean.includes('gurgaon') || clean.includes('ghaziabad') || clean.includes('faridabad')) return DEFAULT_CREATOR_GROUPS[7];
+    if (clean.includes('bhubaneswar') || clean.includes('bhubaneshwar') || clean.includes('cuttack') || clean.includes('odisha') || clean.includes('orissa')) return DEFAULT_CREATOR_GROUPS[8];
+    if (clean.includes('vizag') || clean.includes('visakhapatnam') || clean.includes('andhra')) return DEFAULT_CREATOR_GROUPS[9];
 
     const partial = DEFAULT_CREATOR_GROUPS.find(g => clean.includes(g.city.toLowerCase()) || g.city.toLowerCase().includes(clean));
     return partial || DEFAULT_CREATOR_GROUPS[0];
@@ -209,7 +243,7 @@ const sendWelcomeEmail = async (toEmail, creatorName, verificationUrl, creatorDa
 
         const baseUrl = 'https://newbi.live';
         const city = creatorData.city || 'Pan-India';
-        const cityGroup = resolveCityWhatsAppGroup(city, creatorData.customGroupUrl || creatorData.whatsappGroupUrl);
+        const cityGroup = await resolveCityWhatsAppGroup(city, creatorData.customGroupUrl || creatorData.whatsappGroupUrl);
         const passId = (creatorData.passId || creatorData.creatorId || 'NWB-PASS').toString().toUpperCase().replace(/^NWB-CR-/, '');
         const fullPassId = `NWB-CR-${passId}`;
         const handle = (creatorData.handle || creatorData.instagram || creatorName || 'creator').toString().replace(/^@/, '');
@@ -629,6 +663,21 @@ export default async function handler(req, res) {
             return res.status(200).json({ success: true });
         } catch (err) {
             console.error('[API/CREATOR-JOIN] WhatsApp verify dispatch error:', err);
+            return res.status(500).json({ success: false, error: err.message });
+        }
+    }
+
+    // ── ACTION: CREATOR GROUPS GET ───────────────────────────────────────────
+    if (action === 'creator-groups-get') {
+        try {
+            const snapshot = await adminDb.collection('creator_groups').get();
+            const groups = [];
+            snapshot.forEach(doc => {
+                groups.push({ id: doc.id, ...doc.data() });
+            });
+            return res.status(200).json({ success: true, groups });
+        } catch (err) {
+            console.error('[API/CREATOR-JOIN] Get creator groups error:', err);
             return res.status(500).json({ success: false, error: err.message });
         }
     }

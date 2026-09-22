@@ -2069,7 +2069,7 @@ export const generateReceiptEmailHTML = (data) => {
 /**
  * Resolves the official WhatsApp Community Group for a given creator city.
  */
-export const resolveCityWhatsAppGroup = (city = '', customUrl = '') => {
+export const resolveCityWhatsAppGroup = (city = '', customUrl = '', availableGroups = null) => {
     if (customUrl) {
         return {
             id: 'custom_group',
@@ -2081,6 +2081,20 @@ export const resolveCityWhatsAppGroup = (city = '', customUrl = '') => {
         };
     }
     const clean = String(city || '').trim().toLowerCase();
+
+    // Check if availableGroups or store groups have a match
+    const groupsList = Array.isArray(availableGroups) && availableGroups.length > 0 
+        ? availableGroups 
+        : DEFAULT_CREATOR_GROUPS;
+
+    const dynamicMatch = groupsList.find(g => (g.city || '').toLowerCase().trim() === clean) ||
+        groupsList.find(g => {
+            const gc = (g.city || '').toLowerCase().trim();
+            return clean.includes(gc) || gc.includes(clean);
+        });
+
+    if (dynamicMatch) return dynamicMatch;
+
     if (!clean || clean === 'pan-india' || clean === 'all') {
         return DEFAULT_CREATOR_GROUPS[0];
     }
@@ -2108,6 +2122,12 @@ export const resolveCityWhatsAppGroup = (city = '', customUrl = '') => {
     }
     if (clean.includes('delhi') || clean.includes('ncr') || clean.includes('noida') || clean.includes('gurugram') || clean.includes('gurgaon') || clean.includes('ghaziabad') || clean.includes('faridabad')) {
         return DEFAULT_CREATOR_GROUPS.find(g => g.city.toLowerCase() === 'delhi') || DEFAULT_CREATOR_GROUPS[7];
+    }
+    if (clean.includes('bhubaneswar') || clean.includes('bhubaneshwar') || clean.includes('cuttack') || clean.includes('odisha') || clean.includes('orissa')) {
+        return DEFAULT_CREATOR_GROUPS.find(g => g.city.toLowerCase().includes('bhubaneswar')) || DEFAULT_CREATOR_GROUPS[8];
+    }
+    if (clean.includes('vizag') || clean.includes('visakhapatnam') || clean.includes('andhra')) {
+        return DEFAULT_CREATOR_GROUPS.find(g => g.city.toLowerCase().includes('vizag')) || DEFAULT_CREATOR_GROUPS[9];
     }
 
     const partial = DEFAULT_CREATOR_GROUPS.find(g => clean.includes(g.city.toLowerCase()) || g.city.toLowerCase().includes(clean));
@@ -3066,7 +3086,7 @@ export const generateCreatorGroupsBroadcastHTML = ({
                                     </p>
                                     <p style="margin: 0; font-size: 10px; color: #52525b; line-height: 1.5;">
                                         You received this email because you are a registered creator in the Newbi Creator Network.<br />
-                                        Bengaluru • Mumbai • Delhi NCR • Hyderabad • Pune • Kolkata • Kochi • Chandigarh
+                                        Bengaluru • Mumbai • Delhi NCR • Hyderabad • Pune • Kolkata • Kochi • Chandigarh • Bhubaneswar & Cuttack • Vizag
                                     </p>
                                 </td>
                             </tr>
