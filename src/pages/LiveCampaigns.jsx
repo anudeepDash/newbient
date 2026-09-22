@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useStore } from '../lib/store';
@@ -24,6 +24,7 @@ import { Input } from '../components/ui/Input';
 import { PREDEFINED_CITIES } from '../lib/constants';
 import StudioSelect from '../components/ui/StudioSelect';
 import CampaignDetailModal from '../components/creator/CampaignDetailModal';
+import LoadingSpinner from '../components/ui/LoadingSpinner';
 
 const PLATFORMS = {
     all: { label: 'All Platforms', icon: Globe },
@@ -36,12 +37,79 @@ const PLATFORMS = {
 const LiveCampaigns = () => {
     useStoreSubscription(['campaigns']);
     const navigate = useNavigate();
-    const { campaigns } = useStore();
+    const { campaigns, user, resolveCreatorProfile, updateCreator, setAuthModal } = useStore();
     
+    const [profile, setProfile] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedPlatform, setSelectedPlatform] = useState('all');
     const [selectedCity, setSelectedCity] = useState('All');
     const [selectedCampaignForModal, setSelectedCampaignForModal] = useState(null);
+    const [applyingCampaignId, setApplyingCampaignId] = useState(null);
+
+    useEffect(() => {
+        if (user && resolveCreatorProfile) {
+            resolveCreatorProfile(user).then(p => {
+                if (p) setProfile(p);
+            }).catch(err => console.error("Error loading profile in LiveCampaigns:", err));
+        }
+    }, [user, resolveCreatorProfile]);
+
+    const handleDirectApply = async (campaign) => {
+        if (!user) {
+            setAuthModal(true);
+            return;
+        }
+        if (!profile) {
+            setSelectedCampaignForModal(campaign);
+            return;
+        }
+
+        const minFollowers = Number(campaign?.minInstagramFollowers || 0);
+        const count = Number(profile.instagramFollowers || 0);
+        const isAutoVerified = Boolean(
+            profile.instagramVerified || 
+            profile.isVerified || 
+            profile.profileStatus === 'approved'
+        );
+        const meetsCriteria = minFollowers <= 0 || count >= minFollowers || isAutoVerified;
+
+        if (!meetsCriteria) {
+            useStore.getState().addToast(`Requires at least ${minFollowers.toLocaleString()} followers (${count.toLocaleString()} on profile).`, 'error');
+            setSelectedCampaignForModal(campaign);
+            return;
+        }
+
+        const currentJoined = profile.joinedCampaigns || [];
+        if (currentJoined.includes(campaign.id)) {
+            useStore.getState().addToast("You've already applied to this campaign!", 'info');
+            return;
+        }
+
+        setApplyingCampaignId(campaign.id);
+        try {
+            const creatorData = {
+                ...profile,
+                uid: user.uid,
+                email: user.email || profile.email,
+                name: profile.name || user.displayName || '',
+                phone: profile.phone || '',
+                city: profile.city || '',
+                instagram: profile.instagram || '',
+                instagramFollowers: parseInt(profile.instagramFollowers || 0, 10),
+                joinedCampaigns: [...currentJoined, campaign.id]
+            };
+
+            await updateCreator(user.uid, creatorData);
+            setProfile(creatorData);
+            useStore.getState().addToast(`Applied to ${campaign.title} successfully!`, 'success');
+        } catch (err) {
+            console.error("Direct apply failed:", err);
+            useStore.getState().addToast(err.message || "Failed to apply directly. Opening campaign details...", 'error');
+            setSelectedCampaignForModal(campaign);
+        } finally {
+            setApplyingCampaignId(null);
+        }
+    };
 
     // Filter active and past campaigns (exclude only Draft)
     const filteredCampaigns = useMemo(() => {
@@ -221,27 +289,84 @@ const LiveCampaigns = () => {
                                                     <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-0.5">Reward Payout</p>
                                                     <p className="text-base font-black text-neon-green uppercase truncate max-w-[160px] italic">{camp.reward}</p>
                                                 </div>
-                                                <Button 
-                                                    onClick={() => setSelectedCampaignForModal(camp)}
-                                                    className={cn(
-                                                        "w-full sm:w-auto h-12 sm:h-14 px-6 sm:px-8 rounded-full font-black uppercase tracking-widest text-[10px] transition-all duration-300 shadow-xl flex items-center justify-center gap-2 border-none",
-                                                        (!camp.status || camp.status.toLowerCase() === 'open')
-                                                            ? "bg-white text-black group-hover:bg-neon-blue group-hover:text-black hover:scale-105"
-                                                            : "bg-black/5 dark:bg-white/5 text-gray-600 dark:text-gray-400 border border-black/10 dark:border-white/10 hover:bg-black/10 dark:hover:bg-white/10 hover:text-gray-900 dark:hover:text-white"
-                                                    )}
-                                                >
-                                                    {(!camp.status || camp.status.toLowerCase() === 'open') ? (
-                                                        <>
-                                                            <span>View Brief & Apply</span> 
-                                                            <ArrowRight size={12} className="group-hover:translate-x-1 transition-transform" />
-                                                        </>
-                                                    ) : (
-                                                        <>
-                                                            <span>View Brief</span>
-                                                            <ArrowRight size={12} className="group-hover:translate-x-1 transition-transform" />
-                                                        </>
-                                                    )}
-                                                </Button>
+
+                                                {(() => {
+                                                    const isJoined = profile && (profile.joinedCampaigns || []).includes(camp.id);
+                                                    const minFollowers = Number(camp.minInstagramFollowers || 0);
+                                                    const followersCount = Number(profile?.instagramFollowers || 0);
+                                                    const isAutoVerified = Boolean(
+                                                        profile?.instagramVerified || 
+                                                        profile?.isVerified || 
+                                                        profile?.profileStatus === 'approved'
+                                                    );
+                                                    const isEligible = Boolean(profile) && (
+                                                        isAutoVerified ||
+                                                        minFollowers <= 0 ||
+                                                        followersCount >= minFollowers
+                                                    );
+
+                                                    if (isJoined) {
+                                                        return (
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="px-3.5 py-2 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-neon-green border border-emerald-500/20 font-black uppercase text-[10px] tracking-wider flex items-center gap-1.5 font-mono">
+                                                                    <CheckCircle2 size={12} className="stroke-[2.5]" />
+                                                                    <span>Applied</span>
+                                                                </span>
+                                                                <Button 
+                                                                    onClick={() => setSelectedCampaignForModal(camp)}
+                                                                    className="h-11 px-4 rounded-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-gray-700 dark:text-gray-300 font-bold uppercase tracking-wider text-[10px] hover:bg-black/10 dark:hover:bg-white/10"
+                                                                >
+                                                                    <span>Brief</span>
+                                                                </Button>
+                                                            </div>
+                                                        );
+                                                    }
+
+                                                    return (
+                                                        <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+                                                            <Button 
+                                                                onClick={() => setSelectedCampaignForModal(camp)}
+                                                                className="h-11 sm:h-12 px-4 rounded-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-gray-800 dark:text-gray-200 font-bold uppercase tracking-wider text-[10px] hover:bg-black/10 dark:hover:bg-white/10"
+                                                            >
+                                                                <span>View Brief</span>
+                                                            </Button>
+
+                                                            {isEligible ? (
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        handleDirectApply(camp);
+                                                                    }}
+                                                                    disabled={applyingCampaignId === camp.id}
+                                                                    className="h-11 sm:h-12 px-4 sm:px-6 rounded-full bg-neon-green text-black font-black uppercase tracking-wider text-[10px] sm:text-xs flex items-center justify-center gap-1.5 hover:bg-emerald-400 hover:scale-105 active:scale-95 transition-all shadow-[0_0_20px_rgba(57,255,20,0.3)] cursor-pointer shrink-0"
+                                                                >
+                                                                    {applyingCampaignId === camp.id ? (
+                                                                        <LoadingSpinner size="xs" color="#000000" />
+                                                                    ) : (
+                                                                        <>
+                                                                            <Zap size={12} className="fill-black stroke-black shrink-0" />
+                                                                            <span>1-Click Apply</span>
+                                                                        </>
+                                                                    )}
+                                                                </button>
+                                                            ) : (
+                                                                <Button 
+                                                                    onClick={() => setSelectedCampaignForModal(camp)}
+                                                                    className={cn(
+                                                                        "h-11 sm:h-12 px-5 sm:px-6 rounded-full font-black uppercase tracking-widest text-[10px] transition-all duration-300 shadow-xl flex items-center justify-center gap-2 border-none",
+                                                                        (!camp.status || camp.status.toLowerCase() === 'open')
+                                                                            ? "bg-white text-black hover:bg-neon-blue hover:text-black hover:scale-105"
+                                                                            : "bg-black/5 dark:bg-white/5 text-gray-600 dark:text-gray-400 border border-black/10 dark:border-white/10"
+                                                                    )}
+                                                                >
+                                                                    <span>Apply</span> 
+                                                                    <ArrowRight size={12} />
+                                                                </Button>
+                                                            )}
+                                                        </div>
+                                                    );
+                                                })()}
                                             </div>
                                         </div>
                                     </motion.div>
