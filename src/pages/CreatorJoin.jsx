@@ -132,7 +132,7 @@ const CreatorJoin = () => {
         url: window.location.href
     });
 
-    const { user, addCreator, creators, creatorGroups, siteSettings, markCreatorCityGroupJoined, uploadToCloudinary, setAuthModal, loginWithGoogle, subscriptionsLoaded } = useStore();
+    const { user, addCreator, creators, creatorGroups, siteSettings, markCreatorCityGroupJoined, uploadToCloudinary, setAuthModal, loginWithGoogle, subscriptionsLoaded, resolveCreatorProfile } = useStore();
     const navigate = useNavigate();
 
     const [hasMarkedGroupJoined, setHasMarkedGroupJoined] = useState(false);
@@ -350,19 +350,14 @@ const CreatorJoin = () => {
 
     // If already registered creator and logged in, automatic redirect after small grace period
     useEffect(() => {
-        if (user && creators && creators.length > 0) {
-            const userPhoneNorm = user.phoneNumber ? normalizePhoneNumber(user.phoneNumber) : null;
-            const userEmailNorm = user.email ? user.email.toLowerCase() : null;
-            const existing = creators.find(c => 
-                c.uid === user.uid || 
-                (userEmailNorm && c.email && c.email.toLowerCase() === userEmailNorm) ||
-                (userPhoneNorm && normalizePhoneNumber(c.phone) === userPhoneNorm)
-            );
-            if (existing) {
-                navigate('/creator-dashboard', { replace: true });
-            }
+        if (user) {
+            resolveCreatorProfile(user).then((resolved) => {
+                if (resolved) {
+                    navigate('/creator-dashboard', { replace: true });
+                }
+            }).catch(err => console.error("Error checking creator profile on join page:", err));
         }
-    }, [user, creators, navigate]);
+    }, [user, navigate, resolveCreatorProfile]);
 
     // Smart detection of existing creator accounts across logged-in user, email, phone, and social handle
     const matchedExistingCreator = React.useMemo(() => {
@@ -1176,25 +1171,16 @@ const CreatorJoin = () => {
 
                                 {/* Operating City */}
                                 <div className="space-y-2">
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-2.5">
-                                            <label className="text-[10px] font-bold text-gray-900 dark:text-white/40 uppercase tracking-wider">Operating City *</label>
-                                            <button
-                                                type="button"
-                                                onClick={() => handleAutoDetectLocation(false)}
-                                                disabled={isLocatingCity}
-                                                className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-600 dark:text-neon-green hover:underline cursor-pointer disabled:opacity-50"
-                                            >
-                                                <MapPin size={10} className={isLocatingCity ? "animate-pulse" : ""} />
-                                                <span>{isLocatingCity ? 'Locating...' : 'Auto-detect'}</span>
-                                            </button>
-                                        </div>
+                                    <div className="flex items-center gap-2.5">
+                                        <label className="text-[10px] font-bold text-gray-900 dark:text-white/40 uppercase tracking-wider">Operating City *</label>
                                         <button
                                             type="button"
-                                            onClick={() => setShowAllCities(!showAllCities)}
-                                            className="text-[10px] font-bold text-neon-pink hover:underline uppercase tracking-wider"
+                                            onClick={() => handleAutoDetectLocation(false)}
+                                            disabled={isLocatingCity}
+                                            className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-600 dark:text-neon-green hover:underline cursor-pointer disabled:opacity-50"
                                         >
-                                            {showAllCities ? 'Show Top Hubs' : '+ View More Cities'}
+                                            <MapPin size={10} className={isLocatingCity ? "animate-pulse" : ""} />
+                                            <span>{isLocatingCity ? 'Locating...' : 'Auto-detect'}</span>
                                         </button>
                                     </div>
                                     
@@ -1242,6 +1228,14 @@ const CreatorJoin = () => {
                                             )}
                                         >
                                             Other City...
+                                        </button>
+
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowAllCities(!showAllCities)}
+                                            className="px-3.5 py-2 rounded-xl text-xs font-bold transition-all border bg-neon-pink/10 text-neon-pink border-neon-pink/20 hover:bg-neon-pink hover:text-white"
+                                        >
+                                            {showAllCities ? '- Show Less' : '+ View More Cities'}
                                         </button>
                                     </div>
 

@@ -35,7 +35,7 @@ const CampaignDetailModal = ({
     onClose, 
     initialTaskId = null 
 }) => {
-    const { user, authInitialized, creators, addCreator, updateCreator, setAuthModal } = useStore();
+    const { user, authInitialized, creators, addCreator, updateCreator, setAuthModal, resolveCreatorProfile } = useStore();
 
     const [profile, setProfile] = useState(null);
     const [isVerifying, setIsVerifying] = useState(false);
@@ -59,22 +59,23 @@ const CampaignDetailModal = ({
     // Sync current user's profile
     useEffect(() => {
         if (authInitialized && user) {
-            const existing = creators.find(c => c.uid === user.uid);
-            if (existing) {
-                setProfile(existing);
-                setForm(prev => ({
-                    ...prev,
-                    instagram: existing.instagram || '',
-                    followers: existing.instagramFollowers || '',
-                    name: existing.name || '',
-                    phone: existing.phone || '',
-                    city: existing.city || '',
-                    categories: (existing.specializations || existing.niches || []).join(', '),
-                    bio: existing.bio || ''
-                }));
-            }
+            resolveCreatorProfile(user).then((existing) => {
+                if (existing) {
+                    setProfile(existing);
+                    setForm(prev => ({
+                        ...prev,
+                        instagram: existing.instagram || '',
+                        followers: existing.instagramFollowers || '',
+                        name: existing.name || '',
+                        phone: existing.phone || '',
+                        city: existing.city || '',
+                        categories: (existing.specializations || existing.niches || []).join(', '),
+                        bio: existing.bio || ''
+                    }));
+                }
+            }).catch(err => console.error("Error resolving profile in modal:", err));
         }
-    }, [user, authInitialized, creators]);
+    }, [user, authInitialized, resolveCreatorProfile]);
 
     // Handle ESC key press
     useEffect(() => {
