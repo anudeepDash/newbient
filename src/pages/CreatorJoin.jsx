@@ -293,7 +293,7 @@ const CreatorJoin = () => {
                 ...prev,
                 instagram: data.handle,
                 instagramFollowers: String(count),
-                ...(data.profilePic && !prev.profilePicture ? { profilePicture: data.profilePic } : {})
+                ...(data.profilePic ? { profilePicture: data.profilePic, instagramProfilePic: data.profilePic } : {})
             }));
 
             if (!meetsCriteria) {

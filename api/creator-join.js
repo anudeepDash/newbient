@@ -106,17 +106,16 @@ const fetchInstagramProfile = async (rawHandle) => {
             .replace(/&bull;/g, '•');
     };
 
-    // Strategy 1: Social Crawler Previews (Concurrent requests for speed)
+    // Strategy 1: Social Crawler Previews (Instagram serves complete OpenGraph data to social sharing agents)
     const crawlers = [
         'facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)',
         'Twitterbot/1.0',
         'LinkedInBot/1.0 (compatible; Mozilla/5.0; Apache-HttpClient +http://www.linkedin.com)',
+        'TelegramBot (like TwitterBot)',
         'WhatsApp/2.21.12.21 A'
     ];
 
-    const crawlerPromises = crawlers.map(async (ua) => {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 4000); // 4s timeout per crawler
+    for (const ua of crawlers) {
         try {
             const htmlUrl = `https://www.instagram.com/${cleanHandle}/`;
             const res = await fetch(htmlUrl, {
@@ -124,10 +123,8 @@ const fetchInstagramProfile = async (rawHandle) => {
                     'User-Agent': ua,
                     'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
                     'Accept-Language': 'en-US,en;q=0.9'
-                },
-                signal: controller.signal
+                }
             });
-            clearTimeout(timeoutId);
 
             if (res.ok) {
                 const html = await res.text();
@@ -137,9 +134,12 @@ const fetchInstagramProfile = async (rawHandle) => {
 
                 if (descMatch && descMatch[1]) {
                     const desc = decodeEntities(descMatch[1]);
+                    // Format: "542 Followers, 541 Following, 13 Posts - See Instagram photos and videos from Anudeep Dash (@anudeepdash)"
                     const followerMatch = desc.match(/([0-9.,kKmMbB]+)\s+Followers/i);
                     if (followerMatch) {
                         const parsedCount = parseFollowerCount(followerMatch[1]);
+
+                        // Extract title for display name
                         const titleMatch = html.match(/<meta\s+property=["']og:title["']\s+content=["']([^"']+)["']/i) ||
                                            html.match(/content=["']([^"']+)["']\s+property=["']og:title["']/i);
                         let fullName = cleanHandle;
@@ -148,6 +148,8 @@ const fetchInstagramProfile = async (rawHandle) => {
                             const namePart = rawTitle.split('(@')[0].split('•')[0].trim();
                             if (namePart) fullName = namePart;
                         }
+
+                        // Extract profile image
                         const imgMatch = html.match(/<meta\s+property=["']og:image["']\s+content=["']([^"']+)["']/i) ||
                                          html.match(/content=["']([^"']+)["']\s+property=["']og:image["']/i);
                         const profilePic = imgMatch ? decodeEntities(imgMatch[1]) : null;
@@ -166,18 +168,8 @@ const fetchInstagramProfile = async (rawHandle) => {
                 }
             }
         } catch (err) {
-            clearTimeout(timeoutId);
+            console.warn('[API/CREATOR-JOIN] Social crawler notice:', err.message);
         }
-        throw new Error('Crawler failed or missing data');
-    });
-
-    try {
-        const fastestResult = await Promise.any(crawlerPromises);
-        if (fastestResult && fastestResult.success) {
-            return fastestResult;
-        }
-    } catch (err) {
-        console.warn('[API/CREATOR-JOIN] All social crawlers failed or timed out.');
     }
 
     // Strategy 2: External RapidAPI fallback if key provided
@@ -762,42 +754,31 @@ export default async function handler(req, res) {
         }
 
         try {
-            const reqHost = req.headers?.host || '';
-            const isLocal = reqHost.includes('localhost') || reqHost.includes('127.0.0.1');
-
             // Check deduplication / existing creator linkage
             let alreadyRegistered = false;
             let registeredTo = null;
-            
-            const withTimeout = (promise, ms = 2000) => {
-                return Promise.race([
-                    promise,
-                    new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), ms))
-                ]);
-            };
-
-            if (adminDb && !isLocal) {
+            if (adminDb) {
                 try {
-                    const matchSnap = await withTimeout(adminDb.collection('creators')
+                    const matchSnap = await adminDb.collection('creators')
                         .where('instagram', '==', cleanHandle)
                         .limit(1)
-                        .get());
+                        .get();
                     if (!matchSnap.empty) {
                         const conflictDoc = matchSnap.docs[0].data();
                         alreadyRegistered = true;
                         registeredTo = conflictDoc.displayName || conflictDoc.name || 'Existing Account';
                     }
                 } catch (snapErr) {
-                    console.warn('[API/CREATOR-JOIN] Deduplication check skipped:', snapErr.message);
+                    console.warn('[API/CREATOR-JOIN] Deduplication check notice:', snapErr.message);
                 }
             }
 
             // Fetch minimum follower threshold from site_settings/general
             let minFollowersRequired = 1000;
             let requireVerification = true;
-            if (adminDb && !isLocal) {
+            if (adminDb) {
                 try {
-                    const settingsSnap = await withTimeout(adminDb.collection('site_settings').doc('general').get());
+                    const settingsSnap = await adminDb.collection('site_settings').doc('general').get();
                     if (settingsSnap.exists) {
                         const sData = settingsSnap.data();
                         if (sData.minInstagramFollowersToJoin !== undefined) {
@@ -808,9 +789,12 @@ export default async function handler(req, res) {
                         }
                     }
                 } catch (sErr) {
-                    console.warn('[API/CREATOR-JOIN] site_settings read skipped:', sErr.message);
+                    console.warn('[API/CREATOR-JOIN] site_settings read notice:', sErr.message);
                 }
             }
+
+            const reqHost = req.headers?.host || '';
+            const isLocal = reqHost.includes('localhost') || reqHost.includes('127.0.0.1');
 
             const result = await fetchInstagramProfile(cleanHandle);
             if (!result.success) {
@@ -1427,8 +1411,6 @@ export default async function handler(req, res) {
             instagramFollowers: submittedFollowers ? String(submittedFollowers) : (creatorData.instagramFollowers || '0'),
             instagramVerified: Boolean(creatorData.instagramVerified || (cleanInsta && submittedFollowers >= minInstagramFollowers)),
             instagramVerifiedAt: creatorData.instagramVerifiedAt || (cleanInsta ? now : null),
-            photoURL: creatorData.instagramProfilePic || creatorData.photoURL || creatorData.avatar || '',
-            avatar: creatorData.instagramProfilePic || creatorData.avatar || creatorData.photoURL || '',
             isPhoneVerified,
             phoneVerifiedAt: isPhoneVerified ? (creatorData.phoneVerifiedAt || now) : null,
             isEmailVerified,
