@@ -115,7 +115,10 @@ const fetchInstagramProfile = async (rawHandle) => {
         'WhatsApp/2.21.12.21 A'
     ];
 
-    for (const ua of crawlers) {
+
+    const fetchWithUA = async (ua) => {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 6000); // 6s timeout per request
         try {
             const htmlUrl = `https://www.instagram.com/${cleanHandle}/`;
             const res = await fetch(htmlUrl, {
@@ -123,22 +126,23 @@ const fetchInstagramProfile = async (rawHandle) => {
                     'User-Agent': ua,
                     'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
                     'Accept-Language': 'en-US,en;q=0.9'
-                }
+                },
+                signal: controller.signal
             });
-
+            clearTimeout(timeoutId);
             if (res.ok) {
                 const html = await res.text();
                 const descMatch = html.match(/<meta\s+property=["']og:description["']\s+content=["']([^"']+)["']/i) ||
                                   html.match(/<meta\s+name=["']description["']\s+content=["']([^"']+)["']/i) ||
                                   html.match(/content=["']([^"']+)["']\s+property=["']og:description["']/i);
-
+                
                 if (descMatch && descMatch[1]) {
                     const desc = decodeEntities(descMatch[1]);
                     // Format: "542 Followers, 541 Following, 13 Posts - See Instagram photos and videos from Anudeep Dash (@anudeepdash)"
                     const followerMatch = desc.match(/([0-9.,kKmMbB]+)\s+Followers/i);
                     if (followerMatch) {
                         const parsedCount = parseFollowerCount(followerMatch[1]);
-
+                        
                         // Extract title for display name
                         const titleMatch = html.match(/<meta\s+property=["']og:title["']\s+content=["']([^"']+)["']/i) ||
                                            html.match(/content=["']([^"']+)["']\s+property=["']og:title["']/i);
@@ -148,12 +152,12 @@ const fetchInstagramProfile = async (rawHandle) => {
                             const namePart = rawTitle.split('(@')[0].split('•')[0].trim();
                             if (namePart) fullName = namePart;
                         }
-
+                        
                         // Extract profile image
                         const imgMatch = html.match(/<meta\s+property=["']og:image["']\s+content=["']([^"']+)["']/i) ||
                                          html.match(/content=["']([^"']+)["']\s+property=["']og:image["']/i);
                         const profilePic = imgMatch ? decodeEntities(imgMatch[1]) : null;
-
+                        
                         return {
                             success: true,
                             handle: cleanHandle,
@@ -167,11 +171,22 @@ const fetchInstagramProfile = async (rawHandle) => {
                     }
                 }
             }
+            throw new Error('No valid profile data found');
         } catch (err) {
-            console.warn('[API/CREATOR-JOIN] Social crawler notice:', err.message);
+            clearTimeout(timeoutId);
+            throw err;
         }
-    }
+    };
 
+    let crawlerErrors = [];
+    try {
+        // Fire crawlers concurrently, first to succeed wins immediately
+        const result = await Promise.any(crawlers.map(ua => fetchWithUA(ua)));
+        return result;
+    } catch (err) {
+        crawlerErrors = err.errors ? err.errors.map(e => e.message) : [err.message];
+        console.warn('[API/CREATOR-JOIN] All concurrent social crawlers failed.', crawlerErrors);
+    }
     // Strategy 2: External RapidAPI fallback if key provided
     if (process.env.RAPIDAPI_KEY) {
         try {
