@@ -95,7 +95,6 @@ const escapeHtmlAttr = (str) => {
     return String(str)
         .replace(/&/g, '&amp;')
         .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;')
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;');
 };
@@ -367,7 +366,15 @@ export default async function handler(req, res) {
         if (!adminDb) return;
 
         if (effectiveCampaignId) {
-            const snap = await adminDb.collection('campaigns').doc(effectiveCampaignId).get();
+            let snap = await adminDb.collection('campaigns').doc(effectiveCampaignId).get();
+            if (!snap.exists) {
+                const allSnaps = await adminDb.collection('campaigns').limit(50).get();
+                allSnaps.forEach(d => {
+                    if (!snap.exists && d.id.toLowerCase() === effectiveCampaignId.toLowerCase()) {
+                        snap = d;
+                    }
+                });
+            }
             if (snap.exists) {
                 const data = snap.data();
                 meta.title = `${stripHtml(data.title) || 'Brand Campaign'} | Newbi Creator Network`;
