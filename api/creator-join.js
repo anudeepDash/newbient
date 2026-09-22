@@ -179,13 +179,23 @@ const fetchInstagramProfile = async (rawHandle) => {
     };
 
     let crawlerErrors = [];
-    try {
-        // Fire crawlers concurrently, first to succeed wins immediately
-        const result = await Promise.any(crawlers.map(ua => fetchWithUA(ua)));
-        return result;
-    } catch (err) {
-        crawlerErrors = err.errors ? err.errors.map(e => e.message) : [err.message];
-        console.warn('[API/CREATOR-JOIN] All concurrent social crawlers failed.', crawlerErrors);
+    const maxRetries = 3;
+    
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+            // Fire crawlers concurrently, first to succeed wins immediately
+            const result = await Promise.any(crawlers.map(ua => fetchWithUA(ua)));
+            return result;
+        } catch (err) {
+            crawlerErrors = err.errors ? err.errors.map(e => e.message) : [err.message];
+            
+            if (attempt < maxRetries) {
+                // Wait 800ms before retrying to allow Meta's CDN to generate and cache the OpenGraph page
+                await new Promise(resolve => setTimeout(resolve, 800));
+            } else {
+                console.warn(`[API/CREATOR-JOIN] All concurrent social crawlers failed after ${maxRetries} attempts.`, crawlerErrors);
+            }
+        }
     }
     // Strategy 2: External RapidAPI fallback if key provided
     if (process.env.RAPIDAPI_KEY) {
