@@ -115,7 +115,7 @@ const fetchInstagramProfile = async (rawHandle) => {
 
     const fetchWithUA = async (ua) => {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 2500); // 2.5s strict timeout
+        const timeoutId = setTimeout(() => controller.abort(), 6000); // 6s strict timeout to prevent edge function hanging
 
         try {
             const htmlUrl = `https://www.instagram.com/${cleanHandle}/`;
@@ -129,7 +129,7 @@ const fetchInstagramProfile = async (rawHandle) => {
             });
             clearTimeout(timeoutId);
 
-            if (!res.ok) throw new Error('Not ok');
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
             const html = await res.text();
             const descMatch = html.match(/<meta\s+property=["']og:description["']\s+content=["']([^"']+)["']/i) ||
@@ -170,6 +170,7 @@ const fetchInstagramProfile = async (rawHandle) => {
             throw new Error('No valid profile data found');
         } catch (err) {
             clearTimeout(timeoutId);
+            console.warn(`[API/CREATOR-JOIN] Crawler failed (${ua.split('/')[0]}):`, err.message);
             throw err;
         }
     };
