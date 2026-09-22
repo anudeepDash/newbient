@@ -328,6 +328,16 @@ export default defineConfig(({ mode }) => {
               try {
                 Object.assign(process.env, env);
                 const { default: handler } = await import('./api/creator-join.js');
+                if (!req.query) {
+                  try {
+                    const parsedUrl = new URL(req.url, 'http://localhost');
+                    req.query = Object.fromEntries(parsedUrl.searchParams.entries());
+                  } catch (e) {
+                    req.query = {};
+                  }
+                }
+                if (!res.status) res.status = (c) => { res.statusCode = c; return res; };
+                if (!res.json) res.json = (d) => { res.setHeader('Content-Type', 'application/json'); res.end(JSON.stringify(d)); return res; };
                 if (req.method === 'POST' && !req.body) {
                   let body = '';
                   req.on('data', chunk => { body += chunk; });

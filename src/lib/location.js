@@ -116,40 +116,77 @@ export const detectCityFromCoordinates = async (lat, lng, onlyPrimaryHubs = fals
 };
 
 /**
+ * Checks whether Geolocation is permitted under the current document's Permissions Policy
+ */
+const isGeolocationPolicyBlocked = () => {
+    try {
+        if (typeof document !== 'undefined') {
+            if (document.permissionsPolicy?.allowsFeature && !document.permissionsPolicy.allowsFeature('geolocation')) {
+                return true;
+            }
+            if (document.featurePolicy?.allowsFeature && !document.featurePolicy.allowsFeature('geolocation')) {
+                return true;
+            }
+        }
+    } catch {
+        return false;
+    }
+    return false;
+};
+
+/**
  * Triggers browser geolocation prompt and resolves with closest detected city
  */
-export const requestAutoLocation = ({ onlyPrimaryHubs = false } = {}) => {
-    return new Promise((resolve, reject) => {
-        if (!navigator?.geolocation) {
-            reject(new Error('Geolocation is not supported by your browser'));
-            return;
-        }
+export const requestAutoLocation = async ({ onlyPrimaryHubs = false } = {}) => {
+    if (typeof window === 'undefined' || !navigator?.geolocation) {
+        throw new Error('Geolocation is not supported by your browser');
+    }
 
-        navigator.geolocation.getCurrentPosition(
-            async (pos) => {
-                const { latitude, longitude } = pos.coords;
-                try {
-                    const detectedCity = await detectCityFromCoordinates(latitude, longitude, onlyPrimaryHubs);
-                    resolve({
-                        city: detectedCity,
-                        coords: { latitude, longitude }
-                    });
-                } catch {
-                    const nearest = getNearestCity(latitude, longitude, onlyPrimaryHubs);
-                    resolve({
-                        city: nearest.city,
-                        coords: { latitude, longitude }
-                    });
-                }
-            },
-            (err) => {
-                reject(err);
-            },
-            {
-                enableHighAccuracy: false,
-                timeout: 8000,
-                maximumAge: 1000 * 60 * 30 // 30 minutes cache
+    if (isGeolocationPolicyBlocked()) {
+        throw new Error('Geolocation access has been restricted by permissions policy');
+    }
+
+    if (navigator.permissions?.query) {
+        try {
+            const status = await navigator.permissions.query({ name: 'geolocation' });
+            if (status.state === 'denied') {
+                throw new Error('Geolocation permission denied');
             }
-        );
+        } catch (e) {
+            if (e.message === 'Geolocation permission denied') throw e;
+        }
+    }
+
+    return new Promise((resolve, reject) => {
+        try {
+            navigator.geolocation.getCurrentPosition(
+                async (pos) => {
+                    const { latitude, longitude } = pos.coords;
+                    try {
+                        const detectedCity = await detectCityFromCoordinates(latitude, longitude, onlyPrimaryHubs);
+                        resolve({
+                            city: detectedCity,
+                            coords: { latitude, longitude }
+                        });
+                    } catch {
+                        const nearest = getNearestCity(latitude, longitude, onlyPrimaryHubs);
+                        resolve({
+                            city: nearest.city,
+                            coords: { latitude, longitude }
+                        });
+                    }
+                },
+                (err) => {
+                    reject(err);
+                },
+                {
+                    enableHighAccuracy: false,
+                    timeout: 8000,
+                    maximumAge: 1000 * 60 * 30 // 30 minutes cache
+                }
+            );
+        } catch (err) {
+            reject(err);
+        }
     });
 };
