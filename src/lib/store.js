@@ -2295,7 +2295,66 @@ export const useStore = create((set, get) => ({
 
         return { id: targetUid, creatorId, verificationToken };
     },
+    resolveCreatorProfile: async (user) => {
+        if (!user) return null;
 
+        const { creators } = get();
+        const searchUid = user.uid || user.id;
+        const searchEmail = (user.email || '').trim().toLowerCase();
+        const searchPhone = normalizePhoneNumber(user.phoneNumber || user.phone || '');
+
+        let foundProfile = null;
+
+        // 1. Try local cache first
+        if (creators && creators.length > 0) {
+            foundProfile = creators.find(c => 
+                (searchUid && (c.id === searchUid || c.uid === searchUid)) ||
+                (searchEmail && c.email && c.email.trim().toLowerCase() === searchEmail) ||
+                (searchPhone && normalizePhoneNumber(c.phone) === searchPhone)
+            );
+        }
+
+        // 2. Try direct Firestore lookup by uid
+        if (!foundProfile && searchUid) {
+            try {
+                const docSnap = await getDoc(doc(db, 'creators', searchUid));
+                if (docSnap.exists()) {
+                    foundProfile = { ...docSnap.data(), id: docSnap.id };
+                }
+            } catch (err) {
+                console.warn('[store] Direct Firestore lookup failed:', err.message);
+            }
+        }
+
+        // 3. Robust fallback: Serverless API (bypasses restrictive client rules)
+        if (!foundProfile && (searchUid || searchEmail || searchPhone)) {
+            try {
+                const params = new URLSearchParams({ action: 'get-profile' });
+                if (searchUid) params.append('uid', searchUid);
+                if (searchEmail) params.append('email', searchEmail);
+                if (searchPhone) params.append('phone', searchPhone);
+
+                const res = await fetch(`/api/creator-join?${params.toString()}`);
+                const data = await res.json();
+                if (data.success && data.creator) {
+                    foundProfile = data.creator;
+                }
+            } catch (err) {
+                console.error('[store] Serverless API profile lookup failed:', err.message);
+            }
+        }
+
+        // 4. Update local state if found and not already there
+        if (foundProfile) {
+            const currentCreators = get().creators || [];
+            const exists = currentCreators.some(c => c.id === foundProfile.id);
+            if (!exists) {
+                set({ creators: [...currentCreators, foundProfile] });
+            }
+        }
+
+        return foundProfile;
+    },
 
     updateCreator: async (uid, updates) => {
         if (!uid) {
@@ -3185,11 +3244,14 @@ export const useStore = create((set, get) => ({
             hasJoinedWhatsapp: hasJoinedWhatsapp
         };
 
-        // Cache the session for instant retrieval on refresh, strictly excluding PII (email, phoneNumber)
+        // Cache the session for instant retrieval on refresh
         safeLocalStorage.setItem(AUTH_CACHE_KEY, JSON.stringify({
             user: {
                 uid: finalUser.uid,
                 role: finalUser.role,
+                email: finalUser.email,
+                phoneNumber: finalUser.phoneNumber,
+                displayName: finalUser.displayName,
                 hasJoinedTribe: finalUser.hasJoinedTribe,
                 hasJoinedWhatsapp: finalUser.hasJoinedWhatsapp
             },

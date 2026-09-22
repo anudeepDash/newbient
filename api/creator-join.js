@@ -791,6 +791,82 @@ export default async function handler(req, res) {
         }
     }
 
+    // ── ACTION: GET PROFILE / RESOLVE CREATOR ───────────────────────────────
+    if (action === 'get-profile' || action === 'resolve-creator') {
+        if (req.method !== 'POST' && req.method !== 'GET') {
+            return res.status(405).json({ success: false, error: 'Method not allowed' });
+        }
+        try {
+            const params = req.method === 'POST' ? req.body : req.query;
+            const { uid, email, phone } = params || {};
+            const searchUid = (uid || decodedToken?.uid || '').trim();
+            const searchEmail = (email || decodedToken?.email || '').trim().toLowerCase();
+            const searchPhone = normalizePhoneNumber(phone || decodedToken?.phone_number || '');
+
+            if (!searchUid && !searchEmail && !searchPhone) {
+                return res.status(400).json({ success: false, error: 'Must provide uid, email, or phone to resolve profile.' });
+            }
+
+            let foundDoc = null;
+
+            // 1. Try by exact uid (document ID or uid field)
+            if (searchUid) {
+                let snap = await adminDb.collection('creators').doc(searchUid).get();
+                if (snap.exists) {
+                    foundDoc = snap;
+                } else {
+                    const querySnap = await adminDb.collection('creators').where('uid', '==', searchUid).limit(1).get();
+                    if (!querySnap.empty) foundDoc = querySnap.docs[0];
+                }
+            }
+
+            // 2. Try by email
+            if (!foundDoc && searchEmail) {
+                const creatorsSnap = await adminDb.collection('creators').get();
+                creatorsSnap.forEach(doc => {
+                    const data = doc.data();
+                    if (!foundDoc && data.email && data.email.trim().toLowerCase() === searchEmail) {
+                        foundDoc = doc;
+                    }
+                });
+            }
+
+            // 3. Try by phone
+            if (!foundDoc && searchPhone) {
+                const creatorsSnap = await adminDb.collection('creators').get();
+                creatorsSnap.forEach(doc => {
+                    const data = doc.data();
+                    if (!foundDoc && normalizePhoneNumber(data.phone) === searchPhone) {
+                        foundDoc = doc;
+                    }
+                });
+            }
+
+            if (!foundDoc) {
+                return res.status(404).json({ success: false, error: 'Creator profile not found.' });
+            }
+
+            const data = foundDoc.data();
+            
+            // Auto-link uid if it differs and we have an authenticated user uid
+            if (searchUid && data.uid !== searchUid) {
+                await foundDoc.ref.update({ 
+                    uid: searchUid,
+                    updatedAt: new Date().toISOString()
+                });
+                data.uid = searchUid;
+            }
+
+            return res.status(200).json({ 
+                success: true, 
+                creator: { ...data, id: foundDoc.id } 
+            });
+        } catch (err) {
+            console.error('[API/CREATOR-JOIN] Resolve creator error:', err);
+            return res.status(500).json({ success: false, error: err.message });
+        }
+    }
+
     // ── ACTION: CREATOR GROUPS SYNC / SEED ───────────────────────────────────
     if (action === 'creator-groups-sync') {
         if (req.method !== 'POST') {

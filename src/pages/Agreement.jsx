@@ -16,6 +16,7 @@ import PenTool from 'lucide-react/dist/esm/icons/pen-tool';
 import CheckCircle2 from 'lucide-react/dist/esm/icons/check-circle-2';
 import { useStore } from '../lib/store';
 import { useStoreSubscription } from '../hooks/useStoreSubscription';
+import { safeLocalStorage } from '../lib/storage';
 import { Button } from '../components/ui/Button';
 import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -159,7 +160,7 @@ const Agreement = () => {
     }, [id, agreements, user, storeLoading]);
 
     const location = useLocation();
-    const isAdmin = (localStorage.getItem('adminAuth') === 'true') || (user?.role === 'super_admin' || user?.role === 'developer');
+    const isAdmin = (safeLocalStorage.getItem('adminAuth') === 'true') || (user?.role === 'super_admin' || user?.role === 'developer');
 
     useEffect(() => {
         if (isAdmin || !displayAgreement) return;
@@ -179,7 +180,7 @@ const Agreement = () => {
             const name = searchParams.get('name');
 
             const cacheKey = `last_viewed_agreement_${id}`;
-            const lastViewed = localStorage.getItem(cacheKey);
+            const lastViewed = safeLocalStorage.getItem(cacheKey);
             const tenMins = 10 * 60 * 1000;
 
             if (!lastViewed || (new Date() - new Date(lastViewed) > tenMins) || via === 'email') {
@@ -196,7 +197,7 @@ const Agreement = () => {
                         shareEmail: email || null,
                         shareName: name || null
                     });
-                    localStorage.setItem(cacheKey, new Date().toISOString());
+                    safeLocalStorage.setItem(cacheKey, new Date().toISOString());
                 } catch (err) { console.error("Log access failed:", err); }
             }
         };

@@ -5,18 +5,20 @@
   <script>
     // Prevent flash of wrong theme (FOWT) - sync directly with system preference
     (function() {
-      var saved = null;
-      try { saved = localStorage.getItem('nb_theme'); } catch(e) {}
-      var isDark = saved === 'dark' || (!saved && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
-      if (isDark) {
-        document.documentElement.classList.add('dark');
-      } else {
-        document.documentElement.classList.remove('dark');
-      }
-      var metaThemes = document.querySelectorAll('meta[name="theme-color"]');
-      metaThemes.forEach(function(el) {
-        el.setAttribute('content', isDark ? '#000000' : '#F8F9FA');
-      });
+      try {
+        var saved = null;
+        try { saved = localStorage.getItem('nb_theme'); } catch(e) {}
+        var isDark = saved === 'dark' || (!saved && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)') && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        if (isDark) {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
+        var metaThemes = document.querySelectorAll('meta[name="theme-color"]');
+        for (var i = 0; i < metaThemes.length; i++) {
+          metaThemes[i].setAttribute('content', isDark ? '#000000' : '#F8F9FA');
+        }
+      } catch(e) {}
     })();
   </script>
   <meta charset="UTF-8" />
