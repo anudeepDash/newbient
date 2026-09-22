@@ -1,67 +1,77 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useStore } from '../../lib/store';
 import { useStoreSubscription } from '../../hooks/useStoreSubscription';
 import { DEFAULT_CREATOR_GROUPS } from '../../lib/constants';
+import { requestAutoLocation } from '../../lib/location';
 import { cn } from '../../lib/utils';
-import confetti from 'canvas-confetti';
+import MapPin from 'lucide-react/dist/esm/icons/map-pin';
+import ChevronDown from 'lucide-react/dist/esm/icons/chevron-down';
 import ArrowRight from 'lucide-react/dist/esm/icons/arrow-right';
-import ExternalLink from 'lucide-react/dist/esm/icons/external-link';
+import Loader2 from 'lucide-react/dist/esm/icons/loader-2';
 import Check from 'lucide-react/dist/esm/icons/check';
-import CheckCircle2 from 'lucide-react/dist/esm/icons/check-circle-2';
-import Copy from 'lucide-react/dist/esm/icons/copy';
 
-// Standard SVG for WhatsApp
 const WhatsAppIcon = ({ className = "w-5 h-5", size = 20 }) => (
-    <svg
-        viewBox="0 0 24 24"
-        width={size}
-        height={size}
-        fill="currentColor"
-        className={className}
-    >
+    <svg viewBox="0 0 24 24" width={size} height={size} fill="currentColor" className={className}>
         <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L0 24l6.335-1.662c1.746.953 3.71 1.456 5.711 1.457h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
     </svg>
 );
 
 const normalizeCity = (cityStr = '') => {
     const raw = String(cityStr || '').trim().toLowerCase();
-    if (!raw) return 'bengaluru';
-    if (/^bang[al]*o?re$/i.test(raw) || raw.includes('bengaluru') || raw.includes('bangalore')) return 'bengaluru';
-    if (raw.includes('hyderabad') || raw.includes('secunderabad')) return 'hyderabad';
-    if (raw.includes('chandigarh') || raw.includes('mohali') || raw.includes('panchkula') || raw.includes('tricity')) return 'chandigarh';
-    if (raw.includes('mumbai') || raw.includes('bombay') || raw.includes('navi mumbai') || raw.includes('thane')) return 'mumbai';
-    if (raw.includes('pune') || raw.includes('poona')) return 'pune';
-    if (raw.includes('kolkata') || raw.includes('calcutta')) return 'kolkata';
-    if (raw.includes('kochi') || raw.includes('cochin') || raw.includes('kerala') || raw.includes('ernakulam')) return 'kochi';
-    if (raw.includes('delhi') || raw.includes('ncr') || raw.includes('noida') || raw.includes('gurugram') || raw.includes('gurgaon')) return 'delhi';
-    if (raw.includes('bhubaneswar') || raw.includes('bhubaneshwar') || raw.includes('cuttack')) return 'bhubaneswar & cuttack';
-    if (raw.includes('vizag') || raw.includes('visakhapatnam')) return 'vizag';
-    if (raw.includes('jaipur')) return 'jaipur';
-    if (raw.includes('ahmedabad')) return 'ahmedabad';
-    if (raw.includes('chennai') || raw.includes('madras')) return 'chennai';
-    if (raw.includes('goa')) return 'goa';
-    if (raw.includes('indore')) return 'indore';
-    if (raw.includes('lucknow')) return 'lucknow';
-    if (raw.includes('guwahati')) return 'guwahati';
-    if (raw.includes('surat')) return 'surat';
-    if (raw.includes('bhopal')) return 'bhopal';
-    if (raw.includes('kolhapur')) return 'kolhapur';
-    if (raw.includes('shillong')) return 'shillong';
-    return raw;
+    if (!raw) return '';
+    if (/^bang[al]*o?re$/i.test(raw) || raw.includes('bengaluru') || raw.includes('bangalore')) return 'Bengaluru';
+    if (raw.includes('hyderabad') || raw.includes('secunderabad')) return 'Hyderabad';
+    if (raw.includes('chandigarh') || raw.includes('mohali') || raw.includes('panchkula') || raw.includes('tricity')) return 'Chandigarh';
+    if (raw.includes('mumbai') || raw.includes('bombay') || raw.includes('navi mumbai') || raw.includes('thane')) return 'Mumbai';
+    if (raw.includes('pune') || raw.includes('poona')) return 'Pune';
+    if (raw.includes('kolkata') || raw.includes('calcutta')) return 'Kolkata';
+    if (raw.includes('kochi') || raw.includes('cochin') || raw.includes('kerala') || raw.includes('ernakulam')) return 'Kochi';
+    if (raw.includes('delhi') || raw.includes('ncr') || raw.includes('noida') || raw.includes('gurugram') || raw.includes('gurgaon')) return 'Delhi';
+    if (raw.includes('bhubaneswar') || raw.includes('bhubaneshwar') || raw.includes('cuttack')) return 'Bhubaneswar & Cuttack';
+    if (raw.includes('vizag') || raw.includes('visakhapatnam')) return 'Vizag';
+    if (raw.includes('jaipur')) return 'Jaipur';
+    if (raw.includes('ahmedabad')) return 'Ahmedabad';
+    if (raw.includes('chennai') || raw.includes('madras')) return 'Chennai';
+    if (raw.includes('goa')) return 'Goa';
+    if (raw.includes('indore')) return 'Indore';
+    if (raw.includes('lucknow')) return 'Lucknow';
+    if (raw.includes('guwahati')) return 'Guwahati';
+    if (raw.includes('surat')) return 'Surat';
+    if (raw.includes('bhopal')) return 'Bhopal';
+    if (raw.includes('kolhapur')) return 'Kolhapur';
+    if (raw.includes('shillong')) return 'Shillong';
+    // Return formatted version of whatever it is
+    return raw.charAt(0).toUpperCase() + raw.slice(1);
 };
 
 const CreatorCityGroupCard = ({
-    initialCity = 'Bengaluru',
+    initialCity = '',
     creatorId = null,
     isJoined = false,
     onJoinMarked = null,
     className = ''
 }) => {
     useStoreSubscription(['creatorGroups']);
-    const { creatorGroups, markCreatorCityGroupJoined } = useStore();
+    const { creatorGroups, markCreatorCityGroupJoined, addToast } = useStore();
+    const dropdownRef = useRef(null);
 
-    // Merge remote groups with defaults
+    const [selectedCity, setSelectedCity] = useState(normalizeCity(initialCity) || '');
+    const [isDetecting, setIsDetecting] = useState(false);
+    const [dropdownOpen, setDropdownOpen] = useState(false);
+    const [hasJoined, setHasJoined] = useState(isJoined);
+
+    useEffect(() => {
+        setHasJoined(isJoined);
+    }, [isJoined]);
+
+    useEffect(() => {
+        if (!selectedCity && initialCity) {
+            setSelectedCity(normalizeCity(initialCity));
+        }
+    }, [initialCity]);
+
+    // Merge remote groups with defaults for options
     const activeGroups = useMemo(() => {
         const remote = (creatorGroups || []).filter(g => g.isActive !== false);
         const map = new Map();
@@ -77,205 +87,189 @@ const CreatorCityGroupCard = ({
                 map.set(key, dg);
             }
         });
-        return list;
+        
+        // Return uniquely named groups to avoid duplicates in dropdown
+        return Array.from(map.values()).sort((a, b) => a.city.localeCompare(b.city));
     }, [creatorGroups]);
 
-    // Show ONLY for the city they apply for
     const currentGroup = useMemo(() => {
-        const targetKey = normalizeCity(initialCity);
+        const targetKey = normalizeCity(selectedCity);
+        if (!targetKey) return activeGroups[0] || DEFAULT_CREATOR_GROUPS[0];
+        
         const exact = activeGroups.find(g => normalizeCity(g.city) === targetKey);
         if (exact) return exact;
 
         const partial = activeGroups.find(g => {
             const gKey = normalizeCity(g.city);
-            return gKey.includes(targetKey) || targetKey.includes(gKey);
+            return gKey.includes(targetKey.toLowerCase()) || targetKey.toLowerCase().includes(gKey);
         });
         if (partial) return partial;
 
-        // Fallback to Pan-India / Remote group if available
+        // Fallback to Pan-India
         const panIndia = activeGroups.find(g => {
             const gKey = normalizeCity(g.city);
             return gKey.includes('pan-india') || gKey.includes('india') || gKey.includes('remote') || gKey.includes('all');
         });
         if (panIndia) return panIndia;
 
-        // Fallback to primary group if city not in the 8
         return activeGroups[0] || DEFAULT_CREATOR_GROUPS[0];
-    }, [activeGroups, initialCity]);
+    }, [activeGroups, selectedCity]);
 
-    const isFallback = useMemo(() => {
-        if (!currentGroup) return false;
-        const targetKey = normalizeCity(initialCity);
-        const gKey = normalizeCity(currentGroup.city);
-        return gKey !== targetKey && !gKey.includes(targetKey) && !targetKey.includes(gKey);
-    }, [currentGroup, initialCity]);
+    const handleJoinClick = async () => {
+        if (hasJoined) return;
 
-    const [hasJoined, setHasJoined] = useState(isJoined);
-    const [copied, setCopied] = useState(false);
+        if (!selectedCity) {
+            addToast("Please select a city first", "error");
+            return;
+        }
 
-    useEffect(() => {
-        setHasJoined(isJoined);
-    }, [isJoined]);
-
-    const handleJoinClick = () => {
         if (currentGroup?.groupUrl) {
             window.open(currentGroup.groupUrl, '_blank', 'noopener,noreferrer');
-        }
-    };
-
-    const handleMarkJoined = async () => {
-        setHasJoined(true);
-        try {
-            confetti({
-                particleCount: 80,
-                spread: 70,
-                origin: { y: 0.6 }
-            });
-        } catch (e) {}
-
-        if (creatorId && markCreatorCityGroupJoined) {
-            try {
-                await markCreatorCityGroupJoined(creatorId);
-            } catch (err) {
-                console.warn('markJoined error:', err);
+            setHasJoined(true);
+            if (creatorId && markCreatorCityGroupJoined) {
+                try {
+                    await markCreatorCityGroupJoined(creatorId);
+                    if (onJoinMarked) onJoinMarked(currentGroup);
+                } catch (err) {
+                    console.warn('markJoined error:', err);
+                }
             }
         }
-        if (onJoinMarked) onJoinMarked(currentGroup);
-        useStore.getState().addToast(`Verified! You are now in the ${currentGroup.city} Creators WhatsApp Community. 🎉`, 'success');
     };
 
-    const handleCopyInvite = () => {
-        if (!currentGroup?.groupUrl) return;
-        navigator.clipboard.writeText(currentGroup.groupUrl);
-        setCopied(true);
-        useStore.getState().addToast('WhatsApp group link copied!', 'success');
-        setTimeout(() => setCopied(false), 2000);
+    const handleDetect = async () => {
+        setIsDetecting(true);
+        try {
+            const { city } = await requestAutoLocation();
+            if (city) {
+                setSelectedCity(normalizeCity(city));
+                addToast(`Location detected: ${city}`, "success");
+            }
+        } catch (err) {
+            addToast("Could not detect location automatically.", "error");
+        } finally {
+            setIsDetecting(false);
+        }
     };
 
-    if (!currentGroup) return null;
+    // Close dropdown on click outside
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+                setDropdownOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    const initialLetter = selectedCity ? selectedCity.charAt(0).toUpperCase() : 'W';
 
     return (
-        <motion.div
-            initial={{ opacity: 0, y: -6 }}
-            animate={{ opacity: 1, y: 0 }}
-            className={cn(
-                "relative overflow-hidden rounded-2xl sm:rounded-3xl border transition-all duration-300 group",
-                // Mode-based styling
-                "bg-white/95 dark:bg-[#0c0e14]/95 backdrop-blur-xl",
-                hasJoined
-                    ? "bg-gradient-to-r from-emerald-500/[0.08] via-emerald-500/[0.02] to-transparent dark:from-emerald-950/25 dark:via-[#0c0e14] dark:to-zinc-900/20 border-emerald-500/25 dark:border-emerald-500/30"
-                    : "bg-gradient-to-r from-amber-500/[0.08] via-emerald-500/[0.03] to-transparent dark:from-amber-950/25 dark:via-[#0c0e14] dark:to-emerald-950/10 border-amber-500/30 dark:border-amber-500/30",
-                "shadow-md shadow-emerald-500/[0.03] dark:shadow-[0_15px_35px_rgba(0,0,0,0.4)]",
-                "p-4 sm:p-5 md:p-6",
-                className
-            )}
-        >
-            {/* Subtle WhatsApp Watermark in corner */}
-            <div className="pointer-events-none absolute -right-6 -bottom-6 opacity-[0.03] dark:opacity-[0.06] text-[#25D366]">
-                <WhatsAppIcon size={180} />
+        <div className={cn(
+            "flex flex-col sm:flex-row items-center gap-4 bg-white dark:bg-[#0c0e14] p-3 rounded-2xl sm:rounded-full border border-gray-200 dark:border-white/10 shadow-sm transition-all",
+            className
+        )}>
+            {/* Left Section: Icon and Text */}
+            <div className="flex items-center gap-3 flex-1 w-full sm:w-auto pl-1 sm:pl-2">
+                <div className="w-10 h-10 rounded-[14px] bg-[#e6f8ee] dark:bg-[#e6f8ee]/10 text-[#25D366] flex items-center justify-center shrink-0">
+                    <WhatsAppIcon size={20} />
+                </div>
+                <div className="flex flex-col">
+                    <div className="flex items-center gap-1.5 text-[13px]">
+                        <span className="font-black text-gray-950 dark:text-white">{initialLetter}</span>
+                        <span className="text-[#1b9a59] dark:text-[#25D366] font-bold text-[18px] leading-[0.5] mt-[-2px]">•</span>
+                        <span className="font-bold text-[#1b9a59] dark:text-[#25D366]">Required</span>
+                    </div>
+                    <span className="text-[11px] text-gray-500 dark:text-zinc-400 truncate max-w-[180px] sm:max-w-[220px]">
+                        Brand briefs, concert passes...
+                    </span>
+                </div>
             </div>
 
-            <div className="relative z-10 flex flex-col gap-4">
-                {/* Top: WhatsApp Icon & Text Content */}
-                <div className="flex items-start gap-3.5 sm:gap-4 text-left">
-                    {/* WhatsApp Icon Badge */}
-                    <div className="relative w-12 h-12 sm:w-13 sm:h-13 rounded-2xl bg-gradient-to-br from-[#25D366] to-[#128C7E] text-white flex items-center justify-center shrink-0 shadow-lg shadow-[#25D366]/25 group-hover:scale-105 transition-transform duration-300">
-                        <WhatsAppIcon size={24} className="text-white" />
-                        <span className="absolute -top-1 -right-1 flex h-3.5 w-3.5">
-                            {hasJoined ? (
-                                <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-[#25D366] border-2 border-white dark:border-[#0c0e14]" />
-                            ) : (
-                                <>
-                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
-                                    <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-amber-400 border-2 border-white dark:border-[#0c0e14]" />
-                                </>
-                            )}
-                        </span>
-                    </div>
-
-                    <div className="min-w-0 flex-1 space-y-1">
-                        <div className="flex items-center gap-2 flex-wrap">
-                            <span className={cn(
-                                "px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest font-mono border",
-                                hasJoined
-                                    ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/25"
-                                    : "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30"
-                            )}>
-                                {hasJoined ? '✓ Joined & Verified' : 'Action Required'}
-                            </span>
-                            <span className="text-[10px] text-gray-500 dark:text-zinc-500 font-mono">WhatsApp Community</span>
-                        </div>
-
-                        {/* Title */}
-                        <h4 className="text-base sm:text-lg font-black font-heading tracking-tight text-gray-950 dark:text-white">
-                            {hasJoined 
-                                ? `Official ${currentGroup.city} Creators WhatsApp Group`
-                                : isFallback
-                                    ? `${initialCity} Chapter Coming Soon • Join ${currentGroup.city} Hub`
-                                    : `Required: Join the ${currentGroup.city} Creators WhatsApp Group`}
-                        </h4>
-
-                        {/* Description */}
-                        <p className="text-xs sm:text-sm text-gray-600 dark:text-zinc-300 leading-relaxed">
-                            {hasJoined ? (
-                                <>You are confirmed in the {currentGroup.city} creator network. Campaign briefs, event allocations, and collaboration announcements will be sent to this group.</>
-                            ) : isFallback ? (
-                                <>We are launching a dedicated WhatsApp community for {initialCity} soon! In the meantime, join our active {currentGroup.city} Creators Hub to receive nationwide brand briefs, concert guestlists, and collab drops.</>
-                            ) : (
-                                <>All creators based in {currentGroup.city} are required to join this group. Paid campaign briefs, concert passes, event call times, and brand deliverables are shared exclusively here.</>
-                            )}
-                        </p>
-                    </div>
-                </div>
-
-                {/* Bottom: Actions */}
-                <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 w-full pt-3 border-t border-black/5 dark:border-white/5">
-                    <a
-                        href={currentGroup.groupUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={handleJoinClick}
-                        className="flex-1 sm:flex-none h-11 sm:h-12 px-5 sm:px-6 rounded-xl sm:rounded-2xl bg-gradient-to-r from-[#25D366] to-[#20ba59] hover:brightness-105 active:scale-[0.98] text-black font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-md shadow-[#25D366]/25 hover:shadow-lg hover:shadow-[#25D366]/40 transition-all group/btn"
-                    >
-                        <WhatsAppIcon size={18} className="text-black group-hover/btn:scale-110 transition-transform" />
-                        <span>
-                            {hasJoined
-                                ? 'Open WhatsApp Group'
-                                : isFallback
-                                    ? `Join ${currentGroup.city} Hub (WhatsApp)`
-                                    : `Join ${currentGroup.city} Group (Required)`}
-                        </span>
-                        <ArrowRight size={14} className="text-black/80 group-hover/btn:translate-x-1 transition-transform" />
-                    </a>
-
-                    {!hasJoined ? (
-                        <button
-                            type="button"
-                            onClick={handleMarkJoined}
-                            className="h-11 sm:h-12 px-4 rounded-xl sm:rounded-2xl bg-amber-500/10 hover:bg-amber-500/20 dark:bg-amber-500/15 dark:hover:bg-amber-500/25 border border-amber-500/30 text-amber-900 dark:text-amber-200 font-black text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all"
-                            title="Confirm that you have joined the required group"
-                        >
-                            <Check size={14} />
-                            <span>Confirm I've Joined</span>
-                        </button>
+            {/* Right Section: Actions */}
+            <div className="flex items-center gap-2 w-full sm:w-auto overflow-x-auto sm:overflow-visible pb-1 sm:pb-0 hide-scrollbar shrink-0">
+                {/* Detect Button */}
+                <button
+                    onClick={handleDetect}
+                    disabled={isDetecting || hasJoined}
+                    className="flex items-center gap-1.5 h-10 px-4 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 hover:bg-gray-100 dark:hover:bg-white/10 text-[11px] font-black tracking-wider text-gray-600 dark:text-zinc-300 uppercase shrink-0 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                    {isDetecting ? (
+                        <Loader2 size={14} className="animate-spin text-gray-400" />
                     ) : (
-                        <div className="h-11 sm:h-12 px-4 rounded-xl sm:rounded-2xl bg-emerald-500/10 border border-emerald-500/25 text-emerald-800 dark:text-emerald-400 font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-1.5">
-                            <CheckCircle2 size={16} className="text-[#25D366]" />
-                            <span>Joined &amp; Verified ✓</span>
-                        </div>
+                        <MapPin size={14} className="text-gray-400" />
                     )}
+                    <span>Detect</span>
+                </button>
 
+                {/* Dropdown */}
+                <div className="relative shrink-0" ref={dropdownRef}>
                     <button
-                        type="button"
-                        onClick={handleCopyInvite}
-                        className="h-11 sm:h-12 w-11 sm:w-12 rounded-xl sm:rounded-2xl bg-gray-100 hover:bg-gray-200 dark:bg-white/5 dark:hover:bg-white/10 border border-gray-200 dark:border-white/10 text-gray-600 hover:text-gray-950 dark:text-zinc-400 dark:hover:text-white flex items-center justify-center transition-all shrink-0 ml-auto sm:ml-0"
-                        title="Copy WhatsApp Group Link"
+                        onClick={() => !hasJoined && setDropdownOpen(!dropdownOpen)}
+                        disabled={hasJoined}
+                        className="flex items-center justify-between gap-2 h-10 px-4 min-w-[120px] rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 hover:bg-gray-50 dark:hover:bg-white/10 text-[13px] font-bold text-gray-900 dark:text-white transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
                     >
-                        {copied ? <Check size={16} className="text-emerald-600 dark:text-emerald-400" /> : <Copy size={16} />}
+                        <span>{selectedCity || 'Select City'}</span>
+                        <ChevronDown size={14} className="text-gray-400" />
                     </button>
+                    
+                    <AnimatePresence>
+                        {dropdownOpen && (
+                            <motion.div
+                                initial={{ opacity: 0, y: 5 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: 5 }}
+                                transition={{ duration: 0.15 }}
+                                className="absolute top-full right-0 sm:left-0 sm:right-auto mt-1 w-48 max-h-60 overflow-y-auto bg-white dark:bg-zinc-900 border border-gray-100 dark:border-white/10 rounded-xl shadow-lg z-50 py-1"
+                            >
+                                {activeGroups.map((g) => (
+                                    <button
+                                        key={g.id || g.city}
+                                        onClick={() => {
+                                            setSelectedCity(normalizeCity(g.city));
+                                            setDropdownOpen(false);
+                                        }}
+                                        className={cn(
+                                            "w-full text-left px-4 py-2 text-sm transition-colors",
+                                            selectedCity === normalizeCity(g.city) 
+                                                ? "bg-gray-50 dark:bg-white/5 font-bold text-gray-900 dark:text-white"
+                                                : "text-gray-600 dark:text-zinc-300 hover:bg-gray-50 dark:hover:bg-white/5"
+                                        )}
+                                    >
+                                        {g.city}
+                                    </button>
+                                ))}
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
                 </div>
+
+                {/* Join Button */}
+                <button
+                    onClick={handleJoinClick}
+                    disabled={hasJoined}
+                    className={cn(
+                        "flex items-center gap-1.5 h-10 px-5 rounded-full text-[11px] font-black tracking-wider uppercase shrink-0 transition-colors",
+                        hasJoined 
+                            ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900/50 cursor-default"
+                            : "bg-[#0c0e14] dark:bg-white text-white dark:text-black hover:bg-gray-900 dark:hover:bg-gray-100"
+                    )}
+                >
+                    {hasJoined ? (
+                        <>
+                            <span>Joined</span>
+                            <Check size={14} />
+                        </>
+                    ) : (
+                        <>
+                            <span>Join</span>
+                            <ArrowRight size={14} />
+                        </>
+                    )}
+                </button>
             </div>
-        </motion.div>
+        </div>
     );
 };
 
