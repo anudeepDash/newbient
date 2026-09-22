@@ -152,13 +152,22 @@ const fetchInstagramProfile = async (rawHandle) => {
                         if (titleMatch && titleMatch[1]) {
                             const rawTitle = decodeEntities(titleMatch[1]);
                             const namePart = rawTitle.split('(@')[0].split('•')[0].trim();
-                            if (namePart) fullName = namePart;
+                            const cleanedName = namePart.replace(/^["'‘“”’`\s]+|["'‘“”’`\s]+$/g, '').trim();
+                            if (cleanedName && cleanedName.length > 1) {
+                                fullName = cleanedName;
+                            }
                         }
                         
                         // Extract profile image
                         const imgMatch = html.match(/<meta\s+property=["']og:image["']\s+content=["']([^"']+)["']/i) ||
                                          html.match(/content=["']([^"']+)["']\s+property=["']og:image["']/i);
                         const profilePic = imgMatch ? decodeEntities(imgMatch[1]) : null;
+                        
+                        // Check if officially verified by Instagram (Meta verification is reflected in og:description)
+                        const isVerifiedBadge = Boolean(
+                            desc.toLowerCase().includes('verified account') || 
+                            desc.toLowerCase().includes('verified profile')
+                        );
                         
                         return {
                             success: true,
@@ -168,7 +177,7 @@ const fetchInstagramProfile = async (rawHandle) => {
                             formattedFollowers: formatFollowerCount(parsedCount),
                             profilePic,
                             isPrivate: desc.toLowerCase().includes('private'),
-                            isVerified: desc.includes('Verified') || html.includes('verified')
+                            isVerified: isVerifiedBadge
                         };
                     }
                 }
@@ -202,15 +211,23 @@ const fetchInstagramProfile = async (rawHandle) => {
     // Strategy 2: External RapidAPI fallback if key provided
     if (process.env.RAPIDAPI_KEY) {
         try {
-            const rapidRes = await fetch(`https://instagram-data12.p.rapidapi.com/user/details?username=${cleanHandle}`, {
+            const rapidHost = process.env.RAPIDAPI_HOST || 'instagram-looter2.p.rapidapi.com';
+            // Some APIs use /profile, some use /user, some use /v1/users. We'll default to the standard Looter V2 endpoint.
+            const rapidEndpoint = process.env.RAPIDAPI_ENDPOINT || `https://${rapidHost}/profile?username=${cleanHandle}`;
+            
+            const rapidRes = await fetch(rapidEndpoint, {
                 headers: {
                     'x-rapidapi-key': process.env.RAPIDAPI_KEY,
-                    'x-rapidapi-host': 'instagram-data12.p.rapidapi.com'
+                    'x-rapidapi-host': rapidHost
                 }
             });
+            
             if (rapidRes.ok) {
                 const rapidData = await rapidRes.json();
+                
+                // Supports both instagram-data12 AND instagram-looter2 JSON structures
                 const count = rapidData?.follower_count || rapidData?.edge_followed_by?.count;
+                
                 if (count !== undefined) {
                     const parsedCount = Number(count) || 0;
                     return {
@@ -219,7 +236,7 @@ const fetchInstagramProfile = async (rawHandle) => {
                         name: rapidData.full_name || cleanHandle,
                         followers: parsedCount,
                         formattedFollowers: formatFollowerCount(parsedCount),
-                        profilePic: rapidData.profile_pic_url || null,
+                        profilePic: rapidData.hd_profile_pic_url_info?.url || rapidData.profile_pic_url || null,
                         isPrivate: Boolean(rapidData.is_private),
                         isVerified: Boolean(rapidData.is_verified)
                     };
