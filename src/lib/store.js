@@ -430,6 +430,20 @@ export const useStore = create((set, get) => ({
                     } catch (apiErr) {
                         console.warn('[Store] Forms API fallback notice:', apiErr);
                     }
+                } else if (stateKey === 'creatorGroups') {
+                    try {
+                        const res = await fetch('/api/creator-join?action=creator-groups-get');
+                        if (res.ok) {
+                            const json = await res.json();
+                            if (json.success && Array.isArray(json.groups)) {
+                                let data = json.groups;
+                                if (sortFn) data = sortFn(data);
+                                set({ creatorGroups: data });
+                            }
+                        }
+                    } catch (apiErr) {
+                        console.warn('[Store] Creator groups API fallback notice:', apiErr);
+                    }
                 }
             });
             activeListeners[stateKey] = { unsub, count: 1, timeoutId: null };
@@ -539,23 +553,57 @@ export const useStore = create((set, get) => ({
     subscribeToAdmins: () => get().subscribeToKey('admins', 'admins'),
     subscribeToClientRequests: () => get().subscribeToKey('clientRequests', 'client_requests'),
     subscribeToPastClients: () => get().subscribeToKey('pastClients', 'past_clients', (data) => data.sort((a, b) => (a.order || 0) - (b.order || 0))),
-    subscribeToCreatorGroups: () => get().subscribeToKey('creatorGroups', 'creator_groups', (data) => {
-        const firestoreList = Array.isArray(data) ? data : [];
-        const existingCityMap = new Map();
-        firestoreList.forEach(g => {
-            if (g.city) existingCityMap.set(g.city.toLowerCase().trim(), g);
-        });
-
-        const merged = [...firestoreList];
-        DEFAULT_CREATOR_GROUPS.forEach(defaultGroup => {
-            const key = defaultGroup.city.toLowerCase().trim();
-            if (!existingCityMap.has(key)) {
-                merged.push(defaultGroup);
+    subscribeToCreatorGroups: () => {
+        // Immediately query the server API to ensure groups are available even when client Firestore rules reject unauthenticated access
+        const fetchRemoteGroups = async () => {
+            try {
+                const res = await fetch('/api/creator-join?action=creator-groups-get');
+                if (res.ok) {
+                    const json = await res.json();
+                    if (json.success && Array.isArray(json.groups)) {
+                        const firestoreList = json.groups;
+                        const existingCityMap = new Map();
+                        firestoreList.forEach(g => {
+                            if (g.city) existingCityMap.set(g.city.toLowerCase().trim(), g);
+                        });
+                        const merged = [...firestoreList];
+                        DEFAULT_CREATOR_GROUPS.forEach(defaultGroup => {
+                            const key = defaultGroup.city.toLowerCase().trim();
+                            if (!existingCityMap.has(key)) {
+                                merged.push(defaultGroup);
+                            }
+                        });
+                        const sorted = merged.sort((a, b) => (a.order || 0) - (b.order || 0));
+                        set((state) => ({
+                            creatorGroups: sorted,
+                            subscriptionsLoaded: { ...(state.subscriptionsLoaded || {}), creatorGroups: true }
+                        }));
+                    }
+                }
+            } catch (err) {
+                console.warn('[Store] Background creator groups fetch error:', err);
             }
-        });
+        };
+        fetchRemoteGroups();
 
-        return merged.sort((a, b) => (a.order || 0) - (b.order || 0));
-    }),
+        return get().subscribeToKey('creatorGroups', 'creator_groups', (data) => {
+            const firestoreList = Array.isArray(data) ? data : [];
+            const existingCityMap = new Map();
+            firestoreList.forEach(g => {
+                if (g.city) existingCityMap.set(g.city.toLowerCase().trim(), g);
+            });
+
+            const merged = [...firestoreList];
+            DEFAULT_CREATOR_GROUPS.forEach(defaultGroup => {
+                const key = defaultGroup.city.toLowerCase().trim();
+                if (!existingCityMap.has(key)) {
+                    merged.push(defaultGroup);
+                }
+            });
+
+            return merged.sort((a, b) => (a.order || 0) - (b.order || 0));
+        });
+    },
     subscribeToCreatorTestimonials: () => get().subscribeToKey('creatorTestimonials', 'creator_testimonials', (data) => data.sort((a, b) => (a.order || 0) - (b.order || 0))),
     subscribeToTicketOrders: () => get().subscribeToKey('ticketOrders', 'ticket_orders'),
     subscribeToCoupons: () => get().subscribeToKey('coupons', 'coupons'),
@@ -1104,8 +1152,10 @@ export const useStore = create((set, get) => ({
             createdAt: new Date().toISOString()
         };
 
+        let newId = null;
         try {
-            await addDoc(collection(db, 'creator_groups'), newGroup);
+            const docRef = await addDoc(collection(db, 'creator_groups'), newGroup);
+            newId = docRef.id;
         } catch (fsErr) {
             console.warn('[store] Direct addCreatorGroup failed, falling back to server API:', fsErr.message);
             const res = await fetch('/api/creator-join?action=creator-group-add', {
@@ -1117,9 +1167,25 @@ export const useStore = create((set, get) => ({
                 const errJson = await res.json().catch(() => ({}));
                 throw new Error(errJson.error || fsErr.message || 'Failed to add creator group');
             }
+            const resData = await res.json().catch(() => ({}));
+            newId = resData.id;
         }
+
+        // Optimistically update local store immediately
+        const createdItem = { ...newGroup, id: newId || `group_${Date.now()}` };
+        const updatedList = [
+            ...currentItems.filter(g => g.id !== createdItem.id && g.city?.toLowerCase().trim() !== createdItem.city?.toLowerCase().trim()),
+            createdItem
+        ].sort((a, b) => (a.order || 0) - (b.order || 0));
+        set({ creatorGroups: updatedList });
+        return createdItem;
     },
     updateCreatorGroup: async (id, updates) => {
+        // Optimistically update local store immediately
+        const currentItems = get().creatorGroups || [];
+        const updatedList = currentItems.map(g => g.id === id ? { ...g, ...updates, updatedAt: new Date().toISOString() } : g);
+        set({ creatorGroups: updatedList });
+
         try {
             await updateDoc(doc(db, 'creator_groups', id), updates);
         } catch (fsErr) {
@@ -1136,6 +1202,10 @@ export const useStore = create((set, get) => ({
         }
     },
     deleteCreatorGroup: async (id) => {
+        // Optimistically update local store immediately
+        const currentItems = get().creatorGroups || [];
+        set({ creatorGroups: currentItems.filter(g => g.id !== id) });
+
         try {
             await deleteDoc(doc(db, 'creator_groups', id));
         } catch (fsErr) {
@@ -1162,7 +1232,18 @@ export const useStore = create((set, get) => ({
                 const errJson = await res.json().catch(() => ({}));
                 throw new Error(errJson.error || 'Failed to sync default creator groups');
             }
-            return await res.json();
+            const resData = await res.json();
+            // Refresh creator groups from API
+            try {
+                const getRes = await fetch('/api/creator-join?action=creator-groups-get');
+                if (getRes.ok) {
+                    const json = await getRes.json();
+                    if (json.success && Array.isArray(json.groups)) {
+                        set({ creatorGroups: json.groups });
+                    }
+                }
+            } catch (e) {}
+            return resData;
         } catch (err) {
             console.error('[store] seedDefaultCreatorGroups error:', err);
             throw err;

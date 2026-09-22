@@ -34,6 +34,8 @@ const normalizeCity = (cityStr = '') => {
     if (raw.includes('jaipur')) return 'Jaipur';
     if (raw.includes('goa')) return 'Goa';
     if (raw.includes('ahmedabad')) return 'Ahmedabad';
+    if (raw.includes('bhubaneswar') || raw.includes('bhubaneshwar') || raw.includes('cuttack') || raw.includes('odisha')) return 'Bhubaneswar & Cuttack';
+    if (raw.includes('vizag') || raw.includes('visakhapatnam')) return 'Vizag';
     return cityStr ? (cityStr.charAt(0).toUpperCase() + cityStr.slice(1)) : 'Bengaluru';
 };
 

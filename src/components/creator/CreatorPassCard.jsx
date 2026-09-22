@@ -38,6 +38,8 @@ const normalizeCity = (cityStr = '') => {
     if (raw.includes('kolkata') || raw.includes('calcutta')) return 'kolkata';
     if (raw.includes('kochi') || raw.includes('cochin')) return 'kochi';
     if (raw.includes('delhi')) return 'delhi';
+    if (raw.includes('bhubaneswar') || raw.includes('bhubaneshwar') || raw.includes('cuttack')) return 'bhubaneswar & cuttack';
+    if (raw.includes('vizag') || raw.includes('visakhapatnam')) return 'vizag';
     return raw;
 };
 
@@ -435,7 +437,7 @@ const CreatorPassCard = ({
                                                 setSelectedCity(val);
                                                 setIsAutoDetected(false);
                                             }}
-                                            options={DEFAULT_CREATOR_GROUPS.map(g => ({ value: g.city, label: g.city }))}
+                                            options={activeGroups.map(g => ({ value: g.city, label: g.city }))}
                                             size="sm"
                                             accentColor="neon-green"
                                             searchable={false}
