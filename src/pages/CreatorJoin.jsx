@@ -1116,7 +1116,7 @@ const CreatorJoin = () => {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-[#050505] text-gray-900 dark:text-white pt-24 pb-28 px-4 relative selection:bg-neon-pink selection:text-black transition-colors duration-300">
+        <div className="min-h-screen bg-gray-50 dark:bg-[#050505] text-gray-900 dark:text-white pt-20 sm:pt-24 pb-24 sm:pb-28 px-3.5 sm:px-4 relative selection:bg-neon-pink selection:text-black transition-colors duration-300">
 
 
             {/* Ambient Background Glows */}
@@ -1125,7 +1125,7 @@ const CreatorJoin = () => {
                 <div className="absolute bottom-10 right-1/4 w-[400px] h-[300px] bg-neon-green/[0.03] rounded-full blur-3xl" />
             </div>
 
-            <div className="relative z-10 w-full max-w-xl sm:max-w-2xl mx-auto space-y-6">
+            <div className="relative z-10 w-full max-w-xl sm:max-w-2xl mx-auto space-y-4 sm:space-y-6">
                 
                 {/* Top Nav Header */}
                 <div className="flex items-center justify-between">
@@ -1138,15 +1138,15 @@ const CreatorJoin = () => {
                     </Link>
 
                     {user ? (
-                        <div className="flex items-center gap-2 text-xs text-gray-900 dark:text-white/70 bg-black/5 dark:bg-white/5 px-3.5 py-1.5 rounded-full border border-black/10 dark:border-white/10">
+                        <div className="flex items-center gap-2 text-xs text-gray-900 dark:text-white/70 bg-black/5 dark:bg-white/5 px-3 py-1 sm:px-3.5 sm:py-1.5 rounded-full border border-black/10 dark:border-white/10">
                             <span className="w-2 h-2 rounded-full bg-neon-green" />
-                            <span className="truncate max-w-[160px] font-medium">{user.displayName || user.email}</span>
+                            <span className="truncate max-w-[130px] sm:max-w-[170px] font-medium">{user.displayName || user.email}</span>
                         </div>
                     ) : (
                         <button
                             type="button"
                             onClick={() => setAuthModal(true)}
-                            className="px-4 py-2 rounded-xl bg-black/10 dark:bg-white/10 hover:bg-white text-gray-900 dark:text-white hover:text-black transition-all border border-white/15 text-[11px] font-black uppercase tracking-wider shadow-sm flex items-center gap-2 active:scale-95"
+                            className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl bg-black/10 dark:bg-white/10 hover:bg-white text-gray-900 dark:text-white hover:text-black transition-all border border-white/15 text-[10px] sm:text-[11px] font-black uppercase tracking-wider shadow-sm flex items-center gap-1.5 sm:gap-2 active:scale-95"
                         >
                             <span>Already a Creator? Sign In</span>
                         </button>
@@ -1214,14 +1214,14 @@ const CreatorJoin = () => {
                 ) : (
                 <div 
                     ref={formContainerRef}
-                    className="bg-gray-50/80 dark:bg-white/[0.02] border border-black/[0.08] dark:border-white/[0.06] rounded-3xl p-5 sm:p-8 backdrop-blur-2xl shadow-2xl space-y-6"
+                    className="bg-gray-50/80 dark:bg-white/[0.02] border border-black/[0.08] dark:border-white/[0.06] rounded-2xl sm:rounded-3xl p-4 sm:p-8 backdrop-blur-2xl shadow-2xl space-y-5 sm:space-y-6"
                 >
                     
                     {/* Progress Bar & Header */}
-                    <div className="space-y-3.5">
-                        <div className="flex items-center justify-between gap-3 min-w-0">
+                    <div className="space-y-3 sm:space-y-3.5">
+                        <div className="flex items-center justify-between gap-2.5 min-w-0">
                             {/* Resilient, non-wrapping, non-overlapping pill badge */}
-                            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-neon-pink/10 border border-neon-pink/25 text-neon-pink shrink-0 shadow-sm max-w-[75%] sm:max-w-none">
+                            <div className="inline-flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full bg-neon-pink/10 border border-neon-pink/25 text-neon-pink shrink-0 shadow-sm max-w-[78%] sm:max-w-none">
                                 <span className="w-1.5 h-1.5 rounded-full bg-neon-pink shrink-0 animate-pulse" />
                                 <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider whitespace-nowrap truncate">
                                     Step {step} of 4 • {step === 1 ? 'Identity' : step === 2 ? 'Verification' : step === 3 ? 'Creative Footprint' : 'Terms & Review'}
@@ -1263,13 +1263,13 @@ const CreatorJoin = () => {
                                 animate="center"
                                 exit="exit"
                                 transition={{ duration: 0.25, ease: 'easeOut' }}
-                                className="space-y-6"
+                                className="space-y-5 sm:space-y-6"
                             >
                                 <div>
-                                    <h2 className="text-xl sm:text-2xl font-black font-heading uppercase tracking-tight text-gray-900 dark:text-white">
+                                    <h2 className="text-lg sm:text-2xl font-black font-heading uppercase tracking-tight text-gray-900 dark:text-white">
                                         Let's start with the basics
                                     </h2>
-                                    <p className="text-xs sm:text-sm text-gray-900 dark:text-white/50 mt-1">
+                                    <p className="text-[11px] sm:text-sm text-gray-900 dark:text-white/50 mt-0.5 sm:mt-1">
                                         Tell us your name, photo, and where you create content.
                                     </p>
                                 </div>
@@ -1363,17 +1363,17 @@ const CreatorJoin = () => {
                                 )}
 
                                 {/* Profile Photo Upload */}
-                                <div className="flex items-center gap-4 p-4 bg-gray-50/80 dark:bg-white/[0.02] border border-black/[0.08] dark:border-white/[0.06] rounded-2xl">
+                                <div className="flex items-center gap-3.5 sm:gap-4 p-3.5 sm:p-4 bg-gray-50/80 dark:bg-white/[0.02] border border-black/[0.08] dark:border-white/[0.06] rounded-xl sm:rounded-2xl">
                                     <div className="relative shrink-0">
-                                        <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-white dark:bg-black border border-white/[0.1] flex items-center justify-center overflow-hidden">
+                                        <div className="w-14 h-14 sm:w-20 sm:h-20 rounded-xl sm:rounded-2xl bg-white dark:bg-black border border-white/[0.1] flex items-center justify-center overflow-hidden">
                                             {formData.profilePicture ? (
                                                 <img src={formData.profilePicture} alt="Preview" className="w-full h-full object-cover" />
                                             ) : (
-                                                <Camera size={22} className="text-gray-900 dark:text-white/20" />
+                                                <Camera size={20} className="text-gray-900 dark:text-white/20" />
                                             )}
                                         </div>
-                                        <label className="absolute -bottom-1 -right-1 w-7 h-7 bg-white text-black rounded-lg flex items-center justify-center cursor-pointer hover:bg-neon-pink transition-colors shadow-lg">
-                                            {isUploadingPhoto ? <LoadingSpinner size="xs" color="black" /> : <Upload size={13} />}
+                                        <label className="absolute -bottom-1 -right-1 w-6 h-6 sm:w-7 sm:h-7 bg-white text-black rounded-lg flex items-center justify-center cursor-pointer hover:bg-neon-pink transition-colors shadow-lg">
+                                            {isUploadingPhoto ? <LoadingSpinner size="xs" color="black" /> : <Upload size={12} />}
                                             <input type="file" className="hidden" accept="image/*" onChange={handleImageUpload} disabled={isUploadingPhoto} />
                                         </label>
                                     </div>
@@ -1392,7 +1392,7 @@ const CreatorJoin = () => {
                                         value={formData.name}
                                         onChange={handleChange}
                                         placeholder="e.g. Aisha Sharma"
-                                        className="w-full h-12 bg-white dark:bg-black/40 border border-black/[0.1] dark:border-white/[0.08] focus:border-black/30 dark:focus:border-white/30 rounded-xl px-4 text-sm font-medium text-gray-900 dark:text-white outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-white/20"
+                                        className="w-full h-11 sm:h-12 bg-white dark:bg-black/40 border border-black/[0.1] dark:border-white/[0.08] focus:border-black/30 dark:focus:border-white/30 rounded-xl px-3.5 sm:px-4 text-xs sm:text-sm font-medium text-gray-900 dark:text-white outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-white/20"
                                         autoFocus
                                     />
                                 </div>
@@ -1416,7 +1416,7 @@ const CreatorJoin = () => {
                                     <div className="flex flex-wrap gap-1.5">
                                         {(showAllCities 
                                             ? PREDEFINED_CITIES.filter(c => c !== 'Others') 
-                                            : POPULAR_CITIES
+                                             : POPULAR_CITIES
                                         ).map(c => {
                                             const isSelected = formData.city === c;
                                             return (
@@ -1425,7 +1425,7 @@ const CreatorJoin = () => {
                                                     type="button"
                                                     onClick={() => setFormData(p => ({ ...p, city: c }))}
                                                     className={cn(
-                                                        "px-3.5 py-2 rounded-xl text-xs font-bold transition-all border",
+                                                        "px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-[11px] sm:text-xs font-bold transition-all border",
                                                         isSelected
                                                             ? "bg-neon-green text-black border-neon-green font-black shadow-md shadow-neon-green/20 scale-[1.02]"
                                                             : "bg-white dark:bg-white/[0.04] text-gray-800 dark:text-white/60 border-gray-200 dark:border-white/10 hover:border-gray-300 dark:hover:border-white/20 hover:text-black dark:hover:text-white"
@@ -1439,7 +1439,7 @@ const CreatorJoin = () => {
                                         {!showAllCities && formData.city && !POPULAR_CITIES.includes(formData.city) && formData.city !== 'Others' && (
                                             <button
                                                 type="button"
-                                                className="px-3.5 py-2 rounded-xl text-xs font-bold transition-all border bg-neon-green text-black border-neon-green font-black shadow-md shadow-neon-green/20 scale-[1.02]"
+                                                className="px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-[11px] sm:text-xs font-bold transition-all border bg-neon-green text-black border-neon-green font-black shadow-md shadow-neon-green/20 scale-[1.02]"
                                             >
                                                 {formData.city}
                                             </button>
@@ -1449,7 +1449,7 @@ const CreatorJoin = () => {
                                             type="button"
                                             onClick={() => setFormData(p => ({ ...p, city: 'Others' }))}
                                             className={cn(
-                                                "px-3.5 py-2 rounded-xl text-xs font-bold transition-all border",
+                                                "px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-[11px] sm:text-xs font-bold transition-all border",
                                                 formData.city === 'Others' || (!PREDEFINED_CITIES.includes(formData.city) && formData.city)
                                                     ? "bg-neon-green text-black border-neon-green font-black shadow-md shadow-neon-green/20 scale-[1.02]"
                                                     : "bg-white dark:bg-white/[0.04] text-gray-800 dark:text-white/60 border-gray-200 dark:border-white/10 hover:border-gray-300 dark:hover:border-white/20 hover:text-black dark:hover:text-white"
@@ -1528,35 +1528,24 @@ const CreatorJoin = () => {
                                 {/* WhatsApp Phone & OTP Section */}
                                 <div className="space-y-2">
                                     <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-2">
-                                            <label className="text-[10px] font-bold text-gray-900 dark:text-white/40 uppercase tracking-wider">WhatsApp Contact Number *</label>
-                                            {typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') && (
-                                                <span className="text-[9px] font-mono font-bold text-emerald-600 dark:text-neon-green bg-emerald-500/10 px-1.5 py-0.5 rounded-md border border-emerald-500/20">
-                                                    Local Mode
-                                                </span>
-                                            )}
-                                        </div>
-                                        {isPhoneVerified ? (
+                                        <label className="text-[10px] font-bold text-gray-900 dark:text-white/40 uppercase tracking-wider">WhatsApp Contact Number *</label>
+                                        {isPhoneVerified && (
                                             <span className="text-neon-green font-bold text-[10px] flex items-center gap-1 uppercase tracking-wider">
                                                 <ShieldCheck size={13} /> Verified
-                                            </span>
-                                        ) : (
-                                            <span className="text-amber-500 font-bold text-[10px] flex items-center gap-1 uppercase tracking-wider font-mono">
-                                                Verification Required
                                             </span>
                                         )}
                                     </div>
 
                                     {isPhoneVerified ? (
                                         /* Verified Banner */
-                                        <div className="p-4 bg-neon-green/10 border border-neon-green/20 rounded-2xl flex items-center justify-between">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-8 h-8 rounded-xl bg-neon-green text-black flex items-center justify-center font-bold">
+                                        <div className="p-3.5 sm:p-4 bg-neon-green/10 border border-neon-green/20 rounded-xl sm:rounded-2xl flex items-center justify-between gap-2">
+                                            <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+                                                <div className="w-8 h-8 rounded-xl bg-neon-green text-black flex items-center justify-center font-bold shrink-0">
                                                     <Check size={16} strokeWidth={3} />
                                                 </div>
-                                                <div>
-                                                    <p className="text-xs font-bold text-gray-900 dark:text-white font-mono">{verifiedPhoneNumber || `${countryCode} ${formData.phone.slice(-10)}`}</p>
-                                                    <p className="text-[10px] text-gray-900 dark:text-white/40">Verified for direct brand deals & payment receipts.</p>
+                                                <div className="min-w-0">
+                                                    <p className="text-xs font-bold text-gray-900 dark:text-white font-mono truncate">{verifiedPhoneNumber || `${countryCode} ${formData.phone.slice(-10)}`}</p>
+                                                    <p className="text-[10px] text-gray-900 dark:text-white/40 truncate sm:whitespace-normal">Verified for direct brand deals & payment receipts.</p>
                                                 </div>
                                             </div>
                                             <button
@@ -1566,7 +1555,7 @@ const CreatorJoin = () => {
                                                     setVerifiedPhoneNumber('');
                                                     setOtpSent(false);
                                                 }}
-                                                className="text-[10px] text-gray-900 dark:text-white/40 hover:text-gray-900 dark:hover:text-white underline font-bold uppercase tracking-wider"
+                                                className="text-[10px] text-gray-900 dark:text-white/40 hover:text-gray-900 dark:hover:text-white underline font-bold uppercase tracking-wider shrink-0"
                                             >
                                                 Change
                                             </button>
@@ -1574,16 +1563,16 @@ const CreatorJoin = () => {
                                     ) : (
                                         /* Unverified Phone Input with Safe Boundaries */
                                         <div className="space-y-3">
-                                            <div className="flex items-center gap-2">
+                                            <div className="flex items-center gap-1.5 sm:gap-2">
                                                 {/* Country Code Dropdown */}
                                                 <div className="relative shrink-0" ref={countryCodeRef}>
                                                     <button
                                                         type="button"
                                                         onClick={() => setIsCountryCodeOpen(!isCountryCodeOpen)}
-                                                        className="h-12 px-3 bg-white dark:bg-black/40 border border-black/[0.1] dark:border-white/[0.08] rounded-xl text-xs font-bold text-gray-900 dark:text-white flex items-center gap-1.5 hover:border-black/20 dark:hover:border-white/20 transition-all"
+                                                        className="h-11 sm:h-12 px-2.5 sm:px-3 bg-white dark:bg-black/40 border border-black/[0.1] dark:border-white/[0.08] rounded-xl text-xs font-bold text-gray-900 dark:text-white flex items-center gap-1 hover:border-black/20 dark:hover:border-white/20 transition-all"
                                                     >
                                                         <span>{countryCode}</span>
-                                                        <ChevronDown size={12} className="text-gray-900 dark:text-white/30" />
+                                                        <ChevronDown size={11} className="text-gray-900 dark:text-white/30" />
                                                     </button>
                                                     {isCountryCodeOpen && (
                                                         <div className="absolute z-50 top-full left-0 mt-1 bg-gray-100 dark:bg-zinc-950 border border-black/10 dark:border-white/10 rounded-xl p-1 shadow-2xl w-28 space-y-0.5">
@@ -1606,7 +1595,7 @@ const CreatorJoin = () => {
 
                                                 {/* Phone Number Input */}
                                                 <div className="relative flex-1 min-w-0">
-                                                    <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-900 dark:text-white/20" size={14} />
+                                                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-900 dark:text-white/20" size={13} />
                                                     <input
                                                         type="tel"
                                                         name="phone"
@@ -1615,7 +1604,7 @@ const CreatorJoin = () => {
                                                         disabled={otpSent || isSendingOtp}
                                                         placeholder="98765 43210"
                                                         maxLength={15}
-                                                        className="w-full h-12 pl-9 pr-3 bg-white dark:bg-black/40 border border-black/[0.1] dark:border-white/[0.08] focus:border-black/30 dark:focus:border-white/30 rounded-xl text-sm font-medium text-gray-900 dark:text-white outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-white/20 disabled:opacity-50"
+                                                        className="w-full h-11 sm:h-12 pl-8 sm:pl-9 pr-2 sm:pr-3 bg-white dark:bg-black/40 border border-black/[0.1] dark:border-white/[0.08] focus:border-black/30 dark:focus:border-white/30 rounded-xl text-xs sm:text-sm font-medium text-gray-900 dark:text-white outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-white/20 disabled:opacity-50"
                                                     />
                                                 </div>
 
@@ -1625,7 +1614,7 @@ const CreatorJoin = () => {
                                                         type="button"
                                                         onClick={handleSendOTP}
                                                         disabled={isSendingOtp || formData.phone.replace(/\D/g, '').length < 10}
-                                                        className="h-12 px-4 bg-white text-black hover:bg-neon-pink font-bold rounded-xl text-xs uppercase tracking-wider shrink-0 transition-all disabled:opacity-30"
+                                                        className="h-11 sm:h-12 px-3 sm:px-4 bg-white text-black hover:bg-neon-pink font-bold rounded-xl text-[11px] sm:text-xs uppercase tracking-wider shrink-0 transition-all disabled:opacity-30 whitespace-nowrap active:scale-95"
                                                     >
                                                         {isSendingOtp ? <LoadingSpinner size="xs" color="black" /> : 'Send Code'}
                                                     </button>
@@ -1639,23 +1628,23 @@ const CreatorJoin = () => {
                                                         initial={{ opacity: 0, height: 0 }}
                                                         animate={{ opacity: 1, height: 'auto' }}
                                                         exit={{ opacity: 0, height: 0 }}
-                                                        className="p-4 bg-white dark:bg-black/60 border border-black/[0.1] dark:border-white/[0.08] rounded-2xl space-y-3"
+                                                        className="p-3.5 sm:p-4 bg-white dark:bg-black/60 border border-black/[0.1] dark:border-white/[0.08] rounded-xl sm:rounded-2xl space-y-3"
                                                     >
-                                                        <div className="flex items-center justify-between text-xs">
-                                                            <span className="text-gray-900 dark:text-white/60 text-[11px]">
+                                                        <div className="flex items-center justify-between text-xs gap-2">
+                                                            <span className="text-gray-900 dark:text-white/60 text-[11px] truncate">
                                                                 Enter 6-digit code sent to <strong className="text-gray-900 dark:text-white font-mono">{countryCode} {formData.phone.slice(-10)}</strong>
                                                             </span>
                                                             <button
                                                                 type="button"
                                                                 onClick={() => { setOtpSent(false); setOtpDigits(['','','','','','']); }}
-                                                                className="text-[10px] text-gray-900 dark:text-white/40 hover:text-gray-900 dark:hover:text-white underline uppercase font-bold"
+                                                                className="text-[10px] text-gray-900 dark:text-white/40 hover:text-gray-900 dark:hover:text-white underline uppercase font-bold shrink-0"
                                                             >
                                                                 Edit
                                                             </button>
                                                         </div>
 
                                                         {/* Mobile Safe Grid of 6 PIN Boxes */}
-                                                        <div className="grid grid-cols-6 gap-1.5 sm:gap-2.5 max-w-[320px] sm:max-w-[360px] w-full mx-auto" onPaste={handleOtpPaste}>
+                                                        <div className="grid grid-cols-6 gap-1.5 sm:gap-2.5 max-w-[290px] sm:max-w-[360px] w-full mx-auto" onPaste={handleOtpPaste}>
                                                             {otpDigits.map((digit, index) => (
                                                                 <input
                                                                   key={index}
@@ -1666,7 +1655,7 @@ const CreatorJoin = () => {
                                                                   value={digit}
                                                                   onChange={(e) => handleOtpDigitChange(e.target.value, index)}
                                                                   onKeyDown={(e) => handleOtpKeyDown(e, index)}
-                                                                  className="w-full aspect-square text-center bg-gray-50 dark:bg-white/[0.04] border border-black/[0.1] dark:border-white/[0.1] rounded-xl text-lg sm:text-xl font-bold text-gray-900 dark:text-white focus:border-neon-green focus:ring-1 focus:ring-neon-green outline-none transition-all"
+                                                                  className="w-full aspect-square text-center bg-gray-50 dark:bg-white/[0.04] border border-black/[0.1] dark:border-white/[0.1] rounded-xl text-base sm:text-xl font-bold text-gray-900 dark:text-white focus:border-neon-green focus:ring-1 focus:ring-neon-green outline-none transition-all"
                                                                 />
                                                             ))}
                                                         </div>
@@ -1724,10 +1713,10 @@ const CreatorJoin = () => {
                                 className="space-y-6"
                             >
                                 <div>
-                                    <h2 className="text-xl sm:text-2xl font-black font-heading uppercase tracking-tight text-gray-900 dark:text-white">
+                                    <h2 className="text-lg sm:text-2xl font-black font-heading uppercase tracking-tight text-gray-900 dark:text-white">
                                         Showcase your creative footprint
                                     </h2>
-                                    <p className="text-xs sm:text-sm text-gray-900 dark:text-white/50 mt-1">
+                                    <p className="text-[11px] sm:text-sm text-gray-900 dark:text-white/50 mt-0.5 sm:mt-1">
                                         Select your niche and connect your main creator channels.
                                     </p>
                                 </div>
@@ -1735,7 +1724,7 @@ const CreatorJoin = () => {
                                 {/* Visual Niche Selector */}
                                 <div className="space-y-2">
                                     <label className="text-[10px] font-bold text-gray-900 dark:text-white/40 uppercase tracking-wider block">Primary Content Niche *</label>
-                                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-2.5">
                                         {NICHE_OPTIONS.map(niche => {
                                             const isSelected = formData.categories === niche.id;
                                             const IconComponent = niche.icon;
@@ -1745,22 +1734,22 @@ const CreatorJoin = () => {
                                                     type="button"
                                                     onClick={() => setFormData(p => ({ ...p, categories: niche.id }))}
                                                     className={cn(
-                                                        "p-3.5 rounded-2xl text-left border transition-all flex flex-col justify-between gap-3 group",
+                                                        "p-2.5 sm:p-3.5 rounded-xl sm:rounded-2xl text-left border transition-all flex flex-col justify-between gap-2.5 sm:gap-3 group",
                                                         isSelected
                                                             ? "bg-neon-pink/15 dark:bg-neon-pink/20 border-neon-pink shadow-md scale-[1.02] ring-1 ring-neon-pink text-gray-900 dark:text-white"
                                                             : "bg-white dark:bg-white/[0.02] border-gray-200 dark:border-white/[0.06] hover:bg-gray-50 dark:hover:bg-white/[0.04] hover:border-gray-300 dark:hover:border-white/20 text-gray-700 dark:text-white/70"
                                                     )}
                                                 >
                                                     <div className={cn(
-                                                        "w-8 h-8 rounded-xl flex items-center justify-center transition-colors",
+                                                        "w-7 h-7 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl flex items-center justify-center transition-colors",
                                                         isSelected
                                                             ? "bg-neon-pink text-black"
                                                             : "bg-black/5 dark:bg-white/5 text-gray-600 dark:text-zinc-400 group-hover:text-black dark:group-hover:text-white"
                                                     )}>
-                                                        <IconComponent size={16} />
+                                                        <IconComponent size={15} />
                                                     </div>
                                                     <div>
-                                                        <p className={cn("text-xs font-bold leading-tight", isSelected ? "text-neon-pink dark:text-neon-pink font-black" : "text-gray-900 dark:text-white")}>{niche.label}</p>
+                                                        <p className={cn("text-[11px] sm:text-xs font-bold leading-tight", isSelected ? "text-neon-pink dark:text-neon-pink font-black" : "text-gray-900 dark:text-white")}>{niche.label}</p>
                                                     </div>
                                                 </button>
                                             );
@@ -1775,7 +1764,7 @@ const CreatorJoin = () => {
                                                 value={formData.customNiche}
                                                 onChange={handleChange}
                                                 placeholder="Specify niche (e.g. Automotive, Podcasting, DIY)"
-                                                className="w-full h-12 bg-white dark:bg-black/40 border border-black/[0.1] dark:border-white/[0.08] focus:border-black/30 dark:focus:border-white/30 rounded-xl px-4 text-xs font-medium text-gray-900 dark:text-white outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-white/20"
+                                                className="w-full h-11 sm:h-12 bg-white dark:bg-black/40 border border-black/[0.1] dark:border-white/[0.08] focus:border-black/30 dark:focus:border-white/30 rounded-xl px-3.5 sm:px-4 text-xs font-medium text-gray-900 dark:text-white outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-white/20"
                                             />
                                         </motion.div>
                                     )}
@@ -1788,7 +1777,7 @@ const CreatorJoin = () => {
                                                 value={formData.cityPageFocus}
                                                 onChange={handleChange}
                                                 placeholder="City / Locality or Page Focus (e.g. Bangalore Food & Nightlife, Delhi Events, So South Mumbai)"
-                                                className="w-full h-12 bg-white dark:bg-black/40 border border-black/[0.1] dark:border-white/[0.08] focus:border-black/30 dark:focus:border-white/30 rounded-xl px-4 text-xs font-medium text-gray-900 dark:text-white outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-white/20"
+                                                className="w-full h-11 sm:h-12 bg-white dark:bg-black/40 border border-black/[0.1] dark:border-white/[0.08] focus:border-black/30 dark:focus:border-white/30 rounded-xl px-3.5 sm:px-4 text-xs font-medium text-gray-900 dark:text-white outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-white/20"
                                             />
                                         </motion.div>
                                     )}
@@ -1801,20 +1790,20 @@ const CreatorJoin = () => {
                                                 value={formData.collegeName}
                                                 onChange={handleChange}
                                                 placeholder="College / University Name (e.g. Christ University, IIT Bombay)"
-                                                className="w-full h-12 bg-white dark:bg-black/40 border border-black/[0.1] dark:border-white/[0.08] focus:border-black/30 dark:focus:border-white/30 rounded-xl px-4 text-xs font-medium text-gray-900 dark:text-white outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-white/20"
+                                                className="w-full h-11 sm:h-12 bg-white dark:bg-black/40 border border-black/[0.1] dark:border-white/[0.08] focus:border-black/30 dark:focus:border-white/30 rounded-xl px-3.5 sm:px-4 text-xs font-medium text-gray-900 dark:text-white outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-white/20"
                                             />
                                         </motion.div>
                                     )}
                                 </div>
 
                                 {/* Instagram Profile & Auto-Verification */}
-                                <div className="relative overflow-hidden p-4 sm:p-5 bg-white dark:bg-white/[0.02] border border-black/[0.08] dark:border-white/[0.06] rounded-2xl sm:rounded-3xl space-y-4 shadow-xs backdrop-blur-xl">
+                                <div className="relative overflow-hidden p-3.5 sm:p-5 bg-white dark:bg-white/[0.02] border border-black/[0.08] dark:border-white/[0.06] rounded-2xl sm:rounded-3xl space-y-3.5 sm:space-y-4 shadow-xs backdrop-blur-xl">
                                     {/* Top Instagram Accent Line */}
                                     <div className="absolute top-0 inset-x-0 h-[2px] bg-gradient-to-r from-amber-400 via-rose-500 to-purple-600 opacity-80" />
 
                                     {/* Header: Title + Minimum Followers Pill */}
-                                    <div className="flex items-start sm:items-center justify-between gap-2.5 flex-wrap sm:flex-nowrap">
-                                        <div className="flex items-center gap-2.5">
+                                    <div className="flex items-start sm:items-center justify-between gap-2 flex-wrap sm:flex-nowrap">
+                                        <div className="flex items-center gap-2 sm:gap-2.5">
                                             <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-amber-500 via-rose-500 to-purple-600 p-[1.5px] shadow-xs shrink-0">
                                                 <div className="w-full h-full rounded-[6.5px] bg-white dark:bg-zinc-950 flex items-center justify-center text-pink-500 dark:text-pink-400">
                                                     <Instagram size={14} className="stroke-[2.2]" />
@@ -1828,8 +1817,8 @@ const CreatorJoin = () => {
                                                 <p className="text-[10px] text-gray-500 dark:text-zinc-400 font-medium">Auto-verifies your follower count</p>
                                             </div>
                                         </div>
-                                        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 dark:bg-emerald-500/15 border border-emerald-500/25 text-[10px] font-bold text-emerald-600 dark:text-emerald-400 shrink-0 shadow-xs">
-                                            <ShieldCheck size={12} className="text-emerald-500 shrink-0 stroke-[2.5]" />
+                                        <div className="inline-flex items-center gap-1.5 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full bg-emerald-500/10 dark:bg-emerald-500/15 border border-emerald-500/25 text-[9px] sm:text-[10px] font-bold text-emerald-600 dark:text-emerald-400 shrink-0 shadow-xs">
+                                            <ShieldCheck size={11} className="text-emerald-500 shrink-0 stroke-[2.5]" />
                                             <span>Min. {minInstagramFollowers.toLocaleString()} Followers</span>
                                         </div>
                                     </div>
@@ -1846,7 +1835,7 @@ const CreatorJoin = () => {
                                             </span>
                                         </div>
                                         <div className="relative flex items-center">
-                                            <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-pink-500 font-black text-xs select-none">
+                                            <span className="absolute left-3 sm:left-3.5 top-1/2 -translate-y-1/2 text-pink-500 font-black text-xs select-none">
                                                 @
                                             </span>
                                             <input
@@ -1865,7 +1854,7 @@ const CreatorJoin = () => {
                                                 autoCorrect="off"
                                                 spellCheck="false"
                                                 className={cn(
-                                                    "w-full h-12 pl-8 pr-28 sm:pr-32 bg-white dark:bg-black/40 border rounded-xl text-xs sm:text-sm font-semibold text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-zinc-600 outline-none transition-all shadow-xs",
+                                                    "w-full h-11 sm:h-12 pl-7 sm:pl-8 pr-24 sm:pr-32 bg-white dark:bg-black/40 border rounded-xl text-xs sm:text-sm font-semibold text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-zinc-600 outline-none transition-all shadow-xs",
                                                     instagramVerifiedData && instagramVerifiedData.handle === formData.instagram?.trim().replace(/^@/, '').toLowerCase()
                                                         ? "border-emerald-500/40 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
                                                         : instagramVerificationError
@@ -1882,10 +1871,10 @@ const CreatorJoin = () => {
                                                         setInstagramVerificationError('');
                                                         setInstagramVerifiedData(null);
                                                     }}
-                                                    className="absolute right-24 sm:right-28 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-gray-200 dark:bg-white/10 hover:bg-gray-300 dark:hover:bg-white/20 flex items-center justify-center text-gray-500 dark:text-zinc-400 transition-colors"
+                                                    className="absolute right-20 sm:right-28 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-gray-200 dark:bg-white/10 hover:bg-gray-300 dark:hover:bg-white/20 flex items-center justify-center text-gray-500 dark:text-zinc-400 transition-colors"
                                                     title="Clear handle"
                                                 >
-                                                    <X size={11} className="stroke-[2.5]" />
+                                                    <X size={10} className="stroke-[2.5]" />
                                                 </button>
                                             )}
                                             {/* Verify Button */}
@@ -1894,7 +1883,7 @@ const CreatorJoin = () => {
                                                 onClick={() => handleVerifyInstagram()}
                                                 disabled={isInstagramVerifying || !formData.instagram?.trim()}
                                                 className={cn(
-                                                    "absolute right-1.5 top-1/2 -translate-y-1/2 h-9 px-3 sm:px-3.5 rounded-lg font-black text-[10px] sm:text-[11px] uppercase tracking-wider transition-all flex items-center gap-1.5 shadow-sm active:scale-95 cursor-pointer",
+                                                    "absolute right-1 sm:right-1.5 top-1/2 -translate-y-1/2 h-8 sm:h-9 px-2.5 sm:px-3.5 rounded-lg font-black text-[10px] sm:text-[11px] uppercase tracking-wider transition-all flex items-center gap-1.5 shadow-sm active:scale-95 cursor-pointer",
                                                     instagramVerifiedData && instagramVerifiedData.handle === formData.instagram?.trim().replace(/^@/, '').toLowerCase()
                                                         ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/25"
                                                         : "bg-gradient-to-r from-pink-500 via-rose-500 to-pink-600 text-white hover:opacity-95 disabled:opacity-40 disabled:cursor-not-allowed shadow-pink-500/20"
@@ -2144,49 +2133,49 @@ const CreatorJoin = () => {
                                 {/* Optional Additional Channels */}
                                 <div className="space-y-2">
                                     <label className="text-[10px] font-bold text-gray-900 dark:text-white/40 uppercase tracking-wider block">Additional Channels (Optional)</label>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-start">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3 items-start">
                                         <div className="relative">
-                                            <Linkedin className="absolute left-3.5 top-1/2 -translate-y-1/2 text-blue-400" size={15} />
+                                            <Linkedin className="absolute left-3.5 top-1/2 -translate-y-1/2 text-blue-400" size={14} />
                                             <input
                                                 type="text"
                                                 name="linkedin"
                                                 value={formData.linkedin}
                                                 onChange={handleChange}
                                                 placeholder="LinkedIn profile link"
-                                                className="w-full h-12 pl-10 pr-3 bg-white dark:bg-black/40 border border-black/[0.1] dark:border-white/[0.08] focus:border-blue-400 rounded-xl text-xs font-medium text-gray-900 dark:text-white outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-white/20"
+                                                className="w-full h-11 sm:h-12 pl-9 sm:pl-10 pr-3 bg-white dark:bg-black/40 border border-black/[0.1] dark:border-white/[0.08] focus:border-blue-400 rounded-xl text-xs font-medium text-gray-900 dark:text-white outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-white/20"
                                             />
                                         </div>
                                         <div className="relative">
-                                            <Youtube className="absolute left-3.5 top-1/2 -translate-y-1/2 text-red-400" size={15} />
+                                            <Youtube className="absolute left-3.5 top-1/2 -translate-y-1/2 text-red-400" size={14} />
                                             <input
                                                 type="text"
                                                 name="youtube"
                                                 value={formData.youtube}
                                                 onChange={handleChange}
                                                 placeholder="YouTube channel link"
-                                                className="w-full h-12 pl-10 pr-3 bg-white dark:bg-black/40 border border-black/[0.1] dark:border-white/[0.08] focus:border-red-400 rounded-xl text-xs font-medium text-gray-900 dark:text-white outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-white/20"
+                                                className="w-full h-11 sm:h-12 pl-9 sm:pl-10 pr-3 bg-white dark:bg-black/40 border border-black/[0.1] dark:border-white/[0.08] focus:border-red-400 rounded-xl text-xs font-medium text-gray-900 dark:text-white outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-white/20"
                                             />
                                         </div>
                                         <div className="relative">
-                                            <Twitter className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sky-400" size={15} />
+                                            <Twitter className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sky-400" size={14} />
                                             <input
                                                 type="text"
                                                 name="twitter"
                                                 value={formData.twitter}
                                                 onChange={handleChange}
                                                 placeholder="X / Twitter handle or link"
-                                                className="w-full h-12 pl-10 pr-3 bg-white dark:bg-black/40 border border-black/[0.1] dark:border-white/[0.08] focus:border-sky-400 rounded-xl text-xs font-medium text-gray-900 dark:text-white outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-white/20"
+                                                className="w-full h-11 sm:h-12 pl-9 sm:pl-10 pr-3 bg-white dark:bg-black/40 border border-black/[0.1] dark:border-white/[0.08] focus:border-sky-400 rounded-xl text-xs font-medium text-gray-900 dark:text-white outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-white/20"
                                             />
                                         </div>
                                         <div className="relative">
-                                            <Globe className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neon-green" size={15} />
+                                            <Globe className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neon-green" size={14} />
                                             <input
                                                 type="text"
                                                 name="website"
                                                 value={formData.website}
                                                 onChange={handleChange}
                                                 placeholder="Portfolio or Website link"
-                                                className="w-full h-12 pl-10 pr-3 bg-white dark:bg-black/40 border border-black/[0.1] dark:border-white/[0.08] focus:border-neon-green rounded-xl text-xs font-medium text-gray-900 dark:text-white outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-white/20"
+                                                className="w-full h-11 sm:h-12 pl-9 sm:pl-10 pr-3 bg-white dark:bg-black/40 border border-black/[0.1] dark:border-white/[0.08] focus:border-neon-green rounded-xl text-xs font-medium text-gray-900 dark:text-white outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-white/20"
                                             />
                                         </div>
                                     </div>
@@ -2204,13 +2193,13 @@ const CreatorJoin = () => {
                                 animate="center"
                                 exit="exit"
                                 transition={{ duration: 0.25, ease: 'easeOut' }}
-                                className="space-y-6"
+                                className="space-y-5 sm:space-y-6"
                             >
                                 <div>
-                                    <h2 className="text-xl sm:text-2xl font-black font-heading uppercase tracking-tight text-gray-900 dark:text-white">
+                                    <h2 className="text-lg sm:text-2xl font-black font-heading uppercase tracking-tight text-gray-900 dark:text-white">
                                         Review & Final Terms
                                     </h2>
-                                    <p className="text-xs sm:text-sm text-gray-900 dark:text-white/50 mt-1">
+                                    <p className="text-[11px] sm:text-sm text-gray-900 dark:text-white/50 mt-0.5 sm:mt-1">
                                         Set your collaboration preferences and review your Creator Pass.
                                     </p>
                                 </div>
@@ -2220,7 +2209,7 @@ const CreatorJoin = () => {
                                     <label className="text-[10px] font-bold text-gray-900 dark:text-white/40 uppercase tracking-wider block">
                                         Collaboration Preferences
                                     </label>
-                                    <div className="grid grid-cols-3 gap-2.5">
+                                    <div className="grid grid-cols-3 gap-2 sm:gap-2.5">
                                         {[
                                             { id: 'both', label: 'Open to Both', icon: Layers },
                                             { id: 'paid', label: 'Paid Only', icon: Banknote },
@@ -2234,19 +2223,19 @@ const CreatorJoin = () => {
                                                     type="button"
                                                     onClick={() => setFormData(p => ({ ...p, doBarter: opt.id }))}
                                                     className={cn(
-                                                        "p-3.5 rounded-2xl border transition-all flex flex-col items-center justify-center gap-2",
+                                                        "p-2.5 sm:p-3.5 rounded-xl sm:rounded-2xl border transition-all flex flex-col items-center justify-center gap-1.5 sm:gap-2",
                                                         isSelected
                                                             ? "bg-neon-green text-black border-neon-green font-black shadow-md shadow-neon-green/20 scale-[1.02]"
                                                             : "bg-white dark:bg-white/[0.02] text-gray-800 dark:text-white/60 border-gray-200 dark:border-white/[0.06] hover:text-black dark:hover:text-white hover:border-gray-300 dark:hover:border-white/20"
                                                     )}
                                                 >
                                                     <div className={cn(
-                                                        "w-8 h-8 rounded-xl flex items-center justify-center transition-colors",
+                                                        "w-7 h-7 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl flex items-center justify-center transition-colors",
                                                         isSelected ? "bg-black text-neon-green" : "bg-black/5 dark:bg-white/5 text-gray-500 dark:text-zinc-400"
                                                     )}>
-                                                        <IconComp size={16} />
+                                                        <IconComp size={15} />
                                                     </div>
-                                                    <span className="text-xs font-bold leading-tight">{opt.label}</span>
+                                                    <span className="text-[11px] sm:text-xs font-bold leading-tight text-center">{opt.label}</span>
                                                 </button>
                                             );
                                         })}
@@ -2254,7 +2243,7 @@ const CreatorJoin = () => {
                                 </div>
 
                                 {/* Typical Rates Range Slider */}
-                                <div className="space-y-3 p-4 bg-gray-50/80 dark:bg-white/[0.02] border border-black/[0.08] dark:border-white/[0.06] rounded-2xl">
+                                <div className="space-y-3 p-3.5 sm:p-4 bg-gray-50/80 dark:bg-white/[0.02] border border-black/[0.08] dark:border-white/[0.06] rounded-xl sm:rounded-2xl">
                                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                                         <div>
                                             <label className="text-[10px] font-bold text-gray-900 dark:text-white/40 uppercase tracking-wider block">
@@ -2273,7 +2262,7 @@ const CreatorJoin = () => {
                                     </div>
 
                                     {/* Presets */}
-                                    <div className="flex flex-wrap gap-1.5 pt-1">
+                                    <div className="flex flex-wrap gap-1 sm:gap-1.5 pt-1">
                                         {[
                                             { label: 'Flexible / Barter', min: 0, max: 0, flex: true },
                                             { label: '₹2K – ₹8K', min: 2000, max: 8000 },
@@ -2298,7 +2287,7 @@ const CreatorJoin = () => {
                                                         }
                                                     }}
                                                     className={cn(
-                                                        "px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all border",
+                                                        "px-2 sm:px-2.5 py-1 rounded-lg text-[9px] sm:text-[10px] font-bold uppercase tracking-wider transition-all border",
                                                         isSelected
                                                             ? "bg-neon-green text-black border-neon-green font-black shadow-sm"
                                                             : "bg-white dark:bg-white/[0.04] text-gray-600 dark:text-zinc-400 border-black/10 dark:border-white/10 hover:border-black/20 dark:hover:border-white/20 hover:text-black dark:hover:text-white"
@@ -2313,7 +2302,7 @@ const CreatorJoin = () => {
                                     {/* Synchronized Range Sliders */}
                                     {!isRateFlexible && (
                                         <div className="space-y-3 pt-2">
-                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 items-center">
                                                 <div className="space-y-1.5">
                                                     <div className="flex justify-between text-[10px] font-bold text-gray-500 dark:text-zinc-400 uppercase tracking-wider">
                                                         <span>From</span>
@@ -2349,7 +2338,7 @@ const CreatorJoin = () => {
                                                             const val = Number(e.target.value);
                                                             const newMax = Math.max(val, rateMin + 1000);
                                                             setRateMax(newMax);
-                                                            setFormData(p => ({ ...p, commercials: `${formatINRFull(rateMin)} – ${formatINRFull(newMax)}${newMax >= 100000 ? '+' : ''} / Deliverable` }));
+                                                            setFormData(p => ({ ...p, commercials: `${formatINRFull(rateMin)} – ${formatINRFull(newMax)}${rateMax >= 100000 ? '+' : ''} / Deliverable` }));
                                                         }}
                                                         className="w-full accent-neon-green cursor-pointer h-2 bg-black/10 dark:bg-white/10 rounded-lg appearance-none"
                                                     />
@@ -2369,7 +2358,7 @@ const CreatorJoin = () => {
                                             onChange={handleChange}
                                             placeholder="e.g. Bangalore lifestyle creator focusing on aesthetics, cafes, and campus culture. High engagement reels."
                                             rows={2}
-                                            className="w-full bg-white dark:bg-black/40 border border-black/[0.1] dark:border-white/[0.08] focus:border-black/30 dark:focus:border-white/30 rounded-xl p-3.5 text-xs font-medium text-gray-900 dark:text-white outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-white/20 resize-none"
+                                            className="w-full bg-white dark:bg-black/40 border border-black/[0.1] dark:border-white/[0.08] focus:border-black/30 dark:focus:border-white/30 rounded-xl p-3 sm:p-3.5 text-xs font-medium text-gray-900 dark:text-white outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-white/20 resize-none"
                                         />
                                     </div>
                                     <div className="space-y-1.5">
@@ -2388,7 +2377,7 @@ const CreatorJoin = () => {
                                             onChange={handleChange}
                                             disabled={isReferralCodeLocked}
                                             placeholder="Friend or creator invite code"
-                                            className="w-full h-12 bg-white dark:bg-black/40 border border-black/[0.1] dark:border-white/[0.08] focus:border-black/30 dark:focus:border-white/30 rounded-xl px-4 text-xs font-medium text-gray-900 dark:text-white outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-white/20 disabled:opacity-50"
+                                            className="w-full h-11 sm:h-12 bg-white dark:bg-black/40 border border-black/[0.1] dark:border-white/[0.08] focus:border-black/30 dark:focus:border-white/30 rounded-xl px-3.5 sm:px-4 text-xs font-medium text-gray-900 dark:text-white outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-white/20 disabled:opacity-50"
                                         />
                                     </div>
                                 </div>
@@ -2413,12 +2402,12 @@ const CreatorJoin = () => {
                     </AnimatePresence>
 
                     {/* Step Navigation Actions */}
-                    <div className="pt-4 border-t border-black/[0.08] dark:border-white/[0.06] flex items-center justify-between gap-3">
+                    <div className="pt-3.5 sm:pt-4 border-t border-black/[0.08] dark:border-white/[0.06] flex items-center justify-between gap-2.5 sm:gap-3">
                         {step > 1 ? (
                             <button
                                 type="button"
                                 onClick={prevStep}
-                                className="h-12 px-5 bg-gray-100 dark:bg-white/[0.04] hover:bg-gray-200 dark:hover:bg-white/[0.08] text-gray-900 dark:text-white/60 hover:text-gray-900 dark:hover:text-white font-bold rounded-xl text-xs uppercase tracking-wider transition-all flex items-center gap-2 border border-black/[0.08] dark:border-white/[0.08]"
+                                className="h-11 sm:h-12 px-4 sm:px-5 bg-gray-100 dark:bg-white/[0.04] hover:bg-gray-200 dark:hover:bg-white/[0.08] text-gray-900 dark:text-white/60 hover:text-gray-900 dark:hover:text-white font-bold rounded-xl text-xs uppercase tracking-wider transition-all flex items-center gap-1.5 sm:gap-2 border border-black/[0.08] dark:border-white/[0.08] active:scale-95"
                             >
                                 <ArrowLeft size={14} />
                                 <span>Back</span>
@@ -2431,7 +2420,7 @@ const CreatorJoin = () => {
                             <button
                                 type="button"
                                 onClick={nextStep}
-                                className="h-12 px-6 bg-white hover:bg-neon-pink text-black font-bold rounded-xl text-xs uppercase tracking-wider transition-all flex items-center gap-2 shadow-lg ml-auto"
+                                className="h-11 sm:h-12 px-5 sm:px-6 bg-white hover:bg-neon-pink text-black font-bold rounded-xl text-xs uppercase tracking-wider transition-all flex items-center gap-1.5 sm:gap-2 shadow-lg ml-auto active:scale-95"
                             >
                                 <span>Continue</span>
                                 <ArrowRight size={14} />
@@ -2441,7 +2430,7 @@ const CreatorJoin = () => {
                                 type="button"
                                 onClick={handleSubmit}
                                 disabled={isSubmitting}
-                                className="h-12 px-8 bg-neon-green hover:brightness-110 text-black font-black rounded-xl text-xs uppercase tracking-wider transition-all flex items-center gap-2 shadow-[0_0_25px_rgba(57,255,20,0.3)] ml-auto disabled:opacity-40"
+                                className="h-11 sm:h-12 px-4 sm:px-8 bg-neon-green hover:brightness-110 text-black font-black rounded-xl text-xs uppercase tracking-wider transition-all flex items-center gap-1.5 sm:gap-2 shadow-[0_0_25px_rgba(57,255,20,0.3)] ml-auto disabled:opacity-40 active:scale-95"
                             >
                                 {isSubmitting ? (
                                     <>
@@ -2450,7 +2439,8 @@ const CreatorJoin = () => {
                                     </>
                                 ) : (
                                     <>
-                                        <span>Submit Creator Application</span>
+                                        <span className="hidden sm:inline">Submit Creator Application</span>
+                                        <span className="sm:hidden">Submit Application</span>
                                         <Check size={14} strokeWidth={3} />
                                     </>
                                 )}
