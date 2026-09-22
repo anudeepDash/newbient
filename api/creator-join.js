@@ -232,7 +232,8 @@ const fetchInstagramProfile = async (rawHandle) => {
 
     return {
         success: false,
-        error: `@${cleanHandle} was not found on Instagram. Please verify the handle spelling.`
+        requiresManualEntry: true,
+        error: `@${cleanHandle} could not be automatically verified (Anti-Bot Active).`
     };
 };
 
