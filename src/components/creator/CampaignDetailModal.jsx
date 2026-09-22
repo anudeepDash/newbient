@@ -72,10 +72,15 @@ const CampaignDetailModal = ({
                         categories: (existing.specializations || existing.niches || []).join(', '),
                         bio: existing.bio || ''
                     }));
+                    
+                    // Auto-approve if they already meet the campaign requirement
+                    if (existing.instagramFollowers && Number(existing.instagramFollowers) >= Number(campaign?.minInstagramFollowers || 0)) {
+                        setVerificationStep('success');
+                    }
                 }
             }).catch(err => console.error("Error resolving profile in modal:", err));
         }
-    }, [user, authInitialized, resolveCreatorProfile]);
+    }, [user, authInitialized, resolveCreatorProfile, campaign]);
 
     // Handle ESC key press
     useEffect(() => {
@@ -144,7 +149,7 @@ const CampaignDetailModal = ({
 
             if (!res.ok || !data.success) {
                 setIsVerifying(false);
-                setVerificationStep('failed');
+                setVerificationStep('scraper_error');
                 useStore.getState().addToast(data.error || `Could not auto-verify @${cleanHandle}. Make sure profile is public.`, 'error');
                 return;
             }
@@ -160,13 +165,13 @@ const CampaignDetailModal = ({
 
             setIsVerifying(false);
             if (count < required) {
-                setVerificationStep('failed');
+                setVerificationStep('ineligible');
             } else {
                 setVerificationStep('success');
             }
         } catch (err) {
             setIsVerifying(false);
-            setVerificationStep('failed');
+            setVerificationStep('scraper_error');
             useStore.getState().addToast("Verification network error. Please try again.", 'error');
         }
     };
@@ -643,7 +648,11 @@ const CampaignDetailModal = ({
                                                                 </label>
                                                                 <Input 
                                                                     value={form.instagram} 
-                                                                    onChange={e => setForm({...form, instagram: e.target.value})} 
+                                                                    onChange={e => {
+                                                                        let val = e.target.value;
+                                                                        if (val && !val.startsWith('@')) val = '@' + val;
+                                                                        setForm({...form, instagram: val});
+                                                                    }} 
                                                                     placeholder="@username" 
                                                                     className="h-12 bg-white dark:bg-black/50 border-black/15 dark:border-white/10 rounded-2xl text-xs font-semibold text-gray-950 dark:text-white focus:border-neon-green placeholder-gray-400 dark:placeholder-zinc-500 shadow-2xs" 
                                                                     disabled={isEligible} 
@@ -665,7 +674,7 @@ const CampaignDetailModal = ({
                                                             </div>
 
                                                             {/* Follower Qualification Alert */}
-                                                            {verificationStep === 'failed' && !isEligible && (
+                                                            {verificationStep === 'ineligible' && !isEligible && (
                                                                 <motion.div 
                                                                     initial={{ opacity: 0, y: 5 }}
                                                                     animate={{ opacity: 1, y: 0 }}
@@ -678,6 +687,25 @@ const CampaignDetailModal = ({
                                                                         </p>
                                                                         <p className="text-[11px] leading-relaxed text-red-600 dark:text-red-300 font-normal">
                                                                             This campaign requires at least <span className="font-bold text-gray-950 dark:text-white">{Number(campaign.minInstagramFollowers || 0).toLocaleString()} followers</span> to apply. Your entered count is {Number(form.followers || 0).toLocaleString()}.
+                                                                        </p>
+                                                                    </div>
+                                                                </motion.div>
+                                                            )}
+                                                            
+                                                            {/* Scraper Error Alert */}
+                                                            {verificationStep === 'scraper_error' && !isEligible && (
+                                                                <motion.div 
+                                                                    initial={{ opacity: 0, y: 5 }}
+                                                                    animate={{ opacity: 1, y: 0 }}
+                                                                    className="p-4 rounded-2xl bg-orange-500/10 border border-orange-500/25 flex items-start gap-3 text-orange-600 dark:text-orange-400"
+                                                                >
+                                                                    <AlertTriangle size={18} className="shrink-0 mt-0.5 text-orange-500 dark:text-orange-400" />
+                                                                    <div className="space-y-1">
+                                                                        <p className="text-xs font-bold uppercase tracking-wide">
+                                                                            Verification Failed
+                                                                        </p>
+                                                                        <p className="text-[11px] leading-relaxed text-orange-700 dark:text-orange-300 font-normal">
+                                                                            We couldn't verify your account right now. Make sure the handle spelling is correct and the profile is set to Public.
                                                                         </p>
                                                                     </div>
                                                                 </motion.div>
@@ -701,7 +729,7 @@ const CampaignDetailModal = ({
                                                                     disabled={isVerifying}
                                                                     className="w-full h-12 bg-gray-950 text-white hover:bg-neon-green hover:text-black dark:bg-white dark:text-black dark:hover:bg-neon-green dark:hover:text-black font-black uppercase tracking-wider text-xs rounded-2xl transition-all shadow-md active:scale-95 flex items-center justify-center gap-2"
                                                                 >
-                                                                    <span>{verificationStep === 'failed' ? 'Retry Verification' : 'Check Eligibility'}</span>
+                                                                    <span>{verificationStep === 'scraper_error' || verificationStep === 'ineligible' ? 'Retry Verification' : 'Check Eligibility'}</span>
                                                                     <ArrowRight size={13} />
                                                                 </button>
                                                             )}
