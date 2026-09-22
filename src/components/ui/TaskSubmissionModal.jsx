@@ -63,59 +63,70 @@ const TaskSubmissionModal = ({
     return createPortal(
         <motion.div 
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[150] flex items-center justify-center p-4 md:p-10"
+            className="fixed inset-0 z-[150] flex items-center justify-center p-2 sm:p-4 md:p-10"
         >
-            <div className="absolute inset-0 bg-black/60 backdrop-blur-md" onClick={onClose} />
+            <div className="absolute inset-0 bg-black/70 backdrop-blur-md" onClick={onClose} />
             
             <motion.div 
-                initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }}
-                className="relative w-full max-w-4xl bg-white dark:bg-[#0a0a0a] border border-black/10 dark:border-white/10 rounded-[2rem] md:rounded-[3rem] shadow-[0_50px_100px_rgba(0,0,0,0.8)] overflow-hidden flex flex-col md:flex-row max-h-[90vh]"
+                initial={{ scale: 0.95, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, y: 20 }}
+                className="relative w-full max-w-4xl bg-white dark:bg-[#0a0a0a] border border-black/10 dark:border-white/10 rounded-2xl sm:rounded-[2rem] md:rounded-[3rem] shadow-[0_50px_100px_rgba(0,0,0,0.8)] overflow-hidden flex flex-col md:flex-row max-h-[92vh] sm:max-h-[90vh]"
             >
+                {/* Floating Close Button - Globally Accessible on Mobile & Desktop */}
+                <button 
+                    onClick={onClose} 
+                    className="absolute top-3.5 right-3.5 md:top-8 md:right-8 w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-white/90 dark:bg-black/70 hover:bg-white dark:hover:bg-black/90 backdrop-blur-xl border border-black/10 dark:border-white/20 flex items-center justify-center text-gray-800 dark:text-white transition-all shadow-xl active:scale-95 z-50 group"
+                    aria-label="Close"
+                >
+                    <X size={16} className="md:hidden group-hover:rotate-90 transition-transform duration-200" />
+                    <X size={18} className="hidden md:block group-hover:rotate-90 transition-transform duration-200" />
+                </button>
+
                 {/* Left Side: Creative & Guidelines */}
-                <div className="flex-1 md:w-1/2 p-6 md:p-12 overflow-y-auto custom-scrollbar border-b md:border-b-0 md:border-r border-black/10 dark:border-white/10">
-                    <div className="flex items-center gap-4 mb-8">
-                        <div className="w-12 h-12 md:w-16 md:h-16 rounded-2xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 flex items-center justify-center text-emerald-600 dark:text-neon-green shadow-sm">
-                            {TypeInfo && <TypeInfo.icon size={24} />}
+                <div className="flex-1 md:w-1/2 p-4 sm:p-6 md:p-12 overflow-y-auto custom-scrollbar border-b md:border-b-0 md:border-r border-black/10 dark:border-white/10">
+                    <div className="flex items-center gap-3 sm:gap-4 mb-6 sm:mb-8 pr-10 md:pr-0">
+                        <div className="w-10 h-10 sm:w-12 md:w-16 sm:h-12 md:h-16 rounded-xl sm:rounded-2xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 flex items-center justify-center text-emerald-600 dark:text-neon-green shadow-xs shrink-0">
+                            {TypeInfo && <TypeInfo.icon size={20} className="sm:hidden" />}
+                            {TypeInfo && <TypeInfo.icon size={24} className="hidden sm:block" />}
                         </div>
-                        <div>
-                            <span className="text-[8px] md:text-[10px] font-black text-emerald-600 dark:text-neon-green uppercase tracking-[0.3em] font-mono">Deliverable Segment</span>
-                            <h2 className="text-2xl md:text-3xl font-black font-heading uppercase text-gray-900 dark:text-white tracking-tighter leading-none mt-1">{task.title}</h2>
+                        <div className="min-w-0">
+                            <span className="text-[8px] md:text-[10px] font-black text-emerald-600 dark:text-neon-green uppercase tracking-[0.3em] font-mono block">Deliverable Segment</span>
+                            <h2 className="text-xl sm:text-2xl md:text-3xl font-black font-heading uppercase text-gray-900 dark:text-white tracking-tighter leading-tight mt-0.5 truncate">{task.title}</h2>
                         </div>
                     </div>
 
-                    <div className="space-y-8">
-                        <div className="flex flex-wrap gap-2">
-                            <span className="px-3 py-1 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/5 rounded-lg text-[9px] font-black uppercase tracking-widest text-gray-500 flex items-center gap-2">
-                                {PlatInfo && <PlatInfo.icon size={12} />} {PlatInfo?.label}
+                    <div className="space-y-6 sm:space-y-8">
+                        <div className="flex flex-wrap gap-1.5 sm:gap-2">
+                            <span className="px-2.5 sm:px-3 py-1 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/5 rounded-lg text-[9px] font-black uppercase tracking-widest text-gray-500 flex items-center gap-1.5 font-mono">
+                                {PlatInfo && <PlatInfo.icon size={11} />} {PlatInfo?.label}
                             </span>
                             {task.priority === 'required' && (
-                                <span className="px-3 py-1 bg-neon-green/10 border border-neon-green/20 rounded-lg text-[9px] font-black uppercase tracking-widest text-emerald-600 dark:text-neon-green flex items-center justify-center font-mono">Required</span>
+                                <span className="px-2.5 sm:px-3 py-1 bg-neon-green/10 border border-neon-green/20 rounded-lg text-[9px] font-black uppercase tracking-widest text-emerald-600 dark:text-neon-green flex items-center justify-center font-mono">Required</span>
                             )}
                             {task.deadline && (
                                 <span className={cn(
-                                    "px-3 py-1 border rounded-lg text-[9px] font-black uppercase tracking-widest flex items-center gap-2 font-mono",
+                                    "px-2.5 sm:px-3 py-1 border rounded-lg text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5 font-mono",
                                     isDeadlinePassed ? "bg-red-500/10 border-red-500/20 text-red-500" : "bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/5 text-gray-500"
                                 )}>
-                                    <Clock size={12} /> {isDeadlinePassed ? 'Overdue' : `Due ${new Date(task.deadline).toLocaleDateString()}`}
+                                    <Clock size={11} /> {isDeadlinePassed ? 'Overdue' : `Due ${new Date(task.deadline).toLocaleDateString()}`}
                                 </span>
                             )}
                         </div>
 
-                        <div className="space-y-3">
-                            <h4 className="text-[10px] font-black text-gray-600 uppercase tracking-widest">Campaign Brief</h4>
-                            <div className="article-content text-[14px] text-gray-600 dark:text-gray-400 font-medium leading-relaxed" dangerouslySetInnerHTML={{ __html: task.description }} />
+                        <div className="space-y-2 sm:space-y-3">
+                            <h4 className="text-[10px] font-black text-gray-600 dark:text-zinc-400 uppercase tracking-widest font-mono">Campaign Brief</h4>
+                            <div className="article-content text-xs sm:text-sm text-gray-600 dark:text-gray-300 font-normal leading-relaxed" dangerouslySetInnerHTML={{ __html: task.description }} />
                         </div>
 
                         {creativeAssets.length > 0 && (
-                            <div className="space-y-4">
-                                <h4 className="text-[10px] font-black text-gray-600 uppercase tracking-widest">Reference Kit</h4>
-                                <div className="relative rounded-[2rem] overflow-hidden border border-black/10 dark:border-white/10 group">
+                            <div className="space-y-3 sm:space-y-4">
+                                <h4 className="text-[10px] font-black text-gray-600 dark:text-zinc-400 uppercase tracking-widest font-mono">Reference Kit</h4>
+                                <div className="relative rounded-xl sm:rounded-[2rem] overflow-hidden border border-black/10 dark:border-white/10 group">
                                     <img src={creativeAssets[currentSlide]} alt="" className="w-full aspect-video object-cover" />
                                     {creativeAssets.length > 1 && (
                                         <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1 z-10">
                                             {creativeAssets.map((_, i) => (
-                                                <button key={i} onClick={() => setCurrentSlide(i)} className="w-11 h-11 flex items-center justify-center focus:outline-none">
-                                                    <span className={cn("h-2 rounded-full transition-all", i === currentSlide ? "bg-white w-6" : "bg-white/30 w-2")} />
+                                                <button key={i} onClick={() => setCurrentSlide(i)} className="w-8 h-8 flex items-center justify-center focus:outline-none">
+                                                    <span className={cn("h-1.5 rounded-full transition-all", i === currentSlide ? "bg-white w-5" : "bg-white/30 w-1.5")} />
                                                 </button>
                                             ))}
                                         </div>
@@ -125,27 +136,27 @@ const TaskSubmissionModal = ({
                         )}
 
                         {task.captionScript && (
-                            <div className="space-y-4">
+                            <div className="space-y-3 sm:space-y-4">
                                 <div className="flex items-center justify-between">
-                                    <h4 className="text-[10px] font-black text-gray-600 uppercase tracking-widest">Universal Caption</h4>
-                                    <button onClick={handleCopy} className={cn("min-h-[44px] min-w-[44px] px-4 py-2 rounded-xl bg-white/[0.03] hover:bg-black/10 dark:hover:bg-white/10 border border-black/10 dark:border-white/5 text-[9px] font-black uppercase tracking-widest flex items-center gap-2 transition-all", copiedCaption ? "text-neon-green" : "text-gray-700 dark:text-zinc-300 hover:text-gray-900 dark:hover:text-white")}>
-                                        {copiedCaption ? <><CheckCircle2 size={12} /> Copied</> : <><Copy size={12} /> Copy Text</>}
+                                    <h4 className="text-[10px] font-black text-gray-600 dark:text-zinc-400 uppercase tracking-widest font-mono">Universal Caption</h4>
+                                    <button onClick={handleCopy} className={cn("min-h-[36px] sm:min-h-[44px] px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl bg-white/[0.03] hover:bg-black/10 dark:hover:bg-white/10 border border-black/10 dark:border-white/5 text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5 sm:gap-2 transition-all font-mono", copiedCaption ? "text-neon-green" : "text-gray-700 dark:text-zinc-300 hover:text-gray-900 dark:hover:text-white")}>
+                                        {copiedCaption ? <><CheckCircle2 size={11} /> Copied</> : <><Copy size={11} /> Copy Text</>}
                                     </button>
                                 </div>
-                                <div className="p-6 bg-white/[0.03] border border-black/10 dark:border-white/5 rounded-2xl relative group">
-                                    <div className="article-content text-[12px] text-gray-600 dark:text-gray-400 font-medium leading-relaxed whitespace-pre-wrap" dangerouslySetInnerHTML={{ __html: task.captionScript }} />
+                                <div className="p-4 sm:p-6 bg-white/[0.03] border border-black/10 dark:border-white/5 rounded-xl sm:rounded-2xl relative group">
+                                    <div className="article-content text-xs text-gray-600 dark:text-gray-300 font-normal leading-relaxed whitespace-pre-wrap font-mono" dangerouslySetInnerHTML={{ __html: task.captionScript }} />
                                 </div>
                             </div>
                         )}
 
                         {creativeLinks.length > 0 && (
-                            <div className="space-y-4">
-                                <h4 className="text-[10px] font-black text-gray-600 uppercase tracking-widest">External Assets</h4>
+                            <div className="space-y-3 sm:space-y-4">
+                                <h4 className="text-[10px] font-black text-gray-600 dark:text-zinc-400 uppercase tracking-widest font-mono">External Assets</h4>
                                 <div className="grid grid-cols-1 gap-2">
                                     {creativeLinks.map((link, i) => (
-                                        <a key={i} href={link} target="_blank" rel="noopener noreferrer" className="flex items-center justify-between p-4 min-h-[44px] bg-white/[0.03] border border-black/10 dark:border-white/5 rounded-xl hover:bg-neon-green hover:text-black transition-all group">
+                                        <a key={i} href={link} target="_blank" rel="noopener noreferrer" className="flex items-center justify-between p-3 sm:p-4 min-h-[40px] sm:min-h-[44px] bg-white/[0.03] border border-black/10 dark:border-white/5 rounded-xl hover:bg-neon-green hover:text-black transition-all group">
                                             <span className="text-[11px] font-bold truncate">{link}</span>
-                                            <ExternalLink size={14} />
+                                            <ExternalLink size={13} className="shrink-0 ml-2" />
                                         </a>
                                     ))}
                                 </div>
@@ -155,17 +166,13 @@ const TaskSubmissionModal = ({
                 </div>
 
                 {/* Right Side: Execution & Progress */}
-                <div className="flex-1 md:w-1/2 p-6 md:p-12 overflow-y-auto bg-gradient-to-br from-black/[0.02] dark:from-white/[0.02] to-transparent relative">
-                    <button onClick={onClose} className="absolute top-6 md:top-8 right-6 md:right-8 w-12 h-12 rounded-2xl bg-black/5 dark:bg-white/5 flex items-center justify-center hover:bg-black/10 dark:hover:bg-white hover:text-gray-900 dark:hover:text-black transition-all border border-black/10 dark:border-white/5 z-50 shadow-xl">
-                        <X size={20} />
-                    </button>
-
+                <div className="flex-1 md:w-1/2 p-4 sm:p-6 md:p-12 overflow-y-auto bg-gradient-to-br from-black/[0.02] dark:from-white/[0.02] to-transparent relative">
                     <div className="h-full flex flex-col">
-                        <div className="mb-8 md:mb-12">
-                            <h3 className="text-xl md:text-2xl font-black font-heading uppercase italic tracking-tighter mb-2 text-gray-900 dark:text-white">Task Verification</h3>
-                            <p className="text-[10px] md:text-[12px] text-gray-500 font-medium tracking-tight uppercase">Status: 
+                        <div className="mb-6 sm:mb-8 md:mb-12">
+                            <h3 className="text-xl md:text-2xl font-black font-heading uppercase italic tracking-tighter mb-1 sm:mb-2 text-gray-900 dark:text-white">Task Verification</h3>
+                            <p className="text-[10px] md:text-[12px] text-gray-500 font-medium tracking-tight uppercase font-mono">Status: 
                                 <span className={cn(
-                                     "ml-2",
+                                     "ml-2 font-bold",
                                      status === 'approved' ? 'text-neon-green' :
                                      status === 'submitted' ? 'text-yellow-500' :
                                      status === 'rejected' ? 'text-red-500' :
@@ -209,25 +216,28 @@ const TaskSubmissionModal = ({
                                                 value={contentLink}
                                                 onChange={e => setContentLink(e.target.value)}
                                                 placeholder="Paste your post link here..."
-                                                className="w-full h-14 bg-white dark:bg-black/40 border border-black/10 dark:border-white/10 rounded-2xl px-6 text-[12px] font-bold text-gray-900 dark:text-white focus:border-neon-green transition-all"
+                                                className="w-full h-11 sm:h-14 bg-white dark:bg-black/40 border border-black/10 dark:border-white/10 rounded-xl sm:rounded-2xl px-4 sm:px-6 text-xs sm:text-sm font-bold text-gray-900 dark:text-white focus:border-neon-green transition-all"
                                             />
                                         </div>
 
-                                        <div className="space-y-3">
-                                            <label className="text-[10px] font-black text-gray-600 uppercase tracking-widest flex items-center gap-2">
+                                        <div className="space-y-2 sm:space-y-3">
+                                            <label className="text-[10px] font-black text-gray-600 dark:text-zinc-400 uppercase tracking-widest flex items-center gap-1.5 font-mono">
                                                 <Camera size={12} className="text-emerald-600 dark:text-neon-green" /> Proof Screenshot
                                             </label>
-                                            <label className="w-full h-32 bg-white dark:bg-black/40 border border-dashed border-black/10 dark:border-white/10 rounded-[2rem] flex flex-col items-center justify-center cursor-pointer hover:border-neon-green/30 transition-all group">
+                                            <label className="w-full h-24 sm:h-32 bg-white dark:bg-black/40 border border-dashed border-black/10 dark:border-white/10 rounded-xl sm:rounded-2xl flex flex-col items-center justify-center cursor-pointer hover:border-neon-green/30 transition-all group p-3 text-center">
                                                 <input type="file" className="hidden" accept="image/*" onChange={e => setProofFile(e.target.files[0])} />
-                                                <Upload size={24} className="text-gray-500 group-hover:text-neon-green transition-colors mb-2" />
-                                                <span className="text-[10px] font-black text-gray-600 uppercase tracking-widest group-hover:text-gray-900 dark:group-hover:text-white transition-colors">{proofFile ? proofFile.name : 'Choose Performance Proof'}</span>
+                                                <Upload size={20} className="sm:hidden text-gray-500 group-hover:text-neon-green transition-colors mb-1.5" />
+                                                <Upload size={24} className="hidden sm:block text-gray-500 group-hover:text-neon-green transition-colors mb-2" />
+                                                <span className="text-[10px] font-bold text-gray-600 dark:text-zinc-400 uppercase tracking-wider group-hover:text-gray-900 dark:group-hover:text-white transition-colors truncate max-w-full px-2 font-mono">
+                                                    {proofFile ? proofFile.name : 'Choose Performance Proof'}
+                                                </span>
                                             </label>
                                         </div>
 
                                         <Button 
                                             onClick={() => onSubmit(task.id, contentLink, proofFile)}
                                             disabled={isSubmitting || (!contentLink && !proofFile)}
-                                            className="w-full h-20 rounded-2xl bg-black text-white hover:bg-neutral-800 dark:bg-white dark:text-black dark:hover:bg-neon-green dark:hover:text-black text-sm font-black font-heading uppercase tracking-[0.2em] shadow-2xl transition-all disabled:opacity-50"
+                                            className="w-full h-12 sm:h-14 md:h-16 rounded-xl sm:rounded-2xl bg-black text-white hover:bg-neutral-800 dark:bg-white dark:text-black dark:hover:bg-neon-green dark:hover:text-black text-xs sm:text-sm font-black font-heading uppercase tracking-wider shadow-xl transition-all disabled:opacity-50"
                                         >
                                             {isSubmitting ? <LoadingSpinner size="xs" color="#000000" /> : status === 'rejected' ? 'Re-verify Submission' : 'Submit Performance'}
                                         </Button>

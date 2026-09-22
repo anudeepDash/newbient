@@ -373,17 +373,18 @@ const CampaignDetailModal = ({
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.96, y: 20 }}
                 transition={{ type: "spring", duration: 0.45, bounce: 0.08 }}
-                className="relative w-full max-w-5xl max-h-[94vh] bg-white dark:bg-[#0c0e14] text-gray-950 dark:text-white border border-black/10 dark:border-white/[0.12] rounded-[2.5rem] shadow-[0_25px_80px_rgba(0,0,0,0.18)] dark:shadow-[0_30px_100px_rgba(0,0,0,0.95)] flex flex-col overflow-hidden z-10 transition-colors"
+                className="relative w-full max-w-5xl max-h-[95vh] sm:max-h-[94vh] bg-white dark:bg-[#0c0e14] text-gray-950 dark:text-white border border-black/10 dark:border-white/[0.12] rounded-2xl sm:rounded-[2.5rem] shadow-[0_25px_80px_rgba(0,0,0,0.18)] dark:shadow-[0_30px_100px_rgba(0,0,0,0.95)] flex flex-col overflow-hidden z-10 transition-colors"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Floating Glassmorphic Close Button */}
                 <button 
                     type="button"
                     onClick={onClose}
-                    className="absolute top-5 right-5 sm:top-6 sm:right-6 w-11 h-11 rounded-full bg-white/85 dark:bg-black/60 hover:bg-white dark:hover:bg-black/90 backdrop-blur-xl border border-black/10 dark:border-white/20 text-gray-800 dark:text-white flex items-center justify-center transition-all duration-200 shadow-2xl active:scale-95 group z-30"
+                    className="absolute top-3.5 right-3.5 sm:top-6 sm:right-6 w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-white/90 dark:bg-black/70 hover:bg-white dark:hover:bg-black/90 backdrop-blur-xl border border-black/10 dark:border-white/20 text-gray-800 dark:text-white flex items-center justify-center transition-all duration-200 shadow-xl active:scale-95 group z-30"
                     aria-label="Close modal"
                 >
-                    <X size={18} className="group-hover:rotate-90 transition-transform duration-200" />
+                    <X size={16} className="sm:hidden group-hover:rotate-90 transition-transform duration-200" />
+                    <X size={18} className="hidden sm:block group-hover:rotate-90 transition-transform duration-200" />
                 </button>
 
                 {/* Scrollable Modal Container */}
@@ -401,7 +402,7 @@ const CampaignDetailModal = ({
                     )}
 
                     {/* Full-Bleed Hero Banner with Crisp Image and Natural Ambient Presence */}
-                    <div className="relative w-full aspect-video sm:aspect-[2/1] sm:min-h-[440px] shrink-0 overflow-hidden z-10">
+                    <div className="relative w-full aspect-[16/10] sm:aspect-[2/1] sm:min-h-[440px] shrink-0 overflow-hidden z-10">
                         {campaign.thumbnail ? (
                             <>
                                 {/* Ambient Image Aura inside Banner */}
@@ -448,36 +449,36 @@ const CampaignDetailModal = ({
                     </div>
 
                     {/* Modal Content Body - Seamlessly Connected with Hero Banner */}
-                    <div className="px-5 sm:px-8 pb-8 space-y-6 sm:space-y-8 flex-1 relative z-20">
+                    <div className="px-3.5 sm:px-8 pb-6 sm:pb-8 space-y-5 sm:space-y-8 flex-1 relative z-20">
                         {/* Mobile Title & Badges Section */}
-                        <div className="sm:hidden pt-3 space-y-2">
+                        <div className="sm:hidden pt-2 space-y-2">
                             <div className="flex items-center gap-2">
                                 <div className="p-1.5 rounded-xl bg-black/[0.04] dark:bg-white/[0.06] border border-black/[0.08] dark:border-white/[0.1] text-emerald-600 dark:text-neon-green shadow-xs">
-                                    <Instagram size={14} />
+                                    <Instagram size={13} />
                                 </div>
                                 <div className="px-2.5 py-1 rounded-xl bg-black/[0.04] dark:bg-white/[0.06] border border-black/[0.08] dark:border-white/[0.1] text-[10px] font-black uppercase tracking-widest text-gray-800 dark:text-white shadow-xs flex items-center gap-1.5 font-mono">
                                     <MapPin size={10} className="text-emerald-600 dark:text-neon-green" /> {campaign.targetCity || 'Universal'}
                                 </div>
                             </div>
-                            <h1 className="text-2xl font-black font-heading tracking-tight text-gray-950 dark:text-white uppercase italic leading-tight">
+                            <h1 className="text-xl sm:text-2xl font-black font-heading tracking-tight text-gray-950 dark:text-white uppercase italic leading-tight">
                                 {campaign.title}
                             </h1>
                         </div>
 
                         {/* Quick Stats Grid */}
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:-mt-10">
-                            <div className="p-4 rounded-2xl bg-white/90 dark:bg-[#121620]/90 border border-black/10 dark:border-white/10 backdrop-blur-2xl space-y-1.5 hover:border-black/20 dark:hover:border-white/20 transition-all shadow-xl group">
-                                <span className="text-[9px] font-black text-gray-500 dark:text-zinc-500 uppercase tracking-widest block font-mono">Target City</span>
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 -mt-3 sm:-mt-10">
+                            <div className="p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-white/90 dark:bg-[#121620]/90 border border-black/10 dark:border-white/10 backdrop-blur-2xl space-y-1 sm:space-y-1.5 hover:border-black/20 dark:hover:border-white/20 transition-all shadow-xl group">
+                                <span className="text-[8px] sm:text-[9px] font-black text-gray-500 dark:text-zinc-500 uppercase tracking-widest block font-mono">Target City</span>
                                 <div className="flex items-center gap-1.5 text-gray-950 dark:text-white font-bold text-xs truncate">
-                                    <MapPin size={13} className="text-gray-400 dark:text-zinc-400 shrink-0 group-hover:text-emerald-500 dark:group-hover:text-neon-green transition-colors" />
-                                    <span>{campaign.targetCity || 'Universal'}</span>
+                                    <MapPin size={12} className="text-gray-400 dark:text-zinc-400 shrink-0 group-hover:text-emerald-500 dark:group-hover:text-neon-green transition-colors" />
+                                    <span className="truncate">{campaign.targetCity || 'Universal'}</span>
                                 </div>
                             </div>
 
-                            <div className="p-4 rounded-2xl bg-white/90 dark:bg-[#121620]/90 border border-emerald-500/35 dark:border-neon-green/30 backdrop-blur-2xl space-y-1.5 hover:border-emerald-500/50 dark:hover:border-neon-green/50 transition-all shadow-xl group">
-                                <span className="text-[9px] font-black text-emerald-700 dark:text-neon-green/80 uppercase tracking-widest block font-mono">Reward Payout</span>
+                            <div className="p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-white/90 dark:bg-[#121620]/90 border border-emerald-500/35 dark:border-neon-green/30 backdrop-blur-2xl space-y-1 sm:space-y-1.5 hover:border-emerald-500/50 dark:hover:border-neon-green/50 transition-all shadow-xl group">
+                                <span className="text-[8px] sm:text-[9px] font-black text-emerald-700 dark:text-neon-green/80 uppercase tracking-widest block font-mono">Reward Payout</span>
                                 <div className="flex items-center gap-1.5 text-emerald-600 dark:text-neon-green font-black text-xs truncate">
-                                    <Zap size={13} className="shrink-0" />
+                                    <Zap size={12} className="shrink-0" />
                                     <span>{campaign.reward || 'Barter Collab'}</span>
                                 </div>
                             </div>
@@ -771,7 +772,7 @@ const CampaignDetailModal = ({
                                                                     )}
                                                                 />
                                                                 {/* Clear button */}
-                                                                {form.instagram && !isVerifying && !(instagramVerifiedData && instagramVerifiedData.handle === form.instagram?.trim().replace(/^@/, '').toLowerCase() && isEligible) && (
+                                                                {form.instagram && !isVerifying && !instagramVerifiedData && (
                                                                     <button
                                                                         type="button"
                                                                         onClick={() => {
@@ -791,7 +792,7 @@ const CampaignDetailModal = ({
                                                                     onClick={() => handleInstagramVerify()}
                                                                     disabled={isVerifying || !form.instagram?.trim()}
                                                                     className={cn(
-                                                                        "absolute right-1 sm:right-1.5 top-1/2 -translate-y-1/2 h-8 sm:h-9 px-3 sm:px-4 rounded-lg font-black text-[10px] sm:text-[11px] uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 cursor-pointer",
+                                                                        "absolute right-1 sm:right-1.5 top-1/2 -translate-y-1/2 h-8 sm:h-9 px-2.5 sm:px-4 rounded-lg font-black text-[10px] sm:text-[11px] uppercase tracking-wider transition-all flex items-center justify-center gap-1 cursor-pointer",
                                                                         instagramVerifiedData && instagramVerifiedData.handle === form.instagram?.trim().replace(/^@/, '').toLowerCase()
                                                                             ? instagramVerifiedData.meetsMinimumFollowers
                                                                                 ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
@@ -964,7 +965,7 @@ const CampaignDetailModal = ({
                                                                     initial={{ opacity: 0, scale: 0.98 }}
                                                                     animate={{ opacity: 1, scale: 1 }}
                                                                     className={cn(
-                                                                        "p-4 rounded-2xl border space-y-3.5 transition-all shadow-xs",
+                                                                        "p-3 sm:p-4 rounded-xl sm:rounded-2xl border space-y-3 sm:space-y-3.5 transition-all shadow-xs",
                                                                         instagramVerifiedData.meetsMinimumFollowers
                                                                             ? "bg-emerald-500/[0.05] dark:bg-emerald-500/[0.04] border-emerald-500/30"
                                                                             : "bg-rose-500/[0.04] dark:bg-rose-500/[0.03] border-rose-500/25"
@@ -984,37 +985,37 @@ const CampaignDetailModal = ({
                                                                         const finalDisplayName = isNameInvalid ? null : rawName;
 
                                                                         return (
-                                                                            <div className="flex items-center justify-between gap-3">
-                                                                                <div className="flex items-center gap-3 min-w-0 flex-1">
+                                                                            <div className="flex items-center justify-between gap-2.5 sm:gap-3">
+                                                                                <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
                                                                                     <div className="relative shrink-0">
                                                                                         <div className="p-[2px] rounded-full bg-gradient-to-tr from-amber-500 via-rose-500 to-purple-600">
                                                                                             {instagramVerifiedData.profilePic ? (
                                                                                                 <img
                                                                                                     src={instagramVerifiedData.profilePic}
                                                                                                     alt={cleanHandle}
-                                                                                                    className="w-12 h-12 rounded-full object-cover bg-black/40 block"
+                                                                                                    className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover bg-black/40 block"
                                                                                                     onError={(e) => { e.currentTarget.style.display = 'none'; }}
                                                                                                 />
                                                                                             ) : (
-                                                                                                <div className="w-12 h-12 rounded-full bg-black/60 flex items-center justify-center text-white">
-                                                                                                    <Instagram size={20} />
+                                                                                                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-black/60 flex items-center justify-center text-white">
+                                                                                                    <Instagram size={18} />
                                                                                                 </div>
                                                                                             )}
                                                                                         </div>
                                                                                         {/* Contextual Avatar Badge */}
                                                                                         {instagramVerifiedData.meetsMinimumFollowers ? (
-                                                                                            <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-emerald-500 text-black flex items-center justify-center shadow-xs">
-                                                                                                <Check size={10} className="stroke-[3]" />
+                                                                                            <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full bg-emerald-500 text-black flex items-center justify-center shadow-xs">
+                                                                                                <Check size={9} className="stroke-[3]" />
                                                                                             </div>
                                                                                         ) : (
-                                                                                            <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-rose-500 text-white flex items-center justify-center shadow-xs">
-                                                                                                <AlertCircle size={10} className="stroke-[2.5]" />
+                                                                                            <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full bg-rose-500 text-white flex items-center justify-center shadow-xs">
+                                                                                                <AlertCircle size={9} className="stroke-[2.5]" />
                                                                                             </div>
                                                                                         )}
                                                                                     </div>
                                                                                     <div className="min-w-0 flex-1">
                                                                                         <div className="flex items-center gap-1.5 min-w-0">
-                                                                                            <span className="text-sm font-bold text-gray-900 dark:text-white truncate font-mono tracking-tight">
+                                                                                            <span className="text-xs sm:text-sm font-bold text-gray-900 dark:text-white truncate font-mono tracking-tight">
                                                                                                 @{cleanHandle}
                                                                                             </span>
                                                                                             {instagramVerifiedData.isVerified && (
@@ -1024,11 +1025,11 @@ const CampaignDetailModal = ({
                                                                                             )}
                                                                                         </div>
                                                                                         {finalDisplayName ? (
-                                                                                            <p className="text-[11px] text-gray-500 dark:text-zinc-400 truncate">
+                                                                                            <p className="text-[10px] sm:text-[11px] text-gray-500 dark:text-zinc-400 truncate">
                                                                                                 {finalDisplayName}
                                                                                             </p>
                                                                                         ) : (
-                                                                                            <p className="text-[10px] text-gray-400 dark:text-zinc-500 font-mono truncate">
+                                                                                            <p className="text-[9px] sm:text-[10px] text-gray-400 dark:text-zinc-500 font-mono truncate">
                                                                                                 Instagram Account
                                                                                             </p>
                                                                                         )}
@@ -1038,15 +1039,16 @@ const CampaignDetailModal = ({
                                                                                 {/* Status Pill */}
                                                                                 <div className="shrink-0">
                                                                                     {instagramVerifiedData.meetsMinimumFollowers ? (
-                                                                                        <div className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider px-2.5 sm:px-3 py-1.5 rounded-xl bg-emerald-500 text-black shadow-xs font-mono">
-                                                                                            <CheckCircle2 size={13} className="stroke-[2.5]" />
+                                                                                        <div className="inline-flex items-center gap-1 sm:gap-1.5 text-[9px] sm:text-[10px] font-black uppercase tracking-wider px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl bg-emerald-500 text-black shadow-xs font-mono">
+                                                                                            <CheckCircle2 size={11} className="stroke-[2.5] shrink-0" />
                                                                                             <span className="hidden sm:inline">Eligible to Apply</span>
                                                                                             <span className="sm:hidden">Eligible</span>
                                                                                         </div>
                                                                                     ) : (
-                                                                                        <div className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-lg sm:rounded-xl bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/25 font-mono">
-                                                                                            <AlertCircle size={11} className="shrink-0" />
-                                                                                            <span>Below {minFollowers >= 1000 ? `${(minFollowers / 1000).toFixed(minFollowers % 1000 === 0 ? 0 : 1)}K` : minFollowers} Min</span>
+                                                                                        <div className="inline-flex items-center gap-1 text-[9px] sm:text-[10px] font-black uppercase tracking-wider px-2 sm:px-2.5 py-1 rounded-lg sm:rounded-xl bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/25 font-mono whitespace-nowrap">
+                                                                                            <AlertCircle size={10} className="shrink-0" />
+                                                                                            <span className="hidden sm:inline">Below {minFollowers >= 1000 ? `${(minFollowers / 1000).toFixed(minFollowers % 1000 === 0 ? 0 : 1)}K` : minFollowers} Min</span>
+                                                                                            <span className="sm:hidden">&lt; {minFollowers >= 1000 ? `${(minFollowers / 1000).toFixed(minFollowers % 1000 === 0 ? 0 : 1)}K` : minFollowers}</span>
                                                                                         </div>
                                                                                     )}
                                                                                 </div>
@@ -1057,7 +1059,7 @@ const CampaignDetailModal = ({
                                                                     {/* Detailed Status Breakdown for Ineligible Users */}
                                                                     {!instagramVerifiedData.meetsMinimumFollowers && minFollowers > 0 && (
                                                                         <div className="space-y-2 pt-2.5 border-t border-rose-500/15">
-                                                                            <div className="flex items-center justify-between text-[11px] font-mono">
+                                                                            <div className="flex items-center justify-between text-[10px] sm:text-[11px] font-mono">
                                                                                 <span className="text-gray-600 dark:text-zinc-400 font-medium">
                                                                                     Follower Requirement:
                                                                                 </span>
@@ -1074,37 +1076,47 @@ const CampaignDetailModal = ({
                                                                                 />
                                                                             </div>
 
-                                                                            <p className="text-[11px] text-rose-600 dark:text-rose-300 leading-snug">
+                                                                            <p className="text-[10px] sm:text-[11px] text-rose-600 dark:text-rose-300 leading-snug">
                                                                                 This campaign requires at least <strong>{minFollowers.toLocaleString()} followers</strong> to apply ({Math.max(0, minFollowers - Number(instagramVerifiedData.followers || 0)).toLocaleString()} more needed).
                                                                             </p>
                                                                         </div>
                                                                     )}
 
                                                                     {/* Action Bar & Metadata */}
-                                                                    <div className="pt-2.5 border-t border-black/[0.06] dark:border-white/[0.06] flex items-center justify-between gap-2 flex-wrap">
-                                                                        <div className="flex items-center gap-2">
+                                                                    <div className="pt-2 sm:pt-2.5 border-t border-black/[0.06] dark:border-white/[0.06] flex items-center justify-between gap-2">
+                                                                        <div className="flex items-center gap-1.5 sm:gap-2">
                                                                             {instagramVerifiedData.meetsMinimumFollowers ? (
                                                                                 <>
-                                                                                    <div className="px-2.5 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-baseline gap-1.5">
-                                                                                        <span className="text-sm font-black font-mono text-emerald-600 dark:text-neon-green">
+                                                                                    <div className="px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-baseline gap-1">
+                                                                                        <span className="text-xs sm:text-sm font-black font-mono text-emerald-600 dark:text-neon-green">
                                                                                             {Number(instagramVerifiedData.followers || 0).toLocaleString()}
                                                                                         </span>
-                                                                                        <span className="text-[10px] font-bold text-emerald-700 dark:text-neon-green/80 uppercase tracking-wider font-mono">
+                                                                                        <span className="text-[9px] sm:text-[10px] font-bold text-emerald-700 dark:text-neon-green/80 uppercase tracking-wider font-mono">
                                                                                             Followers
                                                                                         </span>
                                                                                     </div>
-                                                                                    <span className="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 font-mono">
-                                                                                        <Check size={9} className="stroke-[3]" /> Auto-Verified
+                                                                                    <span className="inline-flex items-center gap-1 text-[8px] sm:text-[9px] font-black uppercase tracking-wider px-1.5 sm:px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 font-mono">
+                                                                                        <Check size={8} className="stroke-[3]" /> Auto-Verified
                                                                                     </span>
                                                                                 </>
                                                                             ) : (
-                                                                                <span className="text-[10px] text-gray-500 dark:text-zinc-500 flex items-center gap-1 font-mono">
-                                                                                    <Instagram size={11} className="text-pink-500 shrink-0" /> Synced
-                                                                                </span>
+                                                                                <div className="flex items-center gap-1.5 sm:gap-2">
+                                                                                    <div className="px-2 py-0.5 rounded-md bg-black/[0.03] dark:bg-white/[0.05] border border-black/[0.06] dark:border-white/[0.08] flex items-baseline gap-1">
+                                                                                        <span className="text-xs font-black font-mono text-gray-800 dark:text-zinc-200">
+                                                                                            {Number(instagramVerifiedData.followers || 0).toLocaleString()}
+                                                                                        </span>
+                                                                                        <span className="text-[9px] font-bold text-gray-500 dark:text-zinc-400 uppercase tracking-wider font-mono">
+                                                                                            Followers
+                                                                                        </span>
+                                                                                    </div>
+                                                                                    <span className="text-[10px] text-gray-500 dark:text-zinc-500 flex items-center gap-1 font-mono">
+                                                                                        <Instagram size={10} className="text-pink-500 shrink-0" /> Synced
+                                                                                    </span>
+                                                                                </div>
                                                                             )}
                                                                         </div>
 
-                                                                        <div className="flex items-center gap-3">
+                                                                        <div className="flex items-center gap-1.5 shrink-0">
                                                                             {!instagramVerifiedData.meetsMinimumFollowers && (
                                                                                 <button
                                                                                     type="button"
@@ -1112,9 +1124,9 @@ const CampaignDetailModal = ({
                                                                                         setIsManualFollowerEntry(true);
                                                                                         setInstagramVerificationError('');
                                                                                     }}
-                                                                                    className="text-[10px] font-bold text-pink-500 hover:text-pink-400 uppercase tracking-wider transition-colors cursor-pointer"
+                                                                                    className="px-2 sm:px-2.5 py-1 rounded-lg bg-pink-500/10 hover:bg-pink-500/20 text-[10px] font-bold text-pink-600 dark:text-pink-400 uppercase tracking-wider transition-all active:scale-95 cursor-pointer"
                                                                                 >
-                                                                                    Manual Entry
+                                                                                    Manual
                                                                                 </button>
                                                                             )}
                                                                             <button
@@ -1123,7 +1135,7 @@ const CampaignDetailModal = ({
                                                                                     setInstagramVerifiedData(null);
                                                                                     setVerificationStep('idle');
                                                                                 }}
-                                                                                className="text-[10px] font-bold text-gray-400 hover:text-gray-200 uppercase tracking-wider transition-colors cursor-pointer"
+                                                                                className="px-2 sm:px-2.5 py-1 rounded-lg bg-black/[0.04] dark:bg-white/[0.06] hover:bg-black/[0.08] dark:hover:bg-white/[0.1] text-[10px] font-bold text-gray-500 hover:text-gray-700 dark:text-zinc-400 dark:hover:text-zinc-200 uppercase tracking-wider transition-all active:scale-95 cursor-pointer"
                                                                             >
                                                                                 Change
                                                                             </button>
