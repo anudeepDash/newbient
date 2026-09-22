@@ -5,7 +5,8 @@ import {
     Instagram, MapPin, Users, Zap, ArrowRight, ShieldCheck, Trophy, 
     Target, Ban, Camera, Video, Eye, Star, Globe, Youtube, Twitter, 
     Calendar, CheckCircle2, Clock, MessageCircle, ChevronLeft, 
-    ExternalLink, FileText, Check, X, AlertTriangle, Sparkles 
+    ExternalLink, FileText, Check, X, AlertTriangle, Sparkles,
+    RefreshCw, AlertCircle, Lock
 } from 'lucide-react';
 import { useStore } from '../../lib/store';
 import { cn, normalizePhoneNumber } from '../../lib/utils';
@@ -39,7 +40,10 @@ const CampaignDetailModal = ({
 
     const [profile, setProfile] = useState(null);
     const [isVerifying, setIsVerifying] = useState(false);
-    const [verificationStep, setVerificationStep] = useState('idle'); // idle | verifying | success | failed
+    const [verificationStep, setVerificationStep] = useState('idle'); // idle | verifying | success | scraper_error | ineligible
+    const [instagramVerifiedData, setInstagramVerifiedData] = useState(null);
+    const [instagramVerificationError, setInstagramVerificationError] = useState('');
+    const [isManualFollowerEntry, setIsManualFollowerEntry] = useState(false);
     const [isJoining, setIsJoining] = useState(false);
     const [joinSuccess, setJoinSuccess] = useState(false);
 
@@ -62,10 +66,11 @@ const CampaignDetailModal = ({
             resolveCreatorProfile(user).then((existing) => {
                 if (existing) {
                     setProfile(existing);
+                    const cleanExistingHandle = String(existing.instagram || '').replace(/^@/, '');
                     setForm(prev => ({
                         ...prev,
-                        instagram: existing.instagram || '',
-                        followers: existing.instagramFollowers || '',
+                        instagram: cleanExistingHandle,
+                        followers: existing.instagramFollowers ? String(existing.instagramFollowers) : '',
                         name: existing.name || '',
                         phone: existing.phone || '',
                         city: existing.city || '',
@@ -73,9 +78,21 @@ const CampaignDetailModal = ({
                         bio: existing.bio || ''
                     }));
                     
+                    const minFollowers = Number(campaign?.minInstagramFollowers || 0);
+                    const count = Number(existing.instagramFollowers || 0);
                     // Auto-approve if they already meet the campaign requirement
-                    if (existing.instagramFollowers && Number(existing.instagramFollowers) >= Number(campaign?.minInstagramFollowers || 0)) {
+                    if (count && (minFollowers <= 0 || count >= minFollowers)) {
                         setVerificationStep('success');
+                        setInstagramVerifiedData({
+                            handle: cleanExistingHandle,
+                            name: existing.name || cleanExistingHandle,
+                            followers: count,
+                            formattedFollowers: count.toLocaleString(),
+                            profilePic: existing.profilePicture || existing.instagramProfilePic || user.photoURL || null,
+                            isPrivate: false,
+                            isVerified: Boolean(existing.isVerified),
+                            meetsMinimumFollowers: true
+                        });
                     }
                 }
             }).catch(err => console.error("Error resolving profile in modal:", err));
@@ -134,29 +151,84 @@ const CampaignDetailModal = ({
         }
     }, [initialTaskId, campaignTasks, isJoined]);
 
+    const minFollowers = Number(campaign?.minInstagramFollowers || 0);
+
+    const handleInstagramChange = (e) => {
+        const val = e.target.value.replace(/^@/, '');
+        setForm(prev => ({ ...prev, instagram: val }));
+        if (instagramVerifiedData && instagramVerifiedData.handle !== val.trim().toLowerCase()) {
+            setInstagramVerifiedData(null);
+            setInstagramVerificationError('');
+            setVerificationStep('idle');
+        }
+    };
+
     // Instagram verification eligibility check
-    const handleInstagramVerify = async () => {
-        const cleanHandle = String(form.instagram || '').trim().replace(/^@/, '');
+    const handleInstagramVerify = async (manualHandle = null) => {
+        const raw = manualHandle !== null ? manualHandle : form.instagram;
+        const cleanHandle = String(raw || '').trim().replace(/^@/, '');
         if (!cleanHandle) {
+            setInstagramVerificationError('Please enter your Instagram username.');
             return useStore.getState().addToast("Please enter your Instagram handle to continue.", 'error');
         }
         setIsVerifying(true);
         setVerificationStep('verifying');
+        setInstagramVerificationError('');
+        setIsManualFollowerEntry(false);
 
         try {
+            const isLocal = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
             const res = await fetch(`/api/creator-join?action=verify-instagram&handle=${encodeURIComponent(cleanHandle)}`);
             const data = await res.json();
 
             if (!res.ok || !data.success) {
+                if (isLocal) {
+                    const mockFollowers = Math.max(minFollowers || 1000, 2500);
+                    const verifiedPayload = {
+                        handle: cleanHandle,
+                        name: cleanHandle,
+                        followers: mockFollowers,
+                        formattedFollowers: mockFollowers.toLocaleString(),
+                        profilePic: null,
+                        isPrivate: false,
+                        isVerified: false,
+                        meetsMinimumFollowers: true
+                    };
+                    setInstagramVerifiedData(verifiedPayload);
+                    setForm(prev => ({
+                        ...prev,
+                        instagram: cleanHandle,
+                        followers: String(mockFollowers)
+                    }));
+                    setIsVerifying(false);
+                    setVerificationStep('success');
+                    useStore.getState().addToast(`Local dev mode: Instagram verification passed (${mockFollowers.toLocaleString()} followers).`, 'info');
+                    return;
+                }
+                const errMsg = data.error || `Could not auto-verify @${cleanHandle}. Make sure profile is public.`;
                 setIsVerifying(false);
                 setVerificationStep('scraper_error');
-                useStore.getState().addToast(data.error || `Could not auto-verify @${cleanHandle}. Make sure profile is public.`, 'error');
+                setInstagramVerificationError(errMsg);
+                setInstagramVerifiedData(null);
+                useStore.getState().addToast(errMsg, 'error');
                 return;
             }
 
             const count = Number(data.followers) || 0;
-            const required = Number(campaign?.minInstagramFollowers || 0);
+            const meetsCriteria = minFollowers <= 0 || count >= minFollowers;
 
+            const verifiedPayload = {
+                handle: data.handle,
+                name: data.name,
+                followers: count,
+                formattedFollowers: data.formattedFollowers || count.toLocaleString(),
+                profilePic: data.profilePic || null,
+                isPrivate: data.isPrivate || false,
+                isVerified: data.isVerified || false,
+                meetsMinimumFollowers: meetsCriteria
+            };
+
+            setInstagramVerifiedData(verifiedPayload);
             setForm(prev => ({
                 ...prev,
                 instagram: data.handle,
@@ -164,7 +236,7 @@ const CampaignDetailModal = ({
             }));
 
             setIsVerifying(false);
-            if (count < required) {
+            if (!meetsCriteria) {
                 setVerificationStep('ineligible');
             } else {
                 setVerificationStep('success');
@@ -172,7 +244,9 @@ const CampaignDetailModal = ({
         } catch (err) {
             setIsVerifying(false);
             setVerificationStep('scraper_error');
-            useStore.getState().addToast("Verification network error. Please try again.", 'error');
+            const errMsg = "Verification network error. Please try again.";
+            setInstagramVerificationError(errMsg);
+            useStore.getState().addToast(errMsg, 'error');
         }
     };
 
@@ -184,7 +258,7 @@ const CampaignDetailModal = ({
             return;
         }
 
-        if (verificationStep !== 'success') {
+        if (!isEligible) {
             return useStore.getState().addToast("Please verify your Instagram eligibility before applying.", 'error');
         }
 
@@ -260,7 +334,7 @@ const CampaignDetailModal = ({
 
     if (!campaign) return null;
 
-    const isEligible = verificationStep === 'success';
+    const isEligible = verificationStep === 'success' || (isManualFollowerEntry && Boolean(form.followers) && (minFollowers <= 0 || Number(form.followers) >= minFollowers));
 
     return createPortal(
         <motion.div 
@@ -640,98 +714,372 @@ const CampaignDetailModal = ({
                                             <AnimatePresence mode="wait">
                                                 {!joinSuccess ? (
                                                     <div className="space-y-5">
-                                                        {/* Instagram Verification Row */}
-                                                        <div className="space-y-3.5">
-                                                            <div className="space-y-1.5">
-                                                                <label className="text-[10px] font-black text-gray-500 dark:text-zinc-400 uppercase tracking-widest pl-1 font-mono">
-                                                                    Instagram Handle
-                                                                </label>
-                                                                <Input 
-                                                                    value={form.instagram} 
-                                                                    onChange={e => {
-                                                                        let val = e.target.value;
-                                                                        if (val && !val.startsWith('@')) val = '@' + val;
-                                                                        setForm({...form, instagram: val});
-                                                                    }} 
-                                                                    placeholder="@username" 
-                                                                    className="h-12 bg-white dark:bg-black/50 border-black/15 dark:border-white/10 rounded-2xl text-xs font-semibold text-gray-950 dark:text-white focus:border-neon-green placeholder-gray-400 dark:placeholder-zinc-500 shadow-2xs" 
-                                                                    disabled={isEligible} 
-                                                                />
+                                                        {/* Instagram Profile & Auto-Verification Card */}
+                                                        <div className="relative overflow-hidden p-4 sm:p-5 bg-white dark:bg-white/[0.02] border border-black/[0.08] dark:border-white/[0.06] rounded-2xl sm:rounded-3xl space-y-3.5 sm:space-y-4 shadow-xs backdrop-blur-xl">
+                                                            {/* Top Instagram Accent Line */}
+                                                            <div className="absolute top-0 inset-x-0 h-[2px] bg-gradient-to-r from-amber-400 via-rose-500 to-purple-600 opacity-80" />
+
+                                                            {/* Header: Title + Minimum Followers Pill */}
+                                                            <div className="flex items-start sm:items-center justify-between gap-2 flex-wrap sm:flex-nowrap">
+                                                                <div className="flex items-center gap-2 sm:gap-2.5">
+                                                                    <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-amber-500 via-rose-500 to-purple-600 p-[1.5px] shadow-xs shrink-0">
+                                                                        <div className="w-full h-full rounded-[6.5px] bg-white dark:bg-zinc-950 flex items-center justify-center text-pink-500 dark:text-pink-400">
+                                                                            <Instagram size={14} className="stroke-[2.2]" />
+                                                                        </div>
+                                                                    </div>
+                                                                    <div>
+                                                                        <div className="flex items-center gap-1 text-xs font-black uppercase tracking-wider text-gray-900 dark:text-white">
+                                                                            <span>Instagram Profile</span>
+                                                                            <span className="text-pink-500">*</span>
+                                                                        </div>
+                                                                        <p className="text-[10px] text-gray-500 dark:text-zinc-400 font-medium">Auto-verifies your follower count</p>
+                                                                    </div>
+                                                                </div>
+                                                                {minFollowers > 0 && (
+                                                                    <div className="inline-flex items-center gap-1.5 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full bg-emerald-500/10 dark:bg-emerald-500/15 border border-emerald-500/25 text-[9px] sm:text-[10px] font-bold text-emerald-600 dark:text-emerald-400 shrink-0 shadow-xs">
+                                                                        <ShieldCheck size={11} className="text-emerald-500 shrink-0 stroke-[2.5]" />
+                                                                        <span>Min. {minFollowers.toLocaleString()} Followers</span>
+                                                                    </div>
+                                                                )}
                                                             </div>
 
+                                                            {/* Handle Input with Integrated Action */}
                                                             <div className="space-y-1.5">
-                                                                <label className="text-[10px] font-black text-gray-500 dark:text-zinc-400 uppercase tracking-widest pl-1 font-mono">
-                                                                    Auto-Verified Followers
-                                                                </label>
-                                                                <Input 
-                                                                    type="text" 
-                                                                    readOnly
-                                                                    value={form.followers ? `${Number(form.followers).toLocaleString()} followers` : ''} 
-                                                                    placeholder="Auto-verified via Instagram check" 
-                                                                    className="h-12 bg-gray-50 dark:bg-black/30 border-black/15 dark:border-white/10 rounded-2xl text-xs font-bold text-gray-950 dark:text-white cursor-not-allowed font-mono placeholder-gray-400 dark:placeholder-zinc-500 shadow-2xs" 
-                                                                    disabled={isEligible} 
-                                                                />
+                                                                <div className="flex items-center justify-between">
+                                                                    <label className="text-[10px] font-black uppercase tracking-wider text-gray-700 dark:text-white/60">
+                                                                        Handle
+                                                                    </label>
+                                                                    <span className="text-[10px] font-medium text-gray-400 dark:text-zinc-500 flex items-center gap-1.5">
+                                                                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                                                        Live Verification
+                                                                    </span>
+                                                                </div>
+                                                                <div className="relative flex items-center">
+                                                                    <span className="absolute left-3 sm:left-3.5 top-1/2 -translate-y-1/2 text-pink-500 font-black text-xs select-none">
+                                                                        @
+                                                                    </span>
+                                                                    <input
+                                                                        type="text"
+                                                                        name="instagram"
+                                                                        value={form.instagram}
+                                                                        onChange={handleInstagramChange}
+                                                                        onKeyDown={(e) => {
+                                                                            if (e.key === 'Enter') {
+                                                                                e.preventDefault();
+                                                                                handleInstagramVerify();
+                                                                            }
+                                                                        }}
+                                                                        placeholder="yourhandle"
+                                                                        autoCapitalize="none"
+                                                                        autoCorrect="off"
+                                                                        spellCheck="false"
+                                                                        className={cn(
+                                                                            "w-full h-11 sm:h-12 pl-7 sm:pl-8 pr-24 sm:pr-32 bg-white dark:bg-black/40 border rounded-xl text-xs sm:text-sm font-semibold text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-zinc-600 outline-none transition-all shadow-xs",
+                                                                            instagramVerifiedData && instagramVerifiedData.handle === form.instagram?.trim().replace(/^@/, '').toLowerCase() && isEligible
+                                                                                ? "border-emerald-500/40 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
+                                                                                : instagramVerificationError
+                                                                                ? "border-red-500/40 focus:border-red-500 focus:ring-2 focus:ring-red-500/20"
+                                                                                : "border-black/[0.1] dark:border-white/[0.08] focus:border-pink-500 focus:ring-2 focus:ring-pink-500/20"
+                                                                        )}
+                                                                    />
+                                                                    {/* Clear button if text entered and not verifying/verified */}
+                                                                    {form.instagram && !isVerifying && !(instagramVerifiedData && instagramVerifiedData.handle === form.instagram?.trim().replace(/^@/, '').toLowerCase() && isEligible) && (
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => {
+                                                                                setForm(prev => ({ ...prev, instagram: '', followers: '' }));
+                                                                                setInstagramVerificationError('');
+                                                                                setInstagramVerifiedData(null);
+                                                                                setVerificationStep('idle');
+                                                                            }}
+                                                                            className="absolute right-20 sm:right-28 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-gray-200 dark:bg-white/10 hover:bg-gray-300 dark:hover:bg-white/20 flex items-center justify-center text-gray-500 dark:text-zinc-400 transition-colors"
+                                                                            title="Clear handle"
+                                                                        >
+                                                                            <X size={10} className="stroke-[2.5]" />
+                                                                        </button>
+                                                                    )}
+                                                                    {/* Verify Button Beside Username */}
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => handleInstagramVerify()}
+                                                                        disabled={isVerifying || !form.instagram?.trim()}
+                                                                        className={cn(
+                                                                            "absolute right-1 sm:right-1.5 top-1/2 -translate-y-1/2 h-8 sm:h-9 px-2.5 sm:px-3.5 rounded-lg font-black text-[10px] sm:text-[11px] uppercase tracking-wider transition-all flex items-center gap-1.5 shadow-sm active:scale-95 cursor-pointer",
+                                                                            instagramVerifiedData && instagramVerifiedData.handle === form.instagram?.trim().replace(/^@/, '').toLowerCase() && isEligible
+                                                                                ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/25"
+                                                                                : "bg-gradient-to-r from-pink-500 via-rose-500 to-pink-600 text-white hover:opacity-95 disabled:opacity-40 disabled:cursor-not-allowed shadow-pink-500/20"
+                                                                        )}
+                                                                    >
+                                                                        {isVerifying ? (
+                                                                            <>
+                                                                                <LoadingSpinner size="xs" color="#ffffff" />
+                                                                                <span>Checking</span>
+                                                                            </>
+                                                                        ) : instagramVerifiedData && instagramVerifiedData.handle === form.instagram?.trim().replace(/^@/, '').toLowerCase() && isEligible ? (
+                                                                            <>
+                                                                                <Check size={12} className="stroke-[3]" />
+                                                                                <span>Verified</span>
+                                                                            </>
+                                                                        ) : (
+                                                                            <>
+                                                                                <ShieldCheck size={12} className="stroke-[2.5]" />
+                                                                                <span>Verify</span>
+                                                                            </>
+                                                                        )}
+                                                                    </button>
+                                                                </div>
                                                             </div>
 
-                                                            {/* Follower Qualification Alert */}
+                                                            {/* Verification Progress Indicator */}
+                                                            {isVerifying && (
+                                                                <motion.div
+                                                                    initial={{ opacity: 0, y: -4 }}
+                                                                    animate={{ opacity: 1, y: 0 }}
+                                                                    className="p-3 bg-pink-500/10 border border-pink-500/20 rounded-xl flex items-center gap-3 text-xs text-pink-600 dark:text-pink-400 font-medium"
+                                                                >
+                                                                    <LoadingSpinner size="xs" color="#ec4899" />
+                                                                    <div className="flex-1 min-w-0">
+                                                                        <p className="font-bold text-pink-600 dark:text-pink-300 text-xs truncate">
+                                                                            Connecting to Instagram...
+                                                                        </p>
+                                                                        <p className="text-[10px] text-pink-500/80 truncate">
+                                                                            Fetching follower count for @{form.instagram?.trim().replace(/^@/, '')}
+                                                                        </p>
+                                                                    </div>
+                                                                </motion.div>
+                                                            )}
+
+                                                            {/* Verification Error Notice */}
+                                                            {instagramVerificationError && !isVerifying && !isManualFollowerEntry && (
+                                                                <motion.div
+                                                                    initial={{ opacity: 0, y: -4 }}
+                                                                    animate={{ opacity: 1, y: 0 }}
+                                                                    className="p-3.5 bg-red-500/[0.08] dark:bg-red-500/[0.12] border border-red-500/25 dark:border-red-500/35 rounded-xl space-y-2.5"
+                                                                >
+                                                                    <div className="flex items-start gap-2.5">
+                                                                        <div className="w-5 h-5 rounded-full bg-red-500/20 text-red-500 dark:text-red-400 flex items-center justify-center shrink-0 mt-0.5">
+                                                                            <AlertCircle size={13} className="stroke-[2.5]" />
+                                                                        </div>
+                                                                        <div className="flex-1 min-w-0">
+                                                                            <p className="text-xs font-semibold text-red-600 dark:text-red-300 leading-snug">
+                                                                                {instagramVerificationError}
+                                                                            </p>
+                                                                            {!instagramVerificationError.toLowerCase().includes('public') && (
+                                                                                <p className="text-[10px] text-red-500/80 mt-0.5">
+                                                                                    Make sure your profile is public or check handle spelling.
+                                                                                </p>
+                                                                            )}
+                                                                        </div>
+                                                                    </div>
+
+                                                                    {/* Action bar on Mobile & Desktop */}
+                                                                    <div className="pt-2 border-t border-red-500/15 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5">
+                                                                        <div className="flex items-center gap-1.5 text-[10px] text-red-600/80 dark:text-red-400/80 font-medium shrink-0">
+                                                                            <span className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0" />
+                                                                            <span>Profile must be set to <strong>Public</strong></span>
+                                                                        </div>
+                                                                        <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto w-full sm:w-auto justify-end">
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={() => {
+                                                                                    setIsManualFollowerEntry(true);
+                                                                                    setInstagramVerificationError('');
+                                                                                }}
+                                                                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-red-500/10 hover:bg-red-500/20 active:scale-95 text-red-600/90 dark:text-red-400/90 font-bold text-[10px] uppercase tracking-wider transition-all border border-red-500/20 cursor-pointer shrink-0"
+                                                                            >
+                                                                                Manual Entry
+                                                                            </button>
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={() => handleInstagramVerify()}
+                                                                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-red-500/15 hover:bg-red-500/25 active:scale-95 text-red-600 dark:text-red-400 font-black text-[10px] uppercase tracking-wider transition-all border border-red-500/30 cursor-pointer shrink-0"
+                                                                            >
+                                                                                <RefreshCw size={10} className="stroke-[2.5]" />
+                                                                                <span>Retry</span>
+                                                                            </button>
+                                                                        </div>
+                                                                    </div>
+                                                                </motion.div>
+                                                            )}
+
+                                                            {/* Follower Qualification Alert (Ineligible) */}
                                                             {verificationStep === 'ineligible' && !isEligible && (
                                                                 <motion.div 
                                                                     initial={{ opacity: 0, y: 5 }}
                                                                     animate={{ opacity: 1, y: 0 }}
-                                                                    className="p-4 rounded-2xl bg-red-500/10 border border-red-500/25 flex items-start gap-3 text-red-600 dark:text-red-400"
+                                                                    className="p-3.5 sm:p-4 rounded-2xl bg-red-500/10 border border-red-500/25 flex items-start gap-3 text-red-600 dark:text-red-400"
                                                                 >
                                                                     <Ban size={18} className="shrink-0 mt-0.5 text-red-500 dark:text-red-400" />
-                                                                    <div className="space-y-1">
+                                                                    <div className="space-y-1 flex-1 min-w-0">
                                                                         <p className="text-xs font-bold uppercase tracking-wide">
                                                                             Profile qualifications not met
                                                                         </p>
                                                                         <p className="text-[11px] leading-relaxed text-red-600 dark:text-red-300 font-normal">
-                                                                            This campaign requires at least <span className="font-bold text-gray-950 dark:text-white">{Number(campaign.minInstagramFollowers || 0).toLocaleString()} followers</span> to apply. Your entered count is {Number(form.followers || 0).toLocaleString()}.
+                                                                            This campaign requires at least <span className="font-bold text-gray-950 dark:text-white">{minFollowers.toLocaleString()} followers</span> to apply. Your detected count is {Number(form.followers || 0).toLocaleString()}.
                                                                         </p>
-                                                                    </div>
-                                                                </motion.div>
-                                                            )}
-                                                            
-                                                            {/* Scraper Error Alert */}
-                                                            {verificationStep === 'scraper_error' && !isEligible && (
-                                                                <motion.div 
-                                                                    initial={{ opacity: 0, y: 5 }}
-                                                                    animate={{ opacity: 1, y: 0 }}
-                                                                    className="p-4 rounded-2xl bg-orange-500/10 border border-orange-500/25 flex items-start gap-3 text-orange-600 dark:text-orange-400"
-                                                                >
-                                                                    <AlertTriangle size={18} className="shrink-0 mt-0.5 text-orange-500 dark:text-orange-400" />
-                                                                    <div className="space-y-1">
-                                                                        <p className="text-xs font-bold uppercase tracking-wide">
-                                                                            Verification Failed
-                                                                        </p>
-                                                                        <p className="text-[11px] leading-relaxed text-orange-700 dark:text-orange-300 font-normal">
-                                                                            We couldn't verify your account right now. Make sure the handle spelling is correct and the profile is set to Public.
-                                                                        </p>
+                                                                        <div className="pt-2 flex items-center gap-2">
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={() => {
+                                                                                    setIsManualFollowerEntry(true);
+                                                                                    setInstagramVerificationError('');
+                                                                                }}
+                                                                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-red-500/15 hover:bg-red-500/25 active:scale-95 text-red-600 dark:text-red-400 font-black text-[10px] uppercase tracking-wider transition-all border border-red-500/30 cursor-pointer"
+                                                                            >
+                                                                                Manual Entry
+                                                                            </button>
+                                                                        </div>
                                                                     </div>
                                                                 </motion.div>
                                                             )}
 
-                                                            {/* Action Buttons for Verification */}
-                                                            {verificationStep === 'verifying' ? (
-                                                                <div className="h-12 bg-black/[0.04] dark:bg-white/[0.05] border border-black/10 dark:border-white/10 rounded-2xl flex items-center justify-center gap-2.5 text-xs font-bold text-gray-600 dark:text-zinc-300">
-                                                                    <LoadingSpinner size="xs" color="#39ff14" />
-                                                                    <span>Verifying eligibility...</span>
-                                                                </div>
-                                                            ) : verificationStep === 'success' ? (
-                                                                <div className="h-12 bg-emerald-500/15 dark:bg-neon-green/15 border border-emerald-500/30 dark:border-neon-green/30 rounded-2xl flex items-center justify-center gap-2 text-xs font-black uppercase tracking-wider text-emerald-600 dark:text-neon-green">
-                                                                    <ShieldCheck size={16} />
-                                                                    <span>Eligibility Confirmed</span>
-                                                                </div>
-                                                            ) : (
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={handleInstagramVerify}
-                                                                    disabled={isVerifying}
-                                                                    className="w-full h-12 bg-gray-950 text-white hover:bg-neon-green hover:text-black dark:bg-white dark:text-black dark:hover:bg-neon-green dark:hover:text-black font-black uppercase tracking-wider text-xs rounded-2xl transition-all shadow-md active:scale-95 flex items-center justify-center gap-2"
+                                                            {/* Manual Follower Entry */}
+                                                            {isManualFollowerEntry && (
+                                                                <motion.div
+                                                                    initial={{ opacity: 0, y: -4 }}
+                                                                    animate={{ opacity: 1, y: 0 }}
+                                                                    className="space-y-1.5 pt-2"
                                                                 >
-                                                                    <span>{verificationStep === 'scraper_error' || verificationStep === 'ineligible' ? 'Retry Verification' : 'Check Eligibility'}</span>
-                                                                    <ArrowRight size={13} />
-                                                                </button>
+                                                                    <div className="flex items-center justify-between pl-1">
+                                                                        <label className="text-[11px] sm:text-xs font-black text-gray-700 dark:text-gray-300 uppercase tracking-widest">
+                                                                            Manual Follower Count
+                                                                        </label>
+                                                                        <button 
+                                                                            type="button" 
+                                                                            onClick={() => {
+                                                                                setIsManualFollowerEntry(false);
+                                                                                handleInstagramVerify();
+                                                                            }}
+                                                                            className="text-[10px] font-bold text-pink-500 hover:text-pink-600 uppercase tracking-wider transition-colors cursor-pointer"
+                                                                        >
+                                                                            Retry Auto-Verify
+                                                                        </button>
+                                                                    </div>
+                                                                    <div className="relative group">
+                                                                        <div className="absolute inset-y-0 left-0 pl-3 sm:pl-3.5 flex items-center pointer-events-none">
+                                                                            <Users size={16} className="text-gray-400 dark:text-zinc-500 group-focus-within:text-pink-500 transition-colors" />
+                                                                        </div>
+                                                                        <input
+                                                                            type="number"
+                                                                            placeholder={`e.g. ${(minFollowers || 1000).toLocaleString()}`}
+                                                                            value={form.followers || ''}
+                                                                            onChange={e => {
+                                                                                const val = e.target.value;
+                                                                                setForm(prev => ({ ...prev, followers: val }));
+                                                                                if (Number(val) >= minFollowers) {
+                                                                                    setVerificationStep('success');
+                                                                                } else {
+                                                                                    setVerificationStep('ineligible');
+                                                                                }
+                                                                            }}
+                                                                            className="w-full pl-9 sm:pl-10 pr-4 py-2.5 sm:py-3 rounded-xl border border-gray-200 dark:border-zinc-800 bg-white/50 dark:bg-zinc-900/50 hover:bg-white dark:hover:bg-zinc-900 focus:bg-white dark:focus:bg-zinc-900 focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 text-xs sm:text-sm text-gray-900 dark:text-white transition-all shadow-sm font-mono placeholder:font-sans"
+                                                                        />
+                                                                    </div>
+                                                                    <p className="text-[10px] text-gray-500 pl-1">
+                                                                        Enter your exact follower count. {minFollowers > 0 ? `Minimum ${minFollowers.toLocaleString()} required.` : ''}
+                                                                    </p>
+                                                                </motion.div>
+                                                            )}
+
+                                                            {/* Verified Account Card */}
+                                                            {instagramVerifiedData && instagramVerifiedData.handle === form.instagram?.trim().replace(/^@/, '').toLowerCase() && !isVerifying && (
+                                                                <motion.div
+                                                                    initial={{ opacity: 0, scale: 0.98 }}
+                                                                    animate={{ opacity: 1, scale: 1 }}
+                                                                    className={cn(
+                                                                        "p-3.5 sm:p-4 rounded-xl border space-y-3 transition-all",
+                                                                        instagramVerifiedData.meetsMinimumFollowers
+                                                                            ? "bg-emerald-500/[0.05] dark:bg-emerald-500/[0.04] border-emerald-500/30"
+                                                                            : "bg-amber-500/[0.05] dark:bg-amber-500/[0.04] border-amber-500/30"
+                                                                    )}
+                                                                >
+                                                                    <div className="flex items-center justify-between gap-3">
+                                                                        <div className="flex items-center gap-3 min-w-0">
+                                                                            <div className="relative shrink-0">
+                                                                                <div className="p-[2px] rounded-full bg-gradient-to-tr from-amber-500 via-rose-500 to-purple-600">
+                                                                                    {instagramVerifiedData.profilePic ? (
+                                                                                        <img
+                                                                                            src={instagramVerifiedData.profilePic}
+                                                                                            alt={instagramVerifiedData.name}
+                                                                                            className="w-11 h-11 rounded-full object-cover bg-black/40 block"
+                                                                                            onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                                                                                        />
+                                                                                    ) : (
+                                                                                        <div className="w-11 h-11 rounded-full bg-black/60 flex items-center justify-center text-white">
+                                                                                            <Instagram size={18} />
+                                                                                        </div>
+                                                                                    )}
+                                                                                </div>
+                                                                                <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-emerald-500 text-black flex items-center justify-center shadow-xs">
+                                                                                    <Check size={10} className="stroke-[3]" />
+                                                                                </div>
+                                                                            </div>
+                                                                            <div className="min-w-0">
+                                                                                <div className="flex items-center gap-1.5 flex-wrap">
+                                                                                    <span className="text-xs sm:text-sm font-black text-gray-900 dark:text-white truncate">
+                                                                                        {instagramVerifiedData.name || `@${instagramVerifiedData.handle}`}
+                                                                                    </span>
+                                                                                    {instagramVerifiedData.isVerified && (
+                                                                                        <CheckCircle2 size={13} className="text-sky-400 fill-sky-400 shrink-0" />
+                                                                                    )}
+                                                                                </div>
+                                                                                <p className="text-[11px] text-gray-500 dark:text-zinc-400 font-mono truncate">
+                                                                                    @{instagramVerifiedData.handle}
+                                                                                </p>
+                                                                            </div>
+                                                                        </div>
+
+                                                                        {/* Status Pill */}
+                                                                        <div className="shrink-0">
+                                                                            {instagramVerifiedData.meetsMinimumFollowers ? (
+                                                                                <div className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider px-2.5 sm:px-3 py-1.5 rounded-xl bg-emerald-500 text-black shadow-xs">
+                                                                                    <CheckCircle2 size={13} className="stroke-[2.5]" />
+                                                                                    <span>Eligible to Apply</span>
+                                                                                </div>
+                                                                            ) : (
+                                                                                <div className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider px-2.5 sm:px-3 py-1.5 rounded-xl bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/30">
+                                                                                    <AlertCircle size={13} />
+                                                                                    <span>Below {minFollowers.toLocaleString()} Minimum</span>
+                                                                                </div>
+                                                                            )}
+                                                                        </div>
+                                                                    </div>
+
+                                                                    {/* Follower Stats Bar */}
+                                                                    <div className="pt-2.5 border-t border-black/[0.06] dark:border-white/[0.06] flex items-center justify-between gap-2 flex-wrap">
+                                                                        <div className="flex items-center gap-2">
+                                                                            <div className="px-2.5 py-1 rounded-lg bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/5 flex items-baseline gap-1.5">
+                                                                                <span className="text-sm font-black font-mono text-gray-900 dark:text-white">
+                                                                                    {Number(instagramVerifiedData.followers || 0).toLocaleString()}
+                                                                                </span>
+                                                                                <span className="text-[10px] font-bold text-gray-500 dark:text-zinc-400 uppercase tracking-wider">
+                                                                                    Followers
+                                                                                </span>
+                                                                            </div>
+                                                                            <span className="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                                                                                <Check size={9} className="stroke-[3]" /> Auto-Verified
+                                                                            </span>
+                                                                        </div>
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => {
+                                                                                setInstagramVerifiedData(null);
+                                                                                setVerificationStep('idle');
+                                                                            }}
+                                                                            className="text-[10px] font-bold text-gray-400 hover:text-gray-600 dark:hover:text-zinc-200 transition-colors cursor-pointer"
+                                                                        >
+                                                                            Change
+                                                                        </button>
+                                                                    </div>
+                                                                </motion.div>
+                                                            )}
+
+                                                            {/* Informational Guidance */}
+                                                            {!instagramVerifiedData && !isVerifying && !isManualFollowerEntry && (
+                                                                <div className="flex items-start gap-2 pt-0.5 text-[11px] text-gray-500 dark:text-zinc-400 leading-relaxed">
+                                                                    <Lock size={12} className="shrink-0 mt-0.5 text-gray-400 dark:text-zinc-500" />
+                                                                    <span>Follower counts are verified directly via Instagram. Profile must be public.</span>
+                                                                </div>
                                                             )}
                                                         </div>
 
