@@ -55,6 +55,51 @@ try {
 const normalizeString = (str) => String(str || '').trim().toLowerCase();
 const createSlug = (str) => String(str || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 
+const stripHtml = (input) => {
+    if (!input) return '';
+    return String(input)
+        .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+        .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+        .replace(/<!--[\s\S]*?-->/g, '')
+        .replace(/<\/(p|div|h[1-6]|li|tr|section|article)>/gi, ' ')
+        .replace(/<(br|hr)\s*\/?>/gi, ' ')
+        .replace(/<[^>]+>/g, '')
+        .replace(/&nbsp;/gi, ' ')
+        .replace(/&amp;/gi, '&')
+        .replace(/&quot;/gi, '"')
+        .replace(/&#39;|&apos;/gi, "'")
+        .replace(/&lt;/gi, '<')
+        .replace(/&gt;/gi, '>')
+        .replace(/&ndash;/gi, '–')
+        .replace(/&mdash;/gi, '—')
+        .replace(/&hellip;/gi, '...')
+        .replace(/&bull;/gi, '•')
+        .replace(/&#(\d+);/g, (_, dec) => String.fromCharCode(Number(dec)))
+        .replace(/&#x([0-9a-fA-F]+);/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)))
+        .replace(/\s+/g, ' ')
+        .trim();
+};
+
+const escapeHtml = (str) => {
+    if (!str) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+};
+
+const escapeHtmlAttr = (str) => {
+    if (!str) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+};
+
 async function getBaseHtml(req) {
     const candidatePaths = [
         path.join(process.cwd(), 'dist', 'index.html'),
@@ -324,10 +369,12 @@ export default async function handler(req, res) {
             const snap = await adminDb.collection('campaigns').doc(effectiveCampaignId).get();
             if (snap.exists) {
                 const data = snap.data();
-                meta.title = `${data.title || 'Brand Campaign'} | Newbi Creator Network`;
-                const brand = data.brandName ? `Brand: ${data.brandName}. ` : '';
-                const payout = data.payout || data.budget ? `Compensation: ${data.payout || data.budget}. ` : '';
-                meta.description = `${brand}${payout}${data.description || 'Join this verified brand campaign on Newbi Creator Network.'}`.substring(0, 155);
+                meta.title = `${stripHtml(data.title) || 'Brand Campaign'} | Newbi Creator Network`;
+                const brand = data.brandName ? `Brand: ${stripHtml(data.brandName)}. ` : '';
+                const payout = data.payout || data.budget ? `Compensation: ${stripHtml(data.payout || data.budget)}. ` : '';
+                const rawDesc = stripHtml(data.description) || 'Join this verified brand campaign on Newbi Creator Network.';
+                const combined = `${brand}${payout}${rawDesc}`.trim();
+                meta.description = combined.length > 160 ? combined.substring(0, 157).trim() + '...' : combined;
                 const img = data.thumbnail || data.image || data.coverImage;
                 meta.image = img?.startsWith('http') ? img : (img ? `${baseUrl}${img}` : defaultOgImage);
                 meta.url = `${baseUrl}/campaign/${effectiveCampaignId}`;
@@ -341,8 +388,8 @@ export default async function handler(req, res) {
             const snap = await adminDb.collection('gen_documents').doc(effectiveDocId).get();
             if (snap.exists) {
                 const data = snap.data();
-                meta.title = `${data.title || 'Official Document'} | Newbi Ent.`;
-                meta.description = `${data.documentType || 'Official Document'} #${data.docNumber || effectiveDocId}. Issued by Newbi Entertainment & Marketing.`;
+                meta.title = `${stripHtml(data.title) || 'Official Document'} | Newbi Ent.`;
+                meta.description = `${stripHtml(data.documentType) || 'Official Document'} #${data.docNumber || effectiveDocId}. Issued by Newbi Entertainment & Marketing.`;
                 meta.image = defaultOgImage;
                 meta.url = `${baseUrl}/doc/${effectiveDocId}`;
             } else {
@@ -355,8 +402,10 @@ export default async function handler(req, res) {
             const snap = await adminDb.collection('upcoming_events').doc(effectiveEventId).get();
             if (snap.exists) {
                 const data = snap.data();
-                meta.title = `${data.title}${data.city ? ` | ${data.city}` : ''}`;
-                meta.description = `Featuring ${Array.isArray(data.artists) ? data.artists.join(', ') : 'Exclusive Artists'}. ${data.description || ''}`.substring(0, 155);
+                meta.title = `${stripHtml(data.title)}${data.city ? ` | ${data.city}` : ''}`;
+                const cleanDesc = stripHtml(data.description);
+                const combined = `Featuring ${Array.isArray(data.artists) ? data.artists.join(', ') : 'Exclusive Artists'}. ${cleanDesc || ''}`.trim();
+                meta.description = combined.length > 160 ? combined.substring(0, 157).trim() + '...' : combined;
                 meta.image = data.image?.startsWith('http') ? data.image : (data.image ? `${baseUrl}${data.image}` : defaultOgImage);
                 meta.url = `${baseUrl}/?event=${effectiveEventId}`;
             }
@@ -364,8 +413,10 @@ export default async function handler(req, res) {
             const snaps = await adminDb.collection('giveaways').where('slug', '==', effectiveGiveawaySlug).get();
             if (!snaps.empty) {
                 const data = snaps.docs[0].data();
-                meta.title = `${data.name} | Newbi Giveaway`;
-                meta.description = data.description?.substring(0, 155) || `Join the ultimate giveaway to win ${data.name}!`;
+                meta.title = `${stripHtml(data.name)} | Newbi Giveaway`;
+                const cleanDesc = stripHtml(data.description);
+                const combined = cleanDesc || `Join the ultimate giveaway to win ${data.name}!`;
+                meta.description = combined.length > 160 ? combined.substring(0, 157).trim() + '...' : combined;
                 meta.image = data.posterUrl?.startsWith('http') ? data.posterUrl : (data.posterUrl ? `${baseUrl}${data.posterUrl}` : defaultOgImage);
                 meta.url = `${baseUrl}/giveaway/${effectiveGiveawaySlug}`;
             }
@@ -379,8 +430,10 @@ export default async function handler(req, res) {
             if (snap.exists) {
                 const data = snap.data();
                 initialData = { id: snap.id, ...data };
-                meta.title = `${data.title} | Newbi Forms`;
-                meta.description = data.description?.substring(0, 155) || `Participate in ${data.title} on Newbi Hub.`;
+                meta.title = `${stripHtml(data.title)} | Newbi Forms`;
+                const cleanDesc = stripHtml(data.description);
+                const combined = cleanDesc || `Participate in ${data.title} on Newbi Hub.`;
+                meta.description = combined.length > 160 ? combined.substring(0, 157).trim() + '...' : combined;
                 meta.image = data.image?.startsWith('http') ? data.image : (data.image ? `${baseUrl}${data.image}` : defaultOgImage);
                 meta.url = formId ? `${baseUrl}/forms/${id}` : `${baseUrl}/community?form=${id}`;
             } else {
@@ -403,8 +456,10 @@ export default async function handler(req, res) {
 
                 if (foundDoc) {
                     initialData = foundDoc;
-                    meta.title = `${foundDoc.title} | Newbi Forms`;
-                    meta.description = foundDoc.description?.substring(0, 155) || `Participate in ${foundDoc.title} on Newbi Hub.`;
+                    meta.title = `${stripHtml(foundDoc.title)} | Newbi Forms`;
+                    const cleanDesc = stripHtml(foundDoc.description);
+                    const combined = cleanDesc || `Participate in ${foundDoc.title} on Newbi Hub.`;
+                    meta.description = combined.length > 160 ? combined.substring(0, 157).trim() + '...' : combined;
                     meta.image = foundDoc.image?.startsWith('http') ? foundDoc.image : (foundDoc.image ? `${baseUrl}${foundDoc.image}` : defaultOgImage);
                     meta.url = formId ? `${baseUrl}/forms/${foundDoc.id}` : `${baseUrl}/community?form=${foundDoc.id}`;
                 } else {
@@ -431,8 +486,10 @@ export default async function handler(req, res) {
                                 bottomText: data.location || 'Event Form'
                             };
                         }
-                        meta.title = `${data.title} | Newbi Form`;
-                        meta.description = data.description?.substring(0, 155) || `Participate in ${data.title} on Newbi Hub.`;
+                        meta.title = `${stripHtml(data.title)} | Newbi Form`;
+                        const cleanDesc = stripHtml(data.description);
+                        const combined = cleanDesc || `Participate in ${data.title} on Newbi Hub.`;
+                        meta.description = combined.length > 160 ? combined.substring(0, 157).trim() + '...' : combined;
                         meta.image = data.image?.startsWith('http') ? data.image : (data.image ? `${baseUrl}${data.image}` : defaultOgImage);
                         meta.url = `${baseUrl}/forms/${id}`;
                     } else {
@@ -450,8 +507,10 @@ export default async function handler(req, res) {
                                 highlightColor: data.highlightColor || '#39FF14',
                                 bottomText: data.location || 'Gig Form'
                             };
-                            meta.title = `${data.title} | Volunteer Form`;
-                            meta.description = data.description?.substring(0, 155) || `Participate in ${data.title} on Newbi Hub.`;
+                            meta.title = `${stripHtml(data.title)} | Volunteer Form`;
+                            const cleanDesc = stripHtml(data.description);
+                            const combined = cleanDesc || `Participate in ${data.title} on Newbi Hub.`;
+                            meta.description = combined.length > 160 ? combined.substring(0, 157).trim() + '...' : combined;
                             meta.image = data.image?.startsWith('http') ? data.image : (data.image ? `${baseUrl}${data.image}` : defaultOgImage);
                             meta.url = `${baseUrl}/forms/${id}`;
                         }
@@ -462,8 +521,10 @@ export default async function handler(req, res) {
             const snap = await adminDb.collection('volunteer_gigs').doc(effectiveGigId).get();
             if (snap.exists) {
                 const data = snap.data();
-                meta.title = `${data.title} | Volunteer Gig`;
-                meta.description = data.description?.substring(0, 155) || `Join the Newbi Tribe as a volunteer for ${data.title}.`;
+                meta.title = `${stripHtml(data.title)} | Volunteer Gig`;
+                const cleanDesc = stripHtml(data.description);
+                const combined = cleanDesc || `Join the Newbi Tribe as a volunteer for ${data.title}.`;
+                meta.description = combined.length > 160 ? combined.substring(0, 157).trim() + '...' : combined;
                 meta.image = data.image?.startsWith('http') ? data.image : (data.image ? `${baseUrl}${data.image}` : defaultOgImage);
                 meta.url = `${baseUrl}/community?gig=${effectiveGigId}`;
             }
@@ -471,8 +532,10 @@ export default async function handler(req, res) {
             const snap = await adminDb.collection('guestlists').doc(effectiveGlId).get();
             if (snap.exists) {
                 const data = snap.data();
-                meta.title = `${data.title} | VIP Guestlist`;
-                meta.description = data.description?.substring(0, 155) || `Get on the exclusive guestlist for ${data.title}.`;
+                meta.title = `${stripHtml(data.title)} | VIP Guestlist`;
+                const cleanDesc = stripHtml(data.description);
+                const combined = cleanDesc || `Get on the exclusive guestlist for ${data.title}.`;
+                meta.description = combined.length > 160 ? combined.substring(0, 157).trim() + '...' : combined;
                 meta.image = data.image?.startsWith('http') ? data.image : (data.image ? `${baseUrl}${data.image}` : defaultOgImage);
                 meta.url = `${baseUrl}/community?gl=${effectiveGlId}`;
             }
@@ -480,8 +543,8 @@ export default async function handler(req, res) {
             const snap = await adminDb.collection('proposals').doc(effectiveProposalId).get();
             if (snap.exists) {
                 const data = snap.data();
-                meta.title = `${data.proposalNumber || 'Strategic Quote'} | ${data.clientName || 'Valued Partner'} | Newbi Ent.`;
-                meta.description = `Strategic Proposal for ${data.campaignName || 'Campaign'}. Status: ${data.status || 'Draft'}.`;
+                meta.title = `${stripHtml(data.proposalNumber) || 'Strategic Quote'} | ${stripHtml(data.clientName) || 'Valued Partner'} | Newbi Ent.`;
+                meta.description = `Strategic Proposal for ${stripHtml(data.campaignName) || 'Campaign'}. Status: ${data.status || 'Draft'}.`;
                 meta.image = defaultOgImage;
                 meta.url = `${baseUrl}/proposal/${effectiveProposalId}`;
             }
@@ -489,8 +552,8 @@ export default async function handler(req, res) {
             const snap = await adminDb.collection('invoices').doc(effectiveInvoiceId).get();
             if (snap.exists) {
                 const data = snap.data();
-                meta.title = `${data.invoiceNumber || 'Tax Invoice'} | ${data.clientName || 'Valued Partner'} | Newbi Ent.`;
-                meta.description = `Tax Invoice for ${data.campaignName || 'Services'}. Status: ${data.status || 'Unpaid'}.`;
+                meta.title = `${stripHtml(data.invoiceNumber) || 'Tax Invoice'} | ${stripHtml(data.clientName) || 'Valued Partner'} | Newbi Ent.`;
+                meta.description = `Tax Invoice for ${stripHtml(data.campaignName) || 'Services'}. Status: ${data.status || 'Unpaid'}.`;
                 meta.image = defaultOgImage;
                 meta.url = `${baseUrl}/invoice/${effectiveInvoiceId}`;
             }
@@ -498,8 +561,8 @@ export default async function handler(req, res) {
             const snap = await adminDb.collection('agreements').doc(effectiveAgreementId).get();
             if (snap.exists) {
                 const data = snap.data();
-                meta.title = `${data.agreementNumber || 'Agreement'} | ${data.clientName || 'Valued Partner'} | Newbi Ent.`;
-                meta.description = `Service Agreement for ${data.campaignName || 'Services'}. Status: ${data.status || 'Draft'}.`;
+                meta.title = `${stripHtml(data.agreementNumber) || 'Agreement'} | ${stripHtml(data.clientName) || 'Valued Partner'} | Newbi Ent.`;
+                meta.description = `Service Agreement for ${stripHtml(data.campaignName) || 'Services'}. Status: ${data.status || 'Draft'}.`;
                 meta.image = defaultOgImage;
                 meta.url = `${baseUrl}/agreement/${effectiveAgreementId}`;
             }
@@ -507,8 +570,11 @@ export default async function handler(req, res) {
             const snaps = await adminDb.collection('posts').where('slug', '==', effectiveBlogSlug).get();
             if (!snaps.empty) {
                 const data = snaps.docs[0].data();
-                meta.title = `${data.title} | Concert Zone | Newbi Ent.`;
-                meta.description = data.excerpt?.substring(0, 155) || data.content?.replace(/<[^>]*>/g, '').substring(0, 155) || '';
+                meta.title = `${stripHtml(data.title)} | Concert Zone | Newbi Ent.`;
+                const cleanExcerpt = stripHtml(data.excerpt);
+                const cleanContent = stripHtml(data.content);
+                const desc = cleanExcerpt || cleanContent || '';
+                meta.description = desc.length > 160 ? desc.substring(0, 157).trim() + '...' : desc;
                 meta.image = data.coverImage?.startsWith('http') ? data.coverImage : (data.coverImage ? `${baseUrl}${data.coverImage}` : defaultOgImage);
                 meta.url = `${baseUrl}/concertzone/${data.category || 'music'}/${effectiveBlogSlug}`;
             }
@@ -524,12 +590,16 @@ export default async function handler(req, res) {
         console.warn('[OG] Metadata fetch note:', error.message);
     }
 
+    // Ensure all metadata is free of HTML tags and trimmed
+    meta.title = stripHtml(meta.title);
+    meta.description = stripHtml(meta.description);
+
     // Load base HTML from distribution
     const { html: loadedHtml } = await getBaseHtml(req);
     let html = loadedHtml;
 
     if (!html) {
-        html = `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>${meta.title}</title></head><body><div id="root"></div></body></html>`;
+        html = `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>${escapeHtml(meta.title)}</title></head><body><div id="root"></div></body></html>`;
     }
 
     // Inject dynamic Meta Tags & Initial Data into Head
@@ -538,23 +608,28 @@ export default async function handler(req, res) {
         initialScript = `<script>window.__INITIAL_FORM_DATA__ = ${JSON.stringify(initialData)};</script>`;
     }
 
+    const safeTitle = escapeHtml(meta.title);
+    const safeDesc = escapeHtmlAttr(meta.description);
+    const safeUrl = escapeHtmlAttr(meta.url);
+    const safeImage = escapeHtmlAttr(meta.image);
+
     const metaTags = `
-        <title>${meta.title}</title>
-        <meta name="description" content="${meta.description}" />
+        <title>${safeTitle}</title>
+        <meta name="description" content="${safeDesc}" />
         <meta property="og:site_name" content="Newbi Entertainment &amp; Marketing" />
-        <meta property="og:title" content="${meta.title}" />
-        <meta property="og:description" content="${meta.description}" />
-        <meta property="og:image" content="${meta.image}" />
-        <meta property="og:image:secure_url" content="${meta.image}" />
+        <meta property="og:title" content="${safeTitle}" />
+        <meta property="og:description" content="${safeDesc}" />
+        <meta property="og:image" content="${safeImage}" />
+        <meta property="og:image:secure_url" content="${safeImage}" />
         <meta property="og:image:width" content="1200" />
         <meta property="og:image:height" content="630" />
-        <meta property="og:url" content="${meta.url}" />
-        <meta property="og:type" content="${meta.type}" />
+        <meta property="og:url" content="${safeUrl}" />
+        <meta property="og:type" content="${escapeHtmlAttr(meta.type)}" />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:site" content="@newbi_live" />
-        <meta name="twitter:title" content="${meta.title}" />
-        <meta name="twitter:description" content="${meta.description}" />
-        <meta name="twitter:image" content="${meta.image}" />
+        <meta name="twitter:title" content="${safeTitle}" />
+        <meta name="twitter:description" content="${safeDesc}" />
+        <meta name="twitter:image" content="${safeImage}" />
         <link rel="icon" type="image/png" href="${baseUrl}/favicon.png" />
         <link rel="shortcut icon" type="image/png" href="${baseUrl}/favicon.png" />
         ${initialScript}

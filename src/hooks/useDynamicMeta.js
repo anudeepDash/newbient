@@ -14,6 +14,31 @@ const toAbsoluteUrl = (path) => {
     return `${origin}${cleanPath}`;
 };
 
+const stripHtml = (input) => {
+    if (!input) return '';
+    return String(input)
+        .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+        .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+        .replace(/<!--[\s\S]*?-->/g, '')
+        .replace(/<\/(p|div|h[1-6]|li|tr|section|article)>/gi, ' ')
+        .replace(/<(br|hr)\s*\/?>/gi, ' ')
+        .replace(/<[^>]+>/g, '')
+        .replace(/&nbsp;/gi, ' ')
+        .replace(/&amp;/gi, '&')
+        .replace(/&quot;/gi, '"')
+        .replace(/&#39;|&apos;/gi, "'")
+        .replace(/&lt;/gi, '<')
+        .replace(/&gt;/gi, '>')
+        .replace(/&ndash;/gi, '–')
+        .replace(/&mdash;/gi, '—')
+        .replace(/&hellip;/gi, '...')
+        .replace(/&bull;/gi, '•')
+        .replace(/&#(\d+);/g, (_, dec) => String.fromCharCode(Number(dec)))
+        .replace(/&#x([0-9a-fA-F]+);/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)))
+        .replace(/\s+/g, ' ')
+        .trim();
+};
+
 const useDynamicMeta = ({ title, description, image, url }) => {
     useEffect(() => {
         const defaultTitle = "Newbi Entertainment & Marketing";
@@ -45,8 +70,8 @@ const useDynamicMeta = ({ title, description, image, url }) => {
             if (el) el.setAttribute('content', content);
         };
 
-        const pageTitle = title ? (title.includes('Newbi') ? title : `${title} | Newbi Ent.`) : defaultTitle;
-        const pageDesc = description || defaultDesc;
+        const pageTitle = stripHtml(title ? (title.includes('Newbi') ? title : `${title} | Newbi Ent.`) : defaultTitle);
+        const pageDesc = stripHtml(description) || defaultDesc;
 
         document.title = pageTitle;
 
