@@ -29,11 +29,15 @@ createRoot(document.getElementById('root')).render(
 )
 
 
-// Register Service Worker for Push Notifications
-if ('serviceWorker' in navigator) {
+// Register Service Worker for Push Notifications (only on browsers supporting PushManager)
+if (typeof window !== 'undefined' && 'serviceWorker' in navigator && 'PushManager' in window) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/firebase-messaging-sw.js')
-      .then(reg => console.log('Service Worker registered', reg))
-      .catch(err => console.log('Service Worker registration failed', err));
+    try {
+      navigator.serviceWorker.register('/firebase-messaging-sw.js')
+        .then(reg => console.log('Service Worker registered', reg))
+        .catch(err => console.warn('Service Worker registration failed', err));
+    } catch (e) {
+      console.warn('Service Worker registration skipped:', e);
+    }
   });
 }

@@ -16,6 +16,7 @@ import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { useStore } from '../lib/store';
 import { useStoreSubscription } from '../hooks/useStoreSubscription';
+import { safeLocalStorage } from '../lib/storage';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { cn } from '../lib/utils';
@@ -58,7 +59,7 @@ const Invoice = () => {
     }, [id, invoices, storeLoading]);
 
     const loading = localLoading;
-    const isAdmin = (localStorage.getItem('adminAuth') === 'true') || (user?.role === 'super_admin' || user?.role === 'developer');
+    const isAdmin = (safeLocalStorage.getItem('adminAuth') === 'true') || (user?.role === 'super_admin' || user?.role === 'developer');
     const location = useLocation();
     const invoiceRef = useRef(null);
     const printFrameRef = useRef(null);
@@ -135,7 +136,7 @@ const Invoice = () => {
             const name = searchParams.get('name');
 
             const cacheKey = `last_viewed_invoice_${id}`;
-            const lastViewed = localStorage.getItem(cacheKey);
+            const lastViewed = safeLocalStorage.getItem(cacheKey);
             const tenMins = 10 * 60 * 1000;
 
             if (!lastViewed || (new Date() - new Date(lastViewed) > tenMins) || via === 'email') {
@@ -152,7 +153,7 @@ const Invoice = () => {
                         shareEmail: email || null,
                         shareName: name || null
                     });
-                    localStorage.setItem(cacheKey, new Date().toISOString());
+                    safeLocalStorage.setItem(cacheKey, new Date().toISOString());
                 } catch (err) {
                     console.error("Log access failed:", err);
                 }

@@ -100,18 +100,31 @@ const escapeHtmlAttr = (str) => {
         .replace(/>/g, '&gt;');
 };
 
+let cachedBaseHtml = '';
+
+const isBot = (ua) => {
+    if (!ua) return false;
+    return /bot|crawl|spider|slurp|facebookexternalhit|whatsapp|telegrambot|twitterbot|slackbot|linkedinbot|embedly|quora link preview|pinterest|redditbot|applebot|discordbot/i.test(ua);
+};
+
 async function getBaseHtml(req) {
+    if (cachedBaseHtml) {
+        return { html: cachedBaseHtml, path: 'memory' };
+    }
+
     const candidatePaths = [
         path.join(process.cwd(), 'dist', 'index.html'),
         path.join(__dirname, '..', 'dist', 'index.html'),
-        path.join(__dirname, 'dist', 'index.html')
+        path.join(__dirname, 'dist', 'index.html'),
+        path.join('/var/task', 'dist', 'index.html')
     ];
 
     for (const p of candidatePaths) {
         try {
             if (fs.existsSync(p)) {
                 const content = fs.readFileSync(p, 'utf8');
-                if (content && content.length > 50 && content.includes('<div id="root">')) {
+                if (content && content.length > 50 && content.includes('<div id="root">') && !content.includes('/src/main.jsx')) {
+                    cachedBaseHtml = content;
                     return { html: content, path: p };
                 }
             }
@@ -119,29 +132,17 @@ async function getBaseHtml(req) {
     }
 
     try {
-        const host = req?.headers?.['x-forwarded-host'] || req?.headers?.host || 'newbi.live';
-        const proto = req?.headers?.['x-forwarded-proto'] || (host.includes('localhost') ? 'http' : 'https');
-        const res = await fetch(`${proto}://${host}/index.html`);
+        const res = await fetch('https://www.newbi.live/index.html');
         if (res.ok) {
             const fetched = await res.text();
-            if (fetched && fetched.length > 50 && fetched.includes('<div id="root">')) {
+            if (fetched && fetched.length > 50 && fetched.includes('<div id="root">') && !fetched.includes('/src/main.jsx')) {
+                cachedBaseHtml = fetched;
                 return { html: fetched, path: 'remote' };
             }
         }
     } catch (e) {
         console.warn('[OG] Remote index.html fetch failed:', e);
     }
-
-    // Fallback: Check root index.html
-    const rootPath = path.join(process.cwd(), 'index.html');
-    try {
-        if (fs.existsSync(rootPath)) {
-            const content = fs.readFileSync(rootPath, 'utf8');
-            if (content && content.includes('<div id="root">')) {
-                return { html: content, path: rootPath };
-            }
-        }
-    } catch (e) {}
 
     return { html: '', path: '' };
 }
@@ -581,10 +582,14 @@ export default async function handler(req, res) {
         }
     };
 
+    const userAgent = req.headers['user-agent'] || '';
+    const isCrawler = isBot(userAgent);
+    const timeoutMs = isCrawler ? 2500 : 400;
+
     try {
         await Promise.race([
             fetchMetadata(),
-            new Promise((_, reject) => setTimeout(() => reject(new Error('OG Fetch Timeout')), 2500))
+            new Promise((_, reject) => setTimeout(() => reject(new Error('OG Fetch Timeout')), timeoutMs))
         ]);
     } catch (error) {
         console.warn('[OG] Metadata fetch note:', error.message);
