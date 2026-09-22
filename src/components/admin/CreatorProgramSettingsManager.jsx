@@ -66,8 +66,8 @@ const CreatorProgramSettingsManager = () => {
         <section className="space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="flex items-center gap-4 flex-1">
-                    <h2 className="text-xl font-black font-heading tracking-tight uppercase italic text-neon-yellow dark:text-amber-400 flex items-center gap-2">
-                        <Sliders size={20} className="text-neon-yellow dark:text-amber-400" />
+                    <h2 className="text-xl font-black font-heading tracking-tight uppercase text-amber-600 dark:text-amber-400 flex items-center gap-2">
+                        <Sliders size={20} className="text-amber-600 dark:text-amber-400" />
                         Program Rules &amp; Visibility Controls
                     </h2>
                     <div className="flex-1 h-px bg-black/5 dark:bg-white/5" />
@@ -77,7 +77,7 @@ const CreatorProgramSettingsManager = () => {
                         type="button"
                         onClick={handleSave}
                         disabled={saving}
-                        className="h-10 px-5 rounded-xl bg-neon-yellow text-black font-black text-[10px] uppercase tracking-widest hover:brightness-110 transition-all disabled:opacity-50 flex items-center gap-2 shadow-sm"
+                        className="h-10 px-5 rounded-xl bg-neon-green text-black font-black text-[10px] uppercase tracking-widest hover:bg-emerald-400 transition-all disabled:opacity-50 flex items-center gap-2 shadow-sm"
                     >
                         <Save size={13} /> {saving ? 'Saving...' : 'Save Settings'}
                     </Button>
@@ -87,7 +87,7 @@ const CreatorProgramSettingsManager = () => {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Main Settings Card */}
                 <div className="lg:col-span-2 space-y-6">
-                    <Card className="p-6 sm:p-8 bg-gray-100 dark:bg-zinc-900/40 backdrop-blur-3xl border-black/10 dark:border-white/5 rounded-[2.5rem] space-y-7">
+                    <Card className="p-5 sm:p-8 bg-white dark:bg-[#0c0e14] border border-black/[0.08] dark:border-white/[0.08] rounded-3xl space-y-7 shadow-sm">
                         {/* Section 1: Signup Intake */}
                         <div className="space-y-4">
                             <div className="flex items-center justify-between">
@@ -238,7 +238,7 @@ const CreatorProgramSettingsManager = () => {
 
                 {/* Quick Previews & Direct Action Links */}
                 <div className="space-y-6">
-                    <Card className="p-6 bg-gray-100 dark:bg-zinc-900/40 backdrop-blur-3xl border-black/10 dark:border-white/5 rounded-[2.5rem] space-y-4">
+                    <Card className="p-5 sm:p-6 bg-white dark:bg-[#0c0e14] border border-black/[0.08] dark:border-white/[0.08] rounded-3xl space-y-4 shadow-sm">
                         <h3 className="text-xs font-black font-heading uppercase tracking-widest text-gray-500 dark:text-zinc-400">
                             Live Portal Links
                         </h3>
@@ -248,7 +248,7 @@ const CreatorProgramSettingsManager = () => {
                                 href="/creator"
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="p-3.5 rounded-xl bg-white dark:bg-black/30 border border-black/10 dark:border-white/10 flex items-center justify-between hover:border-neon-green/40 transition-all group"
+                                className="p-3.5 rounded-xl bg-gray-50 dark:bg-black/30 border border-black/[0.08] dark:border-white/[0.08] flex items-center justify-between hover:border-black/20 dark:hover:border-white/20 transition-all group"
                             >
                                 <div>
                                     <div className="text-xs font-bold text-gray-900 dark:text-white group-hover:text-neon-green transition-colors">

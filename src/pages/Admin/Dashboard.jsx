@@ -89,7 +89,7 @@ const DashboardSection = ({ title, gradient, children, icon }) => (
             </div>
             <div className="flex-1 h-px bg-gradient-to-r from-gray-300 dark:from-white/10 via-gray-200 dark:via-white/5 to-transparent" />
         </div>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-8">
             {React.Children.map(children, (child) => (
                 <motion.div 
                     whileHover={{ y: -5 }}
