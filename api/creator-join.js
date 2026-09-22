@@ -112,7 +112,9 @@ const fetchInstagramProfile = async (rawHandle) => {
         'Twitterbot/1.0',
         'LinkedInBot/1.0 (compatible; Mozilla/5.0; Apache-HttpClient +http://www.linkedin.com)',
         'TelegramBot (like TwitterBot)',
-        'WhatsApp/2.21.12.21 A'
+        'WhatsApp/2.21.12.21 A',
+        'Mozilla/5.0 (compatible; Discordbot/2.0; +https://discordapp.com)',
+        'Googlebot/2.1 (+http://www.google.com/bot.html)'
     ];
 
 
