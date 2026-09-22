@@ -338,7 +338,7 @@ const CreatorReferralsView = ({ profile }) => {
  */
 const CreatorDashboard = () => {
     useStoreSubscription(['creators', 'campaigns', 'creatorGroups']);
-    const { user, authInitialized, creators, campaigns, creatorGroups, markCreatorCityGroupJoined, loading, openProfilePanel, subscriptionsLoaded } = useStore();
+    const { user, authInitialized, creators, campaigns, creatorGroups, markCreatorCityGroupJoined, loading, openProfilePanel, subscriptionsLoaded, setAuthModal, resolveCreatorProfile } = useStore();
     const { isDark } = useTheme();
     const navigate = useNavigate();
     const location = useLocation();
@@ -429,70 +429,31 @@ const CreatorDashboard = () => {
     useEffect(() => {
         if (!authInitialized) return;
 
-        // If explicitly unauthenticated, redirect to creator join
+        // If explicitly unauthenticated, show sign-in prompt instead of bouncing
         if (!user) {
             setIsResolvingProfile(false);
-            navigate('/creator/join', { replace: true });
             return;
         }
 
-        // 1. Try finding creator in the subscribed creators array
-        const userPhoneNorm = user.phoneNumber ? normalizePhoneNumber(user.phoneNumber) : null;
-        const userEmailNorm = user.email ? user.email.toLowerCase() : null;
-        const existingProfile = (creators || []).find(c =>
-            c.uid === user.uid ||
-            c.id === user.uid ||
-            (userEmailNorm && c.email && c.email.toLowerCase() === userEmailNorm) ||
-            (userPhoneNorm && normalizePhoneNumber(c.phone) === userPhoneNorm)
-        );
-
-        if (existingProfile) {
-            if (existingProfile.uid !== user.uid) {
-                useStore.getState().updateCreator(existingProfile.uid, { uid: user.uid }).catch(err => console.error('Error linking creator uid:', err));
-            }
-            setProfile(existingProfile);
-            setIsResolvingProfile(false);
-            if (!existingProfile.creatorId) {
-                const generatedId = existingProfile.uid.slice(0, 8).toUpperCase();
-                useStore.getState().updateCreator(existingProfile.uid, { creatorId: generatedId })
-                    .then(() => console.log(`Auto-migrated creatorId for ${existingProfile.uid}: ${generatedId}`))
-                    .catch(err => console.error('Failed to auto-migrate creatorId:', err));
-            }
-            return;
-        }
-
-        // 2. While creators collection is loading or if user doc is indexed by uid, perform a fast direct Firestore lookup
         let isCancelled = false;
-        if (db && user.uid) {
-            getDoc(doc(db, 'creators', user.uid))
-                .then(docSnap => {
-                    if (isCancelled) return;
-                    if (docSnap.exists()) {
-                        const creatorData = { ...docSnap.data(), id: docSnap.id, uid: docSnap.data().uid || docSnap.id };
-                        setProfile(creatorData);
-                        setIsResolvingProfile(false);
-                    } else if (subscriptionsLoaded?.creators) {
-                        // creators collection has fully resolved and direct doc also doesn't exist -> user is not a registered creator
-                        setIsResolvingProfile(false);
-                        navigate('/creator/join', { replace: true });
-                    }
-                })
-                .catch(err => {
-                    console.error("Direct creator profile lookup error:", err);
-                    if (subscriptionsLoaded?.creators && !isCancelled) {
-                        setIsResolvingProfile(false);
-                        navigate('/creator/join', { replace: true });
-                    }
-                });
-        } else if (subscriptionsLoaded?.creators) {
+        resolveCreatorProfile(user).then((resolvedProfile) => {
+            if (isCancelled) return;
+            if (resolvedProfile) {
+                setProfile(resolvedProfile);
+            } else if (subscriptionsLoaded?.creators) {
+                // Not a registered creator
+                navigate('/creator/join', { replace: true });
+            }
             setIsResolvingProfile(false);
-            navigate('/creator/join', { replace: true });
-        }
+        }).catch(err => {
+            console.error("Profile resolution error:", err);
+            if (!isCancelled) setIsResolvingProfile(false);
+        });
 
         return () => {
             isCancelled = true;
         };
-    }, [user, authInitialized, creators, subscriptionsLoaded?.creators, navigate]);
+    }, [user, authInitialized, creators, subscriptionsLoaded?.creators, navigate, resolveCreatorProfile]);
 
     const [briefSearch, setBriefSearch] = useState('');
     const [briefFilter, setBriefFilter] = useState('all'); // 'all', 'city', 'paid', 'barter'
@@ -520,7 +481,7 @@ const CreatorDashboard = () => {
                 : (typeof profile?.specializations === 'string' && profile.specializations.trim() ? profile.specializations.trim() : 'Content Creator')));
 
     const allCampaignsList = useMemo(() => {
-        return (campaigns || []).filter(c => !c.status || c.status === 'Open');
+        return (campaigns || []).filter(c => !c.status || c.status.toLowerCase() === 'open');
     }, [campaigns]);
 
     const availableCampaigns = useMemo(() => {
@@ -589,7 +550,33 @@ const CreatorDashboard = () => {
         });
     }, [joinedCampaignsList, deliverableFilter, profile]);
 
-    if (!authInitialized || isResolvingProfile || !profile) return <GlobalLoader color="#39ff14" />;
+    if (!authInitialized || isResolvingProfile) return <GlobalLoader color="#39ff14" />;
+
+    if (!user || !profile) {
+        return (
+            <div className="min-h-screen min-h-[100dvh] bg-[#fafafa] dark:bg-[#08090d] flex flex-col items-center justify-center p-6 relative">
+                <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
+                    <div className="absolute -top-24 left-1/3 w-[600px] h-[350px] bg-neon-green/[0.035] dark:bg-neon-green/[0.025] rounded-full blur-[140px]" />
+                </div>
+                <div className="relative z-10 max-w-md w-full bg-white dark:bg-[#0c0e14] border border-black/[0.08] dark:border-white/[0.08] rounded-[32px] p-8 sm:p-10 text-center shadow-[0_20px_50px_rgba(0,0,0,0.05)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.4)]">
+                    <div className="w-20 h-20 bg-neon-green/10 text-emerald-600 dark:text-neon-green rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-[inset_0_0_20px_rgba(57,255,20,0.1)] border border-neon-green/20">
+                        <Lock size={36} strokeWidth={1.5} />
+                    </div>
+                    <h2 className="text-2xl font-black font-heading tracking-tight mb-3 text-gray-900 dark:text-white">Sign In to Dashboard</h2>
+                    <p className="text-sm text-gray-500 dark:text-zinc-400 mb-8 leading-relaxed">Please authenticate with your registered phone or email to access your campaign dashboard and rewards.</p>
+                    <div className="space-y-4">
+                        <button onClick={() => setAuthModal(true)} className="w-full h-14 bg-neon-green text-black font-black uppercase tracking-wider rounded-2xl hover:bg-emerald-400 transition-all active:scale-95 shadow-[0_0_20px_rgba(57,255,20,0.15)] flex items-center justify-center gap-2">
+                            <span>Sign In Securely</span>
+                            <ArrowRight size={18} />
+                        </button>
+                        <button onClick={() => navigate('/creator/join')} className="w-full h-14 bg-transparent border border-black/10 dark:border-white/10 text-gray-600 dark:text-zinc-300 font-bold uppercase tracking-wider rounded-2xl hover:bg-black/5 dark:hover:bg-white/5 transition-all active:scale-95 text-xs">
+                            Apply as Creator
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     const tabs = [
         { id: 'opportunities', label: 'New Openings', count: availableCampaigns.length },
