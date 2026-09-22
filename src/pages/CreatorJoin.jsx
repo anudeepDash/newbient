@@ -1952,12 +1952,12 @@ const CreatorJoin = () => {
                                             </div>
 
                                             {/* Action bar on Mobile & Desktop */}
-                                            <div className="pt-2 border-t border-red-500/15 flex items-center justify-between gap-2">
-                                                <div className="flex items-center gap-1.5 text-[10px] text-red-600/80 dark:text-red-400/80 font-medium">
+                                            <div className="pt-2 border-t border-red-500/15 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5">
+                                                <div className="flex items-center gap-1.5 text-[10px] text-red-600/80 dark:text-red-400/80 font-medium shrink-0">
                                                     <span className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0" />
                                                     <span>Profile must be set to <strong>Public</strong></span>
                                                 </div>
-                                                <div className="flex items-center gap-2">
+                                                <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto w-full sm:w-auto justify-end">
                                                     <button
                                                         type="button"
                                                         onClick={() => {
