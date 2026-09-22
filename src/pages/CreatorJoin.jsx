@@ -220,6 +220,7 @@ const CreatorJoin = () => {
     const [isInstagramVerifying, setIsInstagramVerifying] = useState(false);
     const [instagramVerifiedData, setInstagramVerifiedData] = useState(null);
     const [instagramVerificationError, setInstagramVerificationError] = useState('');
+    const [isManualFollowerEntry, setIsManualFollowerEntry] = useState(false);
 
     const minInstagramFollowers = siteSettings?.minInstagramFollowersToJoin !== undefined 
         ? Number(siteSettings.minInstagramFollowersToJoin) 
@@ -237,6 +238,7 @@ const CreatorJoin = () => {
 
         setIsInstagramVerifying(true);
         setInstagramVerificationError('');
+        setIsManualFollowerEntry(false);
 
         try {
             const isLocal = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
@@ -855,8 +857,13 @@ const CreatorJoin = () => {
                 } else {
                     const isVerified = Boolean(instagramVerifiedData && instagramVerifiedData.handle === cleanInsta);
 
-                    if (requireInstagramVerification && !isVerified) {
+                    if (requireInstagramVerification && !isVerified && !isManualFollowerEntry) {
                         useStore.getState().addToast("Please auto-verify your Instagram profile before proceeding.", 'warning');
+                        return;
+                    }
+
+                    if (isManualFollowerEntry && !formData.instagramFollowers) {
+                        useStore.getState().addToast("Please enter your follower count manually.", 'warning');
                         return;
                     }
 
@@ -1933,7 +1940,7 @@ const CreatorJoin = () => {
                                     )}
 
                                     {/* Verification Error Notice */}
-                                    {instagramVerificationError && !isInstagramVerifying && (
+                                    {instagramVerificationError && !isInstagramVerifying && !isManualFollowerEntry && (
                                         <motion.div
                                             initial={{ opacity: 0, y: -4 }}
                                             animate={{ opacity: 1, y: 0 }}
@@ -1961,15 +1968,64 @@ const CreatorJoin = () => {
                                                     <span className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0" />
                                                     <span>Profile must be set to <strong>Public</strong></span>
                                                 </div>
-                                                <button
-                                                    type="button"
+                                                <div className="flex items-center gap-2">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setIsManualFollowerEntry(true);
+                                                            setInstagramVerificationError('');
+                                                        }}
+                                                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-red-500/10 hover:bg-red-500/20 active:scale-95 text-red-600/90 dark:text-red-400/90 font-bold text-[10px] uppercase tracking-wider transition-all border border-red-500/20 cursor-pointer shrink-0"
+                                                    >
+                                                        Manual Entry
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleVerifyInstagram()}
+                                                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-red-500/15 hover:bg-red-500/25 active:scale-95 text-red-600 dark:text-red-400 font-black text-[10px] uppercase tracking-wider transition-all border border-red-500/30 cursor-pointer shrink-0"
+                                                    >
+                                                        <RefreshCw size={10} className="stroke-[2.5]" />
+                                                        <span>Retry</span>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </motion.div>
+                                    )}
+
+                                    {/* Manual Follower Entry */}
+                                    {isManualFollowerEntry && (
+                                        <motion.div
+                                            initial={{ opacity: 0, y: -4 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            className="space-y-1.5 pt-2"
+                                        >
+                                            <div className="flex items-center justify-between pl-1">
+                                                <label className="text-[11px] sm:text-xs font-black text-gray-700 dark:text-gray-300 uppercase tracking-widest">
+                                                    Manual Follower Count
+                                                </label>
+                                                <button 
+                                                    type="button" 
                                                     onClick={() => handleVerifyInstagram()}
-                                                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-red-500/15 hover:bg-red-500/25 active:scale-95 text-red-600 dark:text-red-400 font-black text-[10px] uppercase tracking-wider transition-all border border-red-500/30 cursor-pointer shrink-0"
+                                                    className="text-[10px] font-bold text-brand-purple hover:text-brand-purple/80 uppercase tracking-wider transition-colors"
                                                 >
-                                                    <RefreshCw size={10} className="stroke-[2.5]" />
-                                                    <span>Retry</span>
+                                                    Retry Auto-Verify
                                                 </button>
                                             </div>
+                                            <div className="relative group">
+                                                <div className="absolute inset-y-0 left-0 pl-3 sm:pl-3.5 flex items-center pointer-events-none">
+                                                    <Users size={16} className="text-gray-400 dark:text-zinc-500 group-focus-within:text-brand-purple transition-colors" />
+                                                </div>
+                                                <input
+                                                    type="number"
+                                                    placeholder={`e.g. ${minInstagramFollowers.toLocaleString()}`}
+                                                    value={formData.instagramFollowers || ''}
+                                                    onChange={e => setFormData({ ...formData, instagramFollowers: e.target.value })}
+                                                    className="w-full pl-9 sm:pl-10 pr-4 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl border border-gray-200 dark:border-zinc-800 bg-white/50 dark:bg-zinc-900/50 hover:bg-white dark:hover:bg-zinc-900 focus:bg-white dark:focus:bg-zinc-900 focus:ring-2 focus:ring-brand-purple/20 focus:border-brand-purple text-xs sm:text-sm text-gray-900 dark:text-white transition-all shadow-sm font-mono placeholder:font-sans"
+                                                />
+                                            </div>
+                                            <p className="text-[10px] text-gray-500 pl-1">
+                                                Enter your exact follower count. Minimum {minInstagramFollowers.toLocaleString()} required.
+                                            </p>
                                         </motion.div>
                                     )}
 
