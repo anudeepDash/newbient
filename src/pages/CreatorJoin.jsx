@@ -2012,67 +2012,87 @@ const CreatorJoin = () => {
                                                     : "bg-rose-500/[0.04] dark:bg-rose-500/[0.03] border-rose-500/25"
                                             )}
                                         >
-                                            <div className="flex items-center justify-between gap-3">
-                                                <div className="flex items-center gap-3 min-w-0">
-                                                    <div className="relative shrink-0">
-                                                        <div className="p-[2px] rounded-full bg-gradient-to-tr from-amber-500 via-rose-500 to-purple-600">
-                                                            {instagramVerifiedData.profilePic ? (
-                                                                <img
-                                                                    src={instagramVerifiedData.profilePic}
-                                                                    alt={instagramVerifiedData.name}
-                                                                    className="w-11 h-11 rounded-full object-cover bg-black/40 block"
-                                                                    onError={(e) => { e.currentTarget.style.display = 'none'; }}
-                                                                />
+                                            {(() => {
+                                                const rawHandle = instagramVerifiedData.handle || formData.instagram || '';
+                                                const cleanHandle = String(rawHandle).trim().replace(/^[@()]+|[()]+$/g, '');
+                                                let rawName = String(instagramVerifiedData.name || '').trim();
+                                                rawName = rawName.replace(/^["'‘“”’`()@\s]+|["'‘“”’`()@\s]+$/g, '').trim();
+                                                const isNameInvalid = !rawName || 
+                                                    rawName.length <= 1 || 
+                                                    ['‘', '’', "'", '"', '.', ' ', 'undefined', 'null'].includes(rawName) ||
+                                                    rawName.toLowerCase() === cleanHandle.toLowerCase() ||
+                                                    rawName.toLowerCase() === `@${cleanHandle.toLowerCase()}` ||
+                                                    rawName.startsWith('(@');
+                                                const finalDisplayName = isNameInvalid ? null : rawName;
+
+                                                return (
+                                                    <div className="flex items-center justify-between gap-3">
+                                                        <div className="flex items-center gap-3 min-w-0 flex-1">
+                                                            <div className="relative shrink-0">
+                                                                <div className="p-[2px] rounded-full bg-gradient-to-tr from-amber-500 via-rose-500 to-purple-600">
+                                                                    {instagramVerifiedData.profilePic ? (
+                                                                        <img
+                                                                            src={instagramVerifiedData.profilePic}
+                                                                            alt={cleanHandle}
+                                                                            className="w-12 h-12 rounded-full object-cover bg-black/40 block"
+                                                                            onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                                                                        />
+                                                                    ) : (
+                                                                        <div className="w-12 h-12 rounded-full bg-black/60 flex items-center justify-center text-white">
+                                                                            <Instagram size={18} />
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                                {instagramVerifiedData.meetsMinimumFollowers ? (
+                                                                    <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-emerald-500 text-black flex items-center justify-center shadow-xs">
+                                                                        <Check size={10} className="stroke-[3]" />
+                                                                    </div>
+                                                                ) : (
+                                                                    <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-rose-500 text-white flex items-center justify-center shadow-xs">
+                                                                        <AlertCircle size={10} className="stroke-[2.5]" />
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                            <div className="min-w-0 flex-1">
+                                                                <div className="flex items-center gap-1.5 min-w-0">
+                                                                    <span className="text-sm font-bold text-gray-900 dark:text-white truncate font-mono tracking-tight">
+                                                                        @{cleanHandle}
+                                                                    </span>
+                                                                    {instagramVerifiedData.isVerified && (
+                                                                        <span className="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full bg-sky-500 text-white shrink-0" title="Verified on Instagram">
+                                                                            <Check size={8} className="stroke-[3]" />
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                                {finalDisplayName ? (
+                                                                    <p className="text-[11px] text-gray-500 dark:text-zinc-400 truncate">
+                                                                        {finalDisplayName}
+                                                                    </p>
+                                                                ) : (
+                                                                    <p className="text-[10px] text-gray-400 dark:text-zinc-500 font-mono truncate">
+                                                                        Instagram Account
+                                                                    </p>
+                                                                )}
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Desktop Status Pill */}
+                                                        <div className="hidden sm:block shrink-0">
+                                                            {instagramVerifiedData.meetsMinimumFollowers ? (
+                                                                <div className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider px-3 py-1.5 rounded-xl bg-emerald-500 text-black shadow-xs font-mono">
+                                                                    <CheckCircle2 size={13} className="stroke-[2.5]" />
+                                                                    <span>Eligible to Join</span>
+                                                                </div>
                                                             ) : (
-                                                                <div className="w-11 h-11 rounded-full bg-black/60 flex items-center justify-center text-white">
-                                                                    <Instagram size={18} />
+                                                                <div className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-xl bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/25 font-mono">
+                                                                    <AlertCircle size={11} className="shrink-0" />
+                                                                    <span>Below {minInstagramFollowers >= 1000 ? `${(minInstagramFollowers / 1000).toFixed(minInstagramFollowers % 1000 === 0 ? 0 : 1)}K` : minInstagramFollowers} Min</span>
                                                                 </div>
                                                             )}
                                                         </div>
-                                                        {instagramVerifiedData.meetsMinimumFollowers ? (
-                                                            <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-emerald-500 text-black flex items-center justify-center shadow-xs">
-                                                                <Check size={10} className="stroke-[3]" />
-                                                            </div>
-                                                        ) : (
-                                                            <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-rose-500 text-white flex items-center justify-center shadow-xs">
-                                                                <AlertCircle size={10} className="stroke-[2.5]" />
-                                                            </div>
-                                                        )}
                                                     </div>
-                                                    <div className="min-w-0">
-                                                        <div className="flex items-center gap-1.5 flex-wrap">
-                                                            <span className="text-xs sm:text-sm font-black text-gray-900 dark:text-white truncate">
-                                                                {instagramVerifiedData.name && !['‘', '’', "'", '"', '.', ' '].includes(instagramVerifiedData.name.trim())
-                                                                    ? instagramVerifiedData.name 
-                                                                    : `@${instagramVerifiedData.handle}`}
-                                                            </span>
-                                                            {instagramVerifiedData.isVerified && (
-                                                                <span className="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full bg-sky-500 text-white shrink-0" title="Verified on Instagram">
-                                                                    <Check size={8} className="stroke-[3]" />
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                        <p className="text-[11px] text-gray-500 dark:text-zinc-400 font-mono truncate">
-                                                            @{instagramVerifiedData.handle}
-                                                        </p>
-                                                    </div>
-                                                </div>
-
-                                                {/* Desktop Status Pill */}
-                                                <div className="hidden sm:block shrink-0">
-                                                    {instagramVerifiedData.meetsMinimumFollowers ? (
-                                                        <div className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider px-3 py-1.5 rounded-xl bg-emerald-500 text-black shadow-xs font-mono">
-                                                            <CheckCircle2 size={13} className="stroke-[2.5]" />
-                                                            <span>Eligible to Join</span>
-                                                        </div>
-                                                    ) : (
-                                                        <div className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider px-3 py-1.5 rounded-xl bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/25 font-mono">
-                                                            <AlertCircle size={13} />
-                                                            <span>Below {minInstagramFollowers.toLocaleString()} Minimum</span>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </div>
+                                                );
+                                            })()}
 
                                             {/* Deficit / Progress Breakdown if Ineligible */}
                                             {!instagramVerifiedData.meetsMinimumFollowers && minInstagramFollowers > 0 && (
@@ -2117,8 +2137,8 @@ const CreatorJoin = () => {
                                                             </span>
                                                         </>
                                                     ) : (
-                                                        <span className="inline-flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-black/5 dark:bg-white/5 text-gray-500 dark:text-zinc-400 border border-black/5 dark:border-white/5 font-mono">
-                                                            Synced from Instagram
+                                                        <span className="text-[10px] text-gray-500 dark:text-zinc-500 flex items-center gap-1 font-mono">
+                                                            <Instagram size={11} className="text-pink-500 shrink-0" /> Synced
                                                         </span>
                                                     )}
                                                 </div>
