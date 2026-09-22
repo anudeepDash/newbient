@@ -43,12 +43,13 @@
   }
 
   html {
+    @apply overflow-x-hidden max-w-[100vw];
     background-color: var(--bg-primary);
     transition: background-color 0.3s ease;
   }
 
   body {
-    @apply font-sans overflow-x-hidden;
+    @apply font-sans overflow-x-hidden max-w-[100vw];
     background-color: var(--bg-primary);
     color: var(--text-primary);
     transition: background-color 0.3s ease, color 0.3s ease;

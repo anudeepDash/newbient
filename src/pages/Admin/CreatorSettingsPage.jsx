@@ -35,42 +35,42 @@ export const CreatorSettingsContent = () => {
             label: 'City Groups',
             icon: MapPin,
             count: creatorGroups?.length || 0,
-            color: 'text-neon-blue',
-            activeBg: 'bg-neon-blue/15 text-neon-blue border-neon-blue/30',
-            hoverBg: 'hover:bg-neon-blue/10 hover:text-neon-blue'
+            color: 'text-sky-600 dark:text-neon-blue',
+            activeBg: 'bg-sky-500/10 dark:bg-neon-blue/15 text-sky-600 dark:text-neon-blue border-sky-500/30 dark:border-neon-blue/30',
+            hoverBg: 'hover:bg-sky-500/5 dark:hover:bg-neon-blue/10 hover:text-sky-600 dark:hover:text-neon-blue'
         },
         {
             id: 'testimonials',
             label: 'Testimonials',
             icon: MessageSquareQuote,
             count: creatorTestimonials?.length || 0,
-            color: 'text-neon-pink',
-            activeBg: 'bg-neon-pink/15 text-neon-pink border-neon-pink/30',
-            hoverBg: 'hover:bg-neon-pink/10 hover:text-neon-pink'
+            color: 'text-rose-600 dark:text-neon-pink',
+            activeBg: 'bg-rose-500/10 dark:bg-neon-pink/15 text-rose-600 dark:text-neon-pink border-rose-500/30 dark:border-neon-pink/30',
+            hoverBg: 'hover:bg-rose-500/5 dark:hover:bg-neon-pink/10 hover:text-rose-600 dark:hover:text-neon-pink'
         },
         {
             id: 'brands',
             label: 'Brand Partners',
             icon: Building2,
             count: pastClients?.length || 0,
-            color: 'text-neon-green',
-            activeBg: 'bg-neon-green/15 text-neon-green border-neon-green/30',
-            hoverBg: 'hover:bg-neon-green/10 hover:text-neon-green'
+            color: 'text-emerald-600 dark:text-neon-green',
+            activeBg: 'bg-emerald-500/10 dark:bg-neon-green/15 text-emerald-600 dark:text-neon-green border-emerald-500/30 dark:border-neon-green/30',
+            hoverBg: 'hover:bg-emerald-500/5 dark:hover:bg-neon-green/10 hover:text-emerald-600 dark:hover:text-neon-green'
         },
         {
             id: 'program',
             label: 'Program & Rules',
             icon: Sliders,
-            color: 'text-neon-yellow',
-            activeBg: 'bg-neon-yellow/15 text-neon-yellow border-neon-yellow/30',
-            hoverBg: 'hover:bg-neon-yellow/10 hover:text-neon-yellow'
+            color: 'text-amber-600 dark:text-amber-400',
+            activeBg: 'bg-amber-500/10 dark:bg-amber-400/15 text-amber-600 dark:text-amber-400 border-amber-500/30 dark:border-amber-400/30',
+            hoverBg: 'hover:bg-amber-500/5 dark:hover:bg-amber-400/10 hover:text-amber-600 dark:hover:text-amber-400'
         }
     ];
 
     return (
         <div className="max-w-7xl mx-auto space-y-8 py-4">
             {/* Executive Sub-navigation Switcher */}
-            <div className="bg-white/80 dark:bg-zinc-900/50 backdrop-blur-2xl border border-black/10 dark:border-white/10 p-2 rounded-2xl sm:rounded-3xl shadow-sm">
+            <div className="bg-white dark:bg-[#0c0e14] border border-black/[0.08] dark:border-white/[0.08] p-1.5 sm:p-2 rounded-2xl sm:rounded-3xl shadow-sm">
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 sm:gap-2">
                     {subTabs.map(t => {
                         const Icon = t.icon;
@@ -121,15 +121,14 @@ const CreatorSettingsPage = () => {
         { name: 'Creators', path: '/admin/creators', icon: Star },
         { name: 'Campaigns', path: '/admin/campaigns', icon: Target },
         { name: 'Leaderboard', path: '/admin/creators/leaderboard', icon: Trophy },
-        { name: 'City Groups', path: '/admin/creators/settings?tab=groups', icon: MapPin },
         { name: 'Settings', path: '/admin/creators/settings', icon: Settings },
     ];
 
     return (
         <AdminCommunityHubLayout
             studioHeader={{
-                title: 'CREATOR',
-                subtitle: 'SETTINGS & CONTENT',
+                title: 'Creator',
+                subtitle: 'Settings & Content',
                 icon: Settings,
                 accentClass: 'text-neon-pink'
             }}

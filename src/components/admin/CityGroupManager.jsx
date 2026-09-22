@@ -159,8 +159,8 @@ const CityGroupManager = () => {
         <section className="space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="flex items-center gap-4 flex-1">
-                    <h2 className="text-xl font-black font-heading tracking-tight uppercase italic text-neon-blue flex items-center gap-2">
-                        <MapPin size={20} className="text-neon-blue" />
+                    <h2 className="text-xl font-black font-heading tracking-tight uppercase text-sky-600 dark:text-neon-blue flex items-center gap-2">
+                        <MapPin size={20} className="text-sky-600 dark:text-neon-blue" />
                         City-Wise Creator Groups
                     </h2>
                     <div className="flex-1 h-px bg-black/5 dark:bg-white/5" />
@@ -169,7 +169,7 @@ const CityGroupManager = () => {
                     <Button
                         type="button"
                         onClick={() => setManagingCityGroup(form.city === 'Others' ? (form.customCity || 'Bengaluru') : form.city)}
-                        className="h-10 px-4 rounded-xl bg-neon-blue/10 border border-neon-blue/30 text-neon-blue font-black text-[10px] uppercase tracking-wider hover:bg-neon-blue/20 flex items-center gap-1.5 transition-all"
+                        className="h-10 px-4 rounded-xl bg-sky-500/10 border border-sky-500/20 text-sky-600 dark:text-neon-blue font-black text-[10px] uppercase tracking-wider hover:bg-sky-500/20 flex items-center gap-1.5 transition-all"
                         title="Bulk add creators of any city to WhatsApp group"
                     >
                         <UserPlus size={13} />
@@ -178,7 +178,7 @@ const CityGroupManager = () => {
                     <Button
                         type="button"
                         onClick={() => setIsBroadcastModalOpen(true)}
-                        className="h-10 px-4 rounded-xl bg-[#25D366] text-black font-black text-[10px] uppercase tracking-wider hover:brightness-110 flex items-center gap-1.5 shadow-[0_0_20px_rgba(37,211,102,0.3)]"
+                        className="h-10 px-4 rounded-xl bg-[#25D366] text-black font-black text-[10px] uppercase tracking-wider hover:brightness-110 flex items-center gap-1.5 shadow-sm"
                     >
                         <Mail size={13} />
                         <span>Broadcast via Email</span>
@@ -200,7 +200,7 @@ const CityGroupManager = () => {
                 </div>
             </div>
 
-            <Card className="p-6 sm:p-8 bg-gray-100 dark:bg-zinc-900/40 backdrop-blur-3xl border-black/10 dark:border-white/5 rounded-[2.5rem] space-y-8">
+            <Card className="p-5 sm:p-8 bg-white dark:bg-[#0c0e14] border border-black/[0.08] dark:border-white/[0.08] rounded-3xl space-y-8 shadow-sm">
                 {/* Creation Form */}
                 <div className="space-y-5">
                     <div className="flex items-center justify-between">
@@ -318,7 +318,7 @@ const CityGroupManager = () => {
                             type="button"
                             onClick={handleAddGroup}
                             disabled={submitting || !form.groupUrl.trim()}
-                            className="h-11 px-6 rounded-xl bg-neon-blue text-black font-black text-[10px] uppercase tracking-widest hover:brightness-110 transition-all disabled:opacity-40 flex items-center gap-2"
+                            className="h-11 px-6 rounded-xl bg-neon-green text-black font-black text-[10px] uppercase tracking-widest hover:bg-emerald-400 transition-all disabled:opacity-40 flex items-center gap-2 shadow-sm"
                         >
                             <Plus size={14} /> Add City Group
                         </Button>
@@ -344,7 +344,7 @@ const CityGroupManager = () => {
                     </div>
 
                     {filteredGroups.length === 0 ? (
-                        <div className="p-8 text-center rounded-2xl bg-white/50 dark:bg-black/20 border border-black/5 dark:border-white/5 space-y-1">
+                        <div className="p-8 text-center rounded-2xl bg-black/[0.02] dark:bg-white/[0.02] border border-black/5 dark:border-white/5 space-y-1">
                             <p className="text-sm font-bold text-gray-700 dark:text-zinc-300">
                                 {creatorGroups?.length === 0 ? "No city creator groups added yet." : "No groups match your filter."}
                             </p>
@@ -366,8 +366,8 @@ const CityGroupManager = () => {
                                     <div
                                         key={group.id}
                                         className={cn(
-                                            "p-4 rounded-2xl bg-white dark:bg-black/30 border transition-all flex flex-col justify-between gap-3",
-                                            group.isActive !== false ? "border-black/10 dark:border-white/10" : "border-red-500/20 opacity-60"
+                                            "p-4 rounded-2xl bg-white dark:bg-[#0c0e14] border transition-all flex flex-col justify-between gap-3 shadow-sm",
+                                            group.isActive !== false ? "border-black/[0.08] dark:border-white/[0.08] hover:border-black/20 dark:hover:border-white/20" : "border-red-500/20 opacity-60"
                                         )}
                                     >
                                         <div className="space-y-2">
@@ -410,7 +410,7 @@ const CityGroupManager = () => {
                                                     href={group.groupUrl}
                                                     target="_blank"
                                                     rel="noopener noreferrer"
-                                                    className="inline-flex items-center gap-1 text-[11px] font-bold text-neon-blue hover:underline truncate"
+                                                    className="inline-flex items-center gap-1 text-[11px] font-bold text-sky-600 dark:text-neon-blue hover:underline truncate"
                                                 >
                                                     <ExternalLink size={12} className="shrink-0" />
                                                     <span className="truncate max-w-[150px] font-mono">{group.groupUrl}</span>

@@ -97,8 +97,8 @@ const BrandPartnersManager = () => {
         <section className="space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="flex items-center gap-4 flex-1">
-                    <h2 className="text-xl font-black font-heading tracking-tight uppercase italic text-neon-green flex items-center gap-2">
-                        <Building2 size={20} className="text-neon-green" />
+                    <h2 className="text-xl font-black font-heading tracking-tight uppercase text-emerald-600 dark:text-neon-green flex items-center gap-2">
+                        <Building2 size={20} className="text-emerald-600 dark:text-neon-green" />
                         Brand Partners &amp; Clients
                     </h2>
                     <div className="flex-1 h-px bg-black/5 dark:bg-white/5" />
@@ -129,7 +129,7 @@ const BrandPartnersManager = () => {
                 </div>
             )}
 
-            <Card className="p-6 sm:p-8 bg-gray-100 dark:bg-zinc-900/40 backdrop-blur-3xl border-black/10 dark:border-white/5 rounded-[2.5rem] space-y-8">
+            <Card className="p-5 sm:p-8 bg-white dark:bg-[#0c0e14] border border-black/[0.08] dark:border-white/[0.08] rounded-3xl space-y-8 shadow-sm">
                 {/* Add New Brand */}
                 <div className="space-y-5">
                     <div className="flex items-center justify-between">
@@ -217,7 +217,7 @@ const BrandPartnersManager = () => {
                     </p>
 
                     {(!pastClients || pastClients.length === 0) ? (
-                        <div className="p-8 text-center rounded-2xl bg-white/50 dark:bg-black/20 border border-black/5 dark:border-white/5 space-y-1">
+                        <div className="p-8 text-center rounded-2xl bg-black/[0.02] dark:bg-white/[0.02] border border-black/5 dark:border-white/5 space-y-1">
                             <p className="text-sm font-bold text-gray-700 dark:text-zinc-300">
                                 No custom brands added yet.
                             </p>
@@ -230,7 +230,7 @@ const BrandPartnersManager = () => {
                             {pastClients.map(client => (
                                 <div
                                     key={client.id}
-                                    className="p-3.5 rounded-2xl bg-white dark:bg-black/30 border border-black/10 dark:border-white/10 flex flex-col items-center justify-between gap-3 text-center group hover:border-neon-green/40 transition-all"
+                                    className="p-3.5 rounded-2xl bg-white dark:bg-[#0c0e14] border border-black/[0.08] dark:border-white/[0.08] flex flex-col items-center justify-between gap-3 text-center group hover:border-black/20 dark:hover:border-white/20 transition-all shadow-sm"
                                 >
                                     <div className="h-12 w-full flex items-center justify-center p-1">
                                         {client.logoUrl ? (
@@ -255,7 +255,7 @@ const BrandPartnersManager = () => {
                                                 href={client.websiteUrl}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
-                                                className="text-[9px] text-neon-blue hover:underline truncate block"
+                                                className="text-[9px] text-sky-600 dark:text-neon-blue hover:underline truncate block"
                                             >
                                                 {client.websiteUrl.replace(/^https?:\/\//, '')}
                                             </a>
