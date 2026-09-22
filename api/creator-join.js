@@ -274,8 +274,8 @@ const fetchInstagramProfile = async (rawHandle) => {
                             followers: parsedCount,
                             formattedFollowers: formatFollowerCount(parsedCount),
                             profilePic: profile.profilePicUrlHD || profile.profilePicUrl || null,
-                            isPrivate: Boolean(profile.isPrivate),
-                            isVerified: Boolean(profile.isVerified)
+                            isPrivate: Boolean(profile.isPrivate ?? profile.private),
+                            isVerified: Boolean(profile.isVerified ?? profile.verified)
                         };
                     }
                 }
