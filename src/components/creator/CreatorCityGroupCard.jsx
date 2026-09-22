@@ -163,26 +163,27 @@ const CreatorCityGroupCard = ({
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    const initialLetter = selectedCity ? selectedCity.charAt(0).toUpperCase() : 'W';
-
     return (
         <div className={cn(
-            "flex flex-col sm:flex-row items-center gap-4 bg-white dark:bg-[#0c0e14] p-3 rounded-2xl sm:rounded-full border border-gray-200 dark:border-white/10 shadow-sm transition-all",
+            "flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4 bg-white dark:bg-[#0c0e14] p-3 sm:p-3.5 rounded-2xl border border-gray-200 dark:border-white/10 shadow-sm transition-all",
             className
         )}>
             {/* Left Section: Icon and Text */}
-            <div className="flex items-center gap-3 flex-1 w-full sm:w-auto pl-1 sm:pl-2">
+            <div className="flex items-center gap-3 w-full sm:w-auto pl-1 sm:pl-1.5 min-w-0">
                 <div className="w-10 h-10 rounded-[14px] bg-[#e6f8ee] dark:bg-[#e6f8ee]/10 text-[#25D366] flex items-center justify-center shrink-0">
                     <WhatsAppIcon size={20} />
                 </div>
-                <div className="flex flex-col">
-                    <div className="flex items-center gap-1.5 text-[13px]">
-                        <span className="font-black text-gray-950 dark:text-white">{initialLetter}</span>
-                        <span className="text-[#1b9a59] dark:text-[#25D366] font-bold text-[18px] leading-[0.5] mt-[-2px]">•</span>
-                        <span className="font-bold text-[#1b9a59] dark:text-[#25D366]">Required</span>
+                <div className="flex flex-col min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-bold text-sm text-gray-950 dark:text-white">
+                            {selectedCity ? `${selectedCity} Creators` : 'WhatsApp Community'}
+                        </span>
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-mono font-bold tracking-wider bg-emerald-500/10 dark:bg-neon-green/10 text-emerald-700 dark:text-neon-green border border-emerald-500/20 dark:border-neon-green/20 shrink-0">
+                            Required
+                        </span>
                     </div>
-                    <span className="text-[11px] text-gray-500 dark:text-zinc-400 truncate max-w-[180px] sm:max-w-[220px]">
-                        Brand briefs, concert passes...
+                    <span className="text-[11px] text-gray-500 dark:text-zinc-400 mt-0.5">
+                        Brand briefs, concert guestlists &amp; deliverables
                     </span>
                 </div>
             </div>

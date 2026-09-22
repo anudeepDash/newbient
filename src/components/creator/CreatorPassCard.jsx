@@ -392,45 +392,47 @@ const CreatorPassCard = ({
                     animate={{ opacity: 1, y: 0 }}
                     className="w-full mt-3.5"
                 >
-                    <div className="p-3 sm:p-3.5 rounded-2xl bg-white dark:bg-[#0c0e14] border border-black/[0.08] dark:border-white/[0.08] flex items-center justify-between gap-2.5 sm:gap-3 shadow-xs">
-                        <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                            <div className="w-8 h-8 rounded-xl bg-[#25D366]/15 text-[#25D366] flex items-center justify-center shrink-0">
-                                <WhatsAppIcon size={16} />
+                    <div className="p-3.5 sm:p-4 rounded-2xl bg-white dark:bg-[#0c0e14] border border-black/[0.08] dark:border-white/[0.08] flex flex-col gap-3 shadow-xs">
+                        {/* Top Row: Info & Required badge */}
+                        <div className="flex items-center gap-2.5 min-w-0">
+                            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-[#25D366]/15 text-[#25D366] flex items-center justify-center shrink-0">
+                                <WhatsAppIcon size={18} />
                             </div>
                             <div className="min-w-0 flex-1">
-                                <div className="flex items-center gap-1.5">
-                                    <p className="text-xs font-bold text-gray-900 dark:text-white truncate">
-                                        {currentGroup?.city} Creators WhatsApp
+                                <div className="flex items-center gap-2 flex-wrap">
+                                    <p className="text-xs sm:text-sm font-bold text-gray-900 dark:text-white">
+                                        {currentGroup?.city || selectedCity} Creators WhatsApp
                                     </p>
                                     <span className="text-[9px] font-mono text-emerald-600 dark:text-neon-green font-bold shrink-0">
                                         • Required
                                     </span>
                                 </div>
-                                <p className="text-[10px] text-gray-500 dark:text-zinc-400 truncate">
+                                <p className="text-[10px] sm:text-[11px] text-gray-500 dark:text-zinc-400 mt-0.5">
                                     Brand briefs, concert guestlists &amp; deliverables
                                 </p>
                             </div>
                         </div>
 
-                        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-                            {(!profile?.city || profile.city === 'Pan-India') && (
-                                <>
+                        {/* Bottom Row: Location Selector & Join CTA */}
+                        <div className="flex items-center justify-between gap-2 pt-2.5 border-t border-black/[0.06] dark:border-white/[0.06]">
+                            {(!profile?.city || profile.city === 'Pan-India') ? (
+                                <div className="flex items-center gap-1.5 flex-1 min-w-0">
                                     <button
                                         type="button"
                                         onClick={() => handleAutoDetectLocation(false)}
                                         disabled={isLocating}
                                         title={isAutoDetected ? `Auto-detected: ${selectedCity}` : "Auto-detect my location"}
                                         className={cn(
-                                            "h-8 px-2 sm:px-2.5 rounded-xl border flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer shrink-0",
+                                            "h-8 px-2 sm:px-2.5 rounded-xl border flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer shrink-0 active:scale-95",
                                             isAutoDetected
                                                 ? "bg-emerald-500/15 border-emerald-500/30 text-emerald-700 dark:text-neon-green"
                                                 : "bg-black/[0.03] dark:bg-white/[0.05] border-black/[0.08] dark:border-white/[0.08] text-gray-600 dark:text-zinc-400 hover:text-black dark:hover:text-white"
                                         )}
                                     >
                                         <MapPin size={11} className={isLocating ? "animate-pulse text-emerald-600 dark:text-neon-green" : ""} />
-                                        <span className="hidden sm:inline">{isLocating ? "Locating..." : isAutoDetected ? "Auto" : "Detect"}</span>
+                                        <span>{isLocating ? "Locating..." : isAutoDetected ? "Auto" : "Detect"}</span>
                                     </button>
-                                    <div className="w-24 xs:w-28 sm:w-36 shrink-0">
+                                    <div className="flex-1 max-w-[180px] min-w-[110px]">
                                         <StudioSelect
                                             value={selectedCity}
                                             onChange={(val) => {
@@ -443,13 +445,18 @@ const CreatorPassCard = ({
                                             searchable={false}
                                         />
                                     </div>
-                                </>
+                                </div>
+                            ) : (
+                                <div className="flex items-center gap-1.5 text-[11px] text-gray-500 dark:text-zinc-400 font-medium">
+                                    <MapPin size={12} className="text-emerald-500 shrink-0" />
+                                    <span>City: <strong className="text-gray-900 dark:text-white font-semibold">{profile.city}</strong></span>
+                                </div>
                             )}
                             <a
                                 href={currentGroup?.groupUrl}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="h-8 px-3 sm:px-3.5 rounded-xl bg-gray-950 dark:bg-white text-white dark:text-black hover:bg-black dark:hover:bg-zinc-200 font-bold text-[10px] uppercase tracking-wider flex items-center gap-1 transition-all shadow-xs shrink-0"
+                                className="h-8 px-3.5 sm:px-4 rounded-xl bg-gray-950 dark:bg-white text-white dark:text-black hover:bg-black dark:hover:bg-zinc-200 font-bold text-[10px] sm:text-[11px] uppercase tracking-wider flex items-center gap-1 transition-all shadow-xs shrink-0 active:scale-95 ml-auto"
                             >
                                 <span>Join</span>
                                 <ArrowRight size={11} />
