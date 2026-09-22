@@ -175,12 +175,14 @@ const fetchInstagramProfile = async (rawHandle) => {
         }
     };
 
+    let crawlerErrors = [];
     try {
         // Fire crawlers concurrently, first to succeed wins immediately
         const result = await Promise.any(crawlers.map(ua => fetchWithUA(ua)));
         return result;
     } catch (err) {
-        console.warn('[API/CREATOR-JOIN] All concurrent social crawlers failed.');
+        crawlerErrors = err.errors ? err.errors.map(e => e.message) : [err.message];
+        console.warn('[API/CREATOR-JOIN] All concurrent social crawlers failed.', crawlerErrors);
     }
 
     // Strategy 2: External RapidAPI fallback if key provided
@@ -208,15 +210,19 @@ const fetchInstagramProfile = async (rawHandle) => {
                         isVerified: Boolean(rapidData.is_verified)
                     };
                 }
+            } else {
+                crawlerErrors.push(`RapidAPI HTTP ${rapidRes.status}`);
             }
         } catch (err) {
+            crawlerErrors.push(`RapidAPI Error: ${err.message}`);
             console.warn('[API/CREATOR-JOIN] RapidAPI notice:', err.message);
         }
     }
 
     return {
         success: false,
-        error: `@${cleanHandle} was not found on Instagram. Please verify the handle spelling.`
+        error: `@${cleanHandle} was not found on Instagram. Please verify the handle spelling.`,
+        debug: crawlerErrors
     };
 };
 
