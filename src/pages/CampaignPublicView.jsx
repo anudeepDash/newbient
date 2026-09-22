@@ -19,7 +19,8 @@ const CampaignPublicView = () => {
 
     useEffect(() => {
         if (!campaigns || campaigns.length === 0) return;
-        const found = campaigns.find(c => c.id === id);
+        const targetId = (id || '').toLowerCase();
+        const found = campaigns.find(c => c.id === id || (c.id && c.id.toLowerCase() === targetId));
         if (found) {
             setCampaign(found);
             setNotFound(false);
