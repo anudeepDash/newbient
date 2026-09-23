@@ -640,73 +640,30 @@ const CreatorDashboard = () => {
             {/* Ambient background */}
             <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
                 <div className="absolute -top-24 left-1/3 w-[500px] h-[300px] bg-neon-green/[0.025] dark:bg-neon-green/[0.02] rounded-full blur-[120px]" />
+                <div className="hidden dark:block absolute inset-0" style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px)', backgroundSize: '60px 60px' }} />
             </div>
 
             {/* ─── Scrollable Content ─────────────────────────────────────────── */}
             <div className="relative z-10 max-w-3xl mx-auto px-4 pt-20 pb-28 sm:pt-28 sm:pb-12 sm:px-6">
 
-                {/* ── Profile Hero ─────────────────────────────────────────────── */}
-                <div className="flex items-center gap-3 mb-5">
-                    {/* Avatar */}
-                    <div className="relative shrink-0">
-                        <div className="w-12 h-12 rounded-2xl bg-gray-100 dark:bg-zinc-800 border border-black/[0.08] dark:border-white/[0.08] overflow-hidden shadow-sm">
-                            {profile.profilePicture
-                                ? <img src={profile.profilePicture} alt={profile.name} className="w-full h-full object-cover" />
-                                : <div className="w-full h-full flex items-center justify-center font-black text-lg text-neon-green">{profile.name?.charAt(0) || 'C'}</div>}
-                        </div>
-                        {profile.profileStatus === 'approved' && (
-                            <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-emerald-500 dark:bg-neon-green border-2 border-white dark:border-[#08090d] flex items-center justify-center">
-                                <Check size={8} className="text-white dark:text-black" strokeWidth={3} />
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Name + meta */}
-                    <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                            <h1 className="text-lg font-black font-heading tracking-tight text-gray-950 dark:text-white leading-tight">{profile.name}</h1>
-                            {profile.profileStatus !== 'approved' && (
-                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-400 text-[9px] font-black uppercase tracking-wider font-mono">
-                                    <Clock size={9} /> Pending
-                                </span>
-                            )}
-                        </div>
-                        <div className="flex items-center gap-2 mt-0.5 text-[11px] text-gray-500 dark:text-zinc-400 flex-wrap">
-                            <span>{creatorHandle}</span>
-                            <span className="opacity-30">·</span>
-                            <span className="flex items-center gap-0.5"><MapPin size={10} className="text-neon-green" />{profile.city || 'Pan-India'}</span>
-                            <span className="opacity-30">·</span>
-                            <button
-                                type="button"
-                                onClick={handleCopyCreatorId}
-                                className="inline-flex items-center gap-1 font-mono text-[10px] bg-black/[0.05] dark:bg-white/[0.06] px-1.5 py-0.5 rounded-md hover:bg-black/[0.09] dark:hover:bg-white/[0.1] transition-colors"
-                                title="Copy Creator ID"
-                            >
-                                {creatorId}
-                                {copiedId ? <Check size={9} className="text-neon-green" /> : <Copy size={9} className="opacity-50" />}
-                            </button>
-                        </div>
-                    </div>
-
-                    {/* Settings */}
-                    <button
-                        type="button"
-                        onClick={() => openProfilePanel('creator')}
-                        className="w-9 h-9 rounded-xl bg-white dark:bg-white/[0.05] border border-black/[0.08] dark:border-white/[0.08] flex items-center justify-center text-gray-600 dark:text-zinc-300 hover:bg-gray-100 dark:hover:bg-white/[0.08] transition-colors shadow-sm shrink-0"
-                        aria-label="Edit Profile"
-                    >
-                        <Settings size={15} />
-                    </button>
-                </div>
-
-                {/* ── Creator Pass Card ────────────────────────────────────────── */}
-                <div className="mb-8 mt-2">
+                {/* ── Creator Identity (Redesigned) ─────────────────────────────────── */}
+                <div className="relative w-full max-w-[480px] mx-auto mb-10 mt-4">
                     <CreatorPassCard 
                         profile={profile} 
                         hideAction={true} 
                         showWhatsAppGroup={true} 
-                        className="max-w-none"
+                        className="w-full"
                     />
+                    
+                    {/* Floating Settings Button */}
+                    <button
+                        type="button"
+                        onClick={() => openProfilePanel('creator')}
+                        className="absolute -top-3 -right-3 z-50 w-11 h-11 rounded-full bg-white dark:bg-[#0c0e14] border border-gray-200 dark:border-white/10 shadow-lg flex items-center justify-center text-gray-600 dark:text-zinc-300 hover:scale-105 active:scale-95 transition-transform"
+                        aria-label="Edit Profile"
+                    >
+                        <Settings size={18} />
+                    </button>
                 </div>
 
                 {/* ── Phone Verification Banner (slim, dismissable) ─────────────── */}
@@ -771,7 +728,7 @@ const CreatorDashboard = () => {
                             type="button"
                             whileTap={{ scale: 0.97 }}
                             onClick={stat.onClick}
-                            className="bg-white dark:bg-[#0c0e14] border border-black/[0.07] dark:border-white/[0.07] rounded-2xl p-3.5 text-left shadow-sm hover:border-black/[0.12] dark:hover:border-white/[0.12] transition-colors group"
+                            className="bg-white/80 dark:bg-white/[0.02] backdrop-blur-xl border border-black/[0.05] dark:border-white/[0.05] rounded-[20px] p-4 text-left shadow-sm hover:border-black/[0.1] dark:hover:border-white/[0.1] transition-colors group flex flex-col justify-center"
                         >
                             <div className={`text-xl font-black font-heading leading-none mb-1 ${stat.accent ? 'text-emerald-600 dark:text-neon-green' : 'text-gray-950 dark:text-white'}`}>
                                 {stat.value}
@@ -797,7 +754,7 @@ const CreatorDashboard = () => {
                 )}
 
                 {/* ── Desktop Tab Bar ───────────────────────────────────────────── */}
-                <div className="hidden sm:flex items-center gap-1 bg-white dark:bg-[#0c0e14] border border-black/[0.07] dark:border-white/[0.07] rounded-2xl p-1 mb-5 shadow-sm">
+                <div className="hidden sm:flex items-center gap-1 bg-white/80 dark:bg-white/[0.02] backdrop-blur-xl border border-black/[0.05] dark:border-white/[0.05] rounded-2xl p-1 mb-5 shadow-sm">
                     {tabs.map(tab => {
                         const Icon = tab.icon;
                         const isActive = activeTab === tab.id;
@@ -810,7 +767,7 @@ const CreatorDashboard = () => {
                                     'relative flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all',
                                     isActive
                                         ? 'bg-black dark:bg-white text-white dark:text-black shadow-sm'
-                                        : 'text-gray-500 dark:text-zinc-400 hover:text-gray-800 dark:hover:text-white'
+                                        : 'text-gray-500 dark:text-zinc-400 hover:text-gray-800 dark:hover:text-white hover:bg-black/[0.03] dark:hover:bg-white/[0.03]'
                                 )}
                             >
                                 <Icon size={13} />
