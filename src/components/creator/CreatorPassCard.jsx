@@ -195,40 +195,25 @@ const CreatorPassCard = ({
 
     return (
         <div className={cn("w-full max-w-[480px] mx-auto select-none", className)}>
-            {/* Outer 3D Perspective Stage */}
-            <motion.div
-                ref={cardRef}
-                onMouseMove={handleMouseMove}
-                onMouseLeave={handleMouseLeave}
-                onTouchMove={handleTouchMove}
-                onTouchEnd={handleTouchEnd}
-                style={{ 
-                    perspective: 1200,
-                    WebkitPerspective: 1200,
-                    touchAction: "pan-y",
-                }}
-                className="relative group"
-            >
-                {/* Ambient Aura: Soft clean shadow, zero muddy green in Light Mode */}
-                <div className="absolute -inset-2 rounded-[2.5rem] blur-2xl transition-opacity duration-700 pointer-events-none opacity-0 dark:opacity-30 dark:bg-neon-green/10" />
+            {/* Minimalist Flat Card Container */}
+            <div className="relative group" style={{ perspective: 1000 }}>
+                {/* Subtle Ambient Aura */}
+                <div className="absolute -inset-2 rounded-[2.5rem] blur-xl transition-opacity duration-700 pointer-events-none opacity-0 dark:opacity-20 dark:bg-neon-green/5" />
 
-                {/* 3D Tilting Card Container (One-Sided Luxury Pass) */}
                 <motion.div
+                    ref={cardRef}
+                    onMouseMove={handleMouseMove}
+                    onMouseLeave={handleMouseLeave}
+                    onTouchMove={handleTouchMove}
+                    onTouchEnd={handleTouchEnd}
                     style={{
                         rotateX,
                         rotateY,
-                        transformStyle: "preserve-3d",
-                        WebkitTransformStyle: "preserve-3d",
-                        WebkitBackfaceVisibility: "hidden",
-                        backfaceVisibility: "hidden",
-                        WebkitMaskImage: "-webkit-radial-gradient(white, black)",
+                        transformStyle: "preserve-3d"
                     }}
                     className={cn(
-                        "relative w-full aspect-[1.586/1] min-h-[210px] sm:min-h-[260px] rounded-[20px] sm:rounded-[26px] p-4 sm:p-6 backdrop-blur-2xl flex flex-col justify-between overflow-hidden transition-colors duration-300 will-change-transform",
-                        // Light Mode: Crisp White Ceramic with razor-sharp contrast
-                        "bg-white text-gray-900 border border-black/[0.08] shadow-[0_20px_45px_-15px_rgba(0,0,0,0.07),0_1px_2px_rgba(0,0,0,0.03)] ring-1 ring-black/[0.02]",
-                        // Dark Mode: Matte Obsidian Titanium with Newbi Green accent
-                        "dark:bg-[#0B0D13] dark:text-white dark:border-white/10 dark:ring-1 dark:ring-neon-green/20 dark:shadow-[0_25px_60px_-15px_rgba(0,0,0,0.9)]"
+                        "relative w-full aspect-[1.586/1] min-h-[210px] sm:min-h-[260px] rounded-2xl p-4 sm:p-6 flex flex-col justify-between overflow-hidden transition-colors duration-300",
+                        "bg-white dark:bg-[#0c0e14] border border-black/[0.07] dark:border-white/[0.07] shadow-sm dark:shadow-[0_8px_30px_rgba(0,0,0,0.5)] text-gray-900 dark:text-white"
                     )}
                 >
                     {/* Dynamic Glare Overlay (Clean Specular Highlight) */}
@@ -248,7 +233,7 @@ const CreatorPassCard = ({
                         </div>
 
                         <div className="flex items-center gap-2">
-                            <span className="text-[10px] font-mono tracking-widest text-gray-400 dark:text-zinc-500 font-semibold px-2 py-0.5 rounded-md bg-black/[0.03] dark:bg-white/[0.05] border border-black/[0.04] dark:border-white/[0.05]">
+                            <span className="text-[10px] font-mono tracking-widest text-gray-500 dark:text-zinc-400 font-semibold px-2 py-0.5 rounded-md bg-gray-100 dark:bg-white/[0.05] border border-gray-200 dark:border-white/[0.05]">
                                 {data.passId}
                             </span>
                         </div>
@@ -292,7 +277,7 @@ const CreatorPassCard = ({
                                         <CheckCircle2 size={10} /> VERIFIED
                                     </div>
                                 ) : (
-                                    <div className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-gray-500/20 border border-gray-500/40 text-gray-700 dark:text-gray-300 text-[8px] font-black uppercase tracking-wider font-mono shrink-0">
+                                    <div className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-gray-200 dark:bg-gray-800 text-gray-500 dark:text-gray-400 text-[8px] font-black uppercase tracking-wider font-mono shrink-0">
                                         UNVERIFIED
                                     </div>
                                 )}
@@ -383,7 +368,7 @@ const CreatorPassCard = ({
                         )}
                     </div>
                 </motion.div>
-            </motion.div>
+            </div>
 
             {/* Optional Companion City Group Join Card */}
             {showWhatsAppGroup && (

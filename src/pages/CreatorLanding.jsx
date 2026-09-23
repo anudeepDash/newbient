@@ -17,6 +17,8 @@ import NotificationBell from '../components/NotificationBell';
 import PastClients from '../components/home/PastClients';
 import CreatorPassCard from '../components/creator/CreatorPassCard';
 import CampaignDetailModal from '../components/creator/CampaignDetailModal';
+import CampaignCard from '../components/ui/CampaignCard';
+import { HorizontalCarousel } from '../components/ui/HorizontalCarousel';
 import newbiCreatorsLogoDark from '../assets/newbi-creators-logo.png';
 import newbiCreatorsLogoLight from '../assets/newbi-creators-logo-light.png';
 
@@ -92,8 +94,17 @@ const CreatorLanding = () => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [openFaq, setOpenFaq] = useState(null);
     const [selectedCampaignForModal, setSelectedCampaignForModal] = useState(null);
+    const [isScrolled, setIsScrolled] = useState(false);
 
     const [resolvedCreator, setResolvedCreator] = useState(null);
+
+    useEffect(() => {
+        const handleScroll = () => {
+            setIsScrolled(window.scrollY > 50);
+        };
+        window.addEventListener('scroll', handleScroll);
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
 
     useEffect(() => {
         if (user) {
@@ -230,19 +241,12 @@ const CreatorLanding = () => {
     ];
 
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-[#07090E] text-gray-900 dark:text-white selection:bg-neon-green selection:text-black font-heading transition-colors duration-300 relative overflow-x-hidden">
+        <div className="min-h-screen bg-[#fafafa] dark:bg-[#08090d] text-gray-900 dark:text-white selection:bg-neon-green selection:text-black font-heading transition-colors duration-300 relative overflow-x-hidden">
 
             {/* Ambient Background Effects */}
             <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
-                {/* Primary glows - dark mode */}
-                <div className="hidden dark:block absolute top-[-15%] right-[-10%] w-[70%] h-[70%] bg-neon-green/8 rounded-full blur-[200px]" />
-                <div className="hidden dark:block absolute bottom-[-15%] left-[-10%] w-[60%] h-[60%] bg-purple-600/8 rounded-full blur-[200px]" />
-                <div className="hidden dark:block absolute top-[30%] left-[20%] w-[40%] h-[40%] bg-blue-500/4 rounded-full blur-[180px]" />
-                {/* Subtle grid overlay - dark mode */}
+                <div className="absolute -top-24 left-1/3 w-[500px] h-[300px] bg-neon-green/[0.025] dark:bg-neon-green/[0.02] rounded-full blur-[120px]" />
                 <div className="hidden dark:block absolute inset-0" style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px)', backgroundSize: '60px 60px' }} />
-                {/* Light mode glows */}
-                <div className="dark:hidden absolute top-[-10%] right-[-5%] w-[50%] h-[50%] bg-neon-green/6 rounded-full blur-[160px]" />
-                <div className="dark:hidden absolute bottom-[-10%] left-[-5%] w-[40%] h-[40%] bg-emerald-300/8 rounded-full blur-[140px]" />
             </div>
 
             {/* ===== FLOATING NAVBAR ===== */}
@@ -425,115 +429,105 @@ const CreatorLanding = () => {
             {/* ===== MAIN CONTENT ===== */}
             <main className="relative z-10">
 
-                {/* 1. HERO SECTION */}
-                <section className="relative min-h-[92vh] flex items-center pt-28 pb-16 md:pt-32 md:pb-24 overflow-hidden">
-                    <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-12 w-full">
-                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-14 items-center">
-                            
-                            {/* Left Column: Hero Narrative */}
-                            <motion.div 
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ duration: 0.5 }}
-                                className="lg:col-span-7 space-y-6 text-left"
+                {/* 1. HERO SECTION (Apple-esque Minimalist) */}
+                <section className="relative min-h-[92vh] flex flex-col items-center justify-center pt-32 pb-16 md:pt-40 md:pb-24 overflow-hidden">
+                    <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-12 w-full flex flex-col items-center">
+                        
+                        {/* Center Column: Hero Narrative */}
+                        <motion.div 
+                            initial={{ opacity: 0, y: 30 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+                            className="w-full max-w-4xl mx-auto text-center space-y-8"
+                        >
+                            {/* Warm Conversational Greeting */}
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.95 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                transition={{ duration: 0.5, delay: 0.1 }}
+                                className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-gray-100 dark:bg-white/[0.04] border border-gray-200/50 dark:border-white/[0.05] text-xs sm:text-sm font-medium text-gray-600 dark:text-zinc-300 mx-auto"
                             >
-                                {/* Warm Conversational Greeting (No pill, pure natural typography) */}
-                                <motion.div
-                                    initial={{ opacity: 0, y: -6 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ duration: 0.4 }}
-                                    className="flex items-center gap-2.5 text-sm sm:text-base font-semibold text-emerald-600 dark:text-neon-green tracking-tight"
-                                >
-                                    <span className="relative flex h-2 w-2">
-                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-neon-green opacity-75" />
-                                        <span className="relative inline-flex rounded-full h-2 w-2 bg-neon-green" />
-                                    </span>
-                                    <span>{greetingText}</span>
-                                </motion.div>
-
-                                {/* Refined Display Headline (Multi-line enabled) */}
-                                <h1 className="text-3xl sm:text-4xl lg:text-[3.25rem] font-bold tracking-tight leading-[1.14] text-gray-950 dark:text-white max-w-2xl">
-                                    Turn Your Influence Into Unforgettable{" "}
-                                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-green to-emerald-400">
-                                        Experiences.
-                                    </span>
-                                </h1>
-
-                                {/* Narrative Description */}
-                                <p className="text-gray-600 dark:text-zinc-400 text-sm sm:text-base leading-relaxed max-w-lg font-normal">
-                                    Collaborate with iconic brands, secure front-row concert passes, and earn redeemable points — all on one verified creator platform. 0% agency fees. 100% creator-first.
-                                </p>
-
-                                {/* CTAs */}
-                                <div className="flex flex-wrap items-center gap-3 pt-1">
-                                    {isActualCreator ? (
-                                        <button 
-                                            onClick={() => navigate('/creator-dashboard')}
-                                            className="h-11 sm:h-12 px-6 rounded-xl bg-neon-green hover:bg-[#a8ff6f] text-black font-black uppercase tracking-wider text-xs transition-all flex items-center justify-center gap-2 shadow-[0_0_25px_rgba(57,255,20,0.45)] hover:shadow-[0_0_40px_rgba(57,255,20,0.6)] hover:-translate-y-0.5 active:translate-y-0 group"
-                                        >
-                                            <span>Open Creator Dashboard</span>
-                                            <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
-                                        </button>
-                                    ) : (
-                                        <>
-                                            <button 
-                                                onClick={() => navigate('/creator/join')}
-                                                className="h-11 sm:h-12 px-6 rounded-xl bg-neon-green hover:bg-[#a8ff6f] text-black font-black uppercase tracking-wider text-xs transition-all flex items-center justify-center gap-2 shadow-[0_0_25px_rgba(57,255,20,0.45)] hover:shadow-[0_0_40px_rgba(57,255,20,0.6)] hover:-translate-y-0.5 active:translate-y-0 group"
-                                            >
-                                                <span>Apply as Creator</span>
-                                                <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
-                                            </button>
-                                            <a 
-                                                href="#advantages"
-                                                className="h-11 sm:h-12 px-5 rounded-xl bg-white dark:bg-white/[0.05] hover:bg-gray-100 dark:hover:bg-white/[0.1] border border-gray-200 dark:border-white/[0.1] text-gray-700 dark:text-zinc-300 font-semibold uppercase tracking-wider text-xs transition-all flex items-center justify-center gap-2 shadow-sm hover:-translate-y-0.5"
-                                            >
-                                                <Zap size={12} className="text-neon-green" />
-                                                <span>Explore Perks</span>
-                                            </a>
-                                        </>
-                                    )}
-                                </div>
-
-                                {/* Premium Metric Cards */}
-                                <div className="pt-5 border-t border-gray-200/60 dark:border-white/[0.06] grid grid-cols-2 sm:grid-cols-4 gap-3">
-                                    {[
-                                        { val: '2,400+', label: 'Active Creators', color: 'from-neon-green/20 to-emerald-400/5', borderColor: 'border-neon-green/20', glowColor: 'shadow-neon-green/10' },
-                                        { val: '60+', label: 'Brand Partners', color: 'from-blue-500/20 to-blue-400/5', borderColor: 'border-blue-400/20', glowColor: 'shadow-blue-400/10' },
-                                        { val: '12', label: 'Metros & Hubs', color: 'from-purple-500/20 to-purple-400/5', borderColor: 'border-purple-400/20', glowColor: 'shadow-purple-400/10' },
-                                        { val: '100%', label: 'Free to Join', color: 'from-amber-400/20 to-amber-300/5', borderColor: 'border-amber-400/20', glowColor: 'shadow-amber-400/10' },
-                                    ].map((m, i) => (
-                                        <motion.div
-                                            key={i}
-                                            initial={{ opacity: 0, y: 15 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                            transition={{ duration: 0.4, delay: 0.5 + i * 0.1 }}
-                                            className={`relative p-3.5 sm:p-4 rounded-2xl bg-gradient-to-br ${m.color} border ${m.borderColor} backdrop-blur-sm shadow-lg ${m.glowColor} hover:scale-[1.03] transition-transform duration-300 overflow-hidden group`}
-                                        >
-                                            {/* Background shimmer */}
-                                            <div className="absolute inset-0 bg-white/50 dark:bg-black/20 rounded-2xl" />
-                                            <div className="relative z-10 flex flex-col justify-center">
-                                                <p className="text-xl sm:text-2xl font-black text-gray-900 dark:text-white leading-none tracking-tight">
-                                                    {m.val}
-                                                </p>
-                                                <p className="text-[10px] sm:text-[11px] font-bold uppercase tracking-widest text-gray-500 dark:text-zinc-400 mt-1.5 leading-tight whitespace-nowrap">
-                                                    {m.label}
-                                                </p>
-                                            </div>
-                                        </motion.div>
-                                    ))}
-                                </div>
+                                <span className="relative flex h-2 w-2">
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-neon-green opacity-75" />
+                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-neon-green" />
+                                </span>
+                                <span>{greetingText}</span>
                             </motion.div>
 
-                            {/* Right Column: Prestigious Creator Pass Card */}
-                            <div className="lg:col-span-5 flex justify-center lg:justify-end">
-                                <CreatorPassCard 
-                                    profile={activeCreator} 
-                                    isPreview={!activeCreator} 
-                                    showWhatsAppGroup={true}
-                                />
-                            </div>
+                            {/* Massive Display Headline */}
+                            <h1 className="text-4xl sm:text-6xl lg:text-[5.5rem] font-semibold tracking-tighter leading-[1.05] text-gray-900 dark:text-white mx-auto">
+                                Turn Your Influence Into <br className="hidden sm:block" />
+                                <span className="text-transparent bg-clip-text bg-gradient-to-b from-gray-900 to-gray-500 dark:from-white dark:to-zinc-500">
+                                    Unforgettable Experiences.
+                                </span>
+                            </h1>
 
-                        </div>
+                            {/* Narrative Description */}
+                            <p className="text-lg sm:text-xl text-gray-500 dark:text-zinc-400 font-medium max-w-2xl mx-auto leading-relaxed">
+                                Collaborate with iconic brands, secure front-row concert passes, and earn redeemable points — all on one verified creator platform.
+                            </p>
+
+                            {/* CTAs */}
+                            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
+                                {isActualCreator ? (
+                                    <button 
+                                        onClick={() => navigate('/creator-dashboard')}
+                                        className="h-14 px-8 rounded-full bg-gray-900 dark:bg-white hover:bg-black dark:hover:bg-gray-100 text-white dark:text-black font-semibold text-[15px] transition-all flex items-center justify-center gap-2 shadow-sm hover:scale-105 active:scale-95 group w-full sm:w-auto"
+                                    >
+                                        <span>Open Dashboard</span>
+                                        <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
+                                    </button>
+                                ) : (
+                                    <>
+                                        <button 
+                                            onClick={() => navigate('/creator/join')}
+                                            className="h-14 px-8 rounded-full bg-neon-green hover:bg-[#a8ff6f] text-black font-semibold text-[15px] transition-all flex items-center justify-center gap-2 shadow-[0_4px_14px_rgba(57,255,20,0.2)] hover:shadow-[0_6px_20px_rgba(57,255,20,0.3)] hover:scale-105 active:scale-95 group w-full sm:w-auto"
+                                        >
+                                            <span>Apply as Creator</span>
+                                            <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
+                                        </button>
+                                        <a 
+                                            href="#advantages"
+                                            className="h-14 px-8 rounded-full bg-gray-100 dark:bg-white/[0.05] hover:bg-gray-200 dark:hover:bg-white/[0.1] border border-transparent dark:border-white/[0.05] text-gray-900 dark:text-white font-semibold text-[15px] transition-all flex items-center justify-center gap-2 w-full sm:w-auto"
+                                        >
+                                            <span>Explore Perks</span>
+                                        </a>
+                                    </>
+                                )}
+                            </div>
+                        </motion.div>
+
+
+
+                        {/* Premium Metric Cards - Subdued and Centered */}
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            transition={{ duration: 1, delay: 0.6 }}
+                            className="w-full mt-16 sm:mt-24"
+                        >
+                            <HorizontalCarousel className="pb-2 -mx-5 px-5 sm:mx-0 sm:px-0 gap-3 sm:gap-4 flex sm:justify-center">
+                                {[
+                                    { val: '2,400+', label: 'Active Creators' },
+                                    { val: '60+', label: 'Brand Partners' },
+                                    { val: '12', label: 'Metros & Hubs' },
+                                    { val: '100%', label: 'Free to Join' },
+                                ].map((m, i) => (
+                                    <div
+                                        key={i}
+                                        className="shrink-0 w-[45vw] sm:w-[180px] snap-center flex flex-col items-center justify-center text-center p-4 rounded-3xl bg-transparent transition-transform"
+                                    >
+                                        <p className="text-2xl sm:text-3xl font-semibold tracking-tight text-gray-900 dark:text-white leading-none">
+                                            {m.val}
+                                        </p>
+                                        <p className="text-[11px] sm:text-xs font-medium text-gray-500 dark:text-zinc-500 mt-2 tracking-wide">
+                                            {m.label}
+                                        </p>
+                                    </div>
+                                ))}
+                            </HorizontalCarousel>
+                        </motion.div>
+
                     </div>
                 </section>
 
@@ -567,81 +561,18 @@ const CreatorLanding = () => {
 
                         {/* Campaigns Grid */}
                         {activeCampaigns.length > 0 ? (
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
+                            <HorizontalCarousel className="pb-6 -mx-5 px-5 sm:mx-0 sm:px-0 gap-6 lg:gap-8 md:grid md:grid-cols-2 lg:grid-cols-3 md:overflow-visible">
                                 {activeCampaigns.map((camp, idx) => (
-                                    <motion.div
-                                        key={camp.id || idx}
-                                        initial={{ opacity: 0, y: 20 }}
-                                        whileInView={{ opacity: 1, y: 0 }}
-                                        viewport={{ once: true }}
-                                        transition={{ delay: idx * 0.08 }}
-                                        onClick={() => setSelectedCampaignForModal(camp)}
-                                        className="relative rounded-3xl bg-white dark:bg-[#0C0E14] border border-gray-200/80 dark:border-white/[0.08] hover:border-neon-green/40 dark:hover:border-neon-green/40 transition-all duration-300 shadow-sm hover:shadow-[0_12px_40px_rgba(0,0,0,0.08)] dark:hover:shadow-[0_0_40px_rgba(57,255,20,0.08)] hover:-translate-y-1 flex flex-col justify-between overflow-hidden group cursor-pointer"
-                                    >
-                                        {/* Thumbnail & Badges */}
-                                        <div className="aspect-[16/10] relative overflow-hidden bg-gray-100 dark:bg-zinc-900">
-                                            <img 
-                                                src={camp.thumbnail || 'https://images.unsplash.com/photo-1539109136881-3be0616acf4b?auto=format&fit=crop&q=80&w=800'} 
-                                                alt={camp.title} 
-                                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
-                                            />
-                                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent pointer-events-none" />
-                                            
-                                            {/* Top badges */}
-                                            <div className="absolute top-4 left-4 right-4 flex items-center justify-between gap-2 z-10">
-                                                <span className="px-3 py-1 rounded-full bg-black/60 backdrop-blur-md border border-white/15 text-[10px] font-bold uppercase tracking-wider text-white flex items-center gap-1">
-                                                    <MapPin size={10} className="text-neon-green" /> {camp.targetCity || 'Universal'}
-                                                </span>
-                                                <span className="px-3 py-1 rounded-full bg-neon-green/90 text-black font-black text-[10px] uppercase tracking-wider shadow-lg">
-                                                    Active Brief
-                                                </span>
-                                            </div>
-
-                                            {/* Bottom Overlay Info */}
-                                            <div className="absolute bottom-3 left-4 right-4 z-10">
-                                                <p className="text-[10px] font-mono font-bold uppercase tracking-wider text-zinc-300">
-                                                    Reward Payout
-                                                </p>
-                                                <p className="text-base font-black text-neon-green truncate">
-                                                    {camp.reward || 'Curated Brand Perks'}
-                                                </p>
-                                            </div>
-                                        </div>
-
-                                        {/* Card Body */}
-                                        <div className="p-6 sm:p-7 flex-1 flex flex-col justify-between space-y-4">
-                                            <div className="space-y-2">
-                                                <h3 className="text-lg sm:text-xl font-black text-gray-950 dark:text-white tracking-tight group-hover:text-emerald-600 dark:group-hover:text-neon-green transition-colors line-clamp-1">
-                                                    {camp.title}
-                                                </h3>
-                                                <p className="text-xs sm:text-sm text-gray-600 dark:text-zinc-400 font-normal leading-relaxed line-clamp-2">
-                                                    {camp.description ? camp.description.replace(/<style[^>]*>[\s\S]*?<\/style>|<script[^>]*>[\s\S]*?<\/script>|<[^>]+>/gi, ' ').replace(/&nbsp;/gi, ' ').replace(/&amp;/gi, '&').replace(/&lt;/gi, '<').replace(/&gt;/gi, '>').replace(/&quot;/gi, '"').replace(/&#39;/gi, "'").replace(/\s+/g, ' ').trim() : 'Exclusive brand activation requiring authentic creator content and social engagement deliverables.'}
-                                                </p>
-                                            </div>
-
-                                            {/* Meta & CTA */}
-                                            <div className="pt-4 border-t border-gray-100 dark:border-white/[0.06] flex items-center justify-between gap-3">
-                                                <div className="flex items-center gap-1.5 text-[11px] font-mono font-semibold text-gray-500 dark:text-zinc-400">
-                                                    <Users size={12} className="text-neon-green" />
-                                                    <span>Min. {Number(camp.minInstagramFollowers || 0).toLocaleString()}</span>
-                                                </div>
-
-                                                <button
-                                                    type="button"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        setSelectedCampaignForModal(camp);
-                                                    }}
-                                                    className="h-9 px-4 rounded-xl bg-gray-900 hover:bg-neon-green hover:text-black dark:bg-white/10 dark:hover:bg-neon-green dark:hover:text-black text-white font-bold uppercase tracking-wider text-[10px] transition-all flex items-center gap-1.5 shadow-sm"
-                                                >
-                                                    <span>View Brief</span>
-                                                    <ArrowRight size={11} />
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </motion.div>
+                                    <div key={camp.id || idx} className="shrink-0 w-[85vw] sm:w-[400px] md:w-auto snap-center">
+                                        <CampaignCard
+                                            campaign={camp}
+                                            profile={activeCreator}
+                                            type="available"
+                                            onOpenMission={(c) => setSelectedCampaignForModal(c)}
+                                        />
+                                    </div>
                                 ))}
-                            </div>
+                            </HorizontalCarousel>
                         ) : (
                             /* Empty state if no active campaigns */
                             <div className="rounded-3xl bg-white dark:bg-[#0C0E14] border border-gray-200/80 dark:border-white/[0.08] p-12 text-center max-w-2xl mx-auto space-y-4">
@@ -689,7 +620,7 @@ const CreatorLanding = () => {
                             </p>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
+                        <HorizontalCarousel className="pb-6 -mx-5 px-5 sm:mx-0 sm:px-0 gap-6 lg:gap-8 lg:grid lg:grid-cols-3 lg:overflow-visible">
                             {[
                                 {
                                     num: '01',
@@ -731,7 +662,7 @@ const CreatorLanding = () => {
                                     whileInView={{ opacity: 1, y: 0 }}
                                     viewport={{ once: true }}
                                     transition={{ delay: i * 0.1 }}
-                                    className="relative p-8 sm:p-9 rounded-[2rem] bg-white dark:bg-[#0C0E14] border border-gray-200/80 dark:border-white/[0.08] hover:border-neon-green/40 dark:hover:border-neon-green/40 transition-all duration-300 shadow-sm hover:shadow-[0_12px_40px_rgba(0,0,0,0.08)] dark:hover:shadow-[0_0_50px_rgba(57,255,20,0.07)] hover:-translate-y-1.5 flex flex-col justify-between group overflow-hidden"
+                                    className="shrink-0 w-[85vw] sm:w-[350px] lg:w-auto snap-center relative p-8 sm:p-9 rounded-[2rem] bg-white dark:bg-[#0C0E14] border border-gray-200/80 dark:border-white/[0.08] hover:border-neon-green/40 dark:hover:border-neon-green/40 transition-all duration-300 shadow-sm hover:shadow-[0_12px_40px_rgba(0,0,0,0.08)] dark:hover:shadow-[0_0_50px_rgba(57,255,20,0.07)] hover:-translate-y-1.5 flex flex-col justify-between group overflow-hidden"
                                 >
                                     {/* Subtle Top Accent Glow */}
                                     <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-neon-green/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
@@ -780,7 +711,7 @@ const CreatorLanding = () => {
                                     </div>
                                 </motion.div>
                             ))}
-                        </div>
+                        </HorizontalCarousel>
                     </div>
                 </section>
 
@@ -798,7 +729,7 @@ const CreatorLanding = () => {
                             </p>
                         </div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                        <HorizontalCarousel className="pb-6 -mx-5 px-5 sm:mx-0 sm:px-0 gap-5 md:grid md:grid-cols-2 lg:grid-cols-4 md:overflow-visible">
                             {steps.map((s, i) => (
                                 <motion.div
                                     key={i}
@@ -806,7 +737,7 @@ const CreatorLanding = () => {
                                     whileInView={{ opacity: 1, y: 0 }}
                                     viewport={{ once: true }}
                                     transition={{ delay: i * 0.1 }}
-                                    className="relative p-7 rounded-3xl bg-white dark:bg-zinc-900/30 border border-gray-200 dark:border-white/5 hover:border-gray-300 dark:hover:border-white/15 transition-all flex flex-col justify-between overflow-hidden shadow-sm dark:shadow-none group"
+                                    className="shrink-0 w-[80vw] sm:w-[280px] md:w-auto snap-center relative p-7 rounded-3xl bg-white dark:bg-zinc-900/30 border border-gray-200 dark:border-white/5 hover:border-gray-300 dark:hover:border-white/15 transition-all flex flex-col justify-between overflow-hidden shadow-sm dark:shadow-none group"
                                 >
                                     <div className="space-y-4">
                                         <div className="flex items-center justify-between">
@@ -826,7 +757,7 @@ const CreatorLanding = () => {
                                     </div>
                                 </motion.div>
                             ))}
-                        </div>
+                        </HorizontalCarousel>
                     </div>
                 </section>
 
@@ -842,7 +773,7 @@ const CreatorLanding = () => {
                             </p>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                        <HorizontalCarousel className="pb-6 -mx-5 px-5 sm:mx-0 sm:px-0 gap-5 md:grid md:grid-cols-2 lg:grid-cols-3 md:overflow-visible">
                             {perks.map((p, i) => (
                                 <motion.div
                                     key={i}
@@ -850,7 +781,7 @@ const CreatorLanding = () => {
                                     whileInView={{ opacity: 1, y: 0 }}
                                     viewport={{ once: true }}
                                     transition={{ delay: i * 0.08 }}
-                                    className="p-7 rounded-2xl bg-white dark:bg-zinc-900/30 border border-gray-200 dark:border-white/5 hover:border-gray-300 dark:hover:border-white/10 transition-all shadow-sm dark:shadow-none space-y-3 group"
+                                    className="shrink-0 w-[85vw] sm:w-[340px] md:w-auto snap-center p-7 rounded-3xl bg-white dark:bg-zinc-900/30 border border-gray-200 dark:border-white/5 hover:border-gray-300 dark:hover:border-white/10 transition-all shadow-sm dark:shadow-none space-y-3 group"
                                 >
                                     <div className="w-10 h-10 rounded-xl bg-black/[0.03] dark:bg-white/[0.04] border border-black/[0.06] dark:border-white/[0.08] flex items-center justify-center text-gray-800 dark:text-zinc-200 group-hover:text-neon-green group-hover:border-neon-green/40 transition-all">
                                         <p.icon size={18} strokeWidth={1.8} />
@@ -863,7 +794,7 @@ const CreatorLanding = () => {
                                     </p>
                                 </motion.div>
                             ))}
-                        </div>
+                        </HorizontalCarousel>
                     </div>
                 </section>
 
@@ -891,7 +822,7 @@ const CreatorLanding = () => {
                                 </p>
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            <HorizontalCarousel className="pb-6 -mx-5 px-5 sm:mx-0 sm:px-0 gap-6 md:grid md:grid-cols-2 lg:grid-cols-3 md:overflow-visible">
                                 {activeTestimonials.map((t, i) => (
                                     <motion.div
                                         key={t.id || i}
@@ -899,7 +830,7 @@ const CreatorLanding = () => {
                                         whileInView={{ opacity: 1, y: 0 }}
                                         viewport={{ once: true }}
                                         transition={{ delay: i * 0.08 }}
-                                        className="p-7 rounded-3xl bg-white dark:bg-zinc-900/40 border border-gray-200 dark:border-white/5 hover:border-gray-300 dark:hover:border-white/15 transition-all shadow-sm dark:shadow-none flex flex-col justify-between group"
+                                        className="shrink-0 w-[85vw] sm:w-[360px] md:w-auto snap-center p-7 rounded-3xl bg-white dark:bg-zinc-900/40 border border-gray-200 dark:border-white/5 hover:border-gray-300 dark:hover:border-white/15 transition-all shadow-sm dark:shadow-none flex flex-col justify-between group"
                                     >
                                         <div className="space-y-4">
                                             <div className="flex items-center justify-between">
@@ -946,7 +877,7 @@ const CreatorLanding = () => {
                                         </div>
                                     </motion.div>
                                 ))}
-                            </div>
+                            </HorizontalCarousel>
                         </div>
                     </section>
                 )}
@@ -1059,6 +990,83 @@ const CreatorLanding = () => {
                 </section>
 
             </main>
+
+            {/* ─── Floating Actions (Mobile Only) ─────────────────────────── */}
+            <AnimatePresence>
+                {user && (
+                    <>
+                        {/* Left Button: newbi.live */}
+                        <motion.div 
+                            initial={{ y: 100, opacity: 0 }}
+                            animate={{ y: 0, opacity: 1 }}
+                            exit={{ y: 100, opacity: 0 }}
+                            className="fixed bottom-6 left-5 z-50 pointer-events-auto md:hidden"
+                        >
+                            <div
+                                className="relative bg-white/80 dark:bg-[#12151c]/80 border border-black/5 dark:border-white/10 rounded-full p-1.5 shadow-[0_8px_30px_rgba(0,0,0,0.12)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.5)] flex items-center justify-center transition-all duration-300"
+                                style={{ backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)' }}
+                            >
+                                <button
+                                    onClick={() => navigate('/')}
+                                    className={cn(
+                                        "rounded-full transition-all duration-300 ease-out flex items-center justify-center active:scale-95 overflow-hidden h-10",
+                                        !isScrolled 
+                                            ? "bg-white dark:bg-black border border-gray-200 dark:border-white/10 text-gray-800 dark:text-zinc-300 shadow-sm px-4" 
+                                            : "bg-transparent border border-transparent text-gray-500 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-white px-[11px]"
+                                    )}
+                                >
+                                    <ArrowLeft size={18} strokeWidth={2} className="shrink-0 transition-all duration-300" />
+                                    <span
+                                        className={cn(
+                                            "font-bold uppercase tracking-wider text-[10px] whitespace-nowrap overflow-hidden transition-all duration-300 ease-out leading-none",
+                                            !isScrolled ? "max-w-[100px] opacity-100 ml-2" : "max-w-0 opacity-0 ml-0"
+                                        )}
+                                    >
+                                        newbi.live
+                                    </span>
+                                </button>
+                            </div>
+                        </motion.div>
+
+                        {/* Right Button: Dashboard or Apply */}
+                        <motion.div 
+                            initial={{ y: 100, opacity: 0 }}
+                            animate={{ y: 0, opacity: 1 }}
+                            exit={{ y: 100, opacity: 0 }}
+                            className="fixed bottom-6 right-5 z-50 pointer-events-auto md:hidden"
+                        >
+                            <div
+                                className="relative bg-white/80 dark:bg-[#12151c]/80 border border-black/5 dark:border-white/10 rounded-full p-1.5 shadow-[0_8px_30px_rgba(0,0,0,0.12)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.5)] flex items-center justify-center transition-all duration-300"
+                                style={{ backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)' }}
+                            >
+                                <button
+                                    onClick={() => navigate(isActualCreator ? '/creator-dashboard' : '/creator/join')}
+                                    className={cn(
+                                        "rounded-full transition-all duration-300 ease-out flex items-center justify-center active:scale-95 overflow-hidden h-10",
+                                        !isScrolled 
+                                            ? "bg-neon-green text-black shadow-sm px-4" 
+                                            : "bg-transparent text-gray-500 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-white px-[11px]"
+                                    )}
+                                >
+                                    {isActualCreator ? (
+                                        <LayoutDashboard size={18} strokeWidth={2} className="shrink-0 transition-all duration-300" />
+                                    ) : (
+                                        <Zap size={18} strokeWidth={2} className="shrink-0 transition-all duration-300" />
+                                    )}
+                                    <span
+                                        className={cn(
+                                            "font-bold uppercase tracking-wider text-[10px] whitespace-nowrap overflow-hidden transition-all duration-300 ease-out leading-none",
+                                            !isScrolled ? "max-w-[130px] opacity-100 ml-2" : "max-w-0 opacity-0 ml-0"
+                                        )}
+                                    >
+                                        {isActualCreator ? "Dashboard" : "Apply as Creator"}
+                                    </span>
+                                </button>
+                            </div>
+                        </motion.div>
+                    </>
+                )}
+            </AnimatePresence>
 
             <ProfilePanel isOpen={isProfileOpen} onClose={() => setIsProfileOpen(false)} />
 

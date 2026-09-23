@@ -9,6 +9,7 @@ import GlobalLoader from '../components/ui/GlobalLoader';
 import CampaignCard from '../components/ui/CampaignCard';
 import useDynamicMeta from '../hooks/useDynamicMeta';
 import CreatorCityGroupCard from '../components/creator/CreatorCityGroupCard';
+import CreatorPassCard from '../components/creator/CreatorPassCard';
 import CampaignDetailModal from '../components/creator/CampaignDetailModal';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
@@ -516,25 +517,105 @@ const CreatorDashboard = () => {
 
     if (!user || !profile) {
         return (
-            <div className="min-h-screen min-h-[100dvh] bg-[#fafafa] dark:bg-[#08090d] flex flex-col items-center justify-center p-6">
+            <div className="min-h-screen min-h-[100dvh] bg-gray-50 dark:bg-[#07090E] flex flex-col items-center justify-center p-6 relative overflow-hidden">
+                {/* Ambient dynamic background */}
                 <div className="absolute inset-0 z-0 pointer-events-none">
-                    <div className="absolute -top-24 left-1/3 w-[600px] h-[350px] bg-neon-green/[0.03] rounded-full blur-[140px]" />
+                    <motion.div 
+                        animate={{ 
+                            scale: [1, 1.2, 1],
+                            opacity: [0.3, 0.5, 0.3]
+                        }}
+                        transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+                        className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-neon-green/10 dark:bg-neon-green/5 rounded-full blur-[120px]" 
+                    />
+                    <motion.div 
+                        animate={{ 
+                            scale: [1, 1.5, 1],
+                            opacity: [0.2, 0.4, 0.2]
+                        }}
+                        transition={{ duration: 10, repeat: Infinity, ease: "easeInOut", delay: 2 }}
+                        className="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] bg-blue-500/10 dark:bg-blue-500/5 rounded-full blur-[100px]" 
+                    />
                 </div>
-                <div className="relative z-10 max-w-sm w-full bg-white dark:bg-[#0c0e14] border border-black/[0.07] dark:border-white/[0.07] rounded-3xl p-8 text-center shadow-lg">
-                    <div className="w-16 h-16 bg-neon-green/10 text-emerald-600 dark:text-neon-green rounded-2xl flex items-center justify-center mx-auto mb-5 border border-neon-green/20">
-                        <Lock size={28} strokeWidth={1.5} />
+
+                {/* Back to Home Button */}
+                <motion.button
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.3 }}
+                    onClick={() => navigate('/')}
+                    className="absolute top-8 left-6 sm:top-12 sm:left-12 flex items-center gap-2 text-gray-500 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-white transition-colors text-[10px] font-bold uppercase tracking-widest z-20"
+                >
+                    <ArrowLeft size={16} /> newbi.live
+                </motion.button>
+
+                <motion.div 
+                    initial={{ opacity: 0, y: 30, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    transition={{ type: "spring", stiffness: 300, damping: 25 }}
+                    className="relative z-10 max-w-[380px] w-full"
+                >
+                    <div className="bg-white/80 dark:bg-[#12151C]/80 backdrop-blur-2xl border border-black/5 dark:border-white/10 rounded-[2.5rem] p-10 text-center shadow-[0_20px_60px_-15px_rgba(0,0,0,0.1)] dark:shadow-[0_20px_60px_-15px_rgba(0,0,0,0.5)] overflow-hidden">
+                        {/* Shimmer effect */}
+                        <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/40 dark:via-white/5 to-transparent opacity-50" />
+                        
+                        <div className="relative">
+                            <motion.div 
+                                initial={{ scale: 0 }}
+                                animate={{ scale: 1 }}
+                                transition={{ type: "spring", delay: 0.1, stiffness: 400, damping: 20 }}
+                                className="w-20 h-20 mx-auto mb-8 relative"
+                            >
+                                <div className="absolute inset-0 bg-neon-green/20 dark:bg-neon-green/10 rounded-[2rem] animate-ping opacity-50" style={{ animationDuration: '3s' }} />
+                                <div className="absolute inset-0 bg-gradient-to-br from-neon-green/30 to-emerald-500/10 rounded-[2rem] rotate-6" />
+                                <div className="absolute inset-0 bg-white dark:bg-[#1A1D24] border border-black/5 dark:border-white/10 rounded-[2rem] -rotate-3 flex items-center justify-center shadow-lg transition-transform hover:rotate-0 duration-300">
+                                    <Lock size={28} className="text-emerald-600 dark:text-neon-green" strokeWidth={1.5} />
+                                </div>
+                            </motion.div>
+
+                            <motion.h2 
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.2 }}
+                                className="text-2xl font-black font-heading tracking-tight mb-3 text-gray-900 dark:text-white"
+                            >
+                                Dashboard Access
+                            </motion.h2>
+                            <motion.p 
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.3 }}
+                                className="text-sm text-gray-500 dark:text-zinc-400 mb-8 leading-relaxed px-2"
+                            >
+                                Secure your session to view active campaigns, deliverables, and claim your rewards.
+                            </motion.p>
+
+                            <div className="space-y-3">
+                                <motion.button 
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: 0.4 }}
+                                    whileHover={{ scale: 1.02 }}
+                                    whileTap={{ scale: 0.98 }}
+                                    onClick={() => setAuthModal(true)} 
+                                    className="w-full h-14 bg-gray-900 dark:bg-neon-green text-white dark:text-black font-bold uppercase tracking-wider rounded-2xl shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2 text-[11px]"
+                                >
+                                    <Lock size={14} className="opacity-70" /> Sign In Securely
+                                </motion.button>
+                                
+                                <motion.button 
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: 0.5 }}
+                                    onClick={() => navigate('/creator/join')} 
+                                    className="w-full h-14 bg-white dark:bg-black/20 border border-gray-200 dark:border-white/10 text-gray-600 dark:text-zinc-300 font-bold uppercase tracking-wider rounded-2xl hover:bg-gray-50 dark:hover:bg-white/5 transition-all active:scale-95 text-[10px]"
+                                >
+                                    Apply as Creator
+                                </motion.button>
+                            </div>
+                        </div>
                     </div>
-                    <h2 className="text-xl font-black font-heading tracking-tight mb-2 text-gray-900 dark:text-white">Sign In to Dashboard</h2>
-                    <p className="text-sm text-gray-500 dark:text-zinc-400 mb-6 leading-relaxed">Authenticate to access your campaigns, rewards, and creator ID.</p>
-                    <div className="space-y-3">
-                        <button onClick={() => setAuthModal(true)} className="w-full h-12 bg-neon-green text-black font-black uppercase tracking-wider rounded-xl hover:bg-emerald-400 transition-all active:scale-95 shadow-[0_0_16px_rgba(57,255,20,0.15)] flex items-center justify-center gap-2 text-sm">
-                            Sign In Securely <ArrowRight size={16} />
-                        </button>
-                        <button onClick={() => navigate('/creator/join')} className="w-full h-12 bg-transparent border border-black/10 dark:border-white/10 text-gray-600 dark:text-zinc-300 font-bold uppercase tracking-wider rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-all active:scale-95 text-xs">
-                            Apply as Creator
-                        </button>
-                    </div>
-                </div>
+                </motion.div>
             </div>
         );
     }
@@ -616,6 +697,16 @@ const CreatorDashboard = () => {
                     >
                         <Settings size={15} />
                     </button>
+                </div>
+
+                {/* ── Creator Pass Card ────────────────────────────────────────── */}
+                <div className="mb-8 mt-2">
+                    <CreatorPassCard 
+                        profile={profile} 
+                        hideAction={true} 
+                        showWhatsAppGroup={true} 
+                        className="max-w-none"
+                    />
                 </div>
 
                 {/* ── Phone Verification Banner (slim, dismissable) ─────────────── */}
@@ -899,14 +990,14 @@ const CreatorDashboard = () => {
                 </AnimatePresence>
             </div>
 
-            {/* ─── Mobile Bottom Tab Bar (iOS style) ─────────────────────────── */}
-            <div className="sm:hidden fixed bottom-0 left-0 right-0 z-50">
+            {/* ─── Mobile Bottom Tab Bar (iOS Floating Style) ─────────────────────────── */}
+            <div className="sm:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-[92%] max-w-sm">
                 {/* Frosted glass bar */}
                 <div
-                    className="relative bg-white/90 dark:bg-[#0c0e14]/95 border-t border-black/[0.07] dark:border-white/[0.07] px-2 pb-[env(safe-area-inset-bottom,0px)]"
+                    className="relative bg-white/80 dark:bg-[#12151c]/80 border border-black/5 dark:border-white/10 rounded-full px-2 py-2 shadow-[0_8px_30px_rgba(0,0,0,0.12)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.5)]"
                     style={{ backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)' }}
                 >
-                    <div className="flex items-center justify-around">
+                    <div className="flex items-center justify-between">
                         {tabs.map(tab => {
                             const Icon = tab.icon;
                             const isActive = activeTab === tab.id;
@@ -915,25 +1006,22 @@ const CreatorDashboard = () => {
                                     key={tab.id}
                                     type="button"
                                     onClick={() => setActiveTab(tab.id)}
-                                    className="relative flex flex-col items-center justify-center gap-0.5 py-3 px-3 min-w-[56px] transition-all active:scale-90"
+                                    className={cn(
+                                        "relative flex items-center justify-center gap-2 py-2.5 px-4 rounded-full transition-all duration-300 active:scale-95",
+                                        isActive ? "bg-black dark:bg-white text-white dark:text-black" : "text-gray-500 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-white"
+                                    )}
                                     aria-label={tab.label}
                                 >
-                                    {/* Active indicator pill */}
-                                    {isActive && (
-                                        <motion.div
-                                            layoutId="mobile-tab-indicator"
-                                            className="absolute inset-x-1 top-1 h-0.5 rounded-full bg-neon-green"
-                                            transition={{ type: 'spring', stiffness: 500, damping: 35 }}
-                                        />
-                                    )}
-
                                     {/* Badge */}
                                     {tab.count !== null && tab.count !== undefined && tab.count !== 0 && (
-                                        <div className="absolute top-2 right-2">
+                                        <div className="absolute top-1 right-1.5 z-10">
                                             {tab.count === 'Soon' ? (
-                                                <div className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                                                <div className="w-1.5 h-1.5 rounded-full bg-amber-400 shadow-sm" />
                                             ) : (
-                                                <div className="min-w-[14px] h-[14px] rounded-full bg-neon-green text-black text-[8px] font-black flex items-center justify-center px-1 leading-none">
+                                                <div className={cn(
+                                                    "min-w-[14px] h-[14px] rounded-full text-[8px] font-black flex items-center justify-center px-1 leading-none shadow-sm",
+                                                    isActive ? "bg-neon-green text-black border-[1.5px] border-black dark:border-white" : "bg-neon-green text-black border-[1.5px] border-white dark:border-[#12151c]"
+                                                )}>
                                                     {tab.count}
                                                 </div>
                                             )}
@@ -941,19 +1029,22 @@ const CreatorDashboard = () => {
                                     )}
 
                                     <Icon
-                                        size={20}
-                                        strokeWidth={isActive ? 2 : 1.5}
-                                        className={cn(
-                                            'transition-colors',
-                                            isActive ? 'text-gray-950 dark:text-white' : 'text-gray-400 dark:text-zinc-500'
-                                        )}
+                                        size={18}
+                                        strokeWidth={isActive ? 2.5 : 2}
+                                        className="shrink-0 relative z-10"
                                     />
-                                    <span className={cn(
-                                        'text-[10px] font-semibold transition-colors leading-none',
-                                        isActive ? 'text-gray-950 dark:text-white' : 'text-gray-400 dark:text-zinc-500'
-                                    )}>
-                                        {tab.mobileLabel}
-                                    </span>
+                                    <AnimatePresence>
+                                        {isActive && (
+                                            <motion.span 
+                                                initial={{ width: 0, opacity: 0 }}
+                                                animate={{ width: "auto", opacity: 1 }}
+                                                exit={{ width: 0, opacity: 0 }}
+                                                className="text-[12px] font-bold tracking-wide leading-none whitespace-nowrap overflow-hidden relative z-10"
+                                            >
+                                                {tab.mobileLabel}
+                                            </motion.span>
+                                        )}
+                                    </AnimatePresence>
                                 </button>
                             );
                         })}

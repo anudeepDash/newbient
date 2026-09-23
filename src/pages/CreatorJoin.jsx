@@ -2491,7 +2491,34 @@ const CreatorJoin = () => {
                             <div />
                         )}
 
-                        {step < 4 ? (
+                        {matchedExistingCreator ? (
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    if (user) {
+                                        const userPhoneNorm = user.phoneNumber ? normalizePhoneNumber(user.phoneNumber) : null;
+                                        const userEmailNorm = user.email ? user.email.trim().toLowerCase() : null;
+                                        const creatorEmailNorm = matchedExistingCreator.email ? matchedExistingCreator.email.trim().toLowerCase() : null;
+                                        const creatorPhoneNorm = normalizePhoneNumber(matchedExistingCreator.phone);
+                                        
+                                        if (
+                                            user.uid === matchedExistingCreator.uid || 
+                                            user.uid === matchedExistingCreator.id ||
+                                            (userEmailNorm && creatorEmailNorm && userEmailNorm === creatorEmailNorm) ||
+                                            (userPhoneNorm && creatorPhoneNorm && creatorPhoneNorm === userPhoneNorm)
+                                        ) {
+                                            navigate('/creator-dashboard');
+                                            return;
+                                        }
+                                    }
+                                    setAuthModal(true);
+                                }}
+                                className="h-11 sm:h-12 px-4 sm:px-6 bg-neon-green hover:bg-white text-black font-black rounded-xl text-[11px] sm:text-xs uppercase tracking-wider transition-all flex items-center gap-1.5 sm:gap-2 shadow-[0_0_25px_rgba(57,255,20,0.3)] ml-auto active:scale-95"
+                            >
+                                <span>Log In to Existing Profile</span>
+                                <ArrowRight size={14} />
+                            </button>
+                        ) : step < 4 ? (
                             <button
                                 type="button"
                                 onClick={nextStep}

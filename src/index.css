@@ -125,6 +125,34 @@
   .dark .overflow-x-auto::-webkit-scrollbar-thumb:hover {
     background: rgba(255, 255, 255, 0.18);
   }
+
+  .carousel-scrollbar {
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0, 0, 0, 0.1) transparent;
+  }
+  .dark .carousel-scrollbar {
+    scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+  }
+  .carousel-scrollbar::-webkit-scrollbar {
+    height: 4px;
+  }
+  .carousel-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .carousel-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.1);
+    border-radius: 9999px;
+  }
+  .dark .carousel-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+  }
+  .carousel-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #10b981;
+  }
+  .dark .carousel-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #39ff14;
+  }
 }
 
 @layer utilities {
