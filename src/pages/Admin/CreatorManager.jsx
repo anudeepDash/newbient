@@ -40,6 +40,8 @@ import Target from 'lucide-react/dist/esm/icons/target';
 import Check from 'lucide-react/dist/esm/icons/check';
 import Calendar from 'lucide-react/dist/esm/icons/calendar';
 import CheckCircle2 from 'lucide-react/dist/esm/icons/check-circle-2';
+import Pencil from 'lucide-react/dist/esm/icons/pencil';
+import AlertTriangle from 'lucide-react/dist/esm/icons/alert-triangle';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn, normalizePhoneNumber } from '../../lib/utils';
@@ -387,13 +389,6 @@ const CreatorManager = ({ showLeaderboardOnly = false, isEmbedded = false }) => 
         e.target.value = null; // reset input
     };
 
-    const personnelTabs = [
-        { name: 'Creators', path: '/admin/creators', icon: Star },
-        { name: 'Campaigns', path: '/admin/campaigns', icon: Target },
-        { name: 'Leaderboard', path: '/admin/creators/leaderboard', icon: Trophy },
-        { name: 'Settings', path: '/admin/creators/settings', icon: Settings },
-    ];
-
     const cities = ['All', ...new Set([...PREDEFINED_CITIES, ...creators.map(c => c.city)])];
 
     useEffect(() => {
@@ -466,15 +461,28 @@ const CreatorManager = ({ showLeaderboardOnly = false, isEmbedded = false }) => 
 
     const stats = useMemo(() => {
         const approvedCount = creators.filter(c => c.profileStatus === 'approved').length;
+        const pendingCount = creators.filter(c => !c.profileStatus || c.profileStatus === 'pending').length;
+        const manualPendingCount = creators.filter(c => 
+            (!c.profileStatus || c.profileStatus === 'pending') && 
+            Boolean(c.manualFollowerEntry || c.isManualFollowerEntry || c.requiresManualVerification)
+        ).length;
         const totalFollowers = creators.reduce((sum, c) => sum + Math.max(Number(c.instagramFollowers || 0), Number(c.youtubeSubscribers || 0), Number(c.linkedinFollowers || 0)), 0);
         
         return {
             total: creators.length,
             approved: approvedCount,
-            pending: creators.filter(c => !c.profileStatus || c.profileStatus === 'pending').length,
+            pending: pendingCount,
+            manualPending: manualPendingCount,
             followers: totalFollowers
         };
     }, [creators]);
+
+    const personnelTabs = useMemo(() => [
+        { name: 'Creators', path: '/admin/creators', icon: Star, badge: stats.pending > 0 ? stats.pending : null },
+        { name: 'Campaigns', path: '/admin/campaigns', icon: Target },
+        { name: 'Leaderboard', path: '/admin/creators/leaderboard', icon: Trophy },
+        { name: 'Settings', path: '/admin/creators/settings', icon: Settings },
+    ], [stats.pending]);
 
     const handleUpdateStatus = async (uid, newStatus) => {
         setIsUpdating(true);
@@ -580,6 +588,60 @@ const CreatorManager = ({ showLeaderboardOnly = false, isEmbedded = false }) => 
         return (
             <div className={cn("relative z-10 max-w-[1700px] mx-auto pb-20", isEmbedded ? "px-4 md:px-12 pt-6" : "")}>
             <div>
+                {/* Pending Verification Priority Callout */}
+                {stats.pending > 0 && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="mb-4 sm:mb-6 p-3.5 sm:p-4 rounded-2xl bg-amber-500/[0.08] dark:bg-amber-500/[0.06] border border-amber-500/25 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs"
+                    >
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+                                <Clock size={20} className="animate-pulse" />
+                            </div>
+                            <div>
+                                <div className="flex items-center gap-2 flex-wrap">
+                                    <span className="text-xs sm:text-sm font-black uppercase tracking-wider text-gray-900 dark:text-white">
+                                        {stats.pending} Creator{stats.pending === 1 ? '' : 's'} Pending Verification
+                                    </span>
+                                    <span className="px-2 py-0.5 rounded-full text-[9px] font-mono font-black bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30">
+                                        {stats.manualPending > 0 ? `${stats.manualPending} Manual Follower Entry` : 'Action Required'}
+                                    </span>
+                                </div>
+                                <p className="text-[11px] text-gray-600 dark:text-zinc-400 mt-0.5">
+                                    {stats.manualPending > 0 
+                                        ? `${stats.manualPending} creator${stats.manualPending === 1 ? ' has' : 's have'} manually entered follower counts and require manual verification.`
+                                        : "Review creator profiles and verify or reject applications."}
+                                </p>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
+                            <button
+                                type="button"
+                                onClick={() => setFilterStatus(filterStatus === 'pending' ? 'All' : 'pending')}
+                                className={cn(
+                                    "h-9 px-3.5 sm:px-4 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer",
+                                    filterStatus === 'pending'
+                                        ? "bg-amber-500 text-black shadow-md shadow-amber-500/20"
+                                        : "bg-amber-500/15 hover:bg-amber-500/25 text-amber-700 dark:text-amber-300 border border-amber-500/30"
+                                )}
+                            >
+                                <Filter size={12} />
+                                <span>{filterStatus === 'pending' ? "Viewing Pending" : `Review Pending (${stats.pending})`}</span>
+                            </button>
+                            {filterStatus === 'pending' && (
+                                <button
+                                    type="button"
+                                    onClick={() => setFilterStatus('All')}
+                                    className="h-9 px-3 rounded-xl text-[9px] font-bold uppercase tracking-wider bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-gray-600 dark:text-zinc-400 transition-all cursor-pointer"
+                                >
+                                    Show All
+                                </button>
+                            )}
+                        </div>
+                    </motion.div>
+                )}
+
                 {/* Control Panel */}
                 <div className="relative z-50 bg-white dark:bg-[#0c0e14] border border-black/[0.08] dark:border-white/[0.08] rounded-3xl p-3 sm:p-4 mb-6 md:mb-8 space-y-3 shadow-sm">
                     
@@ -995,8 +1057,8 @@ const CreatorManager = ({ showLeaderboardOnly = false, isEmbedded = false }) => 
                                 value={filterStatus} 
                                 options={[
                                     { value: 'All', label: 'STATUS' }, 
-                                    { value: 'approved', label: 'VERIFIED' }, 
-                                    { value: 'pending', label: 'PENDING' }, 
+                                    { value: 'approved', label: `VERIFIED (${stats.approved})` }, 
+                                    { value: 'pending', label: `PENDING (${stats.pending})` }, 
                                     { value: 'rejected', label: 'REJECTED' }
                                 ]} 
                                 onChange={setFilterStatus} 
@@ -1255,15 +1317,34 @@ const CreatorManager = ({ showLeaderboardOnly = false, isEmbedded = false }) => 
             tabs={personnelTabs}
             hideMobileMenu={selectedUids.length > 0}
             action={
-                <div className="w-full md:w-80 shrink-0">
-                    <StatCard 
-                        compact={true} 
-                        icon={<Users size={20} />} 
-                        label="CREATOR ROSTER" 
-                        value={stats.total} 
-                        color="pink" 
-                        description={`TOTAL CREATORS | ${stats.approved} VERIFIED • ${stats.pending} PENDING`} 
-                    />
+                <div className="flex items-center gap-3 shrink-0">
+                    <div 
+                        onClick={() => setFilterStatus(filterStatus === 'pending' ? 'All' : 'pending')}
+                        className={cn(
+                            "cursor-pointer transition-all hover:scale-[1.02] active:scale-[0.98]",
+                            filterStatus === 'pending' ? "ring-2 ring-amber-400 rounded-2xl" : ""
+                        )}
+                        title="Click to filter Pending Verification"
+                    >
+                        <StatCard 
+                            compact={true} 
+                            icon={<Clock size={20} className={stats.pending > 0 ? "text-amber-500 animate-pulse" : "text-gray-400"} />} 
+                            label="PENDING VERIFICATION" 
+                            value={stats.pending} 
+                            color={stats.pending > 0 ? "yellow" : "gray"} 
+                            description={stats.manualPending > 0 ? `${stats.manualPending} manual follower entries` : `${stats.pending} awaiting review`} 
+                        />
+                    </div>
+                    <div className="hidden lg:block w-72">
+                        <StatCard 
+                            compact={true} 
+                            icon={<Users size={20} />} 
+                            label="CREATOR ROSTER" 
+                            value={stats.total} 
+                            color="pink" 
+                            description={`TOTAL CREATORS | ${stats.approved} VERIFIED`} 
+                        />
+                    </div>
                 </div>
             }
         >
@@ -1401,8 +1482,8 @@ const StatCard = ({ icon, label, value, color, description, compact = false }) =
                 <div className={cn("space-y-1", compact ? "flex-1" : "")}>
                     <p className="text-[9px] font-black uppercase tracking-widest text-gray-500">{label}</p>
                     <h3 className={cn("font-black font-heading tracking-tight tabular-nums leading-none text-gray-900 dark:text-white", compact ? "text-2xl" : "text-2xl sm:text-4xl")}>{value}</h3>
-                    {!compact && description && (
-                        <p className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mt-1">{description}</p>
+                    {description && (
+                        <p className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mt-1 line-clamp-1">{description}</p>
                     )}
                 </div>
             </div>
@@ -1451,8 +1532,13 @@ const CreatorBadgeCard = ({ creator, onSelect, isSelected, onToggleSelect }) => 
                         {creator.name.charAt(0)}
                     </div>
                 )}
-                <div className="absolute top-3 right-3">
+                <div className="absolute top-3 right-3 flex flex-col items-end gap-1">
                     <StatusPill status={creator.profileStatus} />
+                    {Boolean(creator.manualFollowerEntry || creator.requiresManualVerification) && creator.profileStatus !== 'approved' && (
+                        <span className="px-1.5 py-0.5 rounded-md text-[7px] font-black uppercase tracking-wider bg-amber-500 text-black shadow-xs flex items-center gap-1 font-mono">
+                            <Pencil size={8} /> Manual
+                        </span>
+                    )}
                 </div>
                 {creator.profileStatus === 'approved' && (
                     <div className="absolute bottom-3 right-3 w-8 h-8 bg-neon-green text-black rounded-xl flex items-center justify-center shadow-sm">
@@ -1663,7 +1749,12 @@ const CreatorListItem = ({ creator, onSelect, isSelected, onToggleSelect }) => {
                 <p className="text-sm font-bold text-gray-900 dark:text-white tabular-nums">{Math.max(Number(creator.instagramFollowers || 0), Number(creator.youtubeSubscribers || 0), Number(creator.linkedinFollowers || 0)).toLocaleString()}</p>
             </div>
 
-            <div className="flex items-center justify-between lg:justify-end gap-3 w-full lg:w-44 shrink-0">
+            <div className="flex items-center justify-between lg:justify-end gap-2.5 w-full lg:w-56 shrink-0">
+                {Boolean(creator.manualFollowerEntry || creator.requiresManualVerification) && creator.profileStatus !== 'approved' && (
+                    <span className="px-2 py-0.5 rounded-md text-[8px] font-bold uppercase tracking-wider bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 flex items-center gap-1 shrink-0 font-mono">
+                        <Pencil size={9} /> Manual
+                    </span>
+                )}
                 <StatusPill status={creator.profileStatus} />
                 <div className="w-8 h-8 rounded-lg bg-white/[0.03] border border-white/[0.05] flex items-center justify-center text-gray-900 dark:text-white/20 group-hover:text-gray-900 dark:group-hover:text-white/50 transition-all shrink-0">
                     <ChevronRight size={14} />
@@ -2043,6 +2134,28 @@ const CreatorDetailModal = ({ creator, onClose, onUpdateStatus, onDelete, isUpda
                                 </div>
                             </div>
                         </div>
+
+                        {/* Manual Follower Verification Notice */}
+                        {Boolean(creator.manualFollowerEntry || creator.requiresManualVerification) && (
+                            <div className="p-3.5 sm:p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-start gap-3">
+                                <div className="w-8 h-8 rounded-lg bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 mt-0.5">
+                                    <Clock size={16} />
+                                </div>
+                                <div className="space-y-1 min-w-0 flex-1">
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                        <span className="text-[10px] font-black uppercase tracking-wider text-amber-600 dark:text-amber-400 font-mono">
+                                            Followers Entered Manually
+                                        </span>
+                                        <span className="text-[8px] font-mono font-bold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30">
+                                            Manual Verification Required
+                                        </span>
+                                    </div>
+                                    <p className="text-xs text-gray-700 dark:text-zinc-300 leading-relaxed">
+                                        This creator self-reported <strong className="text-gray-900 dark:text-white font-bold">{Number(creator.instagramFollowers || 0).toLocaleString()}</strong> followers. Automated Instagram verification was not completed at signup. Please verify their handle <strong>@{creator.instagram}</strong> manually before approving.
+                                    </p>
+                                </div>
+                            </div>
+                        )}
 
                         {/* ─── Badges Row ─── */}
                         {(earnedBadges.length > 0 || adminBadges.length > 0) && (

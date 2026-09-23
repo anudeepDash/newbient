@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
     Instagram, MapPin, Users, Zap, ArrowRight, ShieldCheck, Trophy, 
-    Target, Ban, Camera, Video, Eye, Star, Globe, Youtube, Twitter, 
+    Target, Ban, Camera, Video, Eye, Layers, Globe, Youtube, Twitter, 
     Calendar, CheckCircle2, Clock, MessageCircle, ChevronLeft, ChevronDown, 
     ExternalLink, FileText, Check, X, AlertTriangle, Sparkles,
     RefreshCw, AlertCircle, Lock, Pencil, User, Phone
@@ -21,7 +21,21 @@ const TASK_TYPES = {
     story: { label: 'Story', icon: Eye, color: 'text-purple-400' },
     reel: { label: 'Reel', icon: Video, color: 'text-orange-400' },
     visit_event: { label: 'Visit Event', icon: MapPin, color: 'text-emerald-400' },
-    custom: { label: 'Custom', icon: Star, color: 'text-neon-green' },
+    custom: { label: 'Custom', icon: Layers, color: 'text-neon-green' },
+};
+
+const resolveTaskType = (task) => {
+    if (!task) return TASK_TYPES.custom;
+    const type = (task.taskType || '').toLowerCase();
+    if (TASK_TYPES[type] && type !== 'custom') return TASK_TYPES[type];
+
+    const title = (task.title || '').toLowerCase();
+    if (title.includes('reel') || title.includes('short') || title.includes('video')) return TASK_TYPES.reel;
+    if (title.includes('story') || title.includes('stories')) return TASK_TYPES.story;
+    if (title.includes('post') || title.includes('photo') || title.includes('feed')) return TASK_TYPES.content_post;
+    if (title.includes('event') || title.includes('visit') || title.includes('attend')) return TASK_TYPES.visit_event;
+
+    return TASK_TYPES.custom;
 };
 
 const PLATFORMS = {
@@ -336,6 +350,9 @@ const CampaignDetailModal = ({
             const rawFollowers = form.followers || profile?.instagramFollowers || (instagramVerifiedData?.followers ?? 0);
             const parsedFollowers = parseInt(rawFollowers, 10) || 0;
 
+            const isManualFollowers = Boolean(isManualFollowerEntry);
+            const shouldAutoVerify = !isManualFollowers;
+
             const creatorData = {
                 uid: user.uid,
                 email: user.email,
@@ -348,9 +365,11 @@ const CampaignDetailModal = ({
                     ? form.categories.split(',').map(n => n.trim()).filter(Boolean)
                     : (profile?.specializations || profile?.niches || []),
                 bio: form.bio || profile?.bio || '',
-                profileStatus: profile?.profileStatus || 'pending',
+                profileStatus: profile?.profileStatus || (shouldAutoVerify ? 'approved' : 'pending'),
                 instagramVerified: profile?.instagramVerified ?? (verificationStep === 'success' || Boolean(instagramVerifiedData?.meetsMinimumFollowers)),
-                isVerified: profile?.isVerified ?? false,
+                isVerified: profile?.isVerified ?? shouldAutoVerify,
+                manualFollowerEntry: isManualFollowers,
+                requiresManualVerification: isManualFollowers,
                 profilePicture: profile?.profilePicture || instagramVerifiedData?.profilePic || user.photoURL || null,
                 joinedCampaigns: [...currentJoined, campaign.id]
             };
@@ -588,7 +607,7 @@ const CampaignDetailModal = ({
 
                                 <div className="space-y-2">
                                     {campaignTasks.map((task, idx) => {
-                                        const typeInfo = TASK_TYPES[task.taskType] || TASK_TYPES.custom;
+                                        const typeInfo = resolveTaskType(task);
                                         const TypeIcon = typeInfo.icon;
                                         const platInfo = PLATFORMS[task.platform] || PLATFORMS.other;
                                         const status = getSubmissionStatus(task, user?.uid);
@@ -793,7 +812,7 @@ const CampaignDetailModal = ({
                                                         onClick={handleJoin}
                                                         disabled={isJoining || !isEligible}
                                                         className={cn(
-                                                            "w-full h-13 rounded-2xl font-bold text-[15px] transition-all flex items-center justify-center gap-2",
+                                                            "w-full h-14 sm:h-[56px] rounded-2xl font-black text-[15px] sm:text-base tracking-wide transition-all flex items-center justify-center gap-2.5",
                                                             isEligible && !isJoining
                                                                 ? "bg-neon-green text-black hover:bg-emerald-400 active:scale-[0.99] cursor-pointer shadow-[0_0_40px_rgba(57,255,20,0.25)]"
                                                                 : "bg-black/[0.04] dark:bg-white/[0.04] text-gray-400 dark:text-zinc-600 cursor-not-allowed border border-black/[0.08] dark:border-white/[0.08]"
@@ -801,7 +820,7 @@ const CampaignDetailModal = ({
                                                     >
                                                         {isJoining ? <LoadingSpinner size="xs" color="#000000" /> : (
                                                             <>
-                                                                <Zap size={16} className="fill-current" />
+                                                                <Zap size={18} className="fill-current" />
                                                                 Apply Now
                                                             </>
                                                         )}
@@ -897,9 +916,9 @@ const CampaignDetailModal = ({
                                                                 <button
                                                                     type="submit"
                                                                     disabled={isJoining || !isEligible}
-                                                                    className="w-full h-11 bg-neon-green text-black font-bold text-sm rounded-2xl hover:bg-emerald-400 transition-all active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
+                                                                    className="w-full h-12 sm:h-[50px] bg-neon-green text-black font-extrabold text-sm sm:text-[15px] rounded-2xl hover:bg-emerald-400 transition-all active:scale-95 flex items-center justify-center gap-2 cursor-pointer shadow-[0_0_30px_rgba(57,255,20,0.2)]"
                                                                 >
-                                                                    {isJoining ? <LoadingSpinner size="xs" color="#000000" /> : <><span>Save & Apply</span><ArrowRight size={14} /></>}
+                                                                    {isJoining ? <LoadingSpinner size="xs" color="#000000" /> : <><span>Save & Apply</span><ArrowRight size={15} /></>}
                                                                 </button>
                                                             </motion.form>
                                                         )}
@@ -1111,9 +1130,9 @@ const CampaignDetailModal = ({
                                                         <button
                                                             type="submit"
                                                             disabled={isJoining}
-                                                            className="w-full h-13 bg-neon-green text-black font-bold text-[15px] rounded-2xl hover:bg-emerald-400 transition-all shadow-[0_0_40px_rgba(57,255,20,0.2)] active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
+                                                            className="w-full h-14 sm:h-[56px] bg-neon-green text-black font-black text-[15px] sm:text-base rounded-2xl hover:bg-emerald-400 transition-all shadow-[0_0_40px_rgba(57,255,20,0.25)] active:scale-95 flex items-center justify-center gap-2.5 cursor-pointer"
                                                         >
-                                                            {isJoining ? <LoadingSpinner size="xs" color="#000000" /> : <><span>Submit Application</span><ArrowRight size={15} /></>}
+                                                            {isJoining ? <LoadingSpinner size="xs" color="#000000" /> : <><span>Submit Application</span><ArrowRight size={16} /></>}
                                                         </button>
                                                     </motion.form>
                                                 </motion.div>

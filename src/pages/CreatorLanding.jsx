@@ -457,7 +457,7 @@ const CreatorLanding = () => {
                             {/* Massive Display Headline */}
                             <h1 className="text-4xl sm:text-6xl lg:text-[5.5rem] font-semibold tracking-tighter leading-[1.05] text-gray-900 dark:text-white mx-auto">
                                 Turn Your Influence Into <br className="hidden sm:block" />
-                                <span className="text-transparent bg-clip-text bg-gradient-to-b from-gray-900 to-gray-500 dark:from-white dark:to-zinc-500">
+                                <span className="text-transparent bg-clip-text bg-gradient-to-r from-black to-neon-green dark:from-white dark:to-neon-green">
                                     Unforgettable Experiences.
                                 </span>
                             </h1>

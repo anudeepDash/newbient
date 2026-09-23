@@ -187,6 +187,11 @@ const AdminCommunityHubLayout = ({ children, title, description, action, studioH
                                             isActive ? (tab.color || "text-neon-green") : "text-gray-400 dark:text-gray-500"
                                         )} />
                                         <span className="text-[10px] font-black uppercase tracking-widest">{tab.name}</span>
+                                        {tab.badge !== undefined && tab.badge !== null && (
+                                            <span className="px-1.5 py-0.5 rounded-full text-[8px] font-mono font-black bg-amber-500/20 text-amber-500 dark:text-amber-400 border border-amber-500/30">
+                                                {tab.badge}
+                                            </span>
+                                        )}
                                         {tab.comingSoon && <span className="px-1.5 py-0.5 rounded text-[7px] font-black text-gray-500 bg-black/5 dark:bg-white/5 uppercase">Soon</span>}
                                         {isActive && (
                                             <motion.div

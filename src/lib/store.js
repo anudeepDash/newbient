@@ -2240,14 +2240,36 @@ export const useStore = create((set, get) => ({
             const headers = { 'Content-Type': 'application/json' };
             if (idToken) headers['Authorization'] = `Bearer ${idToken}`;
 
+            const isManualFollowers = Boolean(
+                creator.manualFollowerEntry || 
+                creator.isManualFollowerEntry || 
+                creator.requiresManualVerification
+            );
+            const shouldAutoVerify = !isManualFollowers;
+            const profileStatus = creator.profileStatus 
+                ? creator.profileStatus 
+                : (shouldAutoVerify ? 'approved' : 'pending');
+            const isVerified = creator.isVerified !== undefined 
+                ? creator.isVerified 
+                : shouldAutoVerify;
+            const now = new Date().toISOString();
+
+            const creatorPayload = {
+                ...creator,
+                uid: currentUid || auth?.currentUser?.uid || null,
+                profileStatus,
+                isVerified,
+                manualFollowerEntry: isManualFollowers,
+                requiresManualVerification: isManualFollowers,
+                verifiedAt: shouldAutoVerify ? (creator.verifiedAt || now) : null,
+                verifiedBy: shouldAutoVerify ? (creator.verifiedBy || 'system_auto_verify') : null
+            };
+
             const res = await fetch('/api/creator-join', {
                 method: 'POST',
                 headers,
                 body: JSON.stringify({
-                    creator: {
-                        ...creator,
-                        uid: currentUid || auth?.currentUser?.uid || null
-                    },
+                    creator: creatorPayload,
                     sendWelcome
                 })
             });
@@ -2296,15 +2318,35 @@ export const useStore = create((set, get) => ({
         
         // Auto-verify email if user is signed in with Google
         const isEmailVerified = creator.isEmailVerified || (user?.emailVerified && user?.email?.toLowerCase() === normEmail) || false;
+        const fallbackNow = new Date().toISOString();
+
+        const isManualFollowersFallback = Boolean(
+            creator.manualFollowerEntry || 
+            creator.isManualFollowerEntry || 
+            creator.requiresManualVerification
+        );
+        const shouldAutoVerifyFallback = !isManualFollowersFallback;
+        const profileStatusFallback = creator.profileStatus 
+            ? creator.profileStatus 
+            : (shouldAutoVerifyFallback ? 'approved' : 'pending');
+        const isVerifiedFallback = creator.isVerified !== undefined 
+            ? creator.isVerified 
+            : shouldAutoVerifyFallback;
 
         const finalCreator = {
             ...creator,
             uid: targetUid,
             creatorId,
             verificationToken,
+            profileStatus: profileStatusFallback,
+            isVerified: isVerifiedFallback,
+            manualFollowerEntry: isManualFollowersFallback,
+            requiresManualVerification: isManualFollowersFallback,
+            verifiedAt: shouldAutoVerifyFallback ? (creator.verifiedAt || fallbackNow) : null,
+            verifiedBy: shouldAutoVerifyFallback ? (creator.verifiedBy || 'system_auto_verify') : null,
             isPhoneVerified: creator.isPhoneVerified ?? false,
             isEmailVerified,
-            createdAt: new Date().toISOString()
+            createdAt: creator.createdAt || fallbackNow
         };
 
         try {

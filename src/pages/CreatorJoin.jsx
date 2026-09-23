@@ -873,12 +873,16 @@ const CreatorJoin = () => {
                 setVerifiedPhoneNumber(fullFormattedPhone);
                 useStore.getState().addToast("Local mode: Phone verified automatically!", 'info');
             } else if (!isPhoneVerified) {
-                if (!otpSent) {
-                    useStore.getState().addToast("Please tap 'Send Code' and verify your phone number with the 6-digit SMS OTP.", 'warning');
+                if (smsFailed) {
+                    useStore.getState().addToast("Skipping phone verification due to SMS failure. We will verify later.", 'info');
                 } else {
-                    useStore.getState().addToast("Please verify your phone number with the 6-digit code.", 'warning');
+                    if (!otpSent) {
+                        useStore.getState().addToast("Please tap 'Send Code' and verify your phone number with the 6-digit SMS OTP.", 'warning');
+                    } else {
+                        useStore.getState().addToast("Please verify your phone number with the 6-digit code.", 'warning');
+                    }
+                    return;
                 }
-                return;
             }
         }
 
@@ -964,8 +968,10 @@ const CreatorJoin = () => {
         if (isLocal && !isPhoneVerified) {
             setIsPhoneVerified(true);
         } else if (!isPhoneVerified) {
-            useStore.getState().addToast("Please verify your phone number with the 6-digit OTP before submitting.", 'warning');
-            return;
+            if (!smsFailed) {
+                useStore.getState().addToast("Please verify your phone number with the 6-digit OTP before submitting.", 'warning');
+                return;
+            }
         }
 
         setIsSubmitting(true);
@@ -985,14 +991,20 @@ const CreatorJoin = () => {
 
             const isInstaVerified = Boolean(instagramVerifiedData && instagramVerifiedData.handle === cleanInstagram.toLowerCase());
             const finalFollowers = String(Number(formData.instagramFollowers || instagramVerifiedData?.followers || 0));
+            const manualFollowers = Boolean(isManualFollowerEntry);
 
             const result = await addCreator({
                 uid: user?.uid || auth?.currentUser?.uid || null,
+                ...formData,
                 email: formData.email.trim(),
                 displayName: formData.name.trim(),
                 name: formData.name.trim(),
-                profileStatus: 'pending',
-                ...formData,
+                profileStatus: manualFollowers ? 'pending' : 'approved',
+                isVerified: !manualFollowers,
+                manualFollowerEntry: manualFollowers,
+                requiresManualVerification: manualFollowers,
+                verifiedAt: manualFollowers ? null : new Date().toISOString(),
+                verifiedBy: manualFollowers ? null : 'system_auto_verify',
                 phone: `${countryCode} ${cleanDigits}`,
                 instagram: cleanInstagram,
                 instagramFollowers: finalFollowers,
@@ -1006,7 +1018,6 @@ const CreatorJoin = () => {
                 city: finalCity,
                 categories: finalNiche,
                 specializations: [finalNiche],
-                isVerified: false,
                 isPhoneVerified: true,
                 phoneVerifiedAt: new Date().toISOString()
             });
@@ -1071,13 +1082,15 @@ const CreatorJoin = () => {
         const displayCity = (formData.city === 'Others' ? formData.customCity?.trim() : formData.city) || 'Your City';
         const displayNiche = (formData.categories === 'Others' ? formData.customNiche?.trim() : formData.categories) || 'Content Creator';
 
+        const isAutoVerified = !isManualFollowerEntry;
         const newCreatorProfile = {
             name: formData.name,
             city: displayCity,
             categories: [displayNiche],
             instagramHandle: formData.instagramHandle || formData.instagram,
             profilePicture: formData.profilePicture,
-            profileStatus: "pending",
+            profileStatus: isAutoVerified ? "approved" : "pending",
+            isVerified: isAutoVerified,
             points: Number(siteSettings?.creatorWelcomePoints) || 100, // Welcome bonus points from settings
             joinedCampaigns: [],
             creatorId: `NB-${(formData.name || 'CRE').slice(0, 3).toUpperCase()}${Math.floor(1000 + Math.random() * 9000)}`
@@ -1097,15 +1110,22 @@ const CreatorJoin = () => {
                     className="relative z-10 max-w-xl sm:max-w-2xl w-full text-center space-y-6"
                 >
                     <div className="space-y-2">
-                        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-400 text-[10px] font-black uppercase tracking-widest font-mono">
-                            <Clock size={12} />
-                            <span>Application Submitted &bull; Pending Verification</span>
+                        <div className={cn(
+                            "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest font-mono border",
+                            isAutoVerified 
+                                ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400"
+                                : "bg-amber-500/10 border-amber-500/30 text-amber-600 dark:text-amber-400"
+                        )}>
+                            {isAutoVerified ? <CheckCircle2 size={12} /> : <Clock size={12} />}
+                            <span>{isAutoVerified ? "Profile Auto-Verified • Access Granted" : "Application Submitted • Pending Verification"}</span>
                         </div>
                         <h2 className="text-3xl sm:text-4xl font-black font-heading tracking-tight text-gray-900 dark:text-white">
                             Welcome to the Collective, {formData.name?.split(' ')[0]}!
                         </h2>
                         <p className="text-gray-600 dark:text-zinc-400 text-xs sm:text-sm max-w-md mx-auto leading-relaxed">
-                            Your application has been received and is under review with our talent team. Your temporary pass is reserved below.
+                            {isAutoVerified
+                                ? "Your creator profile and followers were automatically verified! Your all-access digital pass is ready below."
+                                : "Your application has been received and is under review because followers were manually entered. Your temporary pass is reserved below."}
                         </p>
                     </div>
 
@@ -1768,6 +1788,11 @@ const CreatorJoin = () => {
                                             {phoneError && (
                                                 <div className="pt-1">
                                                     <p className="text-xs text-red-400 font-medium">{phoneError}</p>
+                                                    {smsFailed && (
+                                                        <p className="text-[11px] text-gray-900 dark:text-white/60 mt-1">
+                                                            Having trouble verifying? You can still click <strong className="font-bold">Next</strong> and we will manually verify your number later.
+                                                        </p>
+                                                    )}
                                                 </div>
                                             )}
                                         </div>
