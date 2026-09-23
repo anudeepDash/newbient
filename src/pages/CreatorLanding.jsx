@@ -246,7 +246,7 @@ const CreatorLanding = () => {
             {/* Ambient Background Effects */}
             <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
                 <div className="hidden md:block absolute -top-24 left-1/3 w-[500px] h-[300px] bg-neon-green/[0.025] dark:bg-neon-green/[0.02] rounded-full blur-[120px] transform-gpu" />
-                <div className="hidden dark:block absolute inset-0" style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px)', backgroundSize: '60px 60px' }} />
+                <div className="hidden md:dark:block absolute inset-0" style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px)', backgroundSize: '60px 60px' }} />
             </div>
 
             {/* ===== FLOATING NAVBAR ===== */}
