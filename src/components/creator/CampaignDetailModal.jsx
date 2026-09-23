@@ -884,7 +884,6 @@ const CampaignDetailModal = ({
                                                                     <ChevronDown size={11} className={cn("transition-transform duration-200", showEditDetails && "rotate-180")} />
                                                                 </button>
                                                             </div>
-                                                        </div>
 
                                                             {/* Collapsible Editable Form Fields */}
                                                             <AnimatePresence>
