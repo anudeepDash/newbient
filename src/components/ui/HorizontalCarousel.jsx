@@ -2,10 +2,12 @@ import React, { useRef, useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
-export function HorizontalCarousel({ children, className }) {
+export function HorizontalCarousel({ children, className, autoScroll = false, autoScrollInterval = 3000 }) {
     const scrollRef = useRef(null);
+    const scrollDirRef = useRef('right');
     const [canScrollLeft, setCanScrollLeft] = useState(false);
     const [canScrollRight, setCanScrollRight] = useState(true);
+    const [isHovered, setIsHovered] = useState(false);
 
     const checkScroll = () => {
         if (scrollRef.current) {
@@ -21,6 +23,36 @@ export function HorizontalCarousel({ children, className }) {
         return () => window.removeEventListener('resize', checkScroll);
     }, [children]);
 
+    useEffect(() => {
+        if (!autoScroll) return;
+        
+        const interval = setInterval(() => {
+            if (isHovered) return;
+            
+            if (scrollRef.current) {
+                const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current;
+                
+                if (scrollWidth <= clientWidth) return; // No scrolling needed
+                
+                if (scrollLeft >= scrollWidth - clientWidth - 10) {
+                    scrollDirRef.current = 'left';
+                } else if (scrollLeft <= 10) {
+                    scrollDirRef.current = 'right';
+                }
+                
+                const scrollAmount = clientWidth * 0.8;
+                scrollRef.current.scrollBy({
+                    left: scrollDirRef.current === 'left' ? -scrollAmount : scrollAmount,
+                    behavior: 'smooth'
+                });
+                
+                setTimeout(checkScroll, 300);
+            }
+        }, autoScrollInterval);
+
+        return () => clearInterval(interval);
+    }, [autoScroll, autoScrollInterval, isHovered]);
+
     const scroll = (direction) => {
         if (scrollRef.current) {
             const scrollAmount = scrollRef.current.clientWidth * 0.8;
@@ -34,7 +66,15 @@ export function HorizontalCarousel({ children, className }) {
     };
 
     return (
-        <div className="relative group">
+        <div 
+            className="relative group"
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
+            onTouchStart={() => setIsHovered(true)}
+            onTouchEnd={() => {
+                setTimeout(() => setIsHovered(false), 2000); // Resume auto-scroll after a short delay
+            }}
+        >
             {/* Left Nav Button */}
             {canScrollLeft && (
                 <button

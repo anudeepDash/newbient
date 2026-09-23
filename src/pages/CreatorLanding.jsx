@@ -506,7 +506,7 @@ const CreatorLanding = () => {
                             transition={{ duration: 1, delay: 0.6 }}
                             className="w-full mt-16 sm:mt-24"
                         >
-                            <HorizontalCarousel className="pb-2 -mx-5 px-5 sm:mx-0 sm:px-0 gap-3 sm:gap-4 flex sm:justify-center">
+                            <div className="grid grid-cols-2 gap-3 sm:gap-4 sm:flex sm:justify-center">
                                 {[
                                     { val: '2,400+', label: 'Active Creators' },
                                     { val: '60+', label: 'Brand Partners' },
@@ -515,7 +515,7 @@ const CreatorLanding = () => {
                                 ].map((m, i) => (
                                     <div
                                         key={i}
-                                        className="shrink-0 w-[45vw] sm:w-[180px] snap-center flex flex-col items-center justify-center text-center p-4 rounded-3xl bg-transparent transition-transform"
+                                        className="flex flex-col items-center justify-center text-center p-4 rounded-3xl bg-transparent sm:w-[180px] w-full"
                                     >
                                         <p className="text-2xl sm:text-3xl font-semibold tracking-tight text-gray-900 dark:text-white leading-none">
                                             {m.val}
@@ -525,7 +525,7 @@ const CreatorLanding = () => {
                                         </p>
                                     </div>
                                 ))}
-                            </HorizontalCarousel>
+                            </div>
                         </motion.div>
 
                     </div>
@@ -561,7 +561,7 @@ const CreatorLanding = () => {
 
                         {/* Campaigns Grid */}
                         {activeCampaigns.length > 0 ? (
-                            <HorizontalCarousel className="pb-6 -mx-5 px-5 sm:mx-0 sm:px-0 gap-6 lg:gap-8 md:grid md:grid-cols-2 lg:grid-cols-3 md:overflow-visible">
+                            <HorizontalCarousel autoScroll={true} className="pb-6 -mx-5 px-5 sm:mx-0 sm:px-0 gap-6 lg:gap-8 md:grid md:grid-cols-2 lg:grid-cols-3 md:overflow-visible">
                                 {activeCampaigns.map((camp, idx) => (
                                     <div key={camp.id || idx} className="shrink-0 w-[85vw] sm:w-[400px] md:w-auto snap-center">
                                         <CampaignCard
@@ -620,7 +620,7 @@ const CreatorLanding = () => {
                             </p>
                         </div>
 
-                        <HorizontalCarousel className="pb-6 -mx-5 px-5 sm:mx-0 sm:px-0 gap-6 lg:gap-8 lg:grid lg:grid-cols-3 lg:overflow-visible">
+                        <HorizontalCarousel autoScroll={true} className="pb-6 -mx-5 px-5 sm:mx-0 sm:px-0 gap-6 lg:gap-8 lg:grid lg:grid-cols-3 lg:overflow-visible">
                             {[
                                 {
                                     num: '01',
@@ -729,7 +729,7 @@ const CreatorLanding = () => {
                             </p>
                         </div>
 
-                        <HorizontalCarousel className="pb-6 -mx-5 px-5 sm:mx-0 sm:px-0 gap-5 md:grid md:grid-cols-2 lg:grid-cols-4 md:overflow-visible">
+                        <HorizontalCarousel autoScroll={true} className="pb-6 -mx-5 px-5 sm:mx-0 sm:px-0 gap-5 md:grid md:grid-cols-2 lg:grid-cols-4 md:overflow-visible">
                             {steps.map((s, i) => (
                                 <motion.div
                                     key={i}
@@ -773,7 +773,7 @@ const CreatorLanding = () => {
                             </p>
                         </div>
 
-                        <HorizontalCarousel className="pb-6 -mx-5 px-5 sm:mx-0 sm:px-0 gap-5 md:grid md:grid-cols-2 lg:grid-cols-3 md:overflow-visible">
+                        <HorizontalCarousel autoScroll={true} className="pb-6 -mx-5 px-5 sm:mx-0 sm:px-0 gap-5 md:grid md:grid-cols-2 lg:grid-cols-3 md:overflow-visible">
                             {perks.map((p, i) => (
                                 <motion.div
                                     key={i}
@@ -822,7 +822,7 @@ const CreatorLanding = () => {
                                 </p>
                             </div>
 
-                            <HorizontalCarousel className="pb-6 -mx-5 px-5 sm:mx-0 sm:px-0 gap-6 md:grid md:grid-cols-2 lg:grid-cols-3 md:overflow-visible">
+                            <HorizontalCarousel autoScroll={true} className="pb-6 -mx-5 px-5 sm:mx-0 sm:px-0 gap-6 md:grid md:grid-cols-2 lg:grid-cols-3 md:overflow-visible">
                                 {activeTestimonials.map((t, i) => (
                                     <motion.div
                                         key={t.id || i}
