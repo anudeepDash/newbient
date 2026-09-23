@@ -341,7 +341,6 @@ const CreatorVaultView = ({ creatorPoints }) => {
 // ─── Main Dashboard ───────────────────────────────────────────────────────────
 
 const CreatorDashboard = () => {
-    useStoreSubscription(['creators', 'campaigns', 'creatorGroups']);
     const {
         user, authInitialized, creators, campaigns, creatorGroups,
         markCreatorCityGroupJoined, loading, openProfilePanel, subscriptionsLoaded,
@@ -360,6 +359,13 @@ const CreatorDashboard = () => {
     const [briefFilter, setBriefFilter] = useState('all');
     const [deliverableFilter, setDeliverableFilter] = useState('all');
     const [phoneBannerDismissed, setPhoneBannerDismissed] = useState(false);
+
+    const activeSubs = useMemo(() => {
+        const subs = ['campaigns', 'creatorGroups'];
+        if (activeTab === 'referrals') subs.push('creators');
+        return subs;
+    }, [activeTab]);
+    useStoreSubscription(activeSubs);
 
     useDynamicMeta({
         title: 'Creator Dashboard | Newbi Entertainment',
