@@ -500,6 +500,18 @@ const CreatorDashboard = () => {
     const joinedCampaignsList = (campaigns || []).filter(c => (profile?.joinedCampaigns || []).includes(c.id));
     const shortlistedCampaignsList = (campaigns || []).filter(c => (profile?.shortlistedCampaigns || []).includes(c.id));
 
+    // Sort joined campaigns so shortlisted and open campaigns appear first
+    const sortedJoinedCampaigns = useMemo(() => {
+        return [...joinedCampaignsList].sort((a, b) => {
+            const aShortlisted = (profile?.shortlistedCampaigns || []).includes(a.id) ? 1 : 0;
+            const bShortlisted = (profile?.shortlistedCampaigns || []).includes(b.id) ? 1 : 0;
+            if (bShortlisted !== aShortlisted) return bShortlisted - aShortlisted;
+            const aOpen = (!a.status || a.status.toLowerCase() === 'open') ? 1 : 0;
+            const bOpen = (!b.status || b.status.toLowerCase() === 'open') ? 1 : 0;
+            return bOpen - aOpen;
+        });
+    }, [joinedCampaignsList, profile?.shortlistedCampaigns]);
+
     const totalTasks = joinedCampaignsList.reduce((sum, c) => sum + (c.tasks?.length || 0), 0);
     const approvedTasks = joinedCampaignsList.reduce((sum, c) => {
         return sum + (c.tasks || []).filter(t => getSubmissionStatus(t, profile?.uid) === 'approved').length;
@@ -580,7 +592,7 @@ const CreatorDashboard = () => {
 
     const tabs = [
         { id: 'opportunities', label: 'New Openings', count: availableCampaigns.length },
-        { id: 'active', label: 'Performance History', count: joinedCampaignsList.length },
+        { id: 'active', label: 'My Deliverables', count: joinedCampaignsList.length },
         { id: 'referrals', label: 'Referrals & Leaderboard', count: null },
         { id: 'rewards', label: 'Creator Vault', count: 'Soon' },
     ];
@@ -790,20 +802,50 @@ const CreatorDashboard = () => {
                     </div>
                 </div>
 
-                {/* 3. PRIORITY SHORTLISTED GIGS (If any) */}
-                {shortlistedCampaignsList.length > 0 && (
-                    <motion.section initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
-                        <div className="flex items-center gap-3">
-                            <div className="w-9 h-9 rounded-xl bg-neon-green/15 border border-neon-green/30 text-emerald-700 dark:text-neon-green flex items-center justify-center">
-                                <Sparkles size={16} />
+                {/* 3. LIVE CAMPAIGNS JOINED (Automatically shown on main page without changing tabs) */}
+                {joinedCampaignsList.length > 0 && (
+                    <motion.section 
+                        initial={{ opacity: 0, y: 15 }} 
+                        animate={{ opacity: 1, y: 0 }} 
+                        className="space-y-4"
+                    >
+                        <div className="flex items-center justify-between gap-3 flex-wrap">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-600 dark:text-neon-green flex items-center justify-center shrink-0 shadow-xs">
+                                    <Radio size={18} className="animate-pulse text-emerald-600 dark:text-neon-green" />
+                                </div>
+                                <div>
+                                    <div className="flex items-center gap-2">
+                                        <h3 className="text-lg sm:text-xl font-black font-heading text-gray-950 dark:text-white">
+                                            Live Campaigns Joined
+                                        </h3>
+                                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-neon-green text-[10px] font-black uppercase font-mono border border-emerald-500/25">
+                                            {joinedCampaignsList.length} Active
+                                        </span>
+                                    </div>
+                                    <p className="text-[11px] font-medium text-gray-500 dark:text-zinc-400">
+                                        Campaigns you've registered for — view guidelines, execute missions &amp; submit deliverables
+                                    </p>
+                                </div>
                             </div>
-                            <div>
-                                <h3 className="text-lg sm:text-xl font-black font-heading text-gray-950 dark:text-white">Priority Shortlists</h3>
-                                <p className="text-[9px] font-black uppercase tracking-widest text-gray-400 dark:text-zinc-500">You are selected for immediate execution</p>
-                            </div>
+                            {joinedCampaignsList.length > 3 && (
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setActiveTab('active');
+                                        const el = document.getElementById('nav-tabs');
+                                        if (el) el.scrollIntoView({ behavior: 'smooth' });
+                                    }}
+                                    className="text-xs font-bold text-emerald-600 dark:text-neon-green hover:underline flex items-center gap-1 cursor-pointer shrink-0"
+                                >
+                                    <span>Manage All Deliverables ({joinedCampaignsList.length})</span>
+                                    <ChevronRight size={13} />
+                                </button>
+                            )}
                         </div>
+
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                            {shortlistedCampaignsList.map(c => (
+                            {sortedJoinedCampaigns.map(c => (
                                 <CampaignCard 
                                     key={c.id} 
                                     campaign={c} 
