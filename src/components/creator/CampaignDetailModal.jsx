@@ -421,11 +421,11 @@ const CampaignDetailModal = ({
             {/* Ambient Color Glow Behind Modal (Dynamic ambient backlight sampled from campaign thumbnail) */}
             {campaign.thumbnail ? (
                 <div 
-                    className="absolute w-[1000px] h-[700px] -top-20 left-1/2 -translate-x-1/2 bg-cover bg-center filter blur-[160px] opacity-75 dark:opacity-60 pointer-events-none rounded-full transform-gpu"
+                    className="absolute w-[1000px] h-[700px] -top-20 left-1/2 -translate-x-1/2 bg-cover bg-center filter blur-[160px] opacity-30 dark:opacity-60 pointer-events-none rounded-full transform-gpu"
                     style={{ backgroundImage: `url(${campaign.thumbnail})` }}
                 />
             ) : (
-                <div className="absolute w-[600px] h-[600px] bg-neon-green/5 rounded-full blur-[160px] pointer-events-none" />
+                <div className="absolute w-[600px] h-[600px] bg-emerald-500/10 dark:bg-neon-green/5 rounded-full blur-[160px] pointer-events-none" />
             )}
 
             {/* Ultra-Premium Modal Window */}
@@ -453,7 +453,7 @@ const CampaignDetailModal = ({
                     {/* Ambient Image Color Spill into Modal Content (Image's authentic hues bleed down into the body) */}
                     {campaign.thumbnail && (
                         <div 
-                            className="absolute top-0 inset-x-0 h-[650px] bg-cover bg-center filter blur-[70px] opacity-65 dark:opacity-55 pointer-events-none transform-gpu -z-0"
+                            className="absolute top-0 inset-x-0 h-[650px] bg-cover bg-center filter blur-[70px] opacity-25 dark:opacity-55 pointer-events-none transform-gpu -z-0"
                             style={{ 
                                 backgroundImage: `url(${campaign.thumbnail})`,
                                 WebkitMaskImage: 'linear-gradient(to bottom, rgba(0,0,0,1) 35%, rgba(0,0,0,0.5) 75%, rgba(0,0,0,0) 100%)',
@@ -537,7 +537,6 @@ const CampaignDetailModal = ({
                         {/* ── Stats pill row ── */}
                         <div className="flex flex-wrap gap-2 sm:gap-3 mt-1">
                             {[
-                                { label: 'City', value: campaign.targetCity || 'Universal', icon: MapPin },
                                 { label: 'Reward', value: campaign.reward || 'Barter', icon: Zap, accent: true },
                                 { label: 'Min. Followers', value: `${Number(campaign.minInstagramFollowers || 0).toLocaleString()}+`, icon: Users },
                                 { label: 'Tasks', value: `${campaignTasks.length} Deliverables`, icon: Target },
@@ -547,42 +546,42 @@ const CampaignDetailModal = ({
                                     className={cn(
                                         "flex items-center gap-2 px-3.5 py-2 rounded-full border text-xs font-semibold transition-all",
                                         accent
-                                            ? "bg-neon-green/10 border-neon-green/30 text-neon-green"
-                                            : "bg-white/[0.04] border-white/10 text-zinc-300"
+                                            ? "bg-emerald-50 dark:bg-neon-green/10 border-emerald-200 dark:border-neon-green/30 text-emerald-700 dark:text-neon-green"
+                                            : "bg-black/[0.04] dark:bg-white/[0.04] border-black/10 dark:border-white/10 text-gray-700 dark:text-zinc-300"
                                     )}
                                 >
-                                    <Icon size={12} className={accent ? "text-neon-green" : "text-zinc-500"} />
-                                    <span className="text-zinc-500 text-[10px] uppercase tracking-widest font-mono mr-0.5">{label}</span>
+                                    <Icon size={12} className={accent ? "text-emerald-600 dark:text-neon-green" : "text-gray-500 dark:text-zinc-500"} />
+                                    <span className="text-gray-500 dark:text-zinc-500 text-[10px] uppercase tracking-widest font-mono mr-0.5">{label}</span>
                                     <span>{value}</span>
                                 </div>
                             ))}
                         </div>
 
                         {/* ── Divider ── */}
-                        <div className="border-t border-white/[0.06]" />
+                        <div className="border-t border-black/5 dark:border-white/[0.06]" />
 
                         {/* ── Campaign Briefing ── */}
                         <section className="space-y-5">
-                            <h2 className="text-[11px] font-black uppercase tracking-[0.2em] text-zinc-500 font-mono">
+                            <h2 className="text-[11px] font-black uppercase tracking-[0.2em] text-gray-500 dark:text-zinc-500 font-mono">
                                 Campaign Brief
                             </h2>
                             <div
-                                className="campaign-briefing-content text-[15px] sm:text-base leading-[1.75] text-zinc-200 font-normal"
+                                className="campaign-briefing-content text-[15px] sm:text-base leading-[1.75] text-gray-800 dark:text-zinc-200 font-normal"
                                 dangerouslySetInnerHTML={{ __html: campaign.description || 'No briefing provided.' }}
                             />
                         </section>
 
                         {/* ── Divider ── */}
-                        {campaignTasks.length > 0 && <div className="border-t border-white/[0.06]" />}
+                        {campaignTasks.length > 0 && <div className="border-t border-black/5 dark:border-white/[0.06]" />}
 
                         {/* ── Deliverables ── */}
                         {campaignTasks.length > 0 && (
                             <section className="space-y-5">
                                 <div className="flex items-center justify-between">
-                                    <h2 className="text-[11px] font-black uppercase tracking-[0.2em] text-zinc-500 font-mono">
+                                    <h2 className="text-[11px] font-black uppercase tracking-[0.2em] text-gray-500 dark:text-zinc-500 font-mono">
                                         Deliverables
                                     </h2>
-                                    <span className="text-[10px] text-zinc-600 font-mono">
+                                    <span className="text-[10px] text-gray-500 dark:text-zinc-600 font-mono">
                                         {requiredTasks.length} required · {campaignTasks.length - requiredTasks.length} optional
                                     </span>
                                 </div>
@@ -602,18 +601,18 @@ const CampaignDetailModal = ({
                                                     "group flex items-start gap-4 p-4 rounded-2xl border transition-all duration-200",
                                                     isJoined ? "cursor-pointer" : "",
                                                     status === 'approved'
-                                                        ? "bg-neon-green/[0.05] border-neon-green/20 hover:border-neon-green/40"
+                                                        ? "bg-emerald-50 dark:bg-neon-green/[0.05] border-emerald-200 dark:border-neon-green/20 hover:border-emerald-300 dark:hover:border-neon-green/40"
                                                         : status === 'submitted'
-                                                        ? "bg-amber-500/[0.05] border-amber-500/20 hover:border-amber-500/40"
-                                                        : "bg-white/[0.02] border-white/[0.06] hover:border-white/[0.14] hover:bg-white/[0.04]"
+                                                        ? "bg-amber-50 dark:bg-amber-500/[0.05] border-amber-200 dark:border-amber-500/20 hover:border-amber-300 dark:hover:border-amber-500/40"
+                                                        : "bg-black/[0.02] dark:bg-white/[0.02] border-black/[0.06] dark:border-white/[0.06] hover:border-black/[0.14] dark:hover:border-white/[0.14] hover:bg-black/[0.04] dark:hover:bg-white/[0.04]"
                                                 )}
                                             >
                                                 {/* Status circle */}
                                                 <div className={cn(
                                                     "w-9 h-9 rounded-xl flex items-center justify-center shrink-0 mt-0.5",
-                                                    status === 'approved' ? "bg-neon-green/20 text-neon-green" :
-                                                    status === 'submitted' ? "bg-amber-500/20 text-amber-400" :
-                                                    "bg-white/[0.06] text-zinc-400"
+                                                    status === 'approved' ? "bg-emerald-100 dark:bg-neon-green/20 text-emerald-600 dark:text-neon-green" :
+                                                    status === 'submitted' ? "bg-amber-100 dark:bg-amber-500/20 text-amber-500 dark:text-amber-400" :
+                                                    "bg-black/[0.06] dark:bg-white/[0.06] text-gray-500 dark:text-zinc-400"
                                                 )}>
                                                     {status === 'approved' ? <CheckCircle2 size={18} /> : <TypeIcon size={17} />}
                                                 </div>
@@ -621,7 +620,7 @@ const CampaignDetailModal = ({
                                                 <div className="flex-1 min-w-0">
                                                     <div className="flex items-start justify-between gap-3">
                                                         <div>
-                                                            <p className="text-sm font-semibold text-white leading-snug">
+                                                            <p className="text-sm font-semibold text-gray-900 dark:text-white leading-snug">
                                                                 {task.title}
                                                             </p>
                                                             <div className="flex flex-wrap items-center gap-2 mt-1.5">
@@ -645,15 +644,15 @@ const CampaignDetailModal = ({
                                                             {isJoined && (
                                                                 <span className={cn(
                                                                     "text-[9px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full border font-mono",
-                                                                    status === 'approved' ? "text-neon-green border-neon-green/30 bg-neon-green/10" :
-                                                                    status === 'submitted' ? "text-amber-400 border-amber-500/30 bg-amber-500/10" :
-                                                                    "text-zinc-500 border-white/10 bg-white/[0.04]"
+                                                                    status === 'approved' ? "text-emerald-700 dark:text-neon-green border-emerald-300 dark:border-neon-green/30 bg-emerald-100 dark:bg-neon-green/10" :
+                                                                    status === 'submitted' ? "text-amber-600 dark:text-amber-400 border-amber-300 dark:border-amber-500/30 bg-amber-100 dark:bg-amber-500/10" :
+                                                                    "text-gray-500 dark:text-zinc-500 border-black/10 dark:border-white/10 bg-black/[0.04] dark:bg-white/[0.04]"
                                                                 )}>
                                                                     {status === 'not_started' ? 'Pending' : status.replace('_', ' ')}
                                                                 </span>
                                                             )}
                                                             {isJoined && (
-                                                                <ArrowRight size={14} className="text-zinc-600 group-hover:text-zinc-300 group-hover:translate-x-0.5 transition-all" />
+                                                                <ArrowRight size={14} className="text-gray-400 dark:text-zinc-600 group-hover:text-gray-700 dark:group-hover:text-zinc-300 group-hover:translate-x-0.5 transition-all" />
                                                             )}
                                                         </div>
                                                     </div>
@@ -672,28 +671,28 @@ const CampaignDetailModal = ({
                         )}
 
                         {/* ── Divider ── */}
-                        <div className="border-t border-white/[0.06]" />
+                        <div className="border-t border-black/5 dark:border-white/[0.06]" />
 
                         {/* ── Application / Status Panel ── */}
                         <section className="space-y-5 pb-2">
                             {isJoined ? (
                                 /* ── Already joined view ── */
                                 <div className="space-y-5">
-                                    <h2 className="text-[11px] font-black uppercase tracking-[0.2em] text-zinc-500 font-mono">
+                                    <h2 className="text-[11px] font-black uppercase tracking-[0.2em] text-gray-500 dark:text-zinc-500 font-mono">
                                         Campaign Status
                                     </h2>
 
                                     {/* Progress */}
                                     <div className="space-y-3">
                                         <div className="flex items-center justify-between">
-                                            <span className="text-sm font-semibold text-white">
+                                            <span className="text-sm font-semibold text-gray-900 dark:text-white">
                                                 {approvedTotal} of {campaignTasks.length} tasks completed
                                             </span>
-                                            <span className="text-sm font-bold text-neon-green font-mono">
+                                            <span className="text-sm font-bold text-emerald-600 dark:text-neon-green font-mono">
                                                 {Math.round(progress)}%
                                             </span>
                                         </div>
-                                        <div className="h-[3px] bg-white/[0.08] rounded-full overflow-hidden">
+                                        <div className="h-[3px] bg-black/10 dark:bg-white/[0.08] rounded-full overflow-hidden">
                                             <motion.div
                                                 initial={{ width: 0 }}
                                                 animate={{ width: `${progress}%` }}
@@ -704,9 +703,9 @@ const CampaignDetailModal = ({
                                     </div>
 
                                     {/* Status row */}
-                                    <div className="flex items-center justify-between py-3 border-y border-white/[0.06]">
-                                        <span className="text-sm text-zinc-400">Campaign status</span>
-                                        <span className={cn("text-sm font-semibold", isFullyComplete ? "text-neon-green" : isShortlisted ? "text-amber-400" : "text-zinc-400")}>
+                                    <div className="flex items-center justify-between py-3 border-y border-black/5 dark:border-white/[0.06]">
+                                        <span className="text-sm text-gray-500 dark:text-zinc-400">Campaign status</span>
+                                        <span className={cn("text-sm font-semibold", isFullyComplete ? "text-emerald-600 dark:text-neon-green" : isShortlisted ? "text-amber-500 dark:text-amber-400" : "text-gray-500 dark:text-zinc-400")}>
                                             {isFullyComplete ? "Completed" : isShortlisted ? "Active & Shortlisted" : "Under Review"}
                                         </span>
                                     </div>
@@ -724,7 +723,7 @@ const CampaignDetailModal = ({
                             ) : (
                                 /* ── Application flow ── */
                                 <div className="space-y-6">
-                                    <h2 className="text-[11px] font-black uppercase tracking-[0.2em] text-zinc-500 font-mono">
+                                    <h2 className="text-[11px] font-black uppercase tracking-[0.2em] text-gray-500 dark:text-zinc-500 font-mono">
                                         Apply to Campaign
                                     </h2>
 
@@ -740,7 +739,7 @@ const CampaignDetailModal = ({
                                                     className="space-y-4"
                                                 >
                                                     {/* Creator identity row */}
-                                                    <div className="flex items-center gap-3 py-4 border-y border-white/[0.06]">
+                                                    <div className="flex items-center gap-3 py-4 border-y border-black/5 dark:border-white/[0.06]">
                                                         {(profile.profilePicture || instagramVerifiedData?.profilePic || user?.photoURL) ? (
                                                             <img
                                                                 src={profile.profilePicture || instagramVerifiedData?.profilePic || user?.photoURL}
@@ -749,13 +748,13 @@ const CampaignDetailModal = ({
                                                                 onError={(e) => { e.currentTarget.style.display = 'none'; }}
                                                             />
                                                         ) : (
-                                                            <div className="w-11 h-11 rounded-full bg-white/[0.06] flex items-center justify-center text-zinc-400 shrink-0">
+                                                            <div className="w-11 h-11 rounded-full bg-black/5 dark:bg-white/[0.06] flex items-center justify-center text-gray-500 dark:text-zinc-400 shrink-0">
                                                                 <Instagram size={18} />
                                                             </div>
                                                         )}
                                                         <div className="flex-1 min-w-0">
                                                             <div className="flex items-center gap-1.5">
-                                                                <span className="text-sm font-semibold text-white truncate">
+                                                                <span className="text-sm font-semibold text-gray-900 dark:text-white truncate">
                                                                     {profile.name || form.name || user?.displayName || 'Creator'}
                                                                 </span>
                                                                 {(profile.isVerified || profile.instagramVerified) && (
@@ -797,7 +796,7 @@ const CampaignDetailModal = ({
                                                             "w-full h-13 rounded-2xl font-bold text-[15px] transition-all flex items-center justify-center gap-2",
                                                             isEligible && !isJoining
                                                                 ? "bg-neon-green text-black hover:bg-emerald-400 active:scale-[0.99] cursor-pointer shadow-[0_0_40px_rgba(57,255,20,0.25)]"
-                                                                : "bg-white/[0.04] text-zinc-600 cursor-not-allowed border border-white/[0.08]"
+                                                                : "bg-black/[0.04] dark:bg-white/[0.04] text-gray-400 dark:text-zinc-600 cursor-not-allowed border border-black/[0.08] dark:border-white/[0.08]"
                                                         )}
                                                     >
                                                         {isJoining ? <LoadingSpinner size="xs" color="#000000" /> : (
@@ -831,27 +830,27 @@ const CampaignDetailModal = ({
                                                                 onSubmit={handleJoin}
                                                                 className="space-y-4 overflow-hidden pt-2"
                                                             >
-                                                                <div className="h-px bg-white/[0.06]" />
-                                                                <p className="text-xs text-zinc-500">Changes will update your creator profile.</p>
+                                                                <div className="h-px bg-black/5 dark:bg-white/[0.06]" />
+                                                                <p className="text-xs text-gray-500 dark:text-zinc-500">Changes will update your creator profile.</p>
 
                                                                 {[
                                                                     { label: 'Full Name', field: 'name', placeholder: 'Your full name' },
                                                                     { label: 'WhatsApp / Mobile', field: 'phone', placeholder: '+91...', type: 'tel' },
                                                                 ].map(({ label, field, placeholder, type }) => (
                                                                     <div key={field} className="space-y-1.5">
-                                                                        <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest font-mono">{label}</label>
+                                                                        <label className="text-[10px] font-bold text-gray-500 dark:text-zinc-500 uppercase tracking-widest font-mono">{label}</label>
                                                                         <Input
                                                                             required type={type}
                                                                             value={form[field]}
                                                                             onChange={e => setForm({ ...form, [field]: e.target.value })}
                                                                             placeholder={placeholder}
-                                                                            className="h-11 bg-white/[0.04] border-white/10 rounded-xl text-sm text-white focus:border-neon-green"
+                                                                            className="h-11 bg-black/[0.02] dark:bg-white/[0.04] border-black/10 dark:border-white/10 rounded-xl text-sm text-gray-900 dark:text-white focus:border-emerald-500 dark:focus:border-neon-green"
                                                                         />
                                                                     </div>
                                                                 ))}
 
                                                                 <div className="space-y-1.5">
-                                                                    <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest font-mono block">Target City</label>
+                                                                    <label className="text-[10px] font-bold text-gray-500 dark:text-zinc-500 uppercase tracking-widest font-mono block">Target City</label>
                                                                     <StudioSelect
                                                                         value={form.city}
                                                                         options={PREDEFINED_CITIES.map(c => ({ value: c, label: c.toUpperCase() }))}
@@ -863,34 +862,34 @@ const CampaignDetailModal = ({
                                                                 </div>
 
                                                                 <div className="space-y-1.5">
-                                                                    <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest font-mono">Specializations</label>
+                                                                    <label className="text-[10px] font-bold text-gray-500 dark:text-zinc-500 uppercase tracking-widest font-mono">Specializations</label>
                                                                     <Input
                                                                         required value={form.categories}
                                                                         onChange={e => setForm({ ...form, categories: e.target.value })}
                                                                         placeholder="Fashion, Music, Lifestyle..."
-                                                                        className="h-11 bg-white/[0.04] border-white/10 rounded-xl text-sm text-white focus:border-neon-green"
+                                                                        className="h-11 bg-black/[0.02] dark:bg-white/[0.04] border-black/10 dark:border-white/10 rounded-xl text-sm text-gray-900 dark:text-white focus:border-emerald-500 dark:focus:border-neon-green"
                                                                     />
                                                                 </div>
 
                                                                 <div className="space-y-1.5">
-                                                                    <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest font-mono">Bio</label>
+                                                                    <label className="text-[10px] font-bold text-gray-500 dark:text-zinc-500 uppercase tracking-widest font-mono">Bio</label>
                                                                     <textarea
                                                                         value={form.bio}
                                                                         onChange={e => setForm({ ...form, bio: e.target.value })}
                                                                         placeholder="Brief intro about your content style..."
-                                                                        className="w-full h-20 bg-white/[0.04] border border-white/10 rounded-xl p-3 text-white text-xs resize-none placeholder-zinc-600 focus:outline-none focus:border-neon-green transition-colors"
+                                                                        className="w-full h-20 bg-black/[0.02] dark:bg-white/[0.04] border border-black/10 dark:border-white/10 rounded-xl p-3 text-gray-900 dark:text-white text-xs resize-none placeholder-gray-400 dark:placeholder-zinc-600 focus:outline-none focus:border-emerald-500 dark:focus:border-neon-green transition-colors"
                                                                     />
                                                                 </div>
 
                                                                 {isManualFollowerEntry && (
                                                                     <div className="space-y-1.5">
-                                                                        <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest font-mono">Follower Count</label>
+                                                                        <label className="text-[10px] font-bold text-gray-500 dark:text-zinc-500 uppercase tracking-widest font-mono">Follower Count</label>
                                                                         <Input
                                                                             type="text" inputMode="numeric" pattern="[0-9]*"
                                                                             value={form.followers}
                                                                             onChange={e => { const v = e.target.value.replace(/\D/g, ''); setForm(prev => ({ ...prev, followers: v })); }}
                                                                             placeholder="Your follower count"
-                                                                            className="h-11 bg-white/[0.04] border-white/10 rounded-xl text-sm text-white focus:border-neon-green font-mono"
+                                                                            className="h-11 bg-black/[0.02] dark:bg-white/[0.04] border-black/10 dark:border-white/10 rounded-xl text-sm text-gray-900 dark:text-white focus:border-emerald-500 dark:focus:border-neon-green font-mono"
                                                                         />
                                                                     </div>
                                                                 )}
