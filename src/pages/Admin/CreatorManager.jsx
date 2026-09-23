@@ -59,7 +59,7 @@ import UserPlus from 'lucide-react/dist/esm/icons/user-plus';
 import BroadcastGroupsModal from '../../components/admin/BroadcastGroupsModal';
 import AddCityCreatorsModal from '../../components/admin/AddCityCreatorsModal';
 import { getEarnedBadges, getVerifiedTasksCount, getReferralsForCreator } from '../../lib/badges';
-import { sendCreatorDirectEmail, generateCreatorWelcomeHTML, resolveCityWhatsAppGroup } from '../../lib/email';
+import { sendCreatorDirectEmail, generateCreatorWelcomeHTML, generateCreatorApprovedHTML, sendCreatorApprovedEmail, resolveCityWhatsAppGroup } from '../../lib/email';
 import EmailPreviewIframe from '../../components/ui/EmailPreviewIframe';
 
 const getPageNumbers = (currentPage, totalPages) => {
@@ -1707,6 +1707,7 @@ const CreatorDetailModal = ({ creator, onClose, onUpdateStatus, onDelete, isUpda
     const [sendingEmail, setSendingEmail] = useState(false);
     const [sendingMessage, setSendingMessage] = useState(false);
     const [sendingWelcomePass, setSendingWelcomePass] = useState(false);
+    const [passEmailType, setPassEmailType] = useState(creator.profileStatus === 'approved' ? 'approved' : 'welcome');
 
     useEffect(() => {
         setIsFeatured(creator.isFeatured || false);
@@ -1877,6 +1878,56 @@ const CreatorDetailModal = ({ creator, onClose, onUpdateStatus, onDelete, isUpda
         return generateCreatorWelcomeHTML(
             creator.displayName || creator.name || 'Creator',
             verificationUrl,
+            {
+                city: creator.city,
+                handle: creator.instagram || creator.handle,
+                niche: creator.primaryNiche || creator.niche || creator.categories || creator.category,
+                passId: creator.creatorId || creator.uid?.slice(0, 8),
+                avatar: creator.profilePicture || creator.avatar || creator.photoURL,
+                phone: creator.phone,
+                points: creator.points || 500
+            }
+        );
+    }, [creator]);
+
+    // Handle sending/resending verified pass email
+    const handleSendApprovedPassEmail = async () => {
+        if (!creator.email) {
+            useStore.getState().addToast("Creator does not have an email address", 'error');
+            return;
+        }
+        setSendingWelcomePass(true);
+        try {
+            const result = await sendCreatorApprovedEmail(
+                creator.email,
+                creator.displayName || creator.name || 'Creator',
+                {
+                    city: creator.city,
+                    handle: creator.instagram || creator.handle,
+                    niche: creator.primaryNiche || creator.niche || creator.categories || creator.category,
+                    passId: creator.creatorId || creator.uid?.slice(0, 8),
+                    avatar: creator.profilePicture || creator.avatar || creator.photoURL,
+                    phone: creator.phone,
+                    points: creator.points || 500
+                }
+            );
+            if (result && result.success) {
+                useStore.getState().addToast(`Official Verified Pass Email sent to ${creator.email}!`, 'success');
+            } else {
+                throw new Error(result?.error || 'Failed to dispatch verified pass email');
+            }
+        } catch (err) {
+            console.error("Error sending verified pass email:", err);
+            useStore.getState().addToast(err.message || "Failed to send verified pass email", 'error');
+        } finally {
+            setSendingWelcomePass(false);
+        }
+    };
+
+    const approvedPassPreviewHtml = useMemo(() => {
+        if (!creator) return '';
+        return generateCreatorApprovedHTML(
+            creator.displayName || creator.name || 'Creator',
             {
                 city: creator.city,
                 handle: creator.instagram || creator.handle,
@@ -2168,28 +2219,52 @@ const CreatorDetailModal = ({ creator, onClose, onUpdateStatus, onDelete, isUpda
 
                         {/* ─── Direct Communication ─── */}
                         <div className="p-4 bg-gray-50 dark:bg-white/[0.02] border border-black/10 dark:border-white/[0.05] rounded-2xl space-y-4">
-                            {/* 1-Click Quick Resend Welcome Creator Pass Email */}
-                            <div className="p-3 bg-neon-cyan/5 border border-neon-cyan/20 dark:bg-neon-cyan/10 rounded-xl flex items-center justify-between gap-3">
-                                <div className="min-w-0">
-                                    <p className="text-[10px] font-black text-gray-900 dark:text-white uppercase tracking-wider flex items-center gap-1.5">
-                                        <Ticket size={12} className="text-neon-cyan" />
-                                        Official Creator Pass &amp; Welcome Email
-                                    </p>
-                                    <p className="text-[9px] text-gray-500 dark:text-zinc-400 mt-0.5 truncate">
-                                        Sends pass card, {creator.city || 'city'} WhatsApp hub link &amp; verification
-                                    </p>
+                            {/* 1-Click Quick Resend / Send Pass Email */}
+                            {creator.profileStatus === 'approved' ? (
+                                <div className="p-3 bg-neon-green/5 border border-neon-green/20 dark:bg-neon-green/10 rounded-xl flex items-center justify-between gap-3">
+                                    <div className="min-w-0">
+                                        <p className="text-[10px] font-black text-gray-900 dark:text-white uppercase tracking-wider flex items-center gap-1.5">
+                                            <CheckCircle2 size={12} className="text-neon-green" />
+                                            Official Verified Creator Pass Email
+                                        </p>
+                                        <p className="text-[9px] text-gray-500 dark:text-zinc-400 mt-0.5 truncate">
+                                            Sends verified digital pass, perks &amp; {creator.city || 'city'} WhatsApp hub link
+                                        </p>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={handleSendApprovedPassEmail}
+                                        disabled={sendingWelcomePass || !creator.email}
+                                        className="h-8 px-3 rounded-lg bg-neon-green text-black font-black text-[9px] uppercase tracking-wider shrink-0 flex items-center gap-1.5 hover:bg-neon-green/90 disabled:opacity-40 transition-all shadow-sm cursor-pointer"
+                                    >
+                                        {sendingWelcomePass ? <LoadingSpinner size="xs" color="black" /> : (
+                                            <><Send size={10} /> Send Pass</>
+                                        )}
+                                    </button>
                                 </div>
-                                <button
-                                    type="button"
-                                    onClick={handleSendWelcomePassEmail}
-                                    disabled={sendingWelcomePass || !creator.email}
-                                    className="h-8 px-3 rounded-lg bg-neon-cyan text-black font-black text-[9px] uppercase tracking-wider shrink-0 flex items-center gap-1.5 hover:bg-neon-cyan/90 disabled:opacity-40 transition-all shadow-sm cursor-pointer"
-                                >
-                                    {sendingWelcomePass ? <LoadingSpinner size="xs" color="black" /> : (
-                                        <><Send size={10} /> Send Pass</>
-                                    )}
-                                </button>
-                            </div>
+                            ) : (
+                                <div className="p-3 bg-neon-cyan/5 border border-neon-cyan/20 dark:bg-neon-cyan/10 rounded-xl flex items-center justify-between gap-3">
+                                    <div className="min-w-0">
+                                        <p className="text-[10px] font-black text-gray-900 dark:text-white uppercase tracking-wider flex items-center gap-1.5">
+                                            <Ticket size={12} className="text-neon-cyan" />
+                                            Official Creator Pass &amp; Welcome Email
+                                        </p>
+                                        <p className="text-[9px] text-gray-500 dark:text-zinc-400 mt-0.5 truncate">
+                                            Sends pass card, {creator.city || 'city'} WhatsApp hub link &amp; verification
+                                        </p>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={handleSendWelcomePassEmail}
+                                        disabled={sendingWelcomePass || !creator.email}
+                                        className="h-8 px-3 rounded-lg bg-neon-cyan text-black font-black text-[9px] uppercase tracking-wider shrink-0 flex items-center gap-1.5 hover:bg-neon-cyan/90 disabled:opacity-40 transition-all shadow-sm cursor-pointer"
+                                    >
+                                        {sendingWelcomePass ? <LoadingSpinner size="xs" color="black" /> : (
+                                            <><Send size={10} /> Send Pass</>
+                                        )}
+                                    </button>
+                                </div>
+                            )}
 
                             <div>
                                 <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Direct Communication</p>
@@ -2266,10 +2341,54 @@ const CreatorDetailModal = ({ creator, onClose, onUpdateStatus, onDelete, isUpda
                                 </form>
                             ) : communicationTab === 'pass' ? (
                                 <div className="space-y-3">
-                                    <div className="p-3 bg-neon-cyan/5 border border-neon-cyan/20 rounded-xl space-y-1.5">
+                                    <div className="flex items-center gap-2 p-1 bg-black/5 dark:bg-white/5 rounded-lg border border-black/5 dark:border-white/5">
+                                        <button
+                                            type="button"
+                                            onClick={() => setPassEmailType('approved')}
+                                            className={cn(
+                                                "flex-1 py-1.5 rounded-md text-[9px] font-black uppercase tracking-wider transition-all",
+                                                passEmailType === 'approved' 
+                                                    ? "bg-neon-green text-black shadow-sm" 
+                                                    : "text-gray-500 hover:text-gray-900 dark:hover:text-white"
+                                            )}
+                                        >
+                                            Verified Pass
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setPassEmailType('welcome')}
+                                            className={cn(
+                                                "flex-1 py-1.5 rounded-md text-[9px] font-black uppercase tracking-wider transition-all",
+                                                passEmailType === 'welcome' 
+                                                    ? "bg-neon-cyan text-black shadow-sm" 
+                                                    : "text-gray-500 hover:text-gray-900 dark:hover:text-white"
+                                            )}
+                                        >
+                                            Welcome Pass
+                                        </button>
+                                    </div>
+
+                                    <div className={cn(
+                                        "p-3 rounded-xl space-y-1.5 border",
+                                        passEmailType === 'approved' 
+                                            ? "bg-neon-green/5 border-neon-green/20" 
+                                            : "bg-neon-cyan/5 border-neon-cyan/20"
+                                    )}>
+                                        <div className="flex items-center justify-between text-[10px]">
+                                            <span className="font-bold text-gray-500 dark:text-zinc-400 uppercase tracking-wider">Pass Format</span>
+                                            <span className={cn(
+                                                "font-black uppercase tracking-wider",
+                                                passEmailType === 'approved' ? "text-neon-green" : "text-neon-cyan"
+                                            )}>
+                                                {passEmailType === 'approved' ? 'Profile Verified Roster' : 'New Creator Enrollment'}
+                                            </span>
+                                        </div>
                                         <div className="flex items-center justify-between text-[10px]">
                                             <span className="font-bold text-gray-500 dark:text-zinc-400 uppercase tracking-wider">City WhatsApp Hub</span>
-                                            <span className="font-black text-neon-cyan uppercase tracking-wider">
+                                            <span className={cn(
+                                                "font-black uppercase tracking-wider",
+                                                passEmailType === 'approved' ? "text-neon-green" : "text-neon-cyan"
+                                            )}>
                                                 {resolveCityWhatsAppGroup(creator.city).city} Community
                                             </span>
                                         </div>
@@ -2281,19 +2400,22 @@ const CreatorDetailModal = ({ creator, onClose, onUpdateStatus, onDelete, isUpda
                                         </div>
                                     </div>
 
-                                    {/* Sandboxed live preview of the welcome email with creator pass */}
+                                    {/* Sandboxed live preview of the pass email */}
                                     <div className="border border-black/10 dark:border-white/10 rounded-xl overflow-hidden max-h-80 overflow-y-auto custom-scrollbar bg-[#07080C]">
-                                        <EmailPreviewIframe html={welcomePassPreviewHtml} />
+                                        <EmailPreviewIframe html={passEmailType === 'approved' ? approvedPassPreviewHtml : welcomePassPreviewHtml} />
                                     </div>
 
                                     <button 
                                         type="button"
-                                        onClick={handleSendWelcomePassEmail}
+                                        onClick={passEmailType === 'approved' ? handleSendApprovedPassEmail : handleSendWelcomePassEmail}
                                         disabled={sendingWelcomePass || !creator.email}
-                                        className="w-full h-10 bg-neon-cyan text-black hover:bg-neon-cyan/90 font-black rounded-lg text-[9px] uppercase tracking-wider flex items-center justify-center gap-2 transition-all disabled:opacity-40 cursor-pointer shadow-sm"
+                                        className={cn(
+                                            "w-full h-10 font-black rounded-lg text-[9px] uppercase tracking-wider flex items-center justify-center gap-2 transition-all disabled:opacity-40 cursor-pointer shadow-sm text-black",
+                                            passEmailType === 'approved' ? "bg-neon-green hover:bg-neon-green/90" : "bg-neon-cyan hover:bg-neon-cyan/90"
+                                        )}
                                     >
                                         {sendingWelcomePass ? <LoadingSpinner size="xs" color="black" /> : (
-                                            <><Send size={11} /> Dispatch Official Creator Pass Email</>
+                                            <><Send size={11} /> {passEmailType === 'approved' ? 'Dispatch Verified Pass Email' : 'Dispatch Welcome Pass Email'}</>
                                         )}
                                     </button>
                                 </div>
@@ -2338,20 +2460,29 @@ const CreatorDetailModal = ({ creator, onClose, onUpdateStatus, onDelete, isUpda
 
                 {/* ─── Sticky Bottom Action Bar ─── */}
                 <div className="sticky bottom-0 z-50 px-4 sm:px-6 py-3 sm:py-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] bg-white/95 dark:bg-[#0A0A0A]/95 backdrop-blur-xl border-t border-black/10 dark:border-white/[0.06] flex items-center gap-2">
-                    <button 
-                        onClick={() => onUpdateStatus(creator.id || creator.uid, 'approved')}
-                        disabled={isUpdating || creator.profileStatus === 'approved'}
-                        className={cn(
-                            "flex-1 h-10 sm:h-11 rounded-xl font-bold uppercase tracking-wider text-[9px] transition-all flex items-center justify-center gap-1.5",
-                            creator.profileStatus === 'approved' 
-                                ? "bg-neon-green/10 text-neon-green/50 border border-neon-green/20 cursor-default" 
-                                : "bg-neon-green text-black hover:brightness-110 active:scale-[0.98]"
-                        )}
-                    >
-                        {isUpdating ? <LoadingSpinner size="xs" color="black" /> : (
-                            <><CheckCircle2 size={13} /> {creator.profileStatus === 'approved' ? 'Verified' : 'Verify'}</>
-                        )}
-                    </button>
+                    {creator.profileStatus === 'approved' ? (
+                        <button 
+                            type="button"
+                            onClick={handleSendApprovedPassEmail}
+                            disabled={sendingWelcomePass || !creator.email}
+                            title="Resend Verified Creator Pass Email"
+                            className="flex-1 h-10 sm:h-11 rounded-xl font-bold uppercase tracking-wider text-[9px] transition-all bg-neon-green/10 text-neon-green border border-neon-green/30 hover:bg-neon-green/20 active:scale-[0.98] flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+                        >
+                            {sendingWelcomePass ? <LoadingSpinner size="xs" color="black" /> : (
+                                <><Mail size={13} /> Resend Verified Pass</>
+                            )}
+                        </button>
+                    ) : (
+                        <button 
+                            onClick={() => onUpdateStatus(creator.id || creator.uid, 'approved')}
+                            disabled={isUpdating}
+                            className="flex-1 h-10 sm:h-11 rounded-xl font-bold uppercase tracking-wider text-[9px] transition-all flex items-center justify-center gap-1.5 bg-neon-green text-black hover:brightness-110 active:scale-[0.98] cursor-pointer"
+                        >
+                            {isUpdating ? <LoadingSpinner size="xs" color="black" /> : (
+                                <><CheckCircle2 size={13} /> Verify</>
+                            )}
+                        </button>
+                    )}
                     <button 
                         onClick={() => onUpdateStatus(creator.id || creator.uid, 'rejected')}
                         disabled={isUpdating || creator.profileStatus === 'rejected'}

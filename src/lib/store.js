@@ -2537,7 +2537,8 @@ export const useStore = create((set, get) => ({
 
         // Send approval email if verified
         if (updates.profileStatus === 'approved' && prevStatus !== 'approved' && email) {
-            sendCreatorApprovedEmail(email, name)
+            const creatorData = existingCreator ? { ...existingCreator, ...updates } : updates;
+            sendCreatorApprovedEmail(email, name, creatorData)
                 .catch(err => console.error("Error sending creator approval email:", err));
         }
     },

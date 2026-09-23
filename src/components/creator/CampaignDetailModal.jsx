@@ -463,7 +463,13 @@ const CampaignDetailModal = ({
                     )}
 
                     {/* Full-Bleed Hero Banner with Crisp Image and Natural Ambient Presence */}
-                    <div className="relative w-full aspect-[16/10] sm:aspect-[2/1] sm:min-h-[440px] shrink-0 overflow-hidden z-10">
+                    <div 
+                        className="relative w-full aspect-[16/10] sm:aspect-[2/1] sm:min-h-[440px] shrink-0 overflow-hidden z-10"
+                        style={{
+                            WebkitMaskImage: 'linear-gradient(to bottom, rgba(0,0,0,1) 80%, rgba(0,0,0,0) 100%)',
+                            maskImage: 'linear-gradient(to bottom, rgba(0,0,0,1) 80%, rgba(0,0,0,0) 100%)'
+                        }}
+                    >
                         {campaign.thumbnail ? (
                             <>
                                 {/* Ambient Image Aura inside Banner */}
