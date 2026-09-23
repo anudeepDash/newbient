@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Instagram, FileText, ArrowRight, Zap, MapPin, Users, Award } from 'lucide-react';
+import { Instagram, FileText, ArrowRight, Zap, MapPin, Users, Award, CheckCircle2 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
 const CampaignCard = ({ campaign, profile, type, onOpenMission }) => {
@@ -8,7 +8,6 @@ const CampaignCard = ({ campaign, profile, type, onOpenMission }) => {
     const isShortlisted = profile && (profile.shortlistedCampaigns || []).includes(campaign.id);
     const uid = profile?.uid;
     
-    // Helper to get submission status
     const getSubmissionStatus = (task, creatorUid) => {
         if (!task.submissions || !creatorUid) return 'not_started';
         const sub = task.submissions[creatorUid];
@@ -18,7 +17,6 @@ const CampaignCard = ({ campaign, profile, type, onOpenMission }) => {
     const campaignTasks = campaign.tasks || [];
     const requiredTasks = campaignTasks.filter(t => t.priority !== 'optional');
     
-    // Calculate progress if joined
     let approvedTotal = 0;
     let progress = 0;
     let isFullyComplete = false;
@@ -32,138 +30,161 @@ const CampaignCard = ({ campaign, profile, type, onOpenMission }) => {
         hasNewTasks = isShortlisted && campaignTasks.some(t => getSubmissionStatus(t, uid) === 'not_started');
     }
 
+    const statusLabel = isFullyComplete ? 'Completed' : isShortlisted ? 'Ongoing' : 'Awaiting';
+
     return (
         <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            whileTap={{ scale: 0.98 }}
+            whileTap={{ scale: 0.985 }}
             onClick={() => onOpenMission(campaign)}
-            className="bg-white dark:bg-[#0c0e14] border border-black/[0.08] dark:border-white/[0.08] shadow-sm hover:shadow-xl dark:shadow-[0_15px_35px_rgba(0,0,0,0.5)] hover:border-black/20 dark:hover:border-white/20 rounded-3xl overflow-hidden flex flex-col group transition-all duration-300 h-full relative cursor-pointer"
+            className="relative group cursor-pointer rounded-3xl overflow-hidden flex flex-col h-full bg-[#0c0e14] border border-white/[0.07] shadow-[0_8px_40px_rgba(0,0,0,0.6)] hover:border-white/[0.15] hover:shadow-[0_16px_60px_rgba(0,0,0,0.8)] transition-all duration-500"
         >
-            {/* Progress Strip */}
+            {/* Glowing Progress Strip */}
             {isJoined && (
-                <div className="absolute top-0 left-0 w-full h-1.5 bg-black/5 dark:bg-white/5 overflow-hidden z-20">
-                    <motion.div 
+                <div className="absolute top-0 left-0 w-full h-[3px] bg-white/5 overflow-hidden z-30">
+                    <motion.div
                         initial={{ width: 0 }}
                         animate={{ width: `${progress}%` }}
-                        className={cn("h-full transition-all duration-1000 shadow-[0_0_12px_rgba(57,255,20,0.5)] bg-neon-green")}
+                        transition={{ duration: 1.2, ease: 'easeOut' }}
+                        className="h-full bg-neon-green shadow-[0_0_12px_rgba(57,255,20,0.8)]"
                     />
                 </div>
             )}
 
-            {/* Thumbnail Header */}
-            {campaign.thumbnail ? (
-                <div className="aspect-video relative overflow-hidden bg-white dark:bg-black border-b border-black/10 dark:border-white/5 shrink-0">
-                    <img 
-                        src={campaign.thumbnail} 
-                        alt={campaign.title} 
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a]/20 to-transparent pointer-events-none" />
-                    <div className="absolute top-4 left-4 flex items-center gap-2 z-10">
-                        <div className="p-2 rounded-xl bg-white dark:bg-black/60 backdrop-blur-md border border-black/10 dark:border-white/10 text-neon-green shadow-lg">
-                            <Instagram size={16} />
-                        </div>
-                        <div className="px-3 py-1.5 rounded-xl bg-white dark:bg-black/60 backdrop-blur-md border border-black/10 dark:border-white/10 text-[9px] font-black uppercase tracking-widest text-gray-900 dark:text-white shadow-lg flex items-center gap-1.5">
-                            <MapPin size={10} className="text-zinc-500" /> {campaign.targetCity || 'Universal'}
-                        </div>
-                    </div>
+            {/* ── Hero Image Block with seamless mask fade ── */}
+            <div className="relative w-full aspect-video shrink-0 overflow-hidden">
+                {/* Mask layer — image only, not the badges */}
+                <div
+                    className="absolute inset-0 pointer-events-none"
+                    style={{
+                        WebkitMaskImage: 'linear-gradient(to bottom, rgba(0,0,0,1) 40%, transparent 100%)',
+                        maskImage: 'linear-gradient(to bottom, rgba(0,0,0,1) 40%, transparent 100%)',
+                    }}
+                >
+                    {campaign.thumbnail ? (
+                        <>
+                            {/* Ambient aura */}
+                            <div
+                                className="absolute -inset-8 bg-cover bg-center blur-2xl opacity-80 scale-110 transform-gpu"
+                                style={{ backgroundImage: `url(${campaign.thumbnail})` }}
+                            />
+                            <img
+                                src={campaign.thumbnail}
+                                alt={campaign.title}
+                                className="relative z-10 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                            />
+                            {/* Radial edge vignette */}
+                            <div className="absolute inset-0 z-10 bg-[radial-gradient(ellipse_at_center,_transparent_50%,_rgba(0,0,0,0.4)_100%)]" />
+                        </>
+                    ) : (
+                        <div className="w-full h-full bg-gradient-to-tr from-zinc-950 via-[#121620] to-[#0c0e14]" />
+                    )}
                 </div>
-            ) : (
-                <div className="h-32 relative overflow-hidden bg-gradient-to-r from-neon-green/10 via-zinc-800/10 to-[#0a0a0a] border-b border-black/10 dark:border-white/5 flex items-center px-6 shrink-0">
-                    <div className="absolute -right-10 -top-10 w-40 h-40 bg-neon-green/5 rounded-full blur-3xl pointer-events-none" />
-                    <div className="flex items-center gap-4 z-10">
-                        <div className="p-3.5 rounded-2xl bg-white dark:bg-black/60 backdrop-blur-xl border border-black/10 dark:border-white/10 text-neon-green shadow-2xl group-hover:scale-110 transition-transform">
-                            <Instagram size={24} />
-                        </div>
-                        <div>
-                            <span className="text-[9px] font-black text-neon-green uppercase tracking-[0.4em] block mb-1">Creator Opportunity</span>
-                            <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-gray-900 dark:text-white">
-                                <MapPin size={12} className="text-zinc-500" /> {campaign.targetCity || 'Universal'}
-                            </div>
-                        </div>
-                    </div>
-                    <div className="absolute bottom-0 left-0 w-full h-8 bg-gradient-to-t from-[#0a0a0a] to-transparent pointer-events-none" />
-                </div>
-            )}
 
-            <div className="p-6 md:p-8 flex flex-col flex-1 relative z-10">
-                {/* Status Badges Row */}
-                <div className="flex items-center justify-between gap-2 mb-6">
-                    <div className="flex items-center gap-2">
-                        <span className="px-3 py-1 rounded-xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-[9px] font-black uppercase tracking-widest text-gray-600 dark:text-gray-400 flex items-center gap-1.5 backdrop-blur-md">
-                            <Users size={10} className="text-neon-green" /> {Number(campaign.minInstagramFollowers || 0).toLocaleString()} FLW
-                        </span>
+                {/* Floating badges — outside the mask, fully opaque */}
+                <div className="absolute top-3.5 left-3.5 flex items-center gap-2 z-20">
+                    <div className="p-1.5 rounded-xl bg-black/60 backdrop-blur-xl border border-white/15 text-neon-green shadow-lg">
+                        <Instagram size={13} />
                     </div>
-                    
-                    <div className="flex items-center gap-2">
-                        {isJoined && hasNewTasks && (
-                            <motion.span 
-                                initial={{ scale: 0.8 }} 
-                                animate={{ scale: [0.8, 1.1, 1] }} 
+                    <div className="px-2.5 py-1 rounded-xl bg-black/60 backdrop-blur-xl border border-white/15 text-[9px] font-black uppercase tracking-widest text-white shadow-lg flex items-center gap-1.5 font-mono">
+                        <MapPin size={9} className="text-neon-green" /> {campaign.targetCity || 'Universal'}
+                    </div>
+                </div>
+
+                {/* Status badge top-right */}
+                {isJoined && (
+                    <div className="absolute top-3.5 right-3.5 z-20 flex items-center gap-1.5">
+                        {hasNewTasks && (
+                            <motion.span
+                                animate={{ scale: [1, 1.08, 1] }}
                                 transition={{ repeat: Infinity, duration: 2 }}
-                                className="px-3 py-1 bg-yellow-500/10 border border-yellow-500/20 rounded-xl text-[8px] font-black uppercase tracking-widest text-yellow-500 flex items-center gap-1 shadow-lg backdrop-blur-md"
+                                className="px-2 py-0.5 bg-amber-500/20 border border-amber-500/30 rounded-lg text-[8px] font-black uppercase tracking-widest text-amber-400 flex items-center gap-1 backdrop-blur-xl"
                             >
-                                <Zap size={10} /> New Tasks
+                                <Zap size={8} className="fill-current" /> New
                             </motion.span>
                         )}
-                        {isJoined && (
-                            <div className={cn(
-                                "px-3 py-1 rounded-xl text-[8px] font-black uppercase tracking-widest border backdrop-blur-md shadow-lg flex items-center gap-1.5",
-                                isFullyComplete ? "bg-neon-green/10 text-neon-green border-neon-green/20" :
-                                isShortlisted ? "bg-neon-green/10 text-neon-green border-neon-green/20" : 
-                                "bg-zinc-800/50 text-gray-600 dark:text-gray-400 border-black/10 dark:border-white/5"
-                            )}>
-                                <span className={cn("w-1.5 h-1.5 rounded-full animate-pulse", isFullyComplete ? "bg-neon-green" : isShortlisted ? "bg-neon-green" : "bg-gray-400")} />
-                                {isFullyComplete ? 'Completed' : isShortlisted ? 'Ongoing' : 'Awaiting Approval'}
-                            </div>
-                        )}
+                        <span className={cn(
+                            'px-2.5 py-1 rounded-xl text-[8px] font-black uppercase tracking-widest border backdrop-blur-xl flex items-center gap-1.5 font-mono shadow-lg',
+                            isFullyComplete
+                                ? 'bg-neon-green/20 text-neon-green border-neon-green/30'
+                                : isShortlisted
+                                    ? 'bg-neon-green/15 text-neon-green border-neon-green/20'
+                                    : 'bg-white/5 text-zinc-400 border-white/10'
+                        )}>
+                            <span className={cn('w-1.5 h-1.5 rounded-full', isFullyComplete || isShortlisted ? 'bg-neon-green animate-pulse' : 'bg-zinc-500')} />
+                            {statusLabel}
+                        </span>
                     </div>
+                )}
+            </div>
+
+            {/* ── Card Body (dark glass) ── */}
+            <div className="flex flex-col flex-1 px-5 pt-4 pb-5 relative z-10">
+                {/* Ambient photo colour spill into body */}
+                {campaign.thumbnail && (
+                    <div
+                        className="absolute top-0 inset-x-0 h-32 bg-cover bg-center blur-[60px] opacity-20 pointer-events-none transform-gpu -z-0"
+                        style={{ backgroundImage: `url(${campaign.thumbnail})` }}
+                    />
+                )}
+
+                {/* Followers pill */}
+                <div className="flex items-center justify-between mb-4 relative z-10">
+                    <span className="px-2.5 py-1 rounded-lg bg-white/[0.04] border border-white/[0.07] text-[9px] font-black uppercase tracking-widest text-zinc-400 flex items-center gap-1.5 font-mono">
+                        <Users size={9} className="text-neon-green" />
+                        {Number(campaign.minInstagramFollowers || 0).toLocaleString()}+ FLW
+                    </span>
+                    {isJoined && (
+                        <span className="text-[9px] font-mono font-bold text-zinc-500">
+                            {approvedTotal}/{campaignTasks.length} done
+                        </span>
+                    )}
                 </div>
 
                 {/* Title & Description */}
-                <div className="flex-1 mb-8">
-                    <h3 className="text-xl md:text-2xl font-extrabold font-heading mb-3 text-gray-900 dark:text-white tracking-tight group-hover:text-neon-green transition-colors leading-tight">
+                <div className="flex-1 mb-5 relative z-10">
+                    <h3 className="text-lg font-black font-heading mb-2 text-white tracking-tight group-hover:text-neon-green transition-colors duration-300 leading-snug">
                         {campaign.title}
                     </h3>
-                    <p className="text-gray-600 dark:text-gray-400 text-xs line-clamp-2 leading-relaxed font-medium pr-4">
+                    <p className="text-zinc-500 text-[11px] line-clamp-2 leading-relaxed font-medium">
                         {(campaign.description || '').replace(/<style[^>]*>[\s\S]*?<\/style>|<script[^>]*>[\s\S]*?<\/script>|<[^>]+>/gi, ' ').replace(/&nbsp;/gi, ' ').replace(/&amp;/gi, '&').replace(/&lt;/gi, '<').replace(/&gt;/gi, '>').replace(/&quot;/gi, '"').replace(/&#39;/gi, "'").replace(/\s+/g, ' ').trim()}
                     </p>
                 </div>
-                
-                {/* Key Metrics Grid */}
-                <div className="grid grid-cols-3 gap-1.5 sm:gap-3 p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-black/[0.03] dark:bg-zinc-950/60 border border-black/[0.08] dark:border-white/[0.08] shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)] mb-6 backdrop-blur-md">
-                    <div className="flex flex-col items-center justify-center text-center border-r border-black/10 dark:border-white/5 pr-1 sm:pr-2">
-                        <span className="text-[7px] sm:text-[8px] font-black text-gray-500 uppercase tracking-widest mb-1 flex items-center gap-0.5 sm:gap-1">
-                            <Award size={9} className="text-neon-green sm:w-2.5 sm:h-2.5" /> REWARD
+
+                {/* Metrics row */}
+                <div className="flex items-center gap-2 mb-5 relative z-10">
+                    <div className="flex-1 flex flex-col items-center py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.06]">
+                        <span className="text-[7px] font-black text-zinc-600 uppercase tracking-widest mb-0.5 flex items-center gap-0.5">
+                            <Award size={7} className="text-neon-green" /> Reward
                         </span>
-                        <span className="text-neon-green text-[10px] sm:text-xs font-black italic truncate w-full">{campaign.reward || 'Barter'}</span>
+                        <span className="text-neon-green text-[10px] font-black truncate max-w-full px-1">{campaign.reward || 'Barter'}</span>
                     </div>
-                    <div className="flex flex-col items-center justify-center text-center border-r border-black/10 dark:border-white/5 px-1 sm:px-2">
-                        <span className="text-[7px] sm:text-[8px] font-black text-gray-500 uppercase tracking-widest mb-1 flex items-center gap-0.5 sm:gap-1">
-                            <FileText size={9} className="text-neon-green sm:w-2.5 sm:h-2.5" /> TASKS
+                    <div className="flex-1 flex flex-col items-center py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.06]">
+                        <span className="text-[7px] font-black text-zinc-600 uppercase tracking-widest mb-0.5 flex items-center gap-0.5">
+                            <FileText size={7} className="text-neon-green" /> Tasks
                         </span>
-                        <span className="text-gray-900 dark:text-white text-[10px] sm:text-xs font-black">
-                            {isJoined && isShortlisted ? `${approvedTotal}/${campaignTasks.length}` : `${campaignTasks.length} Tasks`}
+                        <span className="text-white text-[10px] font-black">
+                            {isJoined && isShortlisted ? `${approvedTotal}/${campaignTasks.length}` : `${campaignTasks.length}`}
                         </span>
                     </div>
-                    <div className="flex flex-col items-center justify-center text-center pl-1 sm:pl-2">
-                        <span className="text-[7px] sm:text-[8px] font-black text-gray-500 uppercase tracking-widest mb-1 flex items-center gap-0.5 sm:gap-1">
-                            <Zap size={9} className="text-zinc-500 sm:w-2.5 sm:h-2.5" /> STATUS
+                    <div className="flex-1 flex flex-col items-center py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.06]">
+                        <span className="text-[7px] font-black text-zinc-600 uppercase tracking-widest mb-0.5 flex items-center gap-0.5">
+                            <Zap size={7} className="text-zinc-600" /> Status
                         </span>
-                        <span className={cn("text-[10px] sm:text-xs font-black", isFullyComplete ? 'text-neon-green' : 'text-neon-green')}>
+                        <span className={cn('text-[10px] font-black', isFullyComplete || isShortlisted ? 'text-neon-green' : 'text-zinc-400')}>
                             {isJoined && isShortlisted ? `${Math.round(progress)}%` : 'Open'}
                         </span>
                     </div>
                 </div>
 
-                {/* Interactive Footer Button */}
-                <div className="mt-auto flex items-center justify-between px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl bg-black/[0.03] dark:bg-zinc-950/60 border border-black/[0.08] dark:border-white/[0.08] group-hover:bg-neon-green group-hover:text-black group-hover:border-neon-green transition-all duration-300 shadow-sm">
-                    <div className="text-[8px] sm:text-[9px] font-black uppercase tracking-[0.15em] sm:tracking-[0.2em] flex items-center gap-1.5 sm:gap-2 group-hover:text-black text-gray-700 dark:text-gray-300 transition-colors">
-                        <FileText size={10} className="sm:w-3 sm:h-3" /> 
-                        {isJoined && isShortlisted ? 'Open Campaign Page' : 'View Opportunity'}
-                    </div>
-                    <ArrowRight className="text-gray-600 dark:text-gray-400 group-hover:text-black group-hover:translate-x-1 transition-all" size={14} />
+                {/* CTA Footer */}
+                <div className="relative z-10 flex items-center justify-between px-4 py-2.5 rounded-2xl bg-white/[0.03] border border-white/[0.07] group-hover:bg-neon-green group-hover:border-neon-green transition-all duration-300">
+                    <span className="text-[9px] font-black uppercase tracking-[0.18em] text-zinc-400 group-hover:text-black transition-colors duration-300 flex items-center gap-1.5">
+                        <FileText size={10} />
+                        {isJoined && isShortlisted ? 'Open Campaign' : 'View Opportunity'}
+                    </span>
+                    <ArrowRight size={13} className="text-zinc-500 group-hover:text-black group-hover:translate-x-1 transition-all duration-300" />
                 </div>
             </div>
         </motion.div>

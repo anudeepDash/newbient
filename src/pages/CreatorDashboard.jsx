@@ -87,12 +87,27 @@ const CreatorReferralsView = ({ profile }) => {
     };
 
     const myReferrals = useMemo(() => {
-        return (creators || []).filter(c =>
-            c.referredBy === profile.uid ||
-            (profile.creatorId && c.referredBy && c.referredBy.toUpperCase() === profile.creatorId.toUpperCase()) ||
-            (profile.instagram && c.referredBy && c.referredBy.toLowerCase() === profile.instagram.toLowerCase()) ||
-            (profile.linkedin && c.referredBy && c.referredBy.toLowerCase() === profile.linkedin.toLowerCase())
-        );
+        if (!profile) return [];
+        const profUid = profile.uid;
+        const profIdUpper = profile.creatorId ? String(profile.creatorId).toUpperCase() : null;
+        const profInstaLower = profile.instagram ? String(profile.instagram).toLowerCase() : null;
+        const profLiLower = profile.linkedin ? String(profile.linkedin).toLowerCase() : null;
+        
+        return (creators || []).filter(c => {
+            const ref = c.referredBy;
+            if (!ref) return false;
+            if (ref === profUid) return true;
+            
+            const refStr = String(ref);
+            const refUpper = refStr.toUpperCase();
+            const refLower = refStr.toLowerCase();
+            
+            if (profIdUpper && refUpper === profIdUpper) return true;
+            if (profInstaLower && refLower === profInstaLower) return true;
+            if (profLiLower && refLower === profLiLower) return true;
+            
+            return false;
+        });
     }, [creators, profile]);
 
     const approvedCount = myReferrals.filter(c => c.profileStatus === 'approved').length;
@@ -106,18 +121,18 @@ const CreatorReferralsView = ({ profile }) => {
         
         (creators || []).forEach(rc => {
             if (rc.uid) uidMap.set(rc.uid, rc);
-            if (rc.creatorId) creatorIdMap.set(rc.creatorId.toUpperCase(), rc);
-            if (rc.instagram) instagramMap.set(rc.instagram.toLowerCase(), rc);
-            if (rc.linkedin) linkedinMap.set(rc.linkedin.toLowerCase(), rc);
+            if (rc.creatorId) creatorIdMap.set(String(rc.creatorId).toUpperCase(), rc);
+            if (rc.instagram) instagramMap.set(String(rc.instagram).toLowerCase(), rc);
+            if (rc.linkedin) linkedinMap.set(String(rc.linkedin).toLowerCase(), rc);
         });
 
         (creators || []).forEach(c => {
             if (c.referredBy) {
-                const ref = c.referredBy;
-                const refUpper = ref.toUpperCase();
-                const refLower = ref.toLowerCase();
+                const refStr = String(c.referredBy);
+                const refUpper = refStr.toUpperCase();
+                const refLower = refStr.toLowerCase();
                 
-                const referrer = uidMap.get(ref) || 
+                const referrer = uidMap.get(refStr) || 
                                  creatorIdMap.get(refUpper) || 
                                  instagramMap.get(refLower) || 
                                  linkedinMap.get(refLower);
