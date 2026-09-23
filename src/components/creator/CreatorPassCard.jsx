@@ -377,7 +377,7 @@ const CreatorPassCard = ({
                     animate={{ opacity: 1, y: 0 }}
                     className="w-full mt-3.5"
                 >
-                    <div className="p-3.5 sm:p-4 rounded-2xl bg-white dark:bg-[#0c0e14] border border-black/[0.08] dark:border-white/[0.08] flex flex-col gap-3 shadow-xs">
+                    <div className="p-3.5 sm:p-4 rounded-[20px] sm:rounded-[24px] bg-white/60 dark:bg-white/[0.02] backdrop-blur-2xl border border-black/[0.05] dark:border-white/[0.05] flex flex-col gap-3 shadow-[0_8px_30px_rgba(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.2)]">
                         {/* Top Row: Info & Required badge */}
                         <div className="flex items-center gap-2.5 min-w-0">
                             <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-[#25D366]/15 text-[#25D366] flex items-center justify-center shrink-0">
@@ -441,7 +441,7 @@ const CreatorPassCard = ({
                                 href={currentGroup?.groupUrl}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="h-8 px-3.5 sm:px-4 rounded-xl bg-gray-950 dark:bg-white text-white dark:text-black hover:bg-black dark:hover:bg-zinc-200 font-bold text-[10px] sm:text-[11px] uppercase tracking-wider flex items-center gap-1 transition-all shadow-xs shrink-0 active:scale-95 ml-auto"
+                                className="h-8 sm:h-9 px-4 sm:px-5 rounded-xl bg-gray-950 dark:bg-white text-white dark:text-black hover:bg-black dark:hover:bg-zinc-200 font-black text-[10px] sm:text-[11px] uppercase tracking-wider flex items-center gap-1.5 transition-all shadow-sm shrink-0 active:scale-95 ml-auto"
                             >
                                 <span>Join</span>
                                 <ArrowRight size={11} />
