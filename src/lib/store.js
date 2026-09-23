@@ -526,20 +526,16 @@ export const useStore = create((set, get) => ({
     subscribeToFinancePayees: () => get().subscribeToKey('financePayees', 'finance_payees', (data) => data.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))),
     subscribeToMessages: () => get().subscribeToKey('messages', 'messages', (data) => data.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))),
     subscribeToCreators: () => get().subscribeToKey('creators', 'creators', (data) => {
-        const isBangaloreVariant = (city) => {
-            if (!city) return false;
-            const c = city.trim().toLowerCase();
-            return c === 'bangalore' || c === 'banglore' || c === 'bengaluru south' || c === 'bengaluru north' || c.includes('bangalore') || c.includes('banglore');
-        };
         (data || []).forEach(creator => {
             if (!creator.uid && creator.id) creator.uid = creator.id;
             if (!creator.id && creator.uid) creator.id = creator.uid;
-            if (isBangaloreVariant(creator.city)) {
-                const docId = creator.id || creator.uid;
-                if (docId && creator.city !== 'Bengaluru') {
-                    updateDoc(doc(db, 'creators', docId), { city: 'Bengaluru' }).catch(err => console.error("Auto-migrated creator to Bengaluru:", err));
+            
+            // Fix Bengaluru variants locally only, do NOT write back to DB from client
+            if (creator.city) {
+                const c = String(creator.city).trim().toLowerCase();
+                if (c === 'bangalore' || c === 'banglore' || c === 'bengaluru south' || c === 'bengaluru north' || c.includes('bangalore') || c.includes('banglore')) {
+                    creator.city = 'Bengaluru';
                 }
-                creator.city = 'Bengaluru';
             }
         });
         return data;
@@ -2401,9 +2397,41 @@ export const useStore = create((set, get) => ({
                 const docSnap = await getDoc(doc(db, 'creators', searchUid));
                 if (docSnap.exists()) {
                     foundProfile = { ...docSnap.data(), id: docSnap.id };
+                } else {
+                    const qUid = query(collection(db, 'creators'), where('uid', '==', searchUid), limit(1));
+                    const qUidSnap = await getDocs(qUid);
+                    if (!qUidSnap.empty) {
+                        foundProfile = { ...qUidSnap.docs[0].data(), id: qUidSnap.docs[0].id };
+                    }
                 }
             } catch (err) {
-                console.warn('[store] Direct Firestore lookup failed:', err.message);
+                console.warn('[store] Direct Firestore lookup by UID failed:', err.message);
+            }
+        }
+        
+        // 2.5 Try direct Firestore lookup by Email if uid fails
+        if (!foundProfile && searchEmail) {
+            try {
+                const qEmail = query(collection(db, 'creators'), where('email', '==', searchEmail), limit(1));
+                const qEmailSnap = await getDocs(qEmail);
+                if (!qEmailSnap.empty) {
+                    foundProfile = { ...qEmailSnap.docs[0].data(), id: qEmailSnap.docs[0].id };
+                }
+            } catch (err) {
+                console.warn('[store] Direct Firestore lookup by Email failed:', err.message);
+            }
+        }
+        
+        // 2.6 Try direct Firestore lookup by Phone if email fails
+        if (!foundProfile && searchPhone) {
+            try {
+                const qPhone = query(collection(db, 'creators'), where('phone', '==', searchPhone), limit(1));
+                const qPhoneSnap = await getDocs(qPhone);
+                if (!qPhoneSnap.empty) {
+                    foundProfile = { ...qPhoneSnap.docs[0].data(), id: qPhoneSnap.docs[0].id };
+                }
+            } catch (err) {
+                console.warn('[store] Direct Firestore lookup by Phone failed:', err.message);
             }
         }
 
