@@ -53,7 +53,7 @@ const Navbar = () => {
         { name: 'Community', path: '/community', featureId: 'community', icon: Users },
         { 
             name: 'Creator', 
-            path: isCreator ? '/creator-dashboard' : '/creator', 
+            path: '/creator', 
             matchPaths: ['/creator', '/creator/join', '/creator-dashboard'], 
             featureId: 'influencer', 
             icon: Zap 
