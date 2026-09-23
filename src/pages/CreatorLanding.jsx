@@ -245,13 +245,13 @@ const CreatorLanding = () => {
 
             {/* Ambient Background Effects */}
             <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
-                <div className="absolute -top-24 left-1/3 w-[500px] h-[300px] bg-neon-green/[0.025] dark:bg-neon-green/[0.02] rounded-full blur-[120px]" />
+                <div className="hidden md:block absolute -top-24 left-1/3 w-[500px] h-[300px] bg-neon-green/[0.025] dark:bg-neon-green/[0.02] rounded-full blur-[120px] transform-gpu" />
                 <div className="hidden dark:block absolute inset-0" style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px)', backgroundSize: '60px 60px' }} />
             </div>
 
             {/* ===== FLOATING NAVBAR ===== */}
             <div className="fixed top-4 left-4 right-4 z-50 max-w-7xl mx-auto md:left-8 md:right-8 lg:left-12 lg:right-12">
-                <header className="w-full h-16 bg-white/80 dark:bg-[#0C1017]/80 backdrop-blur-2xl border border-black/5 dark:border-white/10 rounded-2xl px-5 md:px-7 flex items-center justify-between shadow-lg shadow-black/[0.03] dark:shadow-black/40 transition-colors duration-300">
+                <header className="w-full h-16 bg-white/90 dark:bg-[#0C1017]/90 backdrop-blur-md border border-black/5 dark:border-white/10 rounded-2xl px-5 md:px-7 flex items-center justify-between shadow-lg shadow-black/[0.03] dark:shadow-black/40 transition-colors duration-300 transform-gpu">
                     {/* Brand Logo */}
                     <div className="flex items-center gap-3">
                         <Link to="/creator" className="flex items-center gap-2 group">
@@ -353,7 +353,7 @@ const CreatorLanding = () => {
                         initial={{ opacity: 0, scale: 0.96 }}
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.96 }}
-                        className="fixed inset-0 z-[100] lg:hidden bg-white/95 dark:bg-black/95 backdrop-blur-3xl flex flex-col justify-between px-6 pt-24 pb-12 overflow-y-auto"
+                        className="fixed inset-0 z-[100] lg:hidden bg-white/95 dark:bg-black/95 backdrop-blur-md flex flex-col justify-between px-6 pt-24 pb-12 overflow-y-auto transform-gpu"
                     >
                         <button onClick={() => setIsMenuOpen(false)} className="absolute top-6 right-6 p-3 rounded-full bg-gray-100 dark:bg-white/10 text-gray-800 dark:text-white">
                             <X size={20} />
@@ -666,7 +666,7 @@ const CreatorLanding = () => {
                                 >
                                     {/* Subtle Top Accent Glow */}
                                     <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-neon-green/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                                    <div className="absolute -top-20 -right-20 w-44 h-44 bg-neon-green/5 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+                                    <div className="hidden md:block absolute -top-20 -right-20 w-44 h-44 bg-neon-green/5 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none transform-gpu" />
 
                                     <div className="space-y-6 relative z-10">
                                         {/* Header Row: Clean Mono Index + Icon */}
@@ -944,8 +944,8 @@ const CreatorLanding = () => {
                             className="relative rounded-[2.5rem] bg-[#0B0F17] text-white p-10 sm:p-16 md:p-20 text-center overflow-hidden shadow-2xl border border-neon-green/30"
                         >
                             {/* Ambient Glows */}
-                            <div className="absolute top-0 right-0 w-80 h-80 bg-neon-green/20 rounded-full blur-3xl pointer-events-none" />
-                            <div className="absolute bottom-0 left-0 w-80 h-80 bg-neon-blue/15 rounded-full blur-3xl pointer-events-none" />
+                            <div className="hidden md:block absolute top-0 right-0 w-80 h-80 bg-neon-green/20 rounded-full blur-3xl pointer-events-none transform-gpu" />
+                            <div className="hidden md:block absolute bottom-0 left-0 w-80 h-80 bg-neon-blue/15 rounded-full blur-3xl pointer-events-none transform-gpu" />
 
                             <div className="relative z-10 max-w-2xl mx-auto space-y-6">
                                 <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 border border-white/15 text-zinc-300 text-[11px] font-medium tracking-wide">
@@ -1003,8 +1003,8 @@ const CreatorLanding = () => {
                             className="fixed bottom-6 left-5 z-50 pointer-events-auto md:hidden"
                         >
                             <div
-                                className="relative bg-white/80 dark:bg-[#12151c]/80 border border-black/5 dark:border-white/10 rounded-full p-1.5 shadow-[0_8px_30px_rgba(0,0,0,0.12)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.5)] flex items-center justify-center transition-all duration-300"
-                                style={{ backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)' }}
+                                className="relative bg-white/80 dark:bg-[#12151c]/80 border border-black/5 dark:border-white/10 rounded-full p-1.5 shadow-[0_8px_30px_rgba(0,0,0,0.12)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.5)] flex items-center justify-center transition-all duration-300 transform-gpu"
+                                style={{ backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)' }}
                             >
                                 <button
                                     onClick={() => navigate('/')}
@@ -1036,8 +1036,8 @@ const CreatorLanding = () => {
                             className="fixed bottom-6 right-5 z-50 pointer-events-auto md:hidden"
                         >
                             <div
-                                className="relative bg-white/80 dark:bg-[#12151c]/80 border border-black/5 dark:border-white/10 rounded-full p-1.5 shadow-[0_8px_30px_rgba(0,0,0,0.12)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.5)] flex items-center justify-center transition-all duration-300"
-                                style={{ backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)' }}
+                                className="relative bg-white/80 dark:bg-[#12151c]/80 border border-black/5 dark:border-white/10 rounded-full p-1.5 shadow-[0_8px_30px_rgba(0,0,0,0.12)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.5)] flex items-center justify-center transition-all duration-300 transform-gpu"
+                                style={{ backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)' }}
                             >
                                 <button
                                     onClick={() => navigate(isActualCreator ? '/creator-dashboard' : '/creator/join')}
