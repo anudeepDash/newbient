@@ -99,20 +99,38 @@ const CreatorReferralsView = ({ profile }) => {
 
     const leaderboard = useMemo(() => {
         const counts = {};
+        const uidMap = new Map();
+        const creatorIdMap = new Map();
+        const instagramMap = new Map();
+        const linkedinMap = new Map();
+        
+        (creators || []).forEach(rc => {
+            if (rc.uid) uidMap.set(rc.uid, rc);
+            if (rc.creatorId) creatorIdMap.set(rc.creatorId.toUpperCase(), rc);
+            if (rc.instagram) instagramMap.set(rc.instagram.toLowerCase(), rc);
+            if (rc.linkedin) linkedinMap.set(rc.linkedin.toLowerCase(), rc);
+        });
+
         (creators || []).forEach(c => {
             if (c.referredBy) {
-                const referrer = creators.find(rc =>
-                    rc.uid === c.referredBy ||
-                    (rc.creatorId && rc.creatorId.toUpperCase() === c.referredBy.toUpperCase()) ||
-                    (rc.instagram && rc.instagram.toLowerCase() === c.referredBy.toLowerCase()) ||
-                    (rc.linkedin && rc.linkedin.toLowerCase() === c.referredBy.toLowerCase())
-                );
-                if (referrer) counts[referrer.uid] = (counts[referrer.uid] || 0) + 1;
+                const ref = c.referredBy;
+                const refUpper = ref.toUpperCase();
+                const refLower = ref.toLowerCase();
+                
+                const referrer = uidMap.get(ref) || 
+                                 creatorIdMap.get(refUpper) || 
+                                 instagramMap.get(refLower) || 
+                                 linkedinMap.get(refLower);
+                                 
+                if (referrer && referrer.uid) {
+                    counts[referrer.uid] = (counts[referrer.uid] || 0) + 1;
+                }
             }
         });
+
         return (creators || [])
-            .map(c => ({ ...c, referralCount: counts[c.uid] || 0 }))
-            .filter(c => c.referralCount > 0)
+            .filter(c => counts[c.uid] > 0)
+            .map(c => ({ ...c, referralCount: counts[c.uid] }))
             .sort((a, b) => b.referralCount - a.referralCount);
     }, [creators]);
 
