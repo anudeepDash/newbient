@@ -67,7 +67,7 @@ const CampaignCard = ({ campaign, profile, type, onOpenMission }) => {
                         <>
                             {/* Ambient aura */}
                             <div
-                                className="absolute -inset-8 bg-cover bg-center blur-2xl opacity-80 scale-110 transform-gpu"
+                                className="absolute -inset-8 bg-cover bg-center blur-xl opacity-80 scale-110 transform-gpu"
                                 style={{ backgroundImage: `url(${campaign.thumbnail})` }}
                             />
                             <img
@@ -85,10 +85,10 @@ const CampaignCard = ({ campaign, profile, type, onOpenMission }) => {
 
                 {/* Floating badges — outside the mask, fully opaque */}
                 <div className="absolute top-3.5 left-3.5 flex items-center gap-2 z-20">
-                    <div className="p-1.5 rounded-xl bg-black/60 backdrop-blur-xl border border-white/15 text-neon-green shadow-lg">
+                    <div className="p-1.5 rounded-xl bg-black/60 backdrop-blur-sm border border-white/15 text-neon-green shadow-lg transform-gpu">
                         <Instagram size={13} />
                     </div>
-                    <div className="px-2.5 py-1 rounded-xl bg-black/60 backdrop-blur-xl border border-white/15 text-[9px] font-black uppercase tracking-widest text-white shadow-lg flex items-center gap-1.5 font-mono">
+                    <div className="px-2.5 py-1 rounded-xl bg-black/60 backdrop-blur-sm border border-white/15 text-[9px] font-black uppercase tracking-widest text-white shadow-lg flex items-center gap-1.5 font-mono transform-gpu">
                         <MapPin size={9} className="text-neon-green" /> {campaign.targetCity || 'Universal'}
                     </div>
                 </div>
@@ -100,13 +100,13 @@ const CampaignCard = ({ campaign, profile, type, onOpenMission }) => {
                             <motion.span
                                 animate={{ scale: [1, 1.08, 1] }}
                                 transition={{ repeat: Infinity, duration: 2 }}
-                                className="px-2 py-0.5 bg-amber-500/20 border border-amber-500/30 rounded-lg text-[8px] font-black uppercase tracking-widest text-amber-400 flex items-center gap-1 backdrop-blur-xl"
+                                className="px-2 py-0.5 bg-amber-500/20 border border-amber-500/30 rounded-lg text-[8px] font-black uppercase tracking-widest text-amber-400 flex items-center gap-1 backdrop-blur-sm transform-gpu"
                             >
                                 <Zap size={8} className="fill-current" /> New
                             </motion.span>
                         )}
                         <span className={cn(
-                            'px-2.5 py-1 rounded-xl text-[8px] font-black uppercase tracking-widest border backdrop-blur-xl flex items-center gap-1.5 font-mono shadow-lg',
+                            'px-2.5 py-1 rounded-xl text-[8px] font-black uppercase tracking-widest border backdrop-blur-sm transform-gpu flex items-center gap-1.5 font-mono shadow-lg',
                             isFullyComplete
                                 ? 'bg-neon-green/20 text-neon-green border-neon-green/30'
                                 : isShortlisted
@@ -125,7 +125,7 @@ const CampaignCard = ({ campaign, profile, type, onOpenMission }) => {
                 {/* Ambient photo colour spill into body */}
                 {campaign.thumbnail && (
                     <div
-                        className="absolute top-0 inset-x-0 h-32 bg-cover bg-center blur-[60px] opacity-20 pointer-events-none transform-gpu -z-0"
+                        className="absolute top-0 inset-x-0 h-32 bg-cover bg-center blur-2xl opacity-20 pointer-events-none transform-gpu -z-0"
                         style={{ backgroundImage: `url(${campaign.thumbnail})` }}
                     />
                 )}
