@@ -2723,10 +2723,13 @@ export const generateCampaignNotificationHTML = (campaign) => {
 /**
  * Sends an email notification to creators when their profile is verified/approved by an admin.
  */
-export const sendCreatorApprovedEmail = async (toEmail, creatorName) => {
+/**
+ * Sends an email notification to creators when their profile is verified/approved by an admin.
+ */
+export const sendCreatorApprovedEmail = async (toEmail, creatorName, creatorData = {}) => {
     try {
-        const rawHtml = generateCreatorApprovedHTML(creatorName);
-        const subject = `✨ Your Creator Profile is Verified & Approved!`;
+        const rawHtml = generateCreatorApprovedHTML(creatorName, creatorData);
+        const subject = `✨ Congratulations! Your Creator Profile is Verified 🚀`;
         const html = injectEmailTracking({
             html: rawHtml,
             trackingId: `creator_approved_${Date.now()}`,
@@ -2750,12 +2753,20 @@ export const sendCreatorApprovedEmail = async (toEmail, creatorName) => {
 };
 
 /**
- * Generates the HTML for the creator approval email.
+ * Generates the HTML for the creator approval email matching the luxury Digital Pass aesthetic.
  */
-export const generateCreatorApprovedHTML = (creatorName) => {
+export const generateCreatorApprovedHTML = (creatorName, creatorData = {}) => {
     const baseUrl = getBaseUrl();
     const studioUrl = `${baseUrl}/creator-dashboard`;
     const firstName = (creatorName || 'Creator').trim().split(' ')[0];
+    const city = creatorData.city || 'Pan-India';
+    const cityGroup = resolveCityWhatsAppGroup(city, creatorData.customGroupUrl || creatorData.whatsappGroupUrl);
+    const rawPassId = (creatorData.passId || creatorData.creatorId || 'NWB-PASS').toString().toUpperCase().replace(/^NWB-CR-/, '');
+    const fullPassId = `NWB-CR-${rawPassId}`;
+    const handle = (creatorData.handle || creatorData.instagram || (creatorName || 'creator').toLowerCase().replace(/\s+/g, '')).toString().replace(/^@/, '');
+    const niche = creatorData.niche || creatorData.primaryNiche || creatorData.categories || creatorData.category || 'Creator & Influencer';
+    const avatar = creatorData.avatar || creatorData.profilePicture || creatorData.photoURL || '';
+    const initialLetter = (creatorName ? creatorName.charAt(0) : 'C').toUpperCase();
 
     return `
 <!DOCTYPE html>
@@ -2765,7 +2776,7 @@ export const generateCreatorApprovedHTML = (creatorName) => {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="color-scheme" content="light dark">
     <meta name="supported-color-schemes" content="light dark">
-    <title>Creator Profile Verified</title>
+    <title>Creator Profile Verified &amp; Approved</title>
     <style>
         :root {
             color-scheme: light dark;
@@ -2779,7 +2790,10 @@ export const generateCreatorApprovedHTML = (creatorName) => {
             .email-container { width: 100% !important; border-radius: 0 !important; border-left: none !important; border-right: none !important; }
             .content-padding { padding: 22px 18px !important; }
             .header-padding { padding: 20px 18px 14px 18px !important; }
+            .pass-card { padding: 14px !important; }
             .verified-btn { display: block !important; width: 100% !important; box-sizing: border-box !important; text-align: center !important; }
+            .wa-card { padding: 18px 16px !important; }
+            .wa-btn { display: block !important; width: 100% !important; box-sizing: border-box !important; text-align: center !important; }
         }
 
         /* Light Mode Rules */
@@ -2793,10 +2807,27 @@ export const generateCreatorApprovedHTML = (creatorName) => {
             .chip-verified { background: #ECFDF5 !important; border-color: #A7F3D0 !important; color: #059669 !important; }
             .text-title { color: #0F172A !important; }
             .text-subtitle { color: #475569 !important; }
+            .text-bold { color: #0F172A !important; }
+            .pass-card { background: #F8FAFC !important; border-color: #E2E8F0 !important; }
+            .pass-header-text { color: #0F172A !important; }
+            .pass-id-pill { background: #FFFFFF !important; border-color: #CBD5E1 !important; color: #475569 !important; }
+            .pass-avatar-fallback { background-color: #ECFDF5 !important; border-color: #10B981 !important; color: #059669 !important; }
+            .pass-name { color: #0F172A !important; }
+            .pass-meta { color: #475569 !important; }
+            .pass-meta-sep { color: #94A3B8 !important; }
+            .pass-verified-badge { background: #ECFDF5 !important; border-color: #A7F3D0 !important; color: #059669 !important; }
+            .pass-footer-strip { border-top-color: #E2E8F0 !important; background: #F1F5F9 !important; }
+            .pass-footer-text { color: #64748B !important; }
+            .pass-barcode { color: #94A3B8 !important; }
             .card-box { background: #F8FAFC !important; border-color: #E2E8F0 !important; }
             .card-tag { color: #059669 !important; }
             .card-title { color: #0F172A !important; }
             .card-desc { color: #475569 !important; }
+            .wa-card { background: linear-gradient(180deg, #F0FDF4 0%, #DCFCE7 100%) !important; border-color: #86EFAC !important; }
+            .wa-chip { background: #DCFCE7 !important; color: #166534 !important; }
+            .wa-title { color: #0F172A !important; }
+            .wa-desc { color: #334155 !important; }
+            .wa-sublink { color: #475569 !important; }
             .footer-bg { background-color: #F8FAFC !important; border-top-color: #E2E8F0 !important; }
             .social-icon { filter: invert(0) !important; opacity: 0.6 !important; }
             .footer-copy { color: #64748B !important; }
@@ -2815,10 +2846,27 @@ export const generateCreatorApprovedHTML = (creatorName) => {
             .chip-verified { background: rgba(57, 255, 20, 0.08) !important; border-color: rgba(57, 255, 20, 0.25) !important; color: #39FF14 !important; }
             .text-title { color: #FFFFFF !important; }
             .text-subtitle { color: #8E96A4 !important; }
+            .text-bold { color: #FFFFFF !important; }
+            .pass-card { background: #111420 !important; border-color: rgba(255, 255, 255, 0.09) !important; }
+            .pass-header-text { color: #E2E8F0 !important; }
+            .pass-id-pill { background: rgba(255, 255, 255, 0.05) !important; border-color: rgba(255, 255, 255, 0.08) !important; color: #94A3B8 !important; }
+            .pass-avatar-fallback { background-color: #171B2A !important; border-color: #39FF14 !important; color: #39FF14 !important; }
+            .pass-name { color: #FFFFFF !important; }
+            .pass-meta { color: #8E96A4 !important; }
+            .pass-meta-sep { color: #475569 !important; }
+            .pass-verified-badge { background: rgba(57, 255, 20, 0.12) !important; border-color: rgba(57, 255, 20, 0.3) !important; color: #39FF14 !important; }
+            .pass-footer-strip { border-top-color: rgba(255, 255, 255, 0.06) !important; background: rgba(255, 255, 255, 0.015) !important; }
+            .pass-footer-text { color: #64748B !important; }
+            .pass-barcode { color: #475569 !important; }
             .card-box { background: #111420 !important; border-color: rgba(255, 255, 255, 0.09) !important; }
             .card-tag { color: #39FF14 !important; }
             .card-title { color: #FFFFFF !important; }
             .card-desc { color: #8E96A4 !important; }
+            .wa-card { background: linear-gradient(180deg, rgba(37, 211, 102, 0.08) 0%, rgba(37, 211, 102, 0.02) 100%) !important; border-color: rgba(37, 211, 102, 0.22) !important; }
+            .wa-chip { background: rgba(37, 211, 102, 0.12) !important; color: #25D366 !important; }
+            .wa-title { color: #FFFFFF !important; }
+            .wa-desc { color: #94A3B8 !important; }
+            .wa-sublink { color: #64748B !important; }
             .footer-bg { background-color: #07090F !important; border-top-color: rgba(255, 255, 255, 0.06) !important; }
             .social-icon { filter: invert(1) !important; opacity: 0.4 !important; }
             .footer-copy { color: #475569 !important; }
@@ -2834,6 +2882,10 @@ export const generateCreatorApprovedHTML = (creatorName) => {
         [data-ogsc] .email-container { background-color: #0B0D14 !important; border-color: rgba(255, 255, 255, 0.08) !important; }
         [data-ogsc] .text-title { color: #FFFFFF !important; }
         [data-ogsc] .text-subtitle { color: #8E96A4 !important; }
+        [data-ogsc] .text-bold { color: #FFFFFF !important; }
+        [data-ogsc] .pass-card { background: #111420 !important; border-color: rgba(255, 255, 255, 0.09) !important; }
+        [data-ogsc] .pass-name { color: #FFFFFF !important; }
+        [data-ogsc] .pass-meta { color: #8E96A4 !important; }
         [data-ogsc] .card-box { background: #111420 !important; }
         [data-ogsc] .card-title { color: #FFFFFF !important; }
         [data-ogsc] .footer-bg { background-color: #07090F !important; }
@@ -2841,17 +2893,21 @@ export const generateCreatorApprovedHTML = (creatorName) => {
     </style>
 </head>
 <body class="email-bg" style="margin: 0; padding: 0; background-color: #F4F6F9; color: #0F172A; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
-    <span class="preheader">Congratulations! Your Newbi Creators profile has been verified.</span>
+    <span class="preheader">Congratulations! Your Newbi Creator Profile is Verified. Launch your dashboard to access campaigns.</span>
 
+    <!-- Outer Wrapper -->
     <table role="presentation" class="email-bg" width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #F4F6F9; padding: 24px 8px;">
         <tr>
             <td align="center">
+                <!-- Main Container -->
                 <table role="presentation" class="email-container" width="560" border="0" cellspacing="0" cellpadding="0" style="max-width: 560px; width: 100%; background-color: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 20px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.06);">
                     
+                    <!-- Electric Lime Accent Bar -->
                     <tr>
                         <td style="height: 2px; background: #39FF14;"></td>
                     </tr>
 
+                    <!-- Header: Brand Logo & Status Chip -->
                     <tr>
                         <td class="header-padding header-border" style="padding: 26px 30px 16px 30px; border-bottom: 1px solid #F1F5F9;">
                             <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0">
@@ -2876,37 +2932,136 @@ export const generateCreatorApprovedHTML = (creatorName) => {
                         </td>
                     </tr>
 
+                    <!-- Content Body -->
                     <tr>
                         <td class="content-padding" style="padding: 26px 30px 24px 30px;">
                             
+                            <!-- Salutation & Verification Headline -->
                             <div style="margin-bottom: 20px;">
                                 <h1 class="text-title" style="margin: 0 0 6px 0; font-size: 22px; font-weight: 800; color: #0F172A; line-height: 1.25; letter-spacing: -0.4px;">
                                     You're verified, ${firstName}.
                                 </h1>
                                 <p class="text-subtitle" style="margin: 0; font-size: 13px; line-height: 1.55; color: #475569;">
-                                    Our creator partnerships team has officially reviewed and verified your account. Your creator badge is now active across the Newbi ecosystem.
+                                    Great news! Our partnerships team has reviewed and officially verified your creator profile. Your verified creator pass is now active with full commercial privileges unlocked.
                                 </p>
                             </div>
 
-                            <!-- Verification Perks Box -->
-                            <table role="presentation" class="card-box" width="100%" border="0" cellspacing="0" cellpadding="0" style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 16px; overflow: hidden; margin-bottom: 22px; padding: 18px 20px;">
+                            <!-- ─── THE VERIFIED CREATOR PASS CARD ─── -->
+                            <table role="presentation" class="pass-card" width="100%" border="0" cellspacing="0" cellpadding="0" style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 16px; overflow: hidden; margin: 0 0 22px 0;">
+                                
+                                <!-- Pass Header: Brand & Pass ID -->
+                                <tr>
+                                    <td style="padding: 14px 18px 10px 18px;" align="left" valign="middle">
+                                        <span class="pass-header-text" style="font-size: 10px; font-weight: 800; letter-spacing: 1.2px; color: #0F172A; text-transform: uppercase;">NEWBI CREATORS</span>
+                                        <span style="display: inline-block; width: 5px; height: 5px; background-color: #10B981; border-radius: 50%; margin-left: 5px; vertical-align: middle;"></span>
+                                        <span style="font-size: 8px; font-weight: 700; letter-spacing: 1px; color: #10B981; text-transform: uppercase; margin-left: 4px;">● VERIFIED PASS</span>
+                                    </td>
+                                    <td style="padding: 14px 18px 10px 18px;" align="right" valign="middle">
+                                        <span class="pass-id-pill" style="font-family: monospace, -apple-system, sans-serif; font-size: 9px; font-weight: 700; letter-spacing: 0.8px; color: #475569; background: #FFFFFF; border: 1px solid #CBD5E1; border-radius: 6px; padding: 3px 7px;">
+                                            ${fullPassId}
+                                        </span>
+                                    </td>
+                                </tr>
+
+                                <!-- Pass Identity: Avatar, Name & Meta -->
+                                <tr>
+                                    <td colspan="2" style="padding: 8px 18px 16px 18px;">
+                                        <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0">
+                                            <tr>
+                                                <td width="54" valign="middle" style="width: 54px; padding-right: 14px;">
+                                                    ${avatar ? `
+                                                        <img src="${avatar}" alt="${creatorName}" width="48" height="48" style="width: 48px; height: 48px; border-radius: 12px; object-fit: cover; border: 2px solid #10B981; display: block;" />
+                                                    ` : `
+                                                        <table role="presentation" class="pass-avatar-fallback" width="48" height="48" border="0" cellspacing="0" cellpadding="0" style="width: 48px; height: 48px; background-color: #ECFDF5; border: 2px solid #10B981; border-radius: 12px; text-align: center;">
+                                                            <tr>
+                                                                <td align="center" valign="middle" style="font-size: 18px; font-weight: 800; color: #059669;">${initialLetter}</td>
+                                                            </tr>
+                                                        </table>
+                                                    `}
+                                                </td>
+                                                <td valign="middle">
+                                                    <div style="margin-bottom: 2px;">
+                                                        <span class="pass-name" style="font-size: 16px; font-weight: 800; color: #0F172A; line-height: 1.2; letter-spacing: -0.2px; vertical-align: middle;">
+                                                            ${creatorName}
+                                                        </span>
+                                                        <span class="pass-verified-badge" style="display: inline-block; padding: 1px 6px; background: #ECFDF5; border: 1px solid #A7F3D0; border-radius: 4px; color: #059669; font-size: 8px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase; margin-left: 6px; vertical-align: middle;">
+                                                            ✓ VERIFIED
+                                                        </span>
+                                                    </div>
+                                                    <div class="pass-meta" style="font-size: 12px; font-weight: 500; color: #475569; margin-top: 3px;">
+                                                        @${handle} <span class="pass-meta-sep" style="color: #94A3B8;">·</span> ${cityGroup.city} <span class="pass-meta-sep" style="color: #94A3B8;">·</span> ${niche}
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+
+                                <!-- Pass Authentication & Barcode Strip -->
+                                <tr>
+                                    <td colspan="2" class="pass-footer-strip" style="border-top: 1px solid #E2E8F0; background: #F1F5F9; padding: 9px 18px;">
+                                        <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0">
+                                            <tr>
+                                                <td align="left" valign="middle">
+                                                    <span class="pass-footer-text" style="font-family: monospace, -apple-system, sans-serif; font-size: 8px; font-weight: 700; letter-spacing: 1.2px; color: #64748B; text-transform: uppercase;">
+                                                        OFFICIAL VERIFIED ROSTER // ALL-ACCESS
+                                                    </span>
+                                                </td>
+                                                <td align="right" valign="middle">
+                                                    <span class="pass-barcode" style="font-family: monospace, -apple-system, sans-serif; font-size: 9px; letter-spacing: 2px; color: #94A3B8;">
+                                                        ||| || | |||| || |
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <!-- ─── WHAT UNLOCKS NOW CARD ─── -->
+                            <table role="presentation" class="card-box" width="100%" border="0" cellspacing="0" cellpadding="0" style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 16px; overflow: hidden; margin-bottom: 20px; padding: 18px 20px;">
                                 <tr>
                                     <td>
-                                        <div class="card-tag" style="font-size: 10px; font-weight: 800; letter-spacing: 1px; color: #059669; text-transform: uppercase; margin-bottom: 6px;">
+                                        <div class="card-tag" style="font-size: 10px; font-weight: 800; letter-spacing: 1.2px; color: #059669; text-transform: uppercase; margin-bottom: 6px;">
                                             ⚡ WHAT UNLOCKS NOW
                                         </div>
-                                        <div class="card-title" style="font-size: 14px; font-weight: 700; color: #0F172A; margin-bottom: 6px;">
-                                            Direct Commercial Briefs &amp; Fast Payouts
+                                        <div class="card-title" style="font-size: 15px; font-weight: 800; color: #0F172A; margin-bottom: 6px;">
+                                            Direct Commercial Briefs &amp; 1-Click Apply
                                         </div>
-                                        <div class="card-desc" style="font-size: 12px; line-height: 1.5; color: #475569;">
-                                            You can now apply directly to active brand briefs, unlock priority guestlists, submit content proofs, and receive zero-commission payouts directly to your account.
+                                        <div class="card-desc" style="font-size: 12px; line-height: 1.55; color: #475569;">
+                                            You can now apply directly to active briefs, unlock higher-tier campaign rewards, get backstage guestlists, submit proofs, and start earning with zero commission fees.
                                         </div>
                                     </td>
                                 </tr>
                             </table>
 
-                            <div style="text-align: center;">
-                                <a href="${studioUrl}" class="verified-btn" style="display: inline-block; padding: 13px 32px; background-color: #39FF14; color: #000000 !important; font-weight: 800; font-size: 13px; text-decoration: none; border-radius: 10px; letter-spacing: 0.4px; text-transform: uppercase;">
+                            <!-- ─── CITY WHATSAPP CIRCLE ─── -->
+                            <table role="presentation" class="wa-card" width="100%" border="0" cellspacing="0" cellpadding="0" style="background: linear-gradient(180deg, #F0FDF4 0%, #DCFCE7 100%); border: 1px solid #86EFAC; border-radius: 16px; overflow: hidden; margin-bottom: 22px;">
+                                <tr>
+                                    <td style="padding: 20px 20px; text-align: center;">
+                                        <div style="margin-bottom: 8px;">
+                                            <span class="wa-chip" style="display: inline-block; background: #DCFCE7; color: #166534; font-size: 9px; font-weight: 800; letter-spacing: 1.2px; border-radius: 100px; padding: 3px 10px; text-transform: uppercase;">
+                                                ⚡ PRIORITY DROPS · ${cityGroup.city.toUpperCase()}
+                                            </span>
+                                        </div>
+                                        <h2 class="wa-title" style="margin: 0 0 6px 0; font-size: 16px; font-weight: 800; color: #0F172A; letter-spacing: -0.2px;">
+                                            Join the ${cityGroup.city} Creator Circle
+                                        </h2>
+                                        <p class="wa-desc" style="margin: 0 0 14px 0; font-size: 12px; line-height: 1.5; color: #334155; max-width: 420px; margin-left: auto; margin-right: auto;">
+                                            Brand briefs, festival backstage guestlists, and collab announcements are sent here first before anywhere else.
+                                        </p>
+                                        <div>
+                                            <a href="${cityGroup.groupUrl}" target="_blank" class="wa-btn" style="display: inline-block; padding: 11px 26px; background-color: #25D366; color: #000000 !important; font-weight: 800; font-size: 12px; text-decoration: none; border-radius: 10px; letter-spacing: 0.4px; text-transform: uppercase;">
+                                                Join ${cityGroup.city} WhatsApp Group &rarr;
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <!-- ─── PRIMARY CTA ─── -->
+                            <div style="text-align: center; margin-bottom: 10px;">
+                                <a href="${studioUrl}" class="verified-btn" style="display: inline-block; padding: 13px 34px; background-color: #39FF14; color: #000000 !important; font-weight: 800; font-size: 13px; text-decoration: none; border-radius: 12px; letter-spacing: 0.4px; text-transform: uppercase;">
                                     Launch Creator Studio &rarr;
                                 </a>
                             </div>
@@ -2914,6 +3069,7 @@ export const generateCreatorApprovedHTML = (creatorName) => {
                         </td>
                     </tr>
 
+                    <!-- Footer -->
                     <tr>
                         <td class="footer-bg" style="padding: 22px 30px; background-color: #F8FAFC; border-top: 1px solid #E2E8F0; text-align: center;">
                             <div style="margin-bottom: 12px;">

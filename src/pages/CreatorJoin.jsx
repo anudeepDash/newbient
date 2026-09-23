@@ -486,17 +486,6 @@ const CreatorJoin = () => {
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    // If already registered creator and logged in, automatic redirect after small grace period
-    useEffect(() => {
-        if (user) {
-            resolveCreatorProfile(user).then((resolved) => {
-                if (resolved) {
-                    navigate('/creator-dashboard', { replace: true });
-                }
-            }).catch(err => console.error("Error checking creator profile on join page:", err));
-        }
-    }, [user, navigate, resolveCreatorProfile]);
-
     // Smart detection of existing creator accounts across logged-in user, email, phone, and social handle
     const matchedExistingCreator = React.useMemo(() => {
         if (!creators || creators.length === 0) return null;
@@ -540,6 +529,35 @@ const CreatorJoin = () => {
 
         return null;
     }, [formData.email, formData.phone, formData.instagram, creators, user]);
+
+    // If already registered creator and logged in, automatic redirect after small grace period
+    useEffect(() => {
+        if (user) {
+            resolveCreatorProfile(user).then((resolved) => {
+                if (resolved) {
+                    navigate('/creator-dashboard', { replace: true });
+                }
+            }).catch(err => console.error("Error checking creator profile on join page:", err));
+        }
+    }, [user, navigate, resolveCreatorProfile]);
+
+    // Also auto-redirect if we matched them via local creators list
+    useEffect(() => {
+        if (user && matchedExistingCreator) {
+            const userPhoneNorm = user.phoneNumber ? normalizePhoneNumber(user.phoneNumber) : null;
+            const userEmailNorm = user.email ? user.email.toLowerCase() : null;
+            const creatorEmailNorm = matchedExistingCreator.email ? matchedExistingCreator.email.toLowerCase() : null;
+            
+            if (
+                user.uid === matchedExistingCreator.uid ||
+                user.uid === matchedExistingCreator.id ||
+                (userEmailNorm && creatorEmailNorm && userEmailNorm === creatorEmailNorm) ||
+                (userPhoneNorm && normalizePhoneNumber(matchedExistingCreator.phone) === userPhoneNorm)
+            ) {
+                navigate('/creator-dashboard', { replace: true });
+            }
+        }
+    }, [user, matchedExistingCreator, navigate]);
 
     // Real-time duplicate warnings for field labels
     const duplicateWarnings = React.useMemo(() => {
@@ -671,7 +689,14 @@ const CreatorJoin = () => {
             await recaptchaVerifierRef.current.render();
 
             const formattedPhone = `${countryCode}${cleanDigits}`;
-            const confirmation = await signInWithPhoneNumber(auth, formattedPhone, recaptchaVerifierRef.current);
+            let confirmation;
+            if (auth.currentUser) {
+                const { PhoneAuthProvider } = await import('firebase/auth');
+                const phoneProvider = new PhoneAuthProvider(auth);
+                confirmation = await phoneProvider.verifyPhoneNumber(formattedPhone, recaptchaVerifierRef.current);
+            } else {
+                confirmation = await signInWithPhoneNumber(auth, formattedPhone, recaptchaVerifierRef.current);
+            }
             setConfirmationResult(confirmation);
             setOtpSent(true);
             setOtpCooldown(30);
@@ -761,11 +786,40 @@ const CreatorJoin = () => {
         setPhoneError('');
 
         try {
-            if (!isLocal && confirmationResult) {
-                await confirmationResult.confirm(code);
-            }
             const cleanDigits = formData.phone.replace(/\D/g, '').slice(-10);
             const fullFormattedPhone = `${countryCode} ${cleanDigits}`;
+
+            if (!isLocal && confirmationResult) {
+                if (auth.currentUser && typeof confirmationResult === 'string') {
+                    const { PhoneAuthProvider, linkWithCredential } = await import('firebase/auth');
+                    const credential = PhoneAuthProvider.credential(confirmationResult, code);
+                    try {
+                        await linkWithCredential(auth.currentUser, credential);
+                    } catch (linkErr) {
+                        console.log("Phone link note:", linkErr.message);
+                    }
+                } else if (typeof confirmationResult.confirm === 'function') {
+                    await confirmationResult.confirm(code);
+                }
+            }
+
+            if (auth.currentUser) {
+                try {
+                    const { doc, setDoc } = await import('firebase/firestore');
+                    const { db } = await import('../lib/firebase');
+                    await setDoc(doc(db, 'users', auth.currentUser.uid), {
+                        phoneNumber: fullFormattedPhone,
+                        isPhoneVerified: true
+                    }, { merge: true });
+                    const storeUser = useStore.getState().user;
+                    if (storeUser && storeUser.uid === auth.currentUser.uid) {
+                        useStore.setState({ user: { ...storeUser, phoneNumber: fullFormattedPhone, isPhoneVerified: true } });
+                    }
+                } catch (dbErr) {
+                    console.log("Firestore update note:", dbErr.message);
+                }
+            }
+
             setIsPhoneVerified(true);
             setVerifiedPhoneNumber(fullFormattedPhone);
             setOtpSent(false);
@@ -1184,15 +1238,33 @@ const CreatorJoin = () => {
                         <button
                             type="button"
                             onClick={() => {
-                                if (user && (user.uid === matchedExistingCreator.uid || user.email === matchedExistingCreator.email)) {
-                                    navigate('/creator-dashboard');
-                                } else {
-                                    setAuthModal(true);
+                                if (user) {
+                                    const userPhoneNorm = user.phoneNumber ? normalizePhoneNumber(user.phoneNumber) : null;
+                                    const userEmailNorm = user.email ? user.email.toLowerCase() : null;
+                                    const creatorEmailNorm = matchedExistingCreator.email ? matchedExistingCreator.email.toLowerCase() : null;
+                                    
+                                    if (
+                                        user.uid === matchedExistingCreator.uid || 
+                                        user.uid === matchedExistingCreator.id ||
+                                        (userEmailNorm && creatorEmailNorm && userEmailNorm === creatorEmailNorm) ||
+                                        (userPhoneNorm && normalizePhoneNumber(matchedExistingCreator.phone) === userPhoneNorm)
+                                    ) {
+                                        navigate('/creator-dashboard');
+                                        return;
+                                    }
                                 }
+                                setAuthModal(true);
                             }}
                             className="px-5 py-2.5 rounded-xl bg-neon-green text-black font-black uppercase tracking-wider text-[11px] hover:bg-white transition-all shrink-0 flex items-center justify-center gap-2 shadow-lg active:scale-95"
                         >
-                            <span>{user ? 'Open Dashboard' : 'Sign In to Dashboard'}</span>
+                            <span>
+                                {user && (
+                                    user.uid === matchedExistingCreator.uid ||
+                                    user.uid === matchedExistingCreator.id ||
+                                    (user.email && matchedExistingCreator.email && user.email.toLowerCase() === matchedExistingCreator.email.toLowerCase()) ||
+                                    (user.phoneNumber && normalizePhoneNumber(user.phoneNumber) === normalizePhoneNumber(matchedExistingCreator.phone))
+                                ) ? 'Open Dashboard' : 'Sign In to Dashboard'}
+                            </span>
                             <ArrowRight size={14} />
                         </button>
                     </motion.div>
