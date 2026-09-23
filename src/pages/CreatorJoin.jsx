@@ -493,12 +493,14 @@ const CreatorJoin = () => {
         // 1. Check current logged in user
         if (user) {
             const userPhoneNorm = user.phoneNumber ? normalizePhoneNumber(user.phoneNumber) : null;
-            const userEmailNorm = user.email ? user.email.toLowerCase() : null;
-            const match = creators.find(c => 
-                c.uid === user.uid || 
-                (userEmailNorm && c.email && c.email.toLowerCase() === userEmailNorm) ||
-                (userPhoneNorm && normalizePhoneNumber(c.phone) === userPhoneNorm)
-            );
+            const userEmailNorm = user.email ? user.email.trim().toLowerCase() : null;
+            const match = creators.find(c => {
+                const cEmailNorm = c.email ? c.email.trim().toLowerCase() : null;
+                const cPhoneNorm = normalizePhoneNumber(c.phone);
+                return c.uid === user.uid || 
+                (userEmailNorm && cEmailNorm && cEmailNorm === userEmailNorm) ||
+                (userPhoneNorm && cPhoneNorm && cPhoneNorm === userPhoneNorm);
+            });
             if (match) return match;
         }
 
@@ -545,14 +547,15 @@ const CreatorJoin = () => {
     useEffect(() => {
         if (user && matchedExistingCreator) {
             const userPhoneNorm = user.phoneNumber ? normalizePhoneNumber(user.phoneNumber) : null;
-            const userEmailNorm = user.email ? user.email.toLowerCase() : null;
-            const creatorEmailNorm = matchedExistingCreator.email ? matchedExistingCreator.email.toLowerCase() : null;
+            const userEmailNorm = user.email ? user.email.trim().toLowerCase() : null;
+            const creatorEmailNorm = matchedExistingCreator.email ? matchedExistingCreator.email.trim().toLowerCase() : null;
+            const creatorPhoneNorm = normalizePhoneNumber(matchedExistingCreator.phone);
             
             if (
                 user.uid === matchedExistingCreator.uid ||
                 user.uid === matchedExistingCreator.id ||
                 (userEmailNorm && creatorEmailNorm && userEmailNorm === creatorEmailNorm) ||
-                (userPhoneNorm && normalizePhoneNumber(matchedExistingCreator.phone) === userPhoneNorm)
+                (userPhoneNorm && creatorPhoneNorm && creatorPhoneNorm === userPhoneNorm)
             ) {
                 navigate('/creator-dashboard', { replace: true });
             }
@@ -1240,17 +1243,20 @@ const CreatorJoin = () => {
                             onClick={() => {
                                 if (user) {
                                     const userPhoneNorm = user.phoneNumber ? normalizePhoneNumber(user.phoneNumber) : null;
-                                    const userEmailNorm = user.email ? user.email.toLowerCase() : null;
-                                    const creatorEmailNorm = matchedExistingCreator.email ? matchedExistingCreator.email.toLowerCase() : null;
+                                    const userEmailNorm = user.email ? user.email.trim().toLowerCase() : null;
+                                    const creatorEmailNorm = matchedExistingCreator.email ? matchedExistingCreator.email.trim().toLowerCase() : null;
+                                    const creatorPhoneNorm = normalizePhoneNumber(matchedExistingCreator.phone);
                                     
                                     if (
                                         user.uid === matchedExistingCreator.uid || 
                                         user.uid === matchedExistingCreator.id ||
                                         (userEmailNorm && creatorEmailNorm && userEmailNorm === creatorEmailNorm) ||
-                                        (userPhoneNorm && normalizePhoneNumber(matchedExistingCreator.phone) === userPhoneNorm)
+                                        (userPhoneNorm && creatorPhoneNorm && creatorPhoneNorm === userPhoneNorm)
                                     ) {
                                         navigate('/creator-dashboard');
                                         return;
+                                    } else {
+                                        useStore.getState().addToast('You are logged in with an account that does not match this creator profile. Please sign in with the correct email or phone.', 'error');
                                     }
                                 }
                                 setAuthModal(true);

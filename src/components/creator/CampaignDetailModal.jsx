@@ -463,43 +463,45 @@ const CampaignDetailModal = ({
                     )}
 
                     {/* Full-Bleed Hero Banner with Crisp Image and Natural Ambient Presence */}
-                    <div 
-                        className="relative w-full aspect-[16/10] sm:aspect-[2/1] sm:min-h-[440px] shrink-0 overflow-hidden z-10"
-                        style={{
-                            WebkitMaskImage: 'linear-gradient(to bottom, rgba(0,0,0,1) 80%, rgba(0,0,0,0) 100%)',
-                            maskImage: 'linear-gradient(to bottom, rgba(0,0,0,1) 80%, rgba(0,0,0,0) 100%)'
-                        }}
-                    >
-                        {campaign.thumbnail ? (
-                            <>
-                                {/* Ambient Image Aura inside Banner */}
-                                <div 
-                                    className="absolute -inset-10 bg-cover bg-center filter blur-2xl opacity-90 scale-110 pointer-events-none transform-gpu"
-                                    style={{ backgroundImage: `url(${campaign.thumbnail})` }}
-                                />
+                    <div className="relative w-full aspect-[16/10] sm:aspect-[2/1] sm:min-h-[440px] shrink-0 overflow-hidden z-10">
+                        <div 
+                            className="absolute inset-0 pointer-events-none"
+                            style={{
+                                WebkitMaskImage: 'linear-gradient(to bottom, rgba(0,0,0,1) 50%, transparent 95%)',
+                                maskImage: 'linear-gradient(to bottom, rgba(0,0,0,1) 50%, transparent 95%)'
+                            }}
+                        >
+                            {campaign.thumbnail ? (
+                                <>
+                                    {/* Ambient Image Aura inside Banner */}
+                                    <div 
+                                        className="absolute -inset-10 bg-cover bg-center filter blur-2xl opacity-90 scale-110 pointer-events-none transform-gpu"
+                                        style={{ backgroundImage: `url(${campaign.thumbnail})` }}
+                                    />
 
-                                {/* Crisp Foreground Image - Full bleed edge-to-edge */}
-                                <img 
-                                    src={campaign.thumbnail} 
-                                    alt={campaign.title} 
-                                    className="relative z-10 w-full h-full object-cover object-center scale-100 transition-transform duration-700"
-                                />
+                                    {/* Crisp Foreground Image - Full bleed edge-to-edge */}
+                                    <img 
+                                        src={campaign.thumbnail} 
+                                        alt={campaign.title} 
+                                        className="relative z-10 w-full h-full object-cover object-center scale-100 transition-transform duration-700"
+                                    />
 
-                                {/* Soft Ambient Depth Vignette */}
-                                <div className="absolute inset-0 z-10 bg-[radial-gradient(ellipse_at_center,_transparent_60%,_rgba(0,0,0,0.3)_100%)] pointer-events-none" />
-                            </>
-                        ) : (
-                            <div className="w-full h-full bg-gradient-to-tr from-gray-100 via-gray-200 to-gray-50 dark:from-zinc-950 dark:via-[#121620] dark:to-[#0c0e14]" />
-                        )}
+                                    {/* Soft Ambient Depth Vignette */}
+                                    <div className="absolute inset-0 z-10 bg-[radial-gradient(ellipse_at_center,_transparent_60%,_rgba(0,0,0,0.3)_100%)] pointer-events-none" />
+                                </>
+                            ) : (
+                                <div className="w-full h-full bg-gradient-to-tr from-gray-100 via-gray-200 to-gray-50 dark:from-zinc-950 dark:via-[#121620] dark:to-[#0c0e14]" />
+                            )}
+
+                            {/* Subtle Bottom Shadow for Card & Title Contrast (Desktop only) */}
+                            <div className="hidden sm:block absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-black/70 via-black/20 to-transparent pointer-events-none z-10" />
+                        </div>
                         
                         {/* Subtle Top Vignette for Button Visibility */}
                         <div className="absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-black/25 to-transparent pointer-events-none z-10" />
 
-                        {/* Subtle Bottom Shadow for Card & Title Contrast (Desktop only) */}
-                        <div className="hidden sm:block absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-black/50 via-black/20 to-transparent pointer-events-none z-10" />
-
                         {/* Floating Hero Content Overlay - Positioned cleanly above the stat cards (Desktop only) */}
-                        <div className="hidden sm:flex absolute bottom-20 md:bottom-22 left-8 right-8 z-20 flex-col justify-end">
+                        <div className="hidden sm:flex absolute bottom-3 md:bottom-4 left-8 right-8 z-20 flex-col justify-end">
                             <div className="flex items-center gap-2 mb-2.5">
                                 <div className="p-2 rounded-xl bg-black/60 backdrop-blur-xl border border-white/15 text-neon-green shadow-lg">
                                     <Instagram size={15} />
@@ -532,974 +534,621 @@ const CampaignDetailModal = ({
                             </h1>
                         </div>
 
-                        {/* Quick Stats Grid */}
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 -mt-3 sm:-mt-10">
-                            <div className="p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-white/90 dark:bg-[#121620]/90 border border-black/10 dark:border-white/10 backdrop-blur-2xl space-y-1 sm:space-y-1.5 hover:border-black/20 dark:hover:border-white/20 transition-all shadow-xl group">
-                                <span className="text-[8px] sm:text-[9px] font-black text-gray-500 dark:text-zinc-500 uppercase tracking-widest block font-mono">Target City</span>
-                                <div className="flex items-center gap-1.5 text-gray-950 dark:text-white font-bold text-xs truncate">
-                                    <MapPin size={12} className="text-gray-400 dark:text-zinc-400 shrink-0 group-hover:text-emerald-500 dark:group-hover:text-neon-green transition-colors" />
-                                    <span className="truncate">{campaign.targetCity || 'Universal'}</span>
+                        {/* ── Stats pill row ── */}
+                        <div className="flex flex-wrap gap-2 sm:gap-3 mt-1">
+                            {[
+                                { label: 'City', value: campaign.targetCity || 'Universal', icon: MapPin },
+                                { label: 'Reward', value: campaign.reward || 'Barter', icon: Zap, accent: true },
+                                { label: 'Min. Followers', value: `${Number(campaign.minInstagramFollowers || 0).toLocaleString()}+`, icon: Users },
+                                { label: 'Tasks', value: `${campaignTasks.length} Deliverables`, icon: Target },
+                            ].map(({ label, value, icon: Icon, accent }) => (
+                                <div
+                                    key={label}
+                                    className={cn(
+                                        "flex items-center gap-2 px-3.5 py-2 rounded-full border text-xs font-semibold transition-all",
+                                        accent
+                                            ? "bg-neon-green/10 border-neon-green/30 text-neon-green"
+                                            : "bg-white/[0.04] border-white/10 text-zinc-300"
+                                    )}
+                                >
+                                    <Icon size={12} className={accent ? "text-neon-green" : "text-zinc-500"} />
+                                    <span className="text-zinc-500 text-[10px] uppercase tracking-widest font-mono mr-0.5">{label}</span>
+                                    <span>{value}</span>
                                 </div>
-                            </div>
-
-                            <div className="p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-white/90 dark:bg-[#121620]/90 border border-emerald-500/35 dark:border-neon-green/30 backdrop-blur-2xl space-y-1 sm:space-y-1.5 hover:border-emerald-500/50 dark:hover:border-neon-green/50 transition-all shadow-xl group">
-                                <span className="text-[8px] sm:text-[9px] font-black text-emerald-700 dark:text-neon-green/80 uppercase tracking-widest block font-mono">Reward Payout</span>
-                                <div className="flex items-center gap-1.5 text-emerald-600 dark:text-neon-green font-black text-xs truncate">
-                                    <Zap size={12} className="shrink-0" />
-                                    <span>{campaign.reward || 'Barter Collab'}</span>
-                                </div>
-                            </div>
-
-                            <div className="p-4 rounded-2xl bg-white/90 dark:bg-[#121620]/90 border border-black/10 dark:border-white/10 backdrop-blur-2xl space-y-1.5 hover:border-black/20 dark:hover:border-white/20 transition-all shadow-xl group">
-                                <span className="text-[9px] font-black text-gray-500 dark:text-zinc-500 uppercase tracking-widest block font-mono">Min. Followers</span>
-                                <div className="flex items-center gap-1.5 text-gray-950 dark:text-white font-bold text-xs truncate font-mono">
-                                    <Users size={13} className="text-gray-400 dark:text-zinc-400 shrink-0 group-hover:text-emerald-500 dark:group-hover:text-neon-green transition-colors" />
-                                    <span>{Number(campaign.minInstagramFollowers || 0).toLocaleString()}+</span>
-                                </div>
-                            </div>
-
-                            <div className="p-4 rounded-2xl bg-white/90 dark:bg-[#121620]/90 border border-black/10 dark:border-white/10 backdrop-blur-2xl space-y-1.5 hover:border-black/20 dark:hover:border-white/20 transition-all shadow-xl group">
-                                <span className="text-[9px] font-black text-gray-500 dark:text-zinc-500 uppercase tracking-widest block font-mono">Deliverables</span>
-                                <div className="flex items-center gap-1.5 text-gray-950 dark:text-white font-bold text-xs truncate font-mono">
-                                    <Target size={13} className="text-gray-400 dark:text-zinc-400 shrink-0 group-hover:text-emerald-500 dark:group-hover:text-neon-green transition-colors" />
-                                    <span>{campaignTasks.length} Tasks</span>
-                                </div>
-                            </div>
+                            ))}
                         </div>
 
-                        {/* Main Two-Column Layout */}
-                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-                            {/* Left Column: Briefing & Deliverables (7 Cols) */}
-                            <div className="lg:col-span-7 space-y-8">
-                                {/* Campaign Briefing Card - Ultra-Premium Styling */}
-                                <div className="relative p-4 sm:p-7 rounded-3xl bg-gray-50/70 dark:bg-white/[0.025] border border-black/[0.08] dark:border-white/[0.08] backdrop-blur-xl space-y-4 sm:space-y-5 shadow-xs dark:shadow-2xl overflow-hidden transition-colors">
-                                    {/* Ambient Corner Glow */}
-                                    <div className="absolute -top-12 -right-12 w-44 h-44 bg-gradient-to-bl from-emerald-500/10 dark:from-neon-green/10 to-transparent rounded-full blur-2xl pointer-events-none" />
+                        {/* ── Divider ── */}
+                        <div className="border-t border-white/[0.06]" />
 
-                                    <div className="flex items-center justify-between pb-3.5 sm:pb-4 border-b border-black/[0.06] dark:border-white/[0.08] relative z-10 gap-3">
-                                        <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
-                                            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-black/[0.04] dark:bg-white/[0.06] border border-black/[0.08] dark:border-white/[0.1] flex items-center justify-center text-gray-800 dark:text-zinc-200 shadow-2xs shrink-0">
-                                                <FileText size={15} />
-                                            </div>
-                                            <div className="min-w-0">
-                                                <h4 className="text-xs sm:text-sm font-black font-heading uppercase tracking-wider text-gray-950 dark:text-white truncate">
-                                                    Campaign Briefing
-                                                </h4>
-                                                <p className="text-[9px] sm:text-[10px] font-mono text-gray-500 dark:text-zinc-500 uppercase tracking-wider truncate">
-                                                    Guidelines &amp; Requirements
-                                                </p>
-                                            </div>
-                                        </div>
-                                        <span className="hidden sm:inline-flex px-2.5 py-1 rounded-lg bg-black/[0.04] dark:bg-white/[0.05] border border-black/[0.06] dark:border-white/[0.08] text-[9px] font-mono font-bold text-gray-500 dark:text-zinc-400 uppercase tracking-wider shrink-0 whitespace-nowrap">
-                                            Official Brief
-                                        </span>
-                                    </div>
-                                    <div 
-                                        className="campaign-briefing-content text-sm sm:text-base font-normal leading-relaxed relative z-10" 
-                                        dangerouslySetInnerHTML={{ __html: campaign.description || 'No detailed briefing provided for this campaign.' }} 
-                                    />
+                        {/* ── Campaign Briefing ── */}
+                        <section className="space-y-5">
+                            <h2 className="text-[11px] font-black uppercase tracking-[0.2em] text-zinc-500 font-mono">
+                                Campaign Brief
+                            </h2>
+                            <div
+                                className="campaign-briefing-content text-[15px] sm:text-base leading-[1.75] text-zinc-200 font-normal"
+                                dangerouslySetInnerHTML={{ __html: campaign.description || 'No briefing provided.' }}
+                            />
+                        </section>
+
+                        {/* ── Divider ── */}
+                        {campaignTasks.length > 0 && <div className="border-t border-white/[0.06]" />}
+
+                        {/* ── Deliverables ── */}
+                        {campaignTasks.length > 0 && (
+                            <section className="space-y-5">
+                                <div className="flex items-center justify-between">
+                                    <h2 className="text-[11px] font-black uppercase tracking-[0.2em] text-zinc-500 font-mono">
+                                        Deliverables
+                                    </h2>
+                                    <span className="text-[10px] text-zinc-600 font-mono">
+                                        {requiredTasks.length} required · {campaignTasks.length - requiredTasks.length} optional
+                                    </span>
                                 </div>
 
-                                {/* Campaign Deliverables Section */}
-                                {campaignTasks.length > 0 && (
-                                    <div className="space-y-4">
-                                        <div className="flex items-center justify-between pb-1">
-                                            <div className="flex items-center gap-2.5">
-                                                <div className="w-8 h-8 rounded-xl bg-emerald-500/10 dark:bg-neon-green/10 border border-emerald-500/20 dark:border-neon-green/20 flex items-center justify-center text-emerald-600 dark:text-neon-green">
-                                                    <Target size={15} />
+                                <div className="space-y-2">
+                                    {campaignTasks.map((task, idx) => {
+                                        const typeInfo = TASK_TYPES[task.taskType] || TASK_TYPES.custom;
+                                        const TypeIcon = typeInfo.icon;
+                                        const platInfo = PLATFORMS[task.platform] || PLATFORMS.other;
+                                        const status = getSubmissionStatus(task, user?.uid);
+
+                                        return (
+                                            <div
+                                                key={task.id || idx}
+                                                onClick={() => isJoined && setSelectedTask(task)}
+                                                className={cn(
+                                                    "group flex items-start gap-4 p-4 rounded-2xl border transition-all duration-200",
+                                                    isJoined ? "cursor-pointer" : "",
+                                                    status === 'approved'
+                                                        ? "bg-neon-green/[0.05] border-neon-green/20 hover:border-neon-green/40"
+                                                        : status === 'submitted'
+                                                        ? "bg-amber-500/[0.05] border-amber-500/20 hover:border-amber-500/40"
+                                                        : "bg-white/[0.02] border-white/[0.06] hover:border-white/[0.14] hover:bg-white/[0.04]"
+                                                )}
+                                            >
+                                                {/* Status circle */}
+                                                <div className={cn(
+                                                    "w-9 h-9 rounded-xl flex items-center justify-center shrink-0 mt-0.5",
+                                                    status === 'approved' ? "bg-neon-green/20 text-neon-green" :
+                                                    status === 'submitted' ? "bg-amber-500/20 text-amber-400" :
+                                                    "bg-white/[0.06] text-zinc-400"
+                                                )}>
+                                                    {status === 'approved' ? <CheckCircle2 size={18} /> : <TypeIcon size={17} />}
                                                 </div>
-                                                <h4 className="text-xs font-black font-heading uppercase tracking-wider text-gray-950 dark:text-white">
-                                                    Deliverables
-                                                </h4>
-                                            </div>
-                                            <span className="text-[10px] font-bold text-gray-500 dark:text-zinc-400 uppercase tracking-widest font-mono">
-                                                {requiredTasks.length} Required · {campaignTasks.length - requiredTasks.length} Optional
-                                            </span>
-                                        </div>
 
-                                        <div className="space-y-3">
-                                            {campaignTasks.map((task, idx) => {
-                                                const typeInfo = TASK_TYPES[task.taskType] || TASK_TYPES.custom;
-                                                const TypeIcon = typeInfo.icon;
-                                                const platInfo = PLATFORMS[task.platform] || PLATFORMS.other;
-                                                const status = getSubmissionStatus(task, user?.uid);
-
-                                                return (
-                                                    <div
-                                                        key={task.id || idx}
-                                                        onClick={() => isJoined && setSelectedTask(task)}
-                                                        className={cn(
-                                                            "p-5 rounded-2xl bg-gray-50/70 dark:bg-white/[0.025] border border-black/[0.08] dark:border-white/[0.08] hover:border-black/20 dark:hover:border-white/20 transition-all duration-200 flex items-start gap-4 backdrop-blur-md shadow-2xs",
-                                                            isJoined ? "cursor-pointer hover:bg-gray-100/80 dark:hover:bg-white/[0.04]" : ""
-                                                        )}
-                                                    >
-                                                        <div className={cn(
-                                                            "w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 border",
-                                                            status === 'approved' ? "bg-emerald-500/15 dark:bg-neon-green/20 text-emerald-600 dark:text-neon-green border-emerald-500/30 dark:border-neon-green/30" :
-                                                            status === 'submitted' ? "bg-amber-500/15 text-amber-500 dark:text-amber-400 border-amber-500/30" :
-                                                            "bg-black/[0.04] dark:bg-white/[0.04] text-gray-700 dark:text-zinc-300 border-black/10 dark:border-white/10"
-                                                        )}>
-                                                            {status === 'approved' ? <CheckCircle2 size={20} /> : <TypeIcon size={20} />}
-                                                        </div>
-
-                                                        <div className="flex-1 min-w-0">
-                                                            <div className="flex items-center flex-wrap gap-2 mb-1.5">
-                                                                <p className="font-bold text-sm sm:text-base text-gray-950 dark:text-white tracking-tight">
-                                                                    {task.title}
-                                                                </p>
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="flex items-start justify-between gap-3">
+                                                        <div>
+                                                            <p className="text-sm font-semibold text-white leading-snug">
+                                                                {task.title}
+                                                            </p>
+                                                            <div className="flex flex-wrap items-center gap-2 mt-1.5">
+                                                                <span className="text-[10px] text-zinc-500 font-mono">
+                                                                    {platInfo.label} · {typeInfo.label}
+                                                                </span>
                                                                 {task.priority === 'required' && (
-                                                                    <span className="px-2 py-0.5 bg-emerald-500/10 dark:bg-neon-green/10 border border-emerald-500/25 dark:border-neon-green/25 rounded-md text-[8px] font-black uppercase tracking-widest text-emerald-600 dark:text-neon-green font-mono">
+                                                                    <span className="text-[9px] font-bold text-neon-green/80 uppercase tracking-wider">
                                                                         Required
                                                                     </span>
                                                                 )}
                                                                 {task.deadline && (
-                                                                    <span className="px-2 py-0.5 bg-red-500/10 dark:bg-red-500/15 border border-red-500/25 rounded-md text-[8px] font-black uppercase tracking-widest text-red-500 dark:text-red-400 flex items-center gap-1 font-mono">
-                                                                        <Clock size={9} /> {new Date(task.deadline).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
-                                                                    </span>
-                                                                )}
-                                                                {isJoined && (
-                                                                    <span className={cn(
-                                                                        "px-2.5 py-0.5 border rounded-md text-[8px] font-black uppercase tracking-widest font-mono ml-auto",
-                                                                        status === 'approved' ? "bg-emerald-500/10 dark:bg-neon-green/15 border-emerald-500/30 dark:border-neon-green/30 text-emerald-600 dark:text-neon-green" :
-                                                                        status === 'submitted' ? "bg-amber-500/10 dark:bg-amber-500/15 border-amber-500/30 text-amber-600 dark:text-amber-400" :
-                                                                        "bg-black/[0.04] dark:bg-white/[0.05] border-black/10 dark:border-white/10 text-gray-500 dark:text-zinc-400"
-                                                                    )}>
-                                                                        {status === 'not_started' ? 'Pending' : status.toUpperCase().replace('_', ' ')}
-                                                                    </span>
-                                                                )}
-                                                            </div>
-
-                                                            {task.description && (
-                                                                <div 
-                                                                    className="campaign-briefing-content text-xs mt-1 leading-relaxed font-normal" 
-                                                                    dangerouslySetInnerHTML={{ __html: task.description }} 
-                                                                />
-                                                            )}
-
-                                                            <div className="flex flex-wrap items-center gap-2 mt-3 pt-3 border-t border-black/[0.06] dark:border-white/[0.06]">
-                                                                <span className="px-2.5 py-1 bg-black/[0.04] dark:bg-white/[0.04] border border-black/[0.06] dark:border-white/[0.06] rounded-lg text-[9px] font-bold text-gray-600 dark:text-zinc-400 flex items-center gap-1.5 font-mono">
-                                                                    {React.createElement(platInfo.icon, { size: 11 })} {platInfo.label}
-                                                                </span>
-                                                                <span className="px-2.5 py-1 bg-black/[0.04] dark:bg-white/[0.04] border border-black/[0.06] dark:border-white/[0.06] rounded-lg text-[9px] font-bold text-gray-600 dark:text-zinc-400 flex items-center gap-1.5 font-mono">
-                                                                    {React.createElement(typeInfo.icon, { size: 11 })} {typeInfo.label}
-                                                                </span>
-                                                                {isJoined && (
-                                                                    <span className="px-3 py-1 bg-neon-green text-black font-black text-[9px] uppercase tracking-wider rounded-lg flex items-center gap-1 ml-auto hover:bg-emerald-400 transition-colors shadow-2xs">
-                                                                        <span>Submit Proof</span>
-                                                                        <ArrowRight size={10} />
+                                                                    <span className="text-[9px] font-bold text-zinc-500 flex items-center gap-1">
+                                                                        <Clock size={9} />
+                                                                        {new Date(task.deadline).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
                                                                     </span>
                                                                 )}
                                                             </div>
                                                         </div>
+                                                        <div className="shrink-0 flex items-center gap-2">
+                                                            {isJoined && (
+                                                                <span className={cn(
+                                                                    "text-[9px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full border font-mono",
+                                                                    status === 'approved' ? "text-neon-green border-neon-green/30 bg-neon-green/10" :
+                                                                    status === 'submitted' ? "text-amber-400 border-amber-500/30 bg-amber-500/10" :
+                                                                    "text-zinc-500 border-white/10 bg-white/[0.04]"
+                                                                )}>
+                                                                    {status === 'not_started' ? 'Pending' : status.replace('_', ' ')}
+                                                                </span>
+                                                            )}
+                                                            {isJoined && (
+                                                                <ArrowRight size={14} className="text-zinc-600 group-hover:text-zinc-300 group-hover:translate-x-0.5 transition-all" />
+                                                            )}
+                                                        </div>
                                                     </div>
-                                                );
-                                            })}
+                                                    {task.description && (
+                                                        <div
+                                                            className="campaign-briefing-content text-xs mt-2 text-zinc-500 leading-relaxed"
+                                                            dangerouslySetInnerHTML={{ __html: task.description }}
+                                                        />
+                                                    )}
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </section>
+                        )}
+
+                        {/* ── Divider ── */}
+                        <div className="border-t border-white/[0.06]" />
+
+                        {/* ── Application / Status Panel ── */}
+                        <section className="space-y-5 pb-2">
+                            {isJoined ? (
+                                /* ── Already joined view ── */
+                                <div className="space-y-5">
+                                    <h2 className="text-[11px] font-black uppercase tracking-[0.2em] text-zinc-500 font-mono">
+                                        Campaign Status
+                                    </h2>
+
+                                    {/* Progress */}
+                                    <div className="space-y-3">
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-sm font-semibold text-white">
+                                                {approvedTotal} of {campaignTasks.length} tasks completed
+                                            </span>
+                                            <span className="text-sm font-bold text-neon-green font-mono">
+                                                {Math.round(progress)}%
+                                            </span>
+                                        </div>
+                                        <div className="h-[3px] bg-white/[0.08] rounded-full overflow-hidden">
+                                            <motion.div
+                                                initial={{ width: 0 }}
+                                                animate={{ width: `${progress}%` }}
+                                                transition={{ duration: 1, ease: 'easeOut' }}
+                                                className="h-full bg-neon-green rounded-full"
+                                            />
                                         </div>
                                     </div>
-                                )}
-                            </div>
 
-                            {/* Right Column: Application / Progress Workbench (5 Cols) */}
-                            <div className="lg:col-span-5">
-                                <div className="relative bg-gray-50/70 dark:bg-white/[0.025] border border-black/[0.08] dark:border-white/[0.08] backdrop-blur-xl rounded-3xl p-6 sm:p-7 shadow-xs dark:shadow-2xl space-y-6 overflow-hidden transition-colors">
-                                    {/* Ambient Corner Glow */}
-                                    <div className="absolute -bottom-12 -right-12 w-44 h-44 bg-gradient-to-tl from-emerald-500/10 dark:from-neon-green/10 to-transparent rounded-full blur-2xl pointer-events-none" />
+                                    {/* Status row */}
+                                    <div className="flex items-center justify-between py-3 border-y border-white/[0.06]">
+                                        <span className="text-sm text-zinc-400">Campaign status</span>
+                                        <span className={cn("text-sm font-semibold", isFullyComplete ? "text-neon-green" : isShortlisted ? "text-amber-400" : "text-zinc-400")}>
+                                            {isFullyComplete ? "Completed" : isShortlisted ? "Active & Shortlisted" : "Under Review"}
+                                        </span>
+                                    </div>
 
-                                    {isJoined ? (
-                                        /* Already Applied / Joined View */
-                                        <div className="space-y-6 relative z-10">
-                                            <div className="flex items-center gap-2.5 pb-4 border-b border-black/[0.06] dark:border-white/[0.08]">
-                                                <div className="w-8 h-8 rounded-xl bg-emerald-500/15 dark:bg-neon-green/15 border border-emerald-500/30 dark:border-neon-green/30 flex items-center justify-center text-emerald-600 dark:text-neon-green shrink-0">
-                                                    <CheckCircle2 size={16} />
-                                                </div>
-                                                <div>
-                                                    <h4 className="text-xs font-bold font-heading text-gray-950 dark:text-white uppercase tracking-wider">
-                                                        Active Campaign
-                                                    </h4>
-                                                    <p className="text-emerald-600 dark:text-neon-green text-[10px] font-bold uppercase tracking-wider font-mono">
-                                                        Profile Synchronized
-                                                    </p>
-                                                </div>
-                                            </div>
+                                    {/* WhatsApp */}
+                                    {isShortlisted && campaign.whatsappLink && (
+                                        <a href={campaign.whatsappLink} target="_blank" rel="noopener noreferrer">
+                                            <button type="button" className="w-full h-12 rounded-2xl bg-[#25D366]/10 border border-[#25D366]/20 text-[#25D366] font-semibold text-sm flex items-center justify-center gap-2 hover:bg-[#25D366]/20 transition-all">
+                                                <MessageCircle size={16} />
+                                                Join WhatsApp Group
+                                            </button>
+                                        </a>
+                                    )}
+                                </div>
+                            ) : (
+                                /* ── Application flow ── */
+                                <div className="space-y-6">
+                                    <h2 className="text-[11px] font-black uppercase tracking-[0.2em] text-zinc-500 font-mono">
+                                        Apply to Campaign
+                                    </h2>
 
-                                            {/* Progress Bar */}
-                                            <div className="space-y-2.5 p-4 rounded-2xl bg-white dark:bg-black/40 border border-black/[0.08] dark:border-white/[0.06] shadow-2xs">
-                                                <div className="flex items-center justify-between">
-                                                    <span className="text-[10px] font-black uppercase tracking-widest text-gray-500 dark:text-zinc-400 font-mono">Deliverables Progress</span>
-                                                    <span className="text-xs font-black text-emerald-600 dark:text-neon-green font-mono">{Math.round(progress)}%</span>
-                                                </div>
-                                                <div className="h-2 bg-gray-200 dark:bg-white/10 rounded-full overflow-hidden">
-                                                    <motion.div 
-                                                        initial={{ width: 0 }} 
-                                                        animate={{ width: `${progress}%` }} 
-                                                        className={cn("h-full transition-all duration-700 bg-neon-green")}
-                                                    />
-                                                </div>
-                                            </div>
+                                    <AnimatePresence mode="wait">
+                                        {!joinSuccess ? (
+                                            profile ? (
+                                                /* ── Registered creator fast-track ── */
+                                                <motion.div
+                                                    key="registered"
+                                                    initial={{ opacity: 0 }}
+                                                    animate={{ opacity: 1 }}
+                                                    exit={{ opacity: 0 }}
+                                                    className="space-y-4"
+                                                >
+                                                    {/* Creator identity row */}
+                                                    <div className="flex items-center gap-3 py-4 border-y border-white/[0.06]">
+                                                        {(profile.profilePicture || instagramVerifiedData?.profilePic || user?.photoURL) ? (
+                                                            <img
+                                                                src={profile.profilePicture || instagramVerifiedData?.profilePic || user?.photoURL}
+                                                                alt={profile.name || form.name}
+                                                                className="w-11 h-11 rounded-full object-cover border border-white/10 shrink-0"
+                                                                onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                                                            />
+                                                        ) : (
+                                                            <div className="w-11 h-11 rounded-full bg-white/[0.06] flex items-center justify-center text-zinc-400 shrink-0">
+                                                                <Instagram size={18} />
+                                                            </div>
+                                                        )}
+                                                        <div className="flex-1 min-w-0">
+                                                            <div className="flex items-center gap-1.5">
+                                                                <span className="text-sm font-semibold text-white truncate">
+                                                                    {profile.name || form.name || user?.displayName || 'Creator'}
+                                                                </span>
+                                                                {(profile.isVerified || profile.instagramVerified) && (
+                                                                    <span className="w-3.5 h-3.5 rounded-full bg-sky-500 flex items-center justify-center shrink-0">
+                                                                        <Check size={8} className="text-white stroke-[3]" />
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                            <p className="text-xs text-zinc-500 mt-0.5">
+                                                                @{String(profile.instagram || form.instagram || '').replace(/^@/, '')} · {Number(profile.instagramFollowers || form.followers || 0).toLocaleString()} followers
+                                                                {(profile.city || form.city) && ` · ${(profile.city || form.city).toUpperCase()}`}
+                                                            </p>
+                                                        </div>
+                                                        {!isEligible && (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => { setIsManualFollowerEntry(true); setShowEditDetails(true); }}
+                                                                className="text-[11px] text-rose-400 hover:text-rose-300 underline shrink-0 cursor-pointer"
+                                                            >
+                                                                Update
+                                                            </button>
+                                                        )}
+                                                    </div>
 
-                                            {/* Deliverables Summary */}
-                                            <div className="p-4 bg-white dark:bg-black/40 border border-black/[0.08] dark:border-white/[0.06] rounded-2xl space-y-3 font-mono text-xs shadow-2xs">
-                                                <div className="flex items-center justify-between">
-                                                    <span className="text-gray-500 dark:text-zinc-400 text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5">
-                                                        <Target size={12} className="text-emerald-600 dark:text-neon-green" /> Deliverables
-                                                    </span>
-                                                    <span className="font-bold text-gray-950 dark:text-white">
-                                                        {approvedTotal} / {campaignTasks.length} Completed
-                                                    </span>
-                                                </div>
-                                                <div className="flex items-center justify-between pt-2.5 border-t border-black/[0.06] dark:border-white/[0.06]">
-                                                    <span className="text-gray-500 dark:text-zinc-400 text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5">
-                                                        <ShieldCheck size={12} className="text-emerald-600 dark:text-neon-green" /> Status
-                                                    </span>
-                                                    <span className={cn("font-bold uppercase text-[11px]", isFullyComplete ? "text-emerald-600 dark:text-neon-green" : "text-amber-500 dark:text-amber-400")}>
-                                                        {isFullyComplete ? "Fully Verified" : isShortlisted ? "Shortlisted & Active" : "Under Review"}
-                                                    </span>
-                                                </div>
-                                            </div>
+                                                    {/* Ineligibility notice */}
+                                                    {!isEligible && (
+                                                        <div className="flex items-center gap-2 text-rose-400 text-sm">
+                                                            <AlertCircle size={14} className="shrink-0" />
+                                                            <span>Requires {minFollowers.toLocaleString()} followers to apply</span>
+                                                        </div>
+                                                    )}
 
-                                            {/* WhatsApp Hub */}
-                                            {isShortlisted && campaign.whatsappLink && (
-                                                <a href={campaign.whatsappLink} target="_blank" rel="noopener noreferrer" className="block">
+                                                    {/* Apply CTA */}
                                                     <button
                                                         type="button"
-                                                        className="w-full h-12 bg-[#25D366]/15 text-[#128C7E] dark:text-[#25D366] hover:bg-[#25D366] hover:text-white dark:hover:text-black border border-[#25D366]/30 font-black text-xs uppercase tracking-wider gap-2 rounded-2xl flex items-center justify-center transition-all active:scale-95 shadow-2xs"
+                                                        onClick={handleJoin}
+                                                        disabled={isJoining || !isEligible}
+                                                        className={cn(
+                                                            "w-full h-13 rounded-2xl font-bold text-[15px] transition-all flex items-center justify-center gap-2",
+                                                            isEligible && !isJoining
+                                                                ? "bg-neon-green text-black hover:bg-emerald-400 active:scale-[0.99] cursor-pointer shadow-[0_0_40px_rgba(57,255,20,0.25)]"
+                                                                : "bg-white/[0.04] text-zinc-600 cursor-not-allowed border border-white/[0.08]"
+                                                        )}
                                                     >
-                                                        <MessageCircle size={16} />
-                                                        <span>Join WhatsApp Group</span>
+                                                        {isJoining ? <LoadingSpinner size="xs" color="#000000" /> : (
+                                                            <>
+                                                                <Zap size={16} className="fill-current" />
+                                                                Apply Now
+                                                            </>
+                                                        )}
                                                     </button>
-                                                </a>
-                                            )}
-                                        </div>
-                                    ) : (
-                                        /* Application Form / Qualification Check */
-                                        <div className="space-y-6 relative z-10">
-                                            <div className="flex items-center gap-2.5 pb-4 border-b border-black/[0.06] dark:border-white/[0.08]">
-                                                <div className="w-8 h-8 rounded-xl bg-emerald-500/15 dark:bg-neon-green/15 border border-emerald-500/30 dark:border-neon-green/30 flex items-center justify-center text-emerald-600 dark:text-neon-green shrink-0">
-                                                    <Zap size={16} />
-                                                </div>
-                                                <div>
-                                                    <h4 className="text-xs font-bold font-heading text-gray-950 dark:text-white uppercase tracking-wider">
-                                                        {profile ? "Direct Application" : "Creator Application"}
-                                                    </h4>
-                                                    <p className="text-gray-500 dark:text-zinc-400 text-[10px] font-medium">
-                                                        {profile ? "Fast-track 1-click submission" : "Submit profile for review"}
-                                                    </p>
-                                                </div>
-                                            </div>
 
-                                            <AnimatePresence mode="wait">
-                                                {!joinSuccess ? (
-                                                    profile ? (
-                                                        /* Fast-Track Creator Application (Registered Creator) */
-                                                        <div className="space-y-3">
-                                                            {/* Creator Identity Card */}
-                                                            <div className="p-4 sm:p-5 rounded-2xl bg-black/[0.02] dark:bg-white/[0.03] border border-black/[0.08] dark:border-white/[0.08]">
-                                                                <div className="flex items-center gap-3.5">
-                                                                    {/* Avatar */}
-                                                                    {profile.profilePicture || instagramVerifiedData?.profilePic || user?.photoURL ? (
-                                                                        <img
-                                                                            src={profile.profilePicture || instagramVerifiedData?.profilePic || user?.photoURL}
-                                                                            alt={profile.name || form.name}
-                                                                            className="w-12 h-12 rounded-full object-cover border border-black/10 dark:border-white/10 shrink-0"
-                                                                            onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                                                    {/* Customise toggle */}
+                                                    <div className="text-center">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setShowEditDetails(!showEditDetails)}
+                                                            className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors inline-flex items-center gap-1.5 cursor-pointer"
+                                                        >
+                                                            <Pencil size={11} />
+                                                            {showEditDetails ? "Hide details" : "Customise application"}
+                                                            <ChevronDown size={12} className={cn("transition-transform", showEditDetails && "rotate-180")} />
+                                                        </button>
+                                                    </div>
+
+                                                    {/* Collapsible form */}
+                                                    <AnimatePresence>
+                                                        {showEditDetails && (
+                                                            <motion.form
+                                                                initial={{ height: 0, opacity: 0 }}
+                                                                animate={{ height: 'auto', opacity: 1 }}
+                                                                exit={{ height: 0, opacity: 0 }}
+                                                                onSubmit={handleJoin}
+                                                                className="space-y-4 overflow-hidden pt-2"
+                                                            >
+                                                                <div className="h-px bg-white/[0.06]" />
+                                                                <p className="text-xs text-zinc-500">Changes will update your creator profile.</p>
+
+                                                                {[
+                                                                    { label: 'Full Name', field: 'name', placeholder: 'Your full name' },
+                                                                    { label: 'WhatsApp / Mobile', field: 'phone', placeholder: '+91...', type: 'tel' },
+                                                                ].map(({ label, field, placeholder, type }) => (
+                                                                    <div key={field} className="space-y-1.5">
+                                                                        <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest font-mono">{label}</label>
+                                                                        <Input
+                                                                            required type={type}
+                                                                            value={form[field]}
+                                                                            onChange={e => setForm({ ...form, [field]: e.target.value })}
+                                                                            placeholder={placeholder}
+                                                                            className="h-11 bg-white/[0.04] border-white/10 rounded-xl text-sm text-white focus:border-neon-green"
                                                                         />
+                                                                    </div>
+                                                                ))}
+
+                                                                <div className="space-y-1.5">
+                                                                    <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest font-mono block">Target City</label>
+                                                                    <StudioSelect
+                                                                        value={form.city}
+                                                                        options={PREDEFINED_CITIES.map(c => ({ value: c, label: c.toUpperCase() }))}
+                                                                        onChange={val => setForm({ ...form, city: val })}
+                                                                        placeholder="SELECT CITY"
+                                                                        className="h-11"
+                                                                        accentColor="neon-green"
+                                                                    />
+                                                                </div>
+
+                                                                <div className="space-y-1.5">
+                                                                    <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest font-mono">Specializations</label>
+                                                                    <Input
+                                                                        required value={form.categories}
+                                                                        onChange={e => setForm({ ...form, categories: e.target.value })}
+                                                                        placeholder="Fashion, Music, Lifestyle..."
+                                                                        className="h-11 bg-white/[0.04] border-white/10 rounded-xl text-sm text-white focus:border-neon-green"
+                                                                    />
+                                                                </div>
+
+                                                                <div className="space-y-1.5">
+                                                                    <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest font-mono">Bio</label>
+                                                                    <textarea
+                                                                        value={form.bio}
+                                                                        onChange={e => setForm({ ...form, bio: e.target.value })}
+                                                                        placeholder="Brief intro about your content style..."
+                                                                        className="w-full h-20 bg-white/[0.04] border border-white/10 rounded-xl p-3 text-white text-xs resize-none placeholder-zinc-600 focus:outline-none focus:border-neon-green transition-colors"
+                                                                    />
+                                                                </div>
+
+                                                                {isManualFollowerEntry && (
+                                                                    <div className="space-y-1.5">
+                                                                        <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest font-mono">Follower Count</label>
+                                                                        <Input
+                                                                            type="text" inputMode="numeric" pattern="[0-9]*"
+                                                                            value={form.followers}
+                                                                            onChange={e => { const v = e.target.value.replace(/\D/g, ''); setForm(prev => ({ ...prev, followers: v })); }}
+                                                                            placeholder="Your follower count"
+                                                                            className="h-11 bg-white/[0.04] border-white/10 rounded-xl text-sm text-white focus:border-neon-green font-mono"
+                                                                        />
+                                                                    </div>
+                                                                )}
+
+                                                                <button
+                                                                    type="submit"
+                                                                    disabled={isJoining || !isEligible}
+                                                                    className="w-full h-11 bg-neon-green text-black font-bold text-sm rounded-2xl hover:bg-emerald-400 transition-all active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
+                                                                >
+                                                                    {isJoining ? <LoadingSpinner size="xs" color="#000000" /> : <><span>Save & Apply</span><ArrowRight size={14} /></>}
+                                                                </button>
+                                                            </motion.form>
+                                                        )}
+                                                    </AnimatePresence>
+                                                </motion.div>
+                                            ) : (
+                                                /* ── Guest / Instagram verification flow ── */
+                                                <motion.div
+                                                    key="guest"
+                                                    initial={{ opacity: 0 }}
+                                                    animate={{ opacity: 1 }}
+                                                    exit={{ opacity: 0 }}
+                                                    className="space-y-6"
+                                                >
+                                                    {/* IG Handle input */}
+                                                    <div className="space-y-3">
+                                                        <div className="space-y-1">
+                                                            <label className="text-sm font-semibold text-white flex items-center gap-2">
+                                                                <Instagram size={15} className="text-pink-400" />
+                                                                Instagram Handle
+                                                            </label>
+                                                            {minFollowers > 0 && (
+                                                                <p className="text-xs text-zinc-500">
+                                                                    Minimum {minFollowers.toLocaleString()} followers required
+                                                                </p>
+                                                            )}
+                                                        </div>
+
+                                                        <div className="relative">
+                                                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 text-sm font-mono select-none">@</span>
+                                                            <input
+                                                                type="text"
+                                                                value={form.instagram || ''}
+                                                                onChange={e => {
+                                                                    setForm({ ...form, instagram: e.target.value });
+                                                                    if (instagramVerifiedData) setInstagramVerifiedData(null);
+                                                                    if (instagramVerificationError) setInstagramVerificationError('');
+                                                                }}
+                                                                placeholder="yourhandle"
+                                                                spellCheck="false"
+                                                                className={cn(
+                                                                    "w-full h-12 pl-8 pr-28 bg-white/[0.04] border rounded-2xl text-sm font-medium text-white placeholder:text-zinc-600 outline-none transition-all focus:bg-white/[0.06]",
+                                                                    instagramVerifiedData?.handle === form.instagram?.trim().replace(/^@/, '').toLowerCase() && isEligible
+                                                                        ? "border-neon-green/40 focus:border-neon-green/60"
+                                                                        : instagramVerificationError
+                                                                        ? "border-rose-500/40 focus:border-rose-500/60"
+                                                                        : "border-white/[0.08] focus:border-white/20"
+                                                                )}
+                                                            />
+                                                            <button
+                                                                type="button"
+                                                                disabled={isVerifying || !form.instagram?.trim()}
+                                                                onClick={handleInstagramVerify}
+                                                                className={cn(
+                                                                    "absolute right-2 top-1/2 -translate-y-1/2 h-8 px-4 rounded-xl text-xs font-bold uppercase tracking-wider transition-all",
+                                                                    instagramVerifiedData?.handle === form.instagram?.trim().replace(/^@/, '').toLowerCase()
+                                                                        ? instagramVerifiedData.meetsMinimumFollowers
+                                                                            ? "bg-neon-green/15 text-neon-green border border-neon-green/25"
+                                                                            : "bg-rose-500/10 text-rose-400 border border-rose-500/20"
+                                                                        : "bg-white text-black hover:bg-zinc-100 disabled:opacity-30 disabled:cursor-not-allowed"
+                                                                )}
+                                                            >
+                                                                {isVerifying ? (
+                                                                    <LoadingSpinner size="xs" color={instagramVerifiedData?.meetsMinimumFollowers ? "#39ff14" : "#ffffff"} />
+                                                                ) : instagramVerifiedData?.handle === form.instagram?.trim().replace(/^@/, '').toLowerCase() ? (
+                                                                    instagramVerifiedData.meetsMinimumFollowers ? "✓ OK" : "✗ Low"
+                                                                ) : (
+                                                                    "Verify"
+                                                                )}
+                                                            </button>
+                                                        </div>
+
+                                                        {/* Verification loading */}
+                                                        {isVerifying && (
+                                                            <motion.p
+                                                                initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                                                                className="text-xs text-zinc-500 flex items-center gap-2"
+                                                            >
+                                                                <span className="animate-pulse">Connecting to Instagram…</span>
+                                                            </motion.p>
+                                                        )}
+
+                                                        {/* Error */}
+                                                        {instagramVerificationError && !isVerifying && (
+                                                            <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-xs text-rose-400 flex items-center gap-1.5">
+                                                                <AlertCircle size={13} className="shrink-0" />
+                                                                {instagramVerificationError}
+                                                            </motion.p>
+                                                        )}
+
+                                                        {/* Verified result card */}
+                                                        {instagramVerifiedData && !isVerifying && (() => {
+                                                            const cleanHandle = instagramVerifiedData.handle;
+                                                            const followerCount = instagramVerifiedData.followerCount || instagramVerifiedData.followers || 0;
+                                                            return (
+                                                                <motion.div
+                                                                    initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
+                                                                    className={cn(
+                                                                        "flex items-center gap-3 p-4 rounded-2xl border",
+                                                                        instagramVerifiedData.meetsMinimumFollowers
+                                                                            ? "bg-neon-green/[0.05] border-neon-green/20"
+                                                                            : "bg-rose-500/[0.05] border-rose-500/20"
+                                                                    )}
+                                                                >
+                                                                    {instagramVerifiedData.profilePic ? (
+                                                                        <img src={instagramVerifiedData.profilePic} alt={cleanHandle} className="w-10 h-10 rounded-full object-cover shrink-0" />
                                                                     ) : (
-                                                                        <div className="w-12 h-12 rounded-full bg-black/5 dark:bg-white/10 flex items-center justify-center text-gray-700 dark:text-gray-300 shrink-0">
-                                                                            <Instagram size={20} />
+                                                                        <div className="w-10 h-10 rounded-full bg-white/[0.06] flex items-center justify-center text-zinc-400 shrink-0">
+                                                                            <Instagram size={16} />
                                                                         </div>
                                                                     )}
-
-                                                                    {/* Name, Handle, Followers, City */}
-                                                                    <div className="min-w-0 flex-1">
+                                                                    <div className="flex-1 min-w-0">
                                                                         <div className="flex items-center gap-1.5">
-                                                                            <h4 className="text-sm sm:text-base font-bold text-gray-900 dark:text-white truncate">
-                                                                                {profile.name || form.name || user?.displayName || 'Creator'}
-                                                                            </h4>
-                                                                            {(profile.isVerified || profile.instagramVerified) && (
-                                                                                <span className="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full bg-sky-500 text-white shrink-0" title="Verified Creator">
-                                                                                    <Check size={8} className="stroke-[3]" />
+                                                                            <span className="text-sm font-semibold text-white">@{cleanHandle}</span>
+                                                                            {instagramVerifiedData.isVerified && (
+                                                                                <span className="w-3.5 h-3.5 rounded-full bg-sky-500 flex items-center justify-center shrink-0">
+                                                                                    <Check size={8} className="text-white stroke-[3]" />
                                                                                 </span>
                                                                             )}
                                                                         </div>
-                                                                        <div className="text-xs text-gray-500 dark:text-zinc-400 flex items-center gap-1.5 truncate mt-0.5 font-medium">
-                                                                            <span>@{String(profile.instagram || form.instagram || '').replace(/^@/, '')}</span>
-                                                                            <span>•</span>
-                                                                            <span>{Number(profile.instagramFollowers || form.followers || 0).toLocaleString()} followers</span>
-                                                                            {(profile.city || form.city) && (
-                                                                                <>
-                                                                                    <span>•</span>
-                                                                                    <span className="uppercase">{profile.city || form.city}</span>
-                                                                                </>
-                                                                            )}
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-
-                                                                {/* Only show notice if NOT eligible */}
-                                                                {!isEligible && (
-                                                                    <div className="mt-3 pt-3 border-t border-black/[0.06] dark:border-white/[0.06] flex items-center justify-between gap-2 text-xs">
-                                                                        <div className="flex items-center gap-1.5 text-rose-500 dark:text-rose-400">
-                                                                            <AlertCircle size={13} className="shrink-0" />
-                                                                            <span>Requires {minFollowers.toLocaleString()} followers</span>
-                                                                        </div>
-                                                                        <button
-                                                                            type="button"
-                                                                            onClick={() => {
-                                                                                setIsManualFollowerEntry(true);
-                                                                                setShowEditDetails(true);
-                                                                            }}
-                                                                            className="text-[11px] font-semibold text-rose-500 hover:text-rose-400 underline cursor-pointer shrink-0"
-                                                                        >
-                                                                            Update
-                                                                        </button>
-                                                                    </div>
-                                                                )}
-                                                            </div>
-
-                                                            {/* 1 Click Apply Button */}
-                                                            <button
-                                                                type="button"
-                                                                onClick={handleJoin}
-                                                                disabled={isJoining || !isEligible}
-                                                                className={cn(
-                                                                    "w-full h-12 rounded-xl font-bold uppercase tracking-wider text-xs transition-all flex items-center justify-center gap-2",
-                                                                    isEligible && !isJoining
-                                                                        ? "bg-neon-green text-black hover:bg-emerald-400 active:scale-[0.99] cursor-pointer shadow-[0_0_20px_rgba(57,255,20,0.25)]"
-                                                                        : "bg-black/10 dark:bg-white/10 text-gray-400 dark:text-zinc-500 cursor-not-allowed"
-                                                                )}
-                                                            >
-                                                                {isJoining ? (
-                                                                    <LoadingSpinner size="xs" color="#000000" />
-                                                                ) : (
-                                                                    <>
-                                                                        <Zap size={14} className="fill-current shrink-0" />
-                                                                        <span>1 Click Apply</span>
-                                                                    </>
-                                                                )}
-                                                            </button>
-
-                                                            {/* Customization Toggle */}
-                                                            <div className="text-center pt-0.5">
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => setShowEditDetails(!showEditDetails)}
-                                                                    className="text-[11px] text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:hover:text-zinc-200 transition-colors inline-flex items-center gap-1 cursor-pointer py-1"
-                                                                >
-                                                                    <Pencil size={10} />
-                                                                    <span>{showEditDetails ? "Hide custom details" : "Customize application details"}</span>
-                                                                    <ChevronDown size={11} className={cn("transition-transform duration-200", showEditDetails && "rotate-180")} />
-                                                                </button>
-                                                            </div>
-
-                                                            {/* Collapsible Editable Form Fields */}
-                                                            <AnimatePresence>
-                                                                {showEditDetails && (
-                                                                    <motion.form
-                                                                        initial={{ height: 0, opacity: 0 }}
-                                                                        animate={{ height: 'auto', opacity: 1 }}
-                                                                        exit={{ height: 0, opacity: 0 }}
-                                                                        onSubmit={handleJoin}
-                                                                        className="space-y-4 p-4 rounded-2xl bg-gray-50/70 dark:bg-black/30 border border-black/[0.08] dark:border-white/[0.08] overflow-hidden"
-                                                                    >
-                                                                        <p className="text-[10px] text-gray-500 dark:text-zinc-400 font-mono">
-                                                                            You can customize your details for this campaign submission. Any changes will update your creator profile.
-                                                                        </p>
-
-                                                                        <div className="space-y-1.5">
-                                                                            <label className="text-[10px] font-black text-gray-500 dark:text-zinc-400 uppercase tracking-widest pl-1 font-mono">
-                                                                                Full Name
-                                                                            </label>
-                                                                            <Input
-                                                                                required
-                                                                                value={form.name}
-                                                                                onChange={e => setForm({ ...form, name: e.target.value })}
-                                                                                placeholder="Your full name"
-                                                                                className="h-11 bg-white dark:bg-black/50 border-black/15 dark:border-white/10 rounded-xl text-xs font-semibold text-gray-950 dark:text-white focus:border-neon-green shadow-2xs"
-                                                                            />
-                                                                        </div>
-
-                                                                        <div className="space-y-1.5">
-                                                                            <label className="text-[10px] font-black text-gray-500 dark:text-zinc-400 uppercase tracking-widest pl-1 font-mono">
-                                                                                WhatsApp / Mobile
-                                                                            </label>
-                                                                            <Input
-                                                                                required
-                                                                                type="tel"
-                                                                                value={form.phone}
-                                                                                onChange={e => setForm({ ...form, phone: e.target.value })}
-                                                                                placeholder="+91..."
-                                                                                className="h-11 bg-white dark:bg-black/50 border-black/15 dark:border-white/10 rounded-xl text-xs font-semibold text-gray-950 dark:text-white focus:border-neon-green font-mono shadow-2xs"
-                                                                            />
-                                                                        </div>
-
-                                                                        <div className="space-y-1.5">
-                                                                            <label className="text-[10px] font-black text-gray-500 dark:text-zinc-400 uppercase tracking-widest pl-1 font-mono block">
-                                                                                Target City
-                                                                            </label>
-                                                                            <StudioSelect
-                                                                                value={form.city}
-                                                                                options={PREDEFINED_CITIES.map(c => ({ value: c, label: c.toUpperCase() }))}
-                                                                                onChange={val => setForm({ ...form, city: val })}
-                                                                                placeholder="SELECT CITY"
-                                                                                className="h-11"
-                                                                                accentColor="neon-green"
-                                                                            />
-                                                                        </div>
-
-                                                                        <div className="space-y-1.5">
-                                                                            <label className="text-[10px] font-black text-gray-500 dark:text-zinc-400 uppercase tracking-widest pl-1 font-mono">
-                                                                                Specializations
-                                                                            </label>
-                                                                            <Input
-                                                                                required
-                                                                                value={form.categories}
-                                                                                onChange={e => setForm({ ...form, categories: e.target.value })}
-                                                                                placeholder="Fashion, Music, Lifestyle..."
-                                                                                className="h-11 bg-white dark:bg-black/50 border-black/15 dark:border-white/10 rounded-xl text-xs font-semibold text-gray-950 dark:text-white focus:border-neon-green shadow-2xs"
-                                                                            />
-                                                                        </div>
-
-                                                                        <div className="space-y-1.5">
-                                                                            <label className="text-[10px] font-black text-gray-500 dark:text-zinc-400 uppercase tracking-widest pl-1 font-mono">
-                                                                                Creator Bio
-                                                                            </label>
-                                                                            <textarea
-                                                                                value={form.bio}
-                                                                                onChange={e => setForm({ ...form, bio: e.target.value })}
-                                                                                placeholder="Brief intro about your content style..."
-                                                                                className="w-full h-20 bg-white dark:bg-black/50 border border-black/15 dark:border-white/10 rounded-xl p-3 text-gray-950 dark:text-white focus:outline-none focus:border-neon-green text-xs font-normal resize-none placeholder-gray-400 dark:placeholder-zinc-500 shadow-2xs"
-                                                                            />
-                                                                        </div>
-
-                                                                        {isManualFollowerEntry && (
-                                                                            <div className="space-y-1.5">
-                                                                                <label className="text-[10px] font-black text-gray-500 dark:text-zinc-400 uppercase tracking-widest pl-1 font-mono">
-                                                                                    Manual Followers Count
-                                                                                </label>
-                                                                                <Input
-                                                                                    type="text"
-                                                                                    inputMode="numeric"
-                                                                                    pattern="[0-9]*"
-                                                                                    value={form.followers}
-                                                                                    onChange={e => {
-                                                                                        const val = e.target.value.replace(/\D/g, '');
-                                                                                        setForm(prev => ({ ...prev, followers: val }));
-                                                                                    }}
-                                                                                    placeholder="Follower count..."
-                                                                                    className="h-11 bg-white dark:bg-black/50 border-black/15 dark:border-white/10 rounded-xl text-xs font-semibold text-gray-950 dark:text-white focus:border-neon-green font-mono shadow-2xs"
-                                                                                />
-                                                                            </div>
-                                                                        )}
-
-                                                                        <button
-                                                                            type="submit"
-                                                                            disabled={isJoining || !isEligible}
-                                                                            className="w-full h-11 bg-neon-green text-black font-black uppercase tracking-wider text-xs rounded-xl hover:bg-emerald-400 transition-all active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
-                                                                        >
-                                                                            {isJoining ? (
-                                                                                <LoadingSpinner size="xs" color="#000000" />
-                                                                            ) : (
-                                                                                <>
-                                                                                    <span>Save Changes & Apply</span>
-                                                                                    <ArrowRight size={13} />
-                                                                                </>
-                                                                            )}
-                                                                        </button>
-                                                                    </motion.form>
-                                                                )}
-                                                            </AnimatePresence>
-                                                        </div>
-                                                    ) : (
-                                                        /* Guest / Unregistered Creator Flow (Instagram Handle + Auto-Verify + New Creator Form) */
-                                                        <div className="space-y-5">
-                                                            {/* Instagram Profile & Auto-Verification Card */}
-                                                            <div className="relative overflow-hidden p-4 sm:p-5 bg-white dark:bg-white/[0.02] border border-black/[0.08] dark:border-white/[0.06] rounded-2xl sm:rounded-3xl space-y-3.5 sm:space-y-4 shadow-xs backdrop-blur-xl">
-                                                                {/* Top Instagram Accent Line */}
-                                                                {/* Header: Minimalist Label + Badge */}
-                                                                <div className="flex flex-wrap items-center justify-between gap-2 px-1">
-                                                                    <div className="space-y-0.5">
-                                                                        <label className="text-[11px] sm:text-xs font-black uppercase tracking-widest text-gray-900 dark:text-white flex items-center gap-1.5 font-mono">
-                                                                            <Instagram size={13} className="text-pink-500 shrink-0" />
-                                                                            Instagram Handle
-                                                                            <span className="text-pink-500">*</span>
-                                                                        </label>
-                                                                        {minFollowers > 0 && (
-                                                                            <p className="text-[10px] text-gray-500 dark:text-zinc-400 font-medium font-mono">
-                                                                                Requires minimum {minFollowers.toLocaleString()} followers
-                                                                            </p>
-                                                                        )}
-                                                                    </div>
-                                                                </div>
-
-                                                                {/* Handle Input with Integrated Minimal Action */}
-                                                                <div className="relative flex items-center group">
-                                                                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 dark:text-zinc-500 font-black text-sm select-none font-mono">
-                                                                        @
-                                                                    </span>
-                                                                    <input
-                                                                        type="text"
-                                                                        name="instagram"
-                                                                        value={form.instagram}
-                                                                        onChange={handleInstagramChange}
-                                                                        onKeyDown={(e) => {
-                                                                            if (e.key === 'Enter') {
-                                                                                e.preventDefault();
-                                                                                handleInstagramVerify();
+                                                                        <p className="text-xs text-zinc-500 mt-0.5">
+                                                                            {followerCount.toLocaleString()} followers · {' '}
+                                                                            {instagramVerifiedData.meetsMinimumFollowers
+                                                                                ? <span className="text-neon-green">Eligible</span>
+                                                                                : <span className="text-rose-400">Needs {minFollowers.toLocaleString()}</span>
                                                                             }
-                                                                        }}
-                                                                        placeholder="yourhandle"
-                                                                        autoCapitalize="none"
-                                                                        autoCorrect="off"
-                                                                        spellCheck="false"
-                                                                        className={cn(
-                                                                            "w-full h-11 sm:h-12 pl-8 sm:pl-9 pr-24 sm:pr-28 bg-gray-50/50 dark:bg-black/30 border rounded-xl text-xs sm:text-sm font-semibold text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-zinc-600 outline-none transition-all shadow-xs",
-                                                                            instagramVerifiedData && instagramVerifiedData.handle === form.instagram?.trim().replace(/^@/, '').toLowerCase() && isEligible
-                                                                                ? "border-emerald-500/30 focus:border-emerald-500/50 focus:bg-white dark:focus:bg-black/50"
-                                                                                : instagramVerificationError
-                                                                                ? "border-red-500/30 focus:border-red-500/50 focus:bg-white dark:focus:bg-black/50"
-                                                                                : "border-black/10 dark:border-white/10 focus:border-pink-500/50 focus:bg-white dark:focus:bg-black/50"
-                                                                        )}
-                                                                    />
-                                                                    {/* Clear button */}
-                                                                    {form.instagram && !isVerifying && !instagramVerifiedData && (
+                                                                        </p>
+                                                                    </div>
+                                                                    {!instagramVerifiedData.meetsMinimumFollowers && (
                                                                         <button
                                                                             type="button"
-                                                                            onClick={() => {
-                                                                                setForm(prev => ({ ...prev, instagram: '', followers: '' }));
-                                                                                setInstagramVerificationError('');
-                                                                                setInstagramVerifiedData(null);
-                                                                                setVerificationStep('idle');
-                                                                            }}
-                                                                            className="absolute right-20 sm:right-24 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 flex items-center justify-center text-gray-500 transition-colors"
+                                                                            onClick={() => { setIsManualFollowerEntry(true); setInstagramVerificationError(''); }}
+                                                                            className="text-[11px] text-zinc-400 hover:text-white underline shrink-0 cursor-pointer transition-colors"
                                                                         >
-                                                                            <X size={11} className="stroke-[2.5]" />
+                                                                            Enter manually
                                                                         </button>
                                                                     )}
-                                                                    {/* Verify Button Minimal */}
-                                                                    <button
-                                                                        type="button"
-                                                                        onClick={() => handleInstagramVerify()}
-                                                                        disabled={isVerifying || !form.instagram?.trim()}
-                                                                        className={cn(
-                                                                            "absolute right-1 sm:right-1.5 top-1/2 -translate-y-1/2 h-8 sm:h-9 px-2.5 sm:px-4 rounded-lg font-black text-[10px] sm:text-[11px] uppercase tracking-wider transition-all flex items-center justify-center gap-1 cursor-pointer",
-                                                                            instagramVerifiedData && instagramVerifiedData.handle === form.instagram?.trim().replace(/^@/, '').toLowerCase()
-                                                                                ? instagramVerifiedData.meetsMinimumFollowers
-                                                                                ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
-                                                                                : "bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20"
-                                                                                : "bg-gray-900 text-white dark:bg-white dark:text-gray-900 hover:opacity-80 disabled:opacity-30 disabled:cursor-not-allowed shadow-xs"
-                                                                        )}
-                                                                    >
-                                                                        {isVerifying ? (
-                                                                            <LoadingSpinner size="xs" color="currentColor" />
-                                                                        ) : instagramVerifiedData && instagramVerifiedData.handle === form.instagram?.trim().replace(/^@/, '').toLowerCase() ? (
-                                                                            instagramVerifiedData.meetsMinimumFollowers ? (
-                                                                                <>
-                                                                                    <Check size={12} className="stroke-[3]" />
-                                                                                    <span>Verified</span>
-                                                                                </>
-                                                                            ) : (
-                                                                                <span>Checked</span>
-                                                                            )
-                                                                        ) : (
-                                                                            <span>Verify</span>
-                                                                        )}
-                                                                    </button>
-                                                                </div>
+                                                                </motion.div>
+                                                            );
+                                                        })()}
 
-                                                                {/* Verification Progress Indicator */}
-                                                                {isVerifying && (
-                                                                    <motion.div
-                                                                        initial={{ opacity: 0, y: -4 }}
-                                                                        animate={{ opacity: 1, y: 0 }}
-                                                                        className="p-3 bg-pink-500/10 border border-pink-500/20 rounded-xl flex items-center gap-3 text-xs text-pink-600 dark:text-pink-400 font-medium"
-                                                                    >
-                                                                        <LoadingSpinner size="xs" color="#ec4899" />
-                                                                        <div className="flex-1 min-w-0">
-                                                                            <p className="font-bold text-pink-600 dark:text-pink-300 text-xs truncate">
-                                                                                Connecting to Instagram...
-                                                                            </p>
-                                                                            <p className="text-[10px] text-pink-500/80 truncate">
-                                                                                Fetching follower count for @{form.instagram?.trim().replace(/^@/, '')}
-                                                                            </p>
-                                                                        </div>
-                                                                    </motion.div>
-                                                                )}
+                                                        {/* Manual follower entry */}
+                                                        {isManualFollowerEntry && (
+                                                            <motion.div
+                                                                initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
+                                                                className="space-y-2"
+                                                            >
+                                                                <label className="text-xs font-semibold text-zinc-400 flex items-center gap-1.5">
+                                                                    <Pencil size={11} className="text-zinc-500" />
+                                                                    Enter follower count manually
+                                                                </label>
+                                                                <Input
+                                                                    type="text" inputMode="numeric" pattern="[0-9]*"
+                                                                    value={form.followers || ''}
+                                                                    onChange={e => { const v = e.target.value.replace(/\D/g, ''); setForm(prev => ({ ...prev, followers: v })); }}
+                                                                    placeholder="e.g. 5000"
+                                                                    className="h-11 bg-white/[0.04] border-white/10 rounded-xl text-sm text-white focus:border-neon-green font-mono"
+                                                                />
+                                                            </motion.div>
+                                                        )}
+                                                    </div>
 
-                                                                {/* Verification Error Notice */}
-                                                                {instagramVerificationError && !isVerifying && !isManualFollowerEntry && (
-                                                                    <motion.div
-                                                                        initial={{ opacity: 0, y: -4 }}
-                                                                        animate={{ opacity: 1, y: 0 }}
-                                                                        className="p-3.5 bg-red-500/[0.08] dark:bg-red-500/[0.12] border border-red-500/25 dark:border-red-500/35 rounded-xl space-y-2.5"
-                                                                    >
-                                                                        <div className="flex items-start gap-2.5">
-                                                                            <div className="w-5 h-5 rounded-full bg-red-500/20 text-red-500 dark:text-red-400 flex items-center justify-center shrink-0 mt-0.5">
-                                                                                <AlertCircle size={13} className="stroke-[2.5]" />
-                                                                            </div>
-                                                                            <div className="flex-1 min-w-0">
-                                                                                <p className="text-xs font-semibold text-red-600 dark:text-red-300 leading-snug">
-                                                                                    {instagramVerificationError}
-                                                                                </p>
-                                                                                {!instagramVerificationError.toLowerCase().includes('public') && (
-                                                                                    <p className="text-[10px] text-red-500/80 mt-0.5">
-                                                                                        Make sure your profile is public or check handle spelling.
-                                                                                    </p>
-                                                                                )}
-                                                                            </div>
-                                                                        </div>
-
-                                                                        {/* Action bar on Mobile & Desktop */}
-                                                                        <div className="pt-2 border-t border-red-500/15 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5">
-                                                                            <div className="flex items-center gap-1.5 text-[10px] text-red-600/80 dark:text-red-400/80 font-medium shrink-0">
-                                                                                <span className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0" />
-                                                                                <span>Profile must be set to <strong>Public</strong></span>
-                                                                            </div>
-                                                                            <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto w-full sm:w-auto justify-end">
-                                                                                <button
-                                                                                    type="button"
-                                                                                    onClick={() => {
-                                                                                        setIsManualFollowerEntry(true);
-                                                                                        setInstagramVerificationError('');
-                                                                                    }}
-                                                                                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-red-500/10 hover:bg-red-500/20 active:scale-95 text-red-600/90 dark:text-red-400/90 font-bold text-[10px] uppercase tracking-wider transition-all border border-red-500/20 cursor-pointer shrink-0"
-                                                                                >
-                                                                                    Manual Entry
-                                                                                </button>
-                                                                                <button
-                                                                                    type="button"
-                                                                                    onClick={() => handleInstagramVerify()}
-                                                                                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-red-500/15 hover:bg-red-500/25 active:scale-95 text-red-600 dark:text-red-400 font-black text-[10px] uppercase tracking-wider transition-all border border-red-500/30 cursor-pointer shrink-0"
-                                                                                >
-                                                                                    <RefreshCw size={10} className="stroke-[2.5]" />
-                                                                                    <span>Retry</span>
-                                                                                </button>
-                                                                            </div>
-                                                                        </div>
-                                                                    </motion.div>
-                                                                )}
-
-                                                                {/* Manual Follower Entry Mode */}
-                                                                {isManualFollowerEntry && (
-                                                                    <motion.div
-                                                                        initial={{ opacity: 0, y: -4 }}
-                                                                        animate={{ opacity: 1, y: 0 }}
-                                                                        className="p-4 rounded-2xl bg-gray-50/70 dark:bg-black/30 border border-black/[0.08] dark:border-white/[0.08] space-y-3"
-                                                                    >
-                                                                        <div className="flex items-center justify-between gap-2">
-                                                                            <div>
-                                                                                <label className="text-[11px] sm:text-xs font-black text-gray-800 dark:text-gray-200 uppercase tracking-widest font-mono flex items-center gap-1.5">
-                                                                                    <Pencil size={12} className="text-pink-500 shrink-0" />
-                                                                                    Manual Follower Count
-                                                                                </label>
-                                                                                <p className="text-[10px] text-gray-500 dark:text-zinc-400 mt-0.5 font-mono">
-                                                                                    Enter your actual follower count if Instagram auto-sync is outdated or blocked.
-                                                                                </p>
-                                                                            </div>
-                                                                            <button 
-                                                                                type="button" 
-                                                                                onClick={() => {
-                                                                                    setIsManualFollowerEntry(false);
-                                                                                    if (instagramVerifiedData) {
-                                                                                        if (Number(instagramVerifiedData.followers) >= minFollowers) {
-                                                                                            setVerificationStep('success');
-                                                                                        } else {
-                                                                                            setVerificationStep('ineligible');
-                                                                                        }
-                                                                                    } else {
-                                                                                        handleInstagramVerify();
-                                                                                    }
-                                                                                }}
-                                                                                className="inline-flex items-center gap-1 text-[10px] font-bold text-pink-500 hover:text-pink-600 uppercase tracking-wider transition-colors cursor-pointer shrink-0"
-                                                                            >
-                                                                                <ChevronLeft size={12} />
-                                                                                Back to Auto-Sync
-                                                                            </button>
-                                                                        </div>
-                                                                        <div className="relative group">
-                                                                            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                                                                                <Users size={16} className="text-gray-400 dark:text-zinc-500 group-focus-within:text-pink-500 transition-colors" />
-                                                                            </div>
-                                                                            <input
-                                                                                type="text"
-                                                                                inputMode="numeric"
-                                                                                pattern="[0-9]*"
-                                                                                placeholder={`e.g. ${(minFollowers || 1000).toLocaleString()}`}
-                                                                                value={form.followers || ''}
-                                                                                onChange={e => {
-                                                                                    const val = e.target.value.replace(/\D/g, '');
-                                                                                    setForm(prev => ({ ...prev, followers: val }));
-                                                                                    if (Number(val) >= minFollowers) {
-                                                                                        setVerificationStep('success');
-                                                                                    } else {
-                                                                                        setVerificationStep('ineligible');
-                                                                                    }
-                                                                                }}
-                                                                                className="w-full pl-10 pr-4 py-2.5 sm:py-3 rounded-xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/60 focus:bg-white dark:focus:bg-zinc-900 focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 text-xs sm:text-sm text-gray-900 dark:text-white transition-all shadow-xs font-mono"
-                                                                            />
-                                                                        </div>
-                                                                        {form.followers ? (
-                                                                            Number(form.followers) >= minFollowers ? (
-                                                                                <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1 font-mono">
-                                                                                    <Check size={12} className="stroke-[3]" /> Follower requirement met ({Number(form.followers).toLocaleString()} followers).
-                                                                                </p>
-                                                                            ) : (
-                                                                                <p className="text-[11px] text-rose-500 font-medium">
-                                                                                    Minimum {minFollowers.toLocaleString()} followers required. (You entered {Number(form.followers).toLocaleString()})
-                                                                                </p>
-                                                                            )
-                                                                        ) : (
-                                                                            <p className="text-[10px] text-gray-500 dark:text-zinc-400">
-                                                                                Enter your exact follower count. {minFollowers > 0 ? `Minimum ${minFollowers.toLocaleString()} required.` : ''}
-                                                                            </p>
-                                                                        )}
-                                                                    </motion.div>
-                                                                )}
-
-                                                                {/* Unified Verified Account Card */}
-                                                                {instagramVerifiedData && instagramVerifiedData.handle === form.instagram?.trim().replace(/^@/, '').toLowerCase() && !isVerifying && !isManualFollowerEntry && (
-                                                                    <motion.div
-                                                                        initial={{ opacity: 0, scale: 0.98 }}
-                                                                        animate={{ opacity: 1, scale: 1 }}
-                                                                        className={cn(
-                                                                            "p-4 rounded-2xl border transition-all shadow-xs space-y-3",
-                                                                            instagramVerifiedData.meetsMinimumFollowers
-                                                                                ? "bg-black/[0.02] dark:bg-white/[0.03] border-emerald-500/30"
-                                                                                : "bg-black/[0.02] dark:bg-white/[0.03] border-rose-500/25"
-                                                                        )}
-                                                                    >
-                                                                        {(() => {
-                                                                            const rawHandle = instagramVerifiedData.handle || form.instagram || '';
-                                                                            const cleanHandle = String(rawHandle).trim().replace(/^[@()]+|[()]+$/g, '');
-                                                                            let rawName = String(instagramVerifiedData.name || '').trim();
-                                                                            rawName = rawName.replace(/^["'‘“”’`()@\s]+|["'‘“”’`()@\s]+$/g, '').trim();
-                                                                            const isNameInvalid = !rawName || 
-                                                                                rawName.length <= 1 || 
-                                                                                ['‘', '’', "'", '"', '.', ' ', 'undefined', 'null'].includes(rawName) ||
-                                                                                rawName.toLowerCase() === cleanHandle.toLowerCase() ||
-                                                                                rawName.toLowerCase() === `@${cleanHandle.toLowerCase()}` ||
-                                                                                rawName.startsWith('(@');
-                                                                            const finalDisplayName = isNameInvalid ? null : rawName;
-                                                                            const followerCount = Number(instagramVerifiedData.followers || 0);
-
-                                                                            return (
-                                                                                <>
-                                                                                    {/* Header Row: Profile info + Change button */}
-                                                                                    <div className="flex items-center justify-between gap-3">
-                                                                                        <div className="flex items-center gap-3 min-w-0 flex-1">
-                                                                                            {/* Avatar */}
-                                                                                            <div className="relative shrink-0">
-                                                                                                {instagramVerifiedData.profilePic ? (
-                                                                                                    <img
-                                                                                                        src={instagramVerifiedData.profilePic}
-                                                                                                        alt={cleanHandle}
-                                                                                                        className={cn(
-                                                                                                            "w-11 h-11 rounded-full object-cover block border",
-                                                                                                            instagramVerifiedData.meetsMinimumFollowers
-                                                                                                                ? "border-emerald-500/30"
-                                                                                                                : "border-rose-500/30"
-                                                                                                        )}
-                                                                                                        onError={(e) => { e.currentTarget.style.display = 'none'; }}
-                                                                                                    />
-                                                                                                ) : (
-                                                                                                    <div className="w-11 h-11 rounded-full bg-black/5 dark:bg-white/10 flex items-center justify-center text-gray-700 dark:text-gray-300">
-                                                                                                        <Instagram size={18} />
-                                                                                                    </div>
-                                                                                                )}
-                                                                                            </div>
-
-                                                                                            {/* Handle & Details */}
-                                                                                            <div className="min-w-0 flex-1">
-                                                                                                <div className="flex items-center gap-1.5 min-w-0">
-                                                                                                    <span className="text-sm font-bold text-gray-900 dark:text-white truncate">
-                                                                                                        @{cleanHandle}
-                                                                                                    </span>
-                                                                                                    {instagramVerifiedData.isVerified && (
-                                                                                                        <span className="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full bg-sky-500 text-white shrink-0" title="Verified on Instagram">
-                                                                                                            <Check size={8} className="stroke-[3]" />
-                                                                                                        </span>
-                                                                                                    )}
-                                                                                                </div>
-                                                                                                <div className="text-xs text-gray-500 dark:text-zinc-400 flex items-center gap-1.5 truncate mt-0.5 font-medium">
-                                                                                                    <span>{followerCount.toLocaleString()} followers</span>
-                                                                                                    <span>•</span>
-                                                                                                    {instagramVerifiedData.meetsMinimumFollowers ? (
-                                                                                                        <span className="text-emerald-600 dark:text-neon-green font-semibold">
-                                                                                                            Eligible
-                                                                                                        </span>
-                                                                                                    ) : (
-                                                                                                        <span className="text-rose-500 dark:text-rose-400 font-semibold">
-                                                                                                            Requires {minFollowers.toLocaleString()}
-                                                                                                        </span>
-                                                                                                    )}
-                                                                                                </div>
-                                                                                            </div>
-                                                                                        </div>
-
-                                                                                        {/* Change Handle Link */}
-                                                                                        <button
-                                                                                            type="button"
-                                                                                            onClick={() => {
-                                                                                                setInstagramVerifiedData(null);
-                                                                                                setVerificationStep('idle');
-                                                                                            }}
-                                                                                            className="text-xs font-semibold text-gray-400 hover:text-gray-700 dark:text-zinc-500 dark:hover:text-zinc-200 transition-colors cursor-pointer shrink-0 py-1 px-2"
-                                                                                        >
-                                                                                            Change
-                                                                                        </button>
-                                                                                    </div>
-
-                                                                                    {/* Bottom Action for Ineligible Creators */}
-                                                                                    {!instagramVerifiedData.meetsMinimumFollowers && (
-                                                                                        <div className="pt-2.5 border-t border-black/[0.06] dark:border-white/[0.06] flex items-center justify-between gap-2">
-                                                                                            <span className="text-[11px] text-gray-500 dark:text-zinc-400">
-                                                                                                Has your audience grown?
-                                                                                            </span>
-                                                                                            <button
-                                                                                                type="button"
-                                                                                                onClick={() => {
-                                                                                                    setIsManualFollowerEntry(true);
-                                                                                                    setInstagramVerificationError('');
-                                                                                                }}
-                                                                                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-rose-500/10 hover:bg-rose-500/15 text-rose-600 dark:text-rose-400 text-xs font-semibold transition-all cursor-pointer border border-rose-500/20 shrink-0"
-                                                                                            >
-                                                                                                <Pencil size={10} />
-                                                                                                <span>Enter Manually</span>
-                                                                                            </button>
-                                                                                        </div>
-                                                                                    )}
-                                                                                </>
-                                                                            );
-                                                                        })()}
-                                                                    </motion.div>
-                                                                )}
-                                                            </div>
-
-                                                            {/* Expanded Form When Eligible (New Creators) */}
-                                                            <AnimatePresence>
-                                                                {isEligible && (
-                                                                    <motion.form 
-                                                                        initial={{ height: 0, opacity: 0 }}
-                                                                        animate={{ height: 'auto', opacity: 1 }}
-                                                                        onSubmit={handleJoin}
-                                                                        className="space-y-4 pt-4 border-t border-black/[0.06] dark:border-white/[0.08]"
-                                                                    >
-                                                                        <div className="space-y-1.5">
-                                                                            <label className="text-[10px] font-black text-gray-500 dark:text-zinc-400 uppercase tracking-widest pl-1 font-mono">
-                                                                                Full Name
-                                                                            </label>
-                                                                            <Input 
-                                                                                required 
-                                                                                value={form.name} 
-                                                                                onChange={e => setForm({...form, name: e.target.value})} 
-                                                                                placeholder="Your full name" 
-                                                                                className="h-12 bg-white dark:bg-black/50 border-black/15 dark:border-white/10 rounded-2xl text-xs font-semibold text-gray-950 dark:text-white focus:border-neon-green placeholder-gray-400 dark:placeholder-zinc-500 shadow-2xs" 
-                                                                            />
-                                                                        </div>
-
-                                                                        <div className="space-y-1.5">
-                                                                            <label className="text-[10px] font-black text-gray-500 dark:text-zinc-400 uppercase tracking-widest pl-1 font-mono">
-                                                                                WhatsApp / Mobile
-                                                                            </label>
-                                                                            <Input 
-                                                                                required 
-                                                                                type="tel" 
-                                                                                value={form.phone} 
-                                                                                onChange={e => setForm({...form, phone: e.target.value})} 
-                                                                                placeholder="+91..." 
-                                                                                className="h-12 bg-white dark:bg-black/50 border-black/15 dark:border-white/10 rounded-2xl text-xs font-semibold text-gray-950 dark:text-white focus:border-neon-green font-mono placeholder-gray-400 dark:placeholder-zinc-500 shadow-2xs" 
-                                                                            />
-                                                                        </div>
-
-                                                                        <div className="space-y-1.5">
-                                                                            <label className="text-[10px] font-black text-gray-500 dark:text-zinc-400 uppercase tracking-widest pl-1 font-mono block">
-                                                                                Target City
-                                                                            </label>
-                                                                            <StudioSelect 
-                                                                                value={form.city} 
-                                                                                options={PREDEFINED_CITIES.map(c => ({ value: c, label: c.toUpperCase() }))}
-                                                                                onChange={val => setForm({...form, city: val})} 
-                                                                                placeholder="SELECT CITY"
-                                                                                className="h-12"
-                                                                                accentColor="neon-green"
-                                                                            />
-                                                                        </div>
-
-                                                                        <div className="space-y-1.5">
-                                                                            <label className="text-[10px] font-black text-gray-500 dark:text-zinc-400 uppercase tracking-widest pl-1 font-mono">
-                                                                                Specializations
-                                                                            </label>
-                                                                            <Input 
-                                                                                required 
-                                                                                value={form.categories} 
-                                                                                onChange={e => setForm({...form, categories: e.target.value})} 
-                                                                                placeholder="Fashion, Music, Lifestyle..." 
-                                                                                className="h-12 bg-white dark:bg-black/50 border-black/15 dark:border-white/10 rounded-2xl text-xs font-semibold text-gray-950 dark:text-white focus:border-neon-green placeholder-gray-400 dark:placeholder-zinc-500 shadow-2xs" 
-                                                                            />
-                                                                        </div>
-
-                                                                        <div className="space-y-1.5">
-                                                                            <label className="text-[10px] font-black text-gray-500 dark:text-zinc-400 uppercase tracking-widest pl-1 font-mono">
-                                                                                Creator Bio
-                                                                            </label>
-                                                                            <textarea 
-                                                                                required 
-                                                                                value={form.bio} 
-                                                                                onChange={e => setForm({...form, bio: e.target.value})} 
-                                                                                placeholder="Brief intro about your content style..." 
-                                                                                className="w-full h-24 bg-white dark:bg-black/50 border border-black/15 dark:border-white/10 rounded-2xl p-3.5 text-gray-950 dark:text-white focus:outline-none focus:border-neon-green text-xs font-normal resize-none placeholder-gray-400 dark:placeholder-zinc-500 shadow-2xs" 
-                                                                            />
-                                                                        </div>
-
-                                                                        <button 
-                                                                            type="submit" 
-                                                                            disabled={isJoining} 
-                                                                            className="w-full h-12 bg-neon-green text-black font-black uppercase tracking-wider text-xs rounded-2xl hover:bg-emerald-400 transition-all shadow-[0_0_25px_rgba(57,255,20,0.3)] active:scale-95 flex items-center justify-center gap-2"
-                                                                        >
-                                                                            {isJoining ? (
-                                                                                <LoadingSpinner size="xs" color="#000000" />
-                                                                            ) : (
-                                                                                <>
-                                                                                    <span>Submit Application</span>
-                                                                                    <ArrowRight size={13} />
-                                                                                </>
-                                                                            )}
-                                                                        </button>
-                                                                    </motion.form>
-                                                                )}
-                                                            </AnimatePresence>
-                                                        </div>
-                                                    )
-                                                ) : (
-                                                    /* Success State */
-                                                    <motion.div 
-                                                        initial={{ opacity: 0, scale: 0.95 }} 
-                                                        animate={{ opacity: 1, scale: 1 }} 
-                                                        className="text-center py-6 space-y-4"
+                                                    {/* New creator form */}
+                                                    <motion.form
+                                                        initial={{ height: 0, opacity: 0 }}
+                                                        animate={{ height: 'auto', opacity: 1 }}
+                                                        onSubmit={handleJoin}
+                                                        className="space-y-4 pt-4 border-t border-white/[0.06]"
                                                     >
-                                                        <div className="w-16 h-16 rounded-2xl bg-emerald-500/15 dark:bg-neon-green/15 border border-emerald-500/30 dark:border-neon-green/30 flex items-center justify-center mx-auto text-emerald-600 dark:text-neon-green">
-                                                            <CheckCircle2 size={32} />
+                                                        {[
+                                                            { label: 'Full Name', field: 'name', placeholder: 'Your full name', required: true },
+                                                            { label: 'WhatsApp / Mobile', field: 'phone', placeholder: '+91...', type: 'tel', required: true },
+                                                            { label: 'Email', field: 'email', placeholder: 'you@email.com', type: 'email', required: true },
+                                                        ].map(({ label, field, placeholder, type, required }) => (
+                                                            <div key={field} className="space-y-1.5">
+                                                                <label className="text-xs font-semibold text-zinc-500 uppercase tracking-widest font-mono text-[10px]">{label}</label>
+                                                                <Input
+                                                                    required={required} type={type}
+                                                                    value={form[field] || ''}
+                                                                    onChange={e => setForm({ ...form, [field]: e.target.value })}
+                                                                    placeholder={placeholder}
+                                                                    className="h-11 bg-white/[0.04] border-white/10 rounded-xl text-sm text-white focus:border-neon-green"
+                                                                />
+                                                            </div>
+                                                        ))}
+
+                                                        <div className="space-y-1.5">
+                                                            <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest font-mono block">City</label>
+                                                            <StudioSelect
+                                                                value={form.city}
+                                                                options={PREDEFINED_CITIES.map(c => ({ value: c, label: c.toUpperCase() }))}
+                                                                onChange={val => setForm({ ...form, city: val })}
+                                                                placeholder="SELECT CITY"
+                                                                className="h-11"
+                                                                accentColor="neon-green"
+                                                            />
                                                         </div>
-                                                        <h3 className="text-xl font-black font-heading text-gray-950 dark:text-white uppercase tracking-tight">
-                                                            Application Submitted
-                                                        </h3>
-                                                        <p className="text-xs text-gray-500 dark:text-zinc-400 leading-relaxed max-w-[280px] mx-auto">
-                                                            Your profile has been submitted for this campaign. Our brand partnerships team will review your profile.
-                                                        </p>
-                                                        <button 
-                                                            type="button"
-                                                            onClick={onClose} 
-                                                            className="w-full h-12 bg-gray-950 text-white dark:bg-white dark:text-black hover:bg-gray-800 dark:hover:bg-zinc-200 font-black uppercase tracking-wider text-xs rounded-2xl transition-all shadow-md active:scale-95"
+
+                                                        <div className="space-y-1.5">
+                                                            <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest font-mono">Specializations</label>
+                                                            <Input
+                                                                required value={form.categories || ''}
+                                                                onChange={e => setForm({ ...form, categories: e.target.value })}
+                                                                placeholder="Fashion, Music, Lifestyle..."
+                                                                className="h-11 bg-white/[0.04] border-white/10 rounded-xl text-sm text-white focus:border-neon-green"
+                                                            />
+                                                        </div>
+
+                                                        <button
+                                                            type="submit"
+                                                            disabled={isJoining}
+                                                            className="w-full h-13 bg-neon-green text-black font-bold text-[15px] rounded-2xl hover:bg-emerald-400 transition-all shadow-[0_0_40px_rgba(57,255,20,0.2)] active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
                                                         >
-                                                            Back to Workspace
+                                                            {isJoining ? <LoadingSpinner size="xs" color="#000000" /> : <><span>Submit Application</span><ArrowRight size={15} /></>}
                                                         </button>
-                                                    </motion.div>
-                                                )}
-                                            </AnimatePresence>
-                                        </div>
-                                    )}
+                                                    </motion.form>
+                                                </motion.div>
+                                            )
+                                        ) : (
+                                            /* ── Success state ── */
+                                            <motion.div
+                                                key="success"
+                                                initial={{ opacity: 0, scale: 0.96 }}
+                                                animate={{ opacity: 1, scale: 1 }}
+                                                className="py-10 flex flex-col items-center text-center space-y-4"
+                                            >
+                                                <div className="w-16 h-16 rounded-full bg-neon-green/15 border border-neon-green/30 flex items-center justify-center text-neon-green">
+                                                    <CheckCircle2 size={32} />
+                                                </div>
+                                                <div className="space-y-1.5">
+                                                    <h3 className="text-xl font-bold text-white">You're in!</h3>
+                                                    <p className="text-sm text-zinc-500 max-w-xs leading-relaxed">
+                                                        Your application has been submitted. Our team will review and get in touch.
+                                                    </p>
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    onClick={onClose}
+                                                    className="mt-2 px-8 h-11 rounded-full bg-white text-black font-semibold text-sm hover:bg-zinc-100 transition-all active:scale-95"
+                                                >
+                                                    Back to Dashboard
+                                                </button>
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
                                 </div>
-                            </div>
-                        </div>
+                            )}
+                        </section>
                     </div>
                 </div>
             </motion.div>
