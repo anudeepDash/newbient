@@ -70,7 +70,7 @@ const getClaudeGreeting = (name) => {
 };
 
 const CreatorLanding = () => {
-    useStoreSubscription(['creators', 'campaigns', 'pastClients', 'creatorTestimonials']);
+    useStoreSubscription(['campaigns', 'pastClients', 'creatorTestimonials']);
     useDynamicMeta({
         title: "Newbi Creator Network • Brand Campaigns & Concert Experiences",
         description: "Join India's premier creator collective. Collaborate with iconic brands, access front-row concerts, and unlock real-world perks. 100% free to join.",
@@ -78,7 +78,7 @@ const CreatorLanding = () => {
     });
 
     const navigate = useNavigate();
-    const { user, creators, campaigns, siteSettings, creatorTestimonials } = useStore();
+    const { user, campaigns, siteSettings, creatorTestimonials, resolveCreatorProfile } = useStore();
     const { theme, toggleTheme } = useTheme();
     const isDark = theme === 'dark';
 
@@ -93,25 +93,27 @@ const CreatorLanding = () => {
     const [openFaq, setOpenFaq] = useState(null);
     const [selectedCampaignForModal, setSelectedCampaignForModal] = useState(null);
 
+    const [resolvedCreator, setResolvedCreator] = useState(null);
+
+    useEffect(() => {
+        if (user) {
+            resolveCreatorProfile(user).then(found => {
+                setResolvedCreator(found || null);
+            }).catch(err => console.error("Error resolving creator for landing page:", err));
+        } else {
+            setResolvedCreator(null);
+        }
+    }, [user, resolveCreatorProfile]);
+
     const activeCreator = useMemo(() => {
         if (!user) return null;
-        const userPhoneNorm = user.phoneNumber ? normalizePhoneNumber(user.phoneNumber) : null;
-        const userEmailNorm = user.email ? user.email.toLowerCase().trim() : null;
-        
-        const matched = (creators || []).find(c => 
-            (user.uid && (c.uid === user.uid || c.id === user.uid)) ||
-            (userEmailNorm && c.email && c.email.toLowerCase().trim() === userEmailNorm) ||
-            (userPhoneNorm && c.phone && normalizePhoneNumber(c.phone) === userPhoneNorm)
-        );
-
-        if (matched) {
+        if (resolvedCreator) {
             return {
-                ...matched,
-                displayName: matched.name || matched.displayName || user.displayName || 'Creator',
-                profilePicture: matched.profilePicture || matched.profileImage || user.photoURL || null
+                ...resolvedCreator,
+                displayName: resolvedCreator.name || resolvedCreator.displayName || user.displayName || 'Creator',
+                profilePicture: resolvedCreator.profilePicture || resolvedCreator.profileImage || user.photoURL || null
             };
         }
-
         // If user is signed in but hasn't finalized creator record yet, personalize card with their authenticated profile
         return {
             uid: user.uid,
@@ -125,9 +127,9 @@ const CreatorLanding = () => {
             points: 500,
             isVerified: false,
         };
-    }, [user, creators]);
+    }, [user, resolvedCreator]);
 
-    const isActualCreator = Boolean(activeCreator && activeCreator.profileStatus !== 'unclaimed');
+    const isActualCreator = Boolean(resolvedCreator && resolvedCreator.profileStatus !== 'unclaimed');
 
     // Dynamic Claude-style greeting computed per session
     const greetingText = useMemo(() => {

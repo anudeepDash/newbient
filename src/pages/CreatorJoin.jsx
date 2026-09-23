@@ -129,7 +129,7 @@ const slideVariants = {
 };
 
 const CreatorJoin = () => {
-    useStoreSubscription(['creators', 'creatorGroups', 'siteSettings']);
+    useStoreSubscription(['creatorGroups', 'siteSettings']);
     useDynamicMeta({
         title: "Apply to Newbi Creator Network • 45-Second Onboarding",
         description: "Connect with top brands and live events in your city. Fast creator onboarding with zero agency fees.",
@@ -1168,17 +1168,7 @@ const CreatorJoin = () => {
         creatorId: user?.uid ? `NB-${user.uid.slice(0, 5).toUpperCase()}` : "NB-88219"
     };
 
-    // Suppress registration form flash if an authenticated user is currently verifying creator status or already registered
-    const isMatchingLoggedInCreator = Boolean(
-        user && matchedExistingCreator && (
-            user.uid === matchedExistingCreator.uid || 
-            (user.email && matchedExistingCreator.email && user.email.toLowerCase() === matchedExistingCreator.email.toLowerCase())
-        )
-    );
-
-    if (user && (!subscriptionsLoaded?.creators || isMatchingLoggedInCreator)) {
-        return <GlobalLoader color="#39ff14" />;
-    }
+    // Removed blocking creators wait since resolveCreatorProfile handles redirection efficiently
 
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-[#050505] text-gray-900 dark:text-white pt-20 sm:pt-24 pb-24 sm:pb-28 px-3.5 sm:px-4 relative selection:bg-neon-pink selection:text-black transition-colors duration-300">

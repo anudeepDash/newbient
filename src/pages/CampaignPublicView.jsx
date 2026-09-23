@@ -8,7 +8,7 @@ import useDynamicMeta from '../hooks/useDynamicMeta';
 import { ArrowLeft, Compass } from 'lucide-react';
 
 const CampaignPublicView = () => {
-    useStoreSubscription(['campaigns', 'creators']);
+    useStoreSubscription(['campaigns']);
     const { id } = useParams();
     const navigate = useNavigate();
     const location = useLocation();
