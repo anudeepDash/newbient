@@ -77,7 +77,7 @@ const renderRankBadge = (rank) => {
 const CreatorReferralsView = ({ profile }) => {
     const { creators } = useStore();
     const [copied, setCopied] = useState(false);
-    const referralLink = `${window.location.origin}/creator/join?ref=${profile.creatorId || profile.uid.slice(0, 8).toUpperCase()}`;
+    const referralLink = `${window.location.origin}/creator/join?ref=${profile.creatorId || String(profile.uid || '').slice(0, 8).toUpperCase()}`;
 
     const handleCopy = () => {
         navigator.clipboard.writeText(referralLink);
@@ -496,7 +496,7 @@ const CreatorDashboard = () => {
     }, [joinedCampaignsList, deliverableFilter, profile]);
 
     const handleCopyCreatorId = () => {
-        const id = profile?.creatorId || profile?.uid?.slice(0, 8).toUpperCase();
+        const id = profile?.creatorId || String(profile?.uid || '').slice(0, 8).toUpperCase();
         if (!id) return;
         navigator.clipboard.writeText(id);
         setCopiedId(true);
@@ -543,7 +543,7 @@ const CreatorDashboard = () => {
     ];
 
     const creatorHandle = profile.instagram ? `@${profile.instagram.replace(/^@/, '')}` : profile.linkedin ? profile.linkedin.replace(/^@/, '') : 'creator';
-    const creatorId = profile.creatorId || profile.uid?.slice(0, 8).toUpperCase();
+    const creatorId = profile?.creatorId || String(profile?.uid || '').slice(0, 8).toUpperCase();
 
     // ─── Render ────────────────────────────────────────────────────────────────
 
