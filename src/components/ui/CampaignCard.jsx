@@ -4,7 +4,8 @@ import { Instagram, FileText, ArrowRight, Zap, MapPin, Users, Award, CheckCircle
 import { cn } from '../../lib/utils';
 
 const CampaignCard = ({ campaign, profile, type, onOpenMission }) => {
-    const isJoined = type === 'joined';
+    const hasJoined = Boolean(profile && (profile.joinedCampaigns || []).includes(campaign.id));
+    const isJoined = type === 'joined' || hasJoined;
     const isShortlisted = profile && (profile.shortlistedCampaigns || []).includes(campaign.id);
     const uid = profile?.uid;
     
@@ -182,7 +183,7 @@ const CampaignCard = ({ campaign, profile, type, onOpenMission }) => {
                 <div className="relative z-10 flex items-center justify-between px-4 py-2.5 rounded-2xl bg-black/[0.02] dark:bg-white/[0.03] border border-black/[0.05] dark:border-white/[0.07] hover:bg-emerald-50 hover:border-emerald-200 dark:group-hover:bg-neon-green dark:group-hover:border-neon-green transition-all duration-300 group/cta">
                     <span className="text-[9px] font-black uppercase tracking-[0.18em] text-gray-500 dark:text-zinc-400 group-hover/cta:text-emerald-700 dark:group-hover/cta:text-black transition-colors duration-300 flex items-center gap-1.5">
                         <FileText size={10} />
-                        {isJoined && isShortlisted ? 'Open Campaign' : 'View Opportunity'}
+                        {isJoined ? (isShortlisted ? 'Open Campaign' : 'Applied · View Brief') : 'View Opportunity'}
                     </span>
                     <ArrowRight size={13} className="text-gray-400 dark:text-zinc-500 group-hover/cta:text-emerald-700 dark:group-hover/cta:text-black group-hover/cta:translate-x-1 transition-all duration-300" />
                 </div>

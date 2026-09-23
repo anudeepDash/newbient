@@ -78,8 +78,10 @@ export function HorizontalCarousel({ children, className, autoScroll = false, au
             {/* Left Nav Button */}
             {canScrollLeft && (
                 <button
+                    type="button"
                     onClick={() => scroll('left')}
-                    className="absolute left-2 sm:-left-4 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-white dark:bg-black/90 border border-gray-200 dark:border-white/10 text-gray-800 dark:text-white shadow-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:scale-105"
+                    className="absolute left-2 sm:-left-4 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-white dark:bg-black/90 border border-gray-200 dark:border-white/10 text-gray-800 dark:text-white shadow-lg flex items-center justify-center opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-opacity hover:scale-105"
+                    aria-label="Scroll left"
                 >
                     <ChevronLeft size={20} />
                 </button>
@@ -88,8 +90,10 @@ export function HorizontalCarousel({ children, className, autoScroll = false, au
             {/* Right Nav Button */}
             {canScrollRight && (
                 <button
+                    type="button"
                     onClick={() => scroll('right')}
-                    className="absolute right-2 sm:-right-4 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-white dark:bg-black/90 border border-gray-200 dark:border-white/10 text-gray-800 dark:text-white shadow-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:scale-105"
+                    className="absolute right-2 sm:-right-4 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-white dark:bg-black/90 border border-gray-200 dark:border-white/10 text-gray-800 dark:text-white shadow-lg flex items-center justify-center opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-opacity hover:scale-105"
+                    aria-label="Scroll right"
                 >
                     <ChevronRight size={20} />
                 </button>

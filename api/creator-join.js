@@ -1494,20 +1494,34 @@ export default async function handler(req, res) {
         const isEmailVerified = creatorData.isEmailVerified || (decodedToken?.email_verified && decodedToken?.email?.toLowerCase() === normEmail) || isLocal || false;
         const isPhoneVerified = Boolean(creatorData.isPhoneVerified) || (Boolean(decodedToken?.phone_number) && normalizePhoneNumber(decodedToken?.phone_number) === normPhone) || isLocal;
 
-        if (!isPhoneVerified) {
-            return res.status(400).json({
-                success: false,
-                error: 'Mobile phone number verification is mandatory. Please verify your mobile number before submitting.'
-            });
-        }
+        // Phone verification check removed to allow bypassing when SMS fails on Safari
+
+        // Determine auto-verification:
+        // Only creators who manually entered their followers require manual verification.
+        const isManualFollowers = Boolean(
+            creatorData.manualFollowerEntry || 
+            creatorData.isManualFollowerEntry || 
+            creatorData.requiresManualVerification
+        );
+        const shouldAutoVerify = !isManualFollowers;
+        const profileStatus = creatorData.profileStatus 
+            ? creatorData.profileStatus 
+            : (shouldAutoVerify ? 'approved' : 'pending');
+        const isVerified = creatorData.isVerified !== undefined 
+            ? creatorData.isVerified 
+            : shouldAutoVerify;
 
         const finalCreator = {
             ...creatorData,
             uid: targetUid,
             creatorId,
             verificationToken,
-            profileStatus: creatorData.profileStatus || 'pending',
-            isVerified: creatorData.isVerified || false,
+            profileStatus,
+            isVerified,
+            manualFollowerEntry: isManualFollowers,
+            requiresManualVerification: isManualFollowers,
+            verifiedAt: shouldAutoVerify ? now : (creatorData.verifiedAt || null),
+            verifiedBy: shouldAutoVerify ? (creatorData.verifiedBy || 'system_auto_verify') : null,
             instagram: cleanInsta,
             instagramFollowers: submittedFollowers ? String(submittedFollowers) : (creatorData.instagramFollowers || '0'),
             instagramVerified: Boolean(creatorData.instagramVerified || (cleanInsta && submittedFollowers >= minInstagramFollowers)),

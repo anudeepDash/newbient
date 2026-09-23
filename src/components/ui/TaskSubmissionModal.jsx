@@ -83,15 +83,9 @@ const TaskSubmissionModal = ({
 
                 {/* Left Side: Creative & Guidelines */}
                 <div className="flex-1 md:w-1/2 p-4 sm:p-6 md:p-12 overflow-y-auto custom-scrollbar border-b md:border-b-0 md:border-r border-black/10 dark:border-white/10">
-                    <div className="flex items-center gap-3 sm:gap-4 mb-6 sm:mb-8 pr-10 md:pr-0">
-                        <div className="w-10 h-10 sm:w-12 md:w-16 sm:h-12 md:h-16 rounded-xl sm:rounded-2xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 flex items-center justify-center text-emerald-600 dark:text-neon-green shadow-xs shrink-0">
-                            {TypeInfo && <TypeInfo.icon size={20} className="sm:hidden" />}
-                            {TypeInfo && <TypeInfo.icon size={24} className="hidden sm:block" />}
-                        </div>
-                        <div className="min-w-0">
-                            <span className="text-[8px] md:text-[10px] font-black text-emerald-600 dark:text-neon-green uppercase tracking-[0.3em] font-mono block">Deliverable Segment</span>
-                            <h2 className="text-xl sm:text-2xl md:text-3xl font-black font-heading uppercase text-gray-900 dark:text-white tracking-tighter leading-tight mt-0.5 truncate">{task.title}</h2>
-                        </div>
+                    <div className="mb-6 sm:mb-8 pr-10 md:pr-0">
+                        <span className="text-[8px] md:text-[10px] font-black text-emerald-600 dark:text-neon-green uppercase tracking-[0.3em] font-mono block">Deliverable Segment</span>
+                        <h2 className="text-xl sm:text-2xl md:text-3xl font-black font-heading uppercase text-gray-900 dark:text-white tracking-tighter leading-tight mt-0.5 truncate">{task.title}</h2>
                     </div>
 
                     <div className="space-y-6 sm:space-y-8">

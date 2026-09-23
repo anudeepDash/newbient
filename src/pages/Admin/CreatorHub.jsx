@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import Users from 'lucide-react/dist/esm/icons/users';
 import Target from 'lucide-react/dist/esm/icons/target';
 import Sparkles from 'lucide-react/dist/esm/icons/sparkles';
@@ -6,6 +6,7 @@ import Settings from 'lucide-react/dist/esm/icons/settings';
 import LayoutDashboard from 'lucide-react/dist/esm/icons/layout-dashboard';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../../lib/utils';
+import { useStore } from '../../lib/store';
 import AdminCommunityHubLayout from '../../components/admin/AdminCommunityHubLayout';
 import CreatorManager from './CreatorManager';
 import CampaignManager from './CampaignManager';
@@ -15,12 +16,17 @@ import { useLocation } from 'react-router-dom';
 
 const CreatorHub = () => {
     const location = useLocation();
+    const { creators } = useStore();
     const [activeTab, setActiveTab] = useState(
         location.pathname.includes('campaigns') ? 'campaigns' : (location.pathname.includes('settings') || location.pathname.includes('groups')) ? 'settings' : 'creators'
     );
 
+    const pendingCount = useMemo(() => {
+        return (creators || []).filter(c => !c.profileStatus || c.profileStatus === 'pending').length;
+    }, [creators]);
+
     const tabs = [
-        { id: 'creators', label: 'Creators', icon: Users, count: null },
+        { id: 'creators', label: 'Creators', icon: Users, count: pendingCount > 0 ? pendingCount : null, alert: pendingCount > 0 },
         { id: 'campaigns', label: 'Campaigns', icon: Target, count: null },
         { id: 'settings', label: 'Settings', icon: Settings, count: null }
     ];
@@ -76,7 +82,14 @@ const CreatorHub = () => {
                             )} />
                             <span className="text-[10px] font-black uppercase tracking-widest">{tab.label}</span>
                             {tab.count !== null && (
-                                <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-black/5 dark:bg-white/5">{tab.count}</span>
+                                <span className={cn(
+                                    "px-1.5 py-0.5 rounded-full text-[9px] font-mono font-bold border transition-all",
+                                    tab.alert 
+                                        ? "bg-amber-500/20 text-amber-500 dark:text-amber-400 border-amber-500/30"
+                                        : "bg-black/5 dark:bg-white/5 text-gray-700 dark:text-gray-300 border-transparent"
+                                )}>
+                                    {tab.count}
+                                </span>
                             )}
                             {activeTab === tab.id && (
                                 <motion.div 

@@ -49,16 +49,16 @@ const Navbar = () => {
     const isAdmin = user?.role === 'super_admin' || user?.role === 'developer' || user?.role === 'founder';
 
     const mobilePrimaryLinks = [
-        { name: 'HOME', path: '/', icon: Home },
-        { name: 'COMMUNITY', path: '/community', featureId: 'community', icon: Users },
+        { name: 'Home', path: '/', icon: Home },
+        { name: 'Community', path: '/community', featureId: 'community', icon: Users },
         { 
-            name: 'CREATOR', 
-            path: '/creator', 
+            name: 'Creator', 
+            path: isCreator ? '/creator-dashboard' : '/creator', 
             matchPaths: ['/creator', '/creator/join', '/creator-dashboard'], 
             featureId: 'influencer', 
             icon: Zap 
         },
-        { name: 'MORE', action: () => setIsOpen(true), icon: Menu },
+        { name: 'More', isMenu: true, action: () => setIsOpen(prev => !prev), icon: Menu },
     ];
 
     const hideMaintenance = siteSettings.hideMaintenancePages && user?.role !== 'developer';
@@ -121,7 +121,7 @@ const Navbar = () => {
             {/* Top Navbar */}
             {!hideTopNav && (
                 <nav className={cn(
-                    "fixed left-1/2 -translate-x-1/2 z-50 transition-all duration-500 w-full max-w-7xl px-4",
+                    "fixed left-1/2 -translate-x-1/2 z-50 transition-all duration-500 w-full max-w-7xl xl:max-w-[1536px] 2xl:max-w-[1720px] px-4 sm:px-6 lg:px-8 xl:px-12",
                 (maintenanceState.global && user?.role === 'developer') 
                     ? "top-14" 
                     : pinnedAnnouncement 
@@ -284,104 +284,119 @@ const Navbar = () => {
             )}
 
             {/* Apple-Style Floating Capsule Bottom Navigation (Mobile Only) */}
-            {!location.pathname.toLowerCase().startsWith('/admin') && !location.pathname.toLowerCase().includes('/admin/') && (
+            {!location.pathname.toLowerCase().startsWith('/admin') && !location.pathname.toLowerCase().includes('/admin/') && !location.pathname.startsWith('/creator-dashboard') && (
                 <div 
-                    className="md:hidden fixed left-1/2 -translate-x-1/2 z-50 w-full max-w-[420px] px-3 pointer-events-none transition-all duration-300"
-                    style={{ bottom: 'max(1rem, env(safe-area-inset-bottom, 16px))' }}
+                    className="md:hidden fixed left-1/2 -translate-x-1/2 z-50 w-[94%] max-w-sm pointer-events-none transition-all duration-300"
+                    style={{ bottom: 'max(1.25rem, env(safe-area-inset-bottom, 20px))' }}
                 >
-                    <nav 
-                        className="pointer-events-auto w-full h-[62px] bg-white/75 dark:bg-zinc-950/65 backdrop-blur-3xl border border-black/[0.08] dark:border-white/[0.12] rounded-full p-1.5 flex items-center justify-between shadow-[0_12px_40px_-10px_rgba(0,0,0,0.18)] dark:shadow-[0_20px_50px_-10px_rgba(0,0,0,0.85)] ring-1 ring-black/[0.04] dark:ring-white/[0.05] select-none"
+                    <div 
+                        className="pointer-events-auto relative bg-white/85 dark:bg-[#141822]/85 border border-black/[0.08] dark:border-white/[0.12] rounded-full p-1.5 shadow-[0_10px_35px_rgba(0,0,0,0.15)] dark:shadow-[0_10px_35px_rgba(0,0,0,0.6)] backdrop-blur-2xl ring-1 ring-black/[0.04] dark:ring-white/[0.05]"
+                        style={{ WebkitBackdropFilter: 'blur(20px)' }}
                     >
-                        {mobilePrimaryLinks.map((link) => {
-                            const isActive = link.matchPaths ? link.matchPaths.includes(location.pathname) : location.pathname === link.path;
-                            const Icon = link.icon;
-                            const isUnderMaintenance = link.featureId && (maintenanceState.global || maintenanceState.pages?.[link.featureId]);
-                            const isClickable = !isUnderMaintenance || user?.role === 'developer';
+                        <div className="flex items-center justify-between relative">
+                            {mobilePrimaryLinks.map((link) => {
+                                const isActive = link.isMenu 
+                                    ? isOpen 
+                                    : (!isOpen && (link.matchPaths 
+                                        ? link.matchPaths.some(p => location.pathname === p || (p !== '/' && location.pathname.startsWith(p + '/')))
+                                        : (link.path === '/' ? location.pathname === '/' : location.pathname.startsWith(link.path))
+                                    ));
+                                const Icon = link.icon;
+                                const isUnderMaintenance = link.featureId && (maintenanceState.global || maintenanceState.pages?.[link.featureId]);
+                                const isClickable = !isUnderMaintenance || user?.role === 'developer';
 
-                            const content = (
-                                <>
-                                    {/* Active Capsule Pill Indicator (Apple-Style Spring Physics) */}
-                                    {isActive && (
-                                        <motion.div 
-                                            layoutId="mobile-bottom-nav-active-pill"
-                                            className="absolute inset-0 bg-gray-200/80 dark:bg-white/[0.12] border border-black/[0.04] dark:border-white/[0.1] rounded-full shadow-[0_2px_8px_rgba(0,0,0,0.06)] dark:shadow-[0_0_12px_rgba(255,255,255,0.04)]"
-                                            transition={{ type: "spring", bounce: 0.18, duration: 0.5 }}
-                                        />
-                                    )}
-
-                                    <div className="relative z-10 flex flex-col items-center justify-center gap-0.5">
-                                        <motion.div
-                                            animate={{ scale: isActive ? 1.08 : 1 }}
-                                            transition={{ type: "spring", stiffness: 450, damping: 25 }}
-                                            className="relative"
-                                        >
-                                            <Icon 
-                                                size={19} 
-                                                className={cn(
-                                                    "transition-colors duration-200",
-                                                    isActive 
-                                                        ? "text-black dark:text-white" 
-                                                        : "text-gray-500 dark:text-zinc-400 group-hover:text-gray-800 dark:group-hover:text-zinc-200"
-                                                )} 
+                                const content = (
+                                    <>
+                                        {isActive && (
+                                            <motion.div 
+                                                layoutId="globalMobileTabIndicator"
+                                                className="absolute inset-0 rounded-full bg-black dark:bg-white shadow-[0_2px_12px_rgba(0,0,0,0.2)]"
+                                                transition={{ type: "spring", stiffness: 450, damping: 35 }}
                                             />
-                                            {isUnderMaintenance && (
-                                                <div className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full border border-white dark:border-zinc-950" />
-                                            )}
-                                        </motion.div>
-
-                                        <span className={cn(
-                                            "text-[8.5px] font-black uppercase tracking-wider transition-colors duration-200 leading-tight",
-                                            isActive 
-                                                ? "text-black dark:text-white" 
-                                                : "text-gray-500 dark:text-zinc-400 group-hover:text-gray-800 dark:group-hover:text-zinc-200"
-                                        )}>
-                                            {link.name}
-                                        </span>
-                                    </div>
-                                </>
-                            );
-
-                            if (link.action) {
-                                return (
-                                    <button
-                                        key={link.name}
-                                        onClick={link.action}
-                                        className="relative flex-1 h-full flex flex-col items-center justify-center rounded-full transition-all duration-200 active:scale-95 group focus:outline-none"
-                                    >
-                                        {content}
-                                    </button>
-                                );
-                            }
-
-                            if (link.isExternal) {
-                                return (
-                                    <a
-                                        key={link.name}
-                                        href={isClickable ? link.path : '#'}
-                                        className={cn(
-                                            "relative flex-1 h-full flex flex-col items-center justify-center rounded-full transition-all duration-200 active:scale-95 group focus:outline-none",
-                                            isUnderMaintenance && !isClickable && "opacity-40 grayscale cursor-not-allowed"
                                         )}
+
+                                        <div className="relative z-10 flex items-center justify-center gap-1.5">
+                                            <div className="relative">
+                                                <Icon 
+                                                    size={17} 
+                                                    strokeWidth={isActive ? 2.5 : 2}
+                                                    className={cn(
+                                                        "shrink-0 transition-colors duration-200",
+                                                        isActive 
+                                                            ? "text-white dark:text-black" 
+                                                            : "text-gray-500 dark:text-zinc-400 group-hover:text-gray-900 dark:group-hover:text-white"
+                                                    )} 
+                                                />
+                                                {isUnderMaintenance && (
+                                                    <div className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full border border-white dark:border-zinc-950 z-20" />
+                                                )}
+                                            </div>
+
+                                            <AnimatePresence>
+                                                {isActive && (
+                                                    <motion.span 
+                                                        initial={{ width: 0, opacity: 0 }}
+                                                        animate={{ width: "auto", opacity: 1 }}
+                                                        exit={{ width: 0, opacity: 0 }}
+                                                        className={cn(
+                                                            "text-[11px] font-bold tracking-tight leading-none whitespace-nowrap overflow-hidden relative z-10",
+                                                            isActive ? "text-white dark:text-black" : "text-gray-500 dark:text-zinc-400"
+                                                        )}
+                                                    >
+                                                        {link.name}
+                                                    </motion.span>
+                                                )}
+                                            </AnimatePresence>
+                                        </div>
+                                    </>
+                                );
+
+                                const buttonClasses = cn(
+                                    "relative flex-1 flex items-center justify-center py-2.5 px-2 rounded-full transition-all duration-200 active:scale-95 group focus:outline-none select-none",
+                                    isActive ? "text-white dark:text-black" : "text-gray-500 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-white",
+                                    isUnderMaintenance && !isClickable && "opacity-40 grayscale cursor-not-allowed"
+                                );
+
+                                if (link.action) {
+                                    return (
+                                        <button
+                                            key={link.name}
+                                            type="button"
+                                            onClick={link.action}
+                                            className={buttonClasses}
+                                            aria-label={link.name}
+                                        >
+                                            {content}
+                                        </button>
+                                    );
+                                }
+
+                                if (link.isExternal) {
+                                    return (
+                                        <a
+                                            key={link.name}
+                                            href={isClickable ? link.path : '#'}
+                                            className={buttonClasses}
+                                            aria-label={link.name}
+                                        >
+                                            {content}
+                                        </a>
+                                    );
+                                }
+
+                                return (
+                                    <Link
+                                        key={link.name}
+                                        to={isClickable ? link.path : '#'}
+                                        className={buttonClasses}
+                                        aria-label={link.name}
                                     >
                                         {content}
-                                    </a>
+                                    </Link>
                                 );
-                            }
-
-                            return (
-                                <Link
-                                    key={link.name}
-                                    to={isClickable ? link.path : '#'}
-                                    className={cn(
-                                        "relative flex-1 h-full flex flex-col items-center justify-center rounded-full transition-all duration-200 active:scale-95 group focus:outline-none",
-                                        isUnderMaintenance && !isClickable && "opacity-40 grayscale cursor-not-allowed"
-                                    )}
-                                >
-                                    {content}
-                                </Link>
-                            );
-                        })}
-                    </nav>
+                            })}
+                        </div>
+                    </div>
                 </div>
             )}
 

@@ -18,7 +18,9 @@ const Layout = () => {
         location.pathname.startsWith('/artistant') ||
         location.pathname.startsWith('/campaign/') ||
         location.pathname.startsWith('/doc/') ||
-        location.pathname.startsWith('/creator') ||
+        location.pathname === '/creator' ||
+        location.pathname === '/creator/' ||
+        location.pathname.startsWith('/creator/join') ||
         location.pathname.includes('/admin/create-') ||
         location.pathname.includes('/admin/edit-') ||
         location.pathname.includes('/admin/agreements/') ||

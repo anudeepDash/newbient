@@ -78,7 +78,7 @@ const TASK_TYPES = [
     { value: 'story', label: 'Story', icon: Eye },
     { value: 'reel', label: 'Reel', icon: Video },
     { value: 'visit_event', label: 'Visit Event', icon: MapPin },
-    { value: 'custom', label: 'Custom', icon: Star },
+    { value: 'custom', label: 'Custom', icon: Layers },
 ];
 
 const PLATFORMS = [
@@ -90,7 +90,7 @@ const PLATFORMS = [
 
 const getTaskTypeIcon = (type) => {
     const found = TASK_TYPES.find(t => t.value === type);
-    return found ? found.icon : Star;
+    return found ? found.icon : Layers;
 };
 
 const getPlatformIcon = (platform) => {

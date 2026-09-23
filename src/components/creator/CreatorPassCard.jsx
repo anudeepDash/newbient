@@ -45,9 +45,8 @@ const normalizeCity = (cityStr = '') => {
 
 /**
  * CreatorPassCard
- * Ultra-luxury Minimalist Mode-Based Creator Membership Pass (One-Sided).
- * Features official Newbi Creators logo, pure Newbi Green (#39FF14),
- * and clean glare with zero muddy washouts.
+ * Apple Wallet-inspired creator membership pass.
+ * Clean, minimal, with subtle 3D depth on hover.
  */
 const CreatorPassCard = ({ 
     profile = null, 
@@ -91,7 +90,6 @@ const CreatorPassCard = ({
         }
     }, []);
 
-    // Automatically request location access on mount if profile city is not already established
     useEffect(() => {
         if (profile?.city && profile.city !== 'Pan-India') return;
         handleAutoDetectLocation(true);
@@ -146,22 +144,21 @@ const CreatorPassCard = ({
     const x = useMotionValue(0);
     const y = useMotionValue(0);
 
-    const springConfig = { damping: 26, stiffness: 280 };
+    const springConfig = { damping: 30, stiffness: 200 };
     const mouseX = useSpring(x, springConfig);
     const mouseY = useSpring(y, springConfig);
 
-    const rotateX = useTransform(mouseY, [-0.5, 0.5], [11, -11]);
-    const rotateY = useTransform(mouseX, [-0.5, 0.5], [-13, 13]);
+    const rotateX = useTransform(mouseY, [-0.5, 0.5], [6, -6]);
+    const rotateY = useTransform(mouseX, [-0.5, 0.5], [-8, 8]);
 
-    const glareX = useTransform(mouseX, [-0.5, 0.5], [15, 85]);
-    const glareY = useTransform(mouseY, [-0.5, 0.5], [15, 85]);
+    const glareX = useTransform(mouseX, [-0.5, 0.5], [20, 80]);
+    const glareY = useTransform(mouseY, [-0.5, 0.5], [20, 80]);
 
-    // Clean specular reflection: pure subtle white in Light Mode (no green blob!), subtle neon sheen in Dark Mode
     const glareBackground = useTransform(
         [glareX, glareY],
         ([gx, gy]) => isDark
-            ? `radial-gradient(circle at ${gx}% ${gy}%, rgba(255, 255, 255, 0.12) 0%, rgba(57, 255, 20, 0.08) 25%, transparent 60%)`
-            : `radial-gradient(circle at ${gx}% ${gy}%, rgba(255, 255, 255, 0.45) 0%, transparent 55%)`
+            ? `radial-gradient(circle at ${gx}% ${gy}%, rgba(255, 255, 255, 0.06) 0%, transparent 50%)`
+            : `radial-gradient(circle at ${gx}% ${gy}%, rgba(255, 255, 255, 0.35) 0%, transparent 50%)`
     );
 
     const handleMouseMove = useCallback((e) => {
@@ -194,12 +191,8 @@ const CreatorPassCard = ({
     }, [x, y]);
 
     return (
-        <div className={cn("w-full max-w-[480px] mx-auto select-none", className)}>
-            {/* Minimalist Flat Card Container */}
-            <div className="relative group" style={{ perspective: 1000 }}>
-                {/* Subtle Ambient Aura */}
-                <div className="absolute -inset-2 rounded-[2.5rem] blur-xl transition-opacity duration-700 pointer-events-none opacity-0 dark:opacity-20 dark:bg-neon-green/5" />
-
+        <div className={cn("w-full max-w-[420px] mx-auto select-none", className)}>
+            <div className="relative group" style={{ perspective: 900 }}>
                 <motion.div
                     ref={cardRef}
                     onMouseMove={handleMouseMove}
@@ -212,244 +205,131 @@ const CreatorPassCard = ({
                         transformStyle: "preserve-3d"
                     }}
                     className={cn(
-                        "relative w-full aspect-[1.586/1] min-h-[210px] sm:min-h-[260px] rounded-2xl p-4 sm:p-6 flex flex-col justify-between overflow-hidden transition-colors duration-300",
-                        "bg-white dark:bg-[#0c0e14] border border-black/[0.07] dark:border-white/[0.07] shadow-sm dark:shadow-[0_8px_30px_rgba(0,0,0,0.5)] text-gray-900 dark:text-white"
+                        "relative w-full aspect-[1.6/1] min-h-[200px] sm:min-h-[240px] rounded-[20px] sm:rounded-[24px] overflow-hidden transition-colors duration-300",
+                        "bg-white dark:bg-[#111318]",
+                        "border border-black/[0.06] dark:border-white/[0.06]",
+                        "shadow-[0_2px_20px_rgba(0,0,0,0.06)] dark:shadow-[0_4px_40px_rgba(0,0,0,0.4)]"
                     )}
                 >
-                    {/* Dynamic Glare Overlay (Clean Specular Highlight) */}
+                    {/* Subtle Glare */}
                     <motion.div 
-                        className="pointer-events-none absolute inset-0 rounded-[20px] sm:rounded-[26px] transition-opacity duration-300 z-30"
+                        className="pointer-events-none absolute inset-0 z-30 rounded-[20px] sm:rounded-[24px]"
                         style={{ background: glareBackground }}
                     />
 
-                    {/* TOP ROW: Official Logo & Pass ID */}
-                    <div className="flex items-center justify-between relative z-20" style={{ transform: "translateZ(20px)" }}>
-                        <div className="flex items-center">
+                    {/* Card Inner Content */}
+                    <div className="relative z-20 h-full flex flex-col justify-between p-5 sm:p-6">
+                        
+                        {/* TOP: Logo + Pass ID */}
+                        <div className="flex items-center justify-between" style={{ transform: "translateZ(16px)" }}>
                             <img 
                                 src={isDark ? newbiCreatorsLogoDark : newbiCreatorsLogoLight} 
                                 alt="Newbi Creators" 
-                                className="h-6 sm:h-7 w-auto object-contain"
+                                className="h-5 sm:h-[22px] w-auto object-contain opacity-80"
                             />
-                        </div>
-
-                        <div className="flex items-center gap-2">
-                            <span className="text-[10px] font-mono tracking-widest text-gray-500 dark:text-zinc-400 font-semibold px-2 py-0.5 rounded-md bg-gray-100 dark:bg-white/[0.05] border border-gray-200 dark:border-white/[0.05]">
+                            <span className="text-[9px] sm:text-[10px] font-mono tracking-[0.15em] text-gray-400 dark:text-zinc-500 font-semibold">
                                 {data.passId}
                             </span>
                         </div>
-                    </div>
 
-                    {/* CENTERPIECE: Identity & Avatar */}
-                    <div className="flex items-center gap-3.5 sm:gap-4 relative z-20 my-auto py-1" style={{ transform: "translateZ(24px)" }}>
-                        {/* Avatar */}
-                        <div className="relative shrink-0 w-12 h-12 sm:w-14 sm:h-14">
-                            <div className="w-full h-full rounded-2xl bg-black text-white dark:bg-zinc-900 border border-black/[0.08] dark:border-white/10 overflow-hidden flex items-center justify-center shadow-sm">
-                                {data.avatar ? (
-                                    <img src={data.avatar} alt={data.name} className="w-full h-full object-cover" />
-                                ) : (
-                                    (isRegistered || (data.name && data.name !== "Reserve Your Pass")) ? (
-                                        <span className="font-black text-[10px] sm:text-xs tracking-wider uppercase text-neon-green">
-                                            {data.niche.split(' ')[0].substring(0, 5)}
-                                        </span>
+                        {/* CENTER: Identity */}
+                        <div className="flex items-center gap-3 sm:gap-3.5 my-auto" style={{ transform: "translateZ(20px)" }}>
+                            {/* Avatar */}
+                            <div className="relative shrink-0 w-11 h-11 sm:w-[52px] sm:h-[52px]">
+                                <div className="w-full h-full rounded-[14px] sm:rounded-[16px] bg-gray-100 dark:bg-zinc-800/80 overflow-hidden flex items-center justify-center">
+                                    {data.avatar ? (
+                                        <img src={data.avatar} alt={data.name} className="w-full h-full object-cover" />
                                     ) : (
-                                        <div className="flex flex-col items-center justify-center text-zinc-300 dark:text-zinc-300">
-                                            <User size={18} />
-                                            <span className="text-[7px] font-black tracking-wider uppercase text-neon-green mt-0.5">+YOU</span>
-                                        </div>
-                                    )
+                                        (isRegistered || (data.name && data.name !== "Reserve Your Pass")) ? (
+                                            <span className="font-black text-sm text-gray-400 dark:text-zinc-500 uppercase">
+                                                {data.name.charAt(0)}
+                                            </span>
+                                        ) : (
+                                            <User size={18} className="text-gray-300 dark:text-zinc-600" />
+                                        )
+                                    )}
+                                </div>
+                                {isVerified && (
+                                    <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-neon-green text-black flex items-center justify-center ring-2 ring-white dark:ring-[#111318]">
+                                        <CheckCircle2 size={10} strokeWidth={3} />
+                                    </div>
                                 )}
                             </div>
-                            {isVerified && (
-                                <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-neon-green text-black flex items-center justify-center shadow-sm">
-                                    <ShieldCheck size={10} strokeWidth={3} />
-                                </div>
-                            )}
-                        </div>
 
-                        {/* Name & Handle */}
-                        <div className="min-w-0 flex-1">
-                            <div className="flex items-center gap-1.5 sm:gap-2">
-                                <h3 className="text-base sm:text-xl font-black tracking-tight text-gray-950 dark:text-white truncate font-heading">
+                            {/* Name + Handle */}
+                            <div className="min-w-0 flex-1">
+                                <h3 className="text-[15px] sm:text-lg font-bold tracking-tight text-gray-900 dark:text-white truncate leading-tight">
                                     {data.name}
                                 </h3>
-                                {isVerified ? (
-                                    <div className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-neon-green/20 border border-neon-green/40 text-black dark:text-neon-green text-[8px] font-black uppercase tracking-wider font-mono shrink-0">
-                                        <CheckCircle2 size={10} /> VERIFIED
-                                    </div>
-                                ) : (
-                                    <div className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-gray-200 dark:bg-gray-800 text-gray-500 dark:text-gray-400 text-[8px] font-black uppercase tracking-wider font-mono shrink-0">
-                                        UNVERIFIED
-                                    </div>
-                                )}
-                            </div>
-                            <p className="text-[11px] sm:text-xs text-gray-500 dark:text-zinc-400 font-medium truncate mt-0.5">
-                                @{data.handle} <span className="mx-1 text-gray-300 dark:text-zinc-700">&bull;</span> {data.city} <span className="mx-1 text-gray-300 dark:text-zinc-700">&bull;</span> {data.niche}
-                            </p>
-                        </div>
-                    </div>
-
-                    {/* VIP MEMBERSHIP AUTHENTICATION STRIP */}
-                    <div 
-                        className="flex items-center justify-between py-1.5 sm:py-2 border-t border-black/[0.06] dark:border-white/[0.08] relative z-20"
-                        style={{ transform: "translateZ(18px)" }}
-                    >
-                        <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
-                            <span className="text-[8px] sm:text-[9px] font-mono tracking-widest text-gray-500 dark:text-zinc-400 uppercase flex items-center gap-1.5 shrink-0">
-                                <span className="w-1.5 h-1.5 rounded-full bg-neon-green inline-block animate-pulse" />
-                                {isVerified ? "VERIFIED ROSTER" : isRegistered ? "REGISTERED CREATOR" : "ALL-ACCESS PASS"}
-                            </span>
-                            {data.niche && data.niche !== 'C' && (
-                                <span className="hidden xs:inline-block px-1.5 sm:px-2 py-0.5 rounded-md bg-black/[0.03] dark:bg-white/[0.05] border border-black/[0.04] dark:border-white/[0.06] text-[8px] sm:text-[9px] font-bold uppercase tracking-wider text-gray-600 dark:text-zinc-400 truncate max-w-[120px]">
-                                    {data.niche}
-                                </span>
-                            )}
-                        </div>
-
-                        {/* Monospace Barcode Aesthetic */}
-                        <div className="flex items-center gap-1 font-mono text-[8px] sm:text-[9px] text-gray-300 dark:text-zinc-600 tracking-widest select-none shrink-0">
-                            <span>|||</span><span>|</span><span>||</span><span>||||</span><span>|</span><span>||</span>
-                        </div>
-                    </div>
-
-                    {/* BOTTOM ROW: Subtle Pass Indicator & Newbi Green Pill CTA */}
-                    <div className="flex items-center justify-between pt-1 relative z-20 gap-2" style={{ transform: "translateZ(22px)" }}>
-                        {showWhatsAppGroup ? (
-                            <a
-                                href={currentGroup?.groupUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                onClick={(e) => e.stopPropagation()}
-                                className="h-7 sm:h-8 px-2.5 sm:px-3 rounded-xl bg-black/[0.04] hover:bg-[#25D366]/15 dark:bg-white/[0.06] dark:hover:bg-[#25D366]/20 border border-black/[0.08] dark:border-white/[0.08] hover:border-[#25D366]/30 dark:hover:border-[#25D366]/40 text-gray-800 dark:text-zinc-200 text-[9px] sm:text-[10px] font-bold tracking-wide transition-all flex items-center gap-1.5 shadow-2xs group/wa shrink-0"
-                                title={`Join ${currentGroup?.city || ''} Creators WhatsApp Group`}
-                            >
-                                <WhatsAppIcon size={12} className="text-[#25D366]" />
-                                <span>Join WhatsApp</span>
-                            </a>
-                        ) : (
-                            <span className="text-[8px] sm:text-[9px] font-mono tracking-widest text-gray-400 dark:text-zinc-500 uppercase flex items-center gap-1.5">
-                                <span className="w-1.5 h-1.5 rounded-full bg-neon-green inline-block" />
-                                {isRegistered ? "Authorized Member" : "Official Creator Pass"}
-                            </span>
-                        )}
-
-                        {hideAction ? (
-                            <div className="h-7 sm:h-8 px-2.5 sm:px-3 rounded-xl bg-neon-green/10 border border-neon-green/25 text-neon-green font-black text-[9px] sm:text-[10px] uppercase tracking-wider flex items-center gap-1.5 font-mono shrink-0">
-                                <span className="w-1.5 h-1.5 rounded-full bg-neon-green" />
-                                <span>{isVerified ? "Verified Pass" : "Active Member"}</span>
-                            </div>
-                        ) : isRegistered ? (
-                            <button
-                                type="button"
-                                onClick={() => navigate('/creator-dashboard')}
-                                className="h-7 sm:h-8 px-3 sm:px-4 rounded-xl bg-neon-green hover:bg-black hover:text-white text-black font-black text-[9px] sm:text-[10px] uppercase tracking-wider transition-all flex items-center gap-1.5 shadow-[0_0_15px_rgba(57,255,20,0.3)] active:scale-95 group/btn shrink-0"
-                            >
-                                <LayoutDashboard size={11} />
-                                <span>Dashboard</span>
-                                <ArrowRight size={11} className="group-hover/btn:translate-x-0.5 transition-transform" />
-                            </button>
-                        ) : isPreview ? (
-                            <button
-                                type="button"
-                                onClick={() => navigate('/creator/join')}
-                                className="h-7 sm:h-8 px-3 sm:px-4 rounded-xl bg-neon-green hover:bg-black hover:text-white text-black font-black text-[9px] sm:text-[10px] uppercase tracking-wider transition-all flex items-center gap-1.5 shadow-[0_0_15px_rgba(57,255,20,0.3)] active:scale-95 group/btn shrink-0"
-                            >
-                                <span>Claim Pass</span>
-                                <ArrowRight size={11} className="group-hover/btn:translate-x-0.5 transition-transform" />
-                            </button>
-                        ) : (
-                            <button
-                                type="button"
-                                onClick={() => navigate('/creator/join')}
-                                className="h-7 sm:h-8 px-3 sm:px-4 rounded-xl bg-neon-green hover:bg-black hover:text-white text-black font-black text-[9px] sm:text-[10px] uppercase tracking-wider transition-all flex items-center gap-1.5 shadow-[0_0_15px_rgba(57,255,20,0.3)] active:scale-95 group/btn shrink-0"
-                            >
-                                <span>Claim Pass</span>
-                                <ArrowRight size={11} className="group-hover/btn:translate-x-0.5 transition-transform" />
-                            </button>
-                        )}
-                    </div>
-                </motion.div>
-            </div>
-
-            {/* Optional Companion City Group Join Card */}
-            {showWhatsAppGroup && (
-                <motion.div 
-                    initial={{ opacity: 0, y: 6 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="w-full mt-3.5"
-                >
-                    <div className="p-3.5 sm:p-4 rounded-[20px] sm:rounded-[24px] bg-white/60 dark:bg-white/[0.02] backdrop-blur-2xl border border-black/[0.05] dark:border-white/[0.05] flex flex-col gap-3 shadow-[0_8px_30px_rgba(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.2)]">
-                        {/* Top Row: Info & Required badge */}
-                        <div className="flex items-center gap-2.5 min-w-0">
-                            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-[#25D366]/15 text-[#25D366] flex items-center justify-center shrink-0">
-                                <WhatsAppIcon size={18} />
-                            </div>
-                            <div className="min-w-0 flex-1">
-                                <div className="flex items-center gap-2 flex-wrap">
-                                    <p className="text-xs sm:text-sm font-bold text-gray-900 dark:text-white">
-                                        {currentGroup?.city || selectedCity} Creators WhatsApp
-                                    </p>
-                                    <span className="text-[9px] font-mono text-emerald-600 dark:text-neon-green font-bold shrink-0">
-                                        • Required
-                                    </span>
-                                </div>
-                                <p className="text-[10px] sm:text-[11px] text-gray-500 dark:text-zinc-400 mt-0.5">
-                                    Brand briefs, concert guestlists &amp; deliverables
+                                <p className="text-[10px] sm:text-[11px] text-gray-400 dark:text-zinc-500 truncate mt-0.5 font-medium">
+                                    @{data.handle} <span className="mx-1 opacity-40">·</span> {data.city}
                                 </p>
                             </div>
                         </div>
 
-                        {/* Bottom Row: Location Selector & Join CTA */}
-                        <div className="flex items-center justify-between gap-2 pt-2.5 border-t border-black/[0.06] dark:border-white/[0.06]">
-                            {(!profile?.city || profile.city === 'Pan-India') ? (
-                                <div className="flex items-center gap-1.5 flex-1 min-w-0">
-                                    <button
-                                        type="button"
-                                        onClick={() => handleAutoDetectLocation(false)}
-                                        disabled={isLocating}
-                                        title={isAutoDetected ? `Auto-detected: ${selectedCity}` : "Auto-detect my location"}
-                                        className={cn(
-                                            "h-8 px-2 sm:px-2.5 rounded-xl border flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer shrink-0 active:scale-95",
-                                            isAutoDetected
-                                                ? "bg-emerald-500/15 border-emerald-500/30 text-emerald-700 dark:text-neon-green"
-                                                : "bg-black/[0.03] dark:bg-white/[0.05] border-black/[0.08] dark:border-white/[0.08] text-gray-600 dark:text-zinc-400 hover:text-black dark:hover:text-white"
-                                        )}
+                        {/* BOTTOM: Status + Action */}
+                        <div 
+                            className="flex items-center justify-between gap-2 pt-2.5 border-t border-black/[0.04] dark:border-white/[0.05]"
+                            style={{ transform: "translateZ(18px)" }}
+                        >
+                            <div className="flex items-center gap-2 min-w-0">
+                                {/* Status badge */}
+                                <div className={cn(
+                                    "flex items-center gap-1 px-2 py-1 rounded-lg text-[8px] sm:text-[9px] font-bold uppercase tracking-[0.12em]",
+                                    isVerified 
+                                        ? "bg-neon-green/10 text-emerald-700 dark:text-neon-green" 
+                                        : isRegistered 
+                                            ? "bg-amber-500/10 text-amber-600 dark:text-amber-400"
+                                            : "bg-gray-100 dark:bg-white/[0.04] text-gray-400 dark:text-zinc-500"
+                                )}>
+                                    <span className={cn("w-1.5 h-1.5 rounded-full", isVerified ? "bg-neon-green" : isRegistered ? "bg-amber-400" : "bg-gray-300 dark:bg-zinc-600")} />
+                                    {isVerified ? "Verified" : isRegistered ? "Pending" : "Open Pass"}
+                                </div>
+
+                                {/* WhatsApp button */}
+                                {showWhatsAppGroup && (
+                                    <a
+                                        href={currentGroup?.groupUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        onClick={(e) => e.stopPropagation()}
+                                        className="flex items-center gap-1 px-2 py-1 rounded-lg bg-[#25D366]/8 hover:bg-[#25D366]/15 text-[#25D366] text-[8px] sm:text-[9px] font-bold uppercase tracking-wide transition-colors"
                                     >
-                                        <MapPin size={11} className={isLocating ? "animate-pulse text-emerald-600 dark:text-neon-green" : ""} />
-                                        <span>{isLocating ? "Locating..." : isAutoDetected ? "Auto" : "Detect"}</span>
-                                    </button>
-                                    <div className="flex-1 max-w-[180px] min-w-[110px]">
-                                        <StudioSelect
-                                            value={selectedCity}
-                                            onChange={(val) => {
-                                                setSelectedCity(val);
-                                                setIsAutoDetected(false);
-                                            }}
-                                            options={activeGroups.map(g => ({ value: g.city, label: g.city }))}
-                                            size="sm"
-                                            accentColor="neon-green"
-                                            searchable={false}
-                                        />
-                                    </div>
-                                </div>
+                                        <WhatsAppIcon size={10} />
+                                        <span>Join</span>
+                                    </a>
+                                )}
+                            </div>
+
+                            {/* CTA */}
+                            {hideAction ? (
+                                <span className="text-[8px] sm:text-[9px] font-mono text-gray-300 dark:text-zinc-600 tracking-widest uppercase">
+                                    {data.niche}
+                                </span>
+                            ) : isRegistered ? (
+                                <button
+                                    type="button"
+                                    onClick={() => navigate('/creator-dashboard')}
+                                    className="h-7 px-3 rounded-lg bg-gray-900 dark:bg-white text-white dark:text-black font-bold text-[9px] sm:text-[10px] uppercase tracking-wider transition-all flex items-center gap-1 active:scale-95 group/btn"
+                                >
+                                    <LayoutDashboard size={10} />
+                                    <span>Dashboard</span>
+                                    <ArrowRight size={10} className="group-hover/btn:translate-x-0.5 transition-transform" />
+                                </button>
                             ) : (
-                                <div className="flex items-center gap-1.5 text-[11px] text-gray-500 dark:text-zinc-400 font-medium">
-                                    <MapPin size={12} className="text-emerald-500 shrink-0" />
-                                    <span>City: <strong className="text-gray-900 dark:text-white font-semibold">{profile.city}</strong></span>
-                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => navigate('/creator/join')}
+                                    className="h-7 px-3 rounded-lg bg-neon-green text-black font-bold text-[9px] sm:text-[10px] uppercase tracking-wider transition-all flex items-center gap-1 active:scale-95 group/btn"
+                                >
+                                    <span>Claim Pass</span>
+                                    <ArrowRight size={10} className="group-hover/btn:translate-x-0.5 transition-transform" />
+                                </button>
                             )}
-                            <a
-                                href={currentGroup?.groupUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="h-8 sm:h-9 px-4 sm:px-5 rounded-xl bg-gray-950 dark:bg-white text-white dark:text-black hover:bg-black dark:hover:bg-zinc-200 font-black text-[10px] sm:text-[11px] uppercase tracking-wider flex items-center gap-1.5 transition-all shadow-sm shrink-0 active:scale-95 ml-auto"
-                            >
-                                <span>Join</span>
-                                <ArrowRight size={11} />
-                            </a>
                         </div>
                     </div>
                 </motion.div>
-            )}
+            </div>
         </div>
     );
 };
