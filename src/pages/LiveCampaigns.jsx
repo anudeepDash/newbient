@@ -294,13 +294,7 @@ const LiveCampaigns = () => {
                                                     const isJoined = profile && (profile.joinedCampaigns || []).includes(camp.id);
                                                     const minFollowers = Number(camp.minInstagramFollowers || 0);
                                                     const followersCount = Number(profile?.instagramFollowers || 0);
-                                                    const isAutoVerified = Boolean(
-                                                        profile?.instagramVerified || 
-                                                        profile?.isVerified || 
-                                                        profile?.profileStatus === 'approved'
-                                                    );
                                                     const isEligible = Boolean(profile) && (
-                                                        isAutoVerified ||
                                                         minFollowers <= 0 ||
                                                         followersCount >= minFollowers
                                                     );
@@ -346,7 +340,7 @@ const LiveCampaigns = () => {
                                                                     ) : (
                                                                         <>
                                                                             <Zap size={12} className="fill-black stroke-black shrink-0" />
-                                                                            <span>1-Click Apply</span>
+                                                                            <span>1 Click Apply</span>
                                                                         </>
                                                                     )}
                                                                 </button>
