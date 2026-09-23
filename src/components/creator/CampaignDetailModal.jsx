@@ -89,7 +89,7 @@ const CampaignDetailModal = ({
                         (cleanExistingHandle && existing.profileStatus === 'approved')
                     );
                     
-                    const meetsCriteria = (minFollowers <= 0) || (count >= minFollowers) || isAutoVerifiedCreator;
+                    const meetsCriteria = (minFollowers <= 0) || (count >= minFollowers);
                     
                     if (cleanExistingHandle) {
                         setVerificationStep(meetsCriteria ? 'success' : 'ineligible');
@@ -203,6 +203,7 @@ const CampaignDetailModal = ({
             if (!res.ok || !data.success) {
                 if (isRegisteredAutoVerified) {
                     const fallbackCount = Number(profile.instagramFollowers || 0);
+                    const meetsCriteria = (minFollowers <= 0) || (fallbackCount >= minFollowers);
                     const verifiedPayload = {
                         handle: cleanHandle,
                         name: profile.name || cleanHandle,
@@ -211,7 +212,7 @@ const CampaignDetailModal = ({
                         profilePic: profile.profilePicture || profile.instagramProfilePic || user?.photoURL || null,
                         isPrivate: false,
                         isVerified: Boolean(profile.isVerified || profile.instagramVerified),
-                        meetsMinimumFollowers: true,
+                        meetsMinimumFollowers: meetsCriteria,
                         isRegisteredCreator: true,
                         isAutoVerifiedCreator: true
                     };
@@ -222,7 +223,7 @@ const CampaignDetailModal = ({
                         followers: String(fallbackCount)
                     }));
                     setIsVerifying(false);
-                    setVerificationStep('success');
+                    setVerificationStep(meetsCriteria ? 'success' : 'ineligible');
                     return;
                 }
                 if (isLocal) {
@@ -266,7 +267,7 @@ const CampaignDetailModal = ({
             }
 
             const count = Number(data.followers) || 0;
-            const meetsCriteria = minFollowers <= 0 || count >= minFollowers || isRegisteredAutoVerified;
+            const meetsCriteria = minFollowers <= 0 || count >= minFollowers;
 
             const verifiedPayload = {
                 handle: data.handle,
@@ -396,13 +397,11 @@ const CampaignDetailModal = ({
     if (!campaign) return null;
 
     const isRegisteredEligible = Boolean(profile) && (
-        Boolean(profile.instagramVerified || profile.isVerified) ||
         minFollowers <= 0 ||
         Number(profile.instagramFollowers || form.followers || 0) >= minFollowers
     );
 
     const isEligible = isRegisteredEligible || 
-        verificationStep === 'success' || 
         (instagramVerifiedData && Boolean(instagramVerifiedData.meetsMinimumFollowers)) || 
         (isManualFollowerEntry && Boolean(form.followers) && (minFollowers <= 0 || Number(form.followers) >= minFollowers));
 
@@ -786,46 +785,27 @@ const CampaignDetailModal = ({
                                                 {!joinSuccess ? (
                                                     profile ? (
                                                         /* Fast-Track Creator Application (Registered Creator) */
-                                                        <div className="space-y-4">
-                                                            {/* Creator Identity & Verified Profile Card */}
-                                                            <div className="relative overflow-hidden p-4 sm:p-5 bg-white dark:bg-white/[0.02] border border-black/[0.08] dark:border-white/[0.06] rounded-2xl sm:rounded-3xl space-y-4 shadow-xs backdrop-blur-xl">
-                                                                <div className="flex items-center justify-between gap-2 pb-3 border-b border-black/[0.06] dark:border-white/[0.06]">
-                                                                    <div className="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wider text-gray-500 dark:text-zinc-400 font-mono">
-                                                                        <User size={12} className="text-emerald-500 shrink-0" />
-                                                                        <span>Registered Creator Profile</span>
-                                                                    </div>
-                                                                    <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-neon-green border border-emerald-500/20 text-[9px] font-black uppercase tracking-wider font-mono">
-                                                                        <CheckCircle2 size={10} className="stroke-[2.5]" />
-                                                                        <span>Direct Apply</span>
-                                                                    </div>
-                                                                </div>
-
-                                                                {/* Creator Profile Overview */}
-                                                                <div className="flex items-start gap-3 sm:gap-4">
-                                                                    <div className="relative shrink-0">
-                                                                        <div className="p-[2px] rounded-full bg-gradient-to-tr from-amber-500 via-rose-500 to-purple-600">
-                                                                            {profile.profilePicture || instagramVerifiedData?.profilePic || user?.photoURL ? (
-                                                                                <img
-                                                                                    src={profile.profilePicture || instagramVerifiedData?.profilePic || user?.photoURL}
-                                                                                    alt={profile.name || form.name}
-                                                                                    className="w-12 h-12 sm:w-14 sm:h-14 rounded-full object-cover bg-black/40 block"
-                                                                                    onError={(e) => { e.currentTarget.style.display = 'none'; }}
-                                                                                />
-                                                                            ) : (
-                                                                                <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-black/60 flex items-center justify-center text-white">
-                                                                                    <Instagram size={20} />
-                                                                                </div>
-                                                                            )}
+                                                        <div className="space-y-3">
+                                                            {/* Creator Identity Card */}
+                                                            <div className="p-4 sm:p-5 rounded-2xl bg-black/[0.02] dark:bg-white/[0.03] border border-black/[0.08] dark:border-white/[0.08]">
+                                                                <div className="flex items-center gap-3.5">
+                                                                    {/* Avatar */}
+                                                                    {profile.profilePicture || instagramVerifiedData?.profilePic || user?.photoURL ? (
+                                                                        <img
+                                                                            src={profile.profilePicture || instagramVerifiedData?.profilePic || user?.photoURL}
+                                                                            alt={profile.name || form.name}
+                                                                            className="w-12 h-12 rounded-full object-cover border border-black/10 dark:border-white/10 shrink-0"
+                                                                            onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                                                                        />
+                                                                    ) : (
+                                                                        <div className="w-12 h-12 rounded-full bg-black/5 dark:bg-white/10 flex items-center justify-center text-gray-700 dark:text-gray-300 shrink-0">
+                                                                            <Instagram size={20} />
                                                                         </div>
-                                                                        {isEligible && (
-                                                                            <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-emerald-500 text-black flex items-center justify-center shadow-xs">
-                                                                                <Check size={10} className="stroke-[3]" />
-                                                                            </div>
-                                                                        )}
-                                                                    </div>
+                                                                    )}
 
+                                                                    {/* Name, Handle, Followers, City */}
                                                                     <div className="min-w-0 flex-1">
-                                                                        <div className="flex items-center gap-1.5 flex-wrap">
+                                                                        <div className="flex items-center gap-1.5">
                                                                             <h4 className="text-sm sm:text-base font-bold text-gray-900 dark:text-white truncate">
                                                                                 {profile.name || form.name || user?.displayName || 'Creator'}
                                                                             </h4>
@@ -835,140 +815,76 @@ const CampaignDetailModal = ({
                                                                                 </span>
                                                                             )}
                                                                         </div>
-                                                                        <p className="text-xs font-semibold text-pink-600 dark:text-pink-400 font-mono">
-                                                                            @{String(profile.instagram || form.instagram || '').replace(/^@/, '')}
-                                                                        </p>
-
-                                                                        {/* Metadata badges */}
-                                                                        <div className="flex items-center gap-2 mt-2 flex-wrap">
-                                                                            <div className="px-2 py-0.5 rounded-lg bg-black/[0.04] dark:bg-white/[0.06] border border-black/[0.06] dark:border-white/[0.08] text-[10px] font-bold font-mono text-gray-800 dark:text-zinc-200 flex items-center gap-1">
-                                                                                <Users size={11} className="text-pink-500 shrink-0" />
-                                                                                <span>{Number(profile.instagramFollowers || form.followers || 0).toLocaleString()} Followers</span>
-                                                                            </div>
+                                                                        <div className="text-xs text-gray-500 dark:text-zinc-400 flex items-center gap-1.5 truncate mt-0.5 font-medium">
+                                                                            <span>@{String(profile.instagram || form.instagram || '').replace(/^@/, '')}</span>
+                                                                            <span>•</span>
+                                                                            <span>{Number(profile.instagramFollowers || form.followers || 0).toLocaleString()} followers</span>
                                                                             {(profile.city || form.city) && (
-                                                                                <div className="px-2 py-0.5 rounded-lg bg-black/[0.04] dark:bg-white/[0.06] border border-black/[0.06] dark:border-white/[0.08] text-[10px] font-bold font-mono text-gray-800 dark:text-zinc-200 flex items-center gap-1">
-                                                                                <MapPin size={11} className="text-emerald-500 shrink-0" />
-                                                                                <span className="uppercase">{profile.city || form.city}</span>
-                                                                            </div>
-                                                                            )}
-                                                                            {(profile.phone || form.phone) && (
-                                                                                <div className="px-2 py-0.5 rounded-lg bg-black/[0.04] dark:bg-white/[0.06] border border-black/[0.06] dark:border-white/[0.08] text-[10px] font-bold font-mono text-gray-800 dark:text-zinc-200 flex items-center gap-1">
-                                                                                    <Phone size={10} className="text-blue-500 shrink-0" />
-                                                                                    <span>{profile.phone || form.phone}</span>
-                                                                                </div>
+                                                                                <>
+                                                                                    <span>•</span>
+                                                                                    <span className="uppercase">{profile.city || form.city}</span>
+                                                                                </>
                                                                             )}
                                                                         </div>
-
-                                                                        {/* Specializations */}
-                                                                        {((profile.specializations || profile.niches || []).length > 0 || form.categories) && (
-                                                                            <div className="flex items-center gap-1 mt-2 flex-wrap">
-                                                                                {(form.categories ? form.categories.split(',').map(s => s.trim()).filter(Boolean) : (profile.specializations || profile.niches || [])).slice(0, 4).map((tag, idx) => (
-                                                                                    <span key={idx} className="text-[9px] font-semibold px-1.5 py-0.5 rounded bg-pink-500/10 text-pink-600 dark:text-pink-400 border border-pink-500/20">
-                                                                                        {tag}
-                                                                                    </span>
-                                                                                ))}
-                                                                            </div>
-                                                                        )}
                                                                     </div>
                                                                 </div>
 
-                                                                {/* Eligibility Status Banner */}
-                                                                {isEligible ? (
-                                                                    <div className="p-3 rounded-xl bg-emerald-500/[0.08] dark:bg-emerald-500/[0.1] border border-emerald-500/25 flex items-start gap-2.5">
-                                                                        <CheckCircle2 size={15} className="text-emerald-500 shrink-0 mt-0.5 stroke-[2.5]" />
-                                                                        <div className="flex-1 min-w-0">
-                                                                            <p className="text-xs font-bold text-emerald-700 dark:text-emerald-300">
-                                                                                Eligible to Apply
-                                                                            </p>
-                                                                            <p className="text-[10px] text-emerald-600/90 dark:text-emerald-400/90 mt-0.5 leading-relaxed">
-                                                                                {minFollowers > 0 
-                                                                                    ? `Campaign requirement: ${minFollowers.toLocaleString()} followers (${Number(profile.instagramFollowers || form.followers || 0).toLocaleString()} on your profile).`
-                                                                                    : "No minimum follower requirement for this campaign."}
-                                                                                {" Your verified creator profile details will be attached automatically."}
-                                                                            </p>
+                                                                {/* Only show notice if NOT eligible */}
+                                                                {!isEligible && (
+                                                                    <div className="mt-3 pt-3 border-t border-black/[0.06] dark:border-white/[0.06] flex items-center justify-between gap-2 text-xs">
+                                                                        <div className="flex items-center gap-1.5 text-rose-500 dark:text-rose-400">
+                                                                            <AlertCircle size={13} className="shrink-0" />
+                                                                            <span>Requires {minFollowers.toLocaleString()} followers</span>
                                                                         </div>
-                                                                    </div>
-                                                                ) : (
-                                                                    <div className="p-3.5 rounded-xl bg-rose-500/[0.08] dark:bg-rose-500/[0.1] border border-rose-500/25 space-y-2.5">
-                                                                        <div className="flex items-start gap-2.5">
-                                                                            <AlertCircle size={15} className="text-rose-500 shrink-0 mt-0.5 stroke-[2.5]" />
-                                                                            <div className="flex-1 min-w-0">
-                                                                                <p className="text-xs font-bold text-rose-600 dark:text-rose-300">
-                                                                                    Minimum Follower Requirement Not Met
-                                                                                </p>
-                                                                                <p className="text-[10px] text-rose-600/90 dark:text-rose-400/90 mt-0.5 leading-relaxed">
-                                                                                    This campaign requires at least <strong>{minFollowers.toLocaleString()} followers</strong>. Your registered profile currently has <strong>{Number(profile.instagramFollowers || form.followers || 0).toLocaleString()}</strong>.
-                                                                                </p>
-                                                                            </div>
-                                                                        </div>
-                                                                        <div className="pt-2 border-t border-rose-500/20 flex items-center justify-between gap-2 flex-wrap">
-                                                                            <span className="text-[10px] text-rose-600/80 dark:text-rose-400/80">
-                                                                                Has your audience grown?
-                                                                            </span>
-                                                                            <div className="flex items-center gap-1.5">
-                                                                                <button
-                                                                                    type="button"
-                                                                                    onClick={() => {
-                                                                                        setIsManualFollowerEntry(true);
-                                                                                        setShowEditDetails(true);
-                                                                                    }}
-                                                                                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 font-bold text-[10px] uppercase tracking-wider transition-all border border-rose-500/20 cursor-pointer"
-                                                                                >
-                                                                                    <Pencil size={10} />
-                                                                                    <span>Enter Manually</span>
-                                                                                </button>
-                                                                                <button
-                                                                                    type="button"
-                                                                                    onClick={() => handleInstagramVerify()}
-                                                                                    disabled={isVerifying}
-                                                                                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-700 dark:text-rose-300 font-black text-[10px] uppercase tracking-wider transition-all border border-rose-500/30 cursor-pointer"
-                                                                                >
-                                                                                    {isVerifying ? <LoadingSpinner size="xs" color="currentColor" /> : <RefreshCw size={10} />}
-                                                                                    <span>Re-Verify</span>
-                                                                                </button>
-                                                                            </div>
-                                                                        </div>
-                                                                    </div>
-                                                                )}
-
-                                                                {/* Submission Button */}
-                                                                <div className="space-y-2 pt-1">
-                                                                    <button
-                                                                        type="button"
-                                                                        onClick={handleJoin}
-                                                                        disabled={isJoining || !isEligible}
-                                                                        className={cn(
-                                                                            "w-full h-12 bg-neon-green text-black font-black uppercase tracking-wider text-xs rounded-2xl transition-all shadow-[0_0_25px_rgba(57,255,20,0.25)] flex items-center justify-center gap-2",
-                                                                            isEligible && !isJoining
-                                                                                ? "hover:bg-emerald-400 active:scale-95 cursor-pointer"
-                                                                                : "opacity-40 cursor-not-allowed shadow-none"
-                                                                        )}
-                                                                    >
-                                                                        {isJoining ? (
-                                                                            <LoadingSpinner size="xs" color="#000000" />
-                                                                        ) : (
-                                                                            <>
-                                                                                <Zap size={15} className="fill-black stroke-black shrink-0" />
-                                                                                <span>1-Click Apply Directly</span>
-                                                                                <ArrowRight size={13} className="stroke-[2.5]" />
-                                                                            </>
-                                                                        )}
-                                                                    </button>
-
-                                                                    {/* Customization Toggle */}
-                                                                    <div className="text-center pt-1">
                                                                         <button
                                                                             type="button"
-                                                                            onClick={() => setShowEditDetails(!showEditDetails)}
-                                                                            className="text-[11px] text-gray-500 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-white font-medium inline-flex items-center gap-1.5 transition-colors cursor-pointer py-1"
+                                                                            onClick={() => {
+                                                                                setIsManualFollowerEntry(true);
+                                                                                setShowEditDetails(true);
+                                                                            }}
+                                                                            className="text-[11px] font-semibold text-rose-500 hover:text-rose-400 underline cursor-pointer shrink-0"
                                                                         >
-                                                                            <Pencil size={11} />
-                                                                            <span>{showEditDetails ? "Hide custom application details" : "Customize application details (optional)"}</span>
-                                                                            <ChevronDown size={11} className={cn("transition-transform duration-200", showEditDetails && "rotate-180")} />
+                                                                            Update
                                                                         </button>
                                                                     </div>
-                                                                </div>
+                                                                )}
                                                             </div>
+
+                                                            {/* 1 Click Apply Button */}
+                                                            <button
+                                                                type="button"
+                                                                onClick={handleJoin}
+                                                                disabled={isJoining || !isEligible}
+                                                                className={cn(
+                                                                    "w-full h-12 rounded-xl font-bold uppercase tracking-wider text-xs transition-all flex items-center justify-center gap-2",
+                                                                    isEligible && !isJoining
+                                                                        ? "bg-neon-green text-black hover:bg-emerald-400 active:scale-[0.99] cursor-pointer shadow-[0_0_20px_rgba(57,255,20,0.25)]"
+                                                                        : "bg-black/10 dark:bg-white/10 text-gray-400 dark:text-zinc-500 cursor-not-allowed"
+                                                                )}
+                                                            >
+                                                                {isJoining ? (
+                                                                    <LoadingSpinner size="xs" color="#000000" />
+                                                                ) : (
+                                                                    <>
+                                                                        <Zap size={14} className="fill-current shrink-0" />
+                                                                        <span>1 Click Apply</span>
+                                                                    </>
+                                                                )}
+                                                            </button>
+
+                                                            {/* Customization Toggle */}
+                                                            <div className="text-center pt-0.5">
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => setShowEditDetails(!showEditDetails)}
+                                                                    className="text-[11px] text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:hover:text-zinc-200 transition-colors inline-flex items-center gap-1 cursor-pointer py-1"
+                                                                >
+                                                                    <Pencil size={10} />
+                                                                    <span>{showEditDetails ? "Hide custom details" : "Customize application details"}</span>
+                                                                    <ChevronDown size={11} className={cn("transition-transform duration-200", showEditDetails && "rotate-180")} />
+                                                                </button>
+                                                            </div>
+                                                        </div>
 
                                                             {/* Collapsible Editable Form Fields */}
                                                             <AnimatePresence>
