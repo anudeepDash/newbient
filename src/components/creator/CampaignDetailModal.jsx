@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { useStore } from '../../lib/store';
 import { cn, normalizePhoneNumber } from '../../lib/utils';
+import { extractSocialUsername, hasDisallowedLink } from '../../lib/socialUtils';
 import { PREDEFINED_CITIES } from '../../lib/constants';
 import StudioSelect from '../ui/StudioSelect';
 import LoadingSpinner from '../ui/LoadingSpinner';
@@ -180,7 +181,7 @@ const CampaignDetailModal = ({
     const minFollowers = Number(campaign?.minInstagramFollowers || 0);
 
     const handleInstagramChange = (e) => {
-        const val = e.target.value.replace(/^@/, '');
+        const val = extractSocialUsername(e.target.value, 'instagram');
         setForm(prev => ({ ...prev, instagram: val }));
         if (instagramVerifiedData && instagramVerifiedData.handle !== val.trim().toLowerCase()) {
             setInstagramVerifiedData(null);
@@ -192,10 +193,10 @@ const CampaignDetailModal = ({
     // Instagram verification eligibility check
     const handleInstagramVerify = async (manualHandle = null) => {
         const raw = manualHandle !== null ? manualHandle : form.instagram;
-        const cleanHandle = String(raw || '').trim().replace(/^@/, '');
+        const cleanHandle = extractSocialUsername(raw || '', 'instagram');
         if (!cleanHandle) {
-            setInstagramVerificationError('Please enter your Instagram username.');
-            return useStore.getState().addToast("Please enter your Instagram handle to continue.", 'error');
+            setInstagramVerificationError('Please enter your Instagram username (links are not allowed).');
+            return useStore.getState().addToast("Please enter only your Instagram username without links.", 'error');
         }
         setIsVerifying(true);
         setVerificationStep('verifying');
@@ -351,7 +352,7 @@ const CampaignDetailModal = ({
             const parsedFollowers = parseInt(rawFollowers, 10) || 0;
 
             const isManualFollowers = Boolean(isManualFollowerEntry);
-            const shouldAutoVerify = !isManualFollowers;
+            const cleanInsta = extractSocialUsername(form.instagram || profile?.instagram || '', 'instagram');
 
             const creatorData = {
                 uid: user.uid,
@@ -359,7 +360,8 @@ const CampaignDetailModal = ({
                 name: form.name || profile?.name || user.displayName || '',
                 phone: form.phone || profile?.phone || '',
                 city: form.city || profile?.city || '',
-                instagram: form.instagram || profile?.instagram || '',
+                instagram: cleanInsta,
+                website: '',
                 instagramFollowers: parsedFollowers,
                 specializations: form.categories 
                     ? form.categories.split(',').map(n => n.trim()).filter(Boolean)
@@ -952,11 +954,7 @@ const CampaignDetailModal = ({
                                                             <input
                                                                 type="text"
                                                                 value={form.instagram || ''}
-                                                                onChange={e => {
-                                                                    setForm({ ...form, instagram: e.target.value });
-                                                                    if (instagramVerifiedData) setInstagramVerifiedData(null);
-                                                                    if (instagramVerificationError) setInstagramVerificationError('');
-                                                                }}
+                                                                onChange={handleInstagramChange}
                                                                 placeholder="yourhandle"
                                                                 spellCheck="false"
                                                                 className={cn(

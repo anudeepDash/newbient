@@ -4,6 +4,7 @@ import { collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, order
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { sendBookingConfirmation, sendCreatorWelcomeEmail, sendNewCampaignNotificationEmail, sendCreatorApprovedEmail, sendWhatsAppVerification } from './email';
 import { normalizePhoneNumber } from './utils';
+import { extractSocialUsername, hasDisallowedLink } from './socialUtils';
 import { safeLocalStorage } from './storage';
 import { DEFAULT_CREATOR_GROUPS } from './constants';
 
@@ -2211,8 +2212,24 @@ export const useStore = create((set, get) => ({
         const { creators, user } = get();
         const normPhone = normalizePhoneNumber(creator.phone);
         const normEmail = creator.email?.trim().toLowerCase();
-        const cleanInsta = creator.instagram?.trim().replace(/^@/, '').toLowerCase();
+        const cleanInsta = extractSocialUsername(creator.instagram, 'instagram').toLowerCase();
+        const cleanLinkedin = extractSocialUsername(creator.linkedin, 'linkedin');
+        const cleanYoutube = extractSocialUsername(creator.youtube, 'youtube');
+        const cleanTwitter = extractSocialUsername(creator.twitter, 'twitter');
         const currentUid = creator.uid || user?.uid || null;
+
+        if (hasDisallowedLink(creator.instagram) && !cleanInsta) {
+            throw new Error('Links are not allowed. Please enter only your Instagram username or handle.');
+        }
+        if (hasDisallowedLink(creator.linkedin) && !cleanLinkedin) {
+            throw new Error('Links are not allowed. Please enter only your LinkedIn username.');
+        }
+        if (hasDisallowedLink(creator.youtube) && !cleanYoutube) {
+            throw new Error('Links are not allowed. Please enter only your YouTube handle.');
+        }
+        if (hasDisallowedLink(creator.twitter) && !cleanTwitter) {
+            throw new Error('Links are not allowed. Please enter only your X/Twitter handle.');
+        }
 
         // 1. Phone number deduplication
         if (normPhone) {
@@ -2265,6 +2282,11 @@ export const useStore = create((set, get) => ({
 
             const creatorPayload = {
                 ...creator,
+                instagram: cleanInsta,
+                linkedin: cleanLinkedin,
+                youtube: cleanYoutube,
+                twitter: cleanTwitter,
+                website: '',
                 uid: currentUid || auth?.currentUser?.uid || null,
                 profileStatus,
                 isVerified,
@@ -2521,6 +2543,35 @@ export const useStore = create((set, get) => ({
             throw new Error("Creator identifier is required to update creator.");
         }
 
+        const sanitizedUpdates = { ...updates };
+        if (updates.instagram !== undefined) {
+            sanitizedUpdates.instagram = extractSocialUsername(updates.instagram, 'instagram').toLowerCase();
+            if (hasDisallowedLink(updates.instagram) && !sanitizedUpdates.instagram) {
+                throw new Error('Links are not allowed. Please enter only your Instagram username or handle.');
+            }
+        }
+        if (updates.linkedin !== undefined) {
+            sanitizedUpdates.linkedin = extractSocialUsername(updates.linkedin, 'linkedin');
+            if (hasDisallowedLink(updates.linkedin) && !sanitizedUpdates.linkedin) {
+                throw new Error('Links are not allowed. Please enter only your LinkedIn username.');
+            }
+        }
+        if (updates.youtube !== undefined) {
+            sanitizedUpdates.youtube = extractSocialUsername(updates.youtube, 'youtube');
+            if (hasDisallowedLink(updates.youtube) && !sanitizedUpdates.youtube) {
+                throw new Error('Links are not allowed. Please enter only your YouTube handle.');
+            }
+        }
+        if (updates.twitter !== undefined) {
+            sanitizedUpdates.twitter = extractSocialUsername(updates.twitter, 'twitter');
+            if (hasDisallowedLink(updates.twitter) && !sanitizedUpdates.twitter) {
+                throw new Error('Links are not allowed. Please enter only your X/Twitter handle.');
+            }
+        }
+        if (updates.website !== undefined) {
+            sanitizedUpdates.website = '';
+        }
+
         const { creators } = get();
         const existingCreator = (creators || []).find(c => 
             c.id === uid || 
@@ -2528,14 +2579,14 @@ export const useStore = create((set, get) => ({
             (c.creatorId && String(c.creatorId).toUpperCase() === String(uid).toUpperCase())
         );
 
-        if (updates.phone) {
-            const normPhone = normalizePhoneNumber(updates.phone);
+        if (sanitizedUpdates.phone) {
+            const normPhone = normalizePhoneNumber(sanitizedUpdates.phone);
             if (normPhone) {
                 const conflict = (creators || []).find(c => 
                     c.uid !== uid && c.id !== uid && normalizePhoneNumber(c.phone) === normPhone
                 );
                 if (conflict) {
-                    throw new Error(`The mobile number ${updates.phone} is already registered to another Creator account.`);
+                    throw new Error(`The mobile number ${sanitizedUpdates.phone} is already registered to another Creator account.`);
                 }
             }
         }
@@ -2557,19 +2608,19 @@ export const useStore = create((set, get) => ({
                 prevStatus = prevStatus || data.profileStatus;
                 email = email || data.email;
                 name = name || data.displayName || data.name || 'Creator';
-                await updateDoc(creatorRef, updates);
+                await updateDoc(creatorRef, sanitizedUpdates);
                 directSuccess = true;
             } else if (existingCreator?.uid && existingCreator.uid !== docId) {
                 const altRef = doc(db, 'creators', existingCreator.uid);
                 const altSnap = await getDoc(altRef);
                 if (altSnap.exists()) {
-                    await updateDoc(altRef, updates);
+                    await updateDoc(altRef, sanitizedUpdates);
                     directSuccess = true;
                 }
             }
             if (!directSuccess) {
                 // Fallback to setDoc merge if doc does not exist yet under this key
-                await setDoc(doc(db, 'creators', docId), updates, { merge: true });
+                await setDoc(doc(db, 'creators', docId), sanitizedUpdates, { merge: true });
                 directSuccess = true;
             }
         } catch (fsErr) {
@@ -2583,7 +2634,7 @@ export const useStore = create((set, get) => ({
                 const res = await fetch('/api/creator-join?action=creator-update', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ id: docId, uid, updates })
+                    body: JSON.stringify({ id: docId, uid, updates: sanitizedUpdates })
                 });
                 if (res.ok) {
                     const resJson = await res.json();
@@ -2609,14 +2660,14 @@ export const useStore = create((set, get) => ({
         set(state => ({
             creators: (state.creators || []).map(c => 
                 (c.id === docId || c.uid === docId || c.uid === uid || c.id === uid)
-                    ? { ...c, ...updates }
+                    ? { ...c, ...sanitizedUpdates }
                     : c
             )
         }));
 
         // Send approval email if verified
-        if (updates.profileStatus === 'approved' && prevStatus !== 'approved' && email) {
-            const creatorData = existingCreator ? { ...existingCreator, ...updates } : updates;
+        if (sanitizedUpdates.profileStatus === 'approved' && prevStatus !== 'approved' && email) {
+            const creatorData = existingCreator ? { ...existingCreator, ...sanitizedUpdates } : sanitizedUpdates;
             sendCreatorApprovedEmail(email, name, creatorData)
                 .catch(err => console.error("Error sending creator approval email:", err));
         }

@@ -4,6 +4,7 @@ import SharedLayoutModal from '../../design-system/overlays/SharedLayoutModal';
 import { useStore } from '../../lib/store';
 import { useStoreSubscription } from '../../hooks/useStoreSubscription';
 import { PREDEFINED_CITIES, CREATOR_NICHES } from '../../lib/constants';
+import { extractSocialUsername, hasDisallowedLink, buildSocialUrl } from '../../lib/socialUtils';
 import Users from 'lucide-react/dist/esm/icons/users';
 import Search from 'lucide-react/dist/esm/icons/search';
 import MapPin from 'lucide-react/dist/esm/icons/map-pin';
@@ -526,11 +527,11 @@ const CreatorManager = ({ showLeaderboardOnly = false, isEmbedded = false }) => 
                 `"${(c.email || '').replace(/"/g, '""')}"`,
                 `"${(c.phone || '').replace(/"/g, '""')}"`,
                 `"${(c.city || '').replace(/"/g, '""')}"`,
-                `"${c.instagram ? (c.instagram.includes('http') ? c.instagram : `https://instagram.com/${c.instagram.replace(/^@/, '').trim()}`) : ''}"`,
+                `"${buildSocialUrl(c.instagram, 'instagram')}"`,
                 `"${c.instagramFollowers || 0}"`,
-                `"${c.linkedin ? (c.linkedin.includes('http') ? c.linkedin : `https://${c.linkedin}`) : ''}"`,
+                `"${buildSocialUrl(c.linkedin, 'linkedin')}"`,
                 `"${c.linkedinFollowers || 0}"`,
-                `"${c.youtube || ''}"`,
+                `"${buildSocialUrl(c.youtube, 'youtube')}"`,
                 `"${c.youtubeSubscribers || 0}"`,
                 `"${(c.specializations || c.niches || []).join(', ').replace(/"/g, '""')}"`,
                 `"${c.profileStatus || 'pending'}"`
@@ -1497,9 +1498,7 @@ const StatCard = ({ icon, label, value, color, description, compact = false }) =
 
 const CreatorBadgeCard = ({ creator, onSelect, isSelected, onToggleSelect }) => {
     const { creators, campaigns } = useStore();
-    const instagramUrl = creator.instagram 
-        ? (creator.instagram.includes('instagram.com') ? creator.instagram : `https://instagram.com/${creator.instagram.replace(/^@/, '').trim()}`)
-        : '';
+    const instagramUrl = buildSocialUrl(creator.instagram, 'instagram');
 
     const earnedBadges = getEarnedBadges(creator, creators, campaigns);
     const customBadges = creator.adminBadges || [];
@@ -1622,14 +1621,14 @@ const CreatorBadgeCard = ({ creator, onSelect, isSelected, onToggleSelect }) => 
                         )}
                         {creator.linkedin && (
                             <a 
-                                href={creator.linkedin.includes('http') ? creator.linkedin : `https://${creator.linkedin}`} target="_blank" rel="noopener noreferrer"
+                                href={buildSocialUrl(creator.linkedin, 'linkedin')} target="_blank" rel="noopener noreferrer"
                                 onClick={(e) => e.stopPropagation()}
                                 className="px-2 py-1 rounded-lg bg-black/5 dark:bg-white/5 border border-black/[0.06] dark:border-white/[0.06] flex items-center justify-center text-gray-700 dark:text-zinc-400 hover:bg-black/10 dark:hover:bg-white/10 transition-all"
                             ><Linkedin size={11} /></a>
                         )}
                         {creator.youtube && (
                             <a 
-                                href={creator.youtube.includes('http') ? creator.youtube : `https://${creator.youtube}`} target="_blank" rel="noopener noreferrer"
+                                href={buildSocialUrl(creator.youtube, 'youtube')} target="_blank" rel="noopener noreferrer"
                                 onClick={(e) => e.stopPropagation()}
                                 className="px-2 py-1 rounded-lg bg-black/5 dark:bg-white/5 border border-black/[0.06] dark:border-white/[0.06] flex items-center justify-center text-gray-700 dark:text-zinc-400 hover:bg-black/10 dark:hover:bg-white/10 transition-all"
                             ><Youtube size={11} /></a>
@@ -1648,11 +1647,9 @@ const CreatorBadgeCard = ({ creator, onSelect, isSelected, onToggleSelect }) => 
 };
 
 const CreatorListItem = ({ creator, onSelect, isSelected, onToggleSelect }) => {
-    const instagramUrl = creator.instagram 
-        ? (creator.instagram.includes('instagram.com') ? creator.instagram : `https://instagram.com/${creator.instagram.replace(/^@/, '').trim()}`)
-        : '';
+    const instagramUrl = buildSocialUrl(creator.instagram, 'instagram');
     const instagramHandle = creator.instagram 
-        ? `@${creator.instagram.replace(/^@/, '').trim()}`
+        ? `@${extractSocialUsername(creator.instagram, 'instagram')}`
         : '';
 
     return (
@@ -1722,7 +1719,7 @@ const CreatorListItem = ({ creator, onSelect, isSelected, onToggleSelect }) => {
                 )}
                 {creator.linkedin && (
                     <a
-                        href={creator.linkedin.includes('http') ? creator.linkedin : `https://${creator.linkedin}`}
+                        href={buildSocialUrl(creator.linkedin, 'linkedin')}
                         target="_blank"
                         rel="noopener noreferrer"
                         onClick={(e) => e.stopPropagation()}
@@ -1734,7 +1731,7 @@ const CreatorListItem = ({ creator, onSelect, isSelected, onToggleSelect }) => {
                 )}
                 {creator.youtube && (
                     <a
-                        href={creator.youtube.includes('http') ? creator.youtube : `https://${creator.youtube}`}
+                        href={buildSocialUrl(creator.youtube, 'youtube')}
                         target="_blank"
                         rel="noopener noreferrer"
                         onClick={(e) => e.stopPropagation()}
@@ -2058,10 +2055,10 @@ const CreatorDetailModal = ({ creator, onClose, onUpdateStatus, onDelete, isUpda
     };
 
     const socialLinks = [
-        creator.instagram && { platform: 'Instagram', icon: Instagram, handle: `@${creator.instagram.replace('@', '')}`, followers: creator.instagramFollowers, url: `https://instagram.com/${creator.instagram.replace('@', '')}`, color: 'text-pink-600 dark:text-pink-400', bg: 'bg-pink-500/10 border-pink-500/20' },
-        creator.linkedin && { platform: 'LinkedIn', icon: Linkedin, handle: 'Profile', followers: creator.linkedinFollowers, url: creator.linkedin.includes('http') ? creator.linkedin : `https://${creator.linkedin}`, color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-500/10 border-blue-500/20' },
-        creator.youtube && { platform: 'YouTube', icon: Youtube, handle: 'Channel', followers: creator.youtubeSubscribers, url: creator.youtube.includes('http') ? creator.youtube : `https://${creator.youtube}`, color: 'text-red-600 dark:text-red-400', bg: 'bg-red-500/10 border-red-500/20' },
-        creator.twitter && { platform: 'X / Web', icon: Twitter, handle: 'Link', followers: null, url: creator.twitter.includes('http') ? creator.twitter : `https://${creator.twitter}`, color: 'text-sky-600 dark:text-sky-400', bg: 'bg-sky-500/10 border-sky-500/20' },
+        creator.instagram && { platform: 'Instagram', icon: Instagram, handle: `@${extractSocialUsername(creator.instagram, 'instagram')}`, followers: creator.instagramFollowers, url: buildSocialUrl(creator.instagram, 'instagram'), color: 'text-pink-600 dark:text-pink-400', bg: 'bg-pink-500/10 border-pink-500/20' },
+        creator.linkedin && { platform: 'LinkedIn', icon: Linkedin, handle: `@${extractSocialUsername(creator.linkedin, 'linkedin')}`, followers: creator.linkedinFollowers, url: buildSocialUrl(creator.linkedin, 'linkedin'), color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-500/10 border-blue-500/20' },
+        creator.youtube && { platform: 'YouTube', icon: Youtube, handle: `@${extractSocialUsername(creator.youtube, 'youtube')}`, followers: creator.youtubeSubscribers, url: buildSocialUrl(creator.youtube, 'youtube'), color: 'text-red-600 dark:text-red-400', bg: 'bg-red-500/10 border-red-500/20' },
+        creator.twitter && { platform: 'X', icon: Twitter, handle: `@${extractSocialUsername(creator.twitter, 'twitter')}`, followers: null, url: buildSocialUrl(creator.twitter, 'twitter'), color: 'text-sky-600 dark:text-sky-400', bg: 'bg-sky-500/10 border-sky-500/20' },
     ].filter(Boolean);
 
     return (
@@ -2648,7 +2645,17 @@ const AddCreatorModal = ({ onClose }) => {
         commercials: ''
     });
 
-    const handleChange = (e) => setForm({...form, [e.target.name]: e.target.value});
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+        if (['instagram', 'linkedin', 'youtube', 'twitter'].includes(name)) {
+            setForm(prev => ({
+                ...prev,
+                [name]: extractSocialUsername(value, name)
+            }));
+            return;
+        }
+        setForm(prev => ({ ...prev, [name]: value }));
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -2673,8 +2680,20 @@ const AddCreatorModal = ({ onClose }) => {
             return;
         }
 
-        if (form.instagram && (form.instagram.includes('/') || form.instagram.includes('http') || form.instagram.includes('.com'))) {
-            useStore.getState().addToast("Please enter only the Instagram username/handle, not a full link.", 'error');
+        if (form.instagram && hasDisallowedLink(form.instagram)) {
+            useStore.getState().addToast("Links are not allowed. Please enter only the Instagram username/handle.", 'error');
+            return;
+        }
+        if (form.linkedin && hasDisallowedLink(form.linkedin)) {
+            useStore.getState().addToast("Links are not allowed. Please enter only the LinkedIn username.", 'error');
+            return;
+        }
+        if (form.youtube && hasDisallowedLink(form.youtube)) {
+            useStore.getState().addToast("Links are not allowed. Please enter only the YouTube handle/channel username.", 'error');
+            return;
+        }
+        if (form.twitter && hasDisallowedLink(form.twitter)) {
+            useStore.getState().addToast("Links are not allowed. Please enter only the X/Twitter username.", 'error');
             return;
         }
 
@@ -2696,7 +2715,10 @@ const AddCreatorModal = ({ onClose }) => {
             }
             const finalNiche = form.specializations === 'Others' ? form.customNiche : form.specializations;
             const generatedUid = `manual_${Math.random().toString(36).substring(2, 15)}`;
-            const cleanInstagram = form.instagram ? form.instagram.trim().replace(/^@/, '') : '';
+            const cleanInstagram = extractSocialUsername(form.instagram, 'instagram');
+            const cleanLinkedin = extractSocialUsername(form.linkedin, 'linkedin');
+            const cleanYoutube = extractSocialUsername(form.youtube, 'youtube');
+            const cleanTwitter = extractSocialUsername(form.twitter, 'twitter');
 
             await addCreator({
                 uid: generatedUid,
@@ -2710,9 +2732,9 @@ const AddCreatorModal = ({ onClose }) => {
                 bio: form.bio || '',
                 instagram: cleanInstagram,
                 instagramFollowers: form.instagramFollowers || '0',
-                youtube: form.youtube || '',
-                twitter: form.twitter || '',
-                linkedin: form.linkedin || '',
+                youtube: cleanYoutube,
+                twitter: cleanTwitter,
+                linkedin: cleanLinkedin,
                 linkedinFollowers: form.linkedinFollowers || '0',
                 profilePicture: form.profilePicture || '',
                 doBarter: form.doBarter || '',
@@ -2830,8 +2852,8 @@ const AddCreatorModal = ({ onClose }) => {
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-1.5">
-                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">LinkedIn Profile URL</label>
-                            <input name="linkedin" value={form.linkedin} onChange={handleChange} placeholder="https://linkedin.com/in/username" className="w-full h-12 bg-gray-50 dark:bg-black border border-black/10 dark:border-white/10 rounded-xl px-4 text-sm font-bold text-gray-900 dark:text-white focus:border-neon-blue outline-none transition-all" />
+                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">LinkedIn Username</label>
+                            <input name="linkedin" value={form.linkedin} onChange={handleChange} placeholder="@username or handle" className="w-full h-12 bg-gray-50 dark:bg-black border border-black/10 dark:border-white/10 rounded-xl px-4 text-sm font-bold text-gray-900 dark:text-white focus:border-neon-blue outline-none transition-all" />
                         </div>
                         <div className="space-y-1.5">
                             <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">LinkedIn Connections</label>
@@ -2841,12 +2863,12 @@ const AddCreatorModal = ({ onClose }) => {
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-1.5">
-                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">YouTube URL</label>
-                            <input name="youtube" value={form.youtube} onChange={handleChange} placeholder="https://youtube.com/..." className="w-full h-12 bg-gray-50 dark:bg-black border border-black/10 dark:border-white/10 rounded-xl px-4 text-sm font-bold text-gray-900 dark:text-white focus:border-neon-blue outline-none transition-all" />
+                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">YouTube Handle</label>
+                            <input name="youtube" value={form.youtube} onChange={handleChange} placeholder="@channel" className="w-full h-12 bg-gray-50 dark:bg-black border border-black/10 dark:border-white/10 rounded-xl px-4 text-sm font-bold text-gray-900 dark:text-white focus:border-neon-blue outline-none transition-all" />
                         </div>
                         <div className="space-y-1.5">
-                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Twitter / X URL</label>
-                            <input name="twitter" value={form.twitter} onChange={handleChange} placeholder="https://twitter.com/..." className="w-full h-12 bg-gray-50 dark:bg-black border border-black/10 dark:border-white/10 rounded-xl px-4 text-sm font-bold text-gray-900 dark:text-white focus:border-neon-blue outline-none transition-all" />
+                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Twitter / X Username</label>
+                            <input name="twitter" value={form.twitter} onChange={handleChange} placeholder="@username" className="w-full h-12 bg-gray-50 dark:bg-black border border-black/10 dark:border-white/10 rounded-xl px-4 text-sm font-bold text-gray-900 dark:text-white focus:border-neon-blue outline-none transition-all" />
                         </div>
                     </div>
 
