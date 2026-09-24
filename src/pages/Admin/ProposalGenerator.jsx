@@ -1131,6 +1131,10 @@ const ProposalGenerator = () => {
         if (id && proposals.length > 0 && !hasInitializedRef.current) {
             const proposal = proposals.find(p => p.id === id);
             if (proposal) {
+                if (proposal.isUploaded) {
+                    navigate(`/admin/proposals?edit=${id}`, { replace: true });
+                    return;
+                }
                 setSingleFormData({ 
                     ...proposal, 
                     hiddenFields: proposal.hiddenFields || [], 

@@ -2445,12 +2445,7 @@ export const generateCreatorWelcomeHTML = (creatorName, verificationUrl = '', cr
                                 </tr>
                             </table>
 
-                            ${verificationUrl ? `
-                            <!-- Fast-Track Verification link (Minimalist One-Liner) -->
-                            <div class="verify-note" style="text-align: center; margin-top: 14px; font-size: 11px; color: #64748B;">
-                                Want instant payouts? <a href="${verificationUrl}" class="verify-link" style="color: #059669; text-decoration: none; font-weight: 700;">Confirm your phone number &rarr;</a>
-                            </div>
-                            ` : ''}
+
 
                         </td>
                     </tr>

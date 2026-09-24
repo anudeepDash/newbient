@@ -381,7 +381,7 @@ const ProfilePanel = ({ isOpen: propIsOpen, onClose: propOnClose }) => {
     };
 
     const avatarInitial = user?.displayName ? user.displayName.charAt(0).toUpperCase() : (user?.email ? user.email.charAt(0).toUpperCase() : 'U');
-    const avatarPic = creatorProfile?.profilePicture || user?.photoURL || null;
+    const avatarPic = creatorProfile?.profilePicture || creatorProfile?.instagramProfilePic || creatorProfile?.profilePic || user?.photoURL || null;
 
     if (!user) return null;
 
@@ -2091,8 +2091,8 @@ const CreatorProfileManager = ({
                 <div className="absolute top-0 right-0 w-48 h-48 bg-neon-green/15 blur-3xl pointer-events-none" />
                 <div className="flex items-start gap-4">
                     <div className="w-16 h-16 rounded-2xl bg-gray-200 dark:bg-zinc-800 border border-gray-300 dark:border-white/15 flex items-center justify-center overflow-hidden shrink-0 shadow-sm">
-                        {creatorProfile.profilePicture ? (
-                            <img src={creatorProfile.profilePicture} alt={creatorProfile.name} className="w-full h-full object-cover" />
+                        {(creatorProfile.profilePicture || creatorProfile.instagramProfilePic || creatorProfile.profilePic || creatorProfile.photoURL) ? (
+                            <img src={creatorProfile.profilePicture || creatorProfile.instagramProfilePic || creatorProfile.profilePic || creatorProfile.photoURL} alt={creatorProfile.name} className="w-full h-full object-cover" />
                         ) : (
                             <span className="text-2xl font-black text-gray-900 dark:text-white italic">{creatorProfile.name?.charAt(0) || 'C'}</span>
                         )}

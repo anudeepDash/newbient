@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
+import SharedLayoutModal from '../../design-system/overlays/SharedLayoutModal';
 import { useStore } from '../../lib/store';
 import { useStoreSubscription } from '../../hooks/useStoreSubscription';
 import { PREDEFINED_CITIES, CREATOR_NICHES } from '../../lib/constants';
@@ -643,7 +644,7 @@ const CreatorManager = ({ showLeaderboardOnly = false, isEmbedded = false }) => 
                 )}
 
                 {/* Control Panel */}
-                <div className="relative z-50 bg-white dark:bg-[#0c0e14] border border-black/[0.08] dark:border-white/[0.08] rounded-3xl p-3 sm:p-4 mb-6 md:mb-8 space-y-3 shadow-sm">
+                <div className="relative z-50 bg-white/70 dark:bg-[#0c0e14]/80 backdrop-blur-2xl border border-black/[0.06] dark:border-white/[0.08] rounded-3xl p-3 sm:p-4 mb-6 md:mb-8 space-y-4 shadow-[0_8px_32px_rgba(0,0,0,0.02)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)]">
                     
                     {/* Row 1: Search Engine & Action Bar */}
                     <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3">
@@ -670,7 +671,7 @@ const CreatorManager = ({ showLeaderboardOnly = false, isEmbedded = false }) => 
                                     placeholder={SEARCH_FIELDS.find(f => f.id === searchField)?.placeholder || "Search creators..."}
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
-                                    className="w-full h-12 !pl-10 sm:!pl-11 !pr-9 bg-white dark:bg-black/40 border border-black/[0.1] dark:border-white/[0.08] focus:border-neon-green/80 rounded-xl text-sm font-medium outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-white/20 text-gray-900 dark:text-white min-w-0"
+                                    className="w-full h-12 !pl-10 sm:!pl-11 !pr-9 bg-white/70 dark:bg-[#0c0e14]/80 backdrop-blur-2xl border border-black/[0.06] dark:border-white/[0.08] shadow-[0_8px_32px_rgba(0,0,0,0.02)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)] focus:border-neon-green/50 dark:focus:border-neon-green/30 rounded-2xl text-sm font-semibold outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-zinc-600 text-gray-900 dark:text-white min-w-0"
                                 />
                                 {searchTerm && (
                                     <button
@@ -1466,7 +1467,7 @@ const StatCard = ({ icon, label, value, color, description, compact = false }) =
         <motion.div 
             whileHover={{ y: -2 }}
             className={cn(
-                "relative group overflow-hidden bg-white dark:bg-[#0c0e14] border border-black/[0.08] dark:border-white/[0.08] flex-1 transition-all",
+                "relative group overflow-hidden bg-white/70 dark:bg-[#0c0e14]/80 backdrop-blur-2xl border border-black/[0.06] dark:border-white/[0.08] shadow-[0_8px_32px_rgba(0,0,0,0.02)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)] flex-1 transition-all",
                 compact ? "p-4 rounded-2xl min-w-[200px]" : "p-4 sm:p-6 rounded-3xl min-w-[280px]"
             )}
         >
@@ -1507,15 +1508,16 @@ const CreatorBadgeCard = ({ creator, onSelect, isSelected, onToggleSelect }) => 
 
     return (
         <motion.div 
-            layout
+            layoutId={`creator-card-${creator.id || creator.uid}`}
             onClick={onSelect}
             className={cn(
-                "group relative bg-white dark:bg-[#0c0e14] border rounded-3xl cursor-pointer overflow-hidden transition-all duration-300 flex flex-col hover:border-black/20 dark:hover:border-white/20",
-                isSelected ? "border-neon-green/40 bg-neon-green/[0.03]" : "border-black/[0.08] dark:border-white/[0.08]"
+                "group relative bg-white/70 dark:bg-[#0c0e14]/80 backdrop-blur-2xl border rounded-3xl cursor-pointer overflow-hidden transition-all duration-300 flex flex-col shadow-[0_8px_32px_rgba(0,0,0,0.02)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)] hover:shadow-[0_16px_60px_rgba(0,0,0,0.06)] dark:hover:shadow-[0_16px_60px_rgba(0,0,0,0.6)]",
+                isSelected ? "border-neon-green/40 bg-neon-green/[0.03]" : "border-black/[0.06] dark:border-white/[0.08] hover:border-black/20 dark:hover:border-white/[0.15]"
             )}
         >
+            <div className="absolute top-0 right-0 w-48 h-48 bg-gradient-to-bl from-neon-green/[0.08] to-transparent rounded-full blur-2xl pointer-events-none -mr-10 -mt-10 group-hover:scale-110 transition-transform duration-700 z-0" />
             {/* Image */}
-            <div className="relative aspect-[4/3] overflow-hidden bg-black/5 dark:bg-white/5">
+            <div className="relative aspect-[4/3] overflow-hidden bg-black/5 dark:bg-white/5 z-10 rounded-t-[1.3rem]">
                 {/* Checkbox */}
                 <div className="absolute top-3 left-3 z-30" onClick={(e) => e.stopPropagation()}>
                     <input
@@ -1525,11 +1527,11 @@ const CreatorBadgeCard = ({ creator, onSelect, isSelected, onToggleSelect }) => 
                         className="w-4 h-4 rounded border-black/20 dark:border-white/20 bg-white dark:bg-black/60 text-neon-green focus:ring-0 cursor-pointer"
                     />
                 </div>
-                {creator.profilePicture ? (
-                    <img src={creator.profilePicture} alt={creator.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                {(creator.profilePicture || creator.instagramProfilePic || creator.profilePic || creator.photoURL) ? (
+                    <img src={(creator.profilePicture || creator.instagramProfilePic || creator.profilePic || creator.photoURL)} alt={creator.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                 ) : (
                     <div className="w-full h-full flex items-center justify-center text-5xl font-black text-black/5 dark:text-white/5 uppercase italic select-none">
-                        {creator.name.charAt(0)}
+                        {creator.name?.charAt(0) || '?'}
                     </div>
                 )}
                 <div className="absolute top-3 right-3 flex flex-col items-end gap-1">
@@ -1548,7 +1550,7 @@ const CreatorBadgeCard = ({ creator, onSelect, isSelected, onToggleSelect }) => 
             </div>
 
             {/* Content */}
-            <div className="flex-1 flex flex-col p-4 gap-3">
+            <div className="flex-1 flex flex-col p-4 gap-3 relative z-10">
                 {/* Name & Niche */}
                 <div>
                     <p className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mb-1">{(creator.niches || creator.specializations || [])[0] || 'Creator'}</p>
@@ -1671,10 +1673,10 @@ const CreatorListItem = ({ creator, onSelect, isSelected, onToggleSelect }) => {
                     />
                 </div>
                 <div className="w-12 h-12 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-xl flex items-center justify-center font-black text-gray-900 dark:text-white overflow-hidden shrink-0">
-                    {creator.profilePicture ? (
-                        <img src={creator.profilePicture} alt={creator.name} className="w-full h-full object-cover" />
+                    {(creator.profilePicture || creator.instagramProfilePic || creator.profilePic || creator.photoURL) ? (
+                        <img src={(creator.profilePicture || creator.instagramProfilePic || creator.profilePic || creator.photoURL)} alt={creator.name} className="w-full h-full object-cover" />
                     ) : (
-                        <span className="italic text-gray-900 dark:text-white/30">{creator.name.charAt(0)}</span>
+                        <span className="italic text-gray-900 dark:text-white/30">{creator.name?.charAt(0) || '?'}</span>
                     )}
                 </div>
                 <div className="min-w-0 flex-1">
@@ -2062,26 +2064,17 @@ const CreatorDetailModal = ({ creator, onClose, onUpdateStatus, onDelete, isUpda
         creator.twitter && { platform: 'X / Web', icon: Twitter, handle: 'Link', followers: null, url: creator.twitter.includes('http') ? creator.twitter : `https://${creator.twitter}`, color: 'text-sky-600 dark:text-sky-400', bg: 'bg-sky-500/10 border-sky-500/20' },
     ].filter(Boolean);
 
-    return createPortal(
-        <div className="fixed inset-0 z-[99999] flex justify-end">
-            {/* Backdrop */}
-            <motion.div 
-                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                transition={{ duration: 0.2 }}
-                className="absolute inset-0 bg-black/60 backdrop-blur-sm" 
-                onClick={onClose} 
-            />
-
-            {/* Drawer Panel */}
-            <motion.div 
-                initial={{ x: '100%' }}
-                animate={{ x: 0 }}
-                exit={{ x: '100%' }}
-                transition={{ type: "spring", damping: 30, stiffness: 300 }}
-                className="relative w-full sm:max-w-xl md:max-w-2xl h-[100dvh] max-h-[100dvh] bg-white dark:bg-[#0c0e14] sm:border-l border-black/[0.08] dark:border-white/[0.08] sm:rounded-l-3xl flex flex-col z-10 shadow-[-20px_0_60px_rgba(0,0,0,0.1)] dark:shadow-[-20px_0_60px_rgba(0,0,0,0.3)]"
-            >
+    return (
+        <SharedLayoutModal 
+            isOpen={true} 
+            onClose={onClose} 
+            layoutId={`creator-card-${creator.id || creator.uid}`}
+            className="w-full max-w-5xl h-[90vh] bg-gray-50 dark:bg-[#07090E]"
+            contentClassName="p-0"
+        >
+            <div className="flex flex-col h-full relative">
                 {/* Sticky Header */}
-                <div className="sticky top-0 z-50 flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 bg-white/95 dark:bg-[#0c0e14]/95 backdrop-blur-xl border-b border-black/[0.08] dark:border-white/[0.08]">
+                <div className="sticky top-0 z-50 flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 bg-white/70 dark:bg-[#0c0e14]/80 backdrop-blur-2xl border-b border-black/[0.08] dark:border-white/[0.08]">
                     <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
                         <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl bg-black/5 dark:bg-white/[0.04] border border-black/10 dark:border-white/[0.06] flex items-center justify-center shrink-0">
                             <Users size={13} className="text-gray-500 dark:text-white/40" />
@@ -2104,33 +2097,38 @@ const CreatorDetailModal = ({ creator, onClose, onUpdateStatus, onDelete, isUpda
                     <div className="px-4 sm:px-6 py-4 sm:py-6 space-y-5 sm:space-y-6">
 
                         {/* ─── Hero Section ─── */}
-                        <div className="flex items-start gap-3.5 sm:gap-5">
-                            <div className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-xl sm:rounded-2xl bg-gray-100 dark:bg-black border border-black/10 dark:border-white/[0.08] overflow-hidden shrink-0">
-                                {creator.profilePicture ? (
-                                    <img src={creator.profilePicture} alt="" className="w-full h-full object-cover" />
-                                ) : (
-                                    <div className="w-full h-full flex items-center justify-center text-xl sm:text-2xl font-black text-black/10 dark:text-white/[0.06] italic select-none">{creator.name.charAt(0)}</div>
-                                )}
-                                {creator.profileStatus === 'approved' && (
-                                    <div className="absolute -bottom-0.5 -right-0.5 w-5 h-5 sm:w-6 sm:h-6 bg-neon-green rounded-md sm:rounded-lg flex items-center justify-center border-2 border-white dark:border-[#0A0A0A]">
-                                        <Check size={10} strokeWidth={3} className="text-black" />
-                                    </div>
-                                )}
-                            </div>
-                            <div className="flex-1 min-w-0 pt-0.5">
-                                <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-1">
-                                    <StatusPill status={creator.profileStatus} />
-                                    <span className="text-[7px] sm:text-[8px] font-bold text-gray-500 dark:text-white/40 uppercase tracking-[0.15em] bg-black/5 dark:bg-white/[0.03] px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-md border border-black/10 dark:border-white/[0.04]">
-                                        {creator.creatorId || creator.uid.slice(0, 8).toUpperCase()}
-                                    </span>
+                        <div className="relative bg-white/70 dark:bg-[#0c0e14]/80 backdrop-blur-2xl border border-black/[0.06] dark:border-white/[0.08] rounded-3xl p-5 sm:p-7 shadow-[0_8px_32px_rgba(0,0,0,0.02)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)] overflow-hidden group">
+                            {/* Glowing corner accent */}
+                            <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-bl from-neon-green/[0.08] to-transparent rounded-full blur-3xl pointer-events-none -mr-20 -mt-20 group-hover:scale-105 transition-transform duration-700" />
+                            
+                            <div className="relative z-10 flex flex-col sm:flex-row sm:items-start gap-5 sm:gap-6">
+                                <div className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-gray-100 dark:bg-zinc-800 border-2 border-black/[0.06] dark:border-white/[0.1] overflow-hidden shrink-0 shadow-md">
+                                    {(creator.profilePicture || creator.instagramProfilePic || creator.profilePic || creator.photoURL) ? (
+                                        <img src={(creator.profilePicture || creator.instagramProfilePic || creator.profilePic || creator.photoURL)} alt="" className="w-full h-full object-cover" />
+                                    ) : (
+                                        <div className="w-full h-full flex items-center justify-center text-3xl font-black text-black/10 dark:text-white/[0.06] italic select-none font-heading bg-black/[0.02] dark:bg-white/[0.02]">{creator.name?.charAt(0) || '?'}</div>
+                                    )}
+                                    {creator.profileStatus === 'approved' && (
+                                        <div className="absolute -bottom-1 -right-1 w-7 h-7 bg-neon-green rounded-full flex items-center justify-center border-2 border-white dark:border-[#0c0e14] shadow-sm">
+                                            <Check size={14} strokeWidth={3} className="text-black" />
+                                        </div>
+                                    )}
                                 </div>
-                                <h2 className="text-xl sm:text-2xl font-black font-heading tracking-tight uppercase text-gray-900 dark:text-white leading-tight break-words">
-                                    {creator.name}
-                                </h2>
-                                <div className="flex items-center gap-2 sm:gap-3 mt-1.5 text-[8px] sm:text-[9px] font-bold text-gray-500 dark:text-white/40 uppercase tracking-wider flex-wrap">
-                                    <span className="flex items-center gap-1"><MapPin size={9} className="text-neon-pink/60" />{creator.city || 'Global'}</span>
-                                    <span className="text-gray-300 dark:text-white/10">•</span>
-                                    <span className="flex items-center gap-1"><Calendar size={9} className="text-gray-400 dark:text-white/20" />{new Date(creator.createdAt || Date.now()).getFullYear()} Joined</span>
+                                <div className="flex-1 min-w-0 pt-1">
+                                    <div className="flex flex-wrap items-center gap-2 mb-2">
+                                        <StatusPill status={creator.profileStatus} />
+                                        <span className="text-[9px] font-bold text-gray-500 dark:text-white/40 uppercase tracking-[0.15em] bg-black/5 dark:bg-white/[0.03] px-2 py-1 rounded-md border border-black/10 dark:border-white/[0.04]">
+                                            {creator.creatorId || creator.uid.slice(0, 8).toUpperCase()}
+                                        </span>
+                                    </div>
+                                    <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black font-heading tracking-tight text-gray-950 dark:text-white leading-tight break-words">
+                                        {creator.name}
+                                    </h2>
+                                    <div className="flex items-center gap-3 mt-2 text-[10px] font-black text-gray-500 dark:text-zinc-500 uppercase tracking-widest flex-wrap">
+                                        <span className="flex items-center gap-1.5"><MapPin size={12} className="text-neon-pink" />{creator.city || 'Global'}</span>
+                                        <span className="text-gray-300 dark:text-zinc-700">•</span>
+                                        <span className="flex items-center gap-1.5"><Clock size={12} className="text-gray-400" />{new Date(creator.createdAt || Date.now()).getFullYear()} Joined</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -2618,9 +2616,8 @@ const CreatorDetailModal = ({ creator, onClose, onUpdateStatus, onDelete, isUpda
                         <Trash2 size={14} />
                     </button>
                 </div>
-            </motion.div>
-        </div>,
-        document.body
+            </div>
+        </SharedLayoutModal>
     );
 };
 
@@ -2986,7 +2983,7 @@ const ReferralLeaderboard = ({ creators, onSelectCreator }) => {
     };
 
     return (
-        <div className="space-y-6 relative z-10 max-w-7xl mx-auto pb-20">
+        <div className="space-y-6 relative z-10 w-full max-w-7xl xl:max-w-[1536px] 2xl:max-w-[1720px] mx-auto pb-20">
             {/* Stats Overview */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
                 <div className="bg-white dark:bg-[#0c0e14] border border-black/[0.08] dark:border-white/[0.08] p-5 sm:p-6 rounded-3xl shadow-sm flex items-center gap-4 transition-all">
@@ -3084,8 +3081,8 @@ const ReferralLeaderboard = ({ creators, onSelectCreator }) => {
                                             <td className="py-4 px-6">
                                                 <div className="flex items-center gap-3">
                                                     <div className="w-10 h-10 rounded-xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 overflow-hidden flex items-center justify-center shrink-0">
-                                                        {referrer.profilePicture ? (
-                                                            <img src={referrer.profilePicture} alt="" className="w-full h-full object-cover" />
+                                                        {referrer.profilePicture || referrer.instagramProfilePic || referrer.profilePic || referrer.photoURL ? (
+                                                            <img src={referrer.profilePicture || referrer.instagramProfilePic || referrer.profilePic || referrer.photoURL} alt="" className="w-full h-full object-cover" />
                                                         ) : (
                                                             <span className="text-[12px] font-black text-gray-900 dark:text-white">{referrer.name?.charAt(0)}</span>
                                                         )}
@@ -3143,8 +3140,8 @@ const ReferralLeaderboard = ({ creators, onSelectCreator }) => {
                                                                     >
                                                                         <div className="flex items-center gap-3 min-w-0">
                                                                             <div className="w-8 h-8 rounded-lg bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 overflow-hidden flex items-center justify-center shrink-0">
-                                                                                {rc.profilePicture ? (
-                                                                                    <img src={rc.profilePicture} alt="" className="w-full h-full object-cover" />
+                                                                                {rc.profilePicture || rc.instagramProfilePic || rc.profilePic || rc.photoURL ? (
+                                                                                    <img src={rc.profilePicture || rc.instagramProfilePic || rc.profilePic || rc.photoURL} alt="" className="w-full h-full object-cover" />
                                                                                 ) : (
                                                                                     <span className="text-[10px] font-black text-gray-900 dark:text-white">{rc.name?.charAt(0)}</span>
                                                                                 )}
@@ -3202,8 +3199,8 @@ const ReferralLeaderboard = ({ creators, onSelectCreator }) => {
                                 <div className="flex items-center justify-between border-b border-black/[0.08] dark:border-white/[0.08] pb-3">
                                     <div className="flex items-center gap-3">
                                         <div className="w-10 h-10 rounded-xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 overflow-hidden flex items-center justify-center shrink-0">
-                                            {referrer.profilePicture ? (
-                                                <img src={referrer.profilePicture} alt="" className="w-full h-full object-cover" />
+                                            {referrer.profilePicture || referrer.instagramProfilePic || referrer.profilePic || referrer.photoURL ? (
+                                                <img src={referrer.profilePicture || referrer.instagramProfilePic || referrer.profilePic || referrer.photoURL} alt="" className="w-full h-full object-cover" />
                                             ) : (
                                                 <span className="text-[12px] font-black text-gray-900 dark:text-white">{referrer.name?.charAt(0)}</span>
                                             )}
@@ -3262,8 +3259,8 @@ const ReferralLeaderboard = ({ creators, onSelectCreator }) => {
                                                         >
                                                             <div className="flex items-center gap-2.5 min-w-0">
                                                                 <div className="w-7 h-7 rounded-lg bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 overflow-hidden flex items-center justify-center shrink-0">
-                                                                    {rc.profilePicture ? (
-                                                                        <img src={rc.profilePicture} alt="" className="w-full h-full object-cover" />
+                                                                    {rc.profilePicture || rc.instagramProfilePic || rc.profilePic || rc.photoURL ? (
+                                                                        <img src={rc.profilePicture || rc.instagramProfilePic || rc.profilePic || rc.photoURL} alt="" className="w-full h-full object-cover" />
                                                                     ) : (
                                                                         <span className="text-[10px] font-black text-gray-900 dark:text-white">{rc.name?.charAt(0)}</span>
                                                                     )}

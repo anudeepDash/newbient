@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import Edit from 'lucide-react/dist/esm/icons/edit';
 import Trash2 from 'lucide-react/dist/esm/icons/trash-2';
 import Copy from 'lucide-react/dist/esm/icons/copy';
 import LayoutGrid from 'lucide-react/dist/esm/icons/layout-grid';
 import Plus from 'lucide-react/dist/esm/icons/plus';
+import Upload from 'lucide-react/dist/esm/icons/upload';
 import Eye from 'lucide-react/dist/esm/icons/eye';
 import FileSpreadsheet from 'lucide-react/dist/esm/icons/file-spreadsheet';
 import ExternalLink from 'lucide-react/dist/esm/icons/external-link';
@@ -28,6 +29,7 @@ import { useStore } from '../../lib/store';
 import { useStoreSubscription } from '../../hooks/useStoreSubscription';
 import { sendProposalEmail } from '../../lib/email';
 import ProposalEmailModal from '../../components/admin/ProposalEmailModal';
+import UploadProposalModal from '../../components/admin/UploadProposalModal';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
@@ -39,6 +41,7 @@ import AdminCommunityHubLayout from '../../components/admin/AdminCommunityHubLay
 const ProposalManagement = () => {
     useStoreSubscription(['proposals']);
     const navigate = useNavigate();
+    const location = useLocation();
     const { proposals, deleteProposal, updateProposalStatus, duplicateProposal, user } = useStore();
     
     const [searchQuery, setSearchQuery] = useState('');
@@ -48,6 +51,25 @@ const ProposalManagement = () => {
     const [activeAnalyticsTab, setActiveAnalyticsTab] = useState('email');
     const [sharingProposal, setSharingProposal] = useState(null);
     const [emailModalProposal, setEmailModalProposal] = useState(null);
+    const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+    const [editingUploadedProposal, setEditingUploadedProposal] = useState(null);
+
+    // Deep link listeners for ?upload=true or ?edit=:id
+    useEffect(() => {
+        const params = new URLSearchParams(location.search);
+        if (params.get('upload') === 'true') {
+            setEditingUploadedProposal(null);
+            setIsUploadModalOpen(true);
+        }
+        const editId = params.get('edit');
+        if (editId && proposals.length > 0) {
+            const found = proposals.find(p => p.id === editId);
+            if (found && found.isUploaded) {
+                setEditingUploadedProposal(found);
+                setIsUploadModalOpen(true);
+            }
+        }
+    }, [location.search, proposals]);
 
     const getDeviceDetails = (ua) => {
         if (!ua) return { browser: 'Browser', os: 'OS', type: 'Device' };
@@ -220,11 +242,22 @@ const ProposalManagement = () => {
             tabs={vaultTabs}
             accentColor="neon-green"
             action={
-                <Link to="/admin/create-proposal" className="w-full md:w-auto">
-                    <button className="w-full md:w-auto bg-neon-green text-black font-black font-heading uppercase tracking-widest text-[9px] sm:text-xs h-12 md:h-14 px-6 md:px-10 rounded-xl md:rounded-2xl hover:scale-[1.02] active:scale-95 transition-all shadow-[0_4px_12px_rgba(57,255,20,0.4)] hover:shadow-[0_8px_24px_rgba(57,255,20,0.6)] flex items-center justify-center">
-                        <Plus className="mr-2 h-4 w-4" /> New Quote
+                <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-3 w-full md:w-auto">
+                    <button 
+                        onClick={() => {
+                            setEditingUploadedProposal(null);
+                            setIsUploadModalOpen(true);
+                        }}
+                        className="w-full sm:w-auto bg-white/10 hover:bg-neon-green/20 text-white hover:text-neon-green border border-white/15 hover:border-neon-green/40 font-black font-heading uppercase tracking-widest text-[9px] sm:text-xs h-12 md:h-14 px-5 md:px-7 rounded-xl md:rounded-2xl hover:scale-[1.02] active:scale-95 transition-all shadow-lg flex items-center justify-center gap-2"
+                    >
+                        <Upload className="h-4 w-4 text-neon-green" /> Upload Proposal
                     </button>
-                </Link>
+                    <Link to="/admin/create-proposal" className="w-full sm:w-auto">
+                        <button className="w-full sm:w-auto bg-neon-green text-black font-black font-heading uppercase tracking-widest text-[9px] sm:text-xs h-12 md:h-14 px-6 md:px-10 rounded-xl md:rounded-2xl hover:scale-[1.02] active:scale-95 transition-all shadow-[0_4px_12px_rgba(57,255,20,0.4)] hover:shadow-[0_8px_24px_rgba(57,255,20,0.6)] flex items-center justify-center">
+                            <Plus className="mr-2 h-4 w-4" /> New Quote
+                        </button>
+                    </Link>
+                </div>
             }
         >
             <div className="relative z-10">
@@ -313,6 +346,11 @@ const ProposalManagement = () => {
                                                     <span className="text-[10px] font-black font-mono tracking-widest text-neon-green bg-neon-green/10 px-3 py-1 rounded-full border border-neon-green/20">
                                                         {proposal.proposalNumber || 'ID: ' + proposal.id.slice(0, 8)}
                                                     </span>
+                                                    {proposal.isUploaded && (
+                                                        <span className="text-[9px] font-black tracking-wider text-neon-blue bg-neon-blue/10 px-2 py-0.5 rounded-full border border-neon-blue/20 flex items-center gap-1">
+                                                            <Upload size={10} /> PRE-MADE
+                                                        </span>
+                                                    )}
                                                     <div className={cn(
                                                         "w-2 h-2 rounded-full animate-pulse shadow-[0_0_10px_currentColor]",
                                                         proposal.status === 'Accepted' ? 'text-neon-green bg-neon-green' : 
@@ -349,20 +387,42 @@ const ProposalManagement = () => {
                                                 </div>
                                             </div>
 
-                                            <h3 className="text-xl md:text-2xl font-black font-heading tracking-tighter uppercase italic text-gray-900 dark:text-white mb-2 leading-none">
+                                            <h3 className="text-xl md:text-2xl font-black font-heading tracking-tighter uppercase italic text-gray-900 dark:text-white mb-1 leading-none">
                                                 {proposal.clientName}
                                             </h3>
-                                            <p className="text-gray-500 text-[10px] font-bold uppercase tracking-widest flex items-center gap-2 mb-8">
-                                                <Calendar size={12} /> {new Date(proposal.createdAt).toLocaleDateString()}
-                                            </p>
+                                            {proposal.campaignName && (
+                                                <p className="text-gray-500 text-xs font-semibold truncate mb-1">
+                                                    {proposal.campaignName}
+                                                </p>
+                                            )}
+                                            <div className="flex items-center justify-between text-gray-500 text-[10px] font-bold uppercase tracking-widest mb-8">
+                                                <span className="flex items-center gap-1.5"><Calendar size={12} /> {new Date(proposal.createdAt).toLocaleDateString()}</span>
+                                                {(proposal.dealValue || proposal.totalOverride) && (
+                                                    <span className="text-neon-green font-mono font-black">
+                                                        ₹{Number(proposal.dealValue || proposal.totalOverride).toLocaleString('en-IN')}
+                                                    </span>
+                                                )}
+                                            </div>
                                         </div>
 
                                         <div className="flex flex-wrap items-center gap-2 pt-6 border-t border-black/10 dark:border-white/5">
-                                             <Link to={`/admin/edit-proposal/${proposal.id}`} className="flex-1 min-w-[25%]">
-                                                 <button className="w-full py-3 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all border border-black/10 dark:border-white/5">
+                                             {proposal.isUploaded ? (
+                                                 <button 
+                                                     onClick={() => {
+                                                         setEditingUploadedProposal(proposal);
+                                                         setIsUploadModalOpen(true);
+                                                     }}
+                                                     className="flex-1 min-w-[25%] py-3 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all border border-black/10 dark:border-white/5"
+                                                 >
                                                      Edit
                                                  </button>
-                                             </Link>
+                                             ) : (
+                                                 <Link to={`/admin/edit-proposal/${proposal.id}`} className="flex-1 min-w-[25%]">
+                                                     <button className="w-full py-3 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all border border-black/10 dark:border-white/5">
+                                                         Edit
+                                                     </button>
+                                                 </Link>
+                                             )}
                                              <button 
                                                  onClick={() => handleNativeShare(proposal)}
                                                  className="flex-1 min-w-[25%] py-3 bg-neon-green/10 hover:bg-neon-green/20 text-neon-green text-[10px] font-black uppercase tracking-widest rounded-xl transition-all border border-neon-green/10 flex items-center justify-center gap-2"
@@ -382,15 +442,31 @@ const ProposalManagement = () => {
                                              >
                                                  <Eye size={16} />
                                              </Link>
-                                         </div>
+                                        </div>
                                     </Card>
                                 </motion.div>
                             ))}
                             {filteredProposals.length === 0 && (
-                                <div className="col-span-full py-20 text-center border-2 border-dashed border-black/10 dark:border-white/5 rounded-[3rem]">
+                                <div className="col-span-full py-20 text-center border-2 border-dashed border-black/10 dark:border-white/5 rounded-[3rem] p-8 flex flex-col items-center justify-center">
                                     <FileSpreadsheet className="mx-auto text-gray-800 mb-6" size={64} />
                                     <h3 className="text-xl font-black font-heading text-gray-600 uppercase italic">No Proposals Found</h3>
-                                    <p className="text-gray-700 text-xs font-bold uppercase tracking-widest mt-2">Start by generating your first quotation.</p>
+                                    <p className="text-gray-700 text-xs font-bold uppercase tracking-widest mt-2 mb-6">Start by generating your first quotation or host an existing proposal.</p>
+                                    <div className="flex flex-wrap items-center justify-center gap-3">
+                                        <button
+                                            onClick={() => {
+                                                setEditingUploadedProposal(null);
+                                                setIsUploadModalOpen(true);
+                                            }}
+                                            className="px-6 py-3 bg-white/10 hover:bg-neon-green/20 text-white hover:text-neon-green border border-white/10 hover:border-neon-green/40 font-black text-xs uppercase tracking-widest rounded-xl transition-all flex items-center gap-2"
+                                        >
+                                            <Upload size={14} className="text-neon-green" /> Upload Pre-Made Proposal
+                                        </button>
+                                        <Link to="/admin/create-proposal">
+                                            <button className="px-6 py-3 bg-neon-green text-black font-black text-xs uppercase tracking-widest rounded-xl transition-all flex items-center gap-2">
+                                                <Plus size={14} /> New Quote
+                                            </button>
+                                        </Link>
+                                    </div>
                                 </div>
                             )}
                         </motion.div>
@@ -419,11 +495,18 @@ const ProposalManagement = () => {
                                                 <td className="p-6 md:p-8">
                                                     <div className="flex items-center gap-4">
                                                         <div className="w-10 h-10 rounded-xl bg-neon-green/10 flex items-center justify-center text-neon-green group-hover:scale-110 transition-transform">
-                                                            <FileSpreadsheet size={20} />
+                                                            {proposal.isUploaded ? <Upload size={18} className="text-neon-blue" /> : <FileSpreadsheet size={20} />}
                                                         </div>
                                                         <div>
-                                                            <div className="text-xs font-black uppercase tracking-widest text-gray-900 dark:text-white">{proposal.proposalNumber || 'NEWBI-PROP'}</div>
-                                                            <div className="text-[10px] font-bold text-gray-500 uppercase mt-0.5">STRATEGIC QUOTE</div>
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="text-xs font-black uppercase tracking-widest text-gray-900 dark:text-white">{proposal.proposalNumber || 'NEWBI-PROP'}</span>
+                                                                {proposal.isUploaded && (
+                                                                    <span className="text-[8px] font-black text-neon-blue bg-neon-blue/10 px-1.5 py-0.5 rounded border border-neon-blue/20">PRE-MADE</span>
+                                                                )}
+                                                            </div>
+                                                            <div className="text-[10px] font-bold text-gray-500 uppercase mt-0.5">
+                                                                {proposal.isUploaded ? (proposal.fileName || 'PRE-MADE PROPOSAL') : 'STRATEGIC QUOTE'}
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 </td>
@@ -457,7 +540,20 @@ const ProposalManagement = () => {
                                                          )}
                                                          <button onClick={() => handleDuplicate(proposal.id)} className="p-2 text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors"><History size={18} /></button>
                                                          <button onClick={() => handleNativeShare(proposal)} className="p-2 text-gray-500 hover:text-neon-green transition-colors"><Share2 size={18} /></button>
-                                                         <Link to={`/admin/edit-proposal/${proposal.id}`} className="p-2 text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors"><Edit size={18} /></Link>
+                                                         {proposal.isUploaded ? (
+                                                             <button 
+                                                                 onClick={() => {
+                                                                     setEditingUploadedProposal(proposal);
+                                                                     setIsUploadModalOpen(true);
+                                                                 }}
+                                                                 className="p-2 text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors"
+                                                                 title="Edit Uploaded Proposal"
+                                                             >
+                                                                 <Edit size={18} />
+                                                             </button>
+                                                         ) : (
+                                                             <Link to={`/admin/edit-proposal/${proposal.id}`} className="p-2 text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors"><Edit size={18} /></Link>
+                                                         )}
                                                      </div>
                                                 </td>
                                             </tr>
@@ -472,11 +568,18 @@ const ProposalManagement = () => {
                                             <div className="flex justify-between items-start">
                                                 <div className="flex items-center gap-3">
                                                     <div className="w-10 h-10 rounded-xl bg-neon-green/10 flex items-center justify-center text-neon-green">
-                                                        <FileSpreadsheet size={20} />
+                                                        {proposal.isUploaded ? <Upload size={18} className="text-neon-blue" /> : <FileSpreadsheet size={20} />}
                                                     </div>
                                                     <div>
-                                                        <div className="text-xs font-black uppercase tracking-widest text-gray-900 dark:text-white">{proposal.proposalNumber || 'NEWBI-PROP'}</div>
-                                                        <div className="text-[10px] font-bold text-gray-500 uppercase mt-0.5">STRATEGIC QUOTE</div>
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="text-xs font-black uppercase tracking-widest text-gray-900 dark:text-white">{proposal.proposalNumber || 'NEWBI-PROP'}</span>
+                                                            {proposal.isUploaded && (
+                                                                <span className="text-[8px] font-black text-neon-blue bg-neon-blue/10 px-1.5 py-0.5 rounded border border-neon-blue/20">PRE-MADE</span>
+                                                            )}
+                                                        </div>
+                                                        <div className="text-[10px] font-bold text-gray-500 uppercase mt-0.5">
+                                                            {proposal.isUploaded ? (proposal.fileName || 'PRE-MADE PROPOSAL') : 'STRATEGIC QUOTE'}
+                                                        </div>
                                                     </div>
                                                 </div>
                                                 <div className="text-right">
@@ -509,7 +612,20 @@ const ProposalManagement = () => {
                                                 )}
                                                 <button onClick={() => handleDuplicate(proposal.id)} className="p-2 bg-black/5 dark:bg-white/5 rounded-lg text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"><History size={16} /></button>
                                                 <button onClick={() => handleNativeShare(proposal)} className="p-2 bg-black/5 dark:bg-white/5 rounded-lg text-gray-600 dark:text-gray-400 hover:text-neon-green transition-colors"><Share2 size={16} /></button>
-                                                <Link to={`/admin/edit-proposal/${proposal.id}`} className="p-2 bg-black/5 dark:bg-white/5 rounded-lg text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"><Edit size={16} /></Link>
+                                                {proposal.isUploaded ? (
+                                                    <button 
+                                                        onClick={() => {
+                                                            setEditingUploadedProposal(proposal);
+                                                            setIsUploadModalOpen(true);
+                                                        }}
+                                                        className="p-2 bg-black/5 dark:bg-white/5 rounded-lg text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
+                                                        title="Edit Uploaded Proposal"
+                                                    >
+                                                        <Edit size={16} />
+                                                    </button>
+                                                ) : (
+                                                    <Link to={`/admin/edit-proposal/${proposal.id}`} className="p-2 bg-black/5 dark:bg-white/5 rounded-lg text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"><Edit size={16} /></Link>
+                                                )}
                                             </div>
                                         </div>
                                     ))}
@@ -758,6 +874,20 @@ const ProposalManagement = () => {
                         onClose={() => setEmailModalProposal(null)}
                         proposal={emailModalProposal}
                         onSend={handleDispatchEmail}
+                    />
+                )}
+            </AnimatePresence>
+
+            {/* Upload Pre-Made Proposal Modal */}
+            <AnimatePresence>
+                {isUploadModalOpen && (
+                    <UploadProposalModal
+                        isOpen={isUploadModalOpen}
+                        onClose={() => {
+                            setIsUploadModalOpen(false);
+                            setEditingUploadedProposal(null);
+                        }}
+                        editingProposal={editingUploadedProposal}
                     />
                 )}
             </AnimatePresence>
