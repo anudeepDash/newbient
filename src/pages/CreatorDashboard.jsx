@@ -222,8 +222,8 @@ const CreatorReferralsView = ({ profile }) => {
                                 )}>
                                     <div className="w-6 shrink-0 flex items-center justify-center">{renderRankBadge(rank)}</div>
                                     <div className="w-7 h-7 rounded-lg bg-gray-100 dark:bg-zinc-800 border border-black/[0.07] dark:border-white/[0.07] overflow-hidden flex items-center justify-center shrink-0">
-                                        {creator.profilePicture
-                                            ? <img src={creator.profilePicture} alt="" className="w-full h-full object-cover" />
+                                        {creator.profilePicture || creator.instagramProfilePic || creator.profilePic || creator.photoURL
+                                            ? <img src={creator.profilePicture || creator.instagramProfilePic || creator.profilePic || creator.photoURL} alt="" className="w-full h-full object-cover" />
                                             : <span className="text-[10px] font-black text-gray-600 dark:text-zinc-300">{creator.name?.charAt(0) || 'C'}</span>}
                                     </div>
                                     <div className="flex-1 min-w-0">
@@ -258,8 +258,8 @@ const CreatorReferralsView = ({ profile }) => {
                             {myReferrals.map(ref => (
                                 <div key={ref.uid} className="flex items-center gap-3 px-3 py-2.5 bg-gray-50 dark:bg-black/40 border border-black/[0.05] dark:border-white/[0.05] rounded-xl">
                                     <div className="w-7 h-7 rounded-lg bg-gray-100 dark:bg-zinc-800 border border-black/[0.07] dark:border-white/[0.07] flex items-center justify-center shrink-0 overflow-hidden">
-                                        {ref.profilePicture
-                                            ? <img src={ref.profilePicture} alt="" className="w-full h-full object-cover" />
+                                        {ref.profilePicture || ref.instagramProfilePic || ref.profilePic || ref.photoURL
+                                            ? <img src={ref.profilePicture || ref.instagramProfilePic || ref.profilePic || ref.photoURL} alt="" className="w-full h-full object-cover" />
                                             : <span className="text-[10px] font-black text-gray-600 dark:text-zinc-300">{ref.name?.charAt(0) || 'C'}</span>}
                                     </div>
                                     <div className="flex-1 min-w-0">
@@ -676,8 +676,8 @@ const CreatorDashboard = () => {
                             {/* Avatar */}
                             <div className="relative shrink-0">
                                 <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gray-100 dark:bg-zinc-800 border-2 border-black/[0.06] dark:border-white/[0.1] overflow-hidden shadow-md">
-                                    {profile.profilePicture ? (
-                                        <img src={profile.profilePicture} alt={profile.name} className="w-full h-full object-cover" />
+                                    {profile.profilePicture || profile.instagramProfilePic || profile.profilePic || profile.photoURL ? (
+                                        <img src={profile.profilePicture || profile.instagramProfilePic || profile.profilePic || profile.photoURL} alt={profile.name} className="w-full h-full object-cover" />
                                     ) : (
                                         <div className="w-full h-full flex items-center justify-center font-black text-2xl sm:text-3xl text-neon-green bg-black/[0.02] dark:bg-white/[0.02]">
                                             {profile.name?.charAt(0) || 'C'}

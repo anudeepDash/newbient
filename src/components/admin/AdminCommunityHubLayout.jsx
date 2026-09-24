@@ -109,7 +109,7 @@ const AdminCommunityHubLayout = ({ children, title, description, action, studioH
     ];
 
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-dark text-gray-900 dark:text-white pt-32 md:pt-48 pb-32 relative overflow-x-hidden selection:bg-neon-green selection:text-black">
+        <div className="min-h-screen bg-[#fafafa] dark:bg-[#08090d] text-gray-900 dark:text-white pt-32 md:pt-48 pb-32 relative overflow-x-hidden selection:bg-neon-green selection:text-black font-heading transition-colors duration-300">
 
             {/* Atmospheric Background */}
             <div className="fixed inset-0 z-0 pointer-events-none">
@@ -119,7 +119,7 @@ const AdminCommunityHubLayout = ({ children, title, description, action, studioH
                 <div className="absolute bottom-[10%] left-[-5%] w-[400px] h-[300px] bg-neon-pink/[0.02] dark:bg-neon-pink/[0.01] rounded-full blur-[140px]" />
             </div>
 
-            <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-12">
+            <div className="relative z-10 w-full max-w-7xl xl:max-w-[1536px] 2xl:max-w-[1720px] mx-auto px-4 sm:px-6 lg:px-12">
                 {/* Header Section */}
                 <div className="flex flex-col gap-6 mb-6 md:mb-8">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -136,7 +136,7 @@ const AdminCommunityHubLayout = ({ children, title, description, action, studioH
                                         </div>
                                     ) : null}
                                     <div>
-                                        <h1 className="text-xl sm:text-2xl font-black font-heading tracking-tight text-gray-900 dark:text-white leading-none">
+                                        <h1 className="text-xl sm:text-2xl lg:text-3xl font-black font-heading tracking-tight text-gray-950 dark:text-white leading-tight">
                                             {studioHeader.title} <span className={studioHeader.accentClass}>{studioHeader.subtitle}</span>
                                         </h1>
                                         <p className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-gray-500 mt-1">Administrative Portal</p>
@@ -148,7 +148,7 @@ const AdminCommunityHubLayout = ({ children, title, description, action, studioH
                                         <LayoutGrid size={20} className="text-neon-green" />
                                     </div>
                                     <div>
-                                        <h1 className="text-xl sm:text-2xl font-black font-heading tracking-tight text-gray-900 dark:text-white leading-none">
+                                        <h1 className="text-xl sm:text-2xl lg:text-3xl font-black font-heading tracking-tight text-gray-950 dark:text-white leading-tight">
                                             Community Hub
                                         </h1>
                                         <p className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-gray-500 mt-1">Management & Engagement Systems</p>

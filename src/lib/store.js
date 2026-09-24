@@ -211,17 +211,17 @@ export const useStore = create((set, get) => ({
     uploadToCloudinary: async (file) => {
         if (!file) return null;
 
-        // Try Firebase Storage first for PDF files to render inline correctly without Cloudinary security blocks
-        if (file.type === "application/pdf") {
+        // Try Firebase Storage first for PDF/SVG files to avoid Cloudinary security blocks
+        if (file.type === "application/pdf" || file.type.includes("svg") || file.name?.toLowerCase().endsWith(".svg")) {
             try {
                 const uniqueId = Math.random().toString(36).substring(2, 9);
                 const cleanName = file.name.replace(/[^a-zA-Z0-9.]/g, '_');
-                const storagePath = `uploads/pdf_${uniqueId}_${cleanName}`;
+                const storagePath = `uploads/file_${uniqueId}_${cleanName}`;
                 const storageRef = ref(storage, storagePath);
                 await uploadBytes(storageRef, file);
                 return await getDownloadURL(storageRef);
             } catch (firebaseError) {
-                console.warn("Firebase Storage PDF upload failed, falling back to Cloudinary raw upload:", firebaseError);
+                console.warn("Firebase Storage upload failed, falling back to Cloudinary:", firebaseError);
             }
         }
 
@@ -259,12 +259,21 @@ export const useStore = create((set, get) => ({
             const uploadedFile = await res.json();
             return uploadedFile.secure_url;
         } catch (error) {
-            console.error("Cloudinary Upload Error Details:", error);
-            // Re-throw with more context if it's a generic connection/unknown error
-            const message = (!error.message || error.message.includes("failed") || error.message.includes("Failed"))
-                ? "Couldn't upload your file. Please check your internet connection or try a smaller file." 
-                : error.message;
-            throw new Error(message);
+            console.warn("Cloudinary upload failed, falling back to Firebase Storage:", error);
+            try {
+                const uniqueId = Math.random().toString(36).substring(2, 9);
+                const cleanName = file.name.replace(/[^a-zA-Z0-9.]/g, '_');
+                const storagePath = `uploads/fallback_${uniqueId}_${cleanName}`;
+                const storageRef = ref(storage, storagePath);
+                await uploadBytes(storageRef, file);
+                return await getDownloadURL(storageRef);
+            } catch (firebaseError) {
+                console.error("Firebase fallback also failed:", firebaseError);
+                const message = (!error.message || error.message.includes("failed") || error.message.includes("Failed"))
+                    ? "Couldn't upload your file. Please check your internet connection or try a smaller file." 
+                    : error.message;
+                throw new Error(message);
+            }
         }
     },
 

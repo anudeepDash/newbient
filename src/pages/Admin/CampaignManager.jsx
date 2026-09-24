@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import FilterSearchBar from '../../design-system/controls/FilterSearchBar';
 import { useStore } from '../../lib/store';
 import { useStoreSubscription } from '../../hooks/useStoreSubscription';
 import Trophy from 'lucide-react/dist/esm/icons/trophy';
@@ -148,11 +149,12 @@ const StatCard = ({ icon, label, value, color, description, compact = false }) =
 
 const CampaignBadgeCard = ({ campaign, onSelect, onEdit, onDelete, updateCampaign, onCopyLink, isUpdating }) => (
     <motion.div 
-        layout
+        layoutId={`campaign-card-${campaign.id}`}
         onClick={onSelect}
-        className="group relative bg-white dark:bg-[#0c0e14] border border-black/[0.08] dark:border-white/[0.08] hover:border-black/20 dark:hover:border-white/20 rounded-3xl p-4 md:p-6 cursor-pointer overflow-hidden transition-all duration-300 hover:shadow-sm dark:hover:shadow-none flex flex-col h-auto min-h-[510px]"
+        className="group relative bg-white/70 dark:bg-[#0c0e14]/80 backdrop-blur-2xl border border-black/[0.06] dark:border-white/[0.08] hover:border-black/20 dark:hover:border-white/[0.15] rounded-3xl p-4 md:p-6 cursor-pointer overflow-hidden transition-all duration-300 shadow-[0_8px_32px_rgba(0,0,0,0.02)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)] hover:shadow-[0_16px_60px_rgba(0,0,0,0.06)] dark:hover:shadow-[0_16px_60px_rgba(0,0,0,0.6)] flex flex-col h-auto min-h-[510px]"
     >
-        <div className="relative mb-5 group-hover:scale-[1.01] transition-transform duration-300">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-neon-green/[0.06] to-transparent rounded-full blur-3xl pointer-events-none -mr-20 -mt-20 group-hover:scale-110 transition-transform duration-700" />
+        <div className="relative mb-5 group-hover:scale-[1.02] transition-transform duration-500 z-10">
             <div className="aspect-video rounded-2xl overflow-hidden bg-gray-50 dark:bg-black/20 border border-black/[0.08] dark:border-white/[0.08] relative flex items-center justify-center">
                 {campaign.thumbnail ? (
                     <img src={campaign.thumbnail} alt={campaign.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
@@ -169,7 +171,7 @@ const CampaignBadgeCard = ({ campaign, onSelect, onEdit, onDelete, updateCampaig
             </div>
         </div>
 
-        <div className="flex-1 flex flex-col px-1">
+        <div className="flex-1 flex flex-col px-1 relative z-10">
             <div className="mb-5">
                 <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-2">Campaign</p>
                 <h3 className="text-xl font-heading font-black text-gray-900 dark:text-white tracking-tight leading-tight group-hover:text-neon-green transition-colors duration-300 line-clamp-2">
@@ -280,9 +282,10 @@ const CampaignListItem = ({ campaign, idx, onSelect, onEdit, onDelete, updateCam
         animate={{ opacity: 1, x: 0 }}
         transition={{ delay: idx * 0.03 }}
         onClick={onSelect}
-        className="group flex flex-col sm:flex-row items-start sm:items-center p-4 sm:px-6 sm:py-4 bg-white dark:bg-[#0c0e14] border border-black/[0.08] dark:border-white/[0.08] hover:border-black/20 dark:hover:border-white/20 rounded-2xl cursor-pointer transition-all duration-300 gap-4 sm:gap-6"
+        className="group flex flex-col sm:flex-row items-start sm:items-center p-4 sm:px-6 sm:py-4 bg-white/70 dark:bg-[#0c0e14]/80 backdrop-blur-2xl border border-black/[0.04] dark:border-white/[0.06] shadow-[0_8px_32px_rgba(0,0,0,0.02)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)] hover:border-black/20 dark:hover:border-white/[0.15] hover:shadow-[0_16px_40px_rgba(0,0,0,0.06)] dark:hover:shadow-[0_16px_40px_rgba(0,0,0,0.6)] rounded-[1.5rem] cursor-pointer transition-all duration-300 gap-4 sm:gap-6 relative overflow-hidden"
     >
-        <div className="w-14">
+        <div className="absolute top-0 right-0 w-48 h-48 bg-gradient-to-bl from-neon-green/[0.05] to-transparent rounded-full blur-2xl pointer-events-none -mr-10 -mt-10 group-hover:scale-110 transition-transform duration-700 z-0" />
+        <div className="w-14 relative z-10">
             <div className="w-12 h-12 bg-gray-50 dark:bg-black/20 border border-black/[0.08] dark:border-white/[0.08] rounded-xl flex items-center justify-center text-gray-400 group-hover:border-black/20 dark:group-hover:border-white/20 overflow-hidden transition-all group-hover:scale-105">
                 {campaign.thumbnail ? (
                     <img src={campaign.thumbnail} alt={campaign.title} className="w-full h-full object-cover" />
@@ -811,29 +814,26 @@ const CampaignManager = () => {
             <div className={cn("pt-0", !(isCreating || expandedCampaignId) ? "px-4 md:px-12" : "")}>
                 {/* Control Panel */}
                 {!isCreating && !expandedCampaignId && (
-                    <div className="relative z-50 bg-white dark:bg-[#0c0e14] border border-black/[0.08] dark:border-white/[0.08] rounded-2xl p-2 md:p-3 mb-8 md:mb-12 shadow-sm dark:shadow-none flex flex-col xl:flex-row xl:items-center gap-3 md:gap-4">
+                    <div className="relative z-50 bg-white/70 dark:bg-[#0c0e14]/80 backdrop-blur-2xl border border-black/[0.06] dark:border-white/[0.08] rounded-3xl p-3 md:p-4 mb-8 md:mb-12 shadow-[0_8px_32px_rgba(0,0,0,0.02)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)] flex flex-col xl:flex-row xl:items-center gap-4">
                         
-                        {/* Search Engine */}
-                        <div className="relative flex-1 min-w-[280px] group">
-                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-neon-green transition-colors" size={16} />
-                            <input
-                                type="text"
+                        <div className="relative flex-1 min-w-[280px]">
+                            <FilterSearchBar 
+                                searchQuery={searchTerm}
+                                onSearchChange={setSearchTerm}
                                 placeholder="SEARCH CAMPAIGNS..."
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                className="w-full h-12 pl-11 pr-4 bg-white dark:bg-black/40 border border-black/[0.1] dark:border-white/[0.08] group-hover:border-black/20 dark:group-hover:border-white/20 focus:border-neon-green/80 rounded-xl text-sm font-medium outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-white/20 text-gray-900 dark:text-white min-w-0"
+                                className="w-full"
                             />
                         </div>
 
                         {/* View Switcher */}
-                        <div className="hidden md:flex items-center gap-1.5 shrink-0">
+                        <div className="hidden md:flex items-center gap-1.5 shrink-0 bg-black/5 dark:bg-white/5 p-1 rounded-2xl border border-black/5 dark:border-white/5">
                             <button 
                                 onClick={() => setViewMode('grid')} 
                                 className={cn(
-                                    "px-4 h-10 rounded-xl flex items-center justify-center gap-2 text-[10px] uppercase tracking-widest transition-all border", 
+                                    "px-4 h-10 rounded-xl flex items-center justify-center gap-2 text-[10px] uppercase tracking-widest transition-all", 
                                     viewMode === 'grid' 
-                                        ? "bg-black text-white dark:bg-white dark:text-black shadow-sm font-black border-transparent" 
-                                        : "bg-white dark:bg-[#0c0e14] border-black/[0.08] dark:border-white/[0.08] text-gray-600 dark:text-zinc-400 font-bold hover:border-black/20"
+                                        ? "bg-white text-black dark:bg-[#1a1c23] dark:text-white shadow-sm font-black border border-black/10 dark:border-white/10" 
+                                        : "text-gray-600 dark:text-zinc-400 font-bold hover:text-black dark:hover:text-white"
                                 )}
                             >
                                 <LayoutGrid size={14} />
@@ -842,10 +842,10 @@ const CampaignManager = () => {
                             <button 
                                 onClick={() => setViewMode('list')} 
                                 className={cn(
-                                    "px-4 h-10 rounded-xl flex items-center justify-center gap-2 text-[10px] uppercase tracking-widest transition-all border", 
+                                    "px-4 h-10 rounded-xl flex items-center justify-center gap-2 text-[10px] uppercase tracking-widest transition-all", 
                                     viewMode === 'list' 
-                                        ? "bg-black text-white dark:bg-white dark:text-black shadow-sm font-black border-transparent" 
-                                        : "bg-white dark:bg-[#0c0e14] border-black/[0.08] dark:border-white/[0.08] text-gray-600 dark:text-zinc-400 font-bold hover:border-black/20"
+                                        ? "bg-white text-black dark:bg-[#1a1c23] dark:text-white shadow-sm font-black border border-black/10 dark:border-white/10" 
+                                        : "text-gray-600 dark:text-zinc-400 font-bold hover:text-black dark:hover:text-white"
                                 )}
                             >
                                 <FileSpreadsheet size={14} />
@@ -855,7 +855,7 @@ const CampaignManager = () => {
 
                         <button 
                             onClick={() => navigate('/admin/campaigns/create')}
-                            className="h-12 px-6 rounded-xl bg-neon-green text-black font-black uppercase tracking-wider text-xs hover:bg-emerald-400 active:scale-95 transition-all shadow-[0_0_20px_rgba(57,255,20,0.25)] flex items-center justify-center gap-2 w-full xl:w-auto shrink-0"
+                            className="h-12 px-8 rounded-2xl bg-neon-green text-black font-black uppercase tracking-wider text-xs hover:bg-emerald-400 active:scale-95 transition-all shadow-[0_0_20px_rgba(57,255,20,0.25)] flex items-center justify-center gap-2 w-full xl:w-auto shrink-0"
                         >
                             <Plus size={16} />
                             NEW CAMPAIGN
@@ -1070,44 +1070,52 @@ const CampaignManager = () => {
                                 transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
                             >
                                 {viewMode === 'grid' ? (
-                                    <div className="relative group/carousel">
-                                        {/* Scroll Indicators */}
-                                        <div className="absolute -left-4 top-1/2 -translate-y-1/2 z-20 hidden md:flex opacity-0 group-hover/carousel:opacity-100 transition-opacity pointer-events-none">
-                                            <button onClick={() => { const el = document.getElementById('campaign-grid'); if (el) el.scrollBy({ left: -300, behavior: 'smooth' }); }} className="w-12 h-12 rounded-2xl bg-white dark:bg-black/80 backdrop-blur-xl border border-black/10 dark:border-white/10 flex items-center justify-center text-gray-900 dark:text-white pointer-events-auto hover:bg-white hover:text-black transition-all shadow-2xl">
-                                                <ChevronRight className="rotate-180" size={24} />
-                                            </button>
-                                        </div>
-                                        <div className="absolute -right-4 top-1/2 -translate-y-1/2 z-20 hidden md:flex opacity-0 group-hover/carousel:opacity-100 transition-opacity pointer-events-none">
-                                            <button onClick={() => { const el = document.getElementById('campaign-grid'); if (el) el.scrollBy({ left: 300, behavior: 'smooth' }); }} className="w-12 h-12 rounded-2xl bg-white dark:bg-black/80 backdrop-blur-xl border border-black/10 dark:border-white/10 flex items-center justify-center text-gray-900 dark:text-white pointer-events-auto hover:bg-white hover:text-black transition-all shadow-2xl">
-                                                <ChevronRight size={24} />
-                                            </button>
-                                        </div>
-
-                                        <div 
-                                            id="campaign-grid" 
-                                            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-8 items-start pb-8 md:pb-0"
-                                        >
-                                            {paginatedCampaigns.map((campaign, idx) => (
-                                                <motion.div
-                                                    key={campaign.id}
-                                                    initial={{ opacity: 0, y: 20 }}
-                                                    animate={{ opacity: 1, y: 0 }}
-                                                    transition={{ delay: idx * 0.05 }}
-                                                    className="w-full"
-                                                >
-                                                    <CampaignBadgeCard 
-                                                        campaign={campaign} 
-                                                        onSelect={() => navigate('/admin/campaigns/manage/' + campaign.id)}
-                                                        onEdit={() => handleEdit(campaign)}
-                                                        onDelete={handleDeleteCampaign}
-                                                        updateCampaign={handleUpdateCampaignStatus}
-                                                        onCopyLink={() => handleCopyLink(campaign.id)}
-                                                        isUpdating={isUpdating}
-                                                    />
-
-                                                </motion.div>
-                                            ))}
-                                        </div>
+                                    <div className="flex flex-col md:flex-row items-start gap-6 md:gap-8 overflow-x-auto hide-scrollbar pb-8 px-2">
+                                        {['Open', 'Closed'].map(status => (
+                                            <div key={status} className="relative group/column w-full md:w-[420px] shrink-0 bg-white/70 dark:bg-[#0c0e14]/80 backdrop-blur-3xl rounded-[2rem] p-5 md:p-6 border border-black/[0.04] dark:border-white/[0.06] shadow-[0_8px_32px_rgba(0,0,0,0.03)] dark:shadow-[0_8px_40px_rgba(0,0,0,0.5)] overflow-hidden">
+                                                {/* Ambient Column Glow */}
+                                                <div className={cn(
+                                                    "absolute top-0 right-0 w-64 h-64 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20 transition-opacity duration-700 opacity-20 dark:opacity-10 group-hover/column:opacity-40 dark:group-hover/column:opacity-20",
+                                                    status === 'Open' ? "bg-neon-green" : "bg-red-500"
+                                                )} />
+                                                
+                                                <div className="relative z-10 flex items-center justify-between mb-8 px-1">
+                                                    <h3 className="text-sm font-black uppercase tracking-[0.2em] text-gray-900 dark:text-white flex items-center gap-3">
+                                                        <div className={cn("w-2 h-2 rounded-full", status === 'Open' ? "bg-neon-green shadow-[0_0_10px_rgba(57,255,20,0.5)]" : "bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]")} />
+                                                        {status} CAMPAIGNS
+                                                    </h3>
+                                                    <span className="text-xs font-bold bg-black/5 dark:bg-white/10 px-3 py-1.5 rounded-xl text-gray-600 dark:text-zinc-300 border border-black/[0.04] dark:border-white/[0.05]">
+                                                        {paginatedCampaigns.filter(c => c.status === status).length}
+                                                    </span>
+                                                </div>
+                                                <div className="relative z-10 flex flex-col gap-5">
+                                                    {paginatedCampaigns.filter(c => c.status === status).map((campaign, idx) => (
+                                                        <motion.div
+                                                            key={campaign.id}
+                                                            initial={{ opacity: 0, y: 20 }}
+                                                            animate={{ opacity: 1, y: 0 }}
+                                                            transition={{ delay: idx * 0.05 }}
+                                                            className="w-full"
+                                                        >
+                                                            <CampaignBadgeCard 
+                                                                campaign={campaign} 
+                                                                onSelect={() => navigate('/admin/campaigns/manage/' + campaign.id)}
+                                                                onEdit={() => handleEdit(campaign)}
+                                                                onDelete={handleDeleteCampaign}
+                                                                updateCampaign={handleUpdateCampaignStatus}
+                                                                onCopyLink={() => handleCopyLink(campaign.id)}
+                                                                isUpdating={isUpdating}
+                                                            />
+                                                        </motion.div>
+                                                    ))}
+                                                    {paginatedCampaigns.filter(c => c.status === status).length === 0 && (
+                                                        <div className="h-32 rounded-2xl border-2 border-dashed border-black/5 dark:border-white/5 flex items-center justify-center text-xs font-bold text-gray-400 dark:text-zinc-600">
+                                                            No {status.toLowerCase()} campaigns found
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        ))}
                                     </div>
                                 ) : (
                                     <div className="flex flex-col gap-3">
