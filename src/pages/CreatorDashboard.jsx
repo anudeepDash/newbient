@@ -13,6 +13,7 @@ import CreatorCityGroupCard from '../components/creator/CreatorCityGroupCard';
 import CampaignDetailModal from '../components/creator/CampaignDetailModal';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
+import { extractSocialUsername } from '../lib/socialUtils';
 
 // Lucide icon imports
 import MapPin from 'lucide-react/dist/esm/icons/map-pin';
@@ -648,7 +649,11 @@ const CreatorDashboard = () => {
         { id: 'rewards', label: 'Vault', mobileLabel: 'Vault', icon: Sparkles, count: 'Soon' },
     ];
 
-    const creatorHandle = profile.instagram ? `@${profile.instagram.replace(/^@/, '')}` : profile.linkedin ? profile.linkedin.replace(/^@/, '') : 'creator';
+    const creatorHandle = profile.instagram 
+        ? `@${extractSocialUsername(profile.instagram, 'instagram')}` 
+        : profile.linkedin 
+            ? `@${extractSocialUsername(profile.linkedin, 'linkedin')}` 
+            : 'creator';
     const creatorId = profile?.creatorId || String(profile?.uid || '').slice(0, 8).toUpperCase();
 
     // ─── Render ────────────────────────────────────────────────────────────────

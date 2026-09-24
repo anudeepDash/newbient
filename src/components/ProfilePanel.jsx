@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { useStore } from '../lib/store';
 import { cn, normalizePhoneNumber } from '../lib/utils';
+import { extractSocialUsername, hasDisallowedLink, buildSocialUrl } from '../lib/socialUtils';
 import { PREDEFINED_CITIES, CREATOR_NICHES } from '../lib/constants';
 import { useNavigate } from 'react-router-dom';
 import { db, auth } from '../lib/firebase';
@@ -1332,7 +1333,6 @@ const CreatorProfileManager = ({
         youtube: creatorProfile?.youtube || '',
         twitter: creatorProfile?.twitter || '',
         linkedin: creatorProfile?.linkedin || '',
-        website: creatorProfile?.website || '',
         bio: creatorProfile?.bio || '',
         doBarter: initialBarter,
         commercials: creatorProfile?.commercials || '₹5,000 – ₹25,000 / Deliverable',
@@ -1370,6 +1370,11 @@ const CreatorProfileManager = ({
 
     const handleChange = (e) => {
         const { name, value } = e.target;
+        if (name === 'instagram' || name === 'linkedin' || name === 'youtube' || name === 'twitter') {
+            const cleanVal = extractSocialUsername(value, name);
+            setForm(prev => ({ ...prev, [name]: cleanVal }));
+            return;
+        }
         setForm(prev => ({ ...prev, [name]: value }));
     };
 
@@ -1533,6 +1538,13 @@ const CreatorProfileManager = ({
             return;
         }
 
+        for (const field of ['instagram', 'linkedin', 'youtube', 'twitter']) {
+            if (form[field] && hasDisallowedLink(form[field])) {
+                if (addToast) addToast(`Links are not allowed. Please enter only your ${field} username/handle.`, "error");
+                return;
+            }
+        }
+
         setIsSaving(true);
         try {
             let finalCity = form.city === 'Others' ? (form.customCity?.trim() || 'Others') : form.city;
@@ -1554,12 +1566,12 @@ const CreatorProfileManager = ({
                 specializations: [finalNiche],
                 cityPageFocus: form.categories === 'City Pages' ? (form.cityPageFocus?.trim() || '') : '',
                 collegeName: (form.categories === 'Student/Campus Creator' || form.categories === 'College Pages') ? (form.collegeName?.trim() || '') : '',
-                instagram: form.instagram?.trim().replace(/^@/, '') || '',
+                instagram: extractSocialUsername(form.instagram, 'instagram'),
                 instagramFollowers: form.instagramFollowers || '',
-                linkedin: form.linkedin?.trim() || '',
-                youtube: form.youtube?.trim() || '',
-                twitter: form.twitter?.trim() || '',
-                website: form.website?.trim() || '',
+                linkedin: extractSocialUsername(form.linkedin, 'linkedin'),
+                youtube: extractSocialUsername(form.youtube, 'youtube'),
+                twitter: extractSocialUsername(form.twitter, 'twitter'),
+                website: '',
                 bio: form.bio?.trim() || '',
                 doBarter: form.doBarter || 'both',
                 commercials: finalCommercials,
@@ -1845,7 +1857,7 @@ const CreatorProfileManager = ({
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
                             <div className="relative">
                                 <Linkedin className="absolute left-3.5 top-1/2 -translate-y-1/2 text-blue-500" size={14} />
                                 <input 
@@ -1853,7 +1865,7 @@ const CreatorProfileManager = ({
                                     name="linkedin"
                                     value={form.linkedin}
                                     onChange={handleChange}
-                                    placeholder="LinkedIn profile link"
+                                    placeholder="LinkedIn username"
                                     className="w-full h-11 pl-9 pr-3.5 rounded-xl bg-white dark:bg-black/50 border border-gray-200 dark:border-white/10 text-xs font-bold text-gray-900 dark:text-white focus:border-blue-500 outline-none transition-all placeholder:text-gray-400"
                                 />
                             </div>
@@ -1864,7 +1876,7 @@ const CreatorProfileManager = ({
                                     name="youtube"
                                     value={form.youtube}
                                     onChange={handleChange}
-                                    placeholder="YouTube channel link"
+                                    placeholder="YouTube @handle"
                                     className="w-full h-11 pl-9 pr-3.5 rounded-xl bg-white dark:bg-black/50 border border-gray-200 dark:border-white/10 text-xs font-bold text-gray-900 dark:text-white focus:border-red-500 outline-none transition-all placeholder:text-gray-400"
                                 />
                             </div>
@@ -1875,19 +1887,8 @@ const CreatorProfileManager = ({
                                     name="twitter"
                                     value={form.twitter}
                                     onChange={handleChange}
-                                    placeholder="X / Twitter handle or link"
+                                    placeholder="X / Twitter @handle"
                                     className="w-full h-11 pl-9 pr-3.5 rounded-xl bg-white dark:bg-black/50 border border-gray-200 dark:border-white/10 text-xs font-bold text-gray-900 dark:text-white focus:border-sky-500 outline-none transition-all placeholder:text-gray-400"
-                                />
-                            </div>
-                            <div className="relative">
-                                <Globe className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neon-green" size={14} />
-                                <input 
-                                    type="text"
-                                    name="website"
-                                    value={form.website}
-                                    onChange={handleChange}
-                                    placeholder="Portfolio or Website link"
-                                    className="w-full h-11 pl-9 pr-3.5 rounded-xl bg-white dark:bg-black/50 border border-gray-200 dark:border-white/10 text-xs font-bold text-gray-900 dark:text-white focus:border-neon-green outline-none transition-all placeholder:text-gray-400"
                                 />
                             </div>
                         </div>
@@ -2155,26 +2156,26 @@ const CreatorProfileManager = ({
                 </div>
 
                 {/* Social Channel Links */}
-                {(creatorProfile.linkedin || creatorProfile.youtube || creatorProfile.twitter || creatorProfile.website) && (
+                {(creatorProfile.instagram || creatorProfile.linkedin || creatorProfile.youtube || creatorProfile.twitter) && (
                     <div className="flex flex-wrap items-center gap-3 mt-3 pt-3 border-t border-gray-200 dark:border-white/5 text-[11px]">
+                        {creatorProfile.instagram && (
+                            <a href={buildSocialUrl(creatorProfile.instagram, 'instagram')} target="_blank" rel="noopener noreferrer" className="text-pink-500 hover:underline inline-flex items-center gap-1 font-semibold">
+                                <Instagram size={12} /> <span>@{extractSocialUsername(creatorProfile.instagram, 'instagram')}</span>
+                            </a>
+                        )}
                         {creatorProfile.linkedin && (
-                            <a href={creatorProfile.linkedin.startsWith('http') ? creatorProfile.linkedin : `https://${creatorProfile.linkedin}`} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline inline-flex items-center gap-1">
+                            <a href={buildSocialUrl(creatorProfile.linkedin, 'linkedin')} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline inline-flex items-center gap-1 font-semibold">
                                 <Linkedin size={12} /> <span>LinkedIn</span>
                             </a>
                         )}
                         {creatorProfile.youtube && (
-                            <a href={creatorProfile.youtube.startsWith('http') ? creatorProfile.youtube : `https://${creatorProfile.youtube}`} target="_blank" rel="noopener noreferrer" className="text-red-500 hover:underline inline-flex items-center gap-1">
+                            <a href={buildSocialUrl(creatorProfile.youtube, 'youtube')} target="_blank" rel="noopener noreferrer" className="text-red-500 hover:underline inline-flex items-center gap-1 font-semibold">
                                 <Youtube size={12} /> <span>YouTube</span>
                             </a>
                         )}
                         {creatorProfile.twitter && (
-                            <a href={creatorProfile.twitter.startsWith('http') ? creatorProfile.twitter : `https://x.com/${creatorProfile.twitter.replace(/^@/, '')}`} target="_blank" rel="noopener noreferrer" className="text-sky-500 hover:underline inline-flex items-center gap-1">
+                            <a href={buildSocialUrl(creatorProfile.twitter, 'twitter')} target="_blank" rel="noopener noreferrer" className="text-sky-500 hover:underline inline-flex items-center gap-1 font-semibold">
                                 <Twitter size={12} /> <span>Twitter</span>
-                            </a>
-                        )}
-                        {creatorProfile.website && (
-                            <a href={creatorProfile.website.startsWith('http') ? creatorProfile.website : `https://${creatorProfile.website}`} target="_blank" rel="noopener noreferrer" className="text-neon-green hover:underline inline-flex items-center gap-1">
-                                <Globe size={12} /> <span>Portfolio</span>
                             </a>
                         )}
                     </div>

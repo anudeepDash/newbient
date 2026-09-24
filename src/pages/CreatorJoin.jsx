@@ -64,6 +64,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import CreatorPassCard from '../components/creator/CreatorPassCard';
 import CreatorCityGroupCard from '../components/creator/CreatorCityGroupCard';
 import { cn, normalizePhoneNumber } from '../lib/utils';
+import { extractSocialUsername, hasDisallowedLink } from '../lib/socialUtils';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import GlobalLoader from '../components/ui/GlobalLoader';
 import useDynamicMeta from '../hooks/useDynamicMeta';
@@ -230,10 +231,10 @@ const CreatorJoin = () => {
 
     const handleVerifyInstagram = useCallback(async (manualHandle = null) => {
         const raw = manualHandle !== null ? manualHandle : formData.instagram;
-        const cleanHandle = String(raw || '').trim().replace(/^@/, '');
+        const cleanHandle = extractSocialUsername(raw || '', 'instagram');
 
         if (!cleanHandle) {
-            setInstagramVerificationError('Please enter your Instagram username.');
+            setInstagramVerificationError('Please enter your Instagram username (links are not allowed).');
             return;
         }
 
@@ -343,7 +344,7 @@ const CreatorJoin = () => {
     }, [formData.instagram, minInstagramFollowers]);
 
     const handleInstagramChange = (e) => {
-        const val = e.target.value.replace(/^@/, '');
+        const val = extractSocialUsername(e.target.value, 'instagram');
         setFormData(prev => ({ ...prev, instagram: val }));
         if (instagramVerifiedData && instagramVerifiedData.handle !== val.trim().toLowerCase()) {
             setInstagramVerifiedData(null);
@@ -619,6 +620,11 @@ const CreatorJoin = () => {
             }
             setSmsFailed(false);
             setPhoneError('');
+        }
+        if (name === 'linkedin' || name === 'youtube' || name === 'twitter') {
+            const cleanVal = extractSocialUsername(value, name);
+            setFormData(prev => ({ ...prev, [name]: cleanVal }));
+            return;
         }
         setFormData(prev => ({ ...prev, [name]: value }));
     };
@@ -896,8 +902,16 @@ const CreatorJoin = () => {
                 return;
             }
             if (!formData.instagram.trim() && !formData.linkedin.trim()) {
-                useStore.getState().addToast("Please provide at least your Instagram or LinkedIn.", 'warning');
+                useStore.getState().addToast("Please provide at least your Instagram or LinkedIn username.", 'warning');
                 return;
+            }
+
+            for (const field of ['instagram', 'linkedin', 'youtube', 'twitter']) {
+                const val = formData[field]?.trim();
+                if (val && hasDisallowedLink(val)) {
+                    useStore.getState().addToast(`Links are not allowed. Please enter only your ${field} username/handle.`, 'error');
+                    return;
+                }
             }
 
             if (formData.instagram.trim()) {
@@ -983,10 +997,10 @@ const CreatorJoin = () => {
                 finalCity = 'Vizag';
             }
             const finalNiche = formData.categories === 'Others' ? formData.customNiche.trim() : formData.categories;
-            const cleanInstagram = formData.instagram ? formData.instagram.trim().replace(/^@/, '') : '';
-            const cleanLinkedin = formData.linkedin ? formData.linkedin.trim() : '';
-            const cleanTwitter = formData.twitter ? formData.twitter.trim() : '';
-            const cleanWebsite = formData.website ? formData.website.trim() : '';
+            const cleanInstagram = extractSocialUsername(formData.instagram, 'instagram');
+            const cleanLinkedin = extractSocialUsername(formData.linkedin, 'linkedin');
+            const cleanYoutube = extractSocialUsername(formData.youtube, 'youtube');
+            const cleanTwitter = extractSocialUsername(formData.twitter, 'twitter');
             const cleanDigits = formData.phone.replace(/\D/g, '').slice(-10);
 
             const isInstaVerified = Boolean(instagramVerifiedData && instagramVerifiedData.handle === cleanInstagram.toLowerCase());
@@ -1012,8 +1026,9 @@ const CreatorJoin = () => {
                 instagramVerifiedAt: isInstaVerified ? new Date().toISOString() : null,
                 instagramProfilePic: isInstaVerified ? (instagramVerifiedData?.profilePic || null) : null,
                 linkedin: cleanLinkedin,
+                youtube: cleanYoutube,
                 twitter: cleanTwitter,
-                website: cleanWebsite,
+                website: '',
                 cityPageFocus: formData.cityPageFocus ? formData.cityPageFocus.trim() : '',
                 city: finalCity,
                 categories: finalNiche,
@@ -2232,8 +2247,11 @@ const CreatorJoin = () => {
 
                                 {/* Optional Additional Channels */}
                                 <div className="space-y-2">
-                                    <label className="text-[10px] font-bold text-gray-900 dark:text-white/40 uppercase tracking-wider block">Additional Channels (Optional)</label>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3 items-start">
+                                    <div className="flex items-center justify-between">
+                                        <label className="text-[10px] font-bold text-gray-900 dark:text-white/40 uppercase tracking-wider block">Additional Channels (Optional)</label>
+                                        <span className="text-[10px] font-mono text-gray-400 dark:text-zinc-500">Usernames only · Links generated automatically</span>
+                                    </div>
+                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3 items-start">
                                         <div className="relative">
                                             <Linkedin className="absolute left-3.5 top-1/2 -translate-y-1/2 text-blue-400" size={14} />
                                             <input
@@ -2241,7 +2259,7 @@ const CreatorJoin = () => {
                                                 name="linkedin"
                                                 value={formData.linkedin}
                                                 onChange={handleChange}
-                                                placeholder="LinkedIn profile link"
+                                                placeholder="LinkedIn username"
                                                 className="w-full h-11 sm:h-12 pl-9 sm:pl-10 pr-3 bg-white dark:bg-black/40 border border-black/[0.1] dark:border-white/[0.08] focus:border-blue-400 rounded-xl text-xs font-medium text-gray-900 dark:text-white outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-white/20"
                                             />
                                         </div>
@@ -2252,7 +2270,7 @@ const CreatorJoin = () => {
                                                 name="youtube"
                                                 value={formData.youtube}
                                                 onChange={handleChange}
-                                                placeholder="YouTube channel link"
+                                                placeholder="YouTube @handle"
                                                 className="w-full h-11 sm:h-12 pl-9 sm:pl-10 pr-3 bg-white dark:bg-black/40 border border-black/[0.1] dark:border-white/[0.08] focus:border-red-400 rounded-xl text-xs font-medium text-gray-900 dark:text-white outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-white/20"
                                             />
                                         </div>
@@ -2263,19 +2281,8 @@ const CreatorJoin = () => {
                                                 name="twitter"
                                                 value={formData.twitter}
                                                 onChange={handleChange}
-                                                placeholder="X / Twitter handle or link"
+                                                placeholder="X / Twitter @handle"
                                                 className="w-full h-11 sm:h-12 pl-9 sm:pl-10 pr-3 bg-white dark:bg-black/40 border border-black/[0.1] dark:border-white/[0.08] focus:border-sky-400 rounded-xl text-xs font-medium text-gray-900 dark:text-white outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-white/20"
-                                            />
-                                        </div>
-                                        <div className="relative">
-                                            <Globe className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neon-green" size={14} />
-                                            <input
-                                                type="text"
-                                                name="website"
-                                                value={formData.website}
-                                                onChange={handleChange}
-                                                placeholder="Portfolio or Website link"
-                                                className="w-full h-11 sm:h-12 pl-9 sm:pl-10 pr-3 bg-white dark:bg-black/40 border border-black/[0.1] dark:border-white/[0.08] focus:border-neon-green rounded-xl text-xs font-medium text-gray-900 dark:text-white outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-white/20"
                                             />
                                         </div>
                                     </div>

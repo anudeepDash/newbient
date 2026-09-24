@@ -11,6 +11,7 @@ import { useStore } from '../../lib/store';
 import { useStoreSubscription } from '../../hooks/useStoreSubscription';
 import { DEFAULT_CREATOR_GROUPS } from '../../lib/constants';
 import { requestAutoLocation } from '../../lib/location';
+import { extractSocialUsername } from '../../lib/socialUtils';
 import newbiCreatorsLogoDark from '../../assets/newbi-creators-logo.png';
 import newbiCreatorsLogoLight from '../../assets/newbi-creators-logo-light.png';
 import StudioSelect from '../ui/StudioSelect';
@@ -132,7 +133,7 @@ const CreatorPassCard = ({
         niche: (Array.isArray(profile?.categories) ? profile.categories[0] : profile?.categories) || 
                (Array.isArray(profile?.specializations) ? profile.specializations[0] : profile?.specializations) || 
                "Culture & Lifestyle",
-        handle: (profile?.instagramHandle || profile?.instagram || "your.handle").replace('@', ''),
+        handle: extractSocialUsername(profile?.instagramHandle || profile?.instagram || "your.handle", 'instagram'),
         avatar: profile?.profilePicture || profile?.profileImage || profile?.avatar || profile?.photoURL || profile?.avatarUrl || null,
         status: isVerified ? "approved" : (profile?.profileStatus || (isRegistered ? "pending" : "unclaimed")),
         points: profile?.points !== undefined ? profile.points : 500,

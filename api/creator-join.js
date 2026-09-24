@@ -60,6 +60,57 @@ const normalizePhoneNumber = (phone) => {
     return digits.slice(-10);
 };
 
+const extractSocialUsername = (input, platform = 'general') => {
+    if (!input || typeof input !== 'string') return '';
+    let val = input.trim();
+    if (!val) return '';
+    val = val.replace(/^[@/\s]+/, '');
+    if (
+        val.includes('/') || 
+        val.includes('http://') || 
+        val.includes('https://') || 
+        val.includes('.com') || 
+        val.includes('.be') || 
+        val.includes('www.') ||
+        val.includes('?')
+    ) {
+        try {
+            const urlStr = val.startsWith('http://') || val.startsWith('https://') ? val : `https://${val}`;
+            const url = new URL(urlStr);
+            const pathname = url.pathname.replace(/^\/+|\/+$/g, '');
+            const segments = pathname.split('/').filter(Boolean);
+            if (segments.length > 0) {
+                let candidate = segments[segments.length - 1];
+                if (segments.length >= 2 && segments[0] === 'in') candidate = segments[1];
+                if (segments.length >= 2 && (segments[0] === 'c' || segments[0] === 'user')) candidate = segments[1];
+                val = candidate;
+            }
+        } catch {
+            const noQuery = val.split('?')[0].split('#')[0].replace(/\/+$/, '');
+            const parts = noQuery.split('/').filter(Boolean);
+            if (parts.length > 0) val = parts[parts.length - 1];
+        }
+    }
+    return val.split('?')[0].split('#')[0].replace(/^[@/\s]+|[/@#\s]+$/g, '').trim();
+};
+
+const hasDisallowedLink = (input) => {
+    if (!input || typeof input !== 'string') return false;
+    const str = input.trim().toLowerCase();
+    return str.startsWith('http://') || 
+           str.startsWith('https://') || 
+           str.startsWith('www.') || 
+           str.includes('http:') ||
+           str.includes('https:') ||
+           str.includes('.com') || 
+           str.includes('.net') || 
+           str.includes('.org') || 
+           str.includes('.io') || 
+           str.includes('.me') || 
+           str.includes('/') ||
+           str.includes('://');
+};
+
 const parseFollowerCount = (str) => {
     if (!str && str !== 0) return 0;
     if (typeof str === 'number') return Math.round(str);
@@ -89,9 +140,9 @@ const formatFollowerCount = (num) => {
 };
 
 const fetchInstagramProfile = async (rawHandle) => {
-    const cleanHandle = String(rawHandle || '').trim().replace(/^@/, '').toLowerCase();
+    const cleanHandle = extractSocialUsername(rawHandle, 'instagram').toLowerCase();
     if (!cleanHandle || !/^[a-zA-Z0-9._]{1,30}$/.test(cleanHandle)) {
-        return { success: false, error: 'Invalid Instagram username. Handles must be 1-30 characters containing only letters, numbers, periods, and underscores.' };
+        return { success: false, error: 'Links are not permitted. Please enter only your Instagram username (1-30 characters, letters, numbers, periods, underscores).' };
     }
 
     const decodeEntities = (str) => {
@@ -843,10 +894,10 @@ export default async function handler(req, res) {
     // ── ACTION: VERIFY INSTAGRAM PROFILE & FOLLOWERS ──────────────────────────
     if (action === 'verify-instagram') {
         const rawHandle = req.query?.handle || req.body?.handle || '';
-        const cleanHandle = String(rawHandle).trim().replace(/^@/, '').toLowerCase();
+        const cleanHandle = extractSocialUsername(rawHandle, 'instagram').toLowerCase();
 
         if (!cleanHandle) {
-            return res.status(400).json({ success: false, error: 'Instagram handle is required.' });
+            return res.status(400).json({ success: false, error: 'Instagram username is required. Links are not permitted.' });
         }
 
         try {
@@ -1392,7 +1443,23 @@ export default async function handler(req, res) {
 
         const normPhone = normalizePhoneNumber(rawPhone);
         const normEmail = rawEmail.trim().toLowerCase();
-        const cleanInsta = rawInstagram.trim().replace(/^@/, '').toLowerCase();
+        const cleanInsta = extractSocialUsername(rawInstagram, 'instagram').toLowerCase();
+        const cleanLinkedin = extractSocialUsername(creatorData.linkedin, 'linkedin');
+        const cleanYoutube = extractSocialUsername(creatorData.youtube, 'youtube');
+        const cleanTwitter = extractSocialUsername(creatorData.twitter, 'twitter');
+
+        if (hasDisallowedLink(rawInstagram) && !cleanInsta) {
+            return res.status(400).json({ success: false, error: 'Links are not permitted. Please submit only your Instagram username or handle.' });
+        }
+        if (hasDisallowedLink(creatorData.linkedin) && !cleanLinkedin) {
+            return res.status(400).json({ success: false, error: 'Links are not permitted. Please submit only your LinkedIn username.' });
+        }
+        if (hasDisallowedLink(creatorData.youtube) && !cleanYoutube) {
+            return res.status(400).json({ success: false, error: 'Links are not permitted. Please submit only your YouTube handle.' });
+        }
+        if (hasDisallowedLink(creatorData.twitter) && !cleanTwitter) {
+            return res.status(400).json({ success: false, error: 'Links are not permitted. Please submit only your X/Twitter handle.' });
+        }
 
         const callerUid = decodedToken?.uid || null;
         const targetUid = creatorData.uid || callerUid || adminDb.collection('creators').doc().id;
@@ -1518,6 +1585,10 @@ export default async function handler(req, res) {
             verifiedAt: shouldAutoVerify ? now : (creatorData.verifiedAt || null),
             verifiedBy: shouldAutoVerify ? (creatorData.verifiedBy || 'system_auto_verify') : null,
             instagram: cleanInsta,
+            linkedin: cleanLinkedin,
+            youtube: cleanYoutube,
+            twitter: cleanTwitter,
+            website: '',
             instagramFollowers: submittedFollowers ? String(submittedFollowers) : (creatorData.instagramFollowers || '0'),
             instagramVerified: Boolean(creatorData.instagramVerified || (cleanInsta && submittedFollowers >= minInstagramFollowers)),
             instagramVerifiedAt: creatorData.instagramVerifiedAt || (cleanInsta ? now : null),
