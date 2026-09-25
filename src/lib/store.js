@@ -231,21 +231,6 @@ export const useStore = create((set, get) => ({
             }
         }
 
-        // For video files, prioritize Firebase Storage with proper contentType metadata
-        // (avoids Cloudinary free-tier unsigned preset video rejections and 40MB limits)
-        if (isVideo) {
-            try {
-                const uniqueId = Math.random().toString(36).substring(2, 9);
-                const cleanName = file.name.replace(/[^a-zA-Z0-9.]/g, '_');
-                const storagePath = `events/videos/${uniqueId}_${cleanName}`;
-                const storageRef = ref(storage, storagePath);
-                await uploadBytes(storageRef, file, { contentType: file.type || 'video/mp4' });
-                return await getDownloadURL(storageRef);
-            } catch (firebaseVideoError) {
-                console.warn("Firebase Storage video upload failed, trying Cloudinary video endpoint:", firebaseVideoError);
-            }
-        }
-
         const data = new FormData();
         data.append("file", file);
         data.append("upload_preset", import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET || "maw1e4ud");
@@ -294,40 +279,93 @@ export const useStore = create((set, get) => ({
         }
     },
 
-    // Dedicated Resumable Video Upload Utility with Progress Tracking
+    // Dedicated Resumable Video Upload Utility with Real-time Progress Tracking
     uploadVideoFile: async (file, onProgress = null) => {
         if (!file) return null;
-        const uniqueId = Math.random().toString(36).substring(2, 9);
-        const cleanName = file.name.replace(/[^a-zA-Z0-9.]/g, '_');
-        const storagePath = `events/videos/${uniqueId}_${cleanName}`;
-        const storageRef = ref(storage, storagePath);
-        const metadata = { contentType: file.type || 'video/mp4' };
 
+        const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || "dgtalrz4n";
+        const uploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET || "maw1e4ud";
+
+        // Step 1: Upload directly to Cloudinary with real-time XHR progress (avoids Firebase CORS/rules hangs)
         try {
-            const uploadTask = uploadBytesResumable(storageRef, file, metadata);
             return await new Promise((resolve, reject) => {
-                uploadTask.on(
-                    'state_changed',
-                    (snapshot) => {
-                        if (snapshot.totalBytes > 0) {
-                            const progress = Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100);
-                            if (onProgress) onProgress(progress);
-                        }
-                    },
-                    (error) => {
-                        console.warn("Firebase resumable video upload error:", error);
-                        reject(error);
-                    },
-                    async () => {
-                        const downloadUrl = await getDownloadURL(uploadTask.snapshot.ref);
-                        if (onProgress) onProgress(100);
-                        resolve(downloadUrl);
+                const xhr = new XMLHttpRequest();
+                const formData = new FormData();
+                formData.append("file", file);
+                formData.append("upload_preset", uploadPreset);
+                formData.append("cloud_name", cloudName);
+
+                xhr.open("POST", `https://api.cloudinary.com/v1_1/${cloudName}/video/upload`, true);
+
+                // Real-time byte upload tracking
+                xhr.upload.onprogress = (event) => {
+                    if (event.lengthComputable && event.total > 0) {
+                        const percent = Math.min(99, Math.round((event.loaded / event.total) * 100));
+                        if (onProgress) onProgress(percent);
                     }
-                );
+                };
+
+                xhr.onload = () => {
+                    if (xhr.status >= 200 && xhr.status < 300) {
+                        try {
+                            const res = JSON.parse(xhr.responseText);
+                            if (res.secure_url) {
+                                if (onProgress) onProgress(100);
+                                resolve(res.secure_url);
+                                return;
+                            }
+                        } catch (parseErr) {
+                            console.warn("Error parsing upload response:", parseErr);
+                        }
+                    }
+                    try {
+                        const errObj = JSON.parse(xhr.responseText);
+                        reject(new Error(errObj.error?.message || `Upload failed with status ${xhr.status}`));
+                    } catch {
+                        reject(new Error(`Upload failed with status ${xhr.status}`));
+                    }
+                };
+
+                xhr.onerror = () => {
+                    reject(new Error("Network connection error during video upload."));
+                };
+
+                xhr.ontimeout = () => {
+                    reject(new Error("Video upload timed out."));
+                };
+
+                // 2.5 minutes timeout for video processing
+                xhr.timeout = 150000;
+
+                xhr.send(formData);
             });
-        } catch (fbErr) {
-            console.warn("Resumable upload failed, attempting fallback...", fbErr);
-            return await get().uploadToCloudinary(file);
+        } catch (cloudinaryErr) {
+            console.warn("Cloudinary video upload failed, trying Firebase Storage fallback:", cloudinaryErr);
+            if (onProgress) onProgress(50);
+
+            // Step 2: Fallback to Firebase Storage with a strict 20s timeout so it NEVER gets stuck indefinitely
+            try {
+                const uniqueId = Math.random().toString(36).substring(2, 9);
+                const cleanName = file.name.replace(/[^a-zA-Z0-9.]/g, '_');
+                const storagePath = `events/videos/${uniqueId}_${cleanName}`;
+                const storageRef = ref(storage, storagePath);
+                const metadata = { contentType: file.type || 'video/mp4' };
+
+                const uploadPromise = uploadBytes(storageRef, file, metadata).then(async (snap) => {
+                    return await getDownloadURL(snap.ref);
+                });
+
+                const timeoutPromise = new Promise((_, reject) => 
+                    setTimeout(() => reject(new Error("Firebase Storage connection timed out.")), 20000)
+                );
+
+                const downloadUrl = await Promise.race([uploadPromise, timeoutPromise]);
+                if (onProgress) onProgress(100);
+                return downloadUrl;
+            } catch (fbErr) {
+                console.error("Both Cloudinary and Firebase video uploads failed:", fbErr);
+                throw new Error(cloudinaryErr.message || "Failed to upload video. Please ensure the file is a valid video format and under 100MB.");
+            }
         }
     },
 

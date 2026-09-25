@@ -298,6 +298,10 @@ const UpcomingEventsManager = () => {
 
     const handleVideoUpload = async (file) => {
         if (!file) return;
+        if (file.size > 100 * 1024 * 1024) {
+            useStore.getState().addToast("Video file is larger than 100MB. Please choose a video under 100MB.", 'error');
+            return;
+        }
         setIsUploadingVideo(true);
         setVideoUploadProgress(0);
         try {
@@ -902,6 +906,7 @@ const UpcomingEventsManager = () => {
                                                                                     setVideoFile(file);
                                                                                     handleVideoUpload(file);
                                                                                 }
+                                                                                e.target.value = '';
                                                                             }} 
                                                                             className="absolute inset-0 opacity-0 cursor-pointer z-10 disabled:cursor-not-allowed" 
                                                                         />
