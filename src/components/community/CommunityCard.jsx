@@ -148,7 +148,13 @@ const CommunityCard = ({ item, type, handleShare, onAction }) => {
                 >
                     {/* Background Visual */}
                     <div className="absolute inset-0 z-0 overflow-hidden">
-                        {item.videoUrl && item.enableVideoBackground && (item.videoUrl.match(/\.(mp4|webm|ogg)$/i) || item.videoUrl.includes('cloudinary.com')) ? (
+                        {item.videoUrl && item.enableVideoBackground && (
+                            item.videoUrl.match(/\.(mp4|webm|ogg|mov)(\?|$)/i) || 
+                            item.videoUrl.includes('cloudinary.com') || 
+                            item.videoUrl.includes('firebasestorage.googleapis.com') ||
+                            item.videoUrl.includes('storage.googleapis.com') ||
+                            item.videoUrl.startsWith('blob:')
+                        ) ? (
                             <motion.video 
                                 src={item.videoUrl}
                                 autoPlay

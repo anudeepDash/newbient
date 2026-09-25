@@ -8,6 +8,8 @@ import User from 'lucide-react/dist/esm/icons/user';
 import ShieldCheck from 'lucide-react/dist/esm/icons/shield-check';
 import Download from 'lucide-react/dist/esm/icons/download';
 import AlertTriangle from 'lucide-react/dist/esm/icons/alert-triangle';
+import Clock from 'lucide-react/dist/esm/icons/clock';
+import XCircle from 'lucide-react/dist/esm/icons/x-circle';
 import CheckCircle2 from 'lucide-react/dist/esm/icons/check-circle-2';
 import { db } from '../lib/firebase';
 import { collection, query, where, getDocs, collectionGroup, doc, getDoc } from 'firebase/firestore';
@@ -124,8 +126,13 @@ const DigitalTicket = () => {
     const eventLocation = ticketData.eventLocation || ticketData.location;
     const eventTime = ticketData.eventTime || '';
     
-    // For paid tickets, check if verified
-    const isVerified = type === 'guestlist' ? true : status === 'approved' || status === 'dispatched';
+    const isPending = status === 'pending';
+    const isRejected = status === 'rejected';
+
+    // For paid tickets, check if verified. For guestlist, verified if not pending or rejected.
+    const isVerified = type === 'guestlist' 
+        ? (!isPending && !isRejected) 
+        : (status === 'approved' || status === 'dispatched');
     
     // Compute QR Data
     const isRSVPOnly = type === 'guestlist' && ticketData.guestlistMode === 'rsvp';
@@ -179,8 +186,34 @@ const DigitalTicket = () => {
                 className="relative z-10 w-full max-w-md bg-white dark:bg-zinc-900/80 backdrop-blur-3xl border border-gray-200 dark:border-white/10 rounded-[3rem] overflow-hidden shadow-xl dark:shadow-[0_0_100px_rgba(0,255,100,0.1)]"
             >
                 {/* Header Strip */}
-                <div className={`p-8 border-b border-gray-200 dark:border-white/10 text-center ${isRSVPOnly ? 'bg-neon-pink/10' : isVerified ? 'bg-gray-50 dark:bg-black/40' : 'bg-yellow-500/10'}`}>
-                    {isRSVPOnly ? (
+                <div className={`p-8 border-b border-gray-200 dark:border-white/10 text-center ${
+                    isRejected 
+                        ? 'bg-red-500/10'
+                        : isPending 
+                            ? 'bg-amber-500/10'
+                            : isRSVPOnly 
+                                ? 'bg-neon-pink/10' 
+                                : isVerified 
+                                    ? 'bg-gray-50 dark:bg-black/40' 
+                                    : 'bg-yellow-500/10'
+                }`}>
+                    {isRejected ? (
+                        <>
+                            <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-4 border border-red-500/20">
+                                <XCircle size={32} className="text-red-500" />
+                            </div>
+                            <h2 className="text-xl font-black italic uppercase tracking-widest text-gray-900 dark:text-white">Application Rejected</h2>
+                            <p className="text-[10px] text-red-400 font-bold tracking-[0.2em] uppercase mt-1">Guestlist entry was not approved</p>
+                        </>
+                    ) : isPending ? (
+                        <>
+                            <div className="w-16 h-16 bg-amber-500/10 rounded-full flex items-center justify-center mx-auto mb-4 border border-amber-500/20">
+                                <Clock size={32} className="text-amber-400 animate-pulse" />
+                            </div>
+                            <h2 className="text-xl font-black italic uppercase tracking-widest text-gray-900 dark:text-white">Under Curator Review</h2>
+                            <p className="text-[10px] text-amber-400 font-bold tracking-[0.2em] uppercase mt-1">Task submission is being reviewed</p>
+                        </>
+                    ) : isRSVPOnly ? (
                         <>
                             <div className="w-16 h-16 bg-neon-pink/10 rounded-full flex items-center justify-center mx-auto mb-4 border border-neon-pink/20">
                                 <CheckCircle2 size={32} className="text-neon-pink animate-[pulse_2s_infinite]" />
@@ -235,7 +268,19 @@ const DigitalTicket = () => {
 
                     {/* QR Code */}
                     <div className="flex flex-col items-center justify-center p-6 bg-white rounded-3xl relative overflow-hidden group">
-                        {isRSVPOnly ? (
+                        {isRejected ? (
+                            <div className="w-48 h-48 flex flex-col items-center justify-center text-red-500 gap-4 text-center px-4">
+                                <XCircle size={48} className="opacity-80" />
+                                <span className="text-[10px] font-black uppercase tracking-widest">Entry Denied</span>
+                                <span className="text-[8px] font-bold text-gray-500 uppercase tracking-widest leading-relaxed">This guestlist application was not approved by event organizers.</span>
+                            </div>
+                        ) : isPending ? (
+                            <div className="w-48 h-48 flex flex-col items-center justify-center text-amber-500 gap-4 text-center px-4">
+                                <Clock size={48} className="opacity-80 animate-pulse" />
+                                <span className="text-[10px] font-black uppercase tracking-widest">Awaiting Approval</span>
+                                <span className="text-[8px] font-bold text-gray-500 uppercase tracking-widest leading-relaxed">Pass QR code will unlock once curators approve your submission.</span>
+                            </div>
+                        ) : isRSVPOnly ? (
                             <div className="w-48 h-48 flex flex-col items-center justify-center text-neon-pink gap-4 text-center">
                                 <CheckCircle2 size={48} className="opacity-80" />
                                 <span className="text-[10px] font-black uppercase tracking-widest px-4">RSVP CONFIRMED</span>

@@ -4,7 +4,7 @@ import {
     LayoutGrid, Plus, Trash2, Edit, Save, Eye, EyeOff, Sparkles, Clock, MapPin, 
     IndianRupee, Image as ImageIcon, ChevronDown, ChevronUp, X, Upload, Zap, Ticket, 
     Link2, Copy, CheckCircle, Mail, Radio, Calendar, FileText, Music, Map as MapIcon, 
-    RotateCcw, Video as VideoIcon, Pin 
+    RotateCcw, Video as VideoIcon, Pin, FileUp 
 } from 'lucide-react';
 
 import { useStore } from '../../lib/store';
@@ -22,7 +22,7 @@ import StudioDatePicker from '../../components/ui/StudioDatePicker';
 import StudioTimePicker from '../../components/ui/StudioTimePicker';
 import StudioSelect from '../../components/ui/StudioSelect';
 import EventHubModal from '../../components/community/EventHubModal';
-
+import GuestlistTaskConfig from '../../components/admin/GuestlistTaskConfig';
 
 import AdminCommunityHubLayout from '../../components/admin/AdminCommunityHubLayout';
 
@@ -71,6 +71,8 @@ const UpcomingEventsManager = () => {
         isGuestlistEnabled: false,
         guestlistMode: 'qr',
         perUserLimit: 5,
+        hasGuestlistTask: false,
+        guestlistTask: null,
         ticketCategories: [],
         alsoPostToAnnouncements: false,
         imageTransform: { scale: 1, x: 0, y: 0 },
@@ -92,6 +94,8 @@ const UpcomingEventsManager = () => {
     const [artistsInput, setArtistsInput] = useState('');
     const [venueLayoutFile, setVenueLayoutFile] = useState(null);
     const [videoFile, setVideoFile] = useState(null);
+    const [isUploadingVideo, setIsUploadingVideo] = useState(false);
+    const [videoUploadProgress, setVideoUploadProgress] = useState(0);
 
     const coreContentTabs = [
         { name: 'Upcoming', path: '/admin/upcoming-events', icon: Calendar, color: 'text-neon-green' },
@@ -106,7 +110,8 @@ const UpcomingEventsManager = () => {
     const resetForm = () => {
         setNewEvent({
             title: '', date: '', time: '', category: '', description: '', location: '', locationUrl: '', buttonText: '', image: '', hubImage: '', link: '', venueLayout: '', alsoPostToAnnouncements: false,
-            isTicketed: false, ticketMode: 'qr', isGuestlistEnabled: false, guestlistMode: 'qr', perUserLimit: 5, ticketCategories: [],
+            isTicketed: false, ticketMode: 'qr', isGuestlistEnabled: false, guestlistMode: 'qr', perUserLimit: 5,
+            hasGuestlistTask: false, guestlistTask: null, ticketCategories: [],
             imageTransform: { scale: 1, x: 0, y: 0 },
             hubImageTransform: { scale: 1, x: 0, y: 0 },
             artists: [], ageLimit: 'ALL AGES', doorsOpen: '', performanceType: 'LIVE SHOW', highlightColor: '#2ebfff',
@@ -122,6 +127,8 @@ const UpcomingEventsManager = () => {
         setSelectedHubBanner(null);
         setVenueLayoutFile(null);
         setVideoFile(null);
+        setIsUploadingVideo(false);
+        setVideoUploadProgress(0);
         setUploading(false);
         setMappingCategoryId(null);
     };
@@ -208,6 +215,10 @@ const UpcomingEventsManager = () => {
         const artists = item.artists || [];
         setArtistsInput(artists.join(', '));
         
+        setVideoFile(null);
+        setIsUploadingVideo(false);
+        setVideoUploadProgress(0);
+
         setNewEvent({ 
             ...item, 
             date: dateValue || '', 
@@ -218,7 +229,11 @@ const UpcomingEventsManager = () => {
             performanceType: item.performanceType || 'LIVE SHOW',
             highlightColor: item.highlightColor || '#2ebfff',
             guestlistMode: item.guestlistMode || 'qr',
-            perUserLimit: item.perUserLimit || 5
+            perUserLimit: item.perUserLimit || 5,
+            hasGuestlistTask: !!item.hasGuestlistTask,
+            guestlistTask: item.guestlistTask || null,
+            videoUrl: item.videoUrl || '',
+            enableVideoBackground: !!item.enableVideoBackground
         });
     };
 
@@ -279,6 +294,29 @@ const UpcomingEventsManager = () => {
     };
 
     const uploadToCloudinary = useStore.getState().uploadToCloudinary;
+    const uploadVideoFile = useStore.getState().uploadVideoFile;
+
+    const handleVideoUpload = async (file) => {
+        if (!file) return;
+        setIsUploadingVideo(true);
+        setVideoUploadProgress(0);
+        try {
+            const url = await uploadVideoFile(file, (progress) => {
+                setVideoUploadProgress(progress);
+            });
+            if (url) {
+                setNewEvent(prev => ({ ...prev, videoUrl: url }));
+                setVideoFile(null);
+                useStore.getState().addToast("Video uploaded successfully!", 'success');
+            }
+        } catch (error) {
+            console.error("Video upload failed:", error);
+            useStore.getState().addToast(error.message || "Failed to upload video. Please try again.", 'error');
+        } finally {
+            setIsUploadingVideo(false);
+            setVideoUploadProgress(0);
+        }
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -292,9 +330,7 @@ const UpcomingEventsManager = () => {
             
             let videoUrl = newEvent.videoUrl;
             if (videoFile) {
-                // For video, we might still need a specific endpoint or preset if it's different
-                // But let's try the store's one first as it's cleaner
-                videoUrl = await uploadToCloudinary(videoFile);
+                videoUrl = await uploadVideoFile(videoFile, (p) => setVideoUploadProgress(p));
             }
 
             let hubImageUrl = newEvent.hubImage;
@@ -830,25 +866,121 @@ const UpcomingEventsManager = () => {
                                                                 </div>
                                                             </div>
 
-                                                            <div className="space-y-3">
-                                                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Video Highlight (URL or Upload)</label>
+                                                            <div className="space-y-4">
+                                                                <div className="flex items-center justify-between">
+                                                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Video Highlight (URL or Upload)</label>
+                                                                    {newEvent.videoUrl && (
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => {
+                                                                                setNewEvent(prev => ({ ...prev, videoUrl: '' }));
+                                                                                setVideoFile(null);
+                                                                            }}
+                                                                            className="text-[9px] font-bold text-red-500 hover:text-red-400 uppercase tracking-wider flex items-center gap-1 transition-colors"
+                                                                        >
+                                                                            <X size={12} /> Remove Video
+                                                                        </button>
+                                                                    )}
+                                                                </div>
                                                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                                                     <div className="md:col-span-2">
                                                                         <Input 
-                                                                            placeholder="YOUTUBE, VIMEO, OR INSTAGRAM URL..." 
+                                                                            placeholder="YOUTUBE, VIMEO, OR DIRECT VIDEO URL..." 
                                                                             value={newEvent.videoUrl} 
                                                                             onChange={(e) => setNewEvent({ ...newEvent, videoUrl: e.target.value })} 
                                                                             className="h-16 bg-white dark:bg-black/50 border-black/10 dark:border-white/5 rounded-2xl text-[10px] font-black tracking-widest px-6" 
                                                                         />
                                                                     </div>
                                                                     <div className="relative group">
-                                                                        <input type="file" accept="video/*" onChange={(e) => setVideoFile(e.target.files[0])} className="absolute inset-0 opacity-0 cursor-pointer z-10" />
-                                                                        <div className="h-16 border-2 border-dashed border-black/10 dark:border-white/5 rounded-2xl flex items-center justify-center gap-3 bg-white dark:bg-black/20 group-hover:border-neon-pink/30 transition-all">
-                                                                            <VideoIcon className="text-gray-500 group-hover:text-neon-pink" size={18} />
-                                                                            <span className="text-[8px] font-black text-gray-500 group-hover:text-gray-900 dark:group-hover:text-white uppercase tracking-widest">{videoFile ? 'READY' : 'UPLOAD'}</span>
+                                                                        <input 
+                                                                            type="file" 
+                                                                            accept="video/*" 
+                                                                            disabled={isUploadingVideo}
+                                                                            onChange={(e) => {
+                                                                                const file = e.target.files?.[0];
+                                                                                if (file) {
+                                                                                    setVideoFile(file);
+                                                                                    handleVideoUpload(file);
+                                                                                }
+                                                                            }} 
+                                                                            className="absolute inset-0 opacity-0 cursor-pointer z-10 disabled:cursor-not-allowed" 
+                                                                        />
+                                                                        <div className={cn(
+                                                                            "h-16 border-2 border-dashed rounded-2xl flex items-center justify-center gap-3 transition-all",
+                                                                            isUploadingVideo 
+                                                                                ? "border-neon-pink bg-neon-pink/10 animate-pulse" 
+                                                                                : "border-black/10 dark:border-white/5 bg-white dark:bg-black/20 group-hover:border-neon-pink/30"
+                                                                        )}>
+                                                                            {isUploadingVideo ? (
+                                                                                <>
+                                                                                    <LoadingSpinner size="sm" className="text-neon-pink" />
+                                                                                    <span className="text-[9px] font-black text-neon-pink uppercase tracking-widest">{videoUploadProgress}%</span>
+                                                                                </>
+                                                                            ) : (
+                                                                                <>
+                                                                                    <VideoIcon className="text-gray-500 group-hover:text-neon-pink" size={18} />
+                                                                                    <span className="text-[8px] font-black text-gray-500 group-hover:text-gray-900 dark:group-hover:text-white uppercase tracking-widest">
+                                                                                        {newEvent.videoUrl ? 'REPLACE VIDEO' : 'UPLOAD VIDEO'}
+                                                                                    </span>
+                                                                                </>
+                                                                            )}
                                                                         </div>
                                                                     </div>
                                                                 </div>
+
+                                                                {isUploadingVideo && (
+                                                                    <div className="w-full bg-black/10 dark:bg-white/10 rounded-full h-1.5 overflow-hidden">
+                                                                        <div 
+                                                                            className="bg-neon-pink h-full transition-all duration-300 rounded-full" 
+                                                                            style={{ width: `${videoUploadProgress}%` }}
+                                                                        />
+                                                                    </div>
+                                                                )}
+
+                                                                {newEvent.videoUrl && (
+                                                                    <div className="relative rounded-2xl overflow-hidden bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 p-3.5 flex flex-col sm:flex-row gap-4 items-center">
+                                                                        <div className="w-full sm:w-44 aspect-video rounded-xl overflow-hidden bg-black/40 shrink-0 border border-black/10 dark:border-white/10 relative flex items-center justify-center">
+                                                                            {(
+                                                                                newEvent.videoUrl.match(/\.(mp4|webm|ogg|mov)(\?|$)/i) ||
+                                                                                newEvent.videoUrl.includes('cloudinary.com') ||
+                                                                                newEvent.videoUrl.includes('firebasestorage.googleapis.com') ||
+                                                                                newEvent.videoUrl.includes('storage.googleapis.com') ||
+                                                                                newEvent.videoUrl.startsWith('blob:')
+                                                                            ) ? (
+                                                                                <video 
+                                                                                    src={newEvent.videoUrl} 
+                                                                                    controls 
+                                                                                    playsInline
+                                                                                    muted
+                                                                                    className="w-full h-full object-cover" 
+                                                                                />
+                                                                            ) : (
+                                                                                <div className="w-full h-full flex flex-col items-center justify-center p-2 text-center">
+                                                                                    <VideoIcon size={20} className="text-neon-pink mb-1" />
+                                                                                    <span className="text-[8px] font-mono text-zinc-400">Stream / Embed URL</span>
+                                                                                </div>
+                                                                            )}
+                                                                        </div>
+                                                                        <div className="flex-1 min-w-0 text-left w-full">
+                                                                            <p className="text-[10px] font-black text-gray-900 dark:text-white uppercase tracking-wider truncate">
+                                                                                Video Asset Ready
+                                                                            </p>
+                                                                            <p className="text-[8px] font-mono text-gray-500 dark:text-gray-400 truncate mt-0.5 max-w-full">
+                                                                                {newEvent.videoUrl}
+                                                                            </p>
+                                                                            <div className="flex flex-wrap items-center gap-2 mt-2">
+                                                                                <span className="inline-flex items-center gap-1 text-[8px] font-bold text-neon-green bg-neon-green/10 border border-neon-green/20 px-2 py-0.5 rounded-full uppercase tracking-wider">
+                                                                                    <CheckCircle size={10} /> Active
+                                                                                </span>
+                                                                                {newEvent.enableVideoBackground && (
+                                                                                    <span className="inline-flex items-center gap-1 text-[8px] font-bold text-neon-pink bg-neon-pink/10 border border-neon-pink/20 px-2 py-0.5 rounded-full uppercase tracking-wider">
+                                                                                        Background Mode Enabled
+                                                                                    </span>
+                                                                                )}
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                )}
                                                             </div>
 
                                                             <div className="flex items-center justify-between p-6 bg-black/5 dark:bg-white/5 rounded-2xl border border-black/10 dark:border-white/5 mt-6">
@@ -1283,6 +1415,14 @@ const UpcomingEventsManager = () => {
                                                                         />
                                                                         <p className="text-[9px] text-gray-500 font-medium pl-1">Maximum number of guest list spots or RSVPs a single registrant can claim (defaults to 5 if not set).</p>
                                                                     </div>
+
+                                                                    {/* Guestlist Task Configuration */}
+                                                                    <GuestlistTaskConfig
+                                                                        enabled={newEvent.hasGuestlistTask}
+                                                                        taskData={newEvent.guestlistTask}
+                                                                        onChange={({ hasGuestlistTask, guestlistTask }) => setNewEvent({ ...newEvent, hasGuestlistTask, guestlistTask })}
+                                                                        accentColor="neon-pink"
+                                                                    />
                                                                 </div>
                                                             )}
                                                             
@@ -1537,8 +1677,14 @@ const UpcomingEventsManager = () => {
                                                         </div>
                                                     )}
                                                     {item.isGuestlistEnabled && (
-                                                        <div className="w-7 h-7 rounded-lg bg-neon-pink/10 flex items-center justify-center text-neon-pink border border-neon-pink/20" title="RSVP Enabled">
+                                                        <div className="w-7 h-7 rounded-lg bg-neon-pink/10 flex items-center justify-center text-neon-pink border border-neon-pink/20" title="Guestlist Enabled">
                                                             <Sparkles size={12} />
+                                                        </div>
+                                                    )}
+                                                    {item.hasGuestlistTask && (
+                                                        <div className="px-2 h-7 rounded-lg bg-neon-pink/10 flex items-center gap-1 text-neon-pink border border-neon-pink/20 text-[8px] font-black uppercase tracking-wider" title="Application Task Required">
+                                                            <FileUp size={11} />
+                                                            <span className="hidden sm:inline">TASK</span>
                                                         </div>
                                                     )}
                                                     <button 

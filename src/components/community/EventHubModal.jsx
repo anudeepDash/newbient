@@ -14,6 +14,18 @@ import EventTicketingModal from '../tickets/EventTicketingModal';
 
 const EventHubModal = ({ event, isOpen, onClose }) => {
     useStoreSubscription(['forms', 'volunteerGigs', 'campaigns']);
+    const isRawVideo = (url) => {
+        if (!url) return false;
+        return !!(
+            url.match(/\.(mp4|webm|ogg|mov)(\?|$)/i) || 
+            url.includes('cloudinary.com') || 
+            url.includes('firebasestorage.googleapis.com') || 
+            url.includes('storage.googleapis.com') ||
+            url.startsWith('blob:') ||
+            url.startsWith('data:video/')
+        );
+    };
+
     const getVideoEmbedUrl = (url) => {
         if (!url) return null;
         if (url.includes('youtube.com/watch?v=')) {
@@ -214,8 +226,8 @@ const EventHubModal = ({ event, isOpen, onClose }) => {
                                                             <span className="text-[9px] font-bold uppercase tracking-[0.3em]">Video Highlight</span>
                                                         </div>
                                                         <div className="aspect-video rounded-2xl overflow-hidden bg-white dark:bg-black/60 border border-black/10 dark:border-white/5 shadow-2xl relative group">
-                                                            {(event.videoUrl.match(/\.(mp4|webm|ogg)$/i) || event.videoUrl.includes('cloudinary.com')) ? (
-                                                                <video src={event.videoUrl} controls autoPlay muted className="w-full h-full object-cover" poster={event.image} />
+                                                            {isRawVideo(event.videoUrl) ? (
+                                                                <video src={event.videoUrl} controls autoPlay muted playsInline className="w-full h-full object-cover" poster={event.image} />
                                                             ) : (
                                                                 <iframe src={getVideoEmbedUrl(event.videoUrl)} className="w-full h-full border-none" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />
                                                             )}
