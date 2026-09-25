@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { db, storage } from './firebase';
 import { collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, getDocs, where, setDoc, getDoc, increment, arrayUnion, collectionGroup, serverTimestamp, limit, getCountFromServer, startAfter, writeBatch } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { ref, uploadBytes, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { sendBookingConfirmation, sendCreatorWelcomeEmail, sendNewCampaignNotificationEmail, sendCreatorApprovedEmail, sendWhatsAppVerification } from './email';
 import { normalizePhoneNumber } from './utils';
 import { extractSocialUsername, hasDisallowedLink } from './socialUtils';
@@ -212,6 +212,11 @@ export const useStore = create((set, get) => ({
     uploadToCloudinary: async (file) => {
         if (!file) return null;
 
+        const extension = file.name?.split('.').pop()?.toLowerCase();
+        const videoExtensions = ['mp4', 'webm', 'ogg', 'mov', 'avi', 'mkv', 'flv', 'wmv'];
+        const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp', 'bmp', 'ico', 'tiff'];
+        const isVideo = file.type?.startsWith("video/") || videoExtensions.includes(extension);
+
         // Try Firebase Storage first for PDF/SVG files to avoid Cloudinary security blocks
         if (file.type === "application/pdf" || file.type.includes("svg") || file.name?.toLowerCase().endsWith(".svg")) {
             try {
@@ -219,10 +224,25 @@ export const useStore = create((set, get) => ({
                 const cleanName = file.name.replace(/[^a-zA-Z0-9.]/g, '_');
                 const storagePath = `uploads/file_${uniqueId}_${cleanName}`;
                 const storageRef = ref(storage, storagePath);
-                await uploadBytes(storageRef, file);
+                await uploadBytes(storageRef, file, { contentType: file.type || 'application/pdf' });
                 return await getDownloadURL(storageRef);
             } catch (firebaseError) {
                 console.warn("Firebase Storage upload failed, falling back to Cloudinary:", firebaseError);
+            }
+        }
+
+        // For video files, prioritize Firebase Storage with proper contentType metadata
+        // (avoids Cloudinary free-tier unsigned preset video rejections and 40MB limits)
+        if (isVideo) {
+            try {
+                const uniqueId = Math.random().toString(36).substring(2, 9);
+                const cleanName = file.name.replace(/[^a-zA-Z0-9.]/g, '_');
+                const storagePath = `events/videos/${uniqueId}_${cleanName}`;
+                const storageRef = ref(storage, storagePath);
+                await uploadBytes(storageRef, file, { contentType: file.type || 'video/mp4' });
+                return await getDownloadURL(storageRef);
+            } catch (firebaseVideoError) {
+                console.warn("Firebase Storage video upload failed, trying Cloudinary video endpoint:", firebaseVideoError);
             }
         }
 
@@ -231,13 +251,8 @@ export const useStore = create((set, get) => ({
         data.append("upload_preset", import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET || "maw1e4ud");
         data.append("cloud_name", import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || "dgtalrz4n");
 
-        // Auto-detect resource type from file MIME & extension
-        const extension = file.name?.split('.').pop()?.toLowerCase();
-        const videoExtensions = ['mp4', 'webm', 'ogg', 'mov', 'avi', 'mkv', 'flv', 'wmv'];
-        const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp', 'bmp', 'ico', 'tiff'];
-
         let resourceType = "image";
-        if (file.type?.startsWith("video/") || videoExtensions.includes(extension)) {
+        if (isVideo) {
             resourceType = "video";
         } else if (file.type === "application/pdf" || file.type?.startsWith("application/") || (extension && !imageExtensions.includes(extension))) {
             resourceType = "raw";
@@ -266,7 +281,8 @@ export const useStore = create((set, get) => ({
                 const cleanName = file.name.replace(/[^a-zA-Z0-9.]/g, '_');
                 const storagePath = `uploads/fallback_${uniqueId}_${cleanName}`;
                 const storageRef = ref(storage, storagePath);
-                await uploadBytes(storageRef, file);
+                const metadata = file.type ? { contentType: file.type } : (resourceType === 'video' ? { contentType: 'video/mp4' } : undefined);
+                await uploadBytes(storageRef, file, metadata);
                 return await getDownloadURL(storageRef);
             } catch (firebaseError) {
                 console.error("Firebase fallback also failed:", firebaseError);
@@ -275,6 +291,43 @@ export const useStore = create((set, get) => ({
                     : error.message;
                 throw new Error(message);
             }
+        }
+    },
+
+    // Dedicated Resumable Video Upload Utility with Progress Tracking
+    uploadVideoFile: async (file, onProgress = null) => {
+        if (!file) return null;
+        const uniqueId = Math.random().toString(36).substring(2, 9);
+        const cleanName = file.name.replace(/[^a-zA-Z0-9.]/g, '_');
+        const storagePath = `events/videos/${uniqueId}_${cleanName}`;
+        const storageRef = ref(storage, storagePath);
+        const metadata = { contentType: file.type || 'video/mp4' };
+
+        try {
+            const uploadTask = uploadBytesResumable(storageRef, file, metadata);
+            return await new Promise((resolve, reject) => {
+                uploadTask.on(
+                    'state_changed',
+                    (snapshot) => {
+                        if (snapshot.totalBytes > 0) {
+                            const progress = Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100);
+                            if (onProgress) onProgress(progress);
+                        }
+                    },
+                    (error) => {
+                        console.warn("Firebase resumable video upload error:", error);
+                        reject(error);
+                    },
+                    async () => {
+                        const downloadUrl = await getDownloadURL(uploadTask.snapshot.ref);
+                        if (onProgress) onProgress(100);
+                        resolve(downloadUrl);
+                    }
+                );
+            });
+        } catch (fbErr) {
+            console.warn("Resumable upload failed, attempting fallback...", fbErr);
+            return await get().uploadToCloudinary(file);
         }
     },
 
@@ -893,7 +946,9 @@ export const useStore = create((set, get) => ({
                     isEmbedded: true,
                     eventId: docRef.id,
                     guestlistMode: event.guestlistMode || 'qr',
-                    perUserLimit: event.perUserLimit || 5
+                    perUserLimit: event.perUserLimit || 5,
+                    hasGuestlistTask: !!event.hasGuestlistTask,
+                    guestlistTask: event.guestlistTask || null
                 });
             }
         }
@@ -953,7 +1008,9 @@ export const useStore = create((set, get) => ({
                     isEmbedded: true,
                     eventId: id,
                     guestlistMode: updates.guestlistMode || 'qr',
-                    perUserLimit: updates.perUserLimit || 5
+                    perUserLimit: updates.perUserLimit || 5,
+                    hasGuestlistTask: !!updates.hasGuestlistTask,
+                    guestlistTask: updates.guestlistTask || null
                 }, { merge: true });
             } else {
                 // Update basic info if it exists
@@ -961,7 +1018,9 @@ export const useStore = create((set, get) => ({
                     title: updates.title,
                     date: updates.date,
                     guestlistMode: updates.guestlistMode || 'qr',
-                    perUserLimit: updates.perUserLimit || 5
+                    perUserLimit: updates.perUserLimit || 5,
+                    hasGuestlistTask: updates.hasGuestlistTask !== undefined ? !!updates.hasGuestlistTask : false,
+                    guestlistTask: updates.guestlistTask || null
                 });
             }
         }
@@ -2073,6 +2132,49 @@ export const useStore = create((set, get) => ({
             attendedAt: attended ? new Date().toISOString() : null
         });
     },
+    updateGuestlistEntryStatus: async (guestlistId, entryId, status, extra = {}) => {
+        const entryRef = doc(db, 'guestlists', guestlistId, 'entries', entryId);
+        const entrySnap = await getDoc(entryRef);
+        const currentData = entrySnap.exists() ? entrySnap.data() : {};
+
+        await updateDoc(entryRef, {
+            status,
+            statusUpdatedAt: new Date().toISOString(),
+            ...extra
+        });
+
+        // If approved, dispatch confirmation email
+        if (status === 'approved' || status === 'confirmed') {
+            try {
+                const { sendGuestlistConfirmation } = await import('./email');
+                const targetEmail = (currentData.customerEmail || currentData.email || '').trim().toLowerCase();
+                if (targetEmail) {
+                    await sendGuestlistConfirmation({
+                        toName: currentData.customerName || currentData.name || 'Guest',
+                        toEmail: targetEmail,
+                        eventName: currentData.title || 'Event',
+                        bookingRef: currentData.bookingRef,
+                        guestCount: currentData.guestsCount || 1,
+                        date: currentData.date,
+                        location: currentData.location,
+                        guestlistMode: currentData.guestlistMode || 'qr'
+                    });
+                }
+            } catch (err) {
+                console.warn('Failed to send approval email notification:', err);
+            }
+        } else if (status === 'rejected') {
+            // Decrement spots from parent guestlist doc if currently held
+            try {
+                const glRef = doc(db, 'guestlists', guestlistId);
+                await updateDoc(glRef, {
+                    currentSpots: increment(-(currentData.guestsCount || 1))
+                });
+            } catch (err) {
+                console.warn('Failed to decrement spots upon rejection:', err);
+            }
+        }
+    },
 
     // Ticketing & Scanning Operations
     addTicketOrder: async (orderData) => {
@@ -2131,6 +2233,14 @@ export const useStore = create((set, get) => ({
         if (!snapGuest.empty) {
             const docSnap = snapGuest.docs[0];
             const data = docSnap.data();
+
+            // Validate task / approval status
+            if (data.status === 'pending') {
+                return { valid: false, message: 'APPLICATION PENDING APPROVAL' };
+            }
+            if (data.status === 'rejected') {
+                return { valid: false, message: 'APPLICATION REJECTED' };
+            }
 
             if (data.attended) {
                 return { valid: true, scanned: true, data: { code: refId, name: data.customerName || data.name, type: 'Guestlist' } };

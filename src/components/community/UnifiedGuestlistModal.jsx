@@ -17,7 +17,8 @@ import {
     ChevronLeft,
     ShieldCheck,
     Download,
-    ExternalLink
+    ExternalLink,
+    Clock
 } from 'lucide-react';
 import CheckCircle2 from 'lucide-react/dist/esm/icons/check-circle-2';
 import html2canvas from 'html2canvas';
@@ -25,13 +26,15 @@ import { useStore } from '../../lib/store';
 import { Button } from '../ui/Button';
 import LoadingSpinner from '../ui/LoadingSpinner';
 import { cn } from '../../lib/utils';
+import GuestlistTaskSubmissionStep from './GuestlistTaskSubmissionStep';
 
 const UnifiedGuestlistModal = ({ isOpen, onClose, guestlist }) => {
     const { user, addGuestlistEntry } = useStore();
     
-    // Steps: 'selection', 'details', 'loading', 'success', 'error'
+    // Steps: 'selection', 'details', 'task', 'loading', 'success', 'error'
     const [step, setStep] = useState('selection'); 
     const [guestsCount, setGuestsCount] = useState(1);
+    const [isPendingTaskReview, setIsPendingTaskReview] = useState(false);
     const [formData, setFormData] = useState({
         name: user?.displayName || '',
         email: user?.email || '',
@@ -57,6 +60,7 @@ const UnifiedGuestlistModal = ({ isOpen, onClose, guestlist }) => {
             setStep('selection');
             setGuestsCount(1);
             setBookingRef('');
+            setIsPendingTaskReview(false);
             setError(null);
             setFormData({
                 name: user?.displayName || '',
@@ -88,8 +92,16 @@ const UnifiedGuestlistModal = ({ isOpen, onClose, guestlist }) => {
         }
     };
 
-    const handleSubmit = async (e) => {
+    const handleDetailsSubmit = (e) => {
         e.preventDefault();
+        if (guestlist?.hasGuestlistTask && guestlist?.guestlistTask) {
+            setStep('task');
+        } else {
+            executeGuestlistSubmission(null);
+        }
+    };
+
+    const executeGuestlistSubmission = async (taskSubmission = null) => {
         setLoading(true);
         setError(null);
         setStep('loading');
@@ -98,6 +110,10 @@ const UnifiedGuestlistModal = ({ isOpen, onClose, guestlist }) => {
             if (maxSpots && currentSpots + guestsCount > maxSpots) {
                 throw new Error("Guestlist capacity exceeded during your session.");
             }
+
+            const hasTask = !!(guestlist?.hasGuestlistTask && guestlist?.guestlistTask);
+            const reviewRequired = hasTask && (guestlist.guestlistTask.reviewRequired !== false);
+            const initialStatus = reviewRequired ? 'pending' : 'approved';
 
             const ref = `GL-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
             setBookingRef(ref);
@@ -118,30 +134,35 @@ const UnifiedGuestlistModal = ({ isOpen, onClose, guestlist }) => {
                 guestsCount: guestsCount,
                 plusOneNames: formData.plusOneNames.filter(Boolean),
                 customFields: formData.customFields,
-                status: 'approved',
+                status: initialStatus,
                 createdAt: new Date().toISOString(),
                 bookingRef: ref,
-                guestlistMode: guestlist.guestlistMode || 'qr'
+                guestlistMode: guestlist.guestlistMode || 'qr',
+                hasTask: hasTask,
+                taskSubmission: taskSubmission || null
             };
 
             await addGuestlistEntry(guestlist.id, entryData);
 
-            try {
-                const { sendGuestlistConfirmation } = await import('../../lib/email');
-                await sendGuestlistConfirmation({
-                    toName: formData.name,
-                    toEmail: normalizedEmail,
-                    eventName: guestlist.title,
-                    bookingRef: ref,
-                    guestCount: guestsCount,
-                    date: guestlist.date,
-                    location: guestlist.location,
-                    guestlistMode: guestlist.guestlistMode || 'qr'
-                });
-            } catch (mailErr) {
-                console.error("Failed to send guestlist confirmation email:", mailErr);
+            if (!reviewRequired) {
+                try {
+                    const { sendGuestlistConfirmation } = await import('../../lib/email');
+                    await sendGuestlistConfirmation({
+                        toName: formData.name,
+                        toEmail: normalizedEmail,
+                        eventName: guestlist.title,
+                        bookingRef: ref,
+                        guestCount: guestsCount,
+                        date: guestlist.date,
+                        location: guestlist.location,
+                        guestlistMode: guestlist.guestlistMode || 'qr'
+                    });
+                } catch (mailErr) {
+                    console.error("Failed to send guestlist confirmation email:", mailErr);
+                }
             }
 
+            setIsPendingTaskReview(reviewRequired);
             setStep('success');
         } catch (err) {
             setError(err.message || "Registration failed.");
@@ -377,7 +398,7 @@ const UnifiedGuestlistModal = ({ isOpen, onClose, guestlist }) => {
                                                 </h3>
                                             </div>
 
-                                            <form onSubmit={handleSubmit} className="space-y-6 sm:space-y-8">
+                                            <form onSubmit={handleDetailsSubmit} className="space-y-6 sm:space-y-8">
                                                 <div className="grid grid-cols-1 gap-5">
                                                     <div className="space-y-2">
                                                         <label className="text-[8px] font-black text-gray-500 uppercase tracking-widest pl-3">Full Legal Identity</label>
@@ -396,9 +417,24 @@ const UnifiedGuestlistModal = ({ isOpen, onClose, guestlist }) => {
                                                 </div>
 
                                                 <Button type="submit" className="w-full h-20 sm:h-24 rounded-2xl bg-neon-blue text-black font-black uppercase italic tracking-[0.3em] text-[10px] sm:text-xs hover:scale-[1.02] active:scale-95 transition-all shadow-[0_20px_50px_rgba(0,255,255,0.2)] flex items-center justify-center gap-4 group">
-                                                    REGISTER NOW <ArrowRight size={18} className="group-hover:translate-x-2 transition-transform" />
+                                                    {(guestlist?.hasGuestlistTask && guestlist?.guestlistTask) ? 'PROCEED TO TASK' : 'REGISTER NOW'} <ArrowRight size={18} className="group-hover:translate-x-2 transition-transform" />
                                                 </Button>
                                             </form>
+                                        </motion.div>
+                                    )}
+
+                                    {step === 'task' && (
+                                        <motion.div key="task" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="flex-1 flex flex-col min-h-0">
+                                            <GuestlistTaskSubmissionStep
+                                                task={guestlist?.guestlistTask}
+                                                eventTitle={guestlist?.title}
+                                                guestCount={guestsCount}
+                                                onBack={() => setStep('details')}
+                                                onSubmit={(taskSubmission) => {
+                                                    executeGuestlistSubmission(taskSubmission);
+                                                }}
+                                                loading={loading}
+                                            />
                                         </motion.div>
                                     )}
 
@@ -413,6 +449,45 @@ const UnifiedGuestlistModal = ({ isOpen, onClose, guestlist }) => {
                                     )}
 
                                     {step === 'success' && (() => {
+                                        if (isPendingTaskReview) {
+                                            return (
+                                                <motion.div key="success-task-pending" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="flex flex-col items-center justify-center text-center gap-8 py-6">
+                                                    <div className="w-20 h-20 rounded-3xl bg-amber-500/10 border border-amber-500/30 text-amber-400 flex items-center justify-center shadow-[0_0_60px_rgba(245,158,11,0.2)] animate-[pulse_2.5s_infinite]">
+                                                        <Clock size={40} />
+                                                    </div>
+                                                    
+                                                    <div className="space-y-2">
+                                                        <span className="text-[10px] font-black uppercase tracking-[0.3em] px-3.5 py-1 bg-amber-500/15 text-amber-400 border border-amber-500/30 rounded-full inline-block">
+                                                            Task Application Submitted
+                                                        </span>
+                                                        <h3 className="text-3xl font-black font-heading text-gray-900 dark:text-white italic tracking-tighter uppercase leading-none">
+                                                            UNDER <span className="text-amber-400">REVIEW.</span>
+                                                        </h3>
+                                                        <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest px-4 font-mono">
+                                                            REF: {bookingRef}
+                                                        </p>
+                                                    </div>
+
+                                                    <div className="w-full flex flex-col gap-4">
+                                                        <div className="p-6 bg-amber-500/5 border border-amber-500/20 rounded-2xl max-w-sm mx-auto text-left">
+                                                            <p className="text-xs font-bold text-gray-800 dark:text-gray-200 tracking-wide leading-relaxed mb-2">
+                                                                Your submission has been safely received.
+                                                            </p>
+                                                            <p className="text-[11px] text-gray-500 leading-relaxed">
+                                                                Organizers will review your task before issuing a verified gate pass. You'll be notified via email once approved.
+                                                            </p>
+                                                        </div>
+                                                        <Button 
+                                                            onClick={onClose} 
+                                                            className="w-full h-14 bg-black text-white dark:bg-white dark:text-black font-black uppercase tracking-[0.2em] text-[10px] rounded-xl hover:scale-[1.02] active:scale-95 transition-all shadow-md"
+                                                        >
+                                                            CLOSE
+                                                        </Button>
+                                                    </div>
+                                                </motion.div>
+                                            );
+                                        }
+
                                         const isRSVPOnly = guestlist?.guestlistMode === 'rsvp';
                                         return (
                                             <motion.div key="success" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="flex flex-col items-center justify-center text-center gap-10">

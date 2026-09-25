@@ -13,7 +13,13 @@ const EventCard = ({ item, onAction, handleShare }) => {
         return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }).toUpperCase();
     };
 
-    const isVideoBg = item.videoUrl && item.enableVideoBackground && (item.videoUrl.match(/\.(mp4|webm|ogg)$/i) || item.videoUrl.includes('cloudinary.com'));
+    const isVideoBg = item.videoUrl && item.enableVideoBackground && (
+        item.videoUrl.match(/\.(mp4|webm|ogg|mov)(\?|$)/i) || 
+        item.videoUrl.includes('cloudinary.com') || 
+        item.videoUrl.includes('firebasestorage.googleapis.com') ||
+        item.videoUrl.includes('storage.googleapis.com') ||
+        item.videoUrl.startsWith('blob:')
+    );
 
     return (
         <motion.div 

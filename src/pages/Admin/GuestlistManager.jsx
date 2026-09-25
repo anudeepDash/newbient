@@ -25,6 +25,7 @@ import ShieldCheck from 'lucide-react/dist/esm/icons/shield-check';
 import Lock from 'lucide-react/dist/esm/icons/lock';
 import Unlock from 'lucide-react/dist/esm/icons/unlock';
 import Star from 'lucide-react/dist/esm/icons/star';
+import FileUp from 'lucide-react/dist/esm/icons/file-up';
 import { notifyAllUsers } from '../../lib/notificationTriggers';
 
 import { useStore } from '../../lib/store';
@@ -37,6 +38,7 @@ import AdminCommunityHubLayout from '../../components/admin/AdminCommunityHubLay
 import { cn } from '../../lib/utils';
 import StudioDatePicker from '../../components/ui/StudioDatePicker';
 import StudioSelect from '../../components/ui/StudioSelect';
+import GuestlistTaskConfig from '../../components/admin/GuestlistTaskConfig';
 
 const GuestlistCard = ({ gl, navigate, updateGuestlist, deleteGuestlist, handleEdit, upcomingEvents, onToggleHomeEvent }) => {
     const isPostedToUpcoming = (upcomingEvents || []).some(e => 
@@ -91,6 +93,12 @@ const GuestlistCard = ({ gl, navigate, updateGuestlist, deleteGuestlist, handleE
                         <div className="px-3 py-1 rounded-full border text-[8px] font-black uppercase tracking-widest flex items-center gap-1.5 backdrop-blur-3xl bg-neon-blue/10 border-neon-blue/30 text-neon-blue">
                             <Calendar size={10} className="animate-pulse" />
                             <span>HOME EVENT</span>
+                        </div>
+                    )}
+                    {gl.hasGuestlistTask && (
+                        <div className="px-3 py-1 rounded-full border text-[8px] font-black uppercase tracking-widest flex items-center gap-1.5 backdrop-blur-3xl bg-neon-pink/10 border-neon-pink/30 text-neon-pink">
+                            <FileUp size={10} />
+                            <span>TASK REQ</span>
                         </div>
                     )}
                     {!gl.guestlistEnabled && (
@@ -244,6 +252,8 @@ const GuestlistManager = () => {
         imageTransform: { scale: 1.05, x: 0, y: 0 },
         guestlistEnabled: true,
         guestlistMode: 'qr',
+        hasGuestlistTask: false,
+        guestlistTask: null,
         externalLink: ''
     });
 
@@ -273,7 +283,7 @@ const GuestlistManager = () => {
         setFormData({ 
             title: '', date: '', location: '', description: '', status: 'Open', maxSpots: 100, currentSpots: 0, perUserLimit: 2,
             image: '', highlightColor: '#2ebfff', isPinned: false, imageTransform: { scale: 1.05, x: 0, y: 0 }, 
-            guestlistEnabled: true, guestlistMode: 'qr', externalLink: ''
+            guestlistEnabled: true, guestlistMode: 'qr', hasGuestlistTask: false, guestlistTask: null, externalLink: ''
         });
         setIsAdding(false);
         setEditingId(null);
@@ -297,6 +307,8 @@ const GuestlistManager = () => {
             imageTransform: gl.imageTransform || { scale: 1.05, x: 0, y: 0 },
             guestlistEnabled: gl.guestlistEnabled !== undefined ? gl.guestlistEnabled : true,
             guestlistMode: gl.guestlistMode || 'qr',
+            hasGuestlistTask: !!gl.hasGuestlistTask,
+            guestlistTask: gl.guestlistTask || null,
             externalLink: gl.externalLink || ''
         });
         setEditingId(gl.id);
@@ -359,6 +371,8 @@ const GuestlistManager = () => {
                 isGuestlistEnabled: gl.guestlistEnabled !== undefined ? gl.guestlistEnabled : true,
                 guestlistMode: gl.guestlistMode || 'qr',
                 perUserLimit: gl.perUserLimit || 2,
+                hasGuestlistTask: !!gl.hasGuestlistTask,
+                guestlistTask: gl.guestlistTask || null,
                 category: 'guestlist',
                 guestlistId: gl.id,
                 link: `/ticket/${gl.id}`
@@ -515,6 +529,14 @@ const GuestlistManager = () => {
                                                         ))}
                                                     </div>
                                                 </div>
+
+                                                {/* Guestlist Application Task */}
+                                                <GuestlistTaskConfig
+                                                    enabled={formData.hasGuestlistTask}
+                                                    taskData={formData.guestlistTask}
+                                                    onChange={({ hasGuestlistTask, guestlistTask }) => setFormData({ ...formData, hasGuestlistTask, guestlistTask })}
+                                                    accentColor="neon-blue"
+                                                />
                                             </div>
                                         ) : (
                                             <div className="space-y-3 animate-in fade-in slide-in-from-top-4 duration-500">

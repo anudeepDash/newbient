@@ -20,6 +20,9 @@ import Trash2 from 'lucide-react/dist/esm/icons/trash-2';
 import Percent from 'lucide-react/dist/esm/icons/percent';
 import Tag from 'lucide-react/dist/esm/icons/tag';
 import ChevronRight from 'lucide-react/dist/esm/icons/chevron-right';
+import FileUp from 'lucide-react/dist/esm/icons/file-up';
+import Eye from 'lucide-react/dist/esm/icons/eye';
+import GuestlistTaskReviewModal from '../../components/admin/GuestlistTaskReviewModal';
 import { useStore } from '../../lib/store';
 import { useStoreSubscription } from '../../hooks/useStoreSubscription';
 import { Card } from '../../components/ui/Card';
@@ -34,7 +37,7 @@ import { collection, query, orderBy, onSnapshot, deleteDoc, doc, updateDoc, incr
 
 const TicketingManagement = () => {
     useStoreSubscription(['upcomingEvents', 'portfolio', 'ticketOrders']);
-    const { upcomingEvents, portfolio = [], ticketOrders = [], updateTicketOrderStatus, user, coupons = [], volunteerGigs = [] } = useStore();
+    const { upcomingEvents, portfolio = [], ticketOrders = [], updateTicketOrderStatus, updateGuestlistEntryStatus, user, coupons = [], volunteerGigs = [] } = useStore();
     const storeGuestlists = useStore(state => state.guestlists) || [];
     const isScanner = user?.role === 'scanner';
     
@@ -43,6 +46,8 @@ const TicketingManagement = () => {
     const [activeTab, setActiveTab] = useState(isScanner ? 'sheets' : 'buyers'); // buyers, guestlist, dispatch, attendance, coupons, sheets, settings
     const [searchQuery, setSearchQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState('ALL');
+    const [glFilter, setGlFilter] = useState('all'); // all, pending, approved, tasks
+    const [selectedTaskEntry, setSelectedTaskEntry] = useState(null);
     const [isUploading, setIsUploading] = useState(false);
     const [selectedCategory, setSelectedCategory] = useState('');
     const [guestlistEntries, setGuestlistEntries] = useState([]);
@@ -491,7 +496,7 @@ const TicketingManagement = () => {
             });
         } else if (!hasTickets && hasGuestlist) {
             // RSVP/Guestlist-only event layout
-            headers = ["Booking Ref", "Name", "Email", "Phone", "Total Guests", "Attendance Status", "RSVP Date"];
+            headers = ["Booking Ref", "Name", "Email", "Phone", "Total Guests", "Attendance Status", "Task Review Status", "Task File URL", "Task Link", "Task Pitch", "RSVP Date"];
             rows = guestlistEntries.map(e => [
                 e.bookingRef || e.id,
                 e.customerName || e.name || '',
@@ -499,11 +504,15 @@ const TicketingManagement = () => {
                 e.customerPhone || e.phone || '',
                 e.guestsCount || 1,
                 e.attended ? "ATTENDED" : "REGISTERED",
+                e.hasTask ? (e.status || 'pending').toUpperCase() : 'STANDARD',
+                e.taskSubmission?.fileUrl || '',
+                e.taskSubmission?.link || '',
+                e.taskSubmission?.text || '',
                 formatTime(e.createdAt)
             ]);
         } else {
             // Hybrid event layout
-            headers = ["Booking Ref", "Type", "Name", "Email", "Phone", "Status / Attendance", "UTR / Payment Ref", "Amount Paid", "Details", "Date"];
+            headers = ["Booking Ref", "Type", "Name", "Email", "Phone", "Status / Attendance", "UTR / Payment Ref", "Amount Paid", "Details", "Task Material", "Date"];
             
             const ticketRows = eventOrders.map(o => {
                 const ticketDetails = Array.isArray(o.items) 
@@ -519,6 +528,7 @@ const TicketingManagement = () => {
                     o.paymentRef || '',
                     o.totalAmount !== undefined ? `₹${o.totalAmount}` : '₹0',
                     ticketDetails,
+                    '-',
                     formatTime(o.createdAt)
                 ];
             });
@@ -529,10 +539,11 @@ const TicketingManagement = () => {
                 e.customerName || e.name || '',
                 e.customerEmail || e.email || '',
                 e.customerPhone || e.phone || '',
-                e.attended ? "ATTENDED" : "REGISTERED",
+                e.attended ? "ATTENDED" : (e.hasTask ? (e.status || 'pending').toUpperCase() : "REGISTERED"),
                 '-',
                 '-',
                 `${e.guestsCount || 1} Guest(s)`,
+                e.taskSubmission ? `${e.taskSubmission.fileUrl ? 'File: ' + e.taskSubmission.fileUrl : ''} ${e.taskSubmission.link ? 'Link: ' + e.taskSubmission.link : ''} ${e.taskSubmission.text ? 'Note: ' + e.taskSubmission.text : ''}`.trim() : '-',
                 formatTime(e.createdAt)
             ]);
 
@@ -955,7 +966,7 @@ const TicketingManagement = () => {
                         <motion.div key="guestlist" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
                             <Card className="p-0 bg-gray-100 dark:bg-zinc-900/60 backdrop-blur-3xl border border-black/10 dark:border-white/10 rounded-[3rem] overflow-hidden shadow-2xl">
                                 <div className="p-8 border-b border-black/10 dark:border-white/5 flex flex-col md:flex-row gap-6 items-start md:items-center justify-between bg-white dark:bg-black/40">
-                                    <div className="flex gap-4 items-center">
+                                    <div className="flex flex-wrap gap-4 items-center w-full md:w-auto">
                                         <div className="relative">
                                             <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-500" size={16} />
                                             <Input 
@@ -964,6 +975,60 @@ const TicketingManagement = () => {
                                                 onChange={e => setSearchQuery(e.target.value)}
                                                 className="h-14 pl-14 w-64 bg-white dark:bg-black/60 border-black/10 dark:border-white/10 rounded-2xl text-[11px] font-black uppercase tracking-widest"
                                             />
+                                        </div>
+
+                                        {/* Status / Task Filter Chips */}
+                                        <div className="flex flex-wrap items-center gap-1.5 p-1 bg-black/5 dark:bg-white/5 rounded-2xl border border-black/10 dark:border-white/10">
+                                            <button
+                                                type="button"
+                                                onClick={() => setGlFilter('all')}
+                                                className={cn(
+                                                    "px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all",
+                                                    glFilter === 'all'
+                                                        ? "bg-black text-white dark:bg-white dark:text-black shadow-sm"
+                                                        : "text-gray-500 hover:text-gray-900 dark:hover:text-white"
+                                                )}
+                                            >
+                                                All ({guestlistEntries.length})
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setGlFilter('pending')}
+                                                className={cn(
+                                                    "px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all flex items-center gap-1.5",
+                                                    glFilter === 'pending'
+                                                        ? "bg-amber-500 text-black shadow-sm font-black"
+                                                        : "text-amber-500 hover:text-amber-400"
+                                                )}
+                                            >
+                                                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                                                Pending ({guestlistEntries.filter(e => e.status === 'pending').length})
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setGlFilter('approved')}
+                                                className={cn(
+                                                    "px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all",
+                                                    glFilter === 'approved'
+                                                        ? "bg-neon-green text-black shadow-sm"
+                                                        : "text-gray-500 hover:text-gray-900 dark:hover:text-white"
+                                                )}
+                                            >
+                                                Approved ({guestlistEntries.filter(e => e.status === 'approved' || (!e.status && !e.hasTask)).length})
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setGlFilter('tasks')}
+                                                className={cn(
+                                                    "px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all flex items-center gap-1.5",
+                                                    glFilter === 'tasks'
+                                                        ? "bg-neon-blue text-black shadow-sm"
+                                                        : "text-neon-blue hover:underline"
+                                                )}
+                                            >
+                                                <FileUp size={12} />
+                                                With Tasks ({guestlistEntries.filter(e => e.hasTask || e.taskSubmission).length})
+                                            </button>
                                         </div>
                                     </div>
                                     <div className="px-6 py-3 bg-black/5 dark:bg-white/5 text-gray-900 dark:text-white rounded-2xl text-[11px] font-black tracking-widest uppercase border border-black/10 dark:border-white/10">
@@ -977,156 +1042,351 @@ const TicketingManagement = () => {
                                                 <th className="p-8 font-medium">Guest Details</th>
                                                 <th className="p-8 font-medium">Guests</th>
                                                 <th className="p-8 font-medium">Booking Ref</th>
+                                                <th className="p-8 font-medium">Task & Submission</th>
+                                                <th className="p-8 font-medium">Review Status</th>
                                                 <th className="p-8 font-medium">Attendance</th>
                                                 <th className="p-8 font-medium text-right">Actions</th>
                                             </tr>
                                         </thead>
                                         <tbody className="text-sm">
-                                            {guestlistEntries.length > 0 ? guestlistEntries.filter(e => 
-                                                !searchQuery || 
-                                                (e.customerName || e.name)?.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                                                e.bookingRef?.includes(searchQuery)
-                                            ).map((entry) => (
-                                                <tr key={entry.id} className="border-b border-black/10 dark:border-white/5 hover:bg-black/5 dark:hover:bg-white/5 transition-colors group">
-                                                    <td className="p-8">
-                                                        <p className="font-black text-gray-900 dark:text-white text-base tracking-tight">{entry.customerName || entry.name}</p>
-                                                        <p className="text-[10px] font-bold text-gray-500 tracking-widest mt-1 italic">{entry.customerEmail || entry.email}</p>
-                                                    </td>
-                                                    <td className="p-8">
+                                            {(() => {
+                                                const filtered = guestlistEntries.filter(entry => {
+                                                    if (searchQuery) {
+                                                        const q = searchQuery.toLowerCase();
+                                                        const matchesName = (entry.customerName || entry.name || '')?.toLowerCase().includes(q);
+                                                        const matchesEmail = (entry.customerEmail || entry.email || '')?.toLowerCase().includes(q);
+                                                        const matchesRef = (entry.bookingRef || '')?.toLowerCase().includes(q);
+                                                        if (!matchesName && !matchesEmail && !matchesRef) return false;
+                                                    }
+                                                    if (glFilter === 'pending') return entry.status === 'pending';
+                                                    if (glFilter === 'approved') return entry.status === 'approved' || (!entry.status && !entry.hasTask);
+                                                    if (glFilter === 'rejected') return entry.status === 'rejected';
+                                                    if (glFilter === 'tasks') return !!(entry.hasTask || entry.taskSubmission);
+                                                    return true;
+                                                });
+
+                                                if (filtered.length === 0) {
+                                                    return (
+                                                        <tr>
+                                                            <td colSpan="7" className="p-20 text-center text-gray-500 bg-white dark:bg-black/20">
+                                                                <Users size={64} className="mx-auto mb-6 opacity-20" />
+                                                                <p className="text-xs font-black uppercase tracking-[0.4em]">No guestlist entries match filter.</p>
+                                                            </td>
+                                                        </tr>
+                                                    );
+                                                }
+
+                                                return filtered.map((entry) => (
+                                                    <tr key={entry.id} className="border-b border-black/10 dark:border-white/5 hover:bg-black/5 dark:hover:bg-white/5 transition-colors group">
+                                                        <td className="p-8">
+                                                            <p className="font-black text-gray-900 dark:text-white text-base tracking-tight">{entry.customerName || entry.name}</p>
+                                                            <p className="text-[10px] font-bold text-gray-500 tracking-widest mt-1 italic">{entry.customerEmail || entry.email}</p>
+                                                            {(entry.customerPhone || entry.phone) && (
+                                                                <p className="text-[10px] font-mono text-gray-400 mt-0.5">{entry.customerPhone || entry.phone}</p>
+                                                            )}
+                                                        </td>
+                                                        <td className="p-8">
+                                                            <span className="text-[11px] font-black text-neon-blue bg-neon-blue/10 px-4 py-2 rounded-xl border border-neon-blue/20">
+                                                                {entry.guestsCount || 1} GUEST(S)
+                                                            </span>
+                                                        </td>
+                                                        <td className="p-8 font-mono text-[11px] text-gray-600 dark:text-gray-400 bg-white dark:bg-black/20">{entry.bookingRef}</td>
+                                                        <td className="p-8">
+                                                            {(entry.hasTask || entry.taskSubmission) ? (
+                                                                <div className="flex flex-col gap-2 items-start">
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => setSelectedTaskEntry(entry)}
+                                                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-neon-blue/15 hover:bg-neon-blue/30 text-neon-blue border border-neon-blue/30 text-[10px] font-black uppercase tracking-wider transition-all"
+                                                                    >
+                                                                        <Eye size={12} />
+                                                                        Review Submission
+                                                                    </button>
+                                                                    <div className="flex items-center gap-2 text-[10px] text-gray-500 font-mono">
+                                                                        {entry.taskSubmission?.fileUrl && <span className="flex items-center gap-1 text-neon-blue font-bold"><FileUp size={11} /> File</span>}
+                                                                        {entry.taskSubmission?.link && <span className="text-purple-400 font-bold">Link</span>}
+                                                                        {entry.taskSubmission?.text && <span className="text-gray-300 font-bold">Pitch</span>}
+                                                                    </div>
+                                                                </div>
+                                                            ) : (
+                                                                <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Direct RSVP</span>
+                                                            )}
+                                                        </td>
+                                                        <td className="p-8">
+                                                            {entry.status === 'pending' ? (
+                                                                <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-500/10 text-amber-400 border border-amber-500/20 rounded-xl text-[10px] font-black uppercase tracking-wider">
+                                                                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                                                                    Pending Review
+                                                                </span>
+                                                            ) : entry.status === 'rejected' ? (
+                                                                <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-red-500/10 text-red-400 border border-red-500/20 rounded-xl text-[10px] font-black uppercase tracking-wider">
+                                                                    <X size={11} />
+                                                                    Rejected
+                                                                </span>
+                                                            ) : (
+                                                                <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-neon-green/10 text-neon-green border border-neon-green/20 rounded-xl text-[10px] font-black uppercase tracking-wider">
+                                                                    <Check size={11} />
+                                                                    Approved
+                                                                </span>
+                                                            )}
+                                                        </td>
+                                                        <td className="p-8">
+                                                            {entry.attended ? (
+                                                                <div className="flex items-center gap-2 text-neon-green">
+                                                                    <CheckCircle2 size={14} />
+                                                                    <span className="text-[9px] font-black uppercase tracking-widest">Attended</span>
+                                                                </div>
+                                                            ) : (
+                                                                <div className="flex items-center gap-2 text-gray-600">
+                                                                    <div className="w-1.5 h-1.5 rounded-full bg-gray-600" />
+                                                                    <span className="text-[9px] font-black uppercase tracking-widest">Not Yet</span>
+                                                                </div>
+                                                            )}
+                                                        </td>
+                                                        <td className="p-8 text-right">
+                                                            <div className="flex items-center justify-end gap-2">
+                                                                {(entry.hasTask || entry.taskSubmission) && (
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => setSelectedTaskEntry(entry)}
+                                                                        className="p-2.5 rounded-xl bg-neon-blue/10 text-neon-blue hover:bg-neon-blue hover:text-black transition-all"
+                                                                        title="Review submission details"
+                                                                    >
+                                                                        <Eye size={14} />
+                                                                    </button>
+                                                                )}
+                                                                {entry.status === 'pending' && (
+                                                                    <>
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={async () => {
+                                                                                try {
+                                                                                    await updateGuestlistEntryStatus(targetId, entry.id, 'approved');
+                                                                                    setGuestlistEntries(prev => prev.map(e => e.id === entry.id ? { ...e, status: 'approved' } : e));
+                                                                                    useStore.getState().addToast(`Approved ${entry.customerName || entry.name}!`, 'success');
+                                                                                } catch (err) {
+                                                                                    console.error(err);
+                                                                                    useStore.getState().addToast('Failed to approve application.', 'error');
+                                                                                }
+                                                                            }}
+                                                                            className="p-2.5 rounded-xl bg-neon-green/10 text-neon-green hover:bg-neon-green hover:text-black transition-all"
+                                                                            title="Quick approve"
+                                                                        >
+                                                                            <Check size={14} />
+                                                                        </button>
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={async () => {
+                                                                                if (window.confirm(`Reject application for ${entry.customerName || entry.name}?`)) {
+                                                                                    try {
+                                                                                        await updateGuestlistEntryStatus(targetId, entry.id, 'rejected');
+                                                                                        setGuestlistEntries(prev => prev.map(e => e.id === entry.id ? { ...e, status: 'rejected' } : e));
+                                                                                        useStore.getState().addToast(`Rejected application for ${entry.customerName || entry.name}.`, 'info');
+                                                                                    } catch (err) {
+                                                                                        console.error(err);
+                                                                                        useStore.getState().addToast('Failed to reject application.', 'error');
+                                                                                    }
+                                                                                }
+                                                                            }}
+                                                                            className="p-2.5 rounded-xl bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all"
+                                                                            title="Quick reject"
+                                                                        >
+                                                                            <X size={14} />
+                                                                        </button>
+                                                                    </>
+                                                                )}
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={async () => {
+                                                                        if (window.confirm(`Remove ${entry.customerName || entry.name} from the guestlist?`)) {
+                                                                            try {
+                                                                                await deleteDoc(doc(db, 'guestlists', targetId, 'entries', entry.id));
+                                                                                // Decrement parent currentSpots
+                                                                                try {
+                                                                                    await updateDoc(doc(db, 'guestlists', targetId), {
+                                                                                        currentSpots: increment(-(entry.guestsCount || 1))
+                                                                                    });
+                                                                                } catch (e) { }
+                                                                                useStore.getState().addToast('Entry removed.', 'success');
+                                                                            } catch (err) {
+                                                                                console.error(err);
+                                                                                useStore.getState().addToast("Couldn't remove the entry. Please try again.", 'error');
+                                                                            }
+                                                                        }
+                                                                    }}
+                                                                    className="p-2.5 rounded-xl bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all opacity-0 group-hover:opacity-100"
+                                                                    title="Remove entry"
+                                                                >
+                                                                    <Trash2 size={14} />
+                                                                </button>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                ));
+                                            })()}
+                                        </tbody>
+                                    </table>
+
+                                    {/* Mobile Stacked Cards for Guestlist */}
+                                    <div className="flex md:hidden flex-col gap-4 p-4">
+                                        {(() => {
+                                            const filtered = guestlistEntries.filter(entry => {
+                                                if (searchQuery) {
+                                                    const q = searchQuery.toLowerCase();
+                                                    const matchesName = (entry.customerName || entry.name || '')?.toLowerCase().includes(q);
+                                                    const matchesEmail = (entry.customerEmail || entry.email || '')?.toLowerCase().includes(q);
+                                                    const matchesRef = (entry.bookingRef || '')?.toLowerCase().includes(q);
+                                                    if (!matchesName && !matchesEmail && !matchesRef) return false;
+                                                }
+                                                if (glFilter === 'pending') return entry.status === 'pending';
+                                                if (glFilter === 'approved') return entry.status === 'approved' || (!entry.status && !entry.hasTask);
+                                                if (glFilter === 'rejected') return entry.status === 'rejected';
+                                                if (glFilter === 'tasks') return !!(entry.hasTask || entry.taskSubmission);
+                                                return true;
+                                            });
+
+                                            if (filtered.length === 0) {
+                                                return (
+                                                    <div className="p-10 text-center text-gray-500 bg-white dark:bg-black/20 rounded-2xl">
+                                                        <Users size={40} className="mx-auto mb-4 opacity-20" />
+                                                        <p className="text-xs font-black uppercase tracking-[0.4em]">No guestlist entries match filter.</p>
+                                                    </div>
+                                                );
+                                            }
+
+                                            return filtered.map((entry) => (
+                                                <div key={entry.id} className="bg-white/[0.02] border border-black/10 dark:border-white/5 rounded-2xl p-4 flex flex-col gap-4">
+                                                    <div className="flex justify-between items-start">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="w-10 h-10 rounded-xl bg-neon-blue/10 flex items-center justify-center text-neon-blue">
+                                                                <Users size={20} />
+                                                            </div>
+                                                            <div>
+                                                                <p className="font-black text-gray-900 dark:text-white text-base tracking-tight">{entry.customerName || entry.name}</p>
+                                                                <p className="text-[10px] font-bold text-gray-500 tracking-widest mt-1 italic">{entry.customerEmail || entry.email}</p>
+                                                            </div>
+                                                        </div>
+                                                        <div className="text-right">
+                                                            <span className="font-mono text-[11px] text-gray-600 dark:text-gray-400 bg-white dark:bg-black/20 px-2 py-1 rounded">{entry.bookingRef}</span>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="flex flex-wrap justify-between items-center bg-black/5 dark:bg-white/5 rounded-xl p-3 gap-2">
                                                         <span className="text-[11px] font-black text-neon-blue bg-neon-blue/10 px-4 py-2 rounded-xl border border-neon-blue/20">
                                                             {entry.guestsCount || 1} GUEST(S)
                                                         </span>
-                                                    </td>
-                                                    <td className="p-8 font-mono text-[11px] text-gray-600 dark:text-gray-400 bg-white dark:bg-black/20">{entry.bookingRef}</td>
-                                                    <td className="p-8">
-                                                        {entry.attended ? (
-                                                            <div className="flex items-center gap-2 text-neon-green">
-                                                                <CheckCircle2 size={14} />
-                                                                <span className="text-[9px] font-black uppercase tracking-widest">Attended</span>
-                                                            </div>
-                                                        ) : (
-                                                            <div className="flex items-center gap-2 text-gray-600">
-                                                                <div className="w-1.5 h-1.5 rounded-full bg-gray-600" />
-                                                                <span className="text-[9px] font-black uppercase tracking-widest">Pending</span>
-                                                            </div>
-                                                        )}
-                                                    </td>
-                                                    <td className="p-8 text-right">
-                                                        <div className="flex items-center justify-end gap-3">
-                                                            <span className="px-3 py-1 bg-black/5 dark:bg-white/5 text-gray-600 dark:text-gray-400 border border-black/10 dark:border-white/10 rounded-md text-[9px] font-black uppercase tracking-widest">Verified</span>
-                                                            <button
-                                                                onClick={async () => {
-                                                                    if (window.confirm(`Remove ${entry.customerName || entry.name} from the guestlist?`)) {
-                                                                        try {
-                                                                            await deleteDoc(doc(db, 'guestlists', targetId, 'entries', entry.id));
-                                                                            // Decrement the parent guestlist's currentSpots
-                                                                            try {
-                                                                                await updateDoc(doc(db, 'guestlists', targetId), {
-                                                                                    currentSpots: increment(-(entry.guestsCount || 1))
-                                                                                });
-                                                                            } catch (e) { /* parent doc may not exist */ }
-                                                                            useStore.getState().addToast('Entry removed.', 'success');
-                                                                        } catch (err) {
-                                                                            console.error(err);
-                                                                            useStore.getState().addToast("Couldn't remove the entry. Please try again.", 'error');
-                                                                        }
-                                                                    }
-                                                                }}
-                                                                className="p-2.5 rounded-xl bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-gray-900 dark:hover:text-white transition-all opacity-0 group-hover:opacity-100"
-                                                                title="Remove entry"
-                                                            >
-                                                                <Trash2 size={14} />
-                                                            </button>
-                                                        </div>
-                                                    </td>
-                                                </tr>
-                                            )) : (
-                                                <tr>
-                                                    <td colSpan="5" className="p-20 text-center text-gray-500 bg-white dark:bg-black/20">
-                                                        <Users size={64} className="mx-auto mb-6 opacity-20" />
-                                                        <p className="text-xs font-black uppercase tracking-[0.4em]">No guestlist entries yet.</p>
-                                                    </td>
-                                                </tr>
-                                            )}
-                                        </tbody>
-                                    </table>
-                                    {/* Mobile Stacked Cards for Guestlist */}
-                                    <div className="flex md:hidden flex-col gap-4 p-4">
-                                        {guestlistEntries.length > 0 ? guestlistEntries.filter(e => 
-                                            !searchQuery || 
-                                            (e.customerName || e.name)?.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                                            e.bookingRef?.includes(searchQuery)
-                                        ).map((entry) => (
-                                            <div key={entry.id} className="bg-white/[0.02] border border-black/10 dark:border-white/5 rounded-2xl p-4 flex flex-col gap-4">
-                                                <div className="flex justify-between items-start">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="w-10 h-10 rounded-xl bg-neon-blue/10 flex items-center justify-center text-neon-blue">
-                                                            <Users size={20} />
-                                                        </div>
                                                         <div>
-                                                            <p className="font-black text-gray-900 dark:text-white text-base tracking-tight">{entry.customerName || entry.name}</p>
-                                                            <p className="text-[10px] font-bold text-gray-500 tracking-widest mt-1 italic">{entry.customerEmail || entry.email}</p>
+                                                            {entry.status === 'pending' ? (
+                                                                <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-500/10 text-amber-400 border border-amber-500/20 rounded-lg text-[9px] font-black uppercase">
+                                                                    Pending
+                                                                </span>
+                                                            ) : entry.status === 'rejected' ? (
+                                                                <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-red-500/10 text-red-400 border border-red-500/20 rounded-lg text-[9px] font-black uppercase">
+                                                                    Rejected
+                                                                </span>
+                                                            ) : (
+                                                                <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-neon-green/10 text-neon-green border border-neon-green/20 rounded-lg text-[9px] font-black uppercase">
+                                                                    Approved
+                                                                </span>
+                                                            )}
                                                         </div>
                                                     </div>
-                                                    <div className="text-right">
-                                                        <span className="font-mono text-[11px] text-gray-600 dark:text-gray-400 bg-white dark:bg-black/20 px-2 py-1 rounded">{entry.bookingRef}</span>
-                                                    </div>
-                                                </div>
 
-                                                <div className="flex justify-between items-center bg-black/5 dark:bg-white/5 rounded-xl p-3">
-                                                    <span className="text-[11px] font-black text-neon-blue bg-neon-blue/10 px-4 py-2 rounded-xl border border-neon-blue/20">
-                                                        {entry.guestsCount || 1} GUEST(S)
-                                                    </span>
-                                                    <div>
-                                                        {entry.attended ? (
-                                                            <div className="flex items-center gap-2 text-neon-green">
-                                                                <CheckCircle2 size={14} />
-                                                                <span className="text-[9px] font-black uppercase tracking-widest">Attended</span>
-                                                            </div>
-                                                        ) : (
-                                                            <div className="flex items-center gap-2 text-gray-600">
-                                                                <div className="w-1.5 h-1.5 rounded-full bg-gray-600" />
-                                                                <span className="text-[9px] font-black uppercase tracking-widest">Pending</span>
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                </div>
+                                                    {(entry.hasTask || entry.taskSubmission) && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setSelectedTaskEntry(entry)}
+                                                            className="w-full flex items-center justify-center gap-2 py-2.5 bg-neon-blue/10 hover:bg-neon-blue/20 text-neon-blue border border-neon-blue/20 rounded-xl text-xs font-black uppercase tracking-wider"
+                                                        >
+                                                            <Eye size={14} />
+                                                            Review Task Submission
+                                                        </button>
+                                                    )}
 
-                                                <div className="flex flex-wrap justify-end gap-2 pt-2 border-t border-black/10 dark:border-white/5">
-                                                    <span className="px-3 py-1 bg-black/5 dark:bg-white/5 text-gray-600 dark:text-gray-400 border border-black/10 dark:border-white/10 rounded-md text-[9px] font-black uppercase tracking-widest">Verified</span>
-                                                    <button
-                                                        onClick={async () => {
-                                                            if (window.confirm(`Remove ${entry.customerName || entry.name} from the guestlist?`)) {
-                                                                try {
-                                                                    await deleteDoc(doc(db, 'guestlists', targetId, 'entries', entry.id));
+                                                    <div className="flex flex-wrap justify-between items-center gap-2 pt-2 border-t border-black/10 dark:border-white/5">
+                                                        <div className="flex items-center gap-2">
+                                                            {entry.status === 'pending' && (
+                                                                <>
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={async () => {
+                                                                            try {
+                                                                                await updateGuestlistEntryStatus(targetId, entry.id, 'approved');
+                                                                                setGuestlistEntries(prev => prev.map(e => e.id === entry.id ? { ...e, status: 'approved' } : e));
+                                                                                useStore.getState().addToast(`Approved!`, 'success');
+                                                                            } catch (err) {
+                                                                                useStore.getState().addToast('Failed to approve.', 'error');
+                                                                            }
+                                                                        }}
+                                                                        className="px-3 py-1.5 rounded-lg bg-neon-green/10 text-neon-green border border-neon-green/20 text-[10px] font-black uppercase"
+                                                                    >
+                                                                        Approve
+                                                                    </button>
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={async () => {
+                                                                            if (window.confirm('Reject entry?')) {
+                                                                                try {
+                                                                                    await updateGuestlistEntryStatus(targetId, entry.id, 'rejected');
+                                                                                    setGuestlistEntries(prev => prev.map(e => e.id === entry.id ? { ...e, status: 'rejected' } : e));
+                                                                                    useStore.getState().addToast(`Rejected.`, 'info');
+                                                                                } catch (err) {
+                                                                                    useStore.getState().addToast('Failed to reject.', 'error');
+                                                                                }
+                                                                            }
+                                                                        }}
+                                                                        className="px-3 py-1.5 rounded-lg bg-red-500/10 text-red-500 border border-red-500/20 text-[10px] font-black uppercase"
+                                                                    >
+                                                                        Reject
+                                                                    </button>
+                                                                </>
+                                                            )}
+                                                        </div>
+                                                        <button
+                                                            type="button"
+                                                            onClick={async () => {
+                                                                if (window.confirm(`Remove ${entry.customerName || entry.name} from the guestlist?`)) {
                                                                     try {
-                                                                        await updateDoc(doc(db, 'guestlists', targetId), {
-                                                                            currentSpots: increment(-(entry.guestsCount || 1))
-                                                                        });
-                                                                    } catch (e) { }
-                                                                    useStore.getState().addToast('Entry removed.', 'success');
-                                                                } catch (err) {
-                                                                    console.error(err);
-                                                                    useStore.getState().addToast("Couldn't remove the entry. Please try again.", 'error');
+                                                                        await deleteDoc(doc(db, 'guestlists', targetId, 'entries', entry.id));
+                                                                        try {
+                                                                            await updateDoc(doc(db, 'guestlists', targetId), {
+                                                                                currentSpots: increment(-(entry.guestsCount || 1))
+                                                                            });
+                                                                        } catch (e) { }
+                                                                        useStore.getState().addToast('Entry removed.', 'success');
+                                                                    } catch (err) {
+                                                                        console.error(err);
+                                                                        useStore.getState().addToast("Couldn't remove entry.", 'error');
+                                                                    }
                                                                 }
-                                                            }
-                                                        }}
-                                                        className="p-2.5 rounded-xl bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-gray-900 dark:hover:text-white transition-all"
-                                                        title="Remove entry"
-                                                    >
-                                                        <Trash2 size={14} />
-                                                    </button>
+                                                            }}
+                                                            className="p-2 rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all ml-auto"
+                                                            title="Remove entry"
+                                                        >
+                                                            <Trash2 size={13} />
+                                                        </button>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        )) : (
-                                            <div className="p-10 text-center text-gray-500 bg-white dark:bg-black/20 rounded-2xl">
-                                                <Users size={40} className="mx-auto mb-4 opacity-20" />
-                                                <p className="text-xs font-black uppercase tracking-[0.4em]">No guestlist entries yet.</p>
-                                            </div>
-                                        )}
+                                            ));
+                                        })()}
                                     </div>
                                 </div>
                             </Card>
+
+                            {/* Task Review Modal */}
+                            {selectedTaskEntry && (
+                                <GuestlistTaskReviewModal
+                                    isOpen={!!selectedTaskEntry}
+                                    onClose={() => setSelectedTaskEntry(null)}
+                                    entry={selectedTaskEntry}
+                                    event={event}
+                                    onStatusChange={async (entryId, newStatus) => {
+                                        await updateGuestlistEntryStatus(targetId, entryId, newStatus);
+                                        setGuestlistEntries(prev => prev.map(e => e.id === entryId ? { ...e, status: newStatus } : e));
+                                        setSelectedTaskEntry(prev => prev && prev.id === entryId ? { ...prev, status: newStatus } : null);
+                                    }}
+                                />
+                            )}
                         </motion.div>
                     )}
 

@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
     X, Calendar, MapPin, Ticket, Plus, Minus, ArrowRight, 
     ChevronLeft, CheckCircle2, ShieldCheck, Zap,
-    Info, CreditCard, Lock, Share2, ZoomIn, ZoomOut, Maximize2
+    Info, CreditCard, Lock, Share2, ZoomIn, ZoomOut, Maximize2, Clock
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { Button } from '../ui/Button';
@@ -15,6 +15,7 @@ import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { RecaptchaVerifier, PhoneAuthProvider, linkWithCredential } from 'firebase/auth';
 import html2canvas from 'html2canvas';
 import LoadingSpinner from '../ui/LoadingSpinner';
+import GuestlistTaskSubmissionStep from '../community/GuestlistTaskSubmissionStep';
 
 const OTPVerificationSuccess = () => {
     return (
@@ -161,6 +162,7 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
     const [couponInput, setCouponInput] = useState('');
     const [appliedCoupon, setAppliedCoupon] = useState(null);
     const [isValidatingCoupon, setIsValidatingCoupon] = useState(false);
+    const [isPendingTaskReview, setIsPendingTaskReview] = useState(false);
     
     // Zoom state for map
     const [zoom, setZoom] = useState(1);
@@ -217,6 +219,7 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
             setPaymentRef('');
             setAppliedCoupon(null);
             setCouponInput('');
+            setIsPendingTaskReview(false);
             setLoading(false);
             setVerifying(false);
             setBookingRef(null);
@@ -443,7 +446,11 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
                         setStep('payment');
                     }
                 } else {
-                    submitGuestlist();
+                    if (event?.hasGuestlistTask && event?.guestlistTask) {
+                        setStep('task');
+                    } else {
+                        submitGuestlist();
+                    }
                 }
             }, 1200);
 
@@ -467,7 +474,11 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
                             setStep('payment');
                         }
                     } else {
-                        submitGuestlist();
+                        if (event?.hasGuestlistTask && event?.guestlistTask) {
+                            setStep('task');
+                        } else {
+                            submitGuestlist();
+                        }
                     }
                 }, 1200);
             } else {
@@ -577,9 +588,13 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [step, formData, otpSent, otpValues, isPhoneVerified, countryCode]);
 
-    const submitGuestlist = async () => {
+    const submitGuestlist = async (taskSubmission = null) => {
         setLoading(true);
         try {
+            const hasTask = !!(event?.hasGuestlistTask && event?.guestlistTask);
+            const reviewRequired = hasTask && (event.guestlistTask.reviewRequired !== false);
+            const initialStatus = reviewRequired ? 'pending' : 'confirmed';
+
             const ref = `NB-${Math.random().toString(36).substr(2, 5).toUpperCase()}`;
             const normalizedEmail = (formData.email || '').trim().toLowerCase();
             const entryData = {
@@ -592,33 +607,39 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
                 customerPhone: `${countryCode}${formData.phone}`,
                 guestsCount: guestCount,
                 bookingRef: ref,
-                status: 'confirmed',
+                status: initialStatus,
                 title: event?.title || 'Guestlist',
                 attended: false,
                 guestlistMode: event?.guestlistMode || 'qr',
                 eventId: event?.id || null,
-                guestlistId: event?.id || null
+                guestlistId: event?.id || null,
+                hasTask: hasTask,
+                taskSubmission: taskSubmission || null,
+                appliedAt: new Date().toISOString()
             };
             
             await useStore.getState().addGuestlistEntry(event.id, entryData);
 
-            try {
-                const { sendGuestlistConfirmation } = await import('../../lib/email');
-                await sendGuestlistConfirmation({
-                    toName: formData.name,
-                    toEmail: normalizedEmail,
-                    eventName: event?.title || 'Event',
-                    bookingRef: ref,
-                    guestCount: guestCount,
-                    date: event?.date,
-                    location: event?.location,
-                    guestlistMode: event?.guestlistMode || 'qr'
-                });
-            } catch (mailErr) {
-                console.error("Failed to send guestlist confirmation email:", mailErr);
+            if (!reviewRequired) {
+                try {
+                    const { sendGuestlistConfirmation } = await import('../../lib/email');
+                    await sendGuestlistConfirmation({
+                        toName: formData.name,
+                        toEmail: normalizedEmail,
+                        eventName: event?.title || 'Event',
+                        bookingRef: ref,
+                        guestCount: guestCount,
+                        date: event?.date,
+                        location: event?.location,
+                        guestlistMode: event?.guestlistMode || 'qr'
+                    });
+                } catch (mailErr) {
+                    console.error("Failed to send guestlist confirmation email:", mailErr);
+                }
             }
 
             setBookingRef(ref);
+            setIsPendingTaskReview(reviewRequired);
             setStep('success');
         } catch (error) {
             console.error("Guestlist error:", error);
@@ -787,6 +808,9 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
             setOtpSent(false);
             setOtpValues(['','','','','','']);
             setIsPhoneVerified(false);
+        }
+        else if (step === 'task') {
+            setStep('identity-phone');
         }
     };
 
@@ -1407,7 +1431,11 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
                                                                     setStep('payment');
                                                                 }
                                                             } else {
-                                                                submitGuestlist();
+                                                                if (event?.hasGuestlistTask && event?.guestlistTask) {
+                                                                    setStep('task');
+                                                                } else {
+                                                                    submitGuestlist();
+                                                                }
                                                             }
                                                         }}
                                                         className="h-12 px-8 rounded-xl text-[10px] font-bold uppercase tracking-wider bg-neon-green text-black hover:bg-white hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-2 shadow-[0_0_20px_rgba(57,255,20,0.2)]"
@@ -1483,6 +1511,27 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
                                         </div>
                                     )}
                                 </div>
+                            </motion.div>
+                        )}
+
+                        {step === 'task' && (
+                            <motion.div 
+                                key="task" 
+                                initial={{ opacity: 0, x: 20 }} 
+                                animate={{ opacity: 1, x: 0 }} 
+                                exit={{ opacity: 0, x: -20 }}
+                                className="flex-1 flex flex-col min-h-0 overflow-hidden"
+                            >
+                                <GuestlistTaskSubmissionStep
+                                    task={event?.guestlistTask}
+                                    eventTitle={event?.title}
+                                    guestCount={guestCount}
+                                    onBack={handleBack}
+                                    onSubmit={(taskSubmission) => {
+                                        submitGuestlist(taskSubmission);
+                                    }}
+                                    loading={loading}
+                                />
                             </motion.div>
                         )}
 
@@ -1600,6 +1649,41 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
                         )}
 
                         {step === 'success' && (() => {
+                            if (isPendingTaskReview) {
+                                return (
+                                    <motion.div key="success-task-pending" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="flex flex-col items-center justify-center text-center h-full gap-8 py-6">
+                                        <div className="w-24 h-24 rounded-[2.5rem] bg-amber-500/10 border border-amber-500/30 text-amber-400 flex items-center justify-center shadow-[0_0_60px_rgba(245,158,11,0.2)] animate-[pulse_2.5s_infinite]">
+                                            <Clock size={48} />
+                                        </div>
+                                        <div className="space-y-3 max-w-md">
+                                            <span className="text-[10px] font-black uppercase tracking-[0.3em] px-3.5 py-1 bg-amber-500/15 text-amber-400 border border-amber-500/30 rounded-full inline-block">
+                                                Task Application Submitted
+                                            </span>
+                                            <h3 className="text-3xl md:text-5xl font-black font-heading text-gray-900 dark:text-white tracking-tight">
+                                                Under Review
+                                            </h3>
+                                            <div className="flex items-center justify-center gap-3">
+                                                <span className="text-[10px] font-semibold text-gray-500 tracking-widest uppercase">Booking Reference:</span>
+                                                <span className="text-gray-900 dark:text-white font-mono text-sm font-bold tracking-widest px-3 py-1 bg-black/5 dark:bg-white/5 rounded-lg border border-black/10 dark:border-white/10">{bookingRef}</span>
+                                            </div>
+                                        </div>
+
+                                        <div className="p-8 bg-amber-500/5 border border-amber-500/20 rounded-[2.5rem] max-w-md space-y-3 text-left">
+                                            <p className="text-xs font-bold text-gray-800 dark:text-gray-200 tracking-wide leading-relaxed">
+                                                Your guestlist task submission has been received and is waiting for event curator approval.
+                                            </p>
+                                            <p className="text-[11px] text-gray-500 leading-relaxed">
+                                                Once approved, your confirmed guestlist pass will be emailed to <span className="font-semibold text-gray-900 dark:text-white">{formData.email}</span>.
+                                            </p>
+                                        </div>
+
+                                        <Button onClick={onClose} className="w-full max-w-sm h-16 bg-white dark:bg-zinc-800 text-black dark:text-white font-black rounded-2xl tracking-widest text-xs hover:scale-105 active:scale-95 transition-all shadow-xl">
+                                            DONE
+                                        </Button>
+                                    </motion.div>
+                                );
+                            }
+
                             const isRSVPOnly = activeTab === 'guestlist' && event?.guestlistMode === 'rsvp';
                             return (
                                 <motion.div key="success" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="flex flex-col items-center justify-center text-center h-full gap-10">
