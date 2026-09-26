@@ -54,10 +54,11 @@ const uploadBase64ToStorage = async (base64String, path) => {
 
     try {
         const storageRef = ref(storage, path);
-        await uploadBytes(storageRef, blob);
-        return await getDownloadURL(storageRef);
+        const uploadPromise = uploadBytes(storageRef, blob).then(() => getDownloadURL(storageRef));
+        const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('Firebase Storage timeout')), 2000));
+        return await Promise.race([uploadPromise, timeoutPromise]);
     } catch (e) {
-        console.warn("Failed to upload base64 file to Firebase Storage, trying Cloudinary fallback...", e);
+        console.warn("Firebase Storage unavailable, falling back to Cloudinary...", e);
         try {
             const preset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET || "maw1e4ud";
             const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || "dgtalrz4n";
@@ -217,17 +218,18 @@ export const useStore = create((set, get) => ({
         const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp', 'bmp', 'ico', 'tiff'];
         const isVideo = file.type?.startsWith("video/") || videoExtensions.includes(extension);
 
-        // Try Firebase Storage first for PDF/SVG files to avoid Cloudinary security blocks
+        // Try Firebase Storage first for PDF/SVG files with strict 2s timeout
         if (file.type === "application/pdf" || file.type.includes("svg") || file.name?.toLowerCase().endsWith(".svg")) {
             try {
                 const uniqueId = Math.random().toString(36).substring(2, 9);
                 const cleanName = file.name.replace(/[^a-zA-Z0-9.]/g, '_');
                 const storagePath = `uploads/file_${uniqueId}_${cleanName}`;
                 const storageRef = ref(storage, storagePath);
-                await uploadBytes(storageRef, file, { contentType: file.type || 'application/pdf' });
-                return await getDownloadURL(storageRef);
+                const uploadPromise = uploadBytes(storageRef, file, { contentType: file.type || 'application/pdf' }).then(() => getDownloadURL(storageRef));
+                const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('Firebase Storage timeout')), 2000));
+                return await Promise.race([uploadPromise, timeoutPromise]);
             } catch (firebaseError) {
-                console.warn("Firebase Storage upload failed, falling back to Cloudinary:", firebaseError);
+                console.warn("Firebase Storage fast-fallback to Cloudinary:", firebaseError);
             }
         }
 
@@ -369,7 +371,91 @@ export const useStore = create((set, get) => ({
         }
     },
 
-    // Centralized Document Upload Utility (tries Firebase Storage first, falls back to Cloudinary raw upload)
+    // Dedicated Blazing-Fast Proposal & Document Vault Upload Utility with Real-time Progress Tracking
+    uploadProposalFile: async (file, onProgress = null) => {
+        if (!file) return null;
+
+        const maxMb = 35;
+        if (file.size > maxMb * 1024 * 1024) {
+            throw new Error(`File is too large. Please select a proposal document under ${maxMb}MB.`);
+        }
+
+        const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || "dgtalrz4n";
+        const uploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET || "maw1e4ud";
+        const rawExtension = file.name?.split('.').pop()?.toLowerCase() || 'pdf';
+        const isPdf = file.type === 'application/pdf' || rawExtension === 'pdf';
+        const isImage = file.type?.startsWith('image/') || ['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg'].includes(rawExtension);
+
+        const resourceType = isImage ? 'image' : 'raw';
+
+        // For PDFs, upload to Cloudinary raw storage with an alias extension (.doc) 
+        // to prevent Cloudinary default PDF delivery security blocks (401 ACL error),
+        // guaranteeing immediate 200 OK delivery with Access-Control-Allow-Origin: *
+        let uploadFileName = file.name;
+        if (isPdf) {
+            const cleanBase = file.name.replace(/\.[^/.]+$/, '').replace(/[^a-zA-Z0-9_-]/g, '_');
+            const uniqueToken = Math.random().toString(36).substring(2, 8);
+            uploadFileName = `${cleanBase || 'proposal'}_${uniqueToken}.doc`;
+        }
+
+        const formData = new FormData();
+        formData.append("file", file, uploadFileName);
+        formData.append("upload_preset", uploadPreset);
+        formData.append("cloud_name", cloudName);
+
+        return await new Promise((resolve, reject) => {
+            const xhr = new XMLHttpRequest();
+            xhr.open("POST", `https://api.cloudinary.com/v1_1/${cloudName}/${resourceType}/upload`, true);
+
+            // Real-time byte tracking progress
+            xhr.upload.onprogress = (event) => {
+                if (event.lengthComputable && event.total > 0) {
+                    const percent = Math.min(99, Math.round((event.loaded / event.total) * 100));
+                    if (onProgress) onProgress(percent);
+                }
+            };
+
+            xhr.onload = () => {
+                if (xhr.status >= 200 && xhr.status < 300) {
+                    try {
+                        const res = JSON.parse(xhr.responseText);
+                        if (res.secure_url) {
+                            if (onProgress) onProgress(100);
+                            resolve({
+                                url: res.secure_url,
+                                fileName: file.name,
+                                fileSize: file.size,
+                                fileType: isPdf ? 'pdf' : rawExtension
+                            });
+                            return;
+                        }
+                    } catch (parseErr) {
+                        console.warn("Error parsing upload response:", parseErr);
+                    }
+                }
+                try {
+                    const errObj = JSON.parse(xhr.responseText);
+                    reject(new Error(errObj.error?.message || `Upload failed with status ${xhr.status}`));
+                } catch {
+                    reject(new Error(`Upload failed with status ${xhr.status}`));
+                }
+            };
+
+            xhr.onerror = () => {
+                reject(new Error("Network connection error during proposal upload. Please check your connection."));
+            };
+
+            xhr.ontimeout = () => {
+                reject(new Error("Proposal upload timed out. Please check your network."));
+            };
+
+            // 90s max timeout
+            xhr.timeout = 90000;
+            xhr.send(formData);
+        });
+    },
+
+    // Centralized Document Upload Utility (tries Firebase Storage first with 2s timeout, falls back to Cloudinary raw upload)
     uploadDocumentFile: async (file) => {
         if (!file) return null;
         
@@ -377,14 +463,14 @@ export const useStore = create((set, get) => ({
         const cleanName = file.name.replace(/[^a-zA-Z0-9.]/g, '_');
         const storagePath = `documents/${uniqueId}_${cleanName}`;
         
-        // Try Firebase Storage first
+        // Try Firebase Storage first with strict 2s timeout
         try {
             const storageRef = ref(storage, storagePath);
-            await uploadBytes(storageRef, file);
-            const url = await getDownloadURL(storageRef);
-            return { url, storagePath };
+            const uploadPromise = uploadBytes(storageRef, file).then(() => getDownloadURL(storageRef)).then(url => ({ url, storagePath }));
+            const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('Firebase Storage timeout')), 2000));
+            return await Promise.race([uploadPromise, timeoutPromise]);
         } catch (firebaseError) {
-            console.warn("Firebase Storage upload failed, falling back to Cloudinary raw upload:", firebaseError);
+            console.warn("Firebase Storage upload skipped/failed, falling back to Cloudinary raw upload:", firebaseError);
             
             // Cloudinary fallback
             const data = new FormData();

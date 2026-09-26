@@ -3930,11 +3930,11 @@ const ProposalGenerator = () => {
                                                                 try {
                                                                     const storageRef = ref(storage, storagePath);
                                                                     const uploadPromise = uploadBytes(storageRef, file);
-                                                                    const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('Firebase upload timed out')), 15000));
+                                                                    const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('Firebase upload timed out')), 1500));
                                                                     await Promise.race([uploadPromise, timeoutPromise]);
                                                                     downloadUrl = await getDownloadURL(storageRef);
                                                                 } catch (firebaseErr) {
-                                                                    console.warn("Firebase upload failed, attempting Cloudinary fallback...", firebaseErr);
+                                                                    console.warn("Firebase upload fast-fallback to Cloudinary...", firebaseErr);
                                                                     const preset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET || "maw1e4ud";
                                                                     const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || "dgtalrz4n";
                                                                     const data = new FormData();

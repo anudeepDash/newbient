@@ -25,7 +25,7 @@ const logoOptions = [
 ];
 
 const UploadProposalModal = ({ isOpen, onClose, editingProposal = null, onSuccess }) => {
-    const { addProposal, updateProposal, uploadToCloudinary } = useStore();
+    const { addProposal, updateProposal, uploadProposalFile } = useStore();
     const fileInputRef = useRef(null);
 
     const [file, setFile] = useState(null);
@@ -42,6 +42,7 @@ const UploadProposalModal = ({ isOpen, onClose, editingProposal = null, onSucces
     const [coverDescription, setCoverDescription] = useState('');
     const [uploading, setUploading] = useState(false);
     const [uploadProgress, setUploadProgress] = useState('');
+    const [uploadPercent, setUploadPercent] = useState(0);
     const [error, setError] = useState('');
 
     // Pre-populate or reset form
@@ -82,6 +83,7 @@ const UploadProposalModal = ({ isOpen, onClose, editingProposal = null, onSucces
         setError('');
         setUploading(false);
         setUploadProgress('');
+        setUploadPercent(0);
     }, [isOpen, editingProposal]);
 
     if (!isOpen) return null;
@@ -153,6 +155,7 @@ const UploadProposalModal = ({ isOpen, onClose, editingProposal = null, onSucces
         }
 
         setUploading(true);
+        setUploadPercent(0);
 
         try {
             let fileUrl = editingProposal?.fileUrl || '';
@@ -160,18 +163,30 @@ const UploadProposalModal = ({ isOpen, onClose, editingProposal = null, onSucces
             let fileSize = editingProposal?.fileSize || '';
             let fileType = editingProposal?.fileType || 'pdf';
 
-            // If a new physical file is provided, upload it to storage
+            // If a new physical file is provided, upload it using fast direct streaming
             if (file && !file.isExisting) {
-                setUploadProgress('Uploading document to Vault CDN...');
-                fileUrl = await uploadToCloudinary(file);
-                if (!fileUrl) {
+                setUploadProgress('Initiating fast upload to Vault CDN...');
+                setUploadPercent(5);
+
+                const result = await uploadProposalFile(file, (percent) => {
+                    setUploadPercent(percent);
+                    if (percent < 100) {
+                        setUploadProgress(`Uploading proposal: ${percent}%`);
+                    } else {
+                        setUploadProgress('Securing document in Vault CDN...');
+                    }
+                });
+
+                if (!result || !result.url) {
                     throw new Error('Upload failed. Could not obtain secure URL.');
                 }
-                fileName = file.name;
-                fileSize = formatBytes(file.size);
-                fileType = file.name.split('.').pop()?.toLowerCase() || 'pdf';
+                fileUrl = result.url;
+                fileName = result.fileName || file.name;
+                fileSize = formatBytes(result.fileSize || file.size);
+                fileType = result.fileType || 'pdf';
             }
 
+            setUploadPercent(100);
             setUploadProgress('Configuring proposal in Vault...');
 
             const proposalData = {
@@ -212,6 +227,7 @@ const UploadProposalModal = ({ isOpen, onClose, editingProposal = null, onSucces
         } finally {
             setUploading(false);
             setUploadProgress('');
+            setUploadPercent(0);
         }
     };
 
@@ -535,39 +551,63 @@ const UploadProposalModal = ({ isOpen, onClose, editingProposal = null, onSucces
                 </form>
 
                 {/* Footer Actions */}
-                <div className="px-6 sm:px-8 py-4 sm:py-5 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0 bg-white/[0.02]">
-                    <div className="text-[10px] font-mono text-gray-400">
-                        {uploadProgress || 'Vault URL, analytics & sharing link created automatically'}
-                    </div>
+                <div className="px-6 sm:px-8 py-4 sm:py-5 border-t border-white/10 flex flex-col gap-3 shrink-0 bg-white/[0.02]">
+                    {uploading && (
+                        <div className="w-full space-y-1.5">
+                            <div className="flex items-center justify-between text-[10px] font-mono">
+                                <span className="text-neon-green font-bold flex items-center gap-1.5">
+                                    <RefreshCw size={11} className="animate-spin text-neon-green" />
+                                    {uploadProgress || 'Uploading...'}
+                                </span>
+                                <span className="text-neon-green font-black">{uploadPercent}%</span>
+                            </div>
+                            <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
+                                <div 
+                                    className="h-full bg-neon-green shadow-[0_0_10px_rgba(57,255,20,0.8)] transition-all duration-150 ease-out rounded-full"
+                                    style={{ width: `${uploadPercent}%` }}
+                                />
+                            </div>
+                        </div>
+                    )}
 
-                    <div className="flex items-center gap-3 w-full sm:w-auto">
-                        <button
-                            type="button"
-                            onClick={onClose}
-                            disabled={uploading}
-                            className="flex-1 sm:flex-none px-5 py-3 rounded-xl border border-white/10 hover:bg-white/10 text-[10px] font-black uppercase tracking-widest text-gray-300 transition-colors disabled:opacity-50"
-                        >
-                            Cancel
-                        </button>
-
-                        <button
-                            type="button"
-                            onClick={handleSubmit}
-                            disabled={uploading}
-                            className="flex-1 sm:flex-none px-7 py-3 rounded-xl bg-neon-green hover:bg-neon-green/90 text-black text-[10px] font-black uppercase tracking-widest transition-all shadow-[0_4px_16px_rgba(57,255,20,0.4)] hover:shadow-[0_6px_24px_rgba(57,255,20,0.6)] flex items-center justify-center gap-2 disabled:opacity-50"
-                        >
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-3 w-full">
+                        <div className="text-[10px] font-mono text-gray-400">
                             {uploading ? (
-                                <>
-                                    <RefreshCw size={14} className="animate-spin" />
-                                    <span>Hosting...</span>
-                                </>
+                                <span className="text-gray-300">Fast-streaming to Vault CDN • Please wait</span>
                             ) : (
-                                <>
-                                    <Upload size={14} />
-                                    <span>{editingProposal ? 'Update in Vault' : 'Host in Vault'}</span>
-                                </>
+                                'Vault URL, analytics & sharing link created automatically'
                             )}
-                        </button>
+                        </div>
+
+                        <div className="flex items-center gap-3 w-full sm:w-auto">
+                            <button
+                                type="button"
+                                onClick={onClose}
+                                disabled={uploading}
+                                className="flex-1 sm:flex-none px-5 py-3 rounded-xl border border-white/10 hover:bg-white/10 text-[10px] font-black uppercase tracking-widest text-gray-300 transition-colors disabled:opacity-50"
+                            >
+                                Cancel
+                            </button>
+
+                            <button
+                                type="button"
+                                onClick={handleSubmit}
+                                disabled={uploading}
+                                className="flex-1 sm:flex-none px-7 py-3 rounded-xl bg-neon-green hover:bg-neon-green/90 text-black text-[10px] font-black uppercase tracking-widest transition-all shadow-[0_4px_16px_rgba(57,255,20,0.4)] hover:shadow-[0_6px_24px_rgba(57,255,20,0.6)] flex items-center justify-center gap-2 disabled:opacity-50"
+                            >
+                                {uploading ? (
+                                    <>
+                                        <RefreshCw size={14} className="animate-spin" />
+                                        <span>Hosting ({uploadPercent}%)...</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <Upload size={14} />
+                                        <span>{editingProposal ? 'Update in Vault' : 'Host in Vault'}</span>
+                                    </>
+                                )}
+                            </button>
+                        </div>
                     </div>
                 </div>
             </motion.div>
