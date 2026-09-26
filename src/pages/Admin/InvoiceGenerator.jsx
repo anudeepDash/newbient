@@ -447,16 +447,19 @@ const InvoiceGenerator = () => {
         const pages = [];
         let itemsRemaining = [...items];
         
-        const functionalBlocksCount = [
-            formData.showGst,
-            formData.showAdvance && (formData.advancePaid > 0),
-            formData.paymentLink,
-            formData.upiId && formData.showUPI !== false
-        ].filter(Boolean).length;
+        let occupiedWeight = 0;
+        if (formData.showGst) occupiedWeight += 0.5;
+        if (formData.showAdvance && formData.advancePaid > 0) occupiedWeight += 0.5;
+        if (formData.paymentLink) occupiedWeight += 0.5;
+        if (formData.upiId && formData.showUPI !== false) occupiedWeight += 1.5;
+        if (formData.showSeal || formData.showSignatures) occupiedWeight += 2;
+        if (formData.showPaymentDetails && formData.paymentDetails) occupiedWeight += 1.5;
+        if (formData.showNotes && formData.note) occupiedWeight += 1;
 
-        const lastPageWithTotalsLimit = functionalBlocksCount >= 3 ? 4 : 7;
+        const firstPageWithTotalsLimit = occupiedWeight >= 4 ? 3 : (occupiedWeight >= 2 ? 4 : 6);
+        const standardPageWithTotalsLimit = occupiedWeight >= 4 ? 6 : (occupiedWeight >= 2 ? 8 : 10);
         const firstPageLimit = 7; 
-        const standardLimit = 15; 
+        const standardLimit = 14; 
 
         let isFirstPage = true;
         while (itemsRemaining.length > 0) {
@@ -464,7 +467,7 @@ const InvoiceGenerator = () => {
             const pageItems = itemsRemaining.splice(0, limit);
             pages.push(pageItems);
 
-            const totalsLimit = lastPageWithTotalsLimit;
+            const totalsLimit = isFirstPage ? firstPageWithTotalsLimit : standardPageWithTotalsLimit;
             if (itemsRemaining.length === 0 && pageItems.length > totalsLimit) {
                 pages.push([]);
             }
@@ -789,7 +792,7 @@ const InvoiceGenerator = () => {
                                                         <label className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest pl-2">QR Source</label>
                                                         <div className="flex bg-gray-100 dark:bg-black/40 p-1.5 rounded-2xl border border-black/10 dark:border-white/5">
                                                             {['auto', 'custom'].map(type => (
-                                                                <button key={type} onClick={() => setFormData({...formData, qrType: type})} className={cn("flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all", formData.qrType === type ? "bg-white text-black shadow-sm" : "text-gray-500 hover:text-gray-900 dark:hover:text-white")}>{type === 'auto' ? 'Dynamic UPI' : 'Custom Image'}</button>
+                                                                <button key={type} onClick={() => setFormData({...formData, qrType: type})} className={cn("flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all", formData.qrType === type ? "bg-white text-gray-900 dark:text-white print:text-black shadow-sm" : "text-gray-500 hover:text-gray-900 dark:hover:text-white")}>{type === 'auto' ? 'Dynamic UPI' : 'Custom Image'}</button>
                                                             ))}
                                                         </div>
                                                     </div>
@@ -815,6 +818,11 @@ const InvoiceGenerator = () => {
                                         </div>
 
                                         {/* Notes & Terms */}
+                                        <div className="space-y-4 pt-8 border-t border-black/10 dark:border-white/5">
+                                            <div className="flex items-center justify-between px-2">
+                                                <label className="text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest">Additional Notes</label>
+                                                <button onClick={() => setFormData({...formData, showNotes: !formData.showNotes})} className={`text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-xl border transition-all ${formData.showNotes ? "bg-neon-blue text-black border-neon-blue" : "bg-black/5 dark:bg-white/5 text-gray-500 border-black/10 dark:border-white/5"}`}>{formData.showNotes ? 'Notes Enabled' : 'Notes Disabled'}</button>
+                                            </div>
                                             <div className={cn(!formData.showNotes && "opacity-30")}>
                                                 <StudioRichEditor 
                                                     label="Strategic Notes & Terms"
@@ -824,6 +832,7 @@ const InvoiceGenerator = () => {
                                                     minHeight="150px"
                                                 />
                                             </div>
+                                        </div>
 
                                         {/* PayU Gateway */}
                                         <div className="p-4 md:p-8 bg-gray-50 dark:bg-zinc-900 border border-black/10 dark:border-white/10 rounded-[2.5rem] space-y-8 mt-8">
@@ -1059,12 +1068,12 @@ const InvoiceGenerator = () => {
                                     initial={{ opacity: 0 }} 
                                     animate={{ opacity: 1 }} 
                                     exit={{ opacity: 0 }} 
-                                    className="invoice-page-render w-[794px] h-[1123px] bg-[#F3F4F6] text-black relative flex flex-col p-[12mm] shadow-2xl rounded-[2px] overflow-hidden"
+                                    className="invoice-page-render w-[794px] h-[1123px] bg-white dark:bg-[#0B0F17] text-gray-900 dark:text-white print:bg-white print:text-black relative flex flex-col p-[12mm] shadow-2xl rounded-[2px] overflow-hidden"
                                     style={{ fontFamily: "'Inter', sans-serif" }}
                                 >
                                      {/* Header - Page 1 or summary */}
                                     {currentPreviewPage === 0 ? (
-                                        <div className="flex justify-between items-start mb-12">
+                                        <div className="flex justify-between items-start mb-6">
                                             <div>
                                                 <img src={currentLogo.path} alt="Company Logo" className="h-20 object-contain" crossOrigin="anonymous" />
                                             </div>
@@ -1080,7 +1089,7 @@ const InvoiceGenerator = () => {
                                         </div>
                                     )}
 
-                                    <div className={cn("relative z-10 flex flex-col flex-1", currentPreviewPage === paginatedPages.length - 1 ? "pb-56" : "pb-48")}>
+                                    <div className="relative z-10 flex flex-col flex-1 pb-20">
                                         {/* Info Boxes - Page 1 */}
                                         {currentPreviewPage === 0 && (
                                             <div className="grid grid-cols-2 gap-8 mb-8">
@@ -1214,55 +1223,59 @@ const InvoiceGenerator = () => {
                                                         )}
                                                     </div>
 
-                                                    {/* QR Code Section */}
-                                                    {formData.showUPI && formData.upiId && (
-                                                        <div className="flex flex-col items-end gap-2 w-full pt-3 border-t border-gray-300/50">
-                                                            <div className="bg-white p-2 rounded-xl border border-gray-200 inline-block shadow-sm shrink-0">
-                                                                <img 
-                                                                    src={formData.qrType === 'custom' && formData.customQrImage 
-                                                                        ? formData.customQrImage 
-                                                                        : `https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(`upi://pay?pa=${formData.upiId}&pn=NEWBI&am=${balanceDue}&cu=INR`)}`} 
-                                                                    alt="Payment QR" 
-                                                                    className="w-[70px] h-[70px] grayscale contrast-125 mx-auto"
-                                                                    crossOrigin="anonymous"
-                                                                />
-                                                                <p className="text-[6px] font-black text-center mt-1 text-gray-600 tracking-widest uppercase italic font-bold">Scan to pay</p>
-                                                            </div>
-                                                            <a 
-                                                                href={`upi://pay?pa=${formData.upiId}&pn=NEWBI&am=${balanceDue}&cu=INR`} 
-                                                                className="flex items-center justify-center gap-2 w-full h-10 bg-black text-white rounded-lg text-[9px] font-black uppercase tracking-widest"
-                                                                data-html2canvas-ignore="true"
-                                                            >
-                                                                Pay via UPI App
-                                                            </a>
-                                                        </div>
-                                                    )}
-
-                                                    {/* Authentication Layer */}
-                                                    {(formData.showSeal || formData.showSignatures) && (
-                                                        <div className="w-full flex justify-start mt-12 pt-12 border-t-2 border-gray-100 relative">
-                                                            {/* Provider Signature */}
-                                                            <div className="space-y-6">
-                                                                <p className="text-[10px] font-black text-gray-600 uppercase tracking-widest">For Newbi Entertainment</p>
-                                                                <div className="h-32 flex items-center justify-start relative">
-                                                                    {formData.showSignatures && formData.providerSignature ? (
-                                                                        <img src={formData.providerSignature} alt="Provider Signature" className="h-full object-contain grayscale mix-blend-multiply" crossOrigin="anonymous" />
-                                                                    ) : (
-                                                                        <p className="text-[20px] font-formal italic text-black opacity-40">{formData.senderName || 'Authorized Signatory'}</p>
-                                                                    )}
-                                                                    <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-black/10" />
+                                                    {/* QR & Authentication Flex Row */}
+                                                    <div className="flex w-full items-end justify-between pt-4 mt-2 border-t border-gray-300/50 dark:border-white/10 print:border-gray-200">
+                                                        
+                                                        {/* QR Code Section */}
+                                                        {formData.showUPI && formData.upiId && (
+                                                            <div className="flex flex-col items-center gap-2 shrink-0">
+                                                                <div className="bg-white p-2 rounded-xl border border-gray-200 shadow-sm flex flex-col items-center w-[85px]">
+                                                                    <img 
+                                                                        src={formData.qrType === 'custom' && formData.customQrImage 
+                                                                            ? formData.customQrImage 
+                                                                            : `https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(`upi://pay?pa=${formData.upiId}&pn=NEWBI&am=${balanceDue}&cu=INR`)}`} 
+                                                                        alt="Payment QR" 
+                                                                        className="w-[65px] h-[65px] grayscale contrast-125 mx-auto"
+                                                                        crossOrigin="anonymous"
+                                                                    />
+                                                                    <p className="text-[6px] font-black text-center mt-1 text-gray-600 dark:text-gray-400 tracking-widest uppercase italic font-bold">Scan to pay</p>
                                                                 </div>
-                                                                <p className="text-[11px] font-black text-black uppercase tracking-widest leading-none">{formData.senderName || 'Authorized Signatory'}</p>
+                                                                <a 
+                                                                    href={`upi://pay?pa=${formData.upiId}&pn=NEWBI&am=${balanceDue}&cu=INR`} 
+                                                                    className="flex items-center justify-center gap-1 w-[85px] h-8 bg-black dark:bg-white text-white dark:text-black rounded-xl text-[7px] font-black uppercase tracking-widest hover:scale-105 active:scale-95 transition-all"
+                                                                    data-html2canvas-ignore="true"
+                                                                >
+                                                                    Pay via UPI
+                                                                </a>
                                                             </div>
+                                                        )}
+                                                        
+                                                        {/* Authentication Layer */}
+                                                        {(formData.showSeal || formData.showSignatures) && (
+                                                            <div className="flex items-end relative pb-1 pr-1">
+                                                                {formData.showSeal && (
+                                                                    <div className={formData.showSignatures ? "absolute -left-12 -top-4 pointer-events-none z-10 opacity-80 mix-blend-multiply dark:mix-blend-normal dark:drop-shadow-[0_0_15px_rgba(255,255,255,0.8)] print:mix-blend-multiply print:drop-shadow-none mb-0.5 rotate-[-4deg]" : "pointer-events-none z-10 opacity-80 mix-blend-multiply dark:mix-blend-normal dark:drop-shadow-[0_0_15px_rgba(255,255,255,0.8)] print:mix-blend-multiply print:drop-shadow-none mb-0.5 rotate-[-4deg]"}>
+                                                                        <DocumentSeal className="w-[85px] h-[85px]" />
+                                                                    </div>
+                                                                )}
+                                                                {formData.showSignatures && (
 
-                                                            {/* Official Seal Overlay */}
-                                                            {formData.showSeal && (
-                                                                <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-10 opacity-85 mix-blend-multiply">
-                                                                    <DocumentSeal className="w-52 h-52" />
+                                                                    <div className="z-20 flex flex-col items-center relative space-y-1 w-[150px]">
+                                                                    <p className="text-[7.5px] font-black text-gray-500 uppercase tracking-widest mb-1 text-center truncate max-w-[150px]">For {formData.senderName || 'Newbi Entertainment'}</p>
+                                                                    <div className="h-12 w-full flex items-end justify-center relative border-b border-black/20 dark:border-white/20 print:border-black/20 pb-1">
+                                                                        {formData.providerSignature ? (
+                                                                            <img src={formData.providerSignature} alt="Provider Signature" className="h-full object-contain mix-blend-multiply dark:mix-blend-screen dark:invert print:mix-blend-multiply print:invert-0 grayscale-0" crossOrigin="anonymous" />
+                                                                        ) : (
+                                                                            <p className="text-[11px] font-formal italic text-gray-900 dark:text-white print:text-black opacity-40">Authorized Signatory</p>
+                                                                        )}
+                                                                    </div>
+                                                                    <p className="text-[7.5px] font-black text-gray-900 dark:text-white print:text-black uppercase tracking-widest leading-none mt-1 text-center truncate max-w-[150px]">Authorized Signatory</p>
                                                                 </div>
-                                                            )}
-                                                        </div>
-                                                    )}
+
+                                                                )}
+                                                            </div>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             </div>
                                         )}
@@ -1270,13 +1283,29 @@ const InvoiceGenerator = () => {
 
                                     {/* Fixed Footer at bottom of every page */}
                                     {formData.showFooter && (
-                                        <footer className="absolute bottom-[12mm] left-[12mm] right-[12mm] h-10 flex items-center justify-between px-6 rounded-full bg-[#39FF14]/40 text-black">
-                                            <div className="flex gap-4 text-[9px] font-black tracking-widest uppercase">
-                                                <span>CALL: +91 93043 72773</span>
-                                                <span>EMAIL: partnership@newbi.live</span>
-                                                <span>WEB: newbi.live</span>
+                                        <footer 
+                                            className="absolute bottom-[12mm] left-[12mm] right-[12mm] h-11 flex items-center justify-between px-6 rounded-full text-black shadow-sm z-30" 
+                                            style={{ backgroundColor: `${brandColor}66` }}
+                                        >
+                                            <div className="flex items-center gap-5 text-[8.5px] font-black tracking-widest uppercase">
+                                                <div className="flex items-center gap-1.5">
+                                                    <span className="opacity-50 text-[7px] tracking-[0.2em]">CALL</span>
+                                                    <span className="whitespace-nowrap font-bold">+91 93043 72773</span>
+                                                </div>
+                                                <div className="h-3 w-[1px] bg-black/15" />
+                                                <div className="flex items-center gap-1.5">
+                                                    <span className="opacity-50 text-[7px] tracking-[0.2em]">EMAIL</span>
+                                                    <span className="whitespace-nowrap font-bold">partnership@newbi.live</span>
+                                                </div>
+                                                <div className="h-3 w-[1px] bg-black/15" />
+                                                <div className="flex items-center gap-1.5">
+                                                    <span className="opacity-50 text-[7px] tracking-[0.2em]">WEB</span>
+                                                    <span className="whitespace-nowrap font-bold">newbi.live</span>
+                                                </div>
                                             </div>
-                                            <p className="text-[9px] font-black uppercase">Page {currentPreviewPage + 1} of {paginatedPages.length}</p>
+                                            <div className="text-[8.5px] font-black tracking-widest uppercase italic opacity-80 whitespace-nowrap pl-4">
+                                                PAGE {currentPreviewPage + 1} OF {paginatedPages.length}
+                                            </div>
                                         </footer>
                                     )}
                                 </motion.div>
@@ -1292,12 +1321,12 @@ const InvoiceGenerator = () => {
                 {paginatedPages.map((pageItems, pageIdx) => (
                     <div 
                         key={`pdf-page-${pageIdx}`}
-                        className="invoice-page-render w-[794px] h-[1123px] bg-[#F3F4F6] text-black relative flex flex-col p-[12mm] overflow-hidden"
+                        className="invoice-page-render w-[794px] h-[1123px] bg-white dark:bg-[#0B0F17] text-gray-900 dark:text-white print:bg-white print:text-black relative flex flex-col p-[12mm] overflow-hidden"
                         style={{ fontFamily: "'Inter', sans-serif" }}
                     >
                         {/* Header */}
                         {pageIdx === 0 ? (
-                            <div className="flex justify-between items-start mb-12">
+                            <div className="flex justify-between items-start mb-6">
                                 <div>
                                     <img src={currentLogo.path} alt="Company Logo" className="h-20 object-contain" crossOrigin="anonymous" />
                                 </div>
@@ -1313,7 +1342,7 @@ const InvoiceGenerator = () => {
                             </div>
                         )}
 
-                        <div className={cn("relative z-10 flex flex-col flex-1", pageIdx === paginatedPages.length - 1 ? "pb-56" : "pb-48")}>
+                        <div className="relative z-10 flex flex-col flex-1 pb-20">
                             {/* Page 1 Details */}
                             {pageIdx === 0 && (
                                 <div className="grid grid-cols-2 gap-8 mb-8">
@@ -1371,59 +1400,74 @@ const InvoiceGenerator = () => {
 
                             {/* Totals & Notes - Last Page */}
                             {pageIdx === paginatedPages.length - 1 && (
-                                <div className="mt-auto grid grid-cols-2 gap-x-12 items-start pt-8 border-t border-gray-200">
-                                    <div className="space-y-6">
+                                <div className="mt-auto grid grid-cols-2 gap-x-12 items-start pt-6 border-t border-gray-200">
+                                    <div className="space-y-4">
                                         {formData.showPaymentDetails && (
-                                            <div className="p-6 border-2 border-dashed border-gray-300 rounded-[2rem] text-[10px] font-bold text-left uppercase leading-relaxed text-gray-500 bg-white/40 shadow-sm w-full">
-                                                <p className="text-xs font-black text-black mb-3 border-b-2 pb-1.5 inline-block" style={{ borderColor: brandColor }}>PAYMENT DETAILS</p>
+                                            <div className="p-5 border-2 border-dashed border-gray-300 rounded-[2rem] text-[10px] font-bold text-left uppercase leading-relaxed text-gray-500 bg-white/40 shadow-sm w-full">
+                                                <p className="text-xs font-black text-black mb-2 border-b-2 pb-1 inline-block" style={{ borderColor: brandColor }}>PAYMENT DETAILS</p>
                                                 <div className="article-content" dangerouslySetInnerHTML={{ __html: formData.paymentDetails }} />
                                             </div>
                                         )}
                                         {formData.showNotes && (
                                             <div className="bg-white/40 border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
-                                                <div className="p-4">
+                                                <div className="p-3.5">
                                                     <div className="article-content text-[10px] text-gray-700 font-bold leading-relaxed italic" dangerouslySetInnerHTML={{ __html: formData.note || 'No additional notes.' }} />
                                                 </div>
                                             </div>
                                         )}
                                     </div>
-                                    <div className="space-y-3">
-                                        <div className="flex justify-between py-2 border-b border-dashed border-gray-300 text-[10px] font-black text-gray-600 uppercase tracking-widest"><span>SUBTOTAL</span><span className="text-black text-xs font-bold italic">₹{subtotal.toLocaleString()}</span></div>
+                                    <div className="space-y-2">
+                                        <div className="flex justify-between py-1.5 border-b border-dashed border-gray-300 text-[10px] font-black text-gray-600 uppercase tracking-widest"><span>SUBTOTAL</span><span className="text-black text-xs font-bold italic">₹{subtotal.toLocaleString()}</span></div>
                                         {formData.showGst && (
-                                            <div className="flex justify-between py-2 border-b border-dashed border-gray-300 text-[10px] font-black text-gray-600 uppercase tracking-widest"><span>GST ({formData.gstPercentage}%)</span><span className="text-black text-xs font-bold italic">₹{gstAmount.toLocaleString()}</span></div>
+                                            <div className="flex justify-between py-1.5 border-b border-dashed border-gray-300 text-[10px] font-black text-gray-600 uppercase tracking-widest"><span>GST ({formData.gstPercentage}%)</span><span className="text-black text-xs font-bold italic">₹{gstAmount.toLocaleString()}</span></div>
                                         )}
-                                        <div className="flex justify-between items-center py-3 px-4 text-black border border-black/5 mt-2 rounded-xl" style={{ backgroundColor: `${brandColor}66` }}>
+                                        <div className="flex justify-between items-center py-2.5 px-4 text-black border border-black/5 mt-1 rounded-xl" style={{ backgroundColor: `${brandColor}66` }}>
                                             <span className="text-[10px] font-black uppercase tracking-[0.2em]">TOTAL AMOUNT</span>
-                                            <span className="text-2xl font-black italic tracking-tighter">₹{totalAmount.toLocaleString()}</span>
+                                            <span className="text-xl font-black italic tracking-tighter">₹{totalAmount.toLocaleString()}</span>
                                         </div>
                                         {formData.advancePaid > 0 && (
-                                            <div className="flex justify-between py-2 border-b border-dashed border-gray-300 text-[10px] font-black text-gray-600 uppercase tracking-widest"><span>ADVANCE PAID</span><span className="text-black text-xs font-bold italic">₹{formData.advancePaid.toLocaleString()}</span></div>
+                                            <div className="flex justify-between py-1.5 border-b border-dashed border-gray-300 text-[10px] font-black text-gray-600 uppercase tracking-widest"><span>ADVANCE PAID</span><span className="text-black text-xs font-bold italic">₹{formData.advancePaid.toLocaleString()}</span></div>
                                         )}
-                                        <div className="flex justify-between items-center py-4 px-6 text-black border border-black/5 mt-2 rounded-2xl shadow-xl" style={{ backgroundColor: `${brandColor}66` }}>
+                                        <div className="flex justify-between items-center py-3 px-5 text-black border border-black/5 mt-1 rounded-2xl shadow-md" style={{ backgroundColor: `${brandColor}66` }}>
                                             <span className="text-xs font-black uppercase tracking-[0.2em]">BALANCE DUE</span>
-                                            <span className="text-4xl font-black italic tracking-tighter">₹{balanceDue.toLocaleString()}</span>
+                                            <span className="text-3xl font-black italic tracking-tighter">₹{balanceDue.toLocaleString()}</span>
                                         </div>
                                         
-                                        <div className="flex items-center gap-6 pt-6">
-                                            <div className="flex flex-col items-center">
-                                                <div className="bg-white p-2 rounded-xl shadow-lg border border-black/5">
+                                        <div className="flex items-center justify-between w-full pt-4 mt-2 border-t border-gray-300/50">
+                                            <div className="flex flex-col items-center gap-1.5 shrink-0">
+                                                <div className="bg-white p-2 rounded-xl shadow-sm border border-black/5 flex flex-col items-center w-[85px]">
                                                     <img 
                                                         src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=upi://pay?pa=${formData.upiId}%26pn=${encodeURIComponent(formData.senderName)}%26am=${balanceDue}%26cu=INR`}
                                                         alt="Payment QR"
-                                                        className="w-[70px] h-[70px] grayscale contrast-125"
+                                                        className="w-[65px] h-[65px] grayscale contrast-125 mx-auto"
                                                         crossOrigin="anonymous"
                                                     />
+                                                    <p className="text-[6px] font-black text-center mt-1 text-gray-600 tracking-widest uppercase italic font-bold">Scan to pay</p>
                                                 </div>
-                                                <p className="text-[7px] font-black text-gray-600 mt-2 uppercase tracking-widest italic">Scan to pay</p>
                                             </div>
-                                            {formData.showSignatures && (
-                                                <div className="flex-1 flex flex-col items-center">
-                                                    {formData.providerSignature && (
-                                                        <img src={formData.providerSignature} alt="Signature" className="h-12 object-contain grayscale mix-blend-multiply mb-1" />
+                                            
+                                            {(formData.showSeal || formData.showSignatures) && (
+                                                <div className="flex items-end relative pr-1 pb-1">
+                                                    {formData.showSeal && (
+                                                        <div className={formData.showSignatures ? "absolute -left-12 -top-4 pointer-events-none z-10 opacity-80 mix-blend-multiply rotate-[-4deg]" : "pointer-events-none z-10 opacity-80 mix-blend-multiply mb-0.5 rotate-[-4deg]"}>
+                                                            <DocumentSeal className="w-[85px] h-[85px]" />
+                                                        </div>
                                                     )}
-                                                    <div className="w-full border-t-2 border-dashed border-gray-400 text-center pt-2">
-                                                        <p className="text-[8px] font-black uppercase tracking-widest text-gray-700 italic">Authorized Signature</p>
+                                                    {formData.showSignatures && (
+
+                                                        <div className="z-20 flex flex-col items-center relative space-y-1 w-[150px]">
+                                                        <p className="text-[7.5px] font-black text-gray-500 uppercase tracking-widest mb-1 text-center truncate max-w-[150px]">For {formData.senderName || 'Newbi Entertainment'}</p>
+                                                        <div className="h-12 w-full flex items-end justify-center relative border-b border-black/20 pb-1">
+                                                            {formData.providerSignature ? (
+                                                                <img src={formData.providerSignature} alt="Signature" className="h-full object-contain mix-blend-multiply grayscale-0" crossOrigin="anonymous" />
+                                                            ) : (
+                                                                <p className="text-[11px] font-formal italic text-gray-900 opacity-40">Authorized Signatory</p>
+                                                            )}
+                                                        </div>
+                                                        <p className="text-[7.5px] font-black text-gray-900 uppercase tracking-widest leading-none mt-1 text-center truncate max-w-[150px]">Authorized Signatory</p>
                                                     </div>
+
+                                                    )}
                                                 </div>
                                             )}
                                         </div>
@@ -1434,23 +1478,28 @@ const InvoiceGenerator = () => {
 
                         {/* Footer */}
                         {formData.showFooter && (
-                            <footer className="absolute bottom-[12mm] left-[12mm] right-[12mm] h-12 flex items-center px-8 rounded-full text-black shadow-sm" style={{ backgroundColor: `${brandColor}66` }}>
-                                <div className="grid grid-cols-5 w-full items-center">
-                                    <div className="flex items-center gap-2 col-span-1">
-                                        <span className="text-[7px] font-black text-black/50 tracking-[0.2em]">CALL</span>
-                                        <p className="text-[9px] font-black tracking-widest uppercase font-bold whitespace-nowrap">+91 93043 72773</p>
+                            <footer 
+                                className="absolute bottom-[12mm] left-[12mm] right-[12mm] h-11 flex items-center justify-between px-6 rounded-full text-black shadow-sm z-30" 
+                                style={{ backgroundColor: `${brandColor}66` }}
+                            >
+                                <div className="flex items-center gap-5 text-[8.5px] font-black tracking-widest uppercase">
+                                    <div className="flex items-center gap-1.5">
+                                        <span className="opacity-50 text-[7px] tracking-[0.2em]">CALL</span>
+                                        <span className="whitespace-nowrap font-bold">+91 93043 72773</span>
                                     </div>
-                                    <div className="flex items-center gap-2 justify-center col-span-2 border-x border-black/5 px-4">
-                                        <span className="text-[7px] font-black text-black/50 tracking-[0.2em]">EMAIL</span>
-                                        <p className="text-[9px] font-black tracking-widest uppercase font-bold whitespace-nowrap">partnership@newbi.live</p>
+                                    <div className="h-3 w-[1px] bg-black/15" />
+                                    <div className="flex items-center gap-1.5">
+                                        <span className="opacity-50 text-[7px] tracking-[0.2em]">EMAIL</span>
+                                        <span className="whitespace-nowrap font-bold">partnership@newbi.live</span>
                                     </div>
-                                    <div className="flex items-center gap-2 justify-center col-span-1 border-r border-black/5 pr-4">
-                                        <span className="text-[7px] font-black text-black/50 tracking-[0.2em]">WEB</span>
-                                        <p className="text-[9px] font-black tracking-widest uppercase font-bold whitespace-nowrap">newbi.live</p>
+                                    <div className="h-3 w-[1px] bg-black/15" />
+                                    <div className="flex items-center gap-1.5">
+                                        <span className="opacity-50 text-[7px] tracking-[0.2em]">WEB</span>
+                                        <span className="whitespace-nowrap font-bold">newbi.live</span>
                                     </div>
-                                    <div className="flex justify-end col-span-1 pl-4">
-                                        <p className="text-[9px] font-black tracking-[0.1em] uppercase whitespace-nowrap text-black/80 font-bold italic">PAGE {pageIdx + 1} OF {paginatedPages.length}</p>
-                                    </div>
+                                </div>
+                                <div className="text-[8.5px] font-black tracking-widest uppercase italic opacity-80 whitespace-nowrap pl-4">
+                                    PAGE {pageIdx + 1} OF {paginatedPages.length}
                                 </div>
                             </footer>
                         )}

@@ -275,7 +275,7 @@ const Invoice = () => {
                     height: 1123,
                     windowWidth: 794,
                     windowHeight: 1123,
-                    onclone: (clonedDoc) => {
+                    onclone: (clonedDoc) => { clonedDoc.documentElement.classList.remove('dark');
                         const clonedPage = clonedDoc.querySelectorAll('.invoice-page-render')[i];
                         if (clonedPage) {
                             clonedPage.style.transform = 'none';
@@ -335,7 +335,7 @@ const Invoice = () => {
                             windowHeight: 1123,
                             scrollX: 0,
                             scrollY: 0,
-                            onclone: (clonedDoc) => {
+                            onclone: (clonedDoc) => { clonedDoc.documentElement.classList.remove('dark');
                                 const style = clonedDoc.createElement('style');
                                 style.innerHTML = `
                                     * { -webkit-print-color-adjust: exact !important; color-adjust: exact !important; }
@@ -468,9 +468,9 @@ const Invoice = () => {
         return html.replace(/<(p|div)\b([^>]*?)>(#{1,6})(?:\s|&nbsp;|\u00a0)+(.*?)<\/\1>/gi, (match, tag, attrs, hashes, content) => {
             const level = hashes.length;
             const headingClass = level === 1
-                ? "text-[18px] font-black text-black border-b border-black/10 pb-1 mt-6 mb-2 block"
+                ? "text-[18px] font-black text-gray-900 dark:text-white print:text-black border-b border-black/10 pb-1 mt-6 mb-2 block"
                 : level === 2
-                ? "text-[15px] font-bold text-black border-b border-black/10 pb-1 mt-5 mb-2 block"
+                ? "text-[15px] font-bold text-gray-900 dark:text-white print:text-black border-b border-black/10 pb-1 mt-5 mb-2 block"
                 : "text-[13.5px] font-bold text-gray-800 mt-4 mb-1 block";
             const headingTag = `h${Math.min(level + 1, 6)}`;
             return `<${headingTag} class="${headingClass}" ${attrs}>${content}</${headingTag}>`;
@@ -500,9 +500,9 @@ const Invoice = () => {
                 const level = headingMatch[1].length;
                 const headingText = headingMatch[2];
                 const headingClass = level === 1
-                    ? "text-[18px] font-black text-black border-b border-black/10 pb-1 mt-6 mb-2 block"
+                    ? "text-[18px] font-black text-gray-900 dark:text-white print:text-black border-b border-black/10 pb-1 mt-6 mb-2 block"
                     : level === 2
-                    ? "text-[15px] font-bold text-black border-b border-black/10 pb-1 mt-5 mb-2 block"
+                    ? "text-[15px] font-bold text-gray-900 dark:text-white print:text-black border-b border-black/10 pb-1 mt-5 mb-2 block"
                     : "text-[13.5px] font-bold text-gray-800 mt-4 mb-1 block";
                 const headingTag = level === 1 ? 'h2' : level === 2 ? 'h3' : 'h4';
                 const Tag = headingTag;
@@ -798,9 +798,7 @@ const Invoice = () => {
                     </div>
                 ) : (
                     <div className="w-full flex flex-col items-center overflow-x-auto custom-scrollbar pb-12">
-                        <div className="relative group bg-gray-100 dark:bg-zinc-900/40 backdrop-blur-3xl p-4 md:p-12 rounded-[3.5rem] border border-black/10 dark:border-white/5 shadow-[0_30px_60px_rgba(0,0,0,0.5)] flex flex-col items-center">
-                            <div className="absolute top-8 right-12 z-20 bg-white dark:bg-black/50 backdrop-blur-md px-3 py-1 rounded-full border border-black/10 dark:border-white/10 text-[8px] font-black uppercase tracking-widest text-[#39FF14]">Digital Archive</div>
-                            
+                        <div className="relative flex flex-col items-center w-full mt-8">
                             <div className="flex flex-col items-center" style={{ gap: `${48 * scale}px` }}>
                                  {paginatedPages.map((pageItems, pageIdx) => {
                                     const isLastPage = pageIdx === paginatedPages.length - 1;
@@ -815,7 +813,7 @@ const Invoice = () => {
                                                 <div className={cn("relative z-10 flex flex-col flex-1", isLastPage ? "pb-48" : "pb-48")}>
                                                     {/* Header - Only on Page 1 or Summary Page */}
                                                 {isFirstPage ? (
-                                                    <div className="flex justify-between items-start mb-4">
+                                                    <div className="flex justify-between items-start mb-6">
                                                         <div>
                                                             <img src={currentBrand.path} alt="Company Logo" className="h-20 object-contain" crossOrigin="anonymous" />
                                                         </div>
@@ -963,29 +961,57 @@ const Invoice = () => {
                                                                 )}
                                                             </div>
 
-                                                            {/* QR Code Section */}
-                                                            {(!invoice || invoice.showUPI !== false) && displayInvoice.upiId && (
-                                                                        <div className="flex flex-col items-end gap-2 w-full pt-2 border-t border-gray-300/50">
-                                                                    <div className="bg-white p-2 rounded-xl border border-gray-200 inline-block shadow-sm shrink-0">
-                                                                        <img 
-                                                                            src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(`upi://pay?pa=${displayInvoice.upiId}&pa=${displayInvoice.upiId}&pn=NEWBI&am=${toBePaid}&cu=INR`)}`} 
-                                                                            alt="Payment QR" 
-                                                                            className="w-[70px] h-[70px] grayscale contrast-125 mx-auto"
-                                                                            crossOrigin="anonymous"
-                                                                        />
-                                                                        <p className="text-[6px] font-black text-center mt-1 text-gray-600 dark:text-gray-400 tracking-widest uppercase italic font-bold">Scan to pay</p>
+                                                            {/* QR & Authentication Flex Row */}
+                                                            <div className="flex w-full items-end justify-between pt-6 mt-4 border-t border-gray-300/50 dark:border-white/10 print:border-gray-200">
+                                                                
+                                                                {/* QR Code Section */}
+                                                                {(!invoice || invoice.showUPI !== false) && displayInvoice.upiId && (
+                                                                    <div className="flex flex-col items-center gap-2 shrink-0">
+                                                                        <div className="bg-white p-2.5 rounded-xl border border-gray-200 shadow-sm flex flex-col items-center w-[90px]">
+                                                                            <img 
+                                                                                src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(`upi://pay?pa=${displayInvoice.upiId}&pn=NEWBI&am=${toBePaid}&cu=INR`)}`} 
+                                                                                alt="Payment QR" 
+                                                                                className="w-[70px] h-[70px] grayscale contrast-125 mx-auto"
+                                                                                crossOrigin="anonymous"
+                                                                            />
+                                                                            <p className="text-[6.5px] font-black text-center mt-2 text-gray-600 dark:text-gray-400 tracking-widest uppercase italic font-bold">Scan to pay</p>
+                                                                        </div>
+                                                                        <a 
+                                                                            href={`upi://pay?pa=${displayInvoice.upiId}&pn=NEWBI&am=${toBePaid}&cu=INR`} 
+                                                                            className="flex items-center justify-center gap-1 w-[90px] h-9 bg-black dark:bg-white text-white dark:text-black rounded-xl text-[7.5px] font-black uppercase tracking-widest hover:scale-105 active:scale-95 transition-all"
+                                                                            data-html2canvas-ignore="true"
+                                                                        >
+                                                                            Pay via UPI
+                                                                        </a>
                                                                     </div>
-                                                                    <a 
-                                                                        href={`upi://pay?pa=${displayInvoice.upiId}&pn=NEWBI&am=${toBePaid}&cu=INR`} 
-                                                                        className="flex items-center justify-center gap-2 w-full h-8 bg-white dark:bg-black text-gray-900 dark:text-white rounded-lg text-[8px] font-black uppercase tracking-widest"
-                                                                        data-html2canvas-ignore="true"
-                                                                    >
-                                                                        Pay via UPI App
-                                                                    </a>
-                                                                </div>
-                                                            )}
+                                                                )}
 
+                                                                {/* Authentication Layer */}
+                                                                {(displayInvoice.showSeal || displayInvoice.showSignatures) && (
+                                                                    <div className="flex items-end relative pb-1 pr-1">
+                                                                        {displayInvoice.showSeal && (
+                                                                            <div className={displayInvoice.showSignatures ? "absolute -left-12 -top-4 pointer-events-none z-10 opacity-80 mix-blend-multiply dark:mix-blend-normal dark:drop-shadow-[0_0_15px_rgba(255,255,255,0.8)] print:mix-blend-multiply print:drop-shadow-none rotate-[-4deg]" : "pointer-events-none z-10 opacity-80 mix-blend-multiply dark:mix-blend-normal dark:drop-shadow-[0_0_15px_rgba(255,255,255,0.8)] print:mix-blend-multiply print:drop-shadow-none mb-0.5 rotate-[-4deg]"}>
+                                                                                <DocumentSeal className="w-[85px] h-[85px]" />
+                                                                            </div>
+                                                                        )}
+                                                                        {displayInvoice.showSignatures && (
 
+                                                                            <div className="z-20 flex flex-col items-center relative space-y-1 w-[150px]">
+                                                                            <p className="text-[7.5px] font-black text-gray-500 uppercase tracking-widest mb-1 text-center truncate max-w-[150px]">For {displayInvoice.senderName || 'Newbi Entertainment'}</p>
+                                                                            <div className="h-12 w-full flex items-end justify-center relative border-b border-black/20 dark:border-white/20 print:border-black/20 pb-1">
+                                                                                {displayInvoice.providerSignature ? (
+                                                                                    <img src={displayInvoice.providerSignature} alt="Provider Signature" className="h-full object-contain mix-blend-multiply dark:mix-blend-screen dark:invert print:mix-blend-multiply print:invert-0 grayscale-0" crossOrigin="anonymous" />
+                                                                                ) : (
+                                                                                    <p className="text-[11px] font-formal italic text-gray-900 dark:text-white print:text-black opacity-40">Authorized Signatory</p>
+                                                                                )}
+                                                                            </div>
+                                                                            <p className="text-[7.5px] font-black text-gray-900 dark:text-white print:text-black uppercase tracking-widest leading-none mt-1 text-center truncate max-w-[150px]">Authorized Signatory</p>
+                                                                        </div>
+
+                                                                        )}
+                                                                    </div>
+                                                                )}
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 )}
@@ -993,23 +1019,28 @@ const Invoice = () => {
                                             </div>
 
                                                 {displayInvoice.showFooter !== false && (
-                                                    <footer className="absolute bottom-[12mm] left-[12mm] right-[12mm] h-12 flex items-center px-8 rounded-full text-black shadow-sm z-[30]" style={{ backgroundColor: `${brandColor}66` }}>
-                                                        <div className="grid grid-cols-5 w-full items-center">
-                                                            <div className="flex items-center gap-2 col-span-1">
-                                                                <span className="text-[7px] font-black text-black/50 tracking-[0.2em]">CALL</span>
-                                                                <p className="text-[9px] font-black tracking-widest uppercase font-bold whitespace-nowrap">+91 93043 72773</p>
+                                                    <footer 
+                                                        className="absolute bottom-[12mm] left-[12mm] right-[12mm] h-11 flex items-center justify-between px-6 rounded-full text-black shadow-sm z-30" 
+                                                        style={{ backgroundColor: `${brandColor}66` }}
+                                                    >
+                                                        <div className="flex items-center gap-5 text-[8.5px] font-black tracking-widest uppercase">
+                                                            <div className="flex items-center gap-1.5">
+                                                                <span className="opacity-50 text-[7px] tracking-[0.2em]">CALL</span>
+                                                                <span className="whitespace-nowrap font-bold">+91 93043 72773</span>
                                                             </div>
-                                                            <div className="flex items-center gap-2 justify-center col-span-2 border-x border-black/5 px-4">
-                                                                <span className="text-[7px] font-black text-black/50 tracking-[0.2em]">EMAIL</span>
-                                                                <p className="text-[9px] font-black tracking-widest uppercase font-bold whitespace-nowrap">partnership@newbi.live</p>
+                                                            <div className="h-3 w-[1px] bg-black/15" />
+                                                            <div className="flex items-center gap-1.5">
+                                                                <span className="opacity-50 text-[7px] tracking-[0.2em]">EMAIL</span>
+                                                                <span className="whitespace-nowrap font-bold">partnership@newbi.live</span>
                                                             </div>
-                                                            <div className="flex items-center gap-2 justify-center col-span-1 border-r border-black/5 pr-4">
-                                                                <span className="text-[7px] font-black text-black/50 tracking-[0.2em]">WEB</span>
-                                                                <p className="text-[9px] font-black tracking-widest uppercase font-bold whitespace-nowrap">newbi.live</p>
+                                                            <div className="h-3 w-[1px] bg-black/15" />
+                                                            <div className="flex items-center gap-1.5">
+                                                                <span className="opacity-50 text-[7px] tracking-[0.2em]">WEB</span>
+                                                                <span className="whitespace-nowrap font-bold">newbi.live</span>
                                                             </div>
-                                                            <div className="flex justify-end col-span-1 pl-4">
-                                                                <p className="text-[9px] font-black tracking-[0.1em] uppercase whitespace-nowrap text-black/80 font-bold italic">PAGE {pageIdx + 1} OF {paginatedPages.length}</p>
-                                                            </div>
+                                                        </div>
+                                                        <div className="text-[8.5px] font-black tracking-widest uppercase italic opacity-80 whitespace-nowrap pl-4">
+                                                            PAGE {pageIdx + 1} OF {paginatedPages.length}
                                                         </div>
                                                     </footer>
                                                 )}

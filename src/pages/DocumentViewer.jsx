@@ -264,7 +264,7 @@ const DocumentViewer = () => {
     // ─── Download Card (non-embeddable files) ───────────────────────────────────
 
     return (
-        <div className="min-h-screen bg-[#020202] flex items-center justify-center p-4">
+        <div className="min-h-screen bg-gray-50 dark:bg-[#020202] flex items-center justify-center p-4">
             {/* Background */}
             <div className="fixed inset-0 z-0 pointer-events-none">
                 <div className="absolute top-0 right-0 w-[50%] h-[50%] bg-neon-blue/5 rounded-full blur-[120px] animate-pulse" />
@@ -302,7 +302,7 @@ const DocumentViewer = () => {
                 />
 
                 {/* Download Card */}
-                <div className="bg-gradient-to-br from-gray-900 dark:from-white/[0.04] to-gray-900 dark:to-white/[0.01] backdrop-blur-xl border border-black/10 dark:border-white/10 border-t-white/20 rounded-2xl shadow-[inset_0_1px_1px_rgba(255,255,255,0.15),_0_8px_32px_rgba(0,0,0,0.4)] p-8 md:p-12 text-center relative overflow-hidden">
+                <div className="bg-white dark:bg-white/[0.04] backdrop-blur-xl border border-black/10 dark:border-white/10 border-t-white/20 rounded-2xl shadow-2xl dark:shadow-[inset_0_1px_1px_rgba(255,255,255,0.15),_0_8px_32px_rgba(0,0,0,0.4)] p-8 md:p-12 text-center relative overflow-hidden">
                     <div className="absolute inset-0 bg-white/[0.01] pointer-events-none" />
                     {/* Type Badge */}
                     <div className="flex justify-center mb-8">
@@ -378,7 +378,7 @@ const DocumentViewer = () => {
 
                 {/* Branding */}
                 <div className="mt-8 text-center">
-                    <p className="text-[8px] font-black text-gray-700 uppercase tracking-[0.3em]">
+                    <p className="text-[8px] font-black text-gray-400 uppercase tracking-[0.3em]">
                         POWERED BY NEWBI ENTERTAINMENT
                     </p>
                 </div>

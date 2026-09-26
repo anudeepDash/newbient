@@ -388,6 +388,57 @@ const Proposal = () => {
         selectedLogo: 'entertainment'
     };
 
+    const [pdfBlobUrl, setPdfBlobUrl] = useState('');
+    const [isLoadingPdf, setIsLoadingPdf] = useState(false);
+
+    useEffect(() => {
+        if (displayProposal?.isUploaded && displayProposal?.fileUrl) {
+            const isPdf = displayProposal.fileType === 'pdf' || 
+                          displayProposal.fileUrl.toLowerCase().includes('.pdf') || 
+                          displayProposal.fileUrl.includes('/raw/upload/');
+
+            if (!isPdf) return;
+
+            let isMounted = true;
+            let activeBlobUrl = null;
+
+            if (displayProposal.fileUrl.startsWith('blob:') || displayProposal.fileUrl.startsWith('data:')) {
+                setPdfBlobUrl(displayProposal.fileUrl);
+                return;
+            }
+
+            setIsLoadingPdf(true);
+            fetch(displayProposal.fileUrl)
+                .then(res => {
+                    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                    return res.blob();
+                })
+                .then(blob => {
+                    if (!isMounted) return;
+                    const pdfBlob = new Blob([blob], { type: 'application/pdf' });
+                    activeBlobUrl = URL.createObjectURL(pdfBlob);
+                    setPdfBlobUrl(activeBlobUrl);
+                })
+                .catch(err => {
+                    console.warn('Direct PDF blob load notice, using proxy fallback:', err);
+                    if (isMounted) {
+                        const proxyUrl = `/api/proposal-pdf?url=${encodeURIComponent(displayProposal.fileUrl)}&filename=${encodeURIComponent(displayProposal.fileName || `${displayProposal.clientName || 'Proposal'}.pdf`)}`;
+                        setPdfBlobUrl(proxyUrl);
+                    }
+                })
+                .finally(() => {
+                    if (isMounted) setIsLoadingPdf(false);
+                });
+
+            return () => {
+                isMounted = false;
+                if (activeBlobUrl) {
+                    URL.revokeObjectURL(activeBlobUrl);
+                }
+            };
+        }
+    }, [displayProposal?.isUploaded, displayProposal?.fileUrl, displayProposal?.fileType, displayProposal?.fileName, displayProposal?.clientName]);
+
     useEffect(() => {
         if (user?.email && !verificationEmail) {
             setVerificationEmail(user.email);
@@ -486,7 +537,7 @@ const Proposal = () => {
     const handleDownloadPDF = async () => {
         if (displayProposal.isUploaded && displayProposal.fileUrl) {
             const a = document.createElement('a');
-            a.href = displayProposal.fileUrl;
+            a.href = pdfBlobUrl || displayProposal.fileUrl;
             a.download = displayProposal.fileName || `${displayProposal.clientName || 'Proposal'}-${displayProposal.proposalNumber || 'Quote'}.pdf`;
             a.target = '_blank';
             a.rel = 'noopener noreferrer';
@@ -1173,7 +1224,7 @@ const Proposal = () => {
 
                                 <div className="flex items-center gap-2">
                                     <a
-                                        href={displayProposal.fileUrl}
+                                        href={pdfBlobUrl || displayProposal.fileUrl}
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         className="px-3.5 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-[10px] font-black uppercase tracking-wider text-gray-200 hover:text-white transition-all flex items-center gap-1.5"
@@ -1195,9 +1246,17 @@ const Proposal = () => {
 
                             {/* Document Frame / Render */}
                             <div className="relative w-full bg-[#111] p-1 sm:p-2 min-h-[600px] sm:min-h-[850px] flex items-center justify-center">
-                                {displayProposal.fileType === 'pdf' || (displayProposal.fileUrl && displayProposal.fileUrl.toLowerCase().includes('.pdf')) ? (
+                                {isLoadingPdf && !pdfBlobUrl && (
+                                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/60 z-10">
+                                        <RefreshCw size={24} className="animate-spin text-neon-green" />
+                                        <p className="text-[10px] font-mono text-neon-green uppercase tracking-widest">
+                                            Decrypting & rendering document...
+                                        </p>
+                                    </div>
+                                )}
+                                {displayProposal.fileType === 'pdf' || (displayProposal.fileUrl && (displayProposal.fileUrl.toLowerCase().includes('.pdf') || displayProposal.fileUrl.includes('/raw/upload/'))) ? (
                                     <iframe
-                                        src={`${displayProposal.fileUrl}#toolbar=1&navpanes=0`}
+                                        src={pdfBlobUrl ? `${pdfBlobUrl}#toolbar=1&navpanes=0` : `${displayProposal.fileUrl}#toolbar=1&navpanes=0`}
                                         title={displayProposal.fileName || 'Proposal Document'}
                                         className="w-full h-[650px] sm:h-[850px] md:h-[1000px] rounded-xl border border-white/5 bg-white shadow-2xl"
                                     />
