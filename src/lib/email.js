@@ -2129,6 +2129,18 @@ export const resolveCityWhatsAppGroup = (city = '', customUrl = '', availableGro
     if (clean.includes('vizag') || clean.includes('visakhapatnam') || clean.includes('andhra')) {
         return DEFAULT_CREATOR_GROUPS.find(g => g.city.toLowerCase().includes('vizag')) || DEFAULT_CREATOR_GROUPS[9];
     }
+    if (clean.includes('surat')) {
+        return DEFAULT_CREATOR_GROUPS.find(g => g.city.toLowerCase() === 'surat') || DEFAULT_CREATOR_GROUPS[10];
+    }
+    if (clean.includes('ahmedabad')) {
+        return DEFAULT_CREATOR_GROUPS.find(g => g.city.toLowerCase() === 'ahmedabad') || DEFAULT_CREATOR_GROUPS[11];
+    }
+    if (clean.includes('jaipur')) {
+        return DEFAULT_CREATOR_GROUPS.find(g => g.city.toLowerCase() === 'jaipur') || DEFAULT_CREATOR_GROUPS[12];
+    }
+    if (clean.includes('chennai') || clean.includes('madras')) {
+        return DEFAULT_CREATOR_GROUPS.find(g => g.city.toLowerCase() === 'chennai') || DEFAULT_CREATOR_GROUPS[13];
+    }
 
     const partial = DEFAULT_CREATOR_GROUPS.find(g => clean.includes(g.city.toLowerCase()) || g.city.toLowerCase().includes(clean));
     return partial || DEFAULT_CREATOR_GROUPS[0];

@@ -27,6 +27,10 @@ const normalizeCity = (cityStr = '') => {
     if (raw.includes('delhi')) return 'Delhi';
     if (raw.includes('bhubaneswar') || raw.includes('bhubaneshwar') || raw.includes('cuttack') || raw.includes('odisha')) return 'Bhubaneswar & Cuttack';
     if (raw.includes('vizag') || raw.includes('visakhapatnam')) return 'Vizag';
+    if (raw.includes('surat')) return 'Surat';
+    if (raw.includes('ahmedabad')) return 'Ahmedabad';
+    if (raw.includes('jaipur')) return 'Jaipur';
+    if (raw.includes('chennai') || raw.includes('madras')) return 'Chennai';
     return cityStr || 'Bengaluru';
 };
 

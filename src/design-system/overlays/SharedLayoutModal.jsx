@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
 import { cn } from '../../lib/utils';
@@ -9,7 +10,8 @@ export const SharedLayoutModal = ({
     layoutId, 
     children, 
     className,
-    contentClassName
+    contentClassName,
+    hideCloseButton = false
 }) => {
     // Lock body scroll when modal is open
     useEffect(() => {
@@ -21,62 +23,63 @@ export const SharedLayoutModal = ({
         return () => { document.body.style.overflow = 'unset'; };
     }, [isOpen]);
 
-    return (
-        <AnimatePresence>
+    if (typeof document === 'undefined') return null;
+
+    return createPortal(
+        <AnimatePresence mode="wait">
             {isOpen && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center px-4 py-6 sm:px-6 md:px-8">
-                    {/* Backdrop */}
+                <div className="fixed inset-0 z-[5000] flex items-center justify-center p-3 sm:p-5 md:p-6 overflow-hidden">
+                    {/* Backdrop — liquid glass blur */}
                     <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        transition={{ duration: 0.3 }}
+                        transition={{ duration: 0.25 }}
                         onClick={onClose}
-                        className="absolute inset-0 bg-black/40 dark:bg-black/60 backdrop-blur-sm"
+                        className="fixed inset-0 bg-black/40 backdrop-blur-2xl z-0"
+                        style={{ WebkitBackdropFilter: 'saturate(180%) blur(40px)' }}
                     />
 
-                    {/* Modal Content - Expands from layoutId */}
+                    {/* Modal Content — frosted glass shell */}
                     <motion.div
-                        layoutId={layoutId}
+                        initial={{ opacity: 0, scale: 0.96, y: 12 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.96, y: 12 }}
+                        transition={{ 
+                            duration: 0.3,
+                            ease: [0.32, 0.72, 0, 1]
+                        }}
                         className={cn(
-                            "relative z-10 w-full max-w-4xl max-h-[90vh] flex flex-col bg-white dark:bg-[#0c0e14] border border-black/10 dark:border-white/10 rounded-3xl overflow-hidden shadow-2xl",
+                            "relative z-10 w-full max-w-4xl max-h-[92vh] sm:max-h-[90vh] flex flex-col rounded-3xl overflow-hidden",
+                            "bg-[#0c0e14]/80 backdrop-blur-3xl border border-white/[0.12]",
+                            "shadow-[0_0_0_1px_rgba(255,255,255,0.05),0_20px_60px_-10px_rgba(0,0,0,0.5),0_0_100px_-20px_rgba(57,255,20,0.05)]",
                             className
                         )}
-                        transition={{ 
-                            type: "spring", 
-                            damping: 25, 
-                            stiffness: 250, 
-                            mass: 0.8
-                        }}
                     >
-                        {/* Close Button - Floats top right */}
-                        <div className="absolute top-4 right-4 z-50">
-                            <motion.button
-                                initial={{ opacity: 0, scale: 0.8 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                exit={{ opacity: 0, scale: 0.8 }}
-                                transition={{ delay: 0.2 }}
-                                onClick={onClose}
-                                className="w-8 h-8 flex items-center justify-center rounded-full bg-black/10 dark:bg-white/10 hover:bg-black/20 dark:hover:bg-white/20 text-gray-900 dark:text-white transition-colors"
-                            >
-                                <X size={16} strokeWidth={2.5} />
-                            </motion.button>
-                        </div>
+                        {/* Top glass highlight */}
+                        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent z-20 pointer-events-none" />
 
-                        {/* Actual Scrollable Content */}
-                        <motion.div 
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0 }}
-                            transition={{ delay: 0.15 }}
-                            className={cn("flex-1 overflow-y-auto hide-scrollbar", contentClassName)}
-                        >
+                        {/* Close Button */}
+                        {!hideCloseButton && (
+                            <div className="absolute top-4 right-4 z-50">
+                                <button
+                                    onClick={onClose}
+                                    className="w-8 h-8 flex items-center justify-center rounded-full bg-white/[0.08] backdrop-blur-xl hover:bg-white/[0.15] text-white/60 hover:text-white transition-all cursor-pointer border border-white/[0.06]"
+                                >
+                                    <X size={15} strokeWidth={2.5} />
+                                </button>
+                            </div>
+                        )}
+
+                        {/* Content Container */}
+                        <div className={cn("flex-1 min-h-0 flex flex-col overflow-hidden", contentClassName)}>
                             {children}
-                        </motion.div>
+                        </div>
                     </motion.div>
                 </div>
             )}
-        </AnimatePresence>
+        </AnimatePresence>,
+        document.body
     );
 };
 

@@ -66,6 +66,30 @@ export const CREATOR_NICHES = [
     'Others'
 ];
 
+export const CREATOR_NICHE_OPTIONS = [
+    { id: 'City Pages', label: 'City Pages / Local Hubs' },
+    { id: 'College Pages', label: 'College Pages / Hubs' },
+    { id: 'Student/Campus Creator', label: 'Campus & College' },
+    { id: 'Fashion & Luxury', label: 'Fashion & Luxury' },
+    { id: 'Tech & Gaming', label: 'Tech & Gaming' },
+    { id: 'Travel & Lifestyle', label: 'Travel & Lifestyle' },
+    { id: 'Beauty & Fitness', label: 'Beauty & Cosmetics' },
+    { id: 'Fitness & Sports', label: 'Fitness & Athletics' },
+    { id: 'Food & Beverage', label: 'Food & Dining' },
+    { id: 'Comedy & Entertainment', label: 'Comedy & Memes' },
+    { id: 'Real Estate', label: 'Real Estate & Living' },
+    { id: 'Photography & Filmmaking', label: 'Photo & Filmmaking' },
+    { id: 'Automotive & Moto', label: 'Auto & Motovlogging' },
+    { id: 'Art & Design', label: 'Art, Design & DIY' },
+    { id: 'Music & Dance', label: 'Music & Dance' },
+    { id: 'Parenting & Family', label: 'Parenting & Family' },
+    { id: 'Podcasts & Media', label: 'Podcasts & Media' },
+    { id: 'Meme & Pop Culture', label: 'Meme & Pop Culture' },
+    { id: 'Startup & Entrepreneurship', label: 'Startup & Founder' },
+    { id: 'Finance & Business', label: 'Finance & Career' },
+    { id: 'Others', label: 'Other Specialization' }
+];
+
 export const DEFAULT_CREATOR_GROUPS = [
     {
         id: 'group_bengaluru',
@@ -142,7 +166,7 @@ export const DEFAULT_CREATOR_GROUPS = [
         city: 'Delhi',
         platform: 'WhatsApp',
         title: 'Delhi NCR Creators Community',
-        groupUrl: 'https://chat.whatsapp.com/I3TM6ZGFz0X2YNd2YgLjZD?mode=gi_t',
+        groupUrl: 'https://chat.whatsapp.com/DCScNxm2YRR4kbwpcYKI9R?mode=gi_t',
         description: 'Official Delhi NCR hub for mega arena tours, lifestyle campaigns, brand launches & creator networking.',
         isActive: true,
         order: 8
@@ -166,5 +190,45 @@ export const DEFAULT_CREATOR_GROUPS = [
         description: 'Official Vizag & Coastal Andhra hub for beach festivals, youth events, brand briefs & creator collaborations.',
         isActive: true,
         order: 10
+    },
+    {
+        id: 'group_surat',
+        city: 'Surat',
+        platform: 'WhatsApp',
+        title: 'Surat Creators Community',
+        groupUrl: 'https://chat.whatsapp.com/FUV21rcnGxe0wDe9rSTK5f?mode=gi_t',
+        description: 'Official Surat hub for fashion, lifestyle, food culture, brand drops & creator meetups.',
+        isActive: true,
+        order: 11
+    },
+    {
+        id: 'group_ahmedabad',
+        city: 'Ahmedabad',
+        platform: 'WhatsApp',
+        title: 'Ahmedabad Creators Community',
+        groupUrl: 'https://chat.whatsapp.com/BLheHwuewyd20imXdSVWgJ?mode=gi_t',
+        description: 'Official Ahmedabad & Gujarat hub for heritage drops, festivals, startup culture & brand campaigns.',
+        isActive: true,
+        order: 12
+    },
+    {
+        id: 'group_jaipur',
+        city: 'Jaipur',
+        platform: 'WhatsApp',
+        title: 'Jaipur Creators Community',
+        groupUrl: 'https://chat.whatsapp.com/EOAGzmMX7dD8STN2gJvReR?mode=gi_t',
+        description: 'Official Pink City hub for heritage, culture, art festivals, lifestyle brands & creator collaborations.',
+        isActive: true,
+        order: 13
+    },
+    {
+        id: 'group_chennai',
+        city: 'Chennai',
+        platform: 'WhatsApp',
+        title: 'Chennai Creators Community',
+        groupUrl: 'https://chat.whatsapp.com/IhJGGdmyIHN2sN7aTks1HF?mode=gi_t',
+        description: 'Official Chennai & Tamil Nadu hub for music, cinema culture, college festivals & brand collaborations.',
+        isActive: true,
+        order: 14
     }
 ];

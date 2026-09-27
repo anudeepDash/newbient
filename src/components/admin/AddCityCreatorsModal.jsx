@@ -1,24 +1,14 @@
-import React, { useState, useMemo } from 'react';
-import { createPortal } from 'react-dom';
+import React, { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { SharedLayoutModal } from '../../design-system/overlays/SharedLayoutModal';
 import { useStore } from '../../lib/store';
 import { PREDEFINED_CITIES, DEFAULT_CREATOR_GROUPS } from '../../lib/constants';
+import { sendCreatorGroupsBroadcastEmail } from '../../lib/email';
 import { cn } from '../../lib/utils';
-import X from 'lucide-react/dist/esm/icons/x';
-import Users from 'lucide-react/dist/esm/icons/users';
-import UserPlus from 'lucide-react/dist/esm/icons/user-plus';
-import Phone from 'lucide-react/dist/esm/icons/phone';
-import Copy from 'lucide-react/dist/esm/icons/copy';
-import Check from 'lucide-react/dist/esm/icons/check';
-import CheckCircle2 from 'lucide-react/dist/esm/icons/check-circle-2';
-import Download from 'lucide-react/dist/esm/icons/download';
-import ExternalLink from 'lucide-react/dist/esm/icons/external-link';
-import Search from 'lucide-react/dist/esm/icons/search';
-import MapPin from 'lucide-react/dist/esm/icons/map-pin';
-import Sparkles from 'lucide-react/dist/esm/icons/sparkles';
-import MessageSquare from 'lucide-react/dist/esm/icons/message-square';
-import RefreshCw from 'lucide-react/dist/esm/icons/refresh-cw';
-import Filter from 'lucide-react/dist/esm/icons/filter';
+import {
+    Users, Phone, Copy, Check, CheckCircle2, Search, MapPin, 
+    MessageSquare, Play, Send, Mail, ShieldCheck, SkipForward, Square, ExternalLink, X, Undo2, ChevronDown
+} from 'lucide-react';
 
 const normalizeCity = (cityStr = '') => {
     const raw = String(cityStr || '').trim().toLowerCase();
@@ -36,6 +26,7 @@ const normalizeCity = (cityStr = '') => {
     if (raw.includes('ahmedabad')) return 'Ahmedabad';
     if (raw.includes('bhubaneswar') || raw.includes('bhubaneshwar') || raw.includes('cuttack') || raw.includes('odisha')) return 'Bhubaneswar & Cuttack';
     if (raw.includes('vizag') || raw.includes('visakhapatnam')) return 'Vizag';
+    if (raw.includes('surat')) return 'Surat';
     return cityStr ? (cityStr.charAt(0).toUpperCase() + cityStr.slice(1)) : 'Bengaluru';
 };
 
@@ -48,16 +39,109 @@ const formatPhoneForWhatsApp = (raw) => {
     return digits;
 };
 
+const DEFAULT_INVITE_TEMPLATE = `Hey {name}! \u{1F44B} Here is your exclusive invite link to join the Newbi {city} Creator WhatsApp Community:
+
+\u{1F449} {groupLink}
+
+Join to connect with local creators in {city}, unlock paid brand gigs, and get guestlist passes to exclusive events!`;
+
+const TABS = [
+    { id: 'audience', label: '1. Select Audience' },
+    { id: 'message', label: '2. Customize Message' },
+    { id: 'dispatch', label: '3. Dispatch' },
+];
+
+
+const CustomDropdown = ({ value, options, onChange }) => {
+    const [isOpen, setIsOpen] = React.useState(false);
+    const containerRef = React.useRef(null);
+
+    React.useEffect(() => {
+        const handleClick = (e) => {
+            if (containerRef.current && !containerRef.current.contains(e.target)) {
+                setIsOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClick);
+        return () => document.removeEventListener('mousedown', handleClick);
+    }, []);
+
+    return (
+        <div className="relative w-full z-50" ref={containerRef}>
+            <button 
+                type="button"
+                onClick={() => setIsOpen(!isOpen)}
+                className="w-full h-12 px-4 bg-black/40 border border-white/[0.08] hover:border-neon-blue/50 rounded-xl flex items-center justify-between transition-all"
+            >
+                <div className="flex items-center gap-2">
+                    <MapPin size={16} className="text-neon-blue" />
+                    <span className="text-[13px] font-bold text-white">{value}</span>
+                </div>
+                <ChevronDown size={14} className={cn("text-white/50 transition-transform", isOpen && "rotate-180")} />
+            </button>
+
+            <AnimatePresence>
+                {isOpen && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -5 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -5 }}
+                        transition={{ duration: 0.15 }}
+                        className="absolute top-full left-0 right-0 mt-2 bg-[#0c0e14] border border-white/[0.08] rounded-xl shadow-2xl overflow-hidden"
+                    >
+                        <div className="max-h-64 overflow-y-auto no-scrollbar p-1.5 space-y-0.5">
+                            {options.map(opt => (
+                                <button
+                                    key={opt}
+                                    type="button"
+                                    onClick={() => { onChange(opt); setIsOpen(false); }}
+                                    className={cn(
+                                        "w-full text-left px-3 py-2.5 rounded-lg text-sm transition-colors",
+                                        value === opt ? "bg-neon-blue/10 text-neon-blue font-bold" : "text-white/70 hover:bg-white/5 hover:text-white"
+                                    )}
+                                >
+                                    {opt}
+                                </button>
+                            ))}
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </div>
+    );
+};
+
 const AddCityCreatorsModal = ({ isOpen = true, onClose, initialCity = 'Bengaluru', preselectedUids = null }) => {
-    const { creators, creatorGroups, bulkAddCreatorsToCityGroup } = useStore();
+
+    const { 
+        creators, 
+        creatorGroups, 
+        bulkAddCreatorsToCityGroup,
+        markCreatorInviteSent,
+        updateCreator,
+        bulkMarkCreatorInvitesSent,
+        addToast
+    } = useStore();
+
+    const [activeTab, setActiveTab] = useState('audience');
     const [selectedCity, setSelectedCity] = useState(() => normalizeCity(initialCity));
     const [searchQuery, setSearchQuery] = useState('');
-    const [statusFilter, setStatusFilter] = useState('all'); // 'all' | 'pending' | 'joined'
+    const [statusFilter, setStatusFilter] = useState('all');
     const [selectedIds, setSelectedIds] = useState(() => preselectedUids ? new Set(preselectedUids) : null);
+    
+    // Copy/Status
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [copiedPhoneType, setCopiedPhoneType] = useState(null); // 'csv' | 'newline' | creatorId
 
-    // All active city groups (remote + defaults)
+    // Template
+    const [inviteTemplate, setInviteTemplate] = useState(DEFAULT_INVITE_TEMPLATE);
+
+    // Dispatch states
+    const [isEmailSending, setIsEmailSending] = useState(false);
+    const [emailProgress, setEmailProgress] = useState({ current: 0, total: 0 });
+    const [isQueueActive, setIsQueueActive] = useState(false);
+    const [queueIndex, setQueueIndex] = useState(0);
+
+    // Derived Data
     const activeGroups = useMemo(() => {
         const remote = (creatorGroups || []).filter(g => g.isActive !== false);
         const map = new Map();
@@ -75,13 +159,11 @@ const AddCityCreatorsModal = ({ isOpen = true, onClose, initialCity = 'Bengaluru
         return list;
     }, [creatorGroups]);
 
-    // Active WhatsApp group for selected city
     const currentGroup = useMemo(() => {
         const normSelected = normalizeCity(selectedCity).toLowerCase();
         return activeGroups.find(g => normalizeCity(g.city).toLowerCase() === normSelected) || null;
     }, [activeGroups, selectedCity]);
 
-    // All distinct cities that have creators or predefined groups
     const availableCities = useMemo(() => {
         const citySet = new Set(PREDEFINED_CITIES.filter(c => c !== 'Others' && c !== 'Pan-India / Remote'));
         (creators || []).forEach(c => {
@@ -90,52 +172,45 @@ const AddCityCreatorsModal = ({ isOpen = true, onClose, initialCity = 'Bengaluru
         return Array.from(citySet).sort();
     }, [creators]);
 
-    // Filter creators matching current selected city
     const cityCreators = useMemo(() => {
+        if (preselectedUids && preselectedUids.length > 0) {
+            const preselectedSet = new Set(preselectedUids);
+            return (creators || []).filter(c => preselectedSet.has(c.id) || preselectedSet.has(c.uid));
+        }
         const normTarget = normalizeCity(selectedCity).toLowerCase();
         return (creators || []).filter(c => {
             const normC = normalizeCity(c.city).toLowerCase();
             return normC === normTarget || (normTarget === 'bengaluru' && /bang[al]*o?re/i.test(normC));
         });
-    }, [creators, selectedCity]);
+    }, [creators, selectedCity, preselectedUids]);
 
-    // Apply search query and status filter
     const filteredCreators = useMemo(() => {
         return cityCreators.filter(c => {
-            // Status filter
-            if (statusFilter === 'pending' && c.hasJoinedCityGroup) return false;
-            if (statusFilter === 'joined' && !c.hasJoinedCityGroup) return false;
+            const isJoined = Boolean(c.hasJoinedCityGroup);
+            const isSent = Boolean(c.inviteLinkSent) && !isJoined;
+            const isPending = !isJoined && !c.inviteLinkSent;
 
-            // Search query (Mobile, Name, Email, Instagram, UID, College)
+            if (statusFilter === 'pending' && !isPending) return false;
+            if (statusFilter === 'sent' && !isSent) return false;
+            if (statusFilter === 'joined' && !isJoined) return false;
+
             if (!searchQuery.trim()) return true;
             const q = searchQuery.toLowerCase().trim();
-            const qDigits = q.replace(/\D/g, '');
             const name = (c.name || c.displayName || c.fullName || '').toLowerCase();
-            const email = (c.email || '').toLowerCase();
-            const rawPhones = [c.phone, c.mobile, c.whatsapp, c.contact, c.phoneNumber].filter(Boolean).map(String);
-            const phoneDigitsList = rawPhones.map(p => p.replace(/\D/g, ''));
-            const phoneMatches = rawPhones.some(p => p.toLowerCase().includes(q)) ||
-                (qDigits.length >= 3 && phoneDigitsList.some(pDigits => pDigits.includes(qDigits) || qDigits.includes(pDigits)));
-            const insta = (c.instagram || c.handle || c.instagramHandle || '').toLowerCase().replace(/^@/, '');
-            const id = (c.uid || c.id || c.creatorId || '').toLowerCase();
-            const college = (c.college || c.collegeName || c.university || '').toLowerCase();
-            return name.includes(q) || email.includes(q) || phoneMatches || insta.includes(q.replace(/^@/, '')) || id.includes(q) || college.includes(q);
+            const rawPhones = [c.phone, c.mobile, c.whatsapp].filter(Boolean).map(String);
+            const phoneMatches = rawPhones.some(p => p.toLowerCase().includes(q));
+            return name.includes(q) || phoneMatches;
         });
     }, [cityCreators, statusFilter, searchQuery]);
 
-    // Selection management
     const currentSelectedIds = useMemo(() => {
         if (selectedIds === null) {
-            // default: select all filtered creators
             return new Set(filteredCreators.map(c => c.id || c.uid));
         }
         return selectedIds;
     }, [selectedIds, filteredCreators]);
 
-    const isAllSelected = useMemo(() => {
-        if (filteredCreators.length === 0) return false;
-        return filteredCreators.every(c => currentSelectedIds.has(c.id || c.uid));
-    }, [filteredCreators, currentSelectedIds]);
+    const isAllSelected = filteredCreators.length > 0 && filteredCreators.every(c => currentSelectedIds.has(c.id || c.uid));
 
     const handleToggleSelectAll = () => {
         if (isAllSelected) {
@@ -149,510 +224,478 @@ const AddCityCreatorsModal = ({ isOpen = true, onClose, initialCity = 'Bengaluru
 
     const handleToggleCreator = (id) => {
         const next = new Set(currentSelectedIds);
-        if (next.has(id)) {
-            next.delete(id);
-        } else {
-            next.add(id);
-        }
+        if (next.has(id)) next.delete(id);
+        else next.add(id);
         setSelectedIds(next);
     };
 
-    // Stats
     const stats = useMemo(() => {
         const total = cityCreators.length;
         const joined = cityCreators.filter(c => c.hasJoinedCityGroup).length;
-        const pending = total - joined;
+        const sent = cityCreators.filter(c => c.inviteLinkSent && !c.hasJoinedCityGroup).length;
+        const pending = total - (joined + sent);
         const withPhone = cityCreators.filter(c => c.phone && String(c.phone).trim().length >= 10).length;
-        return { total, joined, pending, withPhone };
+        const withEmail = cityCreators.filter(c => c.email && c.email.includes('@')).length;
+        return { total, joined, sent, pending, withPhone, withEmail };
     }, [cityCreators]);
 
-    // Action 1: Bulk mark as added in database
-    const handleBulkMarkAdded = async () => {
-        const idsToUpdate = Array.from(currentSelectedIds);
-        if (idsToUpdate.length === 0) {
-            useStore.getState().addToast('Please select at least one creator to mark as added.', 'error');
-            return;
-        }
-
-        setIsSubmitting(true);
-        try {
-            const res = await bulkAddCreatorsToCityGroup(selectedCity, idsToUpdate);
-            useStore.getState().addToast(
-                `Successfully marked ${res.count || idsToUpdate.length} creators in ${selectedCity} as added to the WhatsApp Group!`,
-                'success'
-            );
-        } catch (err) {
-            console.error('Error marking creators as added:', err);
-            useStore.getState().addToast('Failed to mark creators as added. Please try again.', 'error');
-        } finally {
-            setIsSubmitting(false);
-        }
-    };
-
-    // Action 2: Copy formatted phone numbers
-    const handleCopyPhoneNumbers = (separator = ', ') => {
-        const targetCreators = cityCreators.filter(c => currentSelectedIds.has(c.id || c.uid));
-        const phones = targetCreators
-            .map(c => formatPhoneForWhatsApp(c.phone))
-            .filter(Boolean);
-
-        if (phones.length === 0) {
-            useStore.getState().addToast('No valid phone numbers found for selected creators.', 'error');
-            return;
-        }
-
-        const text = phones.join(separator);
-        navigator.clipboard.writeText(text);
-        setCopiedPhoneType(separator === ', ' ? 'csv' : 'newline');
-        useStore.getState().addToast(`Copied ${phones.length} formatted phone numbers to clipboard!`, 'success');
-        setTimeout(() => setCopiedPhoneType(null), 2500);
-    };
-
-    // Action 3: Download .VCF contacts file
-    const handleDownloadVCard = () => {
-        const targetCreators = cityCreators.filter(c => currentSelectedIds.has(c.id || c.uid));
-        if (targetCreators.length === 0) {
-            useStore.getState().addToast('No creators selected for contact export.', 'error');
-            return;
-        }
-
-        let vcfContent = '';
-        targetCreators.forEach(c => {
-            const phone = formatPhoneForWhatsApp(c.phone);
-            const name = (c.name || c.displayName || c.fullName || 'Creator').trim();
-            const cityTag = selectedCity.substring(0, 3).toUpperCase();
-            const insta = c.instagram || c.handle || c.instagramHandle || '';
-
-            vcfContent += 'BEGIN:VCARD\r\n';
-            vcfContent += 'VERSION:3.0\r\n';
-            vcfContent += `FN:[${cityTag}] ${name}\r\n`;
-            vcfContent += `N:${name};;;;\r\n`;
-            if (phone) {
-                vcfContent += `TEL;TYPE=CELL,VOICE:${phone}\r\n`;
-            }
-            if (c.email) {
-                vcfContent += `EMAIL;TYPE=INTERNET:${c.email.trim()}\r\n`;
-            }
-            vcfContent += `ORG:Newbi Creator Network - ${selectedCity}\r\n`;
-            vcfContent += `NOTE:Newbi Creator | City: ${selectedCity}${insta ? ` | IG: @${insta}` : ''}\r\n`;
-            vcfContent += 'END:VCARD\r\n';
-        });
-
-        const blob = new Blob([vcfContent], { type: 'text/vcard;charset=utf-8' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.setAttribute('download', `Newbi_${selectedCity.replace(/\s+/g, '_')}_Creators.vcf`);
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-
-        useStore.getState().addToast(
-            `Downloaded ${targetCreators.length} contacts for ${selectedCity}! Import this file to your phone to add them in WhatsApp.`,
-            'success'
-        );
-    };
-
-    // Action 4: Copy Individual Phone
-    const handleCopySinglePhone = (creator) => {
-        const phone = formatPhoneForWhatsApp(creator.phone);
-        if (!phone) return;
-        navigator.clipboard.writeText(phone);
-        setCopiedPhoneType(creator.id || creator.uid);
-        useStore.getState().addToast(`Copied ${phone}`, 'success');
-        setTimeout(() => setCopiedPhoneType(null), 2000);
-    };
-
-    // Action 5: Compose Direct WhatsApp Link
-    const getDirectWhatsAppUrl = (creator) => {
-        const phone = formatPhoneForWhatsApp(creator.phone).replace(/\+/g, '');
-        if (!phone) return null;
-        const name = (creator.name || creator.displayName || 'Creator').split(' ')[0];
+    const getInviteMessageForCreator = (creator) => {
+        const name = (creator?.name || creator?.displayName || 'Creator').trim().split(' ')[0];
         const groupLink = currentGroup?.groupUrl || 'https://chat.whatsapp.com/K6MtDAOlZ7s7AUtOFHxduU';
-        const msg = `Hey ${name}! 👋\n\nHere is your official invite to join the Newbi ${selectedCity} Creator WhatsApp Community:\n👉 ${groupLink}\n\nJoin to receive local brand briefs, event guestlists, and connect with other creators in ${selectedCity}!`;
-        return `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
+        return inviteTemplate
+            .replace(/{name}/g, name)
+            .replace(/{city}/g, selectedCity)
+            .replace(/{groupLink}/g, groupLink);
+    };
+
+    const queueCandidates = useMemo(() => {
+        return cityCreators.filter(c => {
+            const id = c.id || c.uid;
+            if (!currentSelectedIds.has(id)) return false;
+            const phone = formatPhoneForWhatsApp(c.phone);
+            return Boolean(phone) && !c.hasJoinedCityGroup;
+        });
+    }, [cityCreators, currentSelectedIds]);
+
+    const currentQueueCreator = queueCandidates[queueIndex] || null;
+
+    // Handlers
+    const handleSendIndividualWhatsApp = (creator) => {
+        const phone = formatPhoneForWhatsApp(creator.phone).replace(/\+/g, '');
+        if (!phone) { addToast(`No valid phone for ${creator.name}`, 'error'); return; }
+        
+        // Fix for WhatsApp Web preview: convert LF to CRLF so newlines don't get stripped
+        const rawMessage = getInviteMessageForCreator(creator);
+        const formattedMessage = rawMessage.replace(/\r?\n/g, '\r\n');
+        
+        // Use api.whatsapp.com directly to avoid wa.me redirect mangling emojis on some devices
+        const waUrl = `https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(formattedMessage)}`;
+        window.open(waUrl, '_blank');
+        
+        if (markCreatorInviteSent) markCreatorInviteSent(creator.id || creator.uid, 'whatsapp');
+    };
+
+    const handleUndoSent = async (creator) => {
+        const id = creator.id || creator.uid;
+        if (updateCreator) {
+            try {
+                await updateCreator(id, { inviteLinkSent: false, inviteLinkSentAt: null, inviteLinkChannel: null });
+                addToast(`Unmarked ${creator.name} as sent.`, 'info');
+            } catch (err) {
+                addToast('Failed to undo status.', 'error');
+            }
+        }
+    };
+
+    const handleStartQueue = () => {
+        if (!queueCandidates.length) { addToast('No eligible creators in selection.', 'error'); return; }
+        setQueueIndex(0); setIsQueueActive(true);
+    };
+
+    const handleQueueNext = () => {
+        if (!currentQueueCreator) { setIsQueueActive(false); return; }
+        handleSendIndividualWhatsApp(currentQueueCreator);
+        if (queueIndex + 1 < queueCandidates.length) setQueueIndex(prev => prev + 1);
+        else { setIsQueueActive(false); setQueueIndex(0); addToast('Queue completed!', 'success'); }
+    };
+
+    const handleQueueSkip = () => {
+        if (queueIndex + 1 < queueCandidates.length) setQueueIndex(prev => prev + 1);
+        else { setIsQueueActive(false); setQueueIndex(0); addToast('Queue finished.', 'info'); }
+    };
+
+    const handleBulkSendEmail = async () => {
+        const targetCreators = cityCreators.filter(c => currentSelectedIds.has(c.id || c.uid) && c.email?.includes('@'));
+        if (!targetCreators.length) { addToast('No creators with valid email addresses.', 'error'); return; }
+
+        setIsEmailSending(true);
+        setEmailProgress({ current: 0, total: targetCreators.length });
+
+        try {
+            const recipientsPayload = targetCreators.map(c => ({
+                email: c.email.trim().toLowerCase(),
+                name: c.name || c.displayName || 'Creator',
+                city: c.city || selectedCity
+            }));
+
+            const result = await sendCreatorGroupsBroadcastEmail(recipientsPayload, {
+                city: currentGroup?.city || selectedCity,
+                groupUrl: currentGroup?.groupUrl || '',
+                customSubject: `\u26A1 Official ${selectedCity} Creator WhatsApp Group Invitation`,
+                customMessage: `You've been invited to join the exclusive Newbi ${selectedCity} Creator WhatsApp community! Connect with verified creators and access priority gig alerts.`,
+                availableGroups: activeGroups,
+                onProgress: (curr, tot) => setEmailProgress({ current: curr, total: tot })
+            });
+
+            if (result?.success || result?.sentCount > 0) {
+                if (bulkMarkCreatorInvitesSent) await bulkMarkCreatorInvitesSent(targetCreators.map(c => c.id || c.uid), 'email');
+                addToast(`Dispatched emails to ${result.sentCount || targetCreators.length} creators!`, 'success');
+            } else throw new Error(result?.error || 'Email dispatch failed.');
+        } catch (err) {
+            addToast(err.message || 'Failed to send emails.', 'error');
+        } finally {
+            setIsEmailSending(false);
+        }
+    };
+
+    const goToNextTab = () => {
+        if (activeTab === 'audience') setActiveTab('message');
+        else if (activeTab === 'message') setActiveTab('dispatch');
+    };
+
+    const goToPrevTab = () => {
+        if (activeTab === 'dispatch') setActiveTab('message');
+        else if (activeTab === 'message') setActiveTab('audience');
     };
 
     if (!isOpen) return null;
 
-    return createPortal(
-        <div className="fixed inset-0 z-[120] flex items-center justify-center p-3 sm:p-5 overflow-y-auto bg-black/80 backdrop-blur-md">
-            <motion.div
-                initial={{ opacity: 0, scale: 0.95, y: 15 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95, y: 15 }}
-                transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-                className="relative w-full max-w-4xl bg-white dark:bg-zinc-950 border border-black/10 dark:border-white/10 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh]"
-            >
-                {/* Header */}
-                <div className="p-5 sm:p-6 border-b border-black/10 dark:border-white/10 flex items-center justify-between gap-4 bg-gray-50/70 dark:bg-zinc-900/50">
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-2xl bg-[#25D366]/10 text-[#25D366] border border-[#25D366]/30 flex items-center justify-center shrink-0 shadow-[0_0_15px_rgba(37,211,102,0.2)]">
-                            <MessageSquare size={20} />
-                        </div>
+    return (
+        <SharedLayoutModal
+            isOpen={isOpen}
+            onClose={onClose}
+            layoutId="add-city-creators-modal"
+            className="w-full max-w-5xl h-[92vh] sm:h-[90vh] bg-[#0a0c12]/70 backdrop-blur-3xl border border-white/[0.1] rounded-[2rem] sm:rounded-[2.5rem] shadow-[0_24px_80px_-12px_rgba(0,0,0,0.6)] overflow-hidden"
+            contentClassName="p-0 flex flex-col h-full"
+            hideCloseButton={true}
+        >
+            <div className="flex flex-col h-full text-white">
+                
+                {/* ── HEADER & TABS ── */}
+                <div className="shrink-0 pt-6 px-6 sm:px-8 border-b border-white/[0.08] relative overflow-hidden backdrop-blur-xl">
+                    <div className="flex items-start justify-between gap-4 mb-6">
                         <div>
-                            <div className="flex items-center gap-2">
-                                <h3 className="text-lg font-black font-heading tracking-tight text-gray-900 dark:text-white uppercase italic">
-                                    Add City Creators to WhatsApp Group
-                                </h3>
-                                <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-black dark:bg-white/10 text-white">
-                                    {selectedCity}
+                            <div className="flex items-center gap-3">
+                                <h2 className="text-xl sm:text-2xl font-black font-heading tracking-tight text-white uppercase italic">
+                                    Send Group Invites
+                                </h2>
+                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                                    <ShieldCheck size={12} /> Anti-Spam Safe
                                 </span>
                             </div>
-                            <p className="text-xs text-gray-500 dark:text-zinc-400 mt-0.5">
-                                Bulk add creators, copy formatted phone numbers, or download contacts (.vcf) for instant WhatsApp group management.
+                            <p className="text-xs text-white/50 mt-1">
+                                Send WhatsApp group links naturally via 1-on-1 chats or email to avoid bans.
                             </p>
                         </div>
+                        <button
+                            onClick={onClose}
+                            className="w-10 h-10 flex items-center justify-center rounded-full bg-white/[0.05] hover:bg-white/[0.1] text-white/60 hover:text-white transition-all cursor-pointer border border-white/[0.05]"
+                        >
+                            <X size={16} strokeWidth={2.5} />
+                        </button>
                     </div>
 
-                    <button
-                        onClick={onClose}
-                        className="w-9 h-9 rounded-xl bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-gray-500 dark:text-zinc-400 flex items-center justify-center transition-colors"
-                        title="Close Modal"
-                    >
-                        <X size={16} />
-                    </button>
-                </div>
-
-                {/* Sub-Header & City Switcher Bar */}
-                <div className="p-4 sm:p-5 border-b border-black/10 dark:border-white/10 bg-white dark:bg-zinc-900/30 space-y-4">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                        {/* Target City Selector */}
-                        <div className="space-y-1">
-                            <label className="text-[10px] font-black uppercase tracking-wider text-gray-600 dark:text-zinc-400 flex items-center gap-1">
-                                <MapPin size={11} className="text-neon-blue" />
-                                <span>Select City Hub</span>
-                            </label>
-                            <select
-                                value={selectedCity}
-                                onChange={(e) => {
-                                    setSelectedCity(e.target.value);
-                                    setSelectedIds(null); // Reset selection to all for new city
-                                }}
-                                className="w-full h-10 px-3 bg-gray-100 dark:bg-black/50 border border-black/10 dark:border-white/10 rounded-xl text-xs font-bold text-gray-900 dark:text-white outline-none focus:border-neon-blue"
-                            >
-                                {availableCities.map(c => {
-                                    const count = (creators || []).filter(cr => normalizeCity(cr.city).toLowerCase() === c.toLowerCase()).length;
-                                    return (
-                                        <option key={c} value={c} className="bg-white dark:bg-zinc-900 text-gray-900 dark:text-white">
-                                            {c} ({count} creators)
-                                        </option>
-                                    );
-                                })}
-                            </select>
-                        </div>
-
-                        {/* WhatsApp Group Info Card */}
-                        <div className="sm:col-span-1 lg:col-span-3 p-3 rounded-2xl bg-[#25D366]/5 border border-[#25D366]/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                            <div className="space-y-0.5 min-w-0">
-                                <div className="flex items-center gap-2">
-                                    <span className="w-2 h-2 rounded-full bg-[#25D366] animate-pulse" />
-                                    <span className="text-[10px] font-black uppercase tracking-widest text-[#25D366]">
-                                        {currentGroup?.title || `${selectedCity} Community Group`}
-                                    </span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <p className="text-xs font-mono text-gray-700 dark:text-zinc-300 truncate max-w-sm sm:max-w-md">
-                                        {currentGroup?.groupUrl || 'No invite link configured for this city yet.'}
-                                    </p>
-                                </div>
-                            </div>
-
-                            {currentGroup?.groupUrl && (
-                                <div className="flex items-center gap-2 shrink-0">
-                                    <a
-                                        href={currentGroup.groupUrl}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="h-8 px-3 rounded-xl bg-[#25D366] text-black font-black text-[10px] uppercase tracking-wider hover:brightness-110 flex items-center gap-1 transition-all"
-                                    >
-                                        <ExternalLink size={12} />
-                                        <span>Open WhatsApp</span>
-                                    </a>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-
-                    {/* Stats Tiles */}
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-                        <div className="p-3 rounded-2xl bg-black/[0.03] dark:bg-white/[0.04] border border-black/5 dark:border-white/5">
-                            <span className="text-[9px] font-black uppercase tracking-wider text-gray-500 dark:text-zinc-400">Total in City</span>
-                            <div className="text-lg font-black text-gray-900 dark:text-white mt-0.5">{stats.total}</div>
-                        </div>
-                        <div className="p-3 rounded-2xl bg-amber-500/5 border border-amber-500/20">
-                            <span className="text-[9px] font-black uppercase tracking-wider text-amber-500">Pending Addition</span>
-                            <div className="text-lg font-black text-amber-500 mt-0.5">{stats.pending}</div>
-                        </div>
-                        <div className="p-3 rounded-2xl bg-emerald-500/5 border border-emerald-500/20">
-                            <span className="text-[9px] font-black uppercase tracking-wider text-emerald-500">Already in Group</span>
-                            <div className="text-lg font-black text-emerald-500 mt-0.5">{stats.joined}</div>
-                        </div>
-                        <div className="p-3 rounded-2xl bg-sky-500/5 border border-sky-500/20">
-                            <span className="text-[9px] font-black uppercase tracking-wider text-sky-500">With Valid Mobile</span>
-                            <div className="text-lg font-black text-sky-500 mt-0.5">{stats.withPhone}</div>
-                        </div>
+                    <div className="flex items-center gap-6 overflow-x-auto no-scrollbar scroll-smooth">
+                        {TABS.map((tab) => {
+                            const isActive = activeTab === tab.id;
+                            return (
+                                <button
+                                    key={tab.id}
+                                    type="button"
+                                    onClick={() => setActiveTab(tab.id)}
+                                    className={cn(
+                                        "relative pb-4 text-xs font-bold uppercase tracking-widest whitespace-nowrap transition-colors outline-none",
+                                        isActive ? "text-neon-green" : "text-white/40 hover:text-white/70"
+                                    )}
+                                >
+                                    <span>{tab.label}</span>
+                                    {isActive && (
+                                        <motion.div
+                                            layoutId="city-creators-active-tab"
+                                            className="absolute bottom-0 left-0 right-0 h-0.5 bg-neon-green"
+                                        />
+                                    )}
+                                </button>
+                            );
+                        })}
                     </div>
                 </div>
 
-                {/* Bulk Actions Toolbar */}
-                <div className="px-5 py-3 border-b border-black/10 dark:border-white/10 bg-gray-50/50 dark:bg-zinc-900/20 flex flex-wrap items-center justify-between gap-3">
-                    {/* Left: Filter Tabs & Search */}
-                    <div className="flex items-center gap-2 flex-wrap flex-1 min-w-[280px]">
-                        <div className="flex items-center bg-gray-200/70 dark:bg-black/50 p-1 rounded-xl border border-black/5 dark:border-white/5 text-[10px] font-bold">
-                            <button
-                                type="button"
-                                onClick={() => setStatusFilter('all')}
-                                className={cn(
-                                    "px-2.5 py-1 rounded-lg transition-all",
-                                    statusFilter === 'all' ? "bg-white dark:bg-zinc-800 text-gray-900 dark:text-white shadow-sm" : "text-gray-600 dark:text-zinc-400 hover:text-white"
-                                )}
+                {/* ── CONTENT AREA ── */}
+                <div className="flex-1 overflow-y-auto min-h-0 bg-white/[0.01]">
+                    <AnimatePresence mode="wait">
+                        
+                        {/* TAB 1: AUDIENCE */}
+                        {activeTab === 'audience' && (
+                            <motion.div
+                                key="audience"
+                                initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
+                                className="p-6 sm:p-8 space-y-6"
                             >
-                                All ({cityCreators.length})
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => setStatusFilter('pending')}
-                                className={cn(
-                                    "px-2.5 py-1 rounded-lg transition-all",
-                                    statusFilter === 'pending' ? "bg-white dark:bg-zinc-800 text-amber-500 shadow-sm" : "text-gray-600 dark:text-zinc-400 hover:text-white"
-                                )}
-                            >
-                                Pending ({stats.pending})
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => setStatusFilter('joined')}
-                                className={cn(
-                                    "px-2.5 py-1 rounded-lg transition-all",
-                                    statusFilter === 'joined' ? "bg-white dark:bg-zinc-800 text-emerald-500 shadow-sm" : "text-gray-600 dark:text-zinc-400 hover:text-white"
-                                )}
-                            >
-                                In Group ({stats.joined})
-                            </button>
-                        </div>
-
-                        <div className="relative flex-1 min-w-[150px] max-w-xs">
-                            <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                            <input
-                                type="text"
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                placeholder="Search name, phone, IG..."
-                                className="w-full h-8 pl-8 pr-3 bg-white dark:bg-black/50 border border-black/10 dark:border-white/10 rounded-xl text-xs font-medium text-gray-900 dark:text-white outline-none focus:border-neon-blue"
-                            />
-                        </div>
-                    </div>
-
-                    {/* Right: Powerful Bulk Operations */}
-                    <div className="flex items-center gap-2 flex-wrap">
-                        {/* 1-Click Copy Phone Numbers */}
-                        <button
-                            type="button"
-                            onClick={() => handleCopyPhoneNumbers(', ')}
-                            className="h-9 px-3 rounded-xl bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-gray-800 dark:text-zinc-200 text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 transition-colors border border-black/5 dark:border-white/5"
-                            title="Copy comma-separated phone numbers (+919876543210, +91...) to paste directly into WhatsApp"
-                        >
-                            {copiedPhoneType === 'csv' ? (
-                                <Check size={13} className="text-neon-green" />
-                            ) : (
-                                <Copy size={13} />
-                            )}
-                            <span>{copiedPhoneType === 'csv' ? 'Copied CSV!' : 'Copy Phones (CSV)'}</span>
-                        </button>
-
-                        {/* Export .vcf Contact Card */}
-                        <button
-                            type="button"
-                            onClick={handleDownloadVCard}
-                            className="h-9 px-3 rounded-xl bg-neon-blue/10 hover:bg-neon-blue/20 text-neon-blue border border-neon-blue/30 text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 transition-colors"
-                            title="Download .vcf vCard file to add all city creators as contacts on your mobile phone"
-                        >
-                            <Download size={13} />
-                            <span>Export Contacts (.vcf)</span>
-                        </button>
-
-                        {/* Mark All / Selected as Added */}
-                        <button
-                            type="button"
-                            onClick={handleBulkMarkAdded}
-                            disabled={isSubmitting || currentSelectedIds.size === 0}
-                            className="h-9 px-4 rounded-xl bg-[#25D366] text-black font-black text-[10px] uppercase tracking-wider hover:brightness-110 disabled:opacity-50 flex items-center gap-1.5 shadow-[0_0_20px_rgba(37,211,102,0.3)] transition-all"
-                            title="Mark all selected creators in this city as added to WhatsApp group in the system"
-                        >
-                            {isSubmitting ? (
-                                <RefreshCw size={13} className="animate-spin" />
-                            ) : (
-                                <CheckCircle2 size={13} />
-                            )}
-                            <span>Mark {currentSelectedIds.size} as Added</span>
-                        </button>
-                    </div>
-                </div>
-
-                {/* Creators Table / List */}
-                <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-2">
-                    <div className="flex items-center justify-between pb-2 border-b border-black/5 dark:border-white/5 text-[10px] font-black uppercase tracking-widest text-gray-500 dark:text-zinc-400">
-                        <div className="flex items-center gap-2">
-                            <input
-                                type="checkbox"
-                                checked={isAllSelected}
-                                onChange={handleToggleSelectAll}
-                                className="w-4 h-4 rounded border-gray-300 text-neon-blue focus:ring-neon-blue cursor-pointer"
-                            />
-                            <span>Creator ({filteredCreators.length})</span>
-                        </div>
-                        <div className="flex items-center gap-8">
-                            <span className="hidden sm:inline">Phone &amp; Direct WhatsApp</span>
-                            <span>Community Status</span>
-                        </div>
-                    </div>
-
-                    {filteredCreators.length === 0 ? (
-                        <div className="py-12 text-center rounded-2xl bg-black/[0.02] dark:bg-white/[0.02] border border-black/5 dark:border-white/5 space-y-2">
-                            <Users size={32} className="mx-auto text-gray-400" />
-                            <p className="text-sm font-bold text-gray-700 dark:text-zinc-300">
-                                No creators found for {selectedCity}
-                            </p>
-                            <p className="text-xs text-gray-500 dark:text-zinc-500 max-w-sm mx-auto">
-                                Try changing your search query or city selection above.
-                            </p>
-                        </div>
-                    ) : (
-                        <div className="space-y-1.5">
-                            {filteredCreators.map(creator => {
-                                const id = creator.id || creator.uid;
-                                const isSelected = currentSelectedIds.has(id);
-                                const waUrl = getDirectWhatsAppUrl(creator);
-                                const phoneFormatted = formatPhoneForWhatsApp(creator.phone);
-
-                                return (
-                                    <div
-                                        key={id}
-                                        className={cn(
-                                            "p-3 rounded-2xl border transition-all flex items-center justify-between gap-3",
-                                            isSelected
-                                                ? "bg-white dark:bg-zinc-900/80 border-neon-blue/30 shadow-sm"
-                                                : "bg-gray-50/70 dark:bg-black/30 border-black/5 dark:border-white/5 opacity-80 hover:opacity-100"
-                                        )}
-                                    >
-                                        {/* Checkbox & Creator Info */}
-                                        <div className="flex items-center gap-3 min-w-0">
-                                            <input
-                                                type="checkbox"
-                                                checked={isSelected}
-                                                onChange={() => handleToggleCreator(id)}
-                                                className="w-4 h-4 rounded border-gray-300 text-neon-blue focus:ring-neon-blue cursor-pointer shrink-0"
-                                            />
-
-                                            <div className="w-8 h-8 rounded-full bg-neon-pink/10 text-neon-pink font-black text-xs flex items-center justify-center shrink-0">
-                                                {(creator.name || creator.displayName || 'C').charAt(0).toUpperCase()}
-                                            </div>
-
-                                            <div className="min-w-0">
-                                                <div className="flex items-center gap-2">
-                                                    <span className="text-xs font-bold text-gray-900 dark:text-white truncate">
-                                                        {creator.name || creator.displayName || creator.fullName || 'Unnamed Creator'}
-                                                    </span>
-                                                    {(creator.instagram || creator.handle || creator.instagramHandle) && (
-                                                        <span className="text-[10px] font-mono text-neon-pink truncate hidden sm:inline">
-                                                            @{creator.instagram || creator.handle || creator.instagramHandle}
-                                                        </span>
-                                                    )}
-                                                </div>
-                                                <div className="flex items-center gap-2 text-[10px] text-gray-500 dark:text-zinc-400">
-                                                    <span>{creator.city || selectedCity}</span>
-                                                    {creator.email && (
-                                                        <>
-                                                            <span>&bull;</span>
-                                                            <span className="truncate max-w-[160px]">{creator.email}</span>
-                                                        </>
-                                                    )}
-                                                </div>
-                                            </div>
+                                <div className="flex flex-col lg:flex-row gap-6">
+                                    {/* City Selector */}
+                                    <div className="lg:w-1/3 space-y-2 relative z-50">
+                                        <label className="text-[10px] font-black uppercase tracking-widest text-white/50 flex items-center gap-1.5">
+                                            <MapPin size={12} className="text-neon-blue" /> Target City Hub
+                                        </label>
+                                        <CustomDropdown 
+                                            value={selectedCity} 
+                                            options={availableCities} 
+                                            onChange={(c) => { setSelectedCity(c); setSelectedIds(null); setIsQueueActive(false); }} 
+                                        />
+                                    </div>
+                                    
+                                    {/* Quick Stats */}
+                                    <div className="lg:flex-1 grid grid-cols-3 gap-3">
+                                        <div className="p-4 rounded-xl bg-white/[0.02] border border-white/[0.05] flex flex-col justify-center items-center">
+                                            <span className="text-[10px] font-black uppercase tracking-wider text-white/40">Total</span>
+                                            <div className="text-2xl font-black mt-1 text-white">{stats.total}</div>
                                         </div>
+                                        <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex flex-col justify-center items-center">
+                                            <span className="text-[10px] font-black uppercase tracking-wider text-emerald-400/70">Joined</span>
+                                            <div className="text-2xl font-black text-emerald-400 mt-1">{stats.joined}</div>
+                                        </div>
+                                        <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 flex flex-col justify-center items-center">
+                                            <span className="text-[10px] font-black uppercase tracking-wider text-amber-400/70">Pending</span>
+                                            <div className="text-2xl font-black text-amber-400 mt-1">{stats.pending}</div>
+                                        </div>
+                                    </div>
+                                </div>
 
-                                        {/* Phone, Direct WA, Status */}
-                                        <div className="flex items-center gap-2 sm:gap-4 shrink-0">
-                                            {/* Phone Pill */}
-                                            {phoneFormatted ? (
-                                                <div className="flex items-center gap-1">
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => handleCopySinglePhone(creator)}
-                                                        className="h-7 px-2 rounded-lg bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 font-mono text-[10px] text-gray-700 dark:text-zinc-300 flex items-center gap-1 transition-colors"
-                                                        title="Click to copy phone number"
-                                                    >
-                                                        <Phone size={10} className="text-gray-400" />
-                                                        <span>{phoneFormatted}</span>
-                                                        {copiedPhoneType === id ? (
-                                                            <Check size={10} className="text-neon-green ml-0.5" />
-                                                        ) : (
-                                                            <Copy size={10} className="text-gray-400 ml-0.5" />
-                                                        )}
-                                                    </button>
+                                <div className="space-y-4 pt-4 border-t border-white/[0.05]">
+                                    {/* Filters & Search */}
+                                    <div className="flex flex-wrap items-center justify-between gap-4">
+                                        <div className="flex items-center bg-white/[0.04] p-1 rounded-xl border border-white/[0.05] text-[10px] font-bold">
+                                            {['all', 'pending', 'sent', 'joined'].map(t => (
+                                                <button
+                                                    key={t}
+                                                    onClick={() => setStatusFilter(t)}
+                                                    className={cn("px-4 py-2 rounded-lg transition-all capitalize", statusFilter === t ? "bg-white/10 text-white shadow-sm" : "text-white/50 hover:text-white")}
+                                                >
+                                                    {t}
+                                                </button>
+                                            ))}
+                                        </div>
+                                        <div className="relative flex-1 max-w-sm">
+                                            <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/40" />
+                                            <input
+                                                type="text"
+                                                value={searchQuery}
+                                                onChange={(e) => setSearchQuery(e.target.value)}
+                                                placeholder="Search by name, phone..."
+                                                className="w-full h-11 pl-10 pr-4 bg-black/40 border border-white/[0.08] rounded-xl text-xs font-medium text-white outline-none focus:border-neon-green transition-colors"
+                                            />
+                                        </div>
+                                    </div>
 
-                                                    {waUrl && (
-                                                        <a
-                                                            href={waUrl}
-                                                            target="_blank"
-                                                            rel="noopener noreferrer"
-                                                            className="w-7 h-7 rounded-lg bg-[#25D366]/10 hover:bg-[#25D366]/20 text-[#25D366] flex items-center justify-center transition-colors"
-                                                            title="Send 1:1 WhatsApp invite"
-                                                        >
-                                                            <MessageSquare size={12} />
-                                                        </a>
-                                                    )}
-                                                </div>
+                                    {/* Creators List */}
+                                    <div className="border border-white/[0.08] rounded-2xl overflow-hidden bg-[#0c0e14]">
+                                        <div className="px-5 py-3 border-b border-white/[0.08] flex items-center justify-between bg-white/[0.02]">
+                                            <div className="flex items-center gap-3">
+                                                <button onClick={handleToggleSelectAll} className="w-5 h-5 rounded border border-white/20 flex items-center justify-center bg-black/40 text-neon-green hover:border-white/40 transition-colors">
+                                                    {isAllSelected && <Check size={12} strokeWidth={3} />}
+                                                </button>
+                                                <span className="text-xs font-bold text-white/70">Select All ({filteredCreators.length})</span>
+                                            </div>
+                                            <span className="text-[10px] font-black uppercase text-neon-green">{currentSelectedIds.size} Selected</span>
+                                        </div>
+                                        
+                                        <div className="max-h-[400px] overflow-y-auto p-2 space-y-1">
+                                            {filteredCreators.length === 0 ? (
+                                                <div className="py-16 text-center text-white/40 text-xs font-bold">No creators match your filters.</div>
                                             ) : (
-                                                <span className="text-[10px] font-mono text-gray-400 italic">
-                                                    No Phone
-                                                </span>
-                                            )}
+                                                filteredCreators.map(c => {
+                                                    const isSel = currentSelectedIds.has(c.id || c.uid);
+                                                    const isJ = Boolean(c.hasJoinedCityGroup);
+                                                    const isSent = Boolean(c.inviteLinkSent) && !isJ;
+                                                    const isPending = !isJ && !isSent;
+                                                    
+                                                    return (
+                                                        <div key={c.id || c.uid} className={cn(
+                                                            "flex items-center justify-between p-3.5 rounded-xl transition-all cursor-pointer group",
+                                                            isSel ? "bg-white/[0.06] border border-white/10" : "hover:bg-white/[0.02] border border-transparent"
+                                                        )} onClick={() => handleToggleCreator(c.id || c.uid)}>
+                                                            <div className="flex items-center gap-4">
+                                                                <div className={cn("w-5 h-5 rounded border flex items-center justify-center shrink-0 transition-colors", isSel ? "bg-neon-green border-neon-green text-black" : "border-white/20 bg-black/40 text-transparent")}>
+                                                                    <Check size={12} strokeWidth={3} />
+                                                                </div>
+                                                                <div>
+                                                                    <p className="text-sm font-bold text-white">{c.name || 'Unknown'}</p>
+                                                                    <p className="text-[10px] font-mono text-white/40 mt-0.5">{formatPhoneForWhatsApp(c.phone) || 'No Phone'}</p>
+                                                                </div>
+                                                            </div>
+                                                            
+                                                            <div className="flex items-center gap-3">
+                                                                {/* Optional Undo Action */}
+                                                                {isSent && (
+                                                                    <button 
+                                                                        onClick={(e) => { e.stopPropagation(); handleUndoSent(c); }}
+                                                                        className="h-7 px-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-white/50 hover:text-white flex items-center gap-1 text-[10px] font-bold transition-all opacity-0 group-hover:opacity-100"
+                                                                    >
+                                                                        <Undo2 size={10} /> Undo
+                                                                    </button>
+                                                                )}
 
-                                            {/* Status Badge */}
-                                            {creator.hasJoinedCityGroup ? (
-                                                <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 flex items-center gap-1">
-                                                    <CheckCircle2 size={10} />
-                                                    <span className="hidden sm:inline">In Group</span>
-                                                </span>
-                                            ) : (
-                                                <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-amber-500/10 text-amber-500 border border-amber-500/20 flex items-center gap-1">
-                                                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-                                                    <span className="hidden sm:inline">Pending</span>
-                                                </span>
+                                                                {/* Status Badge */}
+                                                                {isJ ? (
+                                                                    <span className="w-20 py-1 text-center rounded-full text-[9px] font-black uppercase bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Joined</span>
+                                                                ) : isSent ? (
+                                                                    <span className="w-20 py-1 text-center rounded-full text-[9px] font-black uppercase bg-sky-500/10 text-sky-400 border border-sky-500/20">Sent</span>
+                                                                ) : (
+                                                                    <span className="w-20 py-1 text-center rounded-full text-[9px] font-black uppercase bg-amber-500/10 text-amber-400 border border-amber-500/20">Pending</span>
+                                                                )}
+                                                                
+                                                                {/* Send WhatsApp action */}
+                                                                {!isJ && (
+                                                                    <button 
+                                                                        onClick={(e) => { e.stopPropagation(); handleSendIndividualWhatsApp(c); }}
+                                                                        className="h-7 px-3 rounded-lg bg-[#25D366]/10 hover:bg-[#25D366]/20 border border-[#25D366]/30 text-[#25D366] flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider transition-all"
+                                                                    >
+                                                                        <Send size={10} /> {isSent ? 'Resend' : 'Send'}
+                                                                    </button>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })
                                             )}
                                         </div>
                                     </div>
-                                );
-                            })}
-                        </div>
-                    )}
-                </div>
+                                </div>
+                            </motion.div>
+                        )}
 
-                {/* Footer instructions */}
-                <div className="p-4 sm:p-5 border-t border-black/10 dark:border-white/10 bg-gray-50/80 dark:bg-zinc-900/60 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-gray-500 dark:text-zinc-400">
-                    <div className="flex items-center gap-2">
-                        <Sparkles size={14} className="text-neon-pink shrink-0" />
-                        <span>
-                            <strong>Admin Tip:</strong> Exporting .vcf contacts imports all creators with <code className="text-neon-blue font-mono">[{selectedCity.substring(0,3).toUpperCase()}]</code> prefix so you can select all in WhatsApp in seconds!
-                        </span>
-                    </div>
+                        {/* TAB 2: MESSAGE */}
+                        {activeTab === 'message' && (
+                            <motion.div
+                                key="message"
+                                initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
+                                className="p-6 sm:p-8 space-y-8 max-w-3xl mx-auto"
+                            >
+                                <div className="space-y-4">
+                                    <div className="flex items-center justify-between">
+                                        <label className="text-xs font-black uppercase tracking-widest text-white/70 flex items-center gap-2">
+                                            <MessageSquare size={14} className="text-neon-pink" /> 
+                                            Invite Message Template
+                                        </label>
+                                        <button onClick={() => setInviteTemplate(DEFAULT_INVITE_TEMPLATE)} className="text-[10px] font-bold text-white/40 hover:text-white underline">
+                                            Reset to Default
+                                        </button>
+                                    </div>
+                                    <textarea
+                                        value={inviteTemplate}
+                                        onChange={(e) => setInviteTemplate(e.target.value)}
+                                        rows={7}
+                                        className="w-full p-5 bg-black/40 border border-white/[0.1] rounded-2xl text-[13px] text-white outline-none focus:border-neon-pink transition-colors resize-none leading-relaxed shadow-inner"
+                                        placeholder="Type your message here... Emojis work perfectly!"
+                                    />
+                                    <p className="text-[10px] font-bold text-white/50 bg-white/[0.02] inline-block px-3 py-1.5 rounded-lg border border-white/[0.05]">
+                                        Dynamic Tags: <span className="text-neon-pink ml-1">{"{name}"}</span>, <span className="text-neon-blue mx-1">{"{city}"}</span>, <span className="text-neon-green">{"{groupLink}"}</span>
+                                    </p>
+                                </div>
 
-                    <div className="flex items-center gap-2 shrink-0">
-                        <button
-                            type="button"
-                            onClick={onClose}
-                            className="h-9 px-4 rounded-xl border border-black/10 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/5 font-bold text-[10px] uppercase tracking-wider text-gray-700 dark:text-zinc-300 transition-colors"
-                        >
-                            Close
-                        </button>
-                    </div>
+                                <div className="p-5 rounded-2xl bg-black/20 border border-white/[0.08] space-y-4">
+                                    <h4 className="text-[10px] font-black uppercase tracking-widest text-white/50 flex items-center gap-2">
+                                        <Users size={12} className="text-neon-green" />
+                                        Active Group Link for {selectedCity}
+                                    </h4>
+                                    <div className="flex items-center gap-3">
+                                        <div className="flex-1 bg-black/60 px-4 py-3.5 rounded-xl border border-white/[0.05] font-mono text-xs text-neon-green truncate shadow-inner">
+                                            {currentGroup?.groupUrl || 'No group link configured yet. Check Group Settings.'}
+                                        </div>
+                                        {currentGroup?.groupUrl && (
+                                            <a href={currentGroup.groupUrl} target="_blank" rel="noopener noreferrer" className="h-11 px-5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/[0.05] text-white font-bold text-[10px] uppercase tracking-wider flex items-center gap-2 transition-colors shrink-0 shadow-sm">
+                                                Test Link <ExternalLink size={12} />
+                                            </a>
+                                        )}
+                                    </div>
+                                </div>
+                            </motion.div>
+                        )}
+
+                        {/* TAB 3: DISPATCH */}
+                        {activeTab === 'dispatch' && (
+                            <motion.div
+                                key="dispatch"
+                                initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
+                                className="p-6 sm:p-8 space-y-8 max-w-4xl mx-auto"
+                            >
+                                <div className="text-center space-y-3 pb-4">
+                                    <h3 className="text-3xl font-black font-heading text-white italic tracking-tight">Ready to Dispatch!</h3>
+                                    <p className="text-sm text-white/60">You have carefully selected <strong className="text-neon-green px-1.5 py-0.5 bg-neon-green/10 rounded-md">{currentSelectedIds.size}</strong> creators in <strong className="text-neon-blue">{selectedCity}</strong>.</p>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    {/* WhatsApp Queue Option */}
+                                    <div className="p-6 sm:p-8 rounded-[2rem] bg-black/40 border border-white/[0.05] relative overflow-hidden group hover:border-neon-green/30 transition-colors">
+                                        <div className="absolute top-0 right-0 p-8 opacity-[0.03] group-hover:opacity-[0.08] transition-opacity"><Play size={96} /></div>
+                                        <div className="relative z-10 space-y-5">
+                                            <div className="w-14 h-14 rounded-2xl bg-neon-green/10 border border-neon-green/20 text-neon-green flex items-center justify-center shadow-lg shadow-neon-green/10">
+                                                <Phone size={24} />
+                                            </div>
+                                            <div>
+                                                <h4 className="text-xl font-black text-white tracking-tight">WhatsApp Queue</h4>
+                                                <p className="text-[11px] sm:text-xs text-white/50 mt-2 leading-relaxed">Opens WhatsApp Web 1-by-1 for each creator. 100% safe from bans, highly personal and ensures perfect delivery.</p>
+                                            </div>
+                                            
+                                            {isQueueActive ? (
+                                                <div className="pt-4 space-y-4">
+                                                    <div className="p-4 rounded-xl bg-neon-green/10 border border-neon-green/20 shadow-inner">
+                                                        <p className="text-[10px] font-black uppercase tracking-wider text-neon-green mb-1 flex items-center gap-2">
+                                                            <span className="w-1.5 h-1.5 rounded-full bg-neon-green animate-pulse" /> Queue Active ({queueIndex + 1}/{queueCandidates.length})
+                                                        </p>
+                                                        <p className="text-sm font-bold text-white truncate">{currentQueueCreator?.name}</p>
+                                                    </div>
+                                                    <div className="flex gap-3">
+                                                        <button onClick={handleQueueNext} className="flex-1 h-12 rounded-xl bg-neon-green text-black font-black text-xs uppercase hover:brightness-110 shadow-[0_0_20px_rgba(57,255,20,0.3)] flex items-center justify-center gap-2 transition-all">
+                                                            <Send size={14} /> Send & Next
+                                                        </button>
+                                                        <button onClick={handleQueueSkip} className="h-12 px-5 rounded-xl border border-white/10 text-white/70 hover:text-white hover:bg-white/5 flex items-center justify-center transition-colors" title="Skip Creator">
+                                                            <SkipForward size={14} />
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <button onClick={handleStartQueue} disabled={queueCandidates.length === 0} className="w-full h-12 mt-4 rounded-xl bg-neon-green/10 border border-neon-green/30 text-neon-green font-black text-xs uppercase tracking-wider hover:bg-neon-green/20 transition-all disabled:opacity-40">
+                                                    Start WA Queue ({queueCandidates.length})
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* Email Blast Option */}
+                                    <div className="p-6 sm:p-8 rounded-[2rem] bg-black/40 border border-white/[0.05] relative overflow-hidden group hover:border-neon-pink/30 transition-colors">
+                                        <div className="absolute top-0 right-0 p-8 opacity-[0.03] group-hover:opacity-[0.08] transition-opacity"><Mail size={96} /></div>
+                                        <div className="relative z-10 space-y-5">
+                                            <div className="w-14 h-14 rounded-2xl bg-neon-pink/10 border border-neon-pink/20 text-neon-pink flex items-center justify-center shadow-lg shadow-neon-pink/10">
+                                                <Mail size={24} />
+                                            </div>
+                                            <div>
+                                                <h4 className="text-xl font-black text-white tracking-tight">Email Blast</h4>
+                                                <p className="text-[11px] sm:text-xs text-white/50 mt-2 leading-relaxed">Sends a professional branded HTML email containing the WhatsApp group link. Great for massive bulk dispatches.</p>
+                                            </div>
+                                            
+                                            <button onClick={handleBulkSendEmail} disabled={isEmailSending || currentSelectedIds.size === 0} className="w-full h-12 mt-4 rounded-xl bg-neon-pink/10 border border-neon-pink/30 text-neon-pink font-black text-xs uppercase tracking-wider hover:bg-neon-pink/20 transition-all disabled:opacity-40 flex items-center justify-center gap-2">
+                                                {isEmailSending ? 'Sending emails...' : `Dispatch Emails (${currentSelectedIds.size})`}
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
                 </div>
-            </motion.div>
-        </div>,
-        document.body
+                
+                {/* ── STICKY FOOTER NAVIGATION ── */}
+                <div className="shrink-0 p-5 border-t border-white/[0.08] bg-[#0a0c12]/95 backdrop-blur-3xl flex items-center justify-between z-10 shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
+                    <button 
+                        onClick={goToPrevTab} 
+                        disabled={activeTab === 'audience'}
+                        className="h-11 px-6 rounded-xl border border-white/[0.08] text-white/70 hover:text-white hover:bg-white/5 font-bold text-xs transition-colors disabled:opacity-0"
+                    >
+                        &larr; Back
+                    </button>
+                    
+                    <button 
+                        onClick={goToNextTab}
+                        disabled={activeTab === 'dispatch'}
+                        className="h-11 px-8 rounded-xl bg-white text-black font-black text-xs uppercase tracking-widest hover:bg-gray-200 transition-colors disabled:opacity-0 shadow-[0_0_20px_rgba(255,255,255,0.1)]"
+                    >
+                        Next Step &rarr;
+                    </button>
+                </div>
+            </div>
+        </SharedLayoutModal>
     );
 };
 

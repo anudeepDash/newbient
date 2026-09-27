@@ -21,6 +21,7 @@ import Mail from 'lucide-react/dist/esm/icons/mail';
 import RefreshCw from 'lucide-react/dist/esm/icons/refresh-cw';
 import Users from 'lucide-react/dist/esm/icons/users';
 import UserPlus from 'lucide-react/dist/esm/icons/user-plus';
+import Send from 'lucide-react/dist/esm/icons/send';
 import BroadcastGroupsModal from './BroadcastGroupsModal';
 import AddCityCreatorsModal from './AddCityCreatorsModal';
 import CreatorCityGroupCard from '../creator/CreatorCityGroupCard';
@@ -96,7 +97,7 @@ const CityGroupManager = () => {
             useStore.getState().addToast(`${targetCity} Creator Group added!`, 'success');
         } catch (err) {
             console.error('Error adding creator group:', err);
-            useStore.getState().addToast('Failed to add creator group.', 'error');
+            useStore.getState().addToast(err?.message || 'Failed to add creator group.', 'error');
         } finally {
             setSubmitting(false);
         }
@@ -108,7 +109,7 @@ const CityGroupManager = () => {
             await deleteCreatorGroup(id);
             useStore.getState().addToast('Creator group removed.', 'success');
         } catch (err) {
-            useStore.getState().addToast('Failed to delete group.', 'error');
+            useStore.getState().addToast(err?.message || 'Failed to delete group.', 'error');
         }
     };
 
@@ -117,7 +118,7 @@ const CityGroupManager = () => {
             await updateCreatorGroup(id, { isActive: !currentStatus });
             useStore.getState().addToast(`Group marked ${!currentStatus ? 'Active' : 'Inactive'}.`, 'info');
         } catch (err) {
-            useStore.getState().addToast('Failed to update group status.', 'error');
+            useStore.getState().addToast(err?.message || 'Failed to update group status.', 'error');
         }
     };
 
@@ -421,10 +422,10 @@ const CityGroupManager = () => {
                                                     type="button"
                                                     onClick={() => setManagingCityGroup(group.city)}
                                                     className="h-8 px-2.5 rounded-lg bg-[#25D366]/10 hover:bg-[#25D366]/20 text-[#25D366] text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 transition-colors border border-[#25D366]/20"
-                                                    title={`Add all ${group.city} creators to WhatsApp`}
+                                                    title={`Send WhatsApp group joining links to ${group.city} creators`}
                                                 >
-                                                    <UserPlus size={12} />
-                                                    <span>Add Creators ({cityCreatorCount})</span>
+                                                    <Send size={12} />
+                                                    <span>Send Invites ({cityCreatorCount})</span>
                                                 </button>
                                                 <button
                                                     type="button"

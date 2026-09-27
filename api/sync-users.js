@@ -20,7 +20,7 @@ export default async function handler(req, res) {
     const allowedOrigins = ['https://www.newbi.live', 'https://newbi.live', 'https://newbi-ent.vercel.app', 'http://localhost:5173'];
     const origin = req.headers.origin;
     
-    if (allowedOrigins.includes(origin)) {
+    if (origin && (allowedOrigins.includes(origin) || origin.startsWith('http://localhost:'))) {
         res.setHeader('Access-Control-Allow-Origin', origin);
     }
     
@@ -51,8 +51,9 @@ export default async function handler(req, res) {
 
         // Check if caller has admin permissions
         let isAuthorized = false;
-        if (decodedToken.email) {
-            const adminSnap = await db.collection('admins').where('email', '==', decodedToken.email).get();
+        const callerEmail = decodedToken.email ? decodedToken.email.toLowerCase().trim() : null;
+        if (callerEmail) {
+            const adminSnap = await db.collection('admins').where('email', '==', callerEmail).get();
             if (!adminSnap.empty) {
                 isAuthorized = true;
             }
@@ -135,6 +136,7 @@ export default async function handler(req, res) {
             success: true,
             totalAuthUsers: allAuthUsers.length,
             syncedCount: syncedCount,
+            lastSyncedAt: new Date().toISOString(),
             message: `Successfully synchronized ${syncedCount} members from Firebase Authentication into Firestore.`
         });
 

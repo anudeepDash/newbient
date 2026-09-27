@@ -103,11 +103,19 @@ const Invoice = () => {
 
     React.useEffect(() => {
         const handleResize = () => {
-            if (window.innerWidth < 850) {
-                const newScale = (window.innerWidth - 32) / 794;
-                setScale(newScale);
+            if (window.innerWidth >= 1024) {
+                const availableWidth = window.innerWidth - 420;
+                if (availableWidth < 850) {
+                    setScale((availableWidth - 64) / 794);
+                } else {
+                    setScale(1);
+                }
             } else {
-                setScale(1);
+                if (window.innerWidth < 850) {
+                    setScale((window.innerWidth - 32) / 794);
+                } else {
+                    setScale(1);
+                }
             }
         };
 
@@ -591,7 +599,7 @@ const Invoice = () => {
     const paginatedPages = getPaginatedPages();
 
     return (
-        <div className="min-h-screen bg-[#050505] scroll-smooth overflow-x-hidden">
+        <div className="min-h-screen bg-[#FAFAFA] dark:bg-[#050505] font-sans selection:bg-neon-blue/30 text-gray-900 dark:text-gray-100 flex flex-col lg:flex-row">
             <style dangerouslySetInnerHTML={{ __html: `
                 @media print {
                     .fixed-header-nav, .print-hidden { display: none !important; }
@@ -606,201 +614,105 @@ const Invoice = () => {
                     input[type=number] { -moz-appearance: textfield; }
                 }
             `}} />
+            
             {/* Hidden Iframe for Printing */}
-            <iframe
-                ref={printFrameRef}
-                className="fixed -top-[1000px] left-0 pointer-events-none w-0 h-0"
-                title="print-frame"
-            />
+            <iframe ref={printFrameRef} className="fixed -top-[1000px] left-0 pointer-events-none w-0 h-0" title="print-frame" />
 
-            {/* FIXED HEADER NAVIGATION */}
+            {/* Sidebar / Action Panel */}
             {!isExporting && (
-                <header data-html2canvas-ignore="true" className="fixed-header-nav fixed top-0 left-0 right-0 z-[100] bg-white dark:bg-black/60 backdrop-blur-2xl border-b border-black/10 dark:border-white/10 print:hidden px-4 md:px-8 h-20 md:h-24 flex items-center">
-                    <div className="max-w-[1400px] mx-auto w-full flex items-center justify-between gap-4">
-                        {/* Left: Back Navigation & Logo */}
-                        <div className="flex items-center gap-4">
-                            <Link to={isAdmin ? "/admin/invoices" : "/"} className="group flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.3em] text-gray-500 hover:text-gray-900 dark:hover:text-white transition-all">
-                                <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" /> 
-                                <span className="hidden sm:inline">{isAdmin ? 'ADMIN VAULT' : 'BACK TO HOME'}</span>
-                            </Link>
-                            <div className="h-8 w-[1px] bg-black/10 dark:bg-white/10" />
-                            <img src="/logo_document.png" alt="Logo" className="h-8 md:h-10 object-contain hidden xs:block" crossOrigin="anonymous" />
-                            <div className="h-8 w-[1px] bg-black/10 dark:bg-white/10 hidden xs:block" />
-                            <div className="flex flex-col text-left max-w-[100px] xs:max-w-[180px] sm:max-w-none">
-                                <span className="text-[9px] sm:text-[10px] font-black text-neon-blue uppercase tracking-widest leading-none mb-1 truncate">
-                                    {displayInvoice.clientName ? `${displayInvoice.clientName} (${displayInvoice.invoiceNumber || displayInvoice.id})` : (displayInvoice.invoiceNumber || 'NEWBI-INV')}
-                                </span>
-                                <span className="text-[7px] sm:text-[8px] font-bold text-gray-500 uppercase tracking-widest leading-none">
-                                    OFFICIAL DOCUMENT
-                                </span>
+                <aside className="print-hidden w-full lg:w-[420px] shrink-0 bg-white dark:bg-[#0A0A0A] border-b lg:border-b-0 lg:border-r border-black/5 dark:border-white/5 flex flex-col h-auto lg:h-screen lg:sticky top-0 z-[100] shadow-[10px_0_40px_rgba(0,0,0,0.03)] dark:shadow-none">
+                    
+                    {/* Top Header inside Sidebar */}
+                    <div className="h-20 px-6 lg:px-8 flex items-center justify-between border-b border-black/5 dark:border-white/5 shrink-0">
+                        <Link to={isAdmin ? "/admin/invoices" : "/"} className="flex items-center gap-3 text-[10px] font-black text-gray-500 hover:text-gray-900 dark:hover:text-white transition-all uppercase tracking-widest">
+                            <ArrowLeft size={16} /> 
+                            {isAdmin ? 'Back to Vault' : 'Home'}
+                        </Link>
+                        {isAdmin && (
+                            <div className="flex items-center gap-4">
+                                <Link to="/admin/system-command" className="text-gray-400 hover:text-neon-blue transition-colors">
+                                    <Settings size={16} />
+                                </Link>
+                                <button onClick={() => useStore.getState().logout()} className="text-gray-400 hover:text-red-500 transition-colors">
+                                    <LogOut size={16} />
+                                </button>
                             </div>
-                        </div>
-
-                        {/* Center: Status (Compact) */}
-                        <div className={cn(
-                            "px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.2em] border flex items-center gap-2 transition-all",
-                            displayInvoice.status === 'Paid' 
-                                ? "bg-green-500/10 text-green-500 border-green-500/20 shadow-[0_0_15px_rgba(34,197,94,0.1)]" 
-                                : "bg-yellow-500/10 text-yellow-500 border-yellow-500/20 shadow-[0_0_15px_rgba(234,179,8,0.1)]"
-                        )}>
-                            <div className={cn("w-2 h-2 rounded-full animate-pulse", displayInvoice.status === 'Paid' ? "bg-green-500" : "bg-yellow-500")} />
-                            {displayInvoice.status || 'Active'}
-                        </div>
-
-                        {/* Right: Actions */}
-                        <div className="flex items-center gap-2">
-                            {isAdmin && (
-                                <div className="hidden lg:flex items-center bg-white/[0.03] backdrop-blur-2xl rounded-full border border-black/10 dark:border-white/10 px-4 h-12 gap-3 mr-2 shadow-xl relative overflow-hidden group">
-                                    <div className="absolute inset-0 bg-gradient-to-r from-neon-blue/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                                    
-                                    <Link to="/admin" className="p-1.5 rounded-full hover:bg-black/10 dark:hover:bg-white/10 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all relative z-10" title="Admin Dashboard">
-                                        <LayoutGrid size={14} />
-                                    </Link>
-
-                                    <div className="h-4 w-px bg-black/10 dark:bg-white/10 relative z-10" />
-
-                                    <Link to="/admin/system-command" className="p-1.5 rounded-full hover:bg-black/10 dark:hover:bg-white/10 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all relative z-10" title="Site Settings">
-                                        <Settings size={14} />
-                                    </Link>
-                                    
-                                    <div className="relative z-10">
-                                        <NotificationBell />
-                                    </div>
-                                    
-                                    <div className="h-4 w-px bg-black/10 dark:bg-white/10 relative z-10" />
-                                    
-                                    <div className="flex items-center gap-2 pr-1 relative z-10">
-                                        <div className="w-7 h-7 rounded-full bg-neon-blue/10 border border-neon-blue/20 flex items-center justify-center shrink-0">
-                                            <span className="text-neon-blue font-black text-[10px] uppercase">
-                                                {user?.displayName ? user.displayName.charAt(0) : 'A'}
-                                            </span>
-                                        </div>
-                                        <div className="text-left flex flex-col justify-center">
-                                            <span className="text-[10px] font-bold text-gray-900 dark:text-white leading-none capitalize tracking-tight">
-                                                {user?.displayName?.split(' ')[0] || 'Admin'}
-                                            </span>
-                                            <span className="text-[7px] text-neon-blue uppercase tracking-[0.2em] font-black mt-0.5">
-                                                {user?.role === 'developer' ? 'DEV' : 'ADMIN'}
-                                            </span>
-                                        </div>
-                                    </div>
-
-                                    <button
-                                        onClick={() => useStore.getState().logout()}
-                                        className="p-1.5 rounded-full hover:bg-red-500/10 text-gray-600 dark:text-gray-400 hover:text-red-500 transition-all relative z-10"
-                                    >
-                                        <LogOut size={14} />
-                                    </button>
-                                </div>
-                            )}
-
-                            <div className="flex items-center gap-1 md:gap-2 mr-1">
-                                {isAdmin ? (
-                                    <>
-                                        <button onClick={handleShareWhatsApp} className="p-2 md:p-3 text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 rounded-2xl transition-all hidden md:flex"><MessageCircle size={18} /></button>
-                                        <button onClick={handleShareEmail} className="p-2 md:p-3 text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 rounded-2xl transition-all hidden md:flex"><Mail size={18} /></button>
-                                        {displayInvoice.status !== 'Paid' && (
-                                            <button 
-                                                onClick={handleMarkPaid} 
-                                                className="px-3 md:px-5 py-2 md:py-2.5 text-[8px] md:text-[10px] font-black uppercase tracking-[0.2em] bg-neon-blue text-black hover:bg-neon-blue/90 rounded-xl transition-all shadow-[0_10px_20px_rgba(56,182,255,0.2)] border border-neon-blue"
-                                            >
-                                                Mark as Paid
-                                            </button>
-                                        )}
-                                    </>
-                                ) : (
-                                    <>
-                                        {displayInvoice.status !== 'Paid' && displayInvoice.status !== 'Verification Pending' && (
-                                            <button 
-                                                onClick={() => setShowMarkAsPaid(true)} 
-                                                className="px-3 md:px-5 py-2 md:py-2.5 text-[8px] md:text-[10px] font-black uppercase tracking-[0.2em] bg-[#39FF14]/10 text-[#39FF14] hover:bg-[#39FF14]/20 rounded-xl transition-all border border-[#39FF14]/20 shadow-[0_5px_15px_rgba(57,255,20,0.1)]"
-                                            >
-                                                Mark as Paid
-                                            </button>
-                                        )}
-                                        {displayInvoice.status === 'Verification Pending' && (
-                                            <div className="px-3 md:px-5 py-2 md:py-2.5 text-[8px] md:text-[10px] font-black uppercase tracking-[0.2em] bg-yellow-500/10 text-yellow-500 rounded-xl border border-yellow-500/20 flex items-center gap-2">
-                                                <div className="w-2 h-2 rounded-full bg-yellow-500 animate-pulse" />
-                                                Verification Pending
-                                            </div>
-                                        )}
-                                    </>
-                                )}
-                            </div>
-                            <button onClick={handlePrint} className="p-2 md:p-3 text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 rounded-2xl transition-all" title="Print"><Printer size={18} /></button>
-                            <Button 
-                                variant="primary" 
-                                onClick={handleDownloadPDF} 
-                                className="bg-neon-blue text-black hover:bg-neon-blue/90 h-10 md:h-12 px-4 md:px-6 rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-[0_10px_20px_rgba(56,182,255,0.2)] ml-2"
-                            >
-                                <Download size={16} className="md:mr-2" /><span className="hidden sm:inline">Export PDF</span>
-                            </Button>
-                        </div>
+                        )}
                     </div>
-                </header>
-            )}
 
-            {/* MAIN CONTENT AREA */}
-            <main className="relative z-10 pt-32 pb-32 px-4 flex flex-col items-center">
-                {!invoice && !loading && (
-                    <div className="mb-8 px-6 py-2 bg-yellow-500/10 border border-yellow-500/20 rounded-full text-yellow-500 text-[10px] font-black uppercase tracking-widest animate-pulse">
-                        Demo Mode / Visual Preview Only
-                    </div>
-                )}
-
-                {isQuickUpload ? (
-                    <div className="w-full max-w-5xl flex flex-col gap-4">
-                        {/* Mobile Fallback UI / Mobile Preview */}
-                        <div className="md:hidden w-full p-8 rounded-3xl border border-black/10 dark:border-white/10 bg-gray-100 dark:bg-zinc-900/40 backdrop-blur-3xl shadow-2xl flex flex-col items-center justify-center text-center gap-6">
-                            <div className="w-16 h-16 rounded-full bg-neon-blue/10 border border-neon-blue/20 flex items-center justify-center text-neon-blue animate-pulse">
-                                <FileText size={32} />
+                    {/* Invoice Summary */}
+                    <div className="flex-1 overflow-y-auto p-6 lg:p-8 flex flex-col gap-4 lg:gap-6 lg:gap-10 custom-scrollbar">
+                        
+                        {/* Status & Amount */}
+                        <div className="flex flex-col gap-4 lg:gap-6">
+                            <div className="flex flex-wrap items-center gap-3">
+                                <span className={cn("px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest", displayInvoice.status === 'Paid' ? "bg-green-500/10 text-green-600 dark:text-green-400 border border-green-500/20" : "bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border border-yellow-500/20")}>
+                                    {displayInvoice.status || 'Pending'}
+                                </span>
+                                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                                    Due {new Date(displayInvoice.dueDate || Date.now()).toLocaleDateString('en-GB')}
+                                </span>
                             </div>
+                            
                             <div>
-                                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
-                                    {displayInvoice.clientName ? `${displayInvoice.clientName} - ${displayInvoice.invoiceNumber || displayInvoice.id}` : 'Invoice PDF Document'}
-                                </h3>
-                                <p className="text-sm text-gray-600 dark:text-gray-400 max-w-xs">
-                                    {isQuickUpload ? 'This invoice was quick-uploaded. You can view or download it directly.' : 'Official generated invoice document.'}
-                                </p>
+                                <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">Total Amount Due</p>
+                                <h2 className="text-4xl lg:text-6xl font-black tracking-tighter" style={{ color: brandColor }}>
+                                    ₹{totalAmount.toLocaleString()}
+                                </h2>
                             </div>
-                            <div className="flex flex-col sm:flex-row gap-3 w-full max-w-xs">
-                                <a
-                                    href={pdfBlobUrl || invoice.pdfUrl}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    className="w-full px-6 py-3 bg-neon-blue text-black font-black uppercase text-xs tracking-widest rounded-2xl text-center shadow-[0_10px_20px_rgba(56,182,255,0.2)] hover:bg-neon-blue/90 transition-all"
-                                >
-                                    Open Document
-                                </a>
-                                <button
-                                    onClick={handleDownloadPDF}
-                                    className="w-full px-6 py-3 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-gray-900 dark:text-white font-black uppercase text-xs tracking-widest rounded-2xl text-center border border-black/10 dark:border-white/10 transition-all"
-                                >
-                                    Download PDF
+                        </div>
+
+                        {/* Client Info */}
+                        <div className="p-6 rounded-[2rem] bg-black/[0.02] dark:bg-white/[0.02] border border-black/5 dark:border-white/5 space-y-6">
+                            <div>
+                                <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2">Invoice To</p>
+                                <p className="font-bold text-base leading-tight mb-1">{displayInvoice.clientName}</p>
+                                <p className="text-xs text-gray-500">{displayInvoice.clientEmail}</p>
+                            </div>
+                            <div className="w-full h-px bg-black/5 dark:bg-white/5" />
+                            <div>
+                                <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2">Invoice By</p>
+                                <p className="font-bold text-base leading-tight mb-1">{displayInvoice.senderName || 'Newbi Entertainment'}</p>
+                                <p className="text-xs text-gray-500">{displayInvoice.senderEmail}</p>
+                            </div>
+                        </div>
+
+                        {/* Actions */}
+                        <div className="flex flex-col gap-3 mt-auto pt-8">
+                            {displayInvoice.status !== 'Paid' && isAdmin && (
+                                <button onClick={handleMarkPaid} className="w-full py-4 bg-neon-blue text-black font-black uppercase tracking-widest text-xs rounded-2xl hover:scale-[1.02] active:scale-[0.98] transition-all shadow-[0_10px_20px_rgba(56,182,255,0.2)] flex items-center justify-center gap-2">
+                                    <DollarSign size={16} /> Mark as Paid
+                                </button>
+                            )}
+                            
+                            {displayInvoice.status !== 'Paid' && displayInvoice.status !== 'Verification Pending' && !isAdmin && (
+                                <button onClick={() => setShowMarkAsPaid(true)} className="w-full py-4 bg-[#39FF14]/10 text-[#39FF14] hover:bg-[#39FF14]/20 border border-[#39FF14]/20 font-black uppercase tracking-widest text-xs rounded-2xl hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2">
+                                    <DollarSign size={16} /> Claim Payment
+                                </button>
+                            )}
+                            
+                            <div className="grid grid-cols-2 gap-3">
+                                <button onClick={handleDownloadPDF} disabled={isExporting} className="w-full py-3.5 bg-gray-900 dark:bg-white text-white dark:text-black font-black uppercase tracking-widest text-[10px] rounded-2xl hover:opacity-90 transition-all flex items-center justify-center gap-2">
+                                    <Download size={14} /> {isExporting ? 'Exporting...' : 'Save PDF'}
+                                </button>
+                                <button onClick={handlePrint} className="w-full py-3.5 bg-black/5 dark:bg-white/5 text-gray-900 dark:text-white font-black uppercase tracking-widest text-[10px] rounded-2xl hover:bg-black/10 dark:hover:bg-white/10 transition-all flex items-center justify-center gap-2 border border-black/5 dark:border-white/5">
+                                    <Printer size={14} /> Print
                                 </button>
                             </div>
                         </div>
 
-                        {/* Desktop IFrame */}
-                        <div className="hidden md:block w-full h-[85vh] rounded-3xl overflow-hidden border border-black/10 dark:border-white/10 bg-gray-100 dark:bg-zinc-900/40 backdrop-blur-3xl shadow-2xl">
-                            {pdfBlobUrl ? (
-                                <iframe
-                                    src={pdfBlobUrl}
-                                    title={displayInvoice.clientName ? `${displayInvoice.clientName} - ${displayInvoice.invoiceNumber || displayInvoice.id}` : 'Invoice PDF'}
-                                    className="w-full h-full border-none"
-                                />
-                            ) : (
-                                <div className="w-full h-full flex items-center justify-center text-gray-900 dark:text-white/50">
-                                    Loading PDF document...
-                                </div>
-                            )}
-                        </div>
                     </div>
-                ) : (
-                    <div className="w-full flex flex-col items-center overflow-x-auto custom-scrollbar pb-12">
-                        <div className="relative flex flex-col items-center w-full mt-8">
-                            <div className="flex flex-col items-center" style={{ gap: `${48 * scale}px` }}>
-                                 {paginatedPages.map((pageItems, pageIdx) => {
+                </aside>
+            )}
+
+            {/* Document Viewer Area */}
+            <main className="flex-1 relative overflow-y-auto min-h-[500px] lg:h-screen bg-[#F3F4F6] dark:bg-[#0B0F17] flex items-start justify-center p-4 md:p-8 lg:p-12 custom-scrollbar">
+                {/* Background Pattern */}
+                <div className="absolute inset-0 pointer-events-none opacity-[0.03] dark:opacity-[0.02]" style={{ backgroundImage: "radial-gradient(circle at center, black 1px, transparent 1px)", backgroundSize: "24px 24px" }} />
+                
+                {/* Document Pages Wrapper */}
+                <div className="w-full flex flex-col items-center gap-12 relative z-10 pb-20 mt-4" >
+                    {paginatedPages.map((pageItems, pageIdx) => {
                                     const isLastPage = pageIdx === paginatedPages.length - 1;
                                     const isFirstPage = pageIdx === 0;
 
@@ -1048,13 +960,9 @@ const Invoice = () => {
                                         </div>
                                     );
                                 })}
-                            </div>
-                        </div>
-                    </div>
-                )}
+                </div>
             </main>
-
-            {/* Mark as Paid Modal */}
+            
             <MarkAsPaidModal
                 isOpen={showMarkAsPaid}
                 onClose={() => setShowMarkAsPaid(false)}

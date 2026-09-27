@@ -100,7 +100,6 @@ const AdminCommunityHubLayout = ({ children, title, description, action, studioH
                 { name: "Giveaways", path: "/admin/giveaways", icon: Sparkles, color: "neon-purple", show: !cards.giveaways },
                 { name: "Artistant", path: "/admin/artistant", icon: Music, color: "neon-blue", show: !cards.artists },
                 { name: "Mailing", path: "/admin/mailing", icon: Mail, color: "neon-blue", show: !cards.mailing },
-                { name: "Active Users", path: "/admin/active-users", icon: UserCheck, color: "neon-green", show: user?.role !== 'editor' && user?.role !== 'content_admin' && user?.role !== 'blog_writer' && !cards.admins },
                 { name: "Members", path: "/admin/manage-admins", icon: Shield, color: "neon-blue", show: user?.role !== 'editor' && user?.role !== 'content_admin' && user?.role !== 'blog_writer' && !cards.admins },
                 { name: "System Command", path: "/admin/system-command", icon: Settings, color: "neon-blue", show: ['developer', 'super_admin', 'founder'].includes(user?.role) },
                 { name: "Inbox", path: "/admin/messages", icon: Mail, color: "white", show: !cards.messages }
@@ -160,22 +159,24 @@ const AdminCommunityHubLayout = ({ children, title, description, action, studioH
                         <AdminDashboardLink className="hidden md:inline-flex" />
                     </div>
 
-                    {/* Navigation Tabs (Underline Style - Desktop) */}
+                    {/* Navigation Tabs (Underline Style) */}
                     {!hideTabs && (
-                        <div className="hidden md:flex overflow-x-auto no-scrollbar border-b border-black/[0.08] dark:border-white/[0.08]">
+                        <div className="flex overflow-x-auto no-scrollbar border-b border-black/[0.08] dark:border-white/[0.08]">
                             {tabs.map((tab) => {
                                 const Icon = tab.icon;
                                 const currentFullPath = location.pathname + location.search;
                                 const hasQuery = tab.path.includes('?');
                                 const isActive = hasQuery 
                                     ? currentFullPath === tab.path 
-                                    : location.pathname === tab.path && !tabs.some(t => t.path.includes('?') && t.path === currentFullPath);
+                                    : (location.pathname === tab.path || 
+                                       (tab.path !== '/admin' && location.pathname.startsWith(tab.path + '/') && 
+                                        !tabs.some(t => t.path !== tab.path && (location.pathname === t.path || location.pathname.startsWith(t.path + '/')))));
                                 return (
                                     <Link
                                         key={tab.name}
                                         to={tab.comingSoon ? '#' : tab.path}
                                         className={cn(
-                                            "relative flex items-center gap-2.5 px-5 py-3.5 transition-all duration-300 shrink-0",
+                                            "relative flex items-center gap-2 sm:gap-2.5 px-4 sm:px-5 py-3 sm:py-3.5 transition-all duration-300 shrink-0",
                                             isActive 
                                                 ? "text-gray-900 dark:text-white" 
                                                 : "text-gray-500 hover:text-gray-900 dark:hover:text-white",
@@ -197,7 +198,7 @@ const AdminCommunityHubLayout = ({ children, title, description, action, studioH
                                             <motion.div
                                                 layoutId="admin-hub-active-tab"
                                                 className="absolute -bottom-px left-0 right-0 h-0.5 bg-neon-green"
-                                                transition={{ type: "spring", bounce: 0.2, duration: 0.5 }}
+                                                transition={{ type: "spring", bounce: 0.2, duration: 0.45 }}
                                             />
                                         )}
                                     </Link>

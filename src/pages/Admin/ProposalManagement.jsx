@@ -248,7 +248,7 @@ const ProposalManagement = () => {
                             setEditingUploadedProposal(null);
                             setIsUploadModalOpen(true);
                         }}
-                        className="w-full sm:w-auto bg-white/10 hover:bg-neon-green/20 text-white hover:text-neon-green border border-white/15 hover:border-neon-green/40 font-black font-heading uppercase tracking-widest text-[9px] sm:text-xs h-12 md:h-14 px-5 md:px-7 rounded-xl md:rounded-2xl hover:scale-[1.02] active:scale-95 transition-all shadow-lg flex items-center justify-center gap-2"
+                        className="w-full sm:w-auto bg-white dark:bg-white/10 hover:bg-black/5 dark:hover:bg-neon-green/20 text-gray-900 dark:text-white hover:text-black dark:hover:text-neon-green border border-black/10 dark:border-white/15 hover:border-black/20 dark:hover:border-neon-green/40 font-black font-heading uppercase tracking-widest text-[9px] sm:text-xs h-12 md:h-14 px-5 md:px-7 rounded-xl md:rounded-2xl hover:scale-[1.02] active:scale-95 transition-all shadow-sm dark:shadow-lg flex items-center justify-center gap-2"
                     >
                         <Upload className="h-4 w-4 text-neon-green" /> Upload Proposal
                     </button>
@@ -457,7 +457,7 @@ const ProposalManagement = () => {
                                                 setEditingUploadedProposal(null);
                                                 setIsUploadModalOpen(true);
                                             }}
-                                            className="px-6 py-3 bg-white/10 hover:bg-neon-green/20 text-white hover:text-neon-green border border-white/10 hover:border-neon-green/40 font-black text-xs uppercase tracking-widest rounded-xl transition-all flex items-center gap-2"
+                                            className="px-6 py-3 bg-white dark:bg-white/10 hover:bg-black/5 dark:hover:bg-neon-green/20 text-gray-900 dark:text-white hover:text-black dark:hover:text-neon-green border border-black/10 dark:border-white/10 hover:border-black/20 dark:hover:border-neon-green/40 font-black text-xs uppercase tracking-widest rounded-xl transition-all flex items-center gap-2"
                                         >
                                             <Upload size={14} className="text-neon-green" /> Upload Pre-Made Proposal
                                         </button>

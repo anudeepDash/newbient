@@ -326,7 +326,6 @@ const Dashboard = () => {
                 { name: "Giveaways", path: "/admin/giveaways", icon: Gift, color: "neon-purple", show: !cards.giveaways },
                 { name: "Artistant", path: "/admin/artistant", icon: Music, color: "neon-blue", show: !cards.artists },
                 { name: "Mailing", path: "/admin/mailing", icon: Megaphone, color: "neon-blue", show: !cards.mailing },
-                { name: "Active Users", path: "/admin/active-users", icon: UserCheck, color: "neon-green", show: user?.role !== 'editor' && user?.role !== 'content_admin' && user?.role !== 'blog_writer' && !cards.admins },
                 { name: "Members", path: "/admin/manage-admins", icon: Shield, color: "neon-blue", show: user?.role !== 'editor' && user?.role !== 'content_admin' && user?.role !== 'blog_writer' && !cards.admins },
                 { name: "Inbox", path: "/admin/messages", icon: Mail, color: "white", show: !cards.messages }
             ]
@@ -445,7 +444,7 @@ const Dashboard = () => {
         },
         active_users: { 
             label: 'Active Users', value: activeMembersCount.toLocaleString(), icon: UserCheck, color: 'neon-green', 
-            detail: `${totalMembersCount > 0 ? Math.round((activeMembersCount / totalMembersCount) * 100) : 100}% active clearance rate`, link: '/admin/active-users', category: 'Personnel' 
+            detail: `${totalMembersCount > 0 ? Math.round((activeMembersCount / totalMembersCount) * 100) : 100}% active clearance rate`, link: '/admin/manage-admins?tab=active', category: 'Personnel' 
         },
         administrators: { 
             label: 'Administrators', value: activeAdminsCount, icon: Shield, color: 'neon-pink', 
@@ -986,25 +985,13 @@ const Dashboard = () => {
                             <ControlCard title="Mailing" desc="Mass communication and broadcast logs." icon={Megaphone} color="neon-blue" link="/admin/mailing" isNew isHidden={cards.mailing} />
                             {user.role !== 'editor' && user.role !== 'content_admin' && user.role !== 'blog_writer' && (
                                 <ControlCard 
-                                    title="Active Users" 
-                                    desc="Active clearance personnel and live session audits." 
-                                    icon={UserCheck} 
-                                    color="neon-green" 
-                                    link="/admin/active-users" 
-                                    count={activeMembersCount}
-                                    detail={`${totalMembersCount > 0 ? Math.round((activeMembersCount / totalMembersCount) * 100) : 100}% Active Clearance`}
-                                    isHidden={cards.admins} 
-                                />
-                            )}
-                            {user.role !== 'editor' && user.role !== 'content_admin' && user.role !== 'blog_writer' && (
-                                <ControlCard 
-                                    title="Members" 
-                                    desc="Security clearance and administrative roles." 
+                                    title="Members & Access" 
+                                    desc="Platform member registry, active personnel clearances, and administrative staff." 
                                     icon={Shield} 
-                                    color="neon-blue" 
+                                    color="neon-green" 
                                     link="/admin/manage-admins" 
                                     count={totalMembersCount}
-                                    detail={`${activeAdminsCount} Staff / ${totalMembersCount} Total`}
+                                    detail={`${activeMembersCount} Active / ${totalMembersCount} Total`}
                                     isHidden={cards.admins} 
                                 />
                             )}
