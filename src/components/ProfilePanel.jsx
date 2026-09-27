@@ -11,7 +11,7 @@ import {
 import { useStore } from '../lib/store';
 import { cn, normalizePhoneNumber } from '../lib/utils';
 import { extractSocialUsername, hasDisallowedLink, buildSocialUrl } from '../lib/socialUtils';
-import { PREDEFINED_CITIES, CREATOR_NICHES } from '../lib/constants';
+import { PREDEFINED_CITIES, CREATOR_NICHES, CREATOR_NICHE_OPTIONS } from '../lib/constants';
 import { useNavigate } from 'react-router-dom';
 import { db, auth } from '../lib/firebase';
 import { RecaptchaVerifier, PhoneAuthProvider, linkWithCredential } from 'firebase/auth';
@@ -23,7 +23,7 @@ const ProfilePanel = ({ isOpen: propIsOpen, onClose: propOnClose }) => {
         resetPassword, updateDisplayName, 
         ticketOrders, notifications, upcomingEvents, portfolio, guestlists,
         revokeSessions, deleteAccount, deleteCreator, updateCreator,
-        isProfilePanelOpen, profilePanelTab, closeProfilePanel
+        isProfilePanelOpen, profilePanelTab, closeProfilePanel, resolveCreatorProfile
     } = useStore();
     const navigate = useNavigate();
     
@@ -78,6 +78,8 @@ const ProfilePanel = ({ isOpen: propIsOpen, onClose: propOnClose }) => {
         }
     }, [profilePanelTab]);
 
+    const [resolvedCreator, setResolvedCreator] = useState(null);
+
     useEffect(() => {
         if (!isOpen || !user?.uid) return;
         
@@ -87,6 +89,13 @@ const ProfilePanel = ({ isOpen: propIsOpen, onClose: propOnClose }) => {
         const unsub2 = store.subscribeToUpcomingEvents ? store.subscribeToUpcomingEvents() : null;
         const unsub3 = store.subscribeToPortfolio ? store.subscribeToPortfolio() : null;
         const unsub4 = store.subscribeToGuestlists ? store.subscribeToGuestlists() : null;
+        const unsub5 = store.subscribeToCreators ? store.subscribeToCreators() : null;
+
+        if (resolveCreatorProfile) {
+            resolveCreatorProfile(user).then((res) => {
+                if (res) setResolvedCreator(res);
+            }).catch(() => {});
+        }
         
         setLoadingEntries(true);
         const fetchEntries = async () => {
@@ -151,16 +160,18 @@ const ProfilePanel = ({ isOpen: propIsOpen, onClose: propOnClose }) => {
             if (unsub2) unsub2();
             if (unsub3) unsub3();
             if (unsub4) unsub4();
+            if (unsub5) unsub5();
         };
-    }, [isOpen, user?.uid, user?.email]);
+    }, [isOpen, user?.uid, user?.email, resolveCreatorProfile]);
 
     const userPhoneNorm = user?.phoneNumber ? normalizePhoneNumber(user.phoneNumber) : null;
     const userEmailNorm = user?.email ? user.email.toLowerCase() : null;
-    const creatorProfile = user ? creators?.find(c => 
+    const creatorFromCache = user ? creators?.find(c => 
         c.uid === user.uid || 
         (userEmailNorm && c.email && c.email.toLowerCase() === userEmailNorm) ||
         (userPhoneNorm && c.phone && normalizePhoneNumber(c.phone) === userPhoneNorm)
     ) : null;
+    const creatorProfile = creatorFromCache || resolvedCreator;
     const isCreator = !!creatorProfile;
     const isApprovedCreator = creatorProfile?.profileStatus === 'approved';
 
@@ -1239,29 +1250,6 @@ const CreatorNonMemberView = ({ onClose, navigate }) => {
 
 /* --- Creator Profile & Settings Component Embedded in Profile Panel --- */
 
-const CREATOR_NICHE_OPTIONS = [
-    { id: 'City Pages', label: 'City Pages / Local Hubs' },
-    { id: 'College Pages', label: 'College Pages / Hubs' },
-    { id: 'Student/Campus Creator', label: 'Campus & College' },
-    { id: 'Fashion & Luxury', label: 'Fashion & Luxury' },
-    { id: 'Tech & Gaming', label: 'Tech & Gaming' },
-    { id: 'Travel & Lifestyle', label: 'Travel & Lifestyle' },
-    { id: 'Beauty & Fitness', label: 'Beauty & Cosmetics' },
-    { id: 'Fitness & Sports', label: 'Fitness & Athletics' },
-    { id: 'Food & Beverage', label: 'Food & Dining' },
-    { id: 'Comedy & Entertainment', label: 'Comedy & Memes' },
-    { id: 'Real Estate', label: 'Real Estate & Living' },
-    { id: 'Photography & Filmmaking', label: 'Photo & Filmmaking' },
-    { id: 'Automotive & Moto', label: 'Auto & Motovlogging' },
-    { id: 'Art & Design', label: 'Art, Design & DIY' },
-    { id: 'Music & Dance', label: 'Music & Dance' },
-    { id: 'Parenting & Family', label: 'Parenting & Family' },
-    { id: 'Podcasts & Media', label: 'Podcasts & Media' },
-    { id: 'Meme & Pop Culture', label: 'Meme & Pop Culture' },
-    { id: 'Startup & Entrepreneurship', label: 'Startup & Founder' },
-    { id: 'Finance & Business', label: 'Finance & Career' },
-    { id: 'Others', label: 'Other Specialization' }
-];
 
 const formatINR = (amt) => {
     if (!amt && amt !== 0) return '₹0';

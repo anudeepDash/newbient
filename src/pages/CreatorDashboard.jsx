@@ -11,6 +11,7 @@ import { HorizontalCarousel } from '../components/ui/HorizontalCarousel';
 import useDynamicMeta from '../hooks/useDynamicMeta';
 import CreatorCityGroupCard from '../components/creator/CreatorCityGroupCard';
 import CampaignDetailModal from '../components/creator/CampaignDetailModal';
+import EditCreatorModal from '../components/creator/EditCreatorModal';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { extractSocialUsername } from '../lib/socialUtils';
@@ -23,6 +24,8 @@ import Settings from 'lucide-react/dist/esm/icons/settings';
 import Instagram from 'lucide-react/dist/esm/icons/instagram';
 import Clock from 'lucide-react/dist/esm/icons/clock';
 import Link2 from 'lucide-react/dist/esm/icons/link-2';
+import Building from 'lucide-react/dist/esm/icons/building';
+import Building2 from 'lucide-react/dist/esm/icons/building-2';
 import Youtube from 'lucide-react/dist/esm/icons/youtube';
 import Twitter from 'lucide-react/dist/esm/icons/twitter';
 import Linkedin from 'lucide-react/dist/esm/icons/linkedin';
@@ -345,6 +348,284 @@ const CreatorVaultView = ({ creatorPoints }) => {
     );
 };
 
+// ─── Profile Overview View ───────────────────────────────────────────────────
+
+const CreatorProfileOverviewView = ({ profile, onEditClick, onVerifyPhoneClick }) => {
+    if (!profile) return null;
+    const creatorId = profile?.creatorId || String(profile?.uid || profile?.id || '').slice(0, 8).toUpperCase();
+    const isApproved = profile?.profileStatus === 'approved';
+    const isPhoneVerified = profile?.isPhoneVerified;
+
+    return (
+        <div className="space-y-6">
+            {/* Header / Intro Card */}
+            <div className="bg-white/80 dark:bg-[#0c0e14]/80 backdrop-blur-2xl border border-black/[0.06] dark:border-white/[0.08] rounded-3xl p-6 sm:p-8 relative overflow-hidden shadow-sm">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                    <div className="flex items-center gap-5">
+                        <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-gray-100 dark:bg-zinc-800 border-2 border-black/[0.06] dark:border-white/[0.1] overflow-hidden shrink-0 shadow-md">
+                            {profile.profilePicture || profile.instagramProfilePic || profile.profilePic || profile.photoURL ? (
+                                <img src={profile.profilePicture || profile.instagramProfilePic || profile.profilePic || profile.photoURL} alt={profile.name} className="w-full h-full object-cover" />
+                            ) : (
+                                <div className="w-full h-full flex items-center justify-center font-black text-3xl text-neon-green bg-black/[0.02] dark:bg-white/[0.02]">
+                                    {profile.name?.charAt(0) || 'C'}
+                                </div>
+                            )}
+                        </div>
+                        <div className="min-w-0">
+                            <div className="flex items-center gap-2.5 flex-wrap">
+                                <h2 className="text-2xl sm:text-3xl font-black font-heading text-gray-950 dark:text-white uppercase tracking-tight">
+                                    {profile.name}
+                                </h2>
+                                <span className="font-mono text-xs px-2.5 py-0.5 rounded-lg bg-black/[0.05] dark:bg-white/[0.08] text-gray-700 dark:text-zinc-300 font-bold">
+                                    #{creatorId}
+                                </span>
+                                {isApproved ? (
+                                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-neon-green text-[10px] font-black uppercase font-mono border border-emerald-500/20">
+                                        <ShieldCheck size={12} /> Verified Creator
+                                    </span>
+                                ) : (
+                                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-400 text-[10px] font-black uppercase font-mono border border-amber-500/20">
+                                        <Clock size={12} /> Under Review
+                                    </span>
+                                )}
+                            </div>
+                            <p className="text-sm text-gray-500 dark:text-zinc-400 mt-1 font-medium">
+                                Manage your contact channels, rates, and creator identity.
+                            </p>
+                        </div>
+                    </div>
+
+                    <button
+                        type="button"
+                        onClick={() => onEditClick('identity')}
+                        className="h-12 px-6 rounded-2xl bg-neon-green hover:bg-emerald-400 text-black font-black uppercase tracking-wider text-xs transition-all shadow-md shadow-neon-green/20 flex items-center justify-center gap-2 active:scale-95 shrink-0"
+                    >
+                        <Settings size={15} />
+                        <span>Edit Creator Details</span>
+                    </button>
+                </div>
+            </div>
+
+            {/* Information Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+                
+                {/* 1. Contact & Verification */}
+                <div className="bg-white/80 dark:bg-[#0c0e14]/80 backdrop-blur-2xl border border-black/[0.06] dark:border-white/[0.08] rounded-3xl p-5 sm:p-6 space-y-4 shadow-sm">
+                    <div className="flex items-center justify-between pb-3 border-b border-black/[0.06] dark:border-white/[0.06]">
+                        <h3 className="text-sm font-black font-heading uppercase tracking-wider text-gray-900 dark:text-white flex items-center gap-2">
+                            <Phone size={15} className="text-neon-green" /> Contact & Verification
+                        </h3>
+                        <button
+                            type="button"
+                            onClick={() => onEditClick('identity')}
+                            className="text-[11px] font-bold text-neon-green hover:underline uppercase tracking-wider font-mono"
+                        >
+                            Edit
+                        </button>
+                    </div>
+
+                    <div className="space-y-3 text-xs">
+                        <div>
+                            <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400 dark:text-zinc-500 block mb-0.5">Email</span>
+                            <span className="font-semibold text-gray-900 dark:text-zinc-200">{profile.email || 'Not specified'}</span>
+                        </div>
+                        <div>
+                            <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400 dark:text-zinc-500 block mb-0.5">Mobile / WhatsApp</span>
+                            <div className="flex items-center justify-between">
+                                <span className="font-mono font-semibold text-gray-900 dark:text-zinc-200">{profile.phone || 'Not added'}</span>
+                                {isPhoneVerified ? (
+                                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600 dark:text-neon-green font-mono bg-emerald-500/10 px-2 py-0.5 rounded-md">
+                                        <CheckCircle2 size={11} /> Verified
+                                    </span>
+                                ) : (
+                                    <button
+                                        type="button"
+                                        onClick={onVerifyPhoneClick}
+                                        className="text-[10px] font-black uppercase text-amber-500 hover:underline"
+                                    >
+                                        Verify Number →
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* 2. City & Niche Specialization */}
+                <div className="bg-white/80 dark:bg-[#0c0e14]/80 backdrop-blur-2xl border border-black/[0.06] dark:border-white/[0.08] rounded-3xl p-5 sm:p-6 space-y-4 shadow-sm">
+                    <div className="flex items-center justify-between pb-3 border-b border-black/[0.06] dark:border-white/[0.06]">
+                        <h3 className="text-sm font-black font-heading uppercase tracking-wider text-gray-900 dark:text-white flex items-center gap-2">
+                            <MapPin size={15} className="text-neon-green" /> City & Specialization
+                        </h3>
+                        <button
+                            type="button"
+                            onClick={() => onEditClick('niche')}
+                            className="text-[11px] font-bold text-neon-green hover:underline uppercase tracking-wider font-mono"
+                        >
+                            Edit
+                        </button>
+                    </div>
+
+                    <div className="space-y-3 text-xs">
+                        <div>
+                            <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400 dark:text-zinc-500 block mb-0.5">Operating City</span>
+                            <span className="font-semibold text-gray-900 dark:text-zinc-200">{profile.city || 'Pan-India'}</span>
+                        </div>
+                        <div>
+                            <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400 dark:text-zinc-500 block mb-0.5">Primary Niche</span>
+                            <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-neon-green/10 text-emerald-700 dark:text-neon-green font-bold text-[11px]">
+                                {profile.categories || 'General Creator'}
+                            </span>
+                        </div>
+                        {profile.cityPageFocus && (
+                            <div>
+                                <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400 dark:text-zinc-500 block mb-0.5">Locality Focus</span>
+                                <span className="font-medium text-gray-700 dark:text-zinc-300">{profile.cityPageFocus}</span>
+                            </div>
+                        )}
+                        {profile.collegeName && (
+                            <div>
+                                <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400 dark:text-zinc-500 block mb-0.5">College / Campus</span>
+                                <span className="font-medium text-gray-700 dark:text-zinc-300">{profile.collegeName}</span>
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                {/* 3. Social Media Presence */}
+                <div className="bg-white/80 dark:bg-[#0c0e14]/80 backdrop-blur-2xl border border-black/[0.06] dark:border-white/[0.08] rounded-3xl p-5 sm:p-6 space-y-4 shadow-sm">
+                    <div className="flex items-center justify-between pb-3 border-b border-black/[0.06] dark:border-white/[0.06]">
+                        <h3 className="text-sm font-black font-heading uppercase tracking-wider text-gray-900 dark:text-white flex items-center gap-2">
+                            <Instagram size={15} className="text-pink-500" /> Connected Socials
+                        </h3>
+                        <button
+                            type="button"
+                            onClick={() => onEditClick('socials')}
+                            className="text-[11px] font-bold text-neon-green hover:underline uppercase tracking-wider font-mono"
+                        >
+                            Edit
+                        </button>
+                    </div>
+
+                    <div className="space-y-3 text-xs">
+                        <div className="flex items-center justify-between">
+                            <span className="text-gray-500 flex items-center gap-1.5">
+                                <Instagram size={13} className="text-pink-500" /> Instagram
+                            </span>
+                            {profile.instagram ? (
+                                <a 
+                                    href={`https://instagram.com/${extractSocialUsername(profile.instagram, 'instagram')}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="font-bold text-pink-500 hover:underline"
+                                >
+                                    @{extractSocialUsername(profile.instagram, 'instagram')} {profile.instagramFollowers ? `(${Number(profile.instagramFollowers).toLocaleString()})` : ''}
+                                </a>
+                            ) : (
+                                <span className="text-gray-400 font-medium">Not connected</span>
+                            )}
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                            <span className="text-gray-500 flex items-center gap-1.5">
+                                <Youtube size={13} className="text-red-500" /> YouTube
+                            </span>
+                            {profile.youtube ? (
+                                <a 
+                                    href={`https://youtube.com/@${extractSocialUsername(profile.youtube, 'youtube')}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="font-bold text-red-500 hover:underline"
+                                >
+                                    @{extractSocialUsername(profile.youtube, 'youtube')}
+                                </a>
+                            ) : (
+                                <span className="text-gray-400 font-medium">Not connected</span>
+                            )}
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                            <span className="text-gray-500 flex items-center gap-1.5">
+                                <Linkedin size={13} className="text-blue-500" /> LinkedIn
+                            </span>
+                            {profile.linkedin ? (
+                                <a 
+                                    href={`https://linkedin.com/in/${extractSocialUsername(profile.linkedin, 'linkedin')}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="font-bold text-blue-500 hover:underline"
+                                >
+                                    {extractSocialUsername(profile.linkedin, 'linkedin')}
+                                </a>
+                            ) : (
+                                <span className="text-gray-400 font-medium">Not connected</span>
+                            )}
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                            <span className="text-gray-500 flex items-center gap-1.5">
+                                <Twitter size={13} className="text-sky-500" /> X / Twitter
+                            </span>
+                            {profile.twitter ? (
+                                <a 
+                                    href={`https://twitter.com/${extractSocialUsername(profile.twitter, 'twitter')}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="font-bold text-sky-500 hover:underline"
+                                >
+                                    @{extractSocialUsername(profile.twitter, 'twitter')}
+                                </a>
+                            ) : (
+                                <span className="text-gray-400 font-medium">Not connected</span>
+                            )}
+                        </div>
+                    </div>
+                </div>
+
+                {/* 4. Commercials & Bio */}
+                <div className="bg-white/80 dark:bg-[#0c0e14]/80 backdrop-blur-2xl border border-black/[0.06] dark:border-white/[0.08] rounded-3xl p-5 sm:p-6 space-y-4 shadow-sm">
+                    <div className="flex items-center justify-between pb-3 border-b border-black/[0.06] dark:border-white/[0.06]">
+                        <h3 className="text-sm font-black font-heading uppercase tracking-wider text-gray-900 dark:text-white flex items-center gap-2">
+                            <Coins size={15} className="text-amber-500" /> Commercials & Rates
+                        </h3>
+                        <button
+                            type="button"
+                            onClick={() => onEditClick('rates')}
+                            className="text-[11px] font-bold text-neon-green hover:underline uppercase tracking-wider font-mono"
+                        >
+                            Edit
+                        </button>
+                    </div>
+
+                    <div className="space-y-3 text-xs">
+                        <div>
+                            <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400 dark:text-zinc-500 block mb-0.5">Collaboration Mode</span>
+                            <span className="font-semibold text-gray-900 dark:text-zinc-200">
+                                {profile.doBarter === 'both' ? 'Paid Collaborations & Barter' : profile.doBarter === 'paid' ? 'Paid Deals Only' : 'Barter & Experience Gigs'}
+                            </span>
+                        </div>
+                        <div>
+                            <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400 dark:text-zinc-500 block mb-0.5">Typical Deliverable Quote</span>
+                            <span className="font-mono font-bold text-neon-green bg-black/[0.04] dark:bg-white/[0.06] px-2.5 py-1 rounded-lg inline-block">
+                                {profile.commercials || 'Flexible / Barter'}
+                            </span>
+                        </div>
+                        {profile.bio && (
+                            <div>
+                                <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400 dark:text-zinc-500 block mb-0.5">Creator Bio</span>
+                                <p className="text-gray-600 dark:text-zinc-400 text-xs leading-relaxed italic">
+                                    "{profile.bio}"
+                                </p>
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    );
+};
+
 // ─── Main Dashboard ───────────────────────────────────────────────────────────
 
 const CreatorDashboard = () => {
@@ -362,6 +643,8 @@ const CreatorDashboard = () => {
     const [activeTab, setActiveTab] = useState('opportunities');
     const [copiedId, setCopiedId] = useState(false);
     const [selectedCampaignForModal, setSelectedCampaignForModal] = useState(null);
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [editInitialSection, setEditInitialSection] = useState('identity');
     const [briefSearch, setBriefSearch] = useState('');
     const [briefFilter, setBriefFilter] = useState('all');
     const [deliverableFilter, setDeliverableFilter] = useState('all');
@@ -376,7 +659,7 @@ const CreatorDashboard = () => {
         url: window.location.href
     });
 
-    // Deep link support
+    // Deep link & Settings tab support
     useEffect(() => {
         const searchParams = new URLSearchParams(location.search);
         const campaignId = searchParams.get('campaignId');
@@ -384,14 +667,14 @@ const CreatorDashboard = () => {
             const found = campaigns.find(c => c.id === campaignId);
             if (found) setSelectedCampaignForModal(found);
         }
-    }, [location.search, campaigns]);
 
-    useEffect(() => {
-        if (location.pathname.includes('/settings')) {
-            openProfilePanel('creator');
-            navigate('/creator-dashboard', { replace: true });
+        if (location.pathname.includes('/settings') || searchParams.get('tab') === 'settings' || searchParams.get('action') === 'edit' || searchParams.get('edit') === 'true') {
+            setIsEditModalOpen(true);
+            if (location.pathname.includes('/settings')) {
+                setActiveTab('profile_settings');
+            }
         }
-    }, [location.pathname, openProfilePanel, navigate]);
+    }, [location.pathname, location.search, campaigns]);
 
     useEffect(() => {
         if (!authInitialized) return;
@@ -647,6 +930,7 @@ const CreatorDashboard = () => {
         { id: 'active', label: 'Deliverables', mobileLabel: 'Deliverables', icon: Layers, count: joinedCampaignsList.length },
         { id: 'referrals', label: 'Referrals', mobileLabel: 'Referrals', icon: UsersRound, count: referralCount > 0 ? referralCount : null },
         { id: 'rewards', label: 'Vault', mobileLabel: 'Vault', icon: Sparkles, count: 'Soon' },
+        { id: 'profile_settings', label: 'Profile', mobileLabel: 'Profile', icon: Settings },
     ];
 
     const creatorHandle = profile.instagram 
@@ -679,8 +963,15 @@ const CreatorDashboard = () => {
                         {/* Left: Avatar + Details */}
                         <div className="flex items-center gap-4 sm:gap-5 min-w-0">
                             {/* Avatar */}
-                            <div className="relative shrink-0">
-                                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gray-100 dark:bg-zinc-800 border-2 border-black/[0.06] dark:border-white/[0.1] overflow-hidden shadow-md">
+                            <div className="relative shrink-0 group">
+                                <div 
+                                    onClick={() => {
+                                        setEditInitialSection('identity');
+                                        setIsEditModalOpen(true);
+                                    }}
+                                    className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gray-100 dark:bg-zinc-800 border-2 border-black/[0.06] dark:border-white/[0.1] overflow-hidden shadow-md cursor-pointer hover:opacity-90 transition-opacity"
+                                    title="Click to edit profile & photo"
+                                >
                                     {profile.profilePicture || profile.instagramProfilePic || profile.profilePic || profile.photoURL ? (
                                         <img src={profile.profilePicture || profile.instagramProfilePic || profile.profilePic || profile.photoURL} alt={profile.name} className="w-full h-full object-cover" />
                                     ) : (
@@ -689,6 +980,17 @@ const CreatorDashboard = () => {
                                         </div>
                                     )}
                                 </div>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setEditInitialSection('identity');
+                                        setIsEditModalOpen(true);
+                                    }}
+                                    className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-white dark:bg-zinc-800 border border-black/10 dark:border-white/20 text-gray-700 dark:text-zinc-200 flex items-center justify-center shadow-md hover:bg-neon-green hover:text-black transition-colors cursor-pointer"
+                                    title="Edit creator details"
+                                >
+                                    <Pencil size={11} />
+                                </button>
                                 {profile.profileStatus === 'approved' && (
                                     <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-neon-green border-2 border-white dark:border-[#0c0e14] flex items-center justify-center shadow-sm" title="Verified Creator">
                                         <Check size={12} className="text-black" strokeWidth={3} />
@@ -702,6 +1004,17 @@ const CreatorDashboard = () => {
                                     <h1 className="text-xl sm:text-2xl lg:text-3xl font-black font-heading tracking-tight text-gray-950 dark:text-white leading-tight">
                                         {profile.name}
                                     </h1>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setEditInitialSection('identity');
+                                            setIsEditModalOpen(true);
+                                        }}
+                                        className="w-7 h-7 rounded-lg bg-black/5 dark:bg-white/10 hover:bg-neon-green hover:text-black text-gray-500 dark:text-zinc-300 transition-colors flex items-center justify-center cursor-pointer"
+                                        title="Edit Creator Details"
+                                    >
+                                        <Pencil size={12} />
+                                    </button>
                                     {profile.profileStatus === 'approved' ? (
                                         <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-neon-green text-[10px] font-black uppercase tracking-wider font-mono border border-emerald-500/20">
                                             <ShieldCheck size={11} /> Verified
@@ -752,11 +1065,15 @@ const CreatorDashboard = () => {
 
                             <button
                                 type="button"
-                                onClick={() => openProfilePanel('creator')}
+                                onClick={() => {
+                                    setEditInitialSection('identity');
+                                    setIsEditModalOpen(true);
+                                }}
                                 className="h-10 px-4 sm:px-5 rounded-xl bg-gray-950 dark:bg-white text-white dark:text-black hover:bg-black dark:hover:bg-zinc-200 transition-all font-bold text-xs flex items-center gap-2 shadow-sm active:scale-95"
+                                title="Edit Creator Details"
                             >
                                 <Settings size={14} />
-                                <span>Edit Profile</span>
+                                <span>Edit Details</span>
                             </button>
                         </div>
                     </div>
@@ -897,7 +1214,10 @@ const CreatorDashboard = () => {
                                     </p>
                                     <button
                                         type="button"
-                                        onClick={() => openProfilePanel('creator')}
+                                        onClick={() => {
+                                            setEditInitialSection('identity');
+                                            setIsEditModalOpen(true);
+                                        }}
                                         className="text-[10px] font-black uppercase tracking-wider text-amber-700 dark:text-amber-400 underline shrink-0 hover:opacity-80"
                                     >
                                         Verify Now
@@ -1166,6 +1486,21 @@ const CreatorDashboard = () => {
 
                             {/* ─ Vault Tab ─ */}
                             {activeTab === 'rewards' && <CreatorVaultView creatorPoints={creatorPoints} />}
+
+                            {/* ─ Profile & Settings Tab ─ */}
+                            {activeTab === 'profile_settings' && (
+                                <CreatorProfileOverviewView 
+                                    profile={profile} 
+                                    onEditClick={(sec = 'identity') => {
+                                        setEditInitialSection(sec);
+                                        setIsEditModalOpen(true);
+                                    }}
+                                    onVerifyPhoneClick={() => {
+                                        setEditInitialSection('identity');
+                                        setIsEditModalOpen(true);
+                                    }}
+                                />
+                            )}
                         </motion.div>
                     </AnimatePresence>
                 </div>
@@ -1257,6 +1592,21 @@ const CreatorDashboard = () => {
                         campaign={selectedCampaignForModal}
                         onClose={() => setSelectedCampaignForModal(null)}
                         initialTaskId={new URLSearchParams(location.search).get('taskId')}
+                    />
+                )}
+            </AnimatePresence>
+
+            {/* ─── Edit Creator Details Modal ───────────────────────────────────── */}
+            <AnimatePresence>
+                {isEditModalOpen && profile && (
+                    <EditCreatorModal
+                        isOpen={isEditModalOpen}
+                        onClose={() => setIsEditModalOpen(false)}
+                        profile={profile}
+                        initialSection={editInitialSection}
+                        onUpdated={(updated) => {
+                            setProfile(prev => ({ ...prev, ...updated }));
+                        }}
                     />
                 )}
             </AnimatePresence>

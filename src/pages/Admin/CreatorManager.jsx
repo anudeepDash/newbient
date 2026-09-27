@@ -65,6 +65,9 @@ import AddCityCreatorsModal from '../../components/admin/AddCityCreatorsModal';
 import { getEarnedBadges, getVerifiedTasksCount, getReferralsForCreator } from '../../lib/badges';
 import { sendCreatorDirectEmail, generateCreatorWelcomeHTML, generateCreatorApprovedHTML, sendCreatorApprovedEmail, resolveCityWhatsAppGroup } from '../../lib/email';
 import EmailPreviewIframe from '../../components/ui/EmailPreviewIframe';
+import EditCreatorModal from '../../components/creator/EditCreatorModal';
+import AddCreatorModal from '../../components/admin/AddCreatorModal';
+import CreatorDetailModal from '../../components/admin/CreatorDetailModal';
 
 const getPageNumbers = (currentPage, totalPages) => {
     const pages = [];
@@ -112,6 +115,8 @@ export const SEARCH_FIELDS = [
     { id: 'city', label: 'City Hub', icon: MapPin, placeholder: 'Search by city name...' },
     { id: 'niche', label: 'Niche / Category', icon: Layers, placeholder: 'Search by niche or specialization...' },
 ];
+
+const NICHES = CREATOR_NICHES;
 
 export const matchesCreatorSearch = (c, term, field = 'all') => {
     if (!term || !term.trim()) return true;
@@ -240,16 +245,6 @@ const CreatorManager = ({ showLeaderboardOnly = false, isEmbedded = false }) => 
     const [isFollowersOpen, setIsFollowersOpen] = useState(false);
     const followersRef = useRef(null);
 
-    useEffect(() => {
-        const handleClickOutside = (event) => {
-            if (followersRef.current && !followersRef.current.contains(event.target)) {
-                setIsFollowersOpen(false);
-            }
-        };
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, []);
-
     const [selectedCreator, setSelectedCreator] = useState(null);
     const [isUpdating, setIsUpdating] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
@@ -264,11 +259,24 @@ const CreatorManager = ({ showLeaderboardOnly = false, isEmbedded = false }) => 
     const [isMergingBangalore, setIsMergingBangalore] = useState(false);
     const [isWhatsAppMenuOpen, setIsWhatsAppMenuOpen] = useState(false);
     const whatsAppMenuRef = useRef(null);
+    const [isDataMenuOpen, setIsDataMenuOpen] = useState(false);
+    const dataMenuRef = useRef(null);
+    const [isScopeMenuOpen, setIsScopeMenuOpen] = useState(false);
+    const scopeMenuRef = useRef(null);
 
     useEffect(() => {
         const handleClickOutside = (event) => {
+            if (followersRef.current && !followersRef.current.contains(event.target)) {
+                setIsFollowersOpen(false);
+            }
             if (whatsAppMenuRef.current && !whatsAppMenuRef.current.contains(event.target)) {
                 setIsWhatsAppMenuOpen(false);
+            }
+            if (dataMenuRef.current && !dataMenuRef.current.contains(event.target)) {
+                setIsDataMenuOpen(false);
+            }
+            if (scopeMenuRef.current && !scopeMenuRef.current.contains(event.target)) {
+                setIsScopeMenuOpen(false);
             }
         };
         document.addEventListener('mousedown', handleClickOutside);
@@ -437,7 +445,7 @@ const CreatorManager = ({ showLeaderboardOnly = false, isEmbedded = false }) => 
     }, [creators, searchTerm, searchField, filterCity, filterStatus, filterNiche, minFollowers, maxFollowers, filterPlatform]);
 
     const getFollowersLabel = () => {
-        if (!minFollowers && !maxFollowers) return 'FOLLOWERS (ANY)';
+        if (!minFollowers && !maxFollowers) return 'Followers';
         
         const formatNum = (num) => {
             const n = Number(num);
@@ -588,8 +596,41 @@ const CreatorManager = ({ showLeaderboardOnly = false, isEmbedded = false }) => 
             );
         }
         return (
-            <div className={cn("relative z-10 max-w-[1700px] mx-auto pb-20", isEmbedded ? "px-4 md:px-12 pt-6" : "")}>
-            <div>
+            <div className="relative z-10 max-w-[1700px] mx-auto pb-20">
+                {isEmbedded && !isLeaderboardRoute && (
+                    <div className="flex justify-end mb-6">
+                        <div className="flex items-center gap-3 shrink-0">
+                            <div 
+                                onClick={() => setFilterStatus(filterStatus === 'pending' ? 'All' : 'pending')}
+                                className={cn(
+                                    "cursor-pointer transition-all hover:scale-[1.02] active:scale-[0.98]",
+                                    filterStatus === 'pending' ? "ring-2 ring-amber-400 rounded-2xl" : ""
+                                )}
+                                title="Click to filter Pending Verification"
+                            >
+                                <StatCard 
+                                    compact={true} 
+                                    icon={<Clock size={20} className={stats.pending > 0 ? "text-amber-500 animate-pulse" : "text-gray-400"} />} 
+                                    label="PENDING VERIFICATION" 
+                                    value={stats.pending} 
+                                    color={stats.pending > 0 ? "yellow" : "gray"} 
+                                    description={stats.manualPending > 0 ? `${stats.manualPending} manual follower entries` : `${stats.pending} awaiting review`} 
+                                />
+                            </div>
+                            <div className="hidden lg:block w-72">
+                                <StatCard 
+                                    compact={true} 
+                                    icon={<Users size={20} />} 
+                                    label="CREATOR ROSTER" 
+                                    value={stats.total} 
+                                    color="pink" 
+                                    description={`TOTAL CREATORS | ${stats.approved} VERIFIED`} 
+                                />
+                            </div>
+                        </div>
+                    </div>
+                )}
+                <div>
                 {/* Pending Verification Priority Callout */}
                 {stats.pending > 0 && (
                     <motion.div
@@ -645,107 +686,267 @@ const CreatorManager = ({ showLeaderboardOnly = false, isEmbedded = false }) => 
                 )}
 
                 {/* Control Panel */}
-                <div className="relative z-50 bg-white/70 dark:bg-[#0c0e14]/80 backdrop-blur-2xl border border-black/[0.06] dark:border-white/[0.08] rounded-3xl p-3 sm:p-4 mb-6 md:mb-8 space-y-4 shadow-[0_8px_32px_rgba(0,0,0,0.02)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)]">
+                <div className="relative z-50 bg-white/70 dark:bg-[#0c0e14]/80 backdrop-blur-2xl border border-black/[0.06] dark:border-white/[0.08] rounded-3xl p-3 sm:p-4 mb-6 md:mb-8 space-y-3.5 shadow-[0_8px_32px_rgba(0,0,0,0.02)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)]">
                     
-                    {/* Row 1: Search Engine & Action Bar */}
-                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3">
-                        {/* Search Input with Scope Selector */}
-                        <div className="flex items-center gap-1.5 sm:gap-2 flex-1 min-w-0">
-                            {/* Field Scope Selector */}
-                            <div className="relative shrink-0 w-28 sm:w-36">
-                                <StudioSelect
-                                    value={searchField}
-                                    onChange={setSearchField}
-                                    options={SEARCH_FIELDS.map(f => ({ value: f.id, label: f.label }))}
-                                    size="sm"
-                                    accentColor="neon-blue"
-                                    searchable={false}
-                                    className="h-10"
-                                />
+                    {/* Tier 1: Search Engine & Action Bar */}
+                    <div className="flex flex-col md:flex-row items-stretch md:items-center gap-2.5 sm:gap-3">
+                        {/* Unified Search Input with Integrated Scope Selector */}
+                        <div className="relative flex-1 flex items-center min-w-0 bg-white dark:bg-white/[0.03] border border-black/10 dark:border-white/10 hover:border-black/20 dark:hover:border-white/20 focus-within:!border-neon-green/50 dark:focus-within:!border-neon-green/40 focus-within:bg-white dark:focus-within:bg-zinc-900/90 rounded-2xl h-11 px-2 transition-all shadow-xs">
+                            {/* Scope Selector Button */}
+                            <div className="relative shrink-0" ref={scopeMenuRef}>
+                                <button
+                                    type="button"
+                                    onClick={() => setIsScopeMenuOpen(prev => !prev)}
+                                    className={cn(
+                                        "h-7 px-2.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all select-none",
+                                        searchField === 'all'
+                                            ? "bg-black/5 dark:bg-white/5 text-gray-700 dark:text-zinc-300 hover:bg-black/10 dark:hover:bg-white/10"
+                                            : "bg-neon-blue/15 text-neon-blue border border-neon-blue/30 font-bold"
+                                    )}
+                                    title="Search scope filter"
+                                >
+                                    {(() => {
+                                        const currentField = SEARCH_FIELDS.find(f => f.id === searchField) || SEARCH_FIELDS[0];
+                                        const FieldIcon = currentField.icon;
+                                        return (
+                                            <>
+                                                <FieldIcon size={12} className={searchField === 'all' ? "text-gray-400 dark:text-zinc-400" : "text-neon-blue"} />
+                                                <span className="truncate max-w-[100px] sm:max-w-none">
+                                                    {currentField.label}
+                                                </span>
+                                            </>
+                                        );
+                                    })()}
+                                    <ChevronDown size={11} className={cn("transition-transform duration-200 opacity-60", isScopeMenuOpen && "rotate-180")} />
+                                </button>
+
+                                <AnimatePresence>
+                                    {isScopeMenuOpen && (
+                                        <motion.div
+                                            initial={{ opacity: 0, y: 4, scale: 0.98 }}
+                                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                                            exit={{ opacity: 0, y: 4, scale: 0.98 }}
+                                            transition={{ duration: 0.15, ease: "easeOut" }}
+                                            className="absolute left-0 top-full mt-2 w-56 bg-white dark:bg-zinc-950 border border-black/10 dark:border-white/10 rounded-2xl shadow-2xl p-1.5 z-50 divide-y divide-black/5 dark:divide-white/5 backdrop-blur-xl"
+                                        >
+                                            <div className="px-2.5 py-1.5 text-[10px] font-black uppercase tracking-wider text-gray-400">
+                                                Search Scope
+                                            </div>
+                                            <div className="py-1 space-y-0.5 max-h-64 overflow-y-auto">
+                                                {SEARCH_FIELDS.map(f => {
+                                                    const FieldIcon = f.icon;
+                                                    const isSelected = searchField === f.id;
+                                                    return (
+                                                        <button
+                                                            key={f.id}
+                                                            type="button"
+                                                            onClick={() => {
+                                                                setSearchField(f.id);
+                                                                setIsScopeMenuOpen(false);
+                                                            }}
+                                                            className={cn(
+                                                                "w-full px-2.5 py-2 rounded-xl text-left flex items-center gap-2.5 text-xs font-semibold transition-colors",
+                                                                isSelected
+                                                                    ? "bg-neon-blue/15 text-neon-blue font-bold"
+                                                                    : "hover:bg-black/5 dark:hover:bg-white/5 text-gray-700 dark:text-zinc-300"
+                                                            )}
+                                                        >
+                                                            <FieldIcon size={13} className={isSelected ? "text-neon-blue" : "text-gray-400"} />
+                                                            <span className="flex-1 truncate">{f.label}</span>
+                                                            {isSelected && <Check size={12} className="text-neon-blue ml-auto shrink-0" />}
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
                             </div>
 
+                            {/* Scope / Input Divider */}
+                            <div className="h-4 w-px bg-black/10 dark:bg-white/10 mx-1.5 shrink-0" />
+
+                            {/* Search Icon */}
+                            <Search size={14} className="text-gray-400 dark:text-zinc-500 shrink-0 ml-0.5" />
+
                             {/* Search Input Box */}
-                            <div className="relative flex-1 min-w-0">
-                                <Search className="absolute left-3.5 sm:left-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-zinc-500 pointer-events-none" size={15} />
-                                <input
-                                    type="text"
-                                    placeholder={SEARCH_FIELDS.find(f => f.id === searchField)?.placeholder || "Search creators..."}
-                                    value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
-                                    className="w-full h-12 !pl-10 sm:!pl-11 !pr-9 bg-white/70 dark:bg-[#0c0e14]/80 backdrop-blur-2xl border border-black/[0.06] dark:border-white/[0.08] shadow-[0_8px_32px_rgba(0,0,0,0.02)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)] focus:border-neon-green/50 dark:focus:border-neon-green/30 rounded-2xl text-sm font-semibold outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-zinc-600 text-gray-900 dark:text-white min-w-0"
-                                />
-                                {searchTerm && (
-                                    <button
-                                        onClick={() => setSearchTerm('')}
-                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-white/30 hover:text-gray-900 dark:hover:text-white transition-colors p-0.5"
-                                        aria-label="Clear search"
-                                    >
-                                        <X size={13} />
-                                    </button>
-                                )}
-                            </div>
+                            <input
+                                type="text"
+                                placeholder={SEARCH_FIELDS.find(f => f.id === searchField)?.placeholder || "Search creators..."}
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="flex-1 bg-transparent px-2 text-xs sm:text-sm font-medium outline-none text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-zinc-500 min-w-0"
+                            />
+
+                            {/* Clear Search Button */}
+                            {searchTerm && (
+                                <button
+                                    onClick={() => setSearchTerm('')}
+                                    className="w-5 h-5 flex items-center justify-center rounded-full bg-black/5 dark:bg-white/10 text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors shrink-0 mr-1"
+                                    title="Clear search"
+                                >
+                                    <X size={11} />
+                                </button>
+                            )}
+
+                            {/* Match Count Pill */}
+                            {searchTerm && (
+                                <span className="hidden sm:inline-block px-2 py-0.5 rounded-md bg-neon-blue/10 text-neon-blue text-[10px] font-mono font-bold shrink-0">
+                                    {filteredCreators.length} match{filteredCreators.length === 1 ? '' : 'es'}
+                                </span>
+                            )}
                         </div>
 
                         {/* Action Controls Cluster */}
-                        <div className="flex items-center justify-between sm:justify-end gap-2 shrink-0">
-                            <div className="flex items-center gap-1.5 sm:gap-2">
-                                {/* View Switcher */}
-                                <div className="flex bg-black/5 dark:bg-white/5 p-0.5 rounded-xl border border-black/10 dark:border-white/10 shrink-0 h-10 items-center">
-                                    <button 
-                                        onClick={() => setViewMode('grid')} 
-                                        title="Grid View"
-                                        className={cn(
-                                            "w-9 h-9 rounded-lg flex items-center justify-center transition-all", 
-                                            viewMode === 'grid' ? "bg-white dark:bg-white/10 text-black dark:text-white shadow-sm" : "text-gray-500 hover:text-black dark:hover:text-white"
-                                        )}
-                                    >
-                                        <LayoutGrid size={14} />
-                                    </button>
-                                    <button 
-                                        onClick={() => setViewMode('list')} 
-                                        title="List View"
-                                        className={cn(
-                                            "w-9 h-9 rounded-lg flex items-center justify-center transition-all", 
-                                            viewMode === 'list' ? "bg-white dark:bg-white/10 text-black dark:text-white shadow-sm" : "text-gray-500 hover:text-black dark:hover:text-white"
-                                        )}
-                                    >
-                                        <FileSpreadsheet size={14} />
-                                    </button>
-                                </div>
-
-                                {/* Export CSV */}
+                        <div className="flex items-center justify-between md:justify-end gap-2 shrink-0">
+                            {/* View Switcher */}
+                            <div className="flex bg-black/[0.04] dark:bg-white/[0.04] p-0.5 rounded-xl border border-black/10 dark:border-white/10 shrink-0 h-10 items-center">
                                 <button 
-                                    onClick={exportToCSV}
-                                    className="h-10 px-2.5 sm:px-4 rounded-xl bg-white dark:bg-white/5 border border-black/10 dark:border-white/10 hover:border-black/20 dark:hover:border-white/20 text-gray-800 dark:text-zinc-200 font-bold uppercase tracking-wider text-[9px] sm:text-xs transition-all flex items-center justify-center gap-1.5 shrink-0"
-                                    title="Export Creators to CSV"
+                                    onClick={() => setViewMode('grid')} 
+                                    title="Grid View"
+                                    className={cn(
+                                        "w-8 sm:w-9 h-9 rounded-lg flex items-center justify-center transition-all", 
+                                        viewMode === 'grid' 
+                                            ? "bg-white dark:bg-white/10 text-gray-900 dark:text-white shadow-xs font-bold" 
+                                            : "text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                                    )}
                                 >
-                                    <Download size={13} />
-                                    <span className="hidden xs:inline sm:inline">Export</span>
+                                    <LayoutGrid size={14} />
                                 </button>
-
-                                {/* Import Sheet */}
-                                <label 
-                                    className="h-10 px-2.5 sm:px-4 rounded-xl bg-white dark:bg-white/5 border border-black/10 dark:border-white/10 hover:border-black/20 dark:hover:border-white/20 text-gray-800 dark:text-zinc-200 font-bold uppercase tracking-wider text-[9px] sm:text-xs transition-all cursor-pointer flex items-center justify-center gap-1.5 shrink-0"
-                                    title="Import Creators from CSV"
+                                <button 
+                                    onClick={() => setViewMode('list')} 
+                                    title="List View"
+                                    className={cn(
+                                        "w-8 sm:w-9 h-9 rounded-lg flex items-center justify-center transition-all", 
+                                        viewMode === 'list' 
+                                            ? "bg-white dark:bg-white/10 text-gray-900 dark:text-white shadow-xs font-bold" 
+                                            : "text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                                    )}
                                 >
-                                    <Upload size={13} />
-                                    <span className="hidden xs:inline sm:inline">Import</span>
-                                    <input type="file" accept=".csv" onChange={handleImportCSV} className="hidden" />
-                                </label>
+                                    <FileSpreadsheet size={14} />
+                                </button>
                             </div>
 
-                            {/* Merge Bangalore to Bengaluru */}
-                            {bangaloreCreatorsCount > 0 && (
-                                <button 
-                                    onClick={handleMergeBangalore}
-                                    disabled={isMergingBangalore}
-                                    className="h-10 px-3 sm:px-4 bg-amber-500/10 border border-amber-500/30 hover:bg-amber-500/20 text-amber-500 dark:text-amber-400 rounded-xl font-bold uppercase tracking-wider text-[9px] transition-all flex items-center justify-center gap-1.5 shrink-0"
-                                    title="Merge Bangalore creators to Bengaluru"
+                            {/* Data Tools (Export / Import / Merge) */}
+                            <div className="relative shrink-0" ref={dataMenuRef}>
+                                <button
+                                    type="button"
+                                    onClick={() => setIsDataMenuOpen(prev => !prev)}
+                                    className={cn(
+                                        "h-10 px-3 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-1.5 border select-none",
+                                        isDataMenuOpen
+                                            ? "bg-black/10 dark:bg-white/15 text-gray-900 dark:text-white border-black/20 dark:border-white/20"
+                                            : "bg-white dark:bg-white/5 border-black/10 dark:border-white/10 hover:border-black/20 dark:hover:border-white/20 text-gray-800 dark:text-zinc-200"
+                                    )}
+                                    title="Export, Import and Data Tools"
                                 >
-                                    <MapPin size={13} />
-                                    <span>{isMergingBangalore ? 'Merging...' : `Merge Bangalore (${bangaloreCreatorsCount})`}</span>
+                                    <Download size={13} />
+                                    <span className="hidden sm:inline">Export / Import</span>
+                                    <span className="sm:hidden">Data</span>
+                                    <ChevronDown size={11} className={cn("transition-transform duration-200 opacity-60", isDataMenuOpen && "rotate-180")} />
                                 </button>
-                            )}
+
+                                <AnimatePresence>
+                                    {isDataMenuOpen && (
+                                        <motion.div
+                                            initial={{ opacity: 0, y: 6, scale: 0.96 }}
+                                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                                            exit={{ opacity: 0, y: 6, scale: 0.96 }}
+                                            transition={{ duration: 0.15, ease: "easeOut" }}
+                                            className="absolute right-0 top-full mt-2 w-64 bg-white dark:bg-zinc-950 border border-black/10 dark:border-white/10 rounded-2xl shadow-2xl p-1.5 z-50 backdrop-blur-xl divide-y divide-black/5 dark:divide-white/5"
+                                        >
+                                            <div className="px-3 py-2">
+                                                <p className="text-[10px] font-black uppercase tracking-widest text-neon-blue">
+                                                    Data Hub
+                                                </p>
+                                                <p className="text-[11px] text-gray-500 dark:text-zinc-400 font-medium">
+                                                    Spreadsheets & operations
+                                                </p>
+                                            </div>
+
+                                            <div className="py-1 flex flex-col gap-0.5">
+                                                {/* Export to CSV */}
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        exportToCSV();
+                                                        setIsDataMenuOpen(false);
+                                                    }}
+                                                    className="w-full px-3 py-2.5 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 text-left flex items-start gap-3 transition-colors group"
+                                                >
+                                                    <div className="p-2 rounded-lg bg-neon-blue/10 text-neon-blue group-hover:bg-neon-blue group-hover:text-black transition-all shrink-0 mt-0.5">
+                                                        <Download size={14} />
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <span className="text-[11px] font-bold text-gray-900 dark:text-white block">
+                                                            Export Creators to CSV
+                                                        </span>
+                                                        <p className="text-[10px] text-gray-500 dark:text-zinc-400 truncate mt-0.5">
+                                                            Download {filteredCreators.length} filtered records
+                                                        </p>
+                                                    </div>
+                                                </button>
+
+                                                {/* Import from CSV */}
+                                                <label
+                                                    className="w-full px-3 py-2.5 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 text-left flex items-start gap-3 transition-colors group cursor-pointer"
+                                                >
+                                                    <div className="p-2 rounded-lg bg-purple-500/10 text-purple-400 group-hover:bg-purple-500 group-hover:text-white transition-all shrink-0 mt-0.5">
+                                                        <Upload size={14} />
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <span className="text-[11px] font-bold text-gray-900 dark:text-white block">
+                                                            Import Creators from CSV
+                                                        </span>
+                                                        <p className="text-[10px] text-gray-500 dark:text-zinc-400 truncate mt-0.5">
+                                                            Bulk upload creator spreadsheet
+                                                        </p>
+                                                    </div>
+                                                    <input
+                                                        type="file"
+                                                        accept=".csv"
+                                                        onChange={(e) => {
+                                                            handleImportCSV(e);
+                                                            setIsDataMenuOpen(false);
+                                                        }}
+                                                        className="hidden"
+                                                    />
+                                                </label>
+
+                                                {/* Merge Bangalore to Bengaluru */}
+                                                {bangaloreCreatorsCount > 0 && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            handleMergeBangalore();
+                                                            setIsDataMenuOpen(false);
+                                                        }}
+                                                        disabled={isMergingBangalore}
+                                                        className="w-full px-3 py-2.5 rounded-xl hover:bg-amber-500/10 text-left flex items-start gap-3 transition-colors group"
+                                                    >
+                                                        <div className="p-2 rounded-lg bg-amber-500/10 text-amber-500 group-hover:bg-amber-500 group-hover:text-black transition-all shrink-0 mt-0.5">
+                                                            <MapPin size={14} />
+                                                        </div>
+                                                        <div className="flex-1 min-w-0">
+                                                            <div className="flex items-center justify-between">
+                                                                <span className="text-[11px] font-bold text-gray-900 dark:text-white">
+                                                                    Merge Bangalore
+                                                                </span>
+                                                                <span className="text-[9px] font-mono px-1.5 py-0.5 rounded-md bg-amber-500/20 text-amber-500 font-bold">
+                                                                    {bangaloreCreatorsCount}
+                                                                </span>
+                                                            </div>
+                                                            <p className="text-[10px] text-gray-500 dark:text-zinc-400 truncate mt-0.5">
+                                                                Standardize to Bengaluru
+                                                            </p>
+                                                        </div>
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+                            </div>
 
                             {/* WhatsApp Actions Dropdown */}
                             <div className="relative shrink-0" ref={whatsAppMenuRef}>
@@ -753,7 +954,7 @@ const CreatorManager = ({ showLeaderboardOnly = false, isEmbedded = false }) => 
                                     type="button"
                                     onClick={() => setIsWhatsAppMenuOpen(prev => !prev)}
                                     className={cn(
-                                        "h-10 px-3 sm:px-4 rounded-xl font-black uppercase tracking-wider text-[9px] transition-all flex items-center justify-center gap-2 shrink-0 border",
+                                        "h-10 px-3 sm:px-3.5 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-1.5 shrink-0 border select-none",
                                         isWhatsAppMenuOpen 
                                             ? "bg-[#25D366] text-black border-[#25D366] shadow-[0_0_20px_rgba(37,211,102,0.35)]" 
                                             : "bg-[#25D366]/10 border-[#25D366]/30 hover:bg-[#25D366]/20 text-[#25D366]"
@@ -761,10 +962,10 @@ const CreatorManager = ({ showLeaderboardOnly = false, isEmbedded = false }) => 
                                     title="WhatsApp Groups & Broadcast Hub"
                                 >
                                     <MessageSquare size={13} className="shrink-0" />
-                                    <span className="whitespace-nowrap">WhatsApp</span>
+                                    <span className="hidden sm:inline">WhatsApp</span>
                                     <ChevronDown 
-                                        size={12} 
-                                        className={cn("transition-transform duration-200 shrink-0", isWhatsAppMenuOpen && "rotate-180")} 
+                                        size={11} 
+                                        className={cn("transition-transform duration-200 shrink-0 opacity-60", isWhatsAppMenuOpen && "rotate-180")} 
                                     />
                                 </button>
 
@@ -787,7 +988,7 @@ const CreatorManager = ({ showLeaderboardOnly = false, isEmbedded = false }) => 
                                             </div>
 
                                             <div className="py-1 flex flex-col gap-0.5">
-                                                {/* Option 1: Add City Creators to WhatsApp */}
+                                                {/* Option 1: Send City Joining Links via WhatsApp / Email */}
                                                 <button
                                                     type="button"
                                                     onClick={() => {
@@ -799,19 +1000,19 @@ const CreatorManager = ({ showLeaderboardOnly = false, isEmbedded = false }) => 
                                                     className="w-full px-3 py-2.5 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 text-left flex items-start gap-3 transition-colors group"
                                                 >
                                                     <div className="p-2 rounded-lg bg-[#25D366]/10 text-[#25D366] group-hover:bg-[#25D366] group-hover:text-black transition-all shrink-0 mt-0.5">
-                                                        <UserPlus size={14} />
+                                                        <Send size={14} />
                                                     </div>
                                                     <div className="flex-1 min-w-0">
                                                         <div className="flex items-center justify-between gap-1">
                                                             <span className="text-[11px] font-bold text-gray-900 dark:text-white">
-                                                                Add City to WA
+                                                                Send Group Invites
                                                             </span>
                                                             <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded-md bg-[#25D366]/10 text-[#25D366] border border-[#25D366]/20">
                                                                 {filterCity !== 'All' ? filterCity : 'City'}
                                                             </span>
                                                         </div>
                                                         <p className="text-[10px] text-gray-500 dark:text-zinc-400 truncate mt-0.5">
-                                                            {filterCity !== 'All' ? `Add ${filterCity} creators to WA group` : 'Add all creators of a city to group'}
+                                                            {filterCity !== 'All' ? `Send ${filterCity} group joining links safely` : 'Send WhatsApp group joining links safely'}
                                                         </p>
                                                     </div>
                                                 </button>
@@ -862,252 +1063,263 @@ const CreatorManager = ({ showLeaderboardOnly = false, isEmbedded = false }) => 
                                 </AnimatePresence>
                             </div>
 
-                            {/* Add Creator */}
+                            {/* Add Creator Primary CTA */}
                             <button 
                                 onClick={() => setIsAddModalOpen(true)}
-                                className="h-12 px-6 rounded-xl bg-neon-green text-black font-black uppercase tracking-wider text-xs hover:bg-emerald-400 active:scale-95 transition-all shadow-[0_0_20px_rgba(57,255,20,0.25)] flex items-center justify-center gap-1.5 shrink-0"
+                                className="h-10 px-4 sm:px-5 rounded-xl bg-neon-green text-black font-extrabold text-xs hover:bg-emerald-400 active:scale-95 transition-all shadow-[0_0_20px_rgba(57,255,20,0.25)] flex items-center justify-center gap-1.5 shrink-0 select-none"
                             >
-                                <Plus size={16} />
+                                <Plus size={15} strokeWidth={2.5} />
                                 <span className="whitespace-nowrap">Add Creator</span>
                             </button>
                         </div>
                     </div>
 
-                    {/* Quick Scope Filter Chips */}
-                    <div className="flex items-center gap-1.5 overflow-x-auto pb-1 pt-0.5 scrollbar-none text-[9px] font-bold border-t border-black/[0.08] dark:border-white/[0.08]">
-                        <span className="text-gray-400 dark:text-zinc-500 uppercase tracking-widest text-[8px] shrink-0 mr-1 hidden xs:inline">
-                            Search By:
-                        </span>
-                        {SEARCH_FIELDS.map(f => {
-                            const isActive = searchField === f.id;
-                            const IconComponent = f.icon;
-                            return (
-                                <button
-                                    key={f.id}
-                                    type="button"
-                                    onClick={() => setSearchField(f.id)}
-                                    className={cn(
-                                        "px-2.5 py-1 rounded-full shrink-0 transition-all flex items-center gap-1 border",
-                                        isActive
-                                            ? "bg-black text-white dark:bg-white dark:text-black shadow-sm font-black border-transparent"
-                                            : "bg-white dark:bg-[#0c0e14] border-black/[0.08] dark:border-white/[0.08] text-gray-600 dark:text-zinc-400 hover:border-black/20"
-                                    )}
-                                >
-                                    <IconComponent size={10} className={isActive ? "text-white dark:text-black" : "text-gray-400"} />
-                                    <span>{f.label}</span>
-                                </button>
-                            );
-                        })}
-                        {searchTerm && (
-                            <span className="ml-auto text-[9px] font-mono text-neon-blue shrink-0 pl-2">
-                                {filteredCreators.length} match{filteredCreators.length === 1 ? '' : 'es'}
-                            </span>
-                        )}
-                    </div>
-
-                    {/* Row 2: Filter Toolbar (2-column balanced grid on mobile, inline flex on desktop) */}
-                    <div className="pt-2.5 border-t border-white/[0.04] grid grid-cols-2 sm:grid-cols-3 lg:flex lg:flex-nowrap items-center gap-2">
-                        
-                        {/* Filter Indicator Label */}
-                        <div className="hidden xl:flex items-center gap-1.5 px-2 text-[9px] font-black uppercase tracking-widest text-gray-500 shrink-0 select-none">
-                            <Filter size={12} className="text-neon-pink" />
-                            <span>FILTERS:</span>
-                        </div>
-
-                        {/* Custom Followers Range Popover Selector */}
-                        <div className="relative col-span-1 sm:flex-1 sm:min-w-[130px]" ref={followersRef}>
-                            <div 
-                                onClick={() => setIsFollowersOpen(!isFollowersOpen)}
-                                className={cn(
-                                    "flex items-center justify-between h-10 bg-white dark:bg-black/40 border border-white/[0.06] rounded-xl px-3 cursor-pointer hover:border-black/20 dark:hover:border-white/20 transition-all group select-none",
-                                    isFollowersOpen && "border-neon-pink/40"
-                                )}
-                            >
-                                <span className={cn(
-                                    "text-[9px] font-bold uppercase tracking-wider truncate leading-none",
-                                    (!minFollowers && !maxFollowers) ? "text-gray-900 dark:text-white/40" : "text-gray-900 dark:text-white"
-                                )}
-                                title={getFollowersLabel()}
-                                >
-                                    {getFollowersLabel()}
-                                </span>
-                                <ChevronDown 
-                                    size={12} 
-                                    className={cn(
-                                        "transition-all duration-300 shrink-0 ml-1.5 text-gray-900 dark:text-white/30 group-hover:text-gray-900 dark:group-hover:text-white/50",
-                                        isFollowersOpen && "rotate-180 text-neon-pink"
-                                    )} 
-                                />
+                    {/* Tier 2: Status Navigation & Refined Filters */}
+                    <div className="pt-3 border-t border-black/[0.06] dark:border-white/[0.06] flex flex-col xl:flex-row xl:items-center justify-between gap-3">
+                        {/* Left Group: Status Segmented Control + Filter Dropdowns */}
+                        <div className="flex items-center flex-wrap gap-2.5 min-w-0">
+                            {/* Status Segmented Tabs */}
+                            <div className="flex items-center p-1 bg-black/[0.04] dark:bg-white/[0.04] rounded-xl border border-black/[0.06] dark:border-white/[0.06] shrink-0">
+                                {[
+                                    { id: 'All', label: 'All', count: stats.total },
+                                    { id: 'approved', label: 'Verified', count: stats.approved },
+                                    { id: 'pending', label: 'Pending', count: stats.pending, isAmber: stats.pending > 0 },
+                                    { id: 'rejected', label: 'Rejected' },
+                                ].map(tab => {
+                                    const isActive = filterStatus === tab.id;
+                                    return (
+                                        <button
+                                            key={tab.id}
+                                            type="button"
+                                            onClick={() => setFilterStatus(tab.id)}
+                                            className={cn(
+                                                "relative px-2.5 sm:px-3 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 select-none",
+                                                isActive
+                                                    ? "bg-white dark:bg-white/10 text-gray-900 dark:text-white shadow-xs font-black"
+                                                    : "text-gray-500 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-white"
+                                            )}
+                                        >
+                                            <span>{tab.label}</span>
+                                            {tab.count !== undefined && (
+                                                <span className={cn(
+                                                    "px-1.5 py-0.2 rounded-md text-[10px] font-mono",
+                                                    tab.isAmber && !isActive
+                                                        ? "bg-amber-500/20 text-amber-600 dark:text-amber-400 font-bold"
+                                                        : isActive
+                                                            ? "bg-black/10 dark:bg-white/10 text-gray-900 dark:text-white"
+                                                            : "bg-black/5 dark:bg-white/5 text-gray-500 dark:text-zinc-400"
+                                                )}>
+                                                    {tab.count}
+                                                </span>
+                                            )}
+                                        </button>
+                                    );
+                                })}
                             </div>
 
-                            <AnimatePresence>
-                                {isFollowersOpen && (
-                                    <motion.div
-                                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                                        exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                                        className="absolute z-[100] left-0 mt-2 w-[calc(100vw-2.5rem)] sm:w-[260px] max-w-[280px] bg-white dark:bg-[#0c0e14] border border-black/[0.08] dark:border-white/[0.08] rounded-2xl shadow-xl p-4 sm:p-5 space-y-3"
+                            {/* Vertical Separator */}
+                            <div className="hidden sm:block h-5 w-px bg-black/[0.08] dark:bg-white/[0.08] shrink-0" />
+
+                            {/* Secondary Filter Dropdowns */}
+                            <div className="flex items-center flex-wrap gap-2">
+                                {/* Location Filter */}
+                                <div className="w-32 sm:w-36 shrink-0">
+                                    <StudioSelect
+                                        value={filterCity}
+                                        options={cities.map(c => ({ value: c, label: c === 'All' ? 'Location: All' : c }))}
+                                        onChange={setFilterCity}
+                                        placeholder="Location"
+                                        icon={MapPin}
+                                        size="sm"
+                                        accentColor="neon-blue"
+                                        searchable={true}
+                                        className="h-8"
+                                    />
+                                </div>
+
+                                {/* Niche Filter */}
+                                <div className="w-32 sm:w-36 shrink-0">
+                                    <StudioSelect
+                                        value={filterNiche}
+                                        options={['All', ...NICHES].map(n => ({ value: n, label: n === 'All' ? 'Niche: All' : n }))}
+                                        onChange={setFilterNiche}
+                                        placeholder="Niche"
+                                        icon={Layers}
+                                        size="sm"
+                                        accentColor="neon-pink"
+                                        searchable={true}
+                                        className="h-8"
+                                    />
+                                </div>
+
+                                {/* Followers Filter Popover */}
+                                <div className="relative shrink-0" ref={followersRef}>
+                                    <div
+                                        onClick={() => setIsFollowersOpen(!isFollowersOpen)}
+                                        className={cn(
+                                            "flex items-center justify-between h-8 rounded-xl px-2.5 cursor-pointer transition-all select-none border text-[10px] font-medium gap-1.5",
+                                            (minFollowers || maxFollowers)
+                                                ? "bg-neon-pink/10 border-neon-pink/30 text-neon-pink font-bold"
+                                                : "bg-white dark:bg-white/5 border-black/10 dark:border-white/10 hover:border-black/20 dark:hover:border-white/20 text-gray-700 dark:text-zinc-300"
+                                        )}
                                     >
-                                        <div className="space-y-1">
-                                            <p className="text-[9px] font-black uppercase tracking-widest text-gray-500">Follower Range</p>
-                                        </div>
-                                        <div className="flex gap-2 items-center">
-                                            <div className="space-y-1 flex-1">
-                                                <label className="text-[8px] font-black uppercase tracking-wider text-gray-400 pl-0.5">Min</label>
-                                                <input 
-                                                    type="number" 
-                                                    value={minFollowers} 
-                                                    onChange={(e) => setMinFollowers(e.target.value)}
-                                                    placeholder="0" 
-                                                    className="w-full h-9 bg-gray-50 dark:bg-black/40 border border-black/[0.08] dark:border-white/[0.08] rounded-lg px-2 text-xs font-bold text-gray-900 dark:text-white focus:border-neon-green/80 outline-none transition-all"
-                                                />
-                                            </div>
-                                            <span className="text-gray-400 text-xs font-bold pt-4">-</span>
-                                            <div className="space-y-1 flex-1">
-                                                <label className="text-[8px] font-black uppercase tracking-wider text-gray-400 pl-0.5">Max</label>
-                                                <input 
-                                                    type="number" 
-                                                    value={maxFollowers} 
-                                                    onChange={(e) => setMaxFollowers(e.target.value)}
-                                                    placeholder="Any" 
-                                                    className="w-full h-9 bg-gray-50 dark:bg-black/40 border border-black/[0.08] dark:border-white/[0.08] rounded-lg px-2 text-xs font-bold text-gray-900 dark:text-white focus:border-neon-green/80 outline-none transition-all"
-                                                />
-                                            </div>
-                                        </div>
-
-                                        <div className="h-px bg-black/5 dark:bg-white/5" />
-
-                                        {/* Preset quick ranges */}
-                                        <div className="space-y-1.5">
-                                            <p className="text-[7px] font-bold text-gray-900 dark:text-white/30 uppercase tracking-wider pl-0.5">Presets</p>
-                                            <div className="grid grid-cols-2 gap-1.5">
-                                                {[
-                                                    { label: '0 - 10K', min: '0', max: '10000' },
-                                                    { label: '10K - 50K', min: '10000', max: '50000' },
-                                                    { label: '50K - 100K', min: '50000', max: '100000' },
-                                                    { label: '100K - 500K', min: '100000', max: '500000' },
-                                                    { label: '500K - 1M', min: '500000', max: '1000000' },
-                                                    { label: '1M+', min: '1000000', max: '' },
-                                                ].map((p, idx) => (
-                                                    <button
-                                                        key={idx}
-                                                        type="button"
-                                                        onClick={() => {
-                                                             setMinFollowers(p.min);
-                                                             setMaxFollowers(p.max);
-                                                        }}
-                                                        className="px-2.5 py-1.5 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/5 hover:border-neon-pink/20 hover:bg-neon-pink/5 hover:text-neon-pink rounded-lg text-[8px] font-bold uppercase tracking-wider text-gray-900 dark:text-white/50 transition-all text-center"
-                                                    >
-                                                        {p.label}
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        </div>
-
-                                        <div className="flex gap-2 pt-1 select-none">
+                                        <Users size={12} className={cn((minFollowers || maxFollowers) ? "text-neon-pink" : "text-gray-400 dark:text-zinc-500")} />
+                                        <span className="truncate max-w-[85px]">{getFollowersLabel()}</span>
+                                        <ChevronDown size={11} className={cn("transition-transform duration-200 opacity-60", isFollowersOpen && "rotate-180")} />
+                                        {(minFollowers || maxFollowers) && (
                                             <button
                                                 type="button"
-                                                onClick={() => {
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
                                                     setMinFollowers('');
                                                     setMaxFollowers('');
-                                                    setIsFollowersOpen(false);
                                                 }}
-                                                className="flex-1 py-1.5 rounded-lg border border-black/10 dark:border-white/5 hover:bg-black/5 dark:hover:bg-white/5 text-[8px] font-bold uppercase tracking-wider text-gray-900 dark:text-white/40 hover:text-gray-900 dark:hover:text-white transition-all text-center"
+                                                className="hover:opacity-80 p-0.5 ml-0.5"
+                                                title="Clear followers filter"
                                             >
-                                                Reset
+                                                <X size={10} />
                                             </button>
-                                            <button
-                                                type="button"
-                                                onClick={() => setIsFollowersOpen(false)}
-                                                className="flex-1 py-1.5 rounded-lg bg-neon-pink text-black text-[8px] font-bold uppercase tracking-wider transition-all text-center hover:brightness-110 active:scale-95"
+                                        )}
+                                    </div>
+
+                                    <AnimatePresence>
+                                        {isFollowersOpen && (
+                                            <motion.div
+                                                initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                                                animate={{ opacity: 1, y: 0, scale: 1 }}
+                                                exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                                                className="absolute z-[100] left-0 mt-2 w-[calc(100vw-2.5rem)] sm:w-[260px] max-w-[280px] bg-white dark:bg-[#0c0e14] border border-black/10 dark:border-white/10 rounded-2xl shadow-xl p-4 sm:p-5 space-y-3"
                                             >
-                                                Apply
-                                            </button>
-                                        </div>
-                                    </motion.div>
-                                )}
-                            </AnimatePresence>
-                        </div>
+                                                <div className="space-y-1">
+                                                    <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Follower Range</p>
+                                                </div>
+                                                <div className="flex gap-2 items-center">
+                                                    <div className="space-y-1 flex-1">
+                                                        <label className="text-[8px] font-black uppercase tracking-wider text-gray-400 pl-0.5">Min</label>
+                                                        <input 
+                                                            type="number" 
+                                                            value={minFollowers} 
+                                                            onChange={(e) => setMinFollowers(e.target.value)}
+                                                            placeholder="0" 
+                                                            className="w-full h-9 bg-gray-50 dark:bg-black/40 border border-black/[0.08] dark:border-white/[0.08] rounded-lg px-2 text-xs font-bold text-gray-900 dark:text-white focus:border-neon-green/80 outline-none transition-all"
+                                                        />
+                                                    </div>
+                                                    <span className="text-gray-400 text-xs font-bold pt-4">-</span>
+                                                    <div className="space-y-1 flex-1">
+                                                        <label className="text-[8px] font-black uppercase tracking-wider text-gray-400 pl-0.5">Max</label>
+                                                        <input 
+                                                            type="number" 
+                                                            value={maxFollowers} 
+                                                            onChange={(e) => setMaxFollowers(e.target.value)}
+                                                            placeholder="Any" 
+                                                            className="w-full h-9 bg-gray-50 dark:bg-black/40 border border-black/[0.08] dark:border-white/[0.08] rounded-lg px-2 text-xs font-bold text-gray-900 dark:text-white focus:border-neon-green/80 outline-none transition-all"
+                                                        />
+                                                    </div>
+                                                </div>
 
-                        {/* Niche Filter */}
-                        <div className="col-span-1 sm:flex-1 sm:min-w-[130px]">
-                            <StudioSelect 
-                                value={filterNiche} 
-                                options={['All', ...NICHES].map(n => ({ value: n, label: n === 'All' ? 'NICHE' : n.toUpperCase() }))} 
-                                onChange={setFilterNiche} 
-                                className="w-full min-w-0 h-10 rounded-xl border-white/[0.06] bg-white dark:bg-black/40 text-[9px]" 
-                                accentColor="neon-pink" 
-                                classNamePrefix="studio-select"
-                            />
-                        </div>
+                                                <div className="h-px bg-black/5 dark:bg-white/5" />
 
-                        {/* Location Filter */}
-                        <div className="col-span-1 sm:flex-1 sm:min-w-[130px]">
-                            <StudioSelect 
-                                value={filterCity} 
-                                options={cities.map(c => ({ value: c, label: c === 'All' ? 'LOCATION' : c.toUpperCase() }))} 
-                                onChange={setFilterCity} 
-                                className="w-full min-w-0 h-10 rounded-xl border-white/[0.06] bg-white dark:bg-black/40 text-[9px]" 
-                                accentColor="neon-blue" 
-                                classNamePrefix="studio-select"
-                            />
-                        </div>
+                                                {/* Preset quick ranges */}
+                                                <div className="space-y-1.5">
+                                                    <p className="text-[8px] font-bold text-gray-400 uppercase tracking-wider pl-0.5">Presets</p>
+                                                    <div className="grid grid-cols-2 gap-1.5">
+                                                        {[
+                                                            { label: '0 - 10K', min: '0', max: '10000' },
+                                                            { label: '10K - 50K', min: '10000', max: '50000' },
+                                                            { label: '50K - 100K', min: '50000', max: '100000' },
+                                                            { label: '100K - 500K', min: '100000', max: '500000' },
+                                                            { label: '500K - 1M', min: '500000', max: '1000000' },
+                                                            { label: '1M+', min: '1000000', max: '' },
+                                                        ].map((p, idx) => (
+                                                            <button
+                                                                key={idx}
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    setMinFollowers(p.min);
+                                                                    setMaxFollowers(p.max);
+                                                                }}
+                                                                className="px-2 py-1.5 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/5 hover:border-neon-pink/20 hover:bg-neon-pink/5 hover:text-neon-pink rounded-lg text-[9px] font-bold uppercase tracking-wider text-gray-600 dark:text-zinc-400 transition-all text-center"
+                                                            >
+                                                                {p.label}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </div>
 
-                        {/* Status Filter */}
-                        <div className="col-span-1 sm:flex-1 sm:min-w-[120px]">
-                            <StudioSelect 
-                                value={filterStatus} 
-                                options={[
-                                    { value: 'All', label: 'STATUS' }, 
-                                    { value: 'approved', label: `VERIFIED (${stats.approved})` }, 
-                                    { value: 'pending', label: `PENDING (${stats.pending})` }, 
-                                    { value: 'rejected', label: 'REJECTED' }
-                                ]} 
-                                onChange={setFilterStatus} 
-                                className="w-full min-w-0 h-10 rounded-xl border-white/[0.06] bg-white dark:bg-black/40 text-[9px]" 
-                                accentColor="neon-green" 
-                                classNamePrefix="studio-select"
-                            />
-                        </div>
+                                                <div className="flex gap-2 pt-1 select-none">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setMinFollowers('');
+                                                            setMaxFollowers('');
+                                                            setIsFollowersOpen(false);
+                                                        }}
+                                                        className="flex-1 py-1.5 rounded-lg border border-black/10 dark:border-white/5 hover:bg-black/5 dark:hover:bg-white/5 text-[9px] font-bold uppercase tracking-wider text-gray-500 hover:text-gray-900 dark:hover:text-white transition-all text-center"
+                                                    >
+                                                        Reset
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setIsFollowersOpen(false)}
+                                                        className="flex-1 py-1.5 rounded-lg bg-neon-pink text-black text-[9px] font-black uppercase tracking-wider transition-all text-center hover:brightness-110 active:scale-95"
+                                                    >
+                                                        Apply
+                                                    </button>
+                                                </div>
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
+                                </div>
 
-                        {/* Platform Filter */}
-                        <div className="col-span-1 sm:flex-1 sm:min-w-[120px]">
-                            <StudioSelect 
-                                value={filterPlatform} 
-                                options={[
-                                    { value: 'All', label: 'PLATFORM' }, 
-                                    { value: 'instagram', label: 'INSTAGRAM' }, 
-                                    { value: 'linkedin', label: 'LINKEDIN' },
-                                    { value: 'youtube', label: 'YOUTUBE' }
-                                ]} 
-                                onChange={setFilterPlatform} 
-                                className="w-full min-w-0 h-10 rounded-xl border-white/[0.06] bg-white dark:bg-black/40 text-[9px]" 
-                                accentColor="neon-blue" 
-                                classNamePrefix="studio-select"
-                            />
-                        </div>
-
-                        {/* 6th Slot on Mobile Grid: Reset Button if active, or Count pill */}
-                        {hasActiveFilters ? (
-                            <button
-                                onClick={resetAllFilters}
-                                className="col-span-1 sm:col-auto h-10 px-3.5 rounded-xl bg-neon-pink/10 border border-neon-pink/30 hover:bg-neon-pink/20 text-neon-pink text-[9px] font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all shrink-0 active:scale-95"
-                                title="Reset all filters"
-                            >
-                                <X size={12} />
-                                <span>Reset Filters</span>
-                            </button>
-                        ) : (
-                            <div className="col-span-1 sm:hidden h-10 px-3 bg-white dark:bg-black/40 border border-white/[0.06] rounded-xl flex items-center justify-center gap-1.5 text-[8px] font-bold text-gray-900 dark:text-white/30 uppercase tracking-wider select-none">
-                                <span className="w-1.5 h-1.5 rounded-full bg-neon-pink animate-pulse" />
-                                <span>{filteredCreators.length} of {creators.length}</span>
+                                {/* Platform Filter */}
+                                <div className="w-28 sm:w-32 shrink-0">
+                                    <StudioSelect
+                                        value={filterPlatform}
+                                        options={[
+                                            { value: 'All', label: 'All Platforms' },
+                                            { value: 'instagram', label: 'Instagram' },
+                                            { value: 'linkedin', label: 'LinkedIn' },
+                                            { value: 'youtube', label: 'YouTube' }
+                                        ]}
+                                        onChange={setFilterPlatform}
+                                        placeholder="Platform"
+                                        icon={Globe}
+                                        size="sm"
+                                        accentColor="neon-blue"
+                                        searchable={false}
+                                        className="h-8"
+                                    />
+                                </div>
                             </div>
-                        )}
+                        </div>
 
-                        {/* Creators Count Badge (Tablet / Desktop) */}
-                        <div className="hidden sm:flex col-auto items-center justify-start gap-1.5 text-[8px] font-bold text-gray-900 dark:text-white/30 uppercase tracking-wider sm:ml-auto shrink-0 py-1 select-none">
-                            <span className="w-1.5 h-1.5 rounded-full bg-neon-pink animate-pulse" />
-                            <span>{filteredCreators.length} of {creators.length} Creators</span>
+                        {/* Right Group: Reset Filters & Total Count Badge */}
+                        <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0 pt-1 xl:pt-0 border-t xl:border-t-0 border-black/[0.04] dark:border-white/[0.04]">
+                            {hasActiveFilters && (
+                                <button
+                                    type="button"
+                                    onClick={resetAllFilters}
+                                    className="h-8 px-2.5 rounded-lg text-xs font-semibold text-rose-500 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-500/10 flex items-center gap-1 transition-all select-none"
+                                    title="Reset all filters"
+                                >
+                                    <X size={12} />
+                                    <span>Reset filters</span>
+                                </button>
+                            )}
+
+                            <div className="flex items-center gap-1.5 text-xs font-medium text-gray-500 dark:text-zinc-400 select-none">
+                                <span className={cn(
+                                    "w-1.5 h-1.5 rounded-full shrink-0",
+                                    hasActiveFilters ? "bg-amber-400 animate-pulse" : "bg-emerald-400"
+                                )} />
+                                <span>
+                                    {hasActiveFilters ? (
+                                        <>Showing <strong className="text-gray-900 dark:text-white font-bold">{filteredCreators.length}</strong> of {creators.length} creators</>
+                                    ) : (
+                                        <><strong className="text-gray-900 dark:text-white font-bold">{creators.length}</strong> creators</>
+                                    )}
+                                </span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1441,9 +1653,9 @@ const CreatorManager = ({ showLeaderboardOnly = false, isEmbedded = false }) => 
                                         setIsAddCityCreatorsOpen(true);
                                     }}
                                     className="flex-1 md:flex-none h-9 sm:h-10 px-3.5 sm:px-5 bg-[#25D366] text-black hover:brightness-110 font-black text-[8px] sm:text-[9px] uppercase tracking-widest rounded-xl transition-all flex items-center justify-center gap-1.5 shadow-[0_0_20px_rgba(37,211,102,0.3)]"
-                                    title="Add selected creators to City WhatsApp group"
+                                    title="Send WhatsApp Group joining links to selected creators safely"
                                 >
-                                    <MessageSquare size={12} /> Add to WA
+                                    <Send size={12} /> Send WA Invites
                                 </button>
                                 <button
                                     onClick={() => setIsBulkEmailModalOpen(true)}
@@ -1778,1152 +1990,8 @@ const StatusPill = ({ status }) => {
     );
 };
 
-// Section heading component
-const SectionLabel = ({ children }) => (
-    <p className="text-[10px] font-bold text-gray-500 dark:text-white/40 uppercase tracking-[0.2em] mb-3">{children}</p>
-);
 
-const CreatorDetailModal = ({ creator, onClose, onUpdateStatus, onDelete, isUpdating, isDeleting }) => {
-    const { updateCreator, addNotification, creators, campaigns } = useStore();
-    
-    // States
-    const [isFeatured, setIsFeatured] = useState(creator.isFeatured || false);
-    const [customBadgeText, setCustomBadgeText] = useState('');
-    const [adminBadges, setAdminBadges] = useState(creator.adminBadges || []);
-    const [communicationTab, setCommunicationTab] = useState('email');
-    const [emailSubject, setEmailSubject] = useState('Partnership Update - Newbi Entertainment');
-    const [emailBody, setEmailBody] = useState('');
-    const [messageText, setMessageText] = useState('');
-    const [sendingEmail, setSendingEmail] = useState(false);
-    const [sendingMessage, setSendingMessage] = useState(false);
-    const [sendingWelcomePass, setSendingWelcomePass] = useState(false);
-    const [passEmailType, setPassEmailType] = useState(creator.profileStatus === 'approved' ? 'approved' : 'welcome');
 
-    useEffect(() => {
-        setIsFeatured(creator.isFeatured || false);
-        setAdminBadges(creator.adminBadges || []);
-    }, [creator]);
-
-    // Derived badges from creator stats
-    const earnedBadges = useMemo(() => {
-        const badges = [];
-        const followers = Number(creator.instagramFollowers || 0);
-        
-        if (followers >= 100000) {
-            badges.push({ id: 'macro', label: 'Macro Creator (100K+)', icon: '👑', bg: 'bg-amber-500/10 border-amber-500/20 text-amber-500 dark:text-amber-400', desc: 'Over 100,000 followers' });
-        } else if (followers >= 10000) {
-            badges.push({ id: 'micro', label: 'Micro Creator (10K+)', icon: '⭐', bg: 'bg-blue-500/10 border-blue-500/20 text-blue-500 dark:text-blue-400', desc: 'Over 10,000 followers' });
-        } else if (followers >= 1000) {
-            badges.push({ id: 'nano', label: 'Nano Creator (1K+)', icon: '🌱', bg: 'bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400', desc: 'Over 1,000 followers' });
-        }
-
-        const joinedCount = (creator.joinedCampaigns || []).length;
-        if (joinedCount >= 10) {
-            badges.push({ id: 'veteran', label: 'Campaign Veteran (10+)', icon: '🔥', bg: 'bg-orange-500/10 border-orange-500/20 text-orange-500 dark:text-orange-400', desc: 'Completed 10+ campaigns' });
-        } else if (joinedCount >= 3) {
-            badges.push({ id: 'active', label: 'Active Collaborator (3+)', icon: '⚡', bg: 'bg-purple-500/10 border-purple-500/20 text-purple-600 dark:text-purple-400', desc: 'Participated in 3+ campaigns' });
-        }
-
-        const approvedCount = (creator.shortlistedCampaigns || []).length;
-        if (approvedCount >= 5) {
-            badges.push({ id: 'top_performer', label: 'Top Performer', icon: '🏆', bg: 'bg-rose-500/10 border-rose-500/20 text-rose-500 dark:text-rose-400', desc: 'Shortlisted for 5+ campaigns' });
-        }
-
-        if (creator.isPhoneVerified) {
-            badges.push({ id: 'verified_phone', label: 'Verified Contact', icon: '📱', bg: 'bg-teal-500/10 border-teal-500/20 text-teal-600 dark:text-teal-400', desc: 'Phone number verified' });
-        }
-
-        return badges;
-    }, [creator]);
-
-    // Handle toggle featured
-    const handleToggleFeatured = async () => {
-        const next = !isFeatured;
-        setIsFeatured(next);
-        try {
-            await updateCreator(creator.id || creator.uid, { isFeatured: next });
-            useStore.getState().addToast(next ? "Marked as Featured Creator" : "Removed from Featured", 'success');
-        } catch (err) {
-            setIsFeatured(!next);
-            useStore.getState().addToast("Failed to update featured status", 'error');
-        }
-    };
-
-    // Handle add custom badge
-    const handleAddBadge = async (e) => {
-        e.preventDefault();
-        const trimmed = customBadgeText.trim();
-        if (!trimmed) return;
-        if (adminBadges.includes(trimmed)) {
-            useStore.getState().addToast("Badge already exists", 'error');
-            return;
-        }
-        const updated = [...adminBadges, trimmed];
-        setAdminBadges(updated);
-        setCustomBadgeText('');
-        try {
-            await updateCreator(creator.id || creator.uid, { adminBadges: updated });
-            useStore.getState().addToast(`Added badge: ${trimmed}`, 'success');
-        } catch (err) {
-            setAdminBadges(adminBadges);
-            useStore.getState().addToast("Failed to add badge", 'error');
-        }
-    };
-
-    // Handle remove custom badge
-    const handleRemoveBadge = async (badgeToRemove) => {
-        const updated = adminBadges.filter(b => b !== badgeToRemove);
-        setAdminBadges(updated);
-        try {
-            await updateCreator(creator.id || creator.uid, { adminBadges: updated });
-            useStore.getState().addToast(`Removed badge: ${badgeToRemove}`, 'success');
-        } catch (err) {
-            setAdminBadges(adminBadges);
-            useStore.getState().addToast("Failed to remove badge", 'error');
-        }
-    };
-
-    // Handle sending individual email
-    const handleSendEmail = async (e) => {
-        e.preventDefault();
-        if (!creator.email) {
-            useStore.getState().addToast("Creator does not have an email address", 'error');
-            return;
-        }
-        if (!emailSubject.trim() || !emailBody.trim()) {
-            useStore.getState().addToast("Please enter both subject and message body", 'error');
-            return;
-        }
-        setSendingEmail(true);
-        try {
-            const { sendCustomEmail } = await import('../../lib/email');
-            const result = await sendCustomEmail({
-                toEmail: creator.email,
-                toName: creator.name,
-                subject: emailSubject,
-                message: emailBody,
-                html: `<div style="font-family: Arial, sans-serif; padding: 20px; color: #111;">
-                    <p>${emailBody.replace(/\n/g, '<br/>')}</p>
-                    <hr style="margin-top: 30px; border: none; border-top: 1px solid #eee;" />
-                    <p style="font-size: 12px; color: #888;">Newbi Entertainment • Creator Operations</p>
-                </div>`
-            });
-            if (result && result.success) {
-                useStore.getState().addToast(`Email sent to ${creator.name}!`, 'success');
-                setEmailBody('');
-            } else {
-                throw new Error(result?.error || "Send failed");
-            }
-        } catch (err) {
-            console.error("Error sending custom email:", err);
-            useStore.getState().addToast("Failed to send email. Please try again.", 'error');
-        } finally {
-            setSendingEmail(false);
-        }
-    };
-
-    // Handle sending/resending welcome email with creator pass and city WhatsApp group
-    const handleSendWelcomePassEmail = async () => {
-        if (!creator.email) {
-            useStore.getState().addToast("Creator does not have an email address", 'error');
-            return;
-        }
-        setSendingWelcomePass(true);
-        try {
-            const { sendCreatorWelcomeEmail } = await import('../../lib/email');
-            const result = await sendCreatorWelcomeEmail(
-                creator.email,
-                creator.displayName || creator.name || 'Creator',
-                creator.verificationToken || '',
-                creator.uid || creator.id || '',
-                {
-                    city: creator.city,
-                    handle: creator.instagram || creator.handle,
-                    niche: creator.primaryNiche || creator.niche || creator.categories || creator.category,
-                    passId: creator.creatorId || creator.uid?.slice(0, 8),
-                    avatar: creator.profilePicture || creator.avatar || creator.photoURL,
-                    phone: creator.phone,
-                    points: creator.points || 500
-                }
-            );
-            if (result && result.success) {
-                useStore.getState().addToast(`Creator Pass & Welcome Email sent to ${creator.email}!`, 'success');
-            } else {
-                throw new Error(result?.error || 'Failed to dispatch welcome email');
-            }
-        } catch (err) {
-            console.error("Error sending welcome pass email:", err);
-            useStore.getState().addToast(err.message || "Failed to send welcome pass email", 'error');
-        } finally {
-            setSendingWelcomePass(false);
-        }
-    };
-
-    const welcomePassPreviewHtml = useMemo(() => {
-        if (!creator) return '';
-        const origin = typeof window !== 'undefined' ? window.location.origin : 'https://newbi.live';
-        const verificationUrl = creator.verificationToken 
-            ? `${origin}/verify-creator?id=${creator.uid || creator.id}&token=${creator.verificationToken}`
-            : '';
-        return generateCreatorWelcomeHTML(
-            creator.displayName || creator.name || 'Creator',
-            verificationUrl,
-            {
-                city: creator.city,
-                handle: creator.instagram || creator.handle,
-                niche: creator.primaryNiche || creator.niche || creator.categories || creator.category,
-                passId: creator.creatorId || creator.uid?.slice(0, 8),
-                avatar: creator.profilePicture || creator.avatar || creator.photoURL,
-                phone: creator.phone,
-                points: creator.points || 500
-            }
-        );
-    }, [creator]);
-
-    // Handle sending/resending verified pass email
-    const handleSendApprovedPassEmail = async () => {
-        if (!creator.email) {
-            useStore.getState().addToast("Creator does not have an email address", 'error');
-            return;
-        }
-        setSendingWelcomePass(true);
-        try {
-            const result = await sendCreatorApprovedEmail(
-                creator.email,
-                creator.displayName || creator.name || 'Creator',
-                {
-                    city: creator.city,
-                    handle: creator.instagram || creator.handle,
-                    niche: creator.primaryNiche || creator.niche || creator.categories || creator.category,
-                    passId: creator.creatorId || creator.uid?.slice(0, 8),
-                    avatar: creator.profilePicture || creator.avatar || creator.photoURL,
-                    phone: creator.phone,
-                    points: creator.points || 500
-                }
-            );
-            if (result && result.success) {
-                useStore.getState().addToast(`Official Verified Pass Email sent to ${creator.email}!`, 'success');
-            } else {
-                throw new Error(result?.error || 'Failed to dispatch verified pass email');
-            }
-        } catch (err) {
-            console.error("Error sending verified pass email:", err);
-            useStore.getState().addToast(err.message || "Failed to send verified pass email", 'error');
-        } finally {
-            setSendingWelcomePass(false);
-        }
-    };
-
-    const approvedPassPreviewHtml = useMemo(() => {
-        if (!creator) return '';
-        return generateCreatorApprovedHTML(
-            creator.displayName || creator.name || 'Creator',
-            {
-                city: creator.city,
-                handle: creator.instagram || creator.handle,
-                niche: creator.primaryNiche || creator.niche || creator.categories || creator.category,
-                passId: creator.creatorId || creator.uid?.slice(0, 8),
-                avatar: creator.profilePicture || creator.avatar || creator.photoURL,
-                phone: creator.phone,
-                points: creator.points || 500
-            }
-        );
-    }, [creator]);
-
-    // Handle sending notification
-    const handleSendMessage = async (e) => {
-        e.preventDefault();
-        if (!messageText.trim()) return;
-        setSendingMessage(true);
-        try {
-            await addNotification({
-                userId: creator.uid,
-                title: 'Message from Newbi Admin',
-                message: messageText.trim(),
-                type: 'admin_message',
-                createdAt: new Date().toISOString(),
-                read: false
-            });
-            useStore.getState().addToast(`Notification sent to ${creator.name}!`, 'success');
-            setMessageText('');
-        } catch (err) {
-            console.error("Error sending notification:", err);
-            useStore.getState().addToast("Failed to send notification", 'error');
-        } finally {
-            setSendingMessage(false);
-        }
-    };
-
-    const socialLinks = [
-        creator.instagram && { platform: 'Instagram', icon: Instagram, handle: `@${extractSocialUsername(creator.instagram, 'instagram')}`, followers: creator.instagramFollowers, url: buildSocialUrl(creator.instagram, 'instagram'), color: 'text-pink-600 dark:text-pink-400', bg: 'bg-pink-500/10 border-pink-500/20' },
-        creator.linkedin && { platform: 'LinkedIn', icon: Linkedin, handle: `@${extractSocialUsername(creator.linkedin, 'linkedin')}`, followers: creator.linkedinFollowers, url: buildSocialUrl(creator.linkedin, 'linkedin'), color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-500/10 border-blue-500/20' },
-        creator.youtube && { platform: 'YouTube', icon: Youtube, handle: `@${extractSocialUsername(creator.youtube, 'youtube')}`, followers: creator.youtubeSubscribers, url: buildSocialUrl(creator.youtube, 'youtube'), color: 'text-red-600 dark:text-red-400', bg: 'bg-red-500/10 border-red-500/20' },
-        creator.twitter && { platform: 'X', icon: Twitter, handle: `@${extractSocialUsername(creator.twitter, 'twitter')}`, followers: null, url: buildSocialUrl(creator.twitter, 'twitter'), color: 'text-sky-600 dark:text-sky-400', bg: 'bg-sky-500/10 border-sky-500/20' },
-    ].filter(Boolean);
-
-    return (
-        <SharedLayoutModal 
-            isOpen={true} 
-            onClose={onClose} 
-            layoutId={`creator-card-${creator.id || creator.uid}`}
-            className="w-full max-w-5xl h-[90vh] bg-gray-50 dark:bg-[#07090E]"
-            contentClassName="p-0"
-        >
-            <div className="flex flex-col h-full relative">
-                {/* Sticky Header */}
-                <div className="sticky top-0 z-50 flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 bg-white/70 dark:bg-[#0c0e14]/80 backdrop-blur-2xl border-b border-black/[0.08] dark:border-white/[0.08]">
-                    <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
-                        <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl bg-black/5 dark:bg-white/[0.04] border border-black/10 dark:border-white/[0.06] flex items-center justify-center shrink-0">
-                            <Users size={13} className="text-gray-500 dark:text-white/40" />
-                        </div>
-                        <div className="min-w-0">
-                            <p className="text-[8px] sm:text-[9px] font-bold text-gray-500 dark:text-white/40 uppercase tracking-[0.15em]">Creator Profile</p>
-                            <p className="text-xs font-bold text-gray-900 dark:text-white truncate">{creator.name}</p>
-                        </div>
-                    </div>
-                    <button 
-                        onClick={onClose}
-                        className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-black/5 dark:bg-white/[0.04] border border-black/10 dark:border-white/[0.06] flex items-center justify-center text-gray-600 dark:text-white/40 hover:bg-black/10 dark:hover:bg-white/10 hover:text-gray-900 dark:hover:text-white transition-all shrink-0"
-                    >
-                        <X size={16} />
-                    </button>
-                </div>
-
-                {/* Scrollable Content */}
-                <div className="flex-1 overflow-y-auto custom-scrollbar">
-                    <div className="px-4 sm:px-6 py-4 sm:py-6 space-y-5 sm:space-y-6">
-
-                        {/* ─── Hero Section ─── */}
-                        <div className="relative bg-white/70 dark:bg-[#0c0e14]/80 backdrop-blur-2xl border border-black/[0.06] dark:border-white/[0.08] rounded-3xl p-5 sm:p-7 shadow-[0_8px_32px_rgba(0,0,0,0.02)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)] overflow-hidden group">
-                            {/* Glowing corner accent */}
-                            <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-bl from-neon-green/[0.08] to-transparent rounded-full blur-3xl pointer-events-none -mr-20 -mt-20 group-hover:scale-105 transition-transform duration-700" />
-                            
-                            <div className="relative z-10 flex flex-col sm:flex-row sm:items-start gap-5 sm:gap-6">
-                                <div className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-gray-100 dark:bg-zinc-800 border-2 border-black/[0.06] dark:border-white/[0.1] overflow-hidden shrink-0 shadow-md">
-                                    {(creator.profilePicture || creator.instagramProfilePic || creator.profilePic || creator.photoURL) ? (
-                                        <img src={(creator.profilePicture || creator.instagramProfilePic || creator.profilePic || creator.photoURL)} alt="" className="w-full h-full object-cover" />
-                                    ) : (
-                                        <div className="w-full h-full flex items-center justify-center text-3xl font-black text-black/10 dark:text-white/[0.06] italic select-none font-heading bg-black/[0.02] dark:bg-white/[0.02]">{creator.name?.charAt(0) || '?'}</div>
-                                    )}
-                                    {creator.profileStatus === 'approved' && (
-                                        <div className="absolute -bottom-1 -right-1 w-7 h-7 bg-neon-green rounded-full flex items-center justify-center border-2 border-white dark:border-[#0c0e14] shadow-sm">
-                                            <Check size={14} strokeWidth={3} className="text-black" />
-                                        </div>
-                                    )}
-                                </div>
-                                <div className="flex-1 min-w-0 pt-1">
-                                    <div className="flex flex-wrap items-center gap-2 mb-2">
-                                        <StatusPill status={creator.profileStatus} />
-                                        <span className="text-[9px] font-bold text-gray-500 dark:text-white/40 uppercase tracking-[0.15em] bg-black/5 dark:bg-white/[0.03] px-2 py-1 rounded-md border border-black/10 dark:border-white/[0.04]">
-                                            {creator.creatorId || creator.uid.slice(0, 8).toUpperCase()}
-                                        </span>
-                                    </div>
-                                    <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black font-heading tracking-tight text-gray-950 dark:text-white leading-tight break-words">
-                                        {creator.name}
-                                    </h2>
-                                    <div className="flex items-center gap-3 mt-2 text-[10px] font-black text-gray-500 dark:text-zinc-500 uppercase tracking-widest flex-wrap">
-                                        <span className="flex items-center gap-1.5"><MapPin size={12} className="text-neon-pink" />{creator.city || 'Global'}</span>
-                                        <span className="text-gray-300 dark:text-zinc-700">•</span>
-                                        <span className="flex items-center gap-1.5"><Clock size={12} className="text-gray-400" />{new Date(creator.createdAt || Date.now()).getFullYear()} Joined</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Manual Follower Verification Notice */}
-                        {Boolean(creator.manualFollowerEntry || creator.requiresManualVerification) && (
-                            <div className="p-3.5 sm:p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-start gap-3">
-                                <div className="w-8 h-8 rounded-lg bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 mt-0.5">
-                                    <Clock size={16} />
-                                </div>
-                                <div className="space-y-1 min-w-0 flex-1">
-                                    <div className="flex items-center gap-2 flex-wrap">
-                                        <span className="text-[10px] font-black uppercase tracking-wider text-amber-600 dark:text-amber-400 font-mono">
-                                            Followers Entered Manually
-                                        </span>
-                                        <span className="text-[8px] font-mono font-bold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30">
-                                            Manual Verification Required
-                                        </span>
-                                    </div>
-                                    <p className="text-xs text-gray-700 dark:text-zinc-300 leading-relaxed">
-                                        This creator self-reported <strong className="text-gray-900 dark:text-white font-bold">{Number(creator.instagramFollowers || 0).toLocaleString()}</strong> followers. Automated Instagram verification was not completed at signup. Please verify their handle <strong>@{creator.instagram}</strong> manually before approving.
-                                    </p>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* ─── Badges Row ─── */}
-                        {(earnedBadges.length > 0 || adminBadges.length > 0) && (
-                            <div className="flex flex-wrap gap-1.5">
-                                {earnedBadges.map(badge => (
-                                    <span 
-                                        key={badge.id} 
-                                        title={badge.desc}
-                                        className={cn("inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[8px] font-bold uppercase tracking-wider border", badge.bg)}
-                                    >
-                                        <span>{badge.icon}</span>
-                                        <span>{badge.label}</span>
-                                    </span>
-                                ))}
-                                {adminBadges.map((badge, idx) => (
-                                    <span 
-                                        key={`custom-${idx}`} 
-                                        className="inline-flex items-center gap-1 px-2.5 py-1 bg-purple-500/10 border border-purple-500/20 text-purple-600 dark:text-purple-400 rounded-lg text-[8px] font-bold uppercase tracking-wider"
-                                    >
-                                        <span>🏅</span>
-                                        <span>{badge}</span>
-                                        <button 
-                                            onClick={() => handleRemoveBadge(badge)}
-                                            className="ml-0.5 text-red-500 hover:text-red-700 dark:hover:text-white transition-colors"
-                                        >
-                                            ×
-                                        </button>
-                                    </span>
-                                ))}
-                            </div>
-                        )}
-
-                        {/* Divider */}
-                        <div className="h-px bg-black/10 dark:bg-white/[0.04]" />
-
-                        {/* ─── Contact Info ─── */}
-                        <div>
-                            <SectionLabel>Contact</SectionLabel>
-                            <div className="space-y-2">
-                                <div className="flex items-center gap-3 px-4 py-3 bg-gray-50 dark:bg-white/[0.02] border border-black/10 dark:border-white/[0.05] rounded-xl">
-                                    <Mail size={14} className="text-gray-400 dark:text-white/30 shrink-0" />
-                                    <div className="min-w-0 flex-1">
-                                        <p className="text-[8px] font-bold text-gray-500 dark:text-white/40 uppercase tracking-wider">Email</p>
-                                        <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{creator.email || 'N/A'}</p>
-                                    </div>
-                                </div>
-                                <div className="flex items-center gap-3 px-4 py-3 bg-gray-50 dark:bg-white/[0.02] border border-black/10 dark:border-white/[0.05] rounded-xl">
-                                    <Phone size={14} className="text-gray-400 dark:text-white/30 shrink-0" />
-                                    <div className="min-w-0 flex-1">
-                                        <p className="text-[8px] font-bold text-gray-500 dark:text-white/40 uppercase tracking-wider">Phone</p>
-                                        <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{creator.phone || 'N/A'}</p>
-                                    </div>
-                                </div>
-                                {creator.collegeName && (
-                                    <div className="flex items-center gap-3 px-4 py-3 bg-gray-50 dark:bg-white/[0.02] border border-black/10 dark:border-white/[0.05] rounded-xl">
-                                        <Layers size={14} className="text-gray-400 dark:text-white/30 shrink-0" />
-                                        <div className="min-w-0 flex-1">
-                                            <p className="text-[8px] font-bold text-gray-500 dark:text-white/40 uppercase tracking-wider">College</p>
-                                            <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{creator.collegeName}</p>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-
-                        {/* ─── Social Links ─── */}
-                        {socialLinks.length > 0 && (
-                            <div>
-                                <SectionLabel>Social Footprint</SectionLabel>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                    {socialLinks.map(social => (
-                                        <a
-                                            key={social.platform}
-                                            href={social.url}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className={cn("flex items-center gap-3 px-4 py-3 rounded-xl border transition-all hover:scale-[1.01] active:scale-[0.99]", social.bg)}
-                                        >
-                                            <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center", social.color)}>
-                                                <social.icon size={15} />
-                                            </div>
-                                            <div className="flex-1 min-w-0">
-                                                <p className="text-[8px] font-bold text-gray-500 dark:text-white/40 uppercase tracking-wider">{social.platform}</p>
-                                                <p className="text-xs font-bold text-gray-900 dark:text-white truncate">{social.handle}</p>
-                                                {social.followers && (
-                                                    <p className="text-[9px] font-medium text-gray-600 dark:text-white/40">{Number(social.followers || 0).toLocaleString()} followers</p>
-                                                )}
-                                            </div>
-                                            <ExternalLink size={12} className="text-gray-400 dark:text-white/20 shrink-0" />
-                                        </a>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-
-                        {/* ─── Bio / Strategic Overview ─── */}
-                        <div>
-                            <SectionLabel>Creator Bio &amp; Strategic Overview</SectionLabel>
-                            <div className="px-4 py-4 bg-gray-50 dark:bg-white/[0.02] border border-black/10 dark:border-white/[0.05] rounded-xl">
-                                <p className="text-sm text-gray-700 dark:text-white/60 leading-relaxed italic">
-                                    "{creator.bio || "No professional overview provided."}"
-                                </p>
-                            </div>
-                        </div>
-
-                        {/* ─── Niche & Specialization ─── */}
-                        <div>
-                            <SectionLabel>Niche & Specialization</SectionLabel>
-                            <div className="flex flex-wrap gap-2">
-                                {(creator.niches || creator.specializations || []).map((n, i) => (
-                                    <span key={i} className="px-3 py-1.5 bg-gray-100 dark:bg-white/[0.03] border border-black/10 dark:border-white/[0.06] rounded-lg text-[9px] font-bold uppercase tracking-wider text-gray-700 dark:text-white/50">
-                                        {n}
-                                    </span>
-                                ))}
-                                {(creator.niches || creator.specializations || []).length === 0 && (
-                                    <span className="text-[9px] font-medium text-gray-400 dark:text-white/20 italic">No specializations listed</span>
-                                )}
-                            </div>
-                        </div>
-
-                        {/* ─── Collaboration Preferences ─── */}
-                        <div>
-                            <SectionLabel>Collaboration Preferences</SectionLabel>
-                            <div className="grid grid-cols-2 gap-2">
-                                <div className="px-4 py-3 bg-gray-50 dark:bg-white/[0.02] border border-black/10 dark:border-white/[0.05] rounded-xl">
-                                    <p className="text-[8px] font-bold text-gray-500 dark:text-white/40 uppercase tracking-wider mb-1">Barter</p>
-                                    <p className="text-xs font-bold text-gray-900 dark:text-white">
-                                        {creator.doBarter === 'yes' ? 'Yes' : creator.doBarter === 'no' ? 'Paid Only' : creator.doBarter === 'selective' ? 'Selective' : (creator.doBarter || 'N/A')}
-                                    </p>
-                                </div>
-                                <div className="px-4 py-3 bg-gray-50 dark:bg-white/[0.02] border border-black/10 dark:border-white/[0.05] rounded-xl">
-                                    <p className="text-[8px] font-bold text-gray-500 dark:text-white/40 uppercase tracking-wider mb-1">Rates</p>
-                                    <p className="text-xs font-bold text-gray-900 dark:text-white">{creator.commercials || 'N/A'}</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Divider */}
-                        <div className="h-px bg-black/10 dark:bg-white/[0.04]" />
-
-                        {/* ─── Promotions & Badges ─── */}
-                        <div className="p-4 bg-gray-50 dark:bg-white/[0.02] border border-black/10 dark:border-white/[0.05] rounded-2xl space-y-4">
-                            <div className="flex items-center justify-between">
-                                <p className="text-[10px] font-bold text-gray-500 dark:text-white/40 uppercase tracking-[0.2em]">Promotions & Badges</p>
-                                <div className="flex items-center gap-2.5">
-                                    <span className="text-[9px] font-bold text-gray-500 dark:text-white/40 uppercase tracking-wider">Featured</span>
-                                    <button 
-                                        onClick={handleToggleFeatured}
-                                        className={cn(
-                                            "w-10 h-5 rounded-full p-0.5 transition-all duration-300 flex items-center",
-                                            isFeatured ? "bg-neon-pink justify-end" : "bg-black/10 dark:bg-white/10 justify-start"
-                                        )}
-                                    >
-                                        <motion.div layout className="w-4 h-4 rounded-full bg-white dark:bg-black shadow-md" />
-                                    </button>
-                                </div>
-                            </div>
-                            <form onSubmit={handleAddBadge} className="flex gap-2">
-                                <input 
-                                    type="text" 
-                                    value={customBadgeText}
-                                    onChange={(e) => setCustomBadgeText(e.target.value)}
-                                    placeholder="Custom badge name..."
-                                    className="flex-1 h-10 bg-white dark:bg-black/40 border border-black/10 dark:border-white/[0.06] rounded-lg px-3 text-xs font-medium text-gray-900 dark:text-white focus:border-neon-pink/40 outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-white/20"
-                                />
-                                <button 
-                                    type="submit"
-                                    className="px-4 h-10 bg-black/5 dark:bg-white/[0.06] hover:bg-black/10 dark:hover:bg-white/10 text-gray-800 dark:text-white/60 hover:text-black dark:hover:text-white rounded-lg text-[9px] font-bold uppercase tracking-wider transition-all"
-                                >
-                                    Add
-                                </button>
-                            </form>
-                        </div>
-
-                        {/* ─── Direct Communication ─── */}
-                        <div className="p-4 bg-gray-50 dark:bg-white/[0.02] border border-black/10 dark:border-white/[0.05] rounded-2xl space-y-4">
-                            {/* 1-Click Quick Resend / Send Pass Email */}
-                            {creator.profileStatus === 'approved' ? (
-                                <div className="p-3 bg-neon-green/5 border border-neon-green/20 dark:bg-neon-green/10 rounded-xl flex items-center justify-between gap-3">
-                                    <div className="min-w-0">
-                                        <p className="text-[10px] font-black text-gray-900 dark:text-white uppercase tracking-wider flex items-center gap-1.5">
-                                            <CheckCircle2 size={12} className="text-neon-green" />
-                                            Official Verified Creator Pass Email
-                                        </p>
-                                        <p className="text-[9px] text-gray-500 dark:text-zinc-400 mt-0.5 truncate">
-                                            Sends verified digital pass, perks &amp; {creator.city || 'city'} WhatsApp hub link
-                                        </p>
-                                    </div>
-                                    <button
-                                        type="button"
-                                        onClick={handleSendApprovedPassEmail}
-                                        disabled={sendingWelcomePass || !creator.email}
-                                        className="h-8 px-3 rounded-lg bg-neon-green text-black font-black text-[9px] uppercase tracking-wider shrink-0 flex items-center gap-1.5 hover:bg-neon-green/90 disabled:opacity-40 transition-all shadow-sm cursor-pointer"
-                                    >
-                                        {sendingWelcomePass ? <LoadingSpinner size="xs" color="black" /> : (
-                                            <><Send size={10} /> Send Pass</>
-                                        )}
-                                    </button>
-                                </div>
-                            ) : (
-                                <div className="p-3 bg-neon-cyan/5 border border-neon-cyan/20 dark:bg-neon-cyan/10 rounded-xl flex items-center justify-between gap-3">
-                                    <div className="min-w-0">
-                                        <p className="text-[10px] font-black text-gray-900 dark:text-white uppercase tracking-wider flex items-center gap-1.5">
-                                            <Ticket size={12} className="text-neon-cyan" />
-                                            Official Creator Pass &amp; Welcome Email
-                                        </p>
-                                        <p className="text-[9px] text-gray-500 dark:text-zinc-400 mt-0.5 truncate">
-                                            Sends pass card, {creator.city || 'city'} WhatsApp hub link &amp; verification
-                                        </p>
-                                    </div>
-                                    <button
-                                        type="button"
-                                        onClick={handleSendWelcomePassEmail}
-                                        disabled={sendingWelcomePass || !creator.email}
-                                        className="h-8 px-3 rounded-lg bg-neon-cyan text-black font-black text-[9px] uppercase tracking-wider shrink-0 flex items-center gap-1.5 hover:bg-neon-cyan/90 disabled:opacity-40 transition-all shadow-sm cursor-pointer"
-                                    >
-                                        {sendingWelcomePass ? <LoadingSpinner size="xs" color="black" /> : (
-                                            <><Send size={10} /> Send Pass</>
-                                        )}
-                                    </button>
-                                </div>
-                            )}
-
-                            <div>
-                                <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Direct Communication</p>
-                                <div className="flex border-b border-black/[0.08] dark:border-white/[0.08]">
-                                    <button 
-                                        onClick={() => setCommunicationTab('email')} 
-                                        className={cn(
-                                            "relative px-4 py-3 text-[10px] font-black uppercase tracking-widest transition-all",
-                                            communicationTab === 'email' ? "text-gray-900 dark:text-white" : "text-gray-500 hover:text-gray-900 dark:hover:text-white"
-                                        )}
-                                    >
-                                        Custom
-                                        {communicationTab === 'email' && (
-                                            <motion.div layoutId="comm-tab-underline" className="absolute -bottom-px left-0 right-0 h-0.5 bg-neon-green" />
-                                        )}
-                                    </button>
-                                    <button 
-                                        onClick={() => setCommunicationTab('pass')} 
-                                        className={cn(
-                                            "relative px-4 py-3 text-[10px] font-black uppercase tracking-widest transition-all",
-                                            communicationTab === 'pass' ? "text-gray-900 dark:text-white" : "text-gray-500 hover:text-gray-900 dark:hover:text-white"
-                                        )}
-                                    >
-                                        Pass Mail
-                                        {communicationTab === 'pass' && (
-                                            <motion.div layoutId="comm-tab-underline" className="absolute -bottom-px left-0 right-0 h-0.5 bg-neon-green" />
-                                        )}
-                                    </button>
-                                    <button 
-                                        onClick={() => setCommunicationTab('message')} 
-                                        className={cn(
-                                            "relative px-4 py-3 text-[10px] font-black uppercase tracking-widest transition-all",
-                                            communicationTab === 'message' ? "text-gray-900 dark:text-white" : "text-gray-500 hover:text-gray-900 dark:hover:text-white"
-                                        )}
-                                    >
-                                        Message
-                                        {communicationTab === 'message' && (
-                                            <motion.div layoutId="comm-tab-underline" className="absolute -bottom-px left-0 right-0 h-0.5 bg-neon-green" />
-                                        )}
-                                    </button>
-                                </div>
-                            </div>
-
-                            {communicationTab === 'email' ? (
-                                <form onSubmit={handleSendEmail} className="space-y-3">
-                                    <div>
-                                        <label className="text-[8px] font-bold text-gray-500 dark:text-white/40 uppercase tracking-wider block mb-1 pl-0.5">Subject</label>
-                                        <input 
-                                            type="text" 
-                                            value={emailSubject}
-                                            onChange={(e) => setEmailSubject(e.target.value)}
-                                            placeholder="Email subject..." 
-                                            className="w-full h-10 bg-white dark:bg-black/40 border border-black/10 dark:border-white/[0.06] rounded-lg px-3 text-xs font-medium text-gray-900 dark:text-white focus:border-neon-pink/40 outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-white/20"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="text-[8px] font-bold text-gray-500 dark:text-white/40 uppercase tracking-wider block mb-1 pl-0.5">Message Body</label>
-                                        <textarea 
-                                            value={emailBody}
-                                            onChange={(e) => setEmailBody(e.target.value)}
-                                            placeholder="Write email body..." 
-                                            className="w-full h-28 bg-white dark:bg-black/40 border border-black/10 dark:border-white/[0.06] rounded-lg p-3 text-xs font-medium text-gray-900 dark:text-white focus:border-neon-pink/40 outline-none transition-all resize-none placeholder:text-gray-400 dark:placeholder:text-white/20"
-                                        />
-                                    </div>
-                                    <button 
-                                        type="submit"
-                                        disabled={sendingEmail}
-                                        className="w-full h-10 bg-black text-white dark:bg-white/10 hover:bg-black/80 dark:hover:bg-white/20 dark:text-white rounded-lg text-[9px] font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-all disabled:opacity-40"
-                                    >
-                                        {sendingEmail ? <LoadingSpinner size="xs" color="white" /> : (
-                                            <><Send size={11} /> Send Email</>
-                                        )}
-                                    </button>
-                                </form>
-                            ) : communicationTab === 'pass' ? (
-                                <div className="space-y-3">
-                                    <div className="flex items-center gap-2 p-1 bg-black/5 dark:bg-white/5 rounded-lg border border-black/5 dark:border-white/5">
-                                        <button
-                                            type="button"
-                                            onClick={() => setPassEmailType('approved')}
-                                            className={cn(
-                                                "flex-1 py-1.5 rounded-md text-[9px] font-black uppercase tracking-wider transition-all",
-                                                passEmailType === 'approved' 
-                                                    ? "bg-neon-green text-black shadow-sm" 
-                                                    : "text-gray-500 hover:text-gray-900 dark:hover:text-white"
-                                            )}
-                                        >
-                                            Verified Pass
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={() => setPassEmailType('welcome')}
-                                            className={cn(
-                                                "flex-1 py-1.5 rounded-md text-[9px] font-black uppercase tracking-wider transition-all",
-                                                passEmailType === 'welcome' 
-                                                    ? "bg-neon-cyan text-black shadow-sm" 
-                                                    : "text-gray-500 hover:text-gray-900 dark:hover:text-white"
-                                            )}
-                                        >
-                                            Welcome Pass
-                                        </button>
-                                    </div>
-
-                                    <div className={cn(
-                                        "p-3 rounded-xl space-y-1.5 border",
-                                        passEmailType === 'approved' 
-                                            ? "bg-neon-green/5 border-neon-green/20" 
-                                            : "bg-neon-cyan/5 border-neon-cyan/20"
-                                    )}>
-                                        <div className="flex items-center justify-between text-[10px]">
-                                            <span className="font-bold text-gray-500 dark:text-zinc-400 uppercase tracking-wider">Pass Format</span>
-                                            <span className={cn(
-                                                "font-black uppercase tracking-wider",
-                                                passEmailType === 'approved' ? "text-neon-green" : "text-neon-cyan"
-                                            )}>
-                                                {passEmailType === 'approved' ? 'Profile Verified Roster' : 'New Creator Enrollment'}
-                                            </span>
-                                        </div>
-                                        <div className="flex items-center justify-between text-[10px]">
-                                            <span className="font-bold text-gray-500 dark:text-zinc-400 uppercase tracking-wider">City WhatsApp Hub</span>
-                                            <span className={cn(
-                                                "font-black uppercase tracking-wider",
-                                                passEmailType === 'approved' ? "text-neon-green" : "text-neon-cyan"
-                                            )}>
-                                                {resolveCityWhatsAppGroup(creator.city).city} Community
-                                            </span>
-                                        </div>
-                                        <div className="flex items-center justify-between text-[10px]">
-                                            <span className="font-bold text-gray-500 dark:text-zinc-400 uppercase tracking-wider">Recipient</span>
-                                            <span className="font-mono text-gray-900 dark:text-white truncate max-w-[200px]">
-                                                {creator.email || 'No email registered'}
-                                            </span>
-                                        </div>
-                                    </div>
-
-                                    {/* Sandboxed live preview of the pass email */}
-                                    <div className="border border-black/10 dark:border-white/10 rounded-xl overflow-hidden max-h-80 overflow-y-auto custom-scrollbar bg-[#07080C]">
-                                        <EmailPreviewIframe html={passEmailType === 'approved' ? approvedPassPreviewHtml : welcomePassPreviewHtml} />
-                                    </div>
-
-                                    <button 
-                                        type="button"
-                                        onClick={passEmailType === 'approved' ? handleSendApprovedPassEmail : handleSendWelcomePassEmail}
-                                        disabled={sendingWelcomePass || !creator.email}
-                                        className={cn(
-                                            "w-full h-10 font-black rounded-lg text-[9px] uppercase tracking-wider flex items-center justify-center gap-2 transition-all disabled:opacity-40 cursor-pointer shadow-sm text-black",
-                                            passEmailType === 'approved' ? "bg-neon-green hover:bg-neon-green/90" : "bg-neon-cyan hover:bg-neon-cyan/90"
-                                        )}
-                                    >
-                                        {sendingWelcomePass ? <LoadingSpinner size="xs" color="black" /> : (
-                                            <><Send size={11} /> {passEmailType === 'approved' ? 'Dispatch Verified Pass Email' : 'Dispatch Welcome Pass Email'}</>
-                                        )}
-                                    </button>
-                                </div>
-                            ) : (
-                                <form onSubmit={handleSendMessage} className="space-y-3">
-                                    <div>
-                                        <label className="text-[8px] font-bold text-gray-500 dark:text-white/40 uppercase tracking-wider block mb-1 pl-0.5">Notification Text</label>
-                                        <textarea 
-                                            value={messageText}
-                                            onChange={(e) => setMessageText(e.target.value)}
-                                            placeholder="Write notification message..." 
-                                            className="w-full h-28 bg-white dark:bg-black/40 border border-black/10 dark:border-white/[0.06] rounded-lg p-3 text-xs font-medium text-gray-900 dark:text-white focus:border-neon-pink/40 outline-none transition-all resize-none placeholder:text-gray-400 dark:placeholder:text-white/20"
-                                        />
-                                    </div>
-                                    <button 
-                                        type="submit"
-                                        disabled={sendingMessage}
-                                        className="w-full h-10 bg-black text-white dark:bg-white/10 hover:bg-black/80 dark:hover:bg-white/20 dark:text-white rounded-lg text-[9px] font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-all disabled:opacity-40"
-                                    >
-                                        {sendingMessage ? <LoadingSpinner size="xs" color="white" /> : (
-                                            <><MessageSquare size={11} /> Send Notification</>
-                                        )}
-                                    </button>
-                                </form>
-                            )}
-                        </div>
-
-                        {/* ─── Portfolio Link ─── */}
-                        {creator.portfolioInfo && (
-                            <button 
-                                onClick={() => window.open(creator.portfolioInfo.includes('http') ? creator.portfolioInfo : `https://${creator.portfolioInfo}`, '_blank')}
-                                className="w-full h-11 bg-black/5 hover:bg-black/10 dark:bg-white/[0.04] dark:hover:bg-white/[0.08] border border-black/10 dark:border-white/[0.06] text-gray-800 dark:text-white/60 hover:text-black dark:hover:text-white rounded-xl font-bold uppercase tracking-wider text-[9px] flex items-center justify-center gap-2 transition-all"
-                            >
-                                <FileText size={13} /> View Media Kit / Portfolio
-                            </button>
-                        )}
-
-                        {/* Bottom spacer for action bar */}
-                        <div className="h-20" />
-                    </div>
-                </div>
-
-                {/* ─── Sticky Bottom Action Bar ─── */}
-                <div className="sticky bottom-0 z-50 px-4 sm:px-6 py-3 sm:py-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] bg-white/95 dark:bg-[#0A0A0A]/95 backdrop-blur-xl border-t border-black/10 dark:border-white/[0.06] flex items-center gap-2">
-                    {creator.profileStatus === 'approved' ? (
-                        <button 
-                            type="button"
-                            onClick={handleSendApprovedPassEmail}
-                            disabled={sendingWelcomePass || !creator.email}
-                            title="Resend Verified Creator Pass Email"
-                            className="flex-1 h-10 sm:h-11 rounded-xl font-bold uppercase tracking-wider text-[9px] transition-all bg-neon-green/10 text-neon-green border border-neon-green/30 hover:bg-neon-green/20 active:scale-[0.98] flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
-                        >
-                            {sendingWelcomePass ? <LoadingSpinner size="xs" color="black" /> : (
-                                <><Mail size={13} /> Resend Verified Pass</>
-                            )}
-                        </button>
-                    ) : (
-                        <button 
-                            onClick={() => onUpdateStatus(creator.id || creator.uid, 'approved')}
-                            disabled={isUpdating}
-                            className="flex-1 h-10 sm:h-11 rounded-xl font-bold uppercase tracking-wider text-[9px] transition-all flex items-center justify-center gap-1.5 bg-neon-green text-black hover:brightness-110 active:scale-[0.98] cursor-pointer"
-                        >
-                            {isUpdating ? <LoadingSpinner size="xs" color="black" /> : (
-                                <><CheckCircle2 size={13} /> Verify</>
-                            )}
-                        </button>
-                    )}
-                    <button 
-                        onClick={() => onUpdateStatus(creator.id || creator.uid, 'rejected')}
-                        disabled={isUpdating || creator.profileStatus === 'rejected'}
-                        className={cn(
-                            "flex-1 h-10 sm:h-11 rounded-xl font-bold uppercase tracking-wider text-[9px] transition-all border flex items-center justify-center gap-1.5",
-                            creator.profileStatus === 'rejected' 
-                                ? "bg-yellow-500/10 text-yellow-500/50 border-yellow-500/20 cursor-default" 
-                                : "bg-transparent border-yellow-500/30 text-yellow-500 hover:bg-yellow-500/10 active:scale-[0.98]"
-                        )}
-                    >
-                        {isUpdating ? <LoadingSpinner size="xs" color="yellow" /> : (
-                            <><Ban size={12} /> Reject</>
-                        )}
-                    </button>
-                    <button 
-                        onClick={() => onDelete(creator.id || creator.uid)}
-                        disabled={isDeleting}
-                        className="h-10 px-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 text-xs font-bold uppercase tracking-wider transition-all active:scale-[0.98] flex items-center justify-center gap-1 shrink-0"
-                    >
-                        <Trash2 size={14} />
-                    </button>
-                </div>
-            </div>
-        </SharedLayoutModal>
-    );
-};
-
-const NICHES = CREATOR_NICHES;
-
-const AddCreatorModal = ({ onClose }) => {
-    const { addCreator } = useStore();
-    const [isSaving, setIsSaving] = useState(false);
-    const [sendWelcomeMail, setSendWelcomeMail] = useState(false);
-    const [form, setForm] = useState({
-        name: '',
-        phone: '',
-        email: '',
-        city: '',
-        customCity: '',
-        specializations: '',
-        customNiche: '',
-        collegeName: '',
-        bio: '',
-        instagram: '',
-        instagramFollowers: '',
-        youtube: '',
-        twitter: '',
-        linkedin: '',
-        linkedinFollowers: '',
-        profilePicture: '',
-        doBarter: '',
-        commercials: ''
-    });
-
-    const handleChange = (e) => {
-        const { name, value } = e.target;
-        if (['instagram', 'linkedin', 'youtube', 'twitter'].includes(name)) {
-            setForm(prev => ({
-                ...prev,
-                [name]: extractSocialUsername(value, name)
-            }));
-            return;
-        }
-        setForm(prev => ({ ...prev, [name]: value }));
-    };
-
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        
-        if (sendWelcomeMail && !form.email?.trim()) {
-            useStore.getState().addToast("Please provide an email address to send the welcome email.", 'error');
-            return;
-        }
-
-        if (form.city === 'Others' && !form.customCity?.trim()) {
-            useStore.getState().addToast("Please specify custom city.", 'error');
-            return;
-        }
-        if (form.specializations === 'Others' && !form.customNiche?.trim()) {
-            useStore.getState().addToast("Please specify custom content niche.", 'error');
-            return;
-        }
-
-        const showCollege = form.specializations === 'Student/ Campus Creator' || form.specializations === 'Student Creator/ Campus Creator' || form.specializations === 'College Pages';
-        if (showCollege && !form.collegeName?.trim()) {
-            useStore.getState().addToast("Please enter college name.", 'error');
-            return;
-        }
-
-        if (form.instagram && hasDisallowedLink(form.instagram)) {
-            useStore.getState().addToast("Links are not allowed. Please enter only the Instagram username/handle.", 'error');
-            return;
-        }
-        if (form.linkedin && hasDisallowedLink(form.linkedin)) {
-            useStore.getState().addToast("Links are not allowed. Please enter only the LinkedIn username.", 'error');
-            return;
-        }
-        if (form.youtube && hasDisallowedLink(form.youtube)) {
-            useStore.getState().addToast("Links are not allowed. Please enter only the YouTube handle/channel username.", 'error');
-            return;
-        }
-        if (form.twitter && hasDisallowedLink(form.twitter)) {
-            useStore.getState().addToast("Links are not allowed. Please enter only the X/Twitter username.", 'error');
-            return;
-        }
-
-        const normPhone = normalizePhoneNumber(form.phone);
-        if (normPhone) {
-            const creators = useStore.getState().creators;
-            const existing = creators.find(c => normalizePhoneNumber(c.phone) === normPhone);
-            if (existing) {
-                useStore.getState().addToast(`The mobile number ${form.phone} is already linked to creator profile ${existing.name || existing.displayName} (${existing.email}).`, 'error');
-                return;
-            }
-        }
-
-        setIsSaving(true);
-        try {
-            let finalCity = form.city === 'Others' ? form.customCity : form.city;
-            if (/^bang[al]*o?re$/i.test(finalCity?.trim())) {
-                finalCity = 'Bengaluru';
-            }
-            const finalNiche = form.specializations === 'Others' ? form.customNiche : form.specializations;
-            const generatedUid = `manual_${Math.random().toString(36).substring(2, 15)}`;
-            const cleanInstagram = extractSocialUsername(form.instagram, 'instagram');
-            const cleanLinkedin = extractSocialUsername(form.linkedin, 'linkedin');
-            const cleanYoutube = extractSocialUsername(form.youtube, 'youtube');
-            const cleanTwitter = extractSocialUsername(form.twitter, 'twitter');
-
-            await addCreator({
-                uid: generatedUid,
-                name: form.name,
-                phone: form.phone || '',
-                email: form.email || '',
-                city: finalCity || '',
-                categories: finalNiche || '',
-                specializations: finalNiche ? [finalNiche] : [],
-                collegeName: form.collegeName || '',
-                bio: form.bio || '',
-                instagram: cleanInstagram,
-                instagramFollowers: form.instagramFollowers || '0',
-                youtube: cleanYoutube,
-                twitter: cleanTwitter,
-                linkedin: cleanLinkedin,
-                linkedinFollowers: form.linkedinFollowers || '0',
-                profilePicture: form.profilePicture || '',
-                doBarter: form.doBarter || '',
-                commercials: form.commercials || '',
-                profileStatus: 'approved',
-                isPhoneVerified: true
-            }, sendWelcomeMail);
-            useStore.getState().addToast("Creator profile added successfully!", 'success');
-            onClose();
-        } catch (err) {
-            console.error("Error manually adding creator:", err);
-            useStore.getState().addToast(err.message || "Failed to add creator profile.", 'error');
-        } finally {
-            setIsSaving(false);
-        }
-    };
-
-    const showCollegeField = form.specializations === 'Student/ Campus Creator' || form.specializations === 'Student Creator/ Campus Creator' || form.specializations === 'College Pages';
-
-    return createPortal(
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-6 md:p-10 bg-black/60 dark:bg-black/50 backdrop-blur-md overflow-y-auto">
-            <div className="fixed inset-0 bg-black/60 dark:bg-black/80" onClick={onClose} />
-            <motion.div 
-                initial={{ scale: 0.95, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                className="relative bg-white dark:bg-[#0c0e14] border border-black/[0.08] dark:border-white/[0.08] rounded-3xl w-full max-w-2xl max-h-[92dvh] overflow-y-auto p-5 sm:p-8 md:p-10 shadow-2xl z-10 custom-scrollbar"
-            >
-                <button onClick={onClose} className="absolute top-6 right-6 w-10 h-10 rounded-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 flex items-center justify-center text-gray-600 dark:text-gray-400 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-all">
-                    <X size={16} />
-                </button>
-                
-                <h3 className="text-2xl font-black uppercase italic tracking-tighter text-gray-900 dark:text-white mb-6">MANUALLY ADD INFLUENCER</h3>
-                
-                <form onSubmit={handleSubmit} className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-1.5">
-                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Full Name</label>
-                            <input required name="name" value={form.name} onChange={handleChange} placeholder="Full Name" className="w-full h-12 bg-gray-50 dark:bg-black border border-black/10 dark:border-white/10 rounded-xl px-4 text-sm font-bold text-gray-900 dark:text-white focus:border-neon-blue outline-none transition-all" />
-                        </div>
-                        <div className="space-y-1.5">
-                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Contact Number</label>
-                            <input name="phone" type="tel" value={form.phone} onChange={handleChange} placeholder="Contact Number (Optional)" className="w-full h-12 bg-gray-50 dark:bg-black border border-black/10 dark:border-white/10 rounded-xl px-4 text-sm font-bold text-gray-900 dark:text-white focus:border-neon-blue outline-none transition-all" />
-                        </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-1.5">
-                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Email Address</label>
-                            <input name="email" type="email" value={form.email} onChange={handleChange} placeholder="email@example.com (Optional)" className="w-full h-12 bg-gray-50 dark:bg-black border border-black/10 dark:border-white/10 rounded-xl px-4 text-sm font-bold text-gray-900 dark:text-white focus:border-neon-blue outline-none transition-all" />
-                        </div>
-                        <div className="space-y-1.5">
-                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Operational Hub (City)</label>
-                            <select
-                                name="city" value={form.city} onChange={handleChange}
-                                className="w-full h-12 bg-gray-50 dark:bg-black border border-black/10 dark:border-white/10 rounded-xl px-4 text-sm font-bold text-gray-900 dark:text-white focus:border-neon-blue outline-none transition-all appearance-none cursor-pointer"
-                            >
-                                <option value="">Select City (Optional)</option>
-                                {PREDEFINED_CITIES.map(c => <option key={c} value={c} className="bg-gray-100 dark:bg-zinc-950">{c.toUpperCase()}</option>)}
-                            </select>
-                        </div>
-                    </div>
-
-                    {form.city === 'Others' && (
-                        <div className="space-y-1.5">
-                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Specify City Name</label>
-                            <input name="customCity" value={form.customCity} onChange={handleChange} placeholder="City Name" className="w-full h-12 bg-gray-50 dark:bg-black border border-black/10 dark:border-white/10 rounded-xl px-4 text-sm font-bold text-gray-900 dark:text-white focus:border-neon-blue outline-none transition-all" />
-                        </div>
-                    )}
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-1.5">
-                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Niche / Specialization</label>
-                            <select
-                                name="specializations" value={form.specializations} onChange={handleChange}
-                                className="w-full h-12 bg-gray-50 dark:bg-black border border-black/10 dark:border-white/10 rounded-xl px-4 text-sm font-bold text-gray-900 dark:text-white focus:border-neon-blue outline-none transition-all appearance-none cursor-pointer"
-                            >
-                                <option value="">Select Niche (Optional)</option>
-                                {NICHES.map(n => <option key={n} value={n} className="bg-gray-100 dark:bg-zinc-950">{n.toUpperCase()}</option>)}
-                            </select>
-                        </div>
-                        <div className="space-y-1.5">
-                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">
-                                College Name {showCollegeField ? '' : '(Optional)'}
-                            </label>
-                            <input 
-                                name="collegeName" 
-                                value={form.collegeName} 
-                                onChange={handleChange} 
-                                placeholder={showCollegeField ? 'College/University Name' : 'College/University Name (Optional)'} 
-                                className="w-full h-12 bg-gray-50 dark:bg-black border border-black/10 dark:border-white/10 rounded-xl px-4 text-sm font-bold text-gray-900 dark:text-white focus:border-neon-blue outline-none transition-all" 
-                            />
-                            <p className="text-[8px] font-bold text-gray-500 uppercase tracking-wider pl-1 mt-0.5 leading-normal">
-                                Matching college helps connect creators with regional campaigns and events.
-                            </p>
-                        </div>
-                    </div>
-
-                    {form.specializations === 'Others' && (
-                        <div className="space-y-1.5">
-                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Specify Content Niche</label>
-                            <input name="customNiche" value={form.customNiche} onChange={handleChange} placeholder="Niche Description" className="w-full h-12 bg-gray-50 dark:bg-black border border-black/10 dark:border-white/10 rounded-xl px-4 text-sm font-bold text-gray-900 dark:text-white focus:border-neon-blue outline-none transition-all" />
-                        </div>
-                    )}
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-1.5">
-                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Instagram Handle</label>
-                            <input name="instagram" value={form.instagram} onChange={handleChange} placeholder="@handle" className="w-full h-12 bg-gray-50 dark:bg-black border border-black/10 dark:border-white/10 rounded-xl px-4 text-sm font-bold text-gray-900 dark:text-white focus:border-neon-blue outline-none transition-all" />
-                        </div>
-                        <div className="space-y-1.5">
-                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Instagram Followers</label>
-                            <input name="instagramFollowers" type="number" value={form.instagramFollowers} onChange={handleChange} placeholder="e.g. 5000 (Optional)" className="w-full h-12 bg-gray-50 dark:bg-black border border-black/10 dark:border-white/10 rounded-xl px-4 text-sm font-bold text-gray-900 dark:text-white focus:border-neon-blue outline-none transition-all" />
-                        </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-1.5">
-                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">LinkedIn Username</label>
-                            <input name="linkedin" value={form.linkedin} onChange={handleChange} placeholder="@username or handle" className="w-full h-12 bg-gray-50 dark:bg-black border border-black/10 dark:border-white/10 rounded-xl px-4 text-sm font-bold text-gray-900 dark:text-white focus:border-neon-blue outline-none transition-all" />
-                        </div>
-                        <div className="space-y-1.5">
-                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">LinkedIn Connections</label>
-                            <input name="linkedinFollowers" type="number" value={form.linkedinFollowers} onChange={handleChange} placeholder="e.g. 500 (Optional)" className="w-full h-12 bg-gray-50 dark:bg-black border border-black/10 dark:border-white/10 rounded-xl px-4 text-sm font-bold text-gray-900 dark:text-white focus:border-neon-blue outline-none transition-all" />
-                        </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-1.5">
-                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">YouTube Handle</label>
-                            <input name="youtube" value={form.youtube} onChange={handleChange} placeholder="@channel" className="w-full h-12 bg-gray-50 dark:bg-black border border-black/10 dark:border-white/10 rounded-xl px-4 text-sm font-bold text-gray-900 dark:text-white focus:border-neon-blue outline-none transition-all" />
-                        </div>
-                        <div className="space-y-1.5">
-                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Twitter / X Username</label>
-                            <input name="twitter" value={form.twitter} onChange={handleChange} placeholder="@username" className="w-full h-12 bg-gray-50 dark:bg-black border border-black/10 dark:border-white/10 rounded-xl px-4 text-sm font-bold text-gray-900 dark:text-white focus:border-neon-blue outline-none transition-all" />
-                        </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-1.5">
-                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Barter Collaborations</label>
-                            <select
-                                name="doBarter" value={form.doBarter} onChange={handleChange}
-                                className="w-full h-12 bg-gray-50 dark:bg-black border border-black/10 dark:border-white/10 rounded-xl px-4 text-sm font-bold text-gray-900 dark:text-white focus:border-neon-blue outline-none transition-all appearance-none cursor-pointer"
-                            >
-                                <option value="">Select Preference</option>
-                                <option value="yes" className="bg-gray-100 dark:bg-zinc-950">YES</option>
-                                <option value="no" className="bg-gray-100 dark:bg-zinc-950">NO (ONLY PAID)</option>
-                                <option value="selective" className="bg-gray-100 dark:bg-zinc-950">SELECTIVE</option>
-                            </select>
-                        </div>
-                        <div className="space-y-1.5">
-                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Commercial Rates</label>
-                            <input name="commercials" value={form.commercials} onChange={handleChange} placeholder="e.g. 5k/Reel, 2k/Story" className="w-full h-12 bg-gray-50 dark:bg-black border border-black/10 dark:border-white/10 rounded-xl px-4 text-sm font-bold text-gray-900 dark:text-white focus:border-neon-blue outline-none transition-all" />
-                        </div>
-                    </div>
-
-                    <div className="space-y-1.5">
-                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Profile Picture URL</label>
-                        <input name="profilePicture" value={form.profilePicture} onChange={handleChange} placeholder="https://..." className="w-full h-12 bg-gray-50 dark:bg-black border border-black/10 dark:border-white/10 rounded-xl px-4 text-sm font-bold text-gray-900 dark:text-white focus:border-neon-blue outline-none transition-all" />
-                    </div>
-
-                    <div className="space-y-1.5">
-                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Strategic Bio</label>
-                        <textarea name="bio" value={form.bio} onChange={handleChange} placeholder="Bio description..." className="w-full h-24 bg-gray-50 dark:bg-black border border-black/10 dark:border-white/10 rounded-xl p-4 text-sm font-bold text-gray-900 dark:text-white focus:border-neon-blue outline-none transition-all resize-none animate-none" />
-                    </div>
-
-                    <div className="flex items-center gap-3 py-3 bg-gray-50 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-2xl px-4">
-                        <input
-                            type="checkbox"
-                            id="sendWelcomeMail"
-                            checked={sendWelcomeMail}
-                            onChange={(e) => setSendWelcomeMail(e.target.checked)}
-                            disabled={!form.email?.trim()}
-                            className="w-5 h-5 rounded border-black/10 dark:border-white/10 bg-white dark:bg-black text-neon-blue focus:ring-0 focus:ring-offset-0 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
-                        />
-                        <label htmlFor="sendWelcomeMail" className={`text-xs font-black uppercase tracking-wider cursor-pointer ${!form.email?.trim() ? 'text-gray-400' : 'text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'}`}>
-                            Send Welcome Email {!form.email?.trim() && "(Requires Email)"}
-                        </label>
-                    </div>
-
-                    <button type="submit" disabled={isSaving} className="w-full h-14 bg-black text-white hover:bg-neon-blue hover:text-black dark:bg-white dark:text-black dark:hover:bg-neon-blue font-black uppercase tracking-widest rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg">
-                        {isSaving ? <LoadingSpinner size="xs" color="currentColor" /> : 'Add Creator Profile'}
-                    </button>
-                </form>
-            </motion.div>
-        </div>,
-        document.body
-    );
-};
 
 /**
  * Referral Leaderboard Sub-component

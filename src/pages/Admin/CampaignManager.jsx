@@ -445,7 +445,7 @@ const getPageNumbers = (currentPage, totalPages) => {
 
 /* --- Main Campaign Manager Component --- */
 
-const CampaignManager = () => {
+const CampaignManager = ({ isEmbedded = false }) => {
     useStoreSubscription(['campaigns', 'creators']);
     const { campaigns, addCampaign, updateCampaign, deleteCampaign, user, uploadToCloudinary } = useStore();
     const navigate = useNavigate();
@@ -811,7 +811,7 @@ const CampaignManager = () => {
 
     const renderContent = () => (
         <div className={cn("relative z-10 max-w-[1700px] mx-auto pb-20", (isCreating || expandedCampaignId) ? "pt-24 md:pt-32 px-4 md:px-12" : "")}>
-            <div className={cn("pt-0", !(isCreating || expandedCampaignId) ? "px-4 md:px-12" : "")}>
+            <div className={cn("pt-0", !(isCreating || expandedCampaignId) ? (isEmbedded ? "" : "px-4 md:px-12") : "")}>
                 {/* Control Panel */}
                 {!isCreating && !expandedCampaignId && (
                     <div className="relative z-50 bg-white/70 dark:bg-[#0c0e14]/80 backdrop-blur-2xl border border-black/[0.06] dark:border-white/[0.08] rounded-3xl p-3 md:p-4 mb-8 md:mb-12 shadow-[0_8px_32px_rgba(0,0,0,0.02)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)] flex flex-col xl:flex-row xl:items-center gap-4">
@@ -1190,15 +1190,45 @@ const CampaignManager = () => {
         </div>
     );
 
-    const content = (isCreating || expandedCampaignId) ? renderContent() : (
+    const content = (isCreating || expandedCampaignId || isEmbedded) ? (
+        <div className="relative z-10">
+            {isEmbedded && (
+                <div className="flex justify-end mb-6">
+                    <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto items-stretch">
+                        <div className="w-full md:w-64 shrink-0 flex flex-col items-stretch">
+                            <StatCard 
+                                compact={true} 
+                                icon={<Zap size={20} />} 
+                                label="ACTIVE CAMPAIGNS" 
+                                value={stats.active} 
+                                color="green" 
+                                description={`${stats.total} Total Units`} 
+                            />
+                        </div>
+                        <div className="w-full md:w-64 shrink-0 flex flex-col items-stretch">
+                            <StatCard 
+                                compact={true} 
+                                icon={<Clock size={20} />} 
+                                label="PENDING REVIEW" 
+                                value={stats.pending} 
+                                color="yellow" 
+                                description="Awaiting Verification" 
+                            />
+                        </div>
+                    </div>
+                </div>
+            )}
+            {renderContent()}
+        </div>
+    ) : (
         <AdminCommunityHubLayout
             studioHeader={{
-                title: 'CAMPAIGN',
+                title: 'CREATOR',
                 subtitle: 'PORTAL',
                 icon: Users,
-                accentClass: 'text-neon-blue'
+                accentClass: 'text-neon-pink'
             }}
-            accentColor="neon-blue"
+            accentColor="neon-pink"
             tabs={personnelTabs}
             action={
                 <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto items-stretch">

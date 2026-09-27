@@ -84,6 +84,17 @@ const getPageNumbers = (currentPage, totalPages) => {
     return pages;
 };
 
+const getRelativeTimeString = (timestamp) => {
+    if (!timestamp) return 'Never synced';
+    const elapsedSecs = Math.floor((Date.now() - timestamp) / 1000);
+    if (elapsedSecs < 10) return 'Just now';
+    if (elapsedSecs < 60) return `${elapsedSecs}s ago`;
+    const elapsedMins = Math.floor(elapsedSecs / 60);
+    if (elapsedMins < 60) return `${elapsedMins}m ago`;
+    const elapsedHours = Math.floor(elapsedMins / 60);
+    return `${elapsedHours}h ago`;
+};
+
 // ─── Member Card Component ─────────────────────────────────────────────────────
 
 const MemberCard = ({ member, creators, artists, onBlock, onUnblock, onRevokeSessions }) => {
@@ -220,7 +231,10 @@ const AdminManager = () => {
         blockUser,
         unblockUser,
         authInitialized,
-        admins: storeAdmins = []
+        admins: storeAdmins = [],
+        isSyncingUsers,
+        lastAuthUsersSyncedAt,
+        syncAuthUsers
     } = useStore();
 
     // Use consolidated members as the high-integrity, real-time registry
@@ -238,6 +252,59 @@ const AdminManager = () => {
     // Tab state from URL query param or default to 'members'
     const initialTab = searchParams.get('tab') || 'members';
     const [activeTab, setActiveTab] = useState(initialTab);
+
+    // Auto-update tab if URL changes
+    const currentTabParam = searchParams.get('tab') || 'members';
+    useEffect(() => {
+        if (currentTabParam && currentTabParam !== activeTab) {
+            setActiveTab(currentTabParam);
+        }
+    }, [currentTabParam]);
+
+    // Live relative sync time updater
+    const [relativeSyncTime, setRelativeSyncTime] = useState('');
+    useEffect(() => {
+        setRelativeSyncTime(getRelativeTimeString(lastAuthUsersSyncedAt));
+        const interval = setInterval(() => {
+            setRelativeSyncTime(getRelativeTimeString(useStore.getState().lastAuthUsersSyncedAt));
+        }, 10000);
+        return () => clearInterval(interval);
+    }, [lastAuthUsersSyncedAt]);
+
+    // Background Auto-Sync Automation (on mount, 3-min interval, and tab refocus)
+    useEffect(() => {
+        const canSync = user?.role === 'developer' || user?.role === 'founder' || user?.role === 'super_admin' || user?.role === 'content_admin';
+        if (!canSync) return;
+
+        const THREE_MINUTES = 3 * 60 * 1000;
+        const lastSync = useStore.getState().lastAuthUsersSyncedAt || 0;
+
+        // Initial background sync on mount if stale
+        if (Date.now() - lastSync > THREE_MINUTES) {
+            syncAuthUsers({ silent: true }).catch(() => {});
+        }
+
+        // Periodic background interval sync
+        const syncInterval = setInterval(() => {
+            syncAuthUsers({ silent: true }).catch(() => {});
+        }, THREE_MINUTES);
+
+        // Tab refocus sync
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'visible') {
+                const currentLastSync = useStore.getState().lastAuthUsersSyncedAt || 0;
+                if (Date.now() - currentLastSync > THREE_MINUTES) {
+                    syncAuthUsers({ silent: true }).catch(() => {});
+                }
+            }
+        };
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+
+        return () => {
+            clearInterval(syncInterval);
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+        };
+    }, [user?.role, syncAuthUsers]);
 
     // Sync tab changes with URL search params
     const handleTabChange = (newTab) => {
@@ -265,7 +332,6 @@ const AdminManager = () => {
     const itemsPerPage = 24;
 
     // ── Sync & Refresh state ──
-    const [isSyncing, setIsSyncing] = useState(false);
     const [isRefreshing, setIsRefreshing] = useState(false);
 
     // Fetch admins directly from Firestore collection
@@ -310,13 +376,10 @@ const AdminManager = () => {
     const filteredMembers = useMemo(() => {
         let baseList = members;
 
-        // If on Active Users tab, enforce active only
-        if (activeTab === 'active') {
-            baseList = activeMembers;
-        } else if (memberFilter === 'active') {
-            baseList = activeMembers;
-        } else if (memberFilter === 'suspended') {
+        if (memberFilter === 'suspended') {
             baseList = suspendedMembers;
+        } else if (activeTab === 'active' || memberFilter === 'active') {
+            baseList = activeMembers;
         }
 
         const searchLower = memberSearch.trim().toLowerCase();
@@ -384,18 +447,12 @@ const AdminManager = () => {
 
     // ── Action Handlers ──
 
-    const handleSyncAuthUsers = async () => {
-        if (!window.confirm("Synchronize all registered user accounts from Firebase Authentication into the Firestore member database?")) return;
-        setIsSyncing(true);
+    const handleManualSync = async () => {
         try {
-            const result = await useStore.getState().syncAuthUsers();
-            useStore.getState().addToast(result.message || `Successfully synced ${result.syncedCount} members!`, 'success');
+            await syncAuthUsers({ silent: false });
             await fetchAdmins();
         } catch (error) {
-            console.error("Sync error:", error);
-            useStore.getState().addToast(error.message || "Failed to synchronize users.", 'error');
-        } finally {
-            setIsSyncing(false);
+            console.error("Manual sync error:", error);
         }
     };
 
@@ -564,29 +621,50 @@ const AdminManager = () => {
             hideTabs={true}
             action={
                 <div className="flex flex-wrap items-center gap-2.5 w-full md:w-auto">
+                    {/* Live Auto-Sync Status Badge */}
+                    <div className="flex items-center gap-2 px-3.5 h-11 rounded-xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-[9px] font-black uppercase tracking-wider select-none">
+                        <span className="relative flex h-2 w-2">
+                            <span className={cn(
+                                "animate-ping absolute inline-flex h-full w-full rounded-full opacity-75",
+                                isSyncingUsers ? "bg-neon-blue" : "bg-neon-green"
+                            )} />
+                            <span className={cn(
+                                "relative inline-flex rounded-full h-2 w-2",
+                                isSyncingUsers ? "bg-neon-blue" : "bg-neon-green"
+                            )} />
+                        </span>
+                        <span className="text-gray-700 dark:text-gray-300">
+                            {isSyncingUsers ? "Auto-Syncing..." : "Auto-Sync Active"}
+                        </span>
+                        <span className="text-gray-500 font-mono text-[8px] pl-1 border-l border-black/10 dark:border-white/10">
+                            {isSyncingUsers ? 'In progress' : (relativeSyncTime || 'Active')}
+                        </span>
+                    </div>
+
+                    {/* Instant Manual Sync Trigger */}
                     <button
-                        onClick={handleRefresh}
-                        disabled={isRefreshing}
-                        className="flex-1 sm:flex-initial flex items-center justify-center gap-2 h-11 px-5 rounded-xl font-black uppercase text-[9px] tracking-widest transition-all bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-gray-700 dark:text-gray-300 border border-black/10 dark:border-white/10 disabled:opacity-50"
-                        title="Reload latest records"
+                        onClick={handleManualSync}
+                        disabled={isSyncingUsers}
+                        className={cn(
+                            "flex-1 sm:flex-initial flex items-center justify-center gap-2 h-11 px-4 rounded-xl font-black uppercase text-[9px] tracking-widest transition-all duration-300 border",
+                            isSyncingUsers
+                                ? "bg-neon-blue/20 text-neon-blue border-neon-blue/30 cursor-wait opacity-80"
+                                : "bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-gray-900 dark:text-white border-black/10 dark:border-white/10 hover:border-neon-blue/40"
+                        )}
+                        title="Trigger instant user synchronization from Firebase Authentication"
                     >
-                        <RefreshCw size={13} className={cn("text-neon-blue", isRefreshing && "animate-spin")} />
-                        {isRefreshing ? 'Refreshing...' : 'Refresh'}
+                        <RefreshCw size={13} className={cn("text-neon-blue", isSyncingUsers && "animate-spin")} />
+                        {isSyncingUsers ? 'Syncing...' : 'Sync Now'}
                     </button>
 
                     <button
-                        onClick={handleSyncAuthUsers}
-                        disabled={isSyncing}
-                        className={cn(
-                            "flex-1 sm:flex-initial flex items-center justify-center gap-2.5 h-11 px-5 rounded-xl font-black uppercase text-[9px] tracking-widest transition-all duration-300",
-                            isSyncing
-                                ? "bg-neon-blue/20 text-neon-blue border border-neon-blue/30 cursor-wait opacity-80"
-                                : "bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-gray-900 dark:text-white border border-black/10 dark:border-white/10 hover:border-neon-blue/40"
-                        )}
-                        title="Synchronize Firebase Auth into Firestore"
+                        onClick={handleRefresh}
+                        disabled={isRefreshing}
+                        className="flex-1 sm:flex-initial flex items-center justify-center gap-2 h-11 px-4 rounded-xl font-black uppercase text-[9px] tracking-widest transition-all bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-gray-700 dark:text-gray-300 border border-black/10 dark:border-white/10 disabled:opacity-50"
+                        title="Reload latest records"
                     >
-                        <Zap size={13} className={cn("text-neon-blue", isSyncing && "animate-pulse")} />
-                        {isSyncing ? 'Syncing...' : 'Sync Auth Members'}
+                        <RefreshCw size={13} className={cn("text-gray-400", isRefreshing && "animate-spin")} />
+                        {isRefreshing ? 'Refreshing...' : 'Refresh'}
                     </button>
 
                     {canAuthorizeStaff && (
@@ -798,12 +876,25 @@ const AdminManager = () => {
 
                             {/* Sub-Filters */}
                             <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar p-1.5 bg-gray-100 dark:bg-zinc-950/60 border border-black/10 dark:border-white/10 rounded-2xl shrink-0">
-                                {[
-                                    { id: 'all', label: `All (${activeTab === 'active' ? activeCount : totalCount})` },
-                                    { id: 'active', label: `Active Users (${activeCount})` },
-                                    { id: 'admins', label: `Administrators (${admins.filter(a => a.role !== 'pending').length})` },
-                                    { id: 'suspended', label: `Suspended (${suspendedCount})` }
-                                ].map(f => (
+                                {(activeTab === 'active' ? [
+                                    { id: 'all', label: `All Active (${activeCount})` },
+                                    { id: 'admins', label: `Staff (${admins.filter(a => a.role !== 'pending').length})` },
+                                    { id: 'creators', label: `Creators (${creators.length})` },
+                                    { id: 'artists', label: `Artists (${artists.length})` },
+                                    { id: 'tribe', label: 'Tribe' },
+                                    { id: 'tickets', label: 'Tickets' },
+                                    { id: 'subscribers', label: 'Subscribers' }
+                                ] : [
+                                    { id: 'all', label: `All (${totalCount})` },
+                                    { id: 'active', label: `Active (${activeCount})` },
+                                    { id: 'admins', label: `Staff (${admins.filter(a => a.role !== 'pending').length})` },
+                                    { id: 'suspended', label: `Suspended (${suspendedCount})` },
+                                    { id: 'creators', label: `Creators (${creators.length})` },
+                                    { id: 'artists', label: `Artists (${artists.length})` },
+                                    { id: 'tribe', label: 'Tribe' },
+                                    { id: 'tickets', label: 'Tickets' },
+                                    { id: 'subscribers', label: 'Subscribers' }
+                                ]).map(f => (
                                     <button
                                         key={f.id}
                                         onClick={() => setMemberFilter(f.id)}
@@ -854,10 +945,11 @@ const AdminManager = () => {
                                         </button>
                                     )}
                                     <button
-                                        onClick={handleSyncAuthUsers}
-                                        className="px-4 py-2 bg-neon-blue/10 text-neon-blue border border-neon-blue/20 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-neon-blue hover:text-black transition-all"
+                                        onClick={handleManualSync}
+                                        disabled={isSyncingUsers}
+                                        className="px-4 py-2 bg-neon-blue/10 text-neon-blue border border-neon-blue/20 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-neon-blue hover:text-black transition-all disabled:opacity-50"
                                     >
-                                        Sync Auth Members
+                                        {isSyncingUsers ? 'Syncing...' : 'Sync Auth Members'}
                                     </button>
                                 </div>
                             </div>

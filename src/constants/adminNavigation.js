@@ -92,7 +92,6 @@ export const getAdminSections = (user, cards = {}) => [
       { name: "Giveaways", path: "/admin/giveaways", icon: Gift, color: "neon-purple", show: !cards.giveaways },
       { name: "Artistant", path: "/admin/artistant", icon: Music, color: "neon-blue", show: !cards.artists },
       { name: "Mailing", path: "/admin/mailing", icon: Megaphone, color: "neon-blue", show: !cards.mailing },
-      { name: "Active Users", path: "/admin/active-users", icon: UserCheck, color: "neon-green", show: user?.role !== 'editor' && user?.role !== 'content_admin' && user?.role !== 'blog_writer' && !cards.admins },
       { name: "Members", path: "/admin/manage-admins", icon: Shield, color: "neon-blue", show: user?.role !== 'editor' && user?.role !== 'content_admin' && user?.role !== 'blog_writer' && !cards.admins },
       { name: "System Command", path: "/admin/system-command", icon: Settings, color: "neon-blue", show: ['developer', 'super_admin', 'founder'].includes(user?.role) },
       { name: "Inbox", path: "/admin/messages", icon: Mail, color: "white", show: !cards.messages }

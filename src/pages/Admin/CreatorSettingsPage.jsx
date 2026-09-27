@@ -116,7 +116,7 @@ export const CreatorSettingsContent = () => {
     );
 };
 
-const CreatorSettingsPage = () => {
+const CreatorSettingsPage = ({ isEmbedded = false }) => {
     const personnelTabs = [
         { name: 'Creators', path: '/admin/creators', icon: Star },
         { name: 'Campaigns', path: '/admin/campaigns', icon: Target },
@@ -124,11 +124,34 @@ const CreatorSettingsPage = () => {
         { name: 'Settings', path: '/admin/creators/settings', icon: Settings },
     ];
 
+    if (isEmbedded) {
+        return (
+            <div className="space-y-6">
+                <div className="flex justify-end mb-6">
+                    <div className="flex items-center gap-3">
+                        <a
+                            href="/creator"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="bg-white dark:bg-black/40 backdrop-blur-3xl border border-black/10 dark:border-white/10 px-4 py-2.5 rounded-2xl flex items-center gap-2 text-xs font-bold text-gray-800 dark:text-zinc-200 hover:border-neon-pink/50 hover:text-neon-pink transition-all shadow-sm group"
+                        >
+                            <span>View Live Creator Page</span>
+                            <ExternalLink size={13} className="text-gray-400 group-hover:text-neon-pink transition-colors" />
+                        </a>
+                    </div>
+                </div>
+                <div className="max-w-7xl mx-auto py-2">
+                    <CreatorSettingsContent />
+                </div>
+            </div>
+        );
+    }
+
     return (
         <AdminCommunityHubLayout
             studioHeader={{
-                title: 'Creator',
-                subtitle: 'Settings & Content',
+                title: 'CREATOR',
+                subtitle: 'PORTAL',
                 icon: Settings,
                 accentClass: 'text-neon-pink'
             }}
@@ -148,7 +171,9 @@ const CreatorSettingsPage = () => {
                 </div>
             }
         >
-            <CreatorSettingsContent />
+            <div className="max-w-7xl mx-auto py-6">
+                <CreatorSettingsContent />
+            </div>
         </AdminCommunityHubLayout>
     );
 };

@@ -16,6 +16,7 @@ import StudioSelect from '../ui/StudioSelect';
 import LoadingSpinner from '../ui/LoadingSpinner';
 import { Input } from '../ui/Input';
 import TaskSubmissionModal from '../ui/TaskSubmissionModal';
+import EditCreatorModal from './EditCreatorModal';
 
 const TASK_TYPES = {
     content_post: { label: 'Content Post', icon: Camera, color: 'text-pink-400' },
@@ -62,6 +63,8 @@ const CampaignDetailModal = ({
     const [isJoining, setIsJoining] = useState(false);
     const [joinSuccess, setJoinSuccess] = useState(false);
     const [showEditDetails, setShowEditDetails] = useState(false);
+    const [isEditCreatorModalOpen, setIsEditCreatorModalOpen] = useState(false);
+    const [editInitialSection, setEditInitialSection] = useState('identity');
 
     const [form, setForm] = useState({
         instagram: '',
@@ -431,7 +434,7 @@ const CampaignDetailModal = ({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] flex items-center justify-center p-2 sm:p-4 md:p-6 lg:p-8"
+            className="fixed inset-0 z-[9990] flex items-center justify-center p-2 sm:p-4 md:p-6 lg:p-8"
         >
             {/* Ambient Dark Backdrop with Blur */}
             <div 
@@ -458,16 +461,32 @@ const CampaignDetailModal = ({
                 className="relative w-full max-w-5xl max-h-[95vh] sm:max-h-[94vh] bg-white dark:bg-[#0c0e14] text-gray-950 dark:text-white border border-black/10 dark:border-white/[0.12] rounded-2xl sm:rounded-[2.5rem] shadow-[0_25px_80px_rgba(0,0,0,0.18)] dark:shadow-[0_30px_100px_rgba(0,0,0,0.95)] flex flex-col overflow-hidden z-10 transition-colors"
                 onClick={(e) => e.stopPropagation()}
             >
-                {/* Floating Glassmorphic Close Button */}
-                <button 
-                    type="button"
-                    onClick={onClose}
-                    className="absolute top-3.5 right-3.5 sm:top-6 sm:right-6 w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-white/90 dark:bg-black/70 hover:bg-white dark:hover:bg-black/90 backdrop-blur-xl border border-black/10 dark:border-white/20 text-gray-800 dark:text-white flex items-center justify-center transition-all duration-200 shadow-xl active:scale-95 group z-30"
-                    aria-label="Close modal"
-                >
-                    <X size={16} className="sm:hidden group-hover:rotate-90 transition-transform duration-200" />
-                    <X size={18} className="hidden sm:block group-hover:rotate-90 transition-transform duration-200" />
-                </button>
+                {/* Floating Glassmorphic Action & Close Buttons */}
+                <div className="absolute top-3.5 right-3.5 sm:top-6 sm:right-6 flex items-center gap-2 z-30">
+                    {profile && (
+                        <button 
+                            type="button"
+                            onClick={() => {
+                                setEditInitialSection('identity');
+                                setIsEditCreatorModalOpen(true);
+                            }}
+                            className="h-9 sm:h-11 px-3 sm:px-4 rounded-full bg-white/90 dark:bg-black/70 hover:bg-white dark:hover:bg-black/90 backdrop-blur-xl border border-black/10 dark:border-white/20 text-gray-800 dark:text-white flex items-center gap-1.5 font-bold text-xs transition-all duration-200 shadow-xl active:scale-95 cursor-pointer"
+                            title="Edit Creator Details"
+                        >
+                            <Pencil size={13} className="text-emerald-500 dark:text-neon-green" />
+                            <span className="text-[11px] sm:text-xs font-bold">Edit Details</span>
+                        </button>
+                    )}
+                    <button 
+                        type="button"
+                        onClick={onClose}
+                        className="w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-white/90 dark:bg-black/70 hover:bg-white dark:hover:bg-black/90 backdrop-blur-xl border border-black/10 dark:border-white/20 text-gray-800 dark:text-white flex items-center justify-center transition-all duration-200 shadow-xl active:scale-95 group"
+                        aria-label="Close modal"
+                    >
+                        <X size={16} className="sm:hidden group-hover:rotate-90 transition-transform duration-200" />
+                        <X size={18} className="hidden sm:block group-hover:rotate-90 transition-transform duration-200" />
+                    </button>
+                </div>
 
                 {/* Scrollable Modal Container */}
                 <div className="overflow-y-auto custom-scrollbar flex-1 flex flex-col relative">
@@ -731,6 +750,42 @@ const CampaignDetailModal = ({
                                         </span>
                                     </div>
 
+                                    {/* Creator Profile Preview row in Joined View */}
+                                    {profile && (
+                                        <div className="flex items-center justify-between p-3 rounded-2xl bg-black/[0.02] dark:bg-white/[0.03] border border-black/5 dark:border-white/[0.06]">
+                                            <div className="flex items-center gap-2.5 min-w-0">
+                                                <div className="w-8 h-8 rounded-full overflow-hidden bg-black/5 dark:bg-white/10 shrink-0">
+                                                    {(profile.profilePicture || user?.photoURL) ? (
+                                                        <img src={profile.profilePicture || user?.photoURL} alt="" className="w-full h-full object-cover" />
+                                                    ) : (
+                                                        <div className="w-full h-full flex items-center justify-center text-xs font-bold text-gray-500">
+                                                            {profile.name?.charAt(0) || 'C'}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <div className="min-w-0">
+                                                    <p className="text-xs font-bold text-gray-900 dark:text-white truncate">
+                                                        {profile.name || user?.displayName}
+                                                    </p>
+                                                    <p className="text-[10px] text-zinc-500 truncate">
+                                                        @{String(profile.instagram || '').replace(/^@/, '')} · {profile.city || 'India'}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    setEditInitialSection('identity');
+                                                    setIsEditCreatorModalOpen(true);
+                                                }}
+                                                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-black/5 dark:bg-white/[0.08] hover:bg-neon-green/20 hover:text-emerald-600 dark:hover:text-neon-green text-[11px] font-bold text-gray-700 dark:text-zinc-300 border border-black/10 dark:border-white/10 transition-colors shrink-0 cursor-pointer"
+                                            >
+                                                <Pencil size={11} />
+                                                <span>Edit Details</span>
+                                            </button>
+                                        </div>
+                                    )}
+
                                     {/* WhatsApp */}
                                     {isShortlisted && campaign.whatsappLink && (
                                         <a href={campaign.whatsappLink} target="_blank" rel="noopener noreferrer">
@@ -789,15 +844,29 @@ const CampaignDetailModal = ({
                                                                 {(profile.city || form.city) && ` · ${(profile.city || form.city).toUpperCase()}`}
                                                             </p>
                                                         </div>
-                                                        {!isEligible && (
+                                                        <div className="flex items-center gap-2 shrink-0">
                                                             <button
                                                                 type="button"
-                                                                onClick={() => { setIsManualFollowerEntry(true); setShowEditDetails(true); }}
-                                                                className="text-[11px] text-rose-400 hover:text-rose-300 underline shrink-0 cursor-pointer"
+                                                                onClick={() => {
+                                                                    setEditInitialSection('identity');
+                                                                    setIsEditCreatorModalOpen(true);
+                                                                }}
+                                                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-black/5 dark:bg-white/[0.08] hover:bg-neon-green/20 hover:text-emerald-600 dark:hover:text-neon-green text-xs font-bold text-gray-700 dark:text-zinc-200 border border-black/10 dark:border-white/10 transition-colors shrink-0 cursor-pointer shadow-xs active:scale-95"
+                                                                title="Edit Creator Details"
                                                             >
-                                                                Update
+                                                                <Pencil size={12} />
+                                                                <span>Edit Details</span>
                                                             </button>
-                                                        )}
+                                                            {!isEligible && (
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => { setIsManualFollowerEntry(true); setShowEditDetails(true); }}
+                                                                    className="text-[11px] text-rose-400 hover:text-rose-300 underline shrink-0 cursor-pointer"
+                                                                >
+                                                                    Quick Update
+                                                                </button>
+                                                            )}
+                                                        </div>
                                                     </div>
 
                                                     {/* Ineligibility notice */}
@@ -1184,6 +1253,45 @@ const CampaignDetailModal = ({
                     />
                 )}
             </AnimatePresence>
+
+            {/* Edit Creator Details Modal */}
+            {isEditCreatorModalOpen && profile && (
+                <EditCreatorModal
+                    isOpen={isEditCreatorModalOpen}
+                    onClose={() => setIsEditCreatorModalOpen(false)}
+                    creator={profile}
+                    initialSection={editInitialSection}
+                    onUpdated={(updated) => {
+                        setProfile(prev => ({ ...(prev || {}), ...updated }));
+                        const cleanHandle = updated.instagram ? String(updated.instagram).replace(/^@/, '') : (form.instagram || '');
+                        const newFollowers = updated.instagramFollowers !== undefined ? String(updated.instagramFollowers) : (form.followers || '');
+                        setForm(prev => ({
+                            ...prev,
+                            instagram: cleanHandle,
+                            followers: newFollowers,
+                            name: updated.name || prev.name,
+                            phone: updated.phone || prev.phone,
+                            city: updated.city || prev.city,
+                            categories: updated.niches?.join(', ') || updated.specializations?.join(', ') || prev.categories,
+                            bio: updated.bio || prev.bio
+                        }));
+                        const minFollowers = Number(campaign?.minInstagramFollowers || 0);
+                        const count = Number(newFollowers || 0);
+                        const meetsCriteria = (minFollowers <= 0) || (count >= minFollowers);
+                        setVerificationStep(meetsCriteria ? 'success' : 'ineligible');
+                        setInstagramVerifiedData(prev => ({
+                            ...(prev || {}),
+                            handle: cleanHandle,
+                            name: updated.name || prev?.name || cleanHandle,
+                            followers: count,
+                            formattedFollowers: count.toLocaleString(),
+                            profilePic: updated.profilePicture || prev?.profilePic || null,
+                            meetsMinimumFollowers: meetsCriteria,
+                            isRegisteredCreator: true
+                        }));
+                    }}
+                />
+            )}
         </motion.div>,
         document.body
     );

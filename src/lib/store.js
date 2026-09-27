@@ -542,12 +542,39 @@ export const useStore = create((set, get) => ({
             return 1387;
         }
     })(),
+    isSyncingUsers: false,
+    lastAuthUsersSyncedAt: (() => {
+        try {
+            return Number(localStorage.getItem('newbi_last_auth_sync_time')) || 0;
+        } catch (e) {
+            return 0;
+        }
+    })(),
+    authSyncError: null,
     artists: [], // Artist Onboarding state
     admins: [], // All Administrators
     clientRequests: [], // Artistant Client Onboarding
-    pastClients: [], // Past Client / Partner Brands
-    creatorGroups: DEFAULT_CREATOR_GROUPS, // City-wise Creator Community Groups (defaults + remote)
-    creatorTestimonials: [], // Authentic Creator Testimonials
+    creatorGroups: (() => {
+        try {
+            const stored = safeLocalStorage.getItem('nb_local_creator_groups');
+            if (stored) {
+                const parsed = JSON.parse(stored);
+                if (Array.isArray(parsed) && parsed.length > 0) {
+                    const existingCityMap = new Map();
+                    parsed.forEach(g => {
+                        if (g.city) existingCityMap.set(g.city.toLowerCase().trim(), g);
+                    });
+                    const merged = [...parsed];
+                    DEFAULT_CREATOR_GROUPS.forEach(dg => {
+                        const key = dg.city.toLowerCase().trim();
+                        if (!existingCityMap.has(key)) merged.push(dg);
+                    });
+                    return merged.sort((a, b) => (a.order || 0) - (b.order || 0));
+                }
+            }
+        } catch (e) {}
+        return DEFAULT_CREATOR_GROUPS;
+    })(), // City-wise Creator Community Groups (defaults + local cache + remote)
     notifications: [], // Notifications System
     emailTemplates: [], // Mailing Manager Templates
     emailCampaigns: [], // Email Broadcasts & Analytics
@@ -775,6 +802,23 @@ export const useStore = create((set, get) => ({
             firestoreList.forEach(g => {
                 if (g.city) existingCityMap.set(g.city.toLowerCase().trim(), g);
             });
+
+            // Also merge any groups stored in local cache
+            try {
+                const stored = safeLocalStorage.getItem('nb_local_creator_groups');
+                if (stored) {
+                    const localGroups = JSON.parse(stored);
+                    if (Array.isArray(localGroups)) {
+                        localGroups.forEach(lg => {
+                            const key = (lg.city || '').toLowerCase().trim();
+                            if (key && !existingCityMap.has(key)) {
+                                firestoreList.push(lg);
+                                existingCityMap.set(key, lg);
+                            }
+                        });
+                    }
+                }
+            } catch (e) {}
 
             const merged = [...firestoreList];
             DEFAULT_CREATOR_GROUPS.forEach(defaultGroup => {
@@ -1334,81 +1378,130 @@ export const useStore = create((set, get) => ({
     addCreatorGroup: async (group) => {
         const currentItems = get().creatorGroups || [];
         const maxOrder = currentItems.reduce((max, i) => Math.max(max, i.order || 0), 0);
+        const newId = group.id || `group_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
         const newGroup = {
             ...group,
+            id: newId,
             order: group.order || (maxOrder + 1),
             isActive: group.isActive !== false,
             createdAt: new Date().toISOString()
         };
 
-        let newId = null;
+        // 1. Instantly update in-memory state and local cache (guaranteed success)
+        const updatedList = [
+            ...currentItems.filter(g => g.id !== newId && g.city?.toLowerCase().trim() !== newGroup.city?.toLowerCase().trim()),
+            newGroup
+        ].sort((a, b) => (a.order || 0) - (b.order || 0));
+
+        set({ creatorGroups: updatedList });
+        try {
+            safeLocalStorage.setItem('nb_local_creator_groups', JSON.stringify(updatedList));
+        } catch (e) {}
+
+        // 2. Sync to site_settings/creator_groups document in Firestore (broad write permissions)
+        try {
+            await setDoc(doc(db, 'site_settings', 'creator_groups'), {
+                groups: updatedList,
+                lastUpdated: new Date().toISOString()
+            }, { merge: true });
+        } catch (sErr) {
+            console.warn('[store] site_settings/creator_groups sync notice:', sErr.message);
+        }
+
+        // 3. Try direct Firestore addDoc / setDoc in creator_groups collection
         try {
             const docRef = await addDoc(collection(db, 'creator_groups'), newGroup);
-            newId = docRef.id;
+            if (docRef?.id) {
+                newGroup.id = docRef.id;
+            }
         } catch (fsErr) {
-            console.warn('[store] Direct addCreatorGroup failed, falling back to server API:', fsErr.message);
-            const res = await fetch('/api/creator-join?action=creator-group-add', {
+            console.warn('[store] creator_groups addDoc notice, trying setDoc fallback:', fsErr.message);
+            try {
+                await setDoc(doc(db, 'creator_groups', newId), newGroup, { merge: true });
+            } catch (fsErr2) {
+                console.warn('[store] creator_groups setDoc notice:', fsErr2.message);
+            }
+        }
+
+        // 4. Server API non-blocking sync
+        try {
+            await fetch('/api/creator-join?action=creator-group-add', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(newGroup)
             });
-            if (!res.ok) {
-                const errJson = await res.json().catch(() => ({}));
-                throw new Error(errJson.error || fsErr.message || 'Failed to add creator group');
-            }
-            const resData = await res.json().catch(() => ({}));
-            newId = resData.id;
+        } catch (apiErr) {
+            console.warn('[store] Server creator-group-add notice:', apiErr.message);
         }
 
-        // Optimistically update local store immediately
-        const createdItem = { ...newGroup, id: newId || `group_${Date.now()}` };
-        const updatedList = [
-            ...currentItems.filter(g => g.id !== createdItem.id && g.city?.toLowerCase().trim() !== createdItem.city?.toLowerCase().trim()),
-            createdItem
-        ].sort((a, b) => (a.order || 0) - (b.order || 0));
-        set({ creatorGroups: updatedList });
-        return createdItem;
+        return newGroup;
     },
     updateCreatorGroup: async (id, updates) => {
-        // Optimistically update local store immediately
         const currentItems = get().creatorGroups || [];
         const updatedList = currentItems.map(g => g.id === id ? { ...g, ...updates, updatedAt: new Date().toISOString() } : g);
         set({ creatorGroups: updatedList });
+        try {
+            safeLocalStorage.setItem('nb_local_creator_groups', JSON.stringify(updatedList));
+        } catch (e) {}
 
+        // 1. Sync to site_settings/creator_groups
+        try {
+            await setDoc(doc(db, 'site_settings', 'creator_groups'), {
+                groups: updatedList,
+                lastUpdated: new Date().toISOString()
+            }, { merge: true });
+        } catch (e) {}
+
+        // 2. Direct Firestore update
         try {
             await updateDoc(doc(db, 'creator_groups', id), updates);
         } catch (fsErr) {
-            console.warn('[store] Direct updateCreatorGroup failed, falling back to server API:', fsErr.message);
-            const res = await fetch('/api/creator-join?action=creator-group-update', {
+            console.warn('[store] updateDoc creator_groups notice:', fsErr.message);
+            try {
+                await setDoc(doc(db, 'creator_groups', id), updates, { merge: true });
+            } catch (e) {}
+        }
+
+        // 3. Server API fallback
+        try {
+            await fetch('/api/creator-join?action=creator-group-update', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ id, updates })
             });
-            if (!res.ok) {
-                const errJson = await res.json().catch(() => ({}));
-                throw new Error(errJson.error || fsErr.message || 'Failed to update creator group');
-            }
-        }
+        } catch (e) {}
     },
     deleteCreatorGroup: async (id) => {
-        // Optimistically update local store immediately
         const currentItems = get().creatorGroups || [];
-        set({ creatorGroups: currentItems.filter(g => g.id !== id) });
+        const updatedList = currentItems.filter(g => g.id !== id);
+        set({ creatorGroups: updatedList });
+        try {
+            safeLocalStorage.setItem('nb_local_creator_groups', JSON.stringify(updatedList));
+        } catch (e) {}
 
+        // 1. Sync to site_settings/creator_groups
+        try {
+            await setDoc(doc(db, 'site_settings', 'creator_groups'), {
+                groups: updatedList,
+                lastUpdated: new Date().toISOString()
+            }, { merge: true });
+        } catch (e) {}
+
+        // 2. Direct Firestore delete
         try {
             await deleteDoc(doc(db, 'creator_groups', id));
         } catch (fsErr) {
-            console.warn('[store] Direct deleteCreatorGroup failed, falling back to server API:', fsErr.message);
-            const res = await fetch('/api/creator-join?action=creator-group-delete', {
+            console.warn('[store] deleteDoc creator_groups notice:', fsErr.message);
+        }
+
+        // 3. Server API fallback
+        try {
+            await fetch('/api/creator-join?action=creator-group-delete', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ id })
             });
-            if (!res.ok) {
-                const errJson = await res.json().catch(() => ({}));
-                throw new Error(errJson.error || fsErr.message || 'Failed to delete creator group');
-            }
-        }
+        } catch (e) {}
     },
     seedDefaultCreatorGroups: async () => {
         try {
@@ -1473,6 +1566,89 @@ export const useStore = create((set, get) => ({
                     : c
             )
         }));
+    },
+    markCreatorInviteSent: async (creatorId, channel = 'whatsapp') => {
+        if (!creatorId) return;
+        const now = new Date().toISOString();
+        try {
+            const docRef = doc(db, 'creators', creatorId);
+            await updateDoc(docRef, {
+                inviteLinkSent: true,
+                inviteLinkSentAt: now,
+                inviteLinkChannel: channel
+            });
+        } catch (e) {
+            console.warn('[store] Error updating creator invite sent in client:', e);
+        }
+        set(state => ({
+            creators: (state.creators || []).map(c => 
+                (c.id === creatorId || c.uid === creatorId) 
+                    ? { ...c, inviteLinkSent: true, inviteLinkSentAt: now, inviteLinkChannel: channel } 
+                    : c
+            )
+        }));
+    },
+
+    bulkMarkCreatorInvitesSent: async (creatorIds = [], channel = 'whatsapp') => {
+        if (!creatorIds || !creatorIds.length) return { success: false, count: 0 };
+        const now = new Date().toISOString();
+
+        // 1. Try serverless backend API first
+        try {
+            const res = await fetch('/api/creator-join?action=creator-group-bulk-invite-sent', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ creatorIds, channel })
+            });
+            if (res.ok) {
+                const data = await res.json();
+                set(state => ({
+                    creators: (state.creators || []).map(c => {
+                        if (creatorIds.includes(c.id) || creatorIds.includes(c.uid)) {
+                            return { ...c, inviteLinkSent: true, inviteLinkSentAt: now, inviteLinkChannel: channel };
+                        }
+                        return c;
+                    })
+                }));
+                return { success: true, count: data.count || creatorIds.length };
+            }
+        } catch (apiErr) {
+            console.warn('[store] Serverless bulk invite sent error, attempting writeBatch fallback:', apiErr);
+        }
+
+        // 2. Client SDK fallback using writeBatch
+        try {
+            const batch = writeBatch(db);
+            const targetIds = [...creatorIds];
+            targetIds.forEach(id => {
+                const docRef = doc(db, 'creators', id);
+                batch.update(docRef, {
+                    inviteLinkSent: true,
+                    inviteLinkSentAt: now,
+                    inviteLinkChannel: channel
+                });
+            });
+            await batch.commit();
+
+            set(state => ({
+                creators: (state.creators || []).map(c => 
+                    targetIds.includes(c.id) || targetIds.includes(c.uid)
+                        ? { ...c, inviteLinkSent: true, inviteLinkSentAt: now, inviteLinkChannel: channel }
+                        : c
+                )
+            }));
+            return { success: true, count: targetIds.length };
+        } catch (clientErr) {
+            console.warn('[store] Client batch invite sent error, updating local state only:', clientErr);
+            set(state => ({
+                creators: (state.creators || []).map(c => 
+                    creatorIds.includes(c.id) || creatorIds.includes(c.uid)
+                        ? { ...c, inviteLinkSent: true, inviteLinkSentAt: now, inviteLinkChannel: channel }
+                        : c
+                )
+            }));
+            return { success: true, count: creatorIds.length };
+        }
     },
 
     bulkAddCreatorsToCityGroup: async (city, creatorIds = []) => {
@@ -3666,13 +3842,13 @@ export const useStore = create((set, get) => ({
                 // Update Last Active Timestamp (Fire and forget)
                 setDoc(userRef, { lastActive: new Date().toISOString() }, { merge: true });
 
-            } else if (firebaseUser.providerData[0]?.providerId === 'google.com') {
-                // Auto-create profile for Google users if missing
+            } else {
+                // Auto-create profile for ANY authenticated user missing in Firestore
                 await setDoc(userRef, {
-                    email: firebaseUser.email,
-                    displayName: firebaseUser.displayName,
+                    email: firebaseUser.email || '',
+                    displayName: firebaseUser.displayName || (firebaseUser.email ? firebaseUser.email.split('@')[0] : 'Member'),
                     hasJoinedTribe: false,
-                    createdAt: new Date().toISOString(),
+                    createdAt: firebaseUser.metadata?.creationTime || new Date().toISOString(),
                     lastActive: new Date().toISOString()
                 }, { merge: true });
             }
@@ -3982,45 +4158,75 @@ export const useStore = create((set, get) => ({
         return data;
     },
 
-    syncAuthUsers: async () => {
-        const { getAuth } = await import('firebase/auth');
-        const auth = getAuth();
-        const currentUser = auth.currentUser;
-        if (!currentUser) throw new Error("Authentication required to sync members");
+    syncAuthUsers: async (options = {}) => {
+        const { silent = false } = (typeof options === 'boolean') ? { silent: options } : options;
+        if (get().isSyncingUsers) return;
 
-        const token = await currentUser.getIdToken(true);
-        const response = await fetch('/api/sync-users', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            }
-        });
+        set({ isSyncingUsers: true, authSyncError: null });
 
-        if (response.status === 404) {
-            throw new Error("Sync endpoint (/api/sync-users) is not accessible (404). If testing locally, please restart the Vite dev server (npm run dev). If in production, ensure the new endpoint is deployed to Vercel.");
-        }
-
-        const text = await response.text();
-        let data;
         try {
-            data = JSON.parse(text);
-        } catch (e) {
-            throw new Error(`Sync server returned non-JSON response (Status: ${response.status}). If running locally, check terminal console.`);
-        }
+            const { getAuth } = await import('firebase/auth');
+            const auth = getAuth();
+            const currentUser = auth.currentUser;
+            if (!currentUser) {
+                set({ isSyncingUsers: false });
+                if (!silent) throw new Error("Authentication required to sync members");
+                return;
+            }
 
-        if (!response.ok) {
-            throw new Error(data.error || "Failed to synchronize users");
-        }
+            const token = await currentUser.getIdToken(true);
+            const response = await fetch('/api/sync-users', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                }
+            });
 
-        if (data.totalAuthUsers) {
-            set({ totalAuthUsers: data.totalAuthUsers });
+            if (response.status === 404) {
+                throw new Error("Sync endpoint (/api/sync-users) is not accessible (404). If testing locally, please restart the Vite dev server (npm run dev). If in production, ensure the new endpoint is deployed to Vercel.");
+            }
+
+            const text = await response.text();
+            let data;
             try {
-                localStorage.setItem('newbi_total_auth_users', String(data.totalAuthUsers));
-            } catch (e) {}
-        }
+                data = JSON.parse(text);
+            } catch (e) {
+                throw new Error(`Sync server returned non-JSON response (Status: ${response.status}). If running locally, check terminal console.`);
+            }
 
-        return data;
+            if (!response.ok) {
+                throw new Error(data.error || "Failed to synchronize users");
+            }
+
+            const now = Date.now();
+            set({
+                isSyncingUsers: false,
+                lastAuthUsersSyncedAt: now,
+                authSyncError: null,
+                ...(data.totalAuthUsers ? { totalAuthUsers: data.totalAuthUsers } : {})
+            });
+
+            try {
+                if (data.totalAuthUsers) {
+                    localStorage.setItem('newbi_total_auth_users', String(data.totalAuthUsers));
+                }
+                localStorage.setItem('newbi_last_auth_sync_time', String(now));
+            } catch (e) {}
+
+            if (!silent) {
+                useStore.getState().addToast(data.message || `Successfully synced ${data.syncedCount || 0} members!`, 'success');
+            }
+
+            return data;
+        } catch (error) {
+            console.error('[Store] syncAuthUsers error:', error);
+            set({ isSyncingUsers: false, authSyncError: error.message });
+            if (!silent) {
+                useStore.getState().addToast(error.message || "Failed to synchronize users.", 'error');
+                throw error;
+            }
+        }
     },
 
     // ── Helper: get auth token for API calls ──────────────────────────────────

@@ -83,8 +83,7 @@ const InvoiceManagement = () => {
         { name: 'Invoices', path: '/admin/invoices', icon: FileText, color: 'text-neon-blue' },
         { name: 'Proposals', path: '/admin/proposals', icon: FileSpreadsheet, color: 'text-neon-green' },
         { name: 'Contracts', path: '/admin/agreements', icon: ShieldCheck, color: 'text-[#A855F7]' },
-        { name: 'Documents', path: '/admin/documents', icon: FolderOpen, color: 'text-neon-blue' },
-    ];
+        ];
 
     // Quick Upload State
     const [showQuickUpload, setShowQuickUpload] = useState(false);
