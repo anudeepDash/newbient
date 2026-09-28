@@ -367,7 +367,8 @@ const CreatorDetailModal = ({
                 layoutId={`creator-card-${creatorData.id || creatorData.uid}`}
                 className="w-full max-w-5xl h-[92vh] sm:h-[90vh] bg-white/95 dark:bg-[#0a0c12]/70 backdrop-blur-3xl border border-black/10 dark:border-white/[0.1] rounded-[2rem] sm:rounded-[2.5rem] shadow-[0_24px_80px_-12px_rgba(0,0,0,0.6)] overflow-hidden"
                 contentClassName="p-0"
-                        >
+                hideCloseButton={true}
+            >
                 <div className="flex flex-col h-full text-gray-900 dark:text-white">
 
                     {/* ═══ HEADER ═══ */}
@@ -508,16 +509,20 @@ const CreatorDetailModal = ({
                                 {/* Top-right actions */}
                                 <div className="flex items-center gap-2 shrink-0">
                                     <button type="button" onClick={() => { setEditSection('identity'); setIsEditOpen(true); }}
-                                        className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-black/[0.08] dark:bg-white/[0.1] backdrop-blur-md hover:bg-white/[0.2] border border-white/[0.15] text-gray-900 dark:text-white font-bold text-[11px] transition-all active:scale-95 cursor-pointer shadow-sm">
+                                        className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-black/[0.08] dark:bg-white/[0.1] backdrop-blur-md hover:bg-black/[0.12] dark:hover:bg-white/[0.2] border border-black/10 dark:border-white/[0.15] text-gray-900 dark:text-white font-bold text-[11px] transition-all active:scale-95 cursor-pointer shadow-sm">
                                         <Pencil size={12} /> <span className="hidden sm:inline">Edit</span>
                                     </button>
                                     <button type="button" onClick={() => onUpdateStatus && onUpdateStatus(creatorData.id || creatorData.uid, 'blocked')} disabled={isUpdating} title="Block"
-                                        className="w-8 h-8 rounded-xl bg-black/[0.08] dark:bg-white/[0.1] backdrop-blur-md hover:bg-rose-500/20 border border-white/[0.15] hover:border-rose-500/30 text-gray-900 dark:text-white hover:text-rose-400 flex items-center justify-center transition-all active:scale-90 cursor-pointer disabled:opacity-30 shadow-sm">
+                                        className="w-8 h-8 rounded-xl bg-black/[0.08] dark:bg-white/[0.1] backdrop-blur-md hover:bg-rose-500/20 border border-black/10 dark:border-white/[0.15] hover:border-rose-500/30 text-gray-900 dark:text-white hover:text-rose-400 flex items-center justify-center transition-all active:scale-90 cursor-pointer disabled:opacity-30 shadow-sm">
                                         <Ban size={13} />
                                     </button>
                                     <button type="button" onClick={() => onDelete && onDelete(creatorData.id || creatorData.uid)} disabled={isDeleting} title="Delete"
-                                        className="w-8 h-8 rounded-xl bg-black/[0.08] dark:bg-white/[0.1] backdrop-blur-md hover:bg-rose-500/20 border border-white/[0.15] hover:border-rose-500/30 text-gray-900 dark:text-white hover:text-rose-400 flex items-center justify-center transition-all active:scale-90 cursor-pointer disabled:opacity-30 shadow-sm">
+                                        className="w-8 h-8 rounded-xl bg-black/[0.08] dark:bg-white/[0.1] backdrop-blur-md hover:bg-rose-500/20 border border-black/10 dark:border-white/[0.15] hover:border-rose-500/30 text-gray-900 dark:text-white hover:text-rose-400 flex items-center justify-center transition-all active:scale-90 cursor-pointer disabled:opacity-30 shadow-sm">
                                         {isDeleting ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={13} />}
+                                    </button>
+                                    <button type="button" onClick={onClose} title="Close"
+                                        className="w-8 h-8 rounded-xl bg-black/[0.08] dark:bg-white/[0.1] backdrop-blur-md hover:bg-black/[0.15] dark:hover:bg-white/[0.2] border border-black/10 dark:border-white/[0.15] text-gray-600 dark:text-white/70 hover:text-gray-900 dark:hover:text-white flex items-center justify-center transition-all active:scale-90 cursor-pointer shadow-sm">
+                                        <X size={14} strokeWidth={2.5} />
                                     </button>
                                 </div>
                             </div>
