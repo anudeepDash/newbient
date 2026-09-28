@@ -168,12 +168,104 @@ const CreatorDetailModal = ({
 
     const [isEditOpen, setIsEditOpen] = useState(false);
     const [editSection, setEditSection] = useState('identity');
+    const [avatarError, setAvatarError] = useState(false);
+
+    // Instagram Verification Flow States
+    const [verifyInstagramState, setVerifyInstagramState] = useState('idle'); // 'idle' | 'awaiting' | 'prompt' | 'editing'
+    const [editFollowersInput, setEditFollowersInput] = useState('');
+    const [isSavingInstagram, setIsSavingInstagram] = useState(false);
+    const hasOpenedInstagramRef = useRef(false);
 
     useEffect(() => {
         setIsFeatured(creator?.isFeatured || false);
         setAdminBadges(creator?.adminBadges || []);
         setCreatorData(creator);
+        setVerifyInstagramState('idle');
     }, [creator]);
+
+    // Detect return to tab/window after opening Instagram
+    useEffect(() => {
+        const handleReturn = () => {
+            if (hasOpenedInstagramRef.current) {
+                hasOpenedInstagramRef.current = false;
+                setVerifyInstagramState('prompt');
+            }
+        };
+
+        window.addEventListener('focus', handleReturn);
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'visible' && hasOpenedInstagramRef.current) {
+                handleReturn();
+            }
+        };
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+
+        return () => {
+            window.removeEventListener('focus', handleReturn);
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+        };
+    }, []);
+
+    const handleOpenInstagramVerify = (e) => {
+        if (e) e.preventDefault();
+        const instagramUrl = buildSocialUrl(creatorData.instagram, 'instagram');
+        if (!instagramUrl) {
+            useStore.getState().addToast('No Instagram handle found to verify', 'error');
+            return;
+        }
+        window.open(instagramUrl, '_blank', 'noopener,noreferrer');
+        hasOpenedInstagramRef.current = true;
+        setVerifyInstagramState('awaiting');
+    };
+
+    const handleConfirmInstagramFollowers = async () => {
+        setIsSavingInstagram(true);
+        const updates = {
+            isInstagramVerified: true,
+            requiresManualVerification: false,
+            manualFollowerEntry: false,
+            instagramFollowersVerifiedAt: new Date().toISOString()
+        };
+        try {
+            await updateCreator(creatorData.id || creatorData.uid, updates);
+            setCreatorData(prev => ({ ...prev, ...updates }));
+            setVerifyInstagramState('idle');
+            useStore.getState().addToast(`Followers verified! (${Number(creatorData.instagramFollowers).toLocaleString()})`, 'success');
+        } catch (err) {
+            console.error('Failed to verify instagram followers:', err);
+            useStore.getState().addToast('Failed to update verification status', 'error');
+        } finally {
+            setIsSavingInstagram(false);
+        }
+    };
+
+    const handleSaveEditedFollowers = async () => {
+        const raw = editFollowersInput.trim();
+        if (!raw) {
+            useStore.getState().addToast('Please enter follower count', 'error');
+            return;
+        }
+        const cleanCount = String(Number(raw) || 0);
+        setIsSavingInstagram(true);
+        const updates = {
+            instagramFollowers: cleanCount,
+            isInstagramVerified: true,
+            requiresManualVerification: false,
+            manualFollowerEntry: false,
+            instagramFollowersVerifiedAt: new Date().toISOString()
+        };
+        try {
+            await updateCreator(creatorData.id || creatorData.uid, updates);
+            setCreatorData(prev => ({ ...prev, ...updates }));
+            setVerifyInstagramState('idle');
+            useStore.getState().addToast(`Followers updated to ${Number(cleanCount).toLocaleString()} and verified!`, 'success');
+        } catch (err) {
+            console.error('Failed to save edited followers:', err);
+            useStore.getState().addToast('Failed to save follower count', 'error');
+        } finally {
+            setIsSavingInstagram(false);
+        }
+    };
 
     // Handlers
     const handleToggleFeatured = async () => {
@@ -281,9 +373,9 @@ const CreatorDetailModal = ({
                     {/* ═══ HEADER ═══ */}
                     <div className="shrink-0 border-b border-black/[0.08] dark:border-white/[0.08] relative overflow-hidden backdrop-blur-xl">
                         {/* Blurred avatar background */}
-                        {avatar && (
+                        {avatar && !avatarError && (
                             <div className="absolute inset-0 overflow-hidden">
-                                <img src={avatar} alt="" className="w-full h-full object-cover scale-[2] blur-[80px] opacity-[0.2] saturate-150" />
+                                <img src={avatar} alt="" onError={() => setAvatarError(true)} className="w-full h-full object-cover scale-[2] blur-[80px] opacity-[0.2] saturate-150" />
                                 <div className="absolute inset-0 bg-gradient-to-b from-black/[0.02] via-white/50 to-white/95 dark:from-white/[0.02] dark:via-[#0a0c12]/50 dark:to-[#0a0c12]/80" />
                             </div>
                         )}
@@ -294,18 +386,18 @@ const CreatorDetailModal = ({
                                 {/* Avatar */}
                                 <div className="relative shrink-0">
                                     <div className={cn(
-                                        "w-16 h-16 sm:w-20 sm:h-20 rounded-2xl overflow-hidden ring-2 ring-offset-2 ring-offset-[#0a0c12]",
-                                        bothVerified ? "ring-neon-green/40" : phoneOnly ? "ring-neon-green/30" : "ring-white/[0.08]"
+                                        "w-16 h-16 sm:w-20 sm:h-20 rounded-2xl overflow-hidden ring-2 ring-offset-2 ring-offset-white dark:ring-offset-[#0a0c12]",
+                                        bothVerified ? "ring-neon-green/40" : phoneOnly ? "ring-neon-green/30" : "ring-black/[0.08] dark:ring-white/[0.08]"
                                     )}>
-                                        {avatar ? (
-                                            <img src={avatar} alt={creatorData.name} className="w-full h-full object-cover" />
+                                        {avatar && !avatarError ? (
+                                            <img src={avatar} alt={creatorData.name} onError={() => setAvatarError(true)} className="w-full h-full object-cover" />
                                         ) : (
                                             <div className="w-full h-full bg-gradient-to-br from-zinc-800 to-zinc-900 flex items-center justify-center font-heading font-black text-2xl sm:text-3xl text-emerald-600 dark:text-neon-green">{creatorData.name?.charAt(0) || 'C'}</div>
                                         )}
                                     </div>
                                     {(bothVerified || phoneOnly) && (
                                         <div className={cn(
-                                            "absolute -bottom-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center border-[2px] border-[#0a0c12] shadow-lg",
+                                            "absolute -bottom-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center border-[2px] border-white dark:border-[#0a0c12] shadow-lg",
                                             bothVerified ? "bg-neon-green shadow-neon-green/30" : "bg-blue-500 shadow-blue-500/30"
                                         )}>
                                             <Check size={11} strokeWidth={3.5} className="text-black" />
@@ -352,7 +444,7 @@ const CreatorDetailModal = ({
                                         {fmt(maxFollowers) && (
                                             <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-black/[0.06] dark:bg-white/[0.08] backdrop-blur-md border border-black/10 dark:border-white/[0.12] shadow-sm">
                                                 <span className="font-black text-[13px] font-mono text-gray-900 dark:text-white leading-none">{fmt(maxFollowers)}</span>
-                                                <span className="text-[9px] text-gray-600 text-white/60 font-medium uppercase tracking-wider">followers</span>
+                                                <span className="text-[9px] text-gray-600 dark:text-white/60 font-medium uppercase tracking-wider">followers</span>
                                             </div>
                                         )}
                                         <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/10 dark:bg-neon-green/[0.08] backdrop-blur-md border border-neon-green/20 shadow-[0_0_15px_-3px_rgba(57,255,20,0.1)]">
@@ -361,7 +453,7 @@ const CreatorDetailModal = ({
                                         </div>
                                         <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-black/[0.06] dark:bg-white/[0.08] backdrop-blur-md border border-black/10 dark:border-white/[0.12] shadow-sm">
                                             <span className="font-black text-[13px] font-mono text-gray-900 dark:text-white leading-none">{(creatorData.joinedCampaigns || []).length}</span>
-                                            <span className="text-[9px] text-gray-600 text-white/60 font-medium uppercase tracking-wider">campaigns</span>
+                                            <span className="text-[9px] text-gray-600 dark:text-white/60 font-medium uppercase tracking-wider">campaigns</span>
                                         </div>
 
                                         {/* Divider */}
@@ -487,27 +579,189 @@ const CreatorDetailModal = ({
                             {/* ── PROFILE ── */}
                             {activeTab === 'overview' && (
                                 <motion.div key="overview" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, ease: [0.23, 1, 0.32, 1] }} className="space-y-4">
-                                    {/* Unverified banner */}
-                                    {creatorData.instagramFollowers && !creatorData.isInstagramVerified && (
-                                        <div className="flex items-center justify-between gap-3 px-4 py-3 rounded-2xl bg-amber-500/[0.08] border border-amber-500/20 backdrop-blur-xl shadow-inner">
-                                            <div className="flex items-center gap-2.5 min-w-0">
-                                                <div className="w-7 h-7 rounded-xl bg-amber-500/20 flex items-center justify-center shrink-0 border border-amber-500/10">
-                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-amber-400"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-                                                </div>
-                                                <p className="text-xs text-gray-700 dark:text-white/70">
-                                                    <span className="font-black uppercase tracking-wider text-amber-400">Unverified</span>
-                                                    <span className="mx-1.5 text-white/20">—</span>
-                                                    Self-reported {Number(creatorData.instagramFollowers).toLocaleString()} followers
-                                                </p>
-                                            </div>
-                                            {creatorData.instagram && (
-                                                <a href={buildSocialUrl(creatorData.instagram, 'instagram')} target="_blank" rel="noopener noreferrer"
-                                                    className="px-4 py-2 rounded-xl bg-gradient-to-b from-amber-400 to-amber-600 hover:from-amber-300 hover:to-amber-500 text-black font-black text-[10px] uppercase tracking-wider transition-all flex items-center gap-1.5 active:scale-95 shrink-0 shadow-[0_0_15px_-3px_rgba(245,158,11,0.4)] border border-amber-300/50">
-                                                    Verify <ArrowUpRight size={10} />
-                                                </a>
-                                            )}
-                                        </div>
-                                    )}
+                                    {/* Unverified / Instagram Verification Banner */}
+                                    <AnimatePresence>
+                                        {creatorData.instagramFollowers && !creatorData.isInstagramVerified && (
+                                            <motion.div
+                                                key="instagram-verify-banner"
+                                                initial={{ opacity: 0, height: 0 }}
+                                                animate={{ opacity: 1, height: 'auto' }}
+                                                exit={{ opacity: 0, height: 0, overflow: 'hidden' }}
+                                                transition={{ duration: 0.25 }}
+                                            >
+                                                {/* IDLE STATE: Default unverified banner with Verify button */}
+                                                {verifyInstagramState === 'idle' && (
+                                                    <div className="flex items-center justify-between gap-3 px-4 py-3 rounded-2xl bg-amber-500/[0.08] border border-amber-500/20 backdrop-blur-xl shadow-inner">
+                                                        <div className="flex items-center gap-2.5 min-w-0">
+                                                            <div className="w-7 h-7 rounded-xl bg-amber-500/20 flex items-center justify-center shrink-0 border border-amber-500/10">
+                                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-amber-500 dark:text-amber-400"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                                                            </div>
+                                                            <p className="text-xs text-gray-700 dark:text-white/70">
+                                                                <span className="font-black uppercase tracking-wider text-amber-500 dark:text-amber-400">Unverified</span>
+                                                                <span className="mx-1.5 text-black/20 dark:text-white/20">—</span>
+                                                                Self-reported {Number(creatorData.instagramFollowers).toLocaleString()} followers
+                                                            </p>
+                                                        </div>
+                                                        {creatorData.instagram && (
+                                                            <button
+                                                                type="button"
+                                                                onClick={handleOpenInstagramVerify}
+                                                                className="px-4 py-2 rounded-xl bg-gradient-to-b from-amber-400 to-amber-600 hover:from-amber-300 hover:to-amber-500 text-black font-black text-[10px] uppercase tracking-wider transition-all flex items-center gap-1.5 active:scale-95 shrink-0 shadow-[0_0_15px_-3px_rgba(245,158,11,0.4)] border border-amber-300/50 cursor-pointer"
+                                                            >
+                                                                Verify <ArrowUpRight size={10} />
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                )}
+
+                                                {/* AWAITING STATE: User just clicked Verify, Instagram opened in another tab */}
+                                                {verifyInstagramState === 'awaiting' && (
+                                                    <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 rounded-2xl bg-amber-500/[0.1] border border-amber-500/30 backdrop-blur-xl shadow-inner">
+                                                        <div className="flex items-center gap-2.5 min-w-0">
+                                                            <div className="w-7 h-7 rounded-xl bg-amber-500/20 flex items-center justify-center shrink-0 border border-amber-500/20">
+                                                                <Loader2 size={13} className="text-amber-500 dark:text-amber-400 animate-spin" />
+                                                            </div>
+                                                            <div className="min-w-0">
+                                                                <p className="text-xs font-semibold text-gray-800 dark:text-white/90">
+                                                                    Opened Instagram in a new tab...
+                                                                </p>
+                                                                <p className="text-[10px] text-gray-500 dark:text-white/50 truncate">
+                                                                    Check @{extractSocialUsername(creatorData.instagram, 'instagram')} follower count and return here
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex items-center gap-2 shrink-0">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setVerifyInstagramState('prompt')}
+                                                                className="px-3.5 py-1.5 rounded-xl bg-gradient-to-b from-amber-400 to-amber-600 hover:from-amber-300 hover:to-amber-500 text-black font-black text-[10px] uppercase tracking-wider transition-all flex items-center gap-1.5 active:scale-95 shrink-0 shadow-sm cursor-pointer"
+                                                            >
+                                                                I've Checked It <Check size={11} strokeWidth={2.5} />
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setVerifyInstagramState('idle')}
+                                                                className="w-7 h-7 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 text-gray-400 hover:text-gray-700 dark:hover:text-white flex items-center justify-center transition-all cursor-pointer"
+                                                                title="Cancel"
+                                                            >
+                                                                <X size={12} />
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                {/* PROMPT STATE: Returned from Instagram, ask if correct or edit */}
+                                                {verifyInstagramState === 'prompt' && (
+                                                    <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 rounded-2xl bg-amber-500/[0.12] border border-amber-500/30 backdrop-blur-xl shadow-md">
+                                                        <div className="flex items-center gap-2.5 min-w-0">
+                                                            <div className="w-7 h-7 rounded-xl bg-amber-500/20 flex items-center justify-center shrink-0 border border-amber-500/20 text-amber-500 dark:text-amber-400">
+                                                                <Instagram size={14} />
+                                                            </div>
+                                                            <div className="min-w-0">
+                                                                <p className="text-xs text-gray-900 dark:text-white font-semibold">
+                                                                    Is <span className="font-black text-amber-600 dark:text-amber-400">{Number(creatorData.instagramFollowers).toLocaleString()}</span> followers correct?
+                                                                </p>
+                                                                <p className="text-[10px] text-gray-500 dark:text-white/50 truncate">
+                                                                    @{extractSocialUsername(creatorData.instagram, 'instagram')} on Instagram
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex items-center gap-2 shrink-0">
+                                                            <button
+                                                                type="button"
+                                                                disabled={isSavingInstagram}
+                                                                onClick={handleConfirmInstagramFollowers}
+                                                                className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-[10px] uppercase tracking-wider transition-all flex items-center gap-1.5 active:scale-95 shrink-0 shadow-[0_0_12px_-2px_rgba(16,185,129,0.4)] cursor-pointer disabled:opacity-50"
+                                                            >
+                                                                {isSavingInstagram ? <Loader2 size={11} className="animate-spin" /> : <Check size={11} strokeWidth={3} />}
+                                                                Yes, Correct
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                disabled={isSavingInstagram}
+                                                                onClick={() => {
+                                                                    setEditFollowersInput(String(creatorData.instagramFollowers || ''));
+                                                                    setVerifyInstagramState('editing');
+                                                                }}
+                                                                className="px-3 py-1.5 rounded-xl bg-black/[0.06] dark:bg-white/[0.08] hover:bg-black/[0.1] dark:hover:bg-white/[0.15] border border-black/10 dark:border-white/10 text-gray-800 dark:text-white font-bold text-[10px] uppercase tracking-wider transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer"
+                                                            >
+                                                                <Pencil size={10} />
+                                                                Edit Followers
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={handleOpenInstagramVerify}
+                                                                className="w-7 h-7 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 text-gray-400 hover:text-gray-700 dark:hover:text-white flex items-center justify-center transition-all cursor-pointer"
+                                                                title="Reopen Instagram Profile"
+                                                            >
+                                                                <ArrowUpRight size={13} />
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setVerifyInstagramState('idle')}
+                                                                className="w-7 h-7 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 text-gray-400 hover:text-gray-700 dark:hover:text-white flex items-center justify-center transition-all cursor-pointer"
+                                                                title="Dismiss"
+                                                            >
+                                                                <X size={12} />
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                {/* EDITING STATE: Inline edit follower count and save as verified */}
+                                                {verifyInstagramState === 'editing' && (
+                                                    <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 rounded-2xl bg-amber-500/[0.12] border border-amber-500/30 backdrop-blur-xl shadow-md">
+                                                        <div className="flex items-center gap-2.5 min-w-0">
+                                                            <div className="w-7 h-7 rounded-xl bg-amber-500/20 flex items-center justify-center shrink-0 border border-amber-500/20 text-amber-500 dark:text-amber-400">
+                                                                <Pencil size={12} />
+                                                            </div>
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="text-xs font-bold text-gray-800 dark:text-white/80 shrink-0">Real Followers:</span>
+                                                                <div className="relative">
+                                                                    <input
+                                                                        type="text"
+                                                                        inputMode="numeric"
+                                                                        autoFocus
+                                                                        value={editFollowersInput}
+                                                                        onChange={(e) => setEditFollowersInput(e.target.value.replace(/\D/g, ''))}
+                                                                        placeholder="e.g. 27300"
+                                                                        className="w-28 px-2.5 py-1 text-xs font-bold font-mono rounded-lg bg-white dark:bg-black/50 border border-amber-500/40 text-gray-900 dark:text-white focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 placeholder:text-gray-400 dark:placeholder:text-zinc-500"
+                                                                        onKeyDown={(e) => {
+                                                                            if (e.key === 'Enter') handleSaveEditedFollowers();
+                                                                            if (e.key === 'Escape') setVerifyInstagramState('prompt');
+                                                                        }}
+                                                                    />
+                                                                </div>
+                                                                {editFollowersInput && (
+                                                                    <span className="text-[11px] font-semibold text-gray-500 dark:text-white/50 shrink-0">
+                                                                        ({Number(editFollowersInput).toLocaleString()})
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex items-center gap-2 shrink-0">
+                                                            <button
+                                                                type="button"
+                                                                disabled={isSavingInstagram || !editFollowersInput}
+                                                                onClick={handleSaveEditedFollowers}
+                                                                className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-[10px] uppercase tracking-wider transition-all flex items-center gap-1.5 active:scale-95 shrink-0 shadow-[0_0_12px_-2px_rgba(16,185,129,0.4)] cursor-pointer disabled:opacity-50"
+                                                            >
+                                                                {isSavingInstagram ? <Loader2 size={11} className="animate-spin" /> : <Check size={11} strokeWidth={3} />}
+                                                                Save & Verify
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setVerifyInstagramState('prompt')}
+                                                                className="px-2.5 py-1.5 rounded-xl hover:bg-black/5 dark:hover:bg-white/10 text-gray-600 dark:text-white/60 text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer"
+                                                            >
+                                                                Cancel
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
 
                                     {/* ═══ BENTO GRID ═══ */}
                                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 auto-rows-min">
@@ -740,7 +994,7 @@ const CreatorDetailModal = ({
                                                 {/* Creator ID highlight */}
                                                 <div className="flex items-center justify-between p-3.5 rounded-[1.25rem] bg-gradient-to-br from-emerald-500/10 to-blue-500/5 dark:from-neon-green/[0.08] dark:to-neon-blue/[0.05] border border-emerald-500/20 dark:border-neon-green/20 group cursor-pointer shadow-inner backdrop-blur-md hover:scale-[1.02] transition-transform" onClick={() => handleCopy(creatorIdTag, 'Creator ID')}>
                                                     <div>
-                                                        <p className="text-[9px] font-bold uppercase tracking-widest text-gray-600 text-white/60 mb-1">Creator ID</p>
+                                                        <p className="text-[9px] font-bold uppercase tracking-widest text-gray-600 dark:text-white/60 mb-1">Creator ID</p>
                                                         <p className="text-lg font-black font-mono text-emerald-600 dark:text-neon-green leading-none shadow-black/20 drop-shadow-md">#{creatorIdTag}</p>
                                                     </div>
                                                     <Copy size={13} className="text-gray-400 dark:text-white/40 group-hover:text-emerald-600 dark:group-hover:text-neon-green transition-colors" />
@@ -792,7 +1046,7 @@ const CreatorDetailModal = ({
                                                         "flex items-center gap-2.5 px-4 py-2.5 rounded-2xl text-left transition-all cursor-pointer border",
                                                         isActive
                                                             ? "bg-black/[0.06] dark:bg-white/[0.08] border-black/10 dark:border-white/[0.12] text-gray-900 dark:text-white shadow-sm backdrop-blur-md"
-                                                            : "bg-black/[0.03] dark:bg-white/[0.03] border-transparent text-gray-500 dark:text-white/50 hover:bg-black/[0.06] dark:bg-white/[0.06] hover:text-gray-800 dark:text-white/80 hover:border-black/10 border-white/[0.08] backdrop-blur-sm"
+                                                            : "bg-black/[0.03] dark:bg-white/[0.03] border-transparent text-gray-500 dark:text-white/50 hover:bg-black/[0.06] dark:bg-white/[0.06] hover:text-gray-800 dark:text-white/80 hover:border-black/10 dark:hover:border-white/[0.08] backdrop-blur-sm"
                                                     )}>
                                                     <div className={cn(
                                                         "w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-colors shadow-sm",
@@ -801,7 +1055,7 @@ const CreatorDetailModal = ({
                                                         <Icon size={14} />
                                                     </div>
                                                     <div>
-                                                        <p className={cn("text-[11px] font-bold", isActive ? "text-gray-900 dark:text-white" : "text-gray-600 text-white/60")}>{m.label}</p>
+                                                        <p className={cn("text-[11px] font-bold", isActive ? "text-gray-900 dark:text-white" : "text-gray-600 dark:text-white/60")}>{m.label}</p>
                                                         <p className="text-[9px] text-gray-400 dark:text-white/40">{m.desc}</p>
                                                     </div>
                                                 </button>
