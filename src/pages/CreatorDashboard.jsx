@@ -59,6 +59,7 @@ import Globe from 'lucide-react/dist/esm/icons/globe';
 import Compass from 'lucide-react/dist/esm/icons/compass';
 import MessageCircle from 'lucide-react/dist/esm/icons/message-circle';
 import ArrowLeft from 'lucide-react/dist/esm/icons/arrow-left';
+import Pencil from 'lucide-react/dist/esm/icons/pencil';
 
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
