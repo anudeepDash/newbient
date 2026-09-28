@@ -51,8 +51,8 @@ export const SharedLayoutModal = ({
                         }}
                         className={cn(
                             "relative z-10 w-full max-w-4xl max-h-[92vh] sm:max-h-[90vh] flex flex-col rounded-3xl overflow-hidden",
-                            "bg-[#0c0e14]/80 backdrop-blur-3xl border border-white/[0.12]",
-                            "shadow-[0_0_0_1px_rgba(255,255,255,0.05),0_20px_60px_-10px_rgba(0,0,0,0.5),0_0_100px_-20px_rgba(57,255,20,0.05)]",
+                            "bg-white/95 dark:bg-[#0c0e14]/80 backdrop-blur-3xl border border-black/10 dark:border-white/[0.12]",
+                            "shadow-[0_20px_60px_-10px_rgba(0,0,0,0.1)] dark:shadow-[0_0_0_1px_rgba(255,255,255,0.05),0_20px_60px_-10px_rgba(0,0,0,0.5),0_0_100px_-20px_rgba(57,255,20,0.05)]",
                             className
                         )}
                     >
@@ -64,7 +64,7 @@ export const SharedLayoutModal = ({
                             <div className="absolute top-4 right-4 z-50">
                                 <button
                                     onClick={onClose}
-                                    className="w-8 h-8 flex items-center justify-center rounded-full bg-white/[0.08] backdrop-blur-xl hover:bg-white/[0.15] text-white/60 hover:text-white transition-all cursor-pointer border border-white/[0.06]"
+                                    className="w-8 h-8 flex items-center justify-center rounded-full bg-black/5 dark:bg-white/[0.08] backdrop-blur-xl hover:bg-black/10 dark:hover:bg-white/[0.15] text-gray-500 dark:text-white/60 hover:text-gray-900 dark:hover:text-white transition-all cursor-pointer border border-black/10 dark:border-white/[0.06]"
                                 >
                                     <X size={15} strokeWidth={2.5} />
                                 </button>
