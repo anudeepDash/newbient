@@ -377,12 +377,7 @@ const AddCityCreatorsModal = ({ isOpen = true, onClose, initialCity = 'Bengaluru
                                 Send WhatsApp group links naturally via 1-on-1 chats or email to avoid bans.
                             </p>
                         </div>
-                        <button
-                            onClick={onClose}
-                            className="w-10 h-10 flex items-center justify-center rounded-full bg-black/[0.05] dark:bg-white/[0.05] hover:bg-black/[0.08] dark:bg-white/[0.1] text-gray-600 dark:text-white/60 hover:text-gray-900 dark:text-white transition-all cursor-pointer border border-black/[0.06] dark:border-white/[0.05]"
-                        >
-                            <X size={16} strokeWidth={2.5} />
-                        </button>
+
                     </div>
 
                     <div className="flex items-center gap-6 overflow-x-auto no-scrollbar scroll-smooth">
