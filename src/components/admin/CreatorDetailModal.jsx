@@ -273,18 +273,18 @@ const CreatorDetailModal = ({
                 isOpen={true}
                 onClose={onClose}
                 layoutId={`creator-card-${creatorData.id || creatorData.uid}`}
-                className="w-full max-w-5xl h-[92vh] sm:h-[90vh] bg-white/95 dark:bg-[#0a0c12]/70 backdrop-blur-3xl border border-black/10 dark:border-black/10 dark:border-white/[0.1] rounded-[2rem] sm:rounded-[2.5rem] shadow-[0_24px_80px_-12px_rgba(0,0,0,0.6)] overflow-hidden"
+                className="w-full max-w-5xl h-[92vh] sm:h-[90vh] bg-white/95 dark:bg-[#0a0c12]/70 backdrop-blur-3xl border border-black/10 dark:border-white/[0.1] rounded-[2rem] sm:rounded-[2.5rem] shadow-[0_24px_80px_-12px_rgba(0,0,0,0.6)] overflow-hidden"
                 contentClassName="p-0"
                         >
                 <div className="flex flex-col h-full text-gray-900 dark:text-white">
 
                     {/* ═══ HEADER ═══ */}
-                    <div className="shrink-0 border-b border-white/[0.08] relative overflow-hidden backdrop-blur-xl">
+                    <div className="shrink-0 border-b border-black/[0.08] dark:border-white/[0.08] relative overflow-hidden backdrop-blur-xl">
                         {/* Blurred avatar background */}
                         {avatar && (
                             <div className="absolute inset-0 overflow-hidden">
                                 <img src={avatar} alt="" className="w-full h-full object-cover scale-[2] blur-[80px] opacity-[0.2] saturate-150" />
-                                <div className="absolute inset-0 bg-gradient-to-b from-white/[0.02] via-[#0a0c12]/50 to-[#0a0c12]/80" />
+                                <div className="absolute inset-0 bg-gradient-to-b from-black/[0.02] via-white/50 to-white/95 dark:from-white/[0.02] dark:via-[#0a0c12]/50 dark:to-[#0a0c12]/80" />
                             </div>
                         )}
 
@@ -300,7 +300,7 @@ const CreatorDetailModal = ({
                                         {avatar ? (
                                             <img src={avatar} alt={creatorData.name} className="w-full h-full object-cover" />
                                         ) : (
-                                            <div className="w-full h-full bg-gradient-to-br from-zinc-800 to-zinc-900 flex items-center justify-center font-heading font-black text-2xl sm:text-3xl text-neon-green">{creatorData.name?.charAt(0) || 'C'}</div>
+                                            <div className="w-full h-full bg-gradient-to-br from-zinc-800 to-zinc-900 flex items-center justify-center font-heading font-black text-2xl sm:text-3xl text-emerald-600 dark:text-neon-green">{creatorData.name?.charAt(0) || 'C'}</div>
                                         )}
                                     </div>
                                     {(bothVerified || phoneOnly) && (
@@ -320,7 +320,7 @@ const CreatorDetailModal = ({
                                         <h1 className="text-lg sm:text-xl font-black font-heading uppercase tracking-tight leading-none text-gray-900 dark:text-white">{creatorData.name}</h1>
                                         <span className="font-mono text-[8px] px-1.5 py-0.5 rounded-md bg-black/[0.05] dark:bg-white/[0.05] text-zinc-500 font-bold tracking-widest">#{creatorIdTag}</span>
                                         {isApproved ? (
-                                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-neon-green/10 text-neon-green text-[9px] font-black uppercase font-mono border border-neon-green/20">
+                                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-neon-green/10 text-emerald-600 dark:text-neon-green text-[9px] font-black uppercase font-mono border border-neon-green/20">
                                                 <ShieldCheck size={9} /> Verified
                                             </span>
                                         ) : isPending ? (
@@ -352,16 +352,16 @@ const CreatorDetailModal = ({
                                         {fmt(maxFollowers) && (
                                             <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-black/[0.06] dark:bg-white/[0.08] backdrop-blur-md border border-black/10 dark:border-white/[0.12] shadow-sm">
                                                 <span className="font-black text-[13px] font-mono text-gray-900 dark:text-white leading-none">{fmt(maxFollowers)}</span>
-                                                <span className="text-[9px] text-gray-600 dark:text-white/60 font-medium uppercase tracking-wider">followers</span>
+                                                <span className="text-[9px] text-gray-600 text-white/60 font-medium uppercase tracking-wider">followers</span>
                                             </div>
                                         )}
-                                        <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-neon-green/[0.08] backdrop-blur-md border border-neon-green/20 shadow-[0_0_15px_-3px_rgba(57,255,20,0.1)]">
-                                            <span className="font-black text-[13px] font-mono text-neon-green leading-none">{(creatorData.points || 500).toLocaleString()}</span>
-                                            <span className="text-[9px] text-neon-green/60 font-medium uppercase tracking-wider">pts</span>
+                                        <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/10 dark:bg-neon-green/[0.08] backdrop-blur-md border border-neon-green/20 shadow-[0_0_15px_-3px_rgba(57,255,20,0.1)]">
+                                            <span className="font-black text-[13px] font-mono text-emerald-600 dark:text-neon-green leading-none">{(creatorData.points || 500).toLocaleString()}</span>
+                                            <span className="text-[9px] text-emerald-600/70 dark:text-neon-green/60 font-medium uppercase tracking-wider">pts</span>
                                         </div>
                                         <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-black/[0.06] dark:bg-white/[0.08] backdrop-blur-md border border-black/10 dark:border-white/[0.12] shadow-sm">
                                             <span className="font-black text-[13px] font-mono text-gray-900 dark:text-white leading-none">{(creatorData.joinedCampaigns || []).length}</span>
-                                            <span className="text-[9px] text-gray-600 dark:text-white/60 font-medium uppercase tracking-wider">campaigns</span>
+                                            <span className="text-[9px] text-gray-600 text-white/60 font-medium uppercase tracking-wider">campaigns</span>
                                         </div>
 
                                         {/* Divider */}
@@ -451,7 +451,7 @@ const CreatorDetailModal = ({
                                         </button>
                                         {isPending && (
                                             <button type="button" onClick={() => onUpdateStatus && onUpdateStatus(creatorData.id || creatorData.uid, 'rejected')} disabled={isUpdating}
-                                                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-black/[0.05] dark:bg-white/[0.05] hover:bg-rose-500/10 border border-white/[0.08] text-zinc-300 hover:text-rose-400 font-black text-[10px] uppercase tracking-wider transition-all active:scale-95 cursor-pointer">
+                                                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-black/[0.05] dark:bg-white/[0.05] hover:bg-rose-500/10 border border-black/[0.08] dark:border-white/[0.08] text-zinc-300 hover:text-rose-400 font-black text-[10px] uppercase tracking-wider transition-all active:scale-95 cursor-pointer">
                                                 <X size={11} strokeWidth={3} /> Reject
                                             </button>
                                         )}
@@ -522,7 +522,7 @@ const CreatorDetailModal = ({
                                                         <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">Connected Platforms</p>
                                                     </div>
                                                     <button type="button" onClick={() => { setEditSection('socials'); setIsEditOpen(true); }}
-                                                        className="text-[10px] font-bold text-neon-green/70 hover:text-neon-green uppercase tracking-wider font-mono cursor-pointer transition-colors">Edit</button>
+                                                        className="text-[10px] font-bold text-emerald-600/80 dark:text-neon-green/70 hover:text-emerald-600 dark:hover:text-neon-green uppercase tracking-wider font-mono cursor-pointer transition-colors">Edit</button>
                                                 </div>
                                                 <div className="p-4">
                                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -590,12 +590,12 @@ const CreatorDetailModal = ({
                                             <div className="flex items-center justify-between px-5 py-3.5 border-b border-white/[0.06]">
                                                 <div className="flex items-center gap-2">
                                                     <div className="w-6 h-6 rounded-lg bg-neon-green/10 flex items-center justify-center border border-neon-green/20 shadow-sm">
-                                                        <Phone size={11} className="text-neon-green" />
+                                                        <Phone size={11} className="text-emerald-600 dark:text-neon-green" />
                                                     </div>
                                                     <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-700 dark:text-white/70">Contact</p>
                                                 </div>
                                                 <button type="button" onClick={() => { setEditSection('identity'); setIsEditOpen(true); }}
-                                                    className="text-[10px] font-bold text-neon-green/70 hover:text-neon-green uppercase tracking-wider font-mono cursor-pointer transition-colors">Edit</button>
+                                                    className="text-[10px] font-bold text-emerald-600/80 dark:text-neon-green/70 hover:text-emerald-600 dark:hover:text-neon-green uppercase tracking-wider font-mono cursor-pointer transition-colors">Edit</button>
                                             </div>
                                             <div className="p-5 space-y-1">
                                                 {creatorData.email && (
@@ -658,16 +658,16 @@ const CreatorDetailModal = ({
                                                     <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-700 dark:text-white/70">Content & Rates</p>
                                                 </div>
                                                 <button type="button" onClick={() => { setEditSection('rates'); setIsEditOpen(true); }}
-                                                    className="text-[10px] font-bold text-neon-green/70 hover:text-neon-green uppercase tracking-wider font-mono cursor-pointer transition-colors">Edit</button>
+                                                    className="text-[10px] font-bold text-emerald-600/80 dark:text-neon-green/70 hover:text-emerald-600 dark:hover:text-neon-green uppercase tracking-wider font-mono cursor-pointer transition-colors">Edit</button>
                                             </div>
                                             <div className="p-4">
                                                 {/* Mini bento tiles */}
                                                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                                                     {/* Rate tile */}
-                                                    <div className="col-span-2 rounded-[1.25rem] bg-gradient-to-br from-neon-green/[0.08] to-neon-green/[0.03] border border-neon-green/20 p-4 shadow-inner backdrop-blur-md flex flex-col justify-center min-h-[80px]">
-                                                        <p className="text-[9px] font-bold uppercase tracking-widest text-neon-green/60 mb-2">Rate</p>
+                                                    <div className="col-span-2 rounded-[1.25rem] bg-gradient-to-br from-emerald-500/10 to-emerald-500/5 dark:from-neon-green/[0.08] dark:to-neon-green/[0.03] border border-emerald-500/20 dark:border-neon-green/20 p-4 shadow-inner backdrop-blur-md flex flex-col justify-center min-h-[80px]">
+                                                        <p className="text-[9px] font-bold uppercase tracking-widest text-emerald-600/70 dark:text-neon-green/60 mb-2">Rate</p>
                                                         {creatorData.commercials ? (
-                                                            <p className="text-[14px] sm:text-[15px] font-black text-neon-green leading-snug shadow-black/20 drop-shadow-md break-keep">{creatorData.commercials}</p>
+                                                            <p className="text-[14px] sm:text-[15px] font-black text-emerald-600 dark:text-neon-green leading-snug shadow-black/20 drop-shadow-md break-keep">{creatorData.commercials}</p>
                                                         ) : (
                                                             <p className="text-[14px] font-bold text-gray-400 dark:text-white/40 italic">Not set</p>
                                                         )}
@@ -711,7 +711,7 @@ const CreatorDetailModal = ({
 
                                                 {/* Specializations */}
                                                 {(creatorData.specializations || creatorData.niches || []).length > 0 && (
-                                                    <div className="mt-4 pt-4 border-t border-white/[0.08]">
+                                                    <div className="mt-4 pt-4 border-t border-black/[0.08] dark:border-white/[0.08]">
                                                         <p className="text-[9px] font-bold uppercase tracking-widest text-gray-500 dark:text-white/50 mb-2">Specializations</p>
                                                         <div className="flex flex-wrap gap-2">
                                                             {(creatorData.specializations || creatorData.niches || []).map((s, i) => (
@@ -738,21 +738,21 @@ const CreatorDetailModal = ({
                                             </div>
                                             <div className="p-5 space-y-5">
                                                 {/* Creator ID highlight */}
-                                                <div className="flex items-center justify-between p-3.5 rounded-[1.25rem] bg-gradient-to-br from-neon-green/[0.08] to-neon-blue/[0.05] border border-neon-green/20 group cursor-pointer shadow-inner backdrop-blur-md hover:scale-[1.02] transition-transform" onClick={() => handleCopy(creatorIdTag, 'Creator ID')}>
+                                                <div className="flex items-center justify-between p-3.5 rounded-[1.25rem] bg-gradient-to-br from-emerald-500/10 to-blue-500/5 dark:from-neon-green/[0.08] dark:to-neon-blue/[0.05] border border-emerald-500/20 dark:border-neon-green/20 group cursor-pointer shadow-inner backdrop-blur-md hover:scale-[1.02] transition-transform" onClick={() => handleCopy(creatorIdTag, 'Creator ID')}>
                                                     <div>
-                                                        <p className="text-[9px] font-bold uppercase tracking-widest text-gray-600 dark:text-white/60 mb-1">Creator ID</p>
-                                                        <p className="text-lg font-black font-mono text-neon-green leading-none shadow-black/20 drop-shadow-md">#{creatorIdTag}</p>
+                                                        <p className="text-[9px] font-bold uppercase tracking-widest text-gray-600 text-white/60 mb-1">Creator ID</p>
+                                                        <p className="text-lg font-black font-mono text-emerald-600 dark:text-neon-green leading-none shadow-black/20 drop-shadow-md">#{creatorIdTag}</p>
                                                     </div>
-                                                    <Copy size={13} className="text-gray-400 dark:text-white/40 group-hover:text-neon-green transition-colors" />
+                                                    <Copy size={13} className="text-gray-400 dark:text-white/40 group-hover:text-emerald-600 dark:group-hover:text-neon-green transition-colors" />
                                                 </div>
 
                                                 <div className="space-y-4">
                                                     <div className="flex items-center justify-between">
                                                         <p className="text-[9px] font-bold uppercase tracking-widest text-gray-500 dark:text-white/50">Points</p>
-                                                        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-neon-green/10 border border-neon-green/20">
+                                                        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-500/10 dark:bg-neon-green/10 border border-emerald-500/20 dark:border-neon-green/20">
                                                             <div className="w-2 h-2 rounded-full bg-neon-green shadow-[0_0_8px_rgba(57,255,20,0.8)]" />
-                                                            <span className="text-sm font-black font-mono text-neon-green">{(creatorData.points || 500).toLocaleString()}</span>
-                                                            <span className="text-[10px] text-neon-green/70 font-medium">pts</span>
+                                                            <span className="text-sm font-black font-mono text-emerald-600 dark:text-neon-green">{(creatorData.points || 500).toLocaleString()}</span>
+                                                            <span className="text-[10px] text-emerald-600/80 dark:text-neon-green/70 font-medium">pts</span>
                                                         </div>
                                                     </div>
                                                     <div className="flex items-center justify-between">
@@ -792,16 +792,16 @@ const CreatorDetailModal = ({
                                                         "flex items-center gap-2.5 px-4 py-2.5 rounded-2xl text-left transition-all cursor-pointer border",
                                                         isActive
                                                             ? "bg-black/[0.06] dark:bg-white/[0.08] border-black/10 dark:border-white/[0.12] text-gray-900 dark:text-white shadow-sm backdrop-blur-md"
-                                                            : "bg-black/[0.03] dark:bg-white/[0.03] border-transparent text-gray-500 dark:text-white/50 hover:bg-black/[0.06] dark:bg-white/[0.06] hover:text-gray-800 dark:text-white/80 hover:border-black/10 dark:hover:border-white/[0.08] backdrop-blur-sm"
+                                                            : "bg-black/[0.03] dark:bg-white/[0.03] border-transparent text-gray-500 dark:text-white/50 hover:bg-black/[0.06] dark:bg-white/[0.06] hover:text-gray-800 dark:text-white/80 hover:border-black/10 border-white/[0.08] backdrop-blur-sm"
                                                     )}>
                                                     <div className={cn(
                                                         "w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-colors shadow-sm",
-                                                        isActive ? "bg-neon-green/15 text-neon-green border border-neon-green/20" : "bg-black/[0.05] dark:bg-white/[0.05] text-gray-500 dark:text-white/50 border border-black/[0.06] dark:border-white/[0.05]"
+                                                        isActive ? "bg-neon-green/15 text-emerald-600 dark:text-neon-green border border-neon-green/20" : "bg-black/[0.05] dark:bg-white/[0.05] text-gray-500 dark:text-white/50 border border-black/[0.06] dark:border-white/[0.05]"
                                                     )}>
                                                         <Icon size={14} />
                                                     </div>
                                                     <div>
-                                                        <p className={cn("text-[11px] font-bold", isActive ? "text-gray-900 dark:text-white" : "text-gray-600 dark:text-white/60")}>{m.label}</p>
+                                                        <p className={cn("text-[11px] font-bold", isActive ? "text-gray-900 dark:text-white" : "text-gray-600 text-white/60")}>{m.label}</p>
                                                         <p className="text-[9px] text-gray-400 dark:text-white/40">{m.desc}</p>
                                                     </div>
                                                 </button>
@@ -819,7 +819,7 @@ const CreatorDetailModal = ({
                                             {commMode === 'email' && (
                                                 <form onSubmit={handleSendEmail} className="flex flex-col h-full relative z-10">
                                                     {/* Email header fields */}
-                                                    <div className="px-5 py-4 border-b border-white/[0.08] shrink-0 space-y-3">
+                                                    <div className="px-5 py-4 border-b border-black/[0.08] dark:border-white/[0.08] shrink-0 space-y-3">
                                                         <div className="flex items-center gap-3 text-[13px]">
                                                             <span className="text-[9px] font-bold uppercase tracking-widest text-gray-500 dark:text-white/50 w-8">To</span>
                                                             <div className="flex items-center gap-2 px-3 py-1.5 bg-black/[0.05] dark:bg-white/[0.05] border border-black/10 dark:border-white/[0.1] rounded-xl font-medium text-gray-900 dark:text-white/90 text-[12px] shadow-inner backdrop-blur-sm">
@@ -842,7 +842,7 @@ const CreatorDetailModal = ({
                                                         />
                                                     </div>
                                                     {/* Send button */}
-                                                    <div className="px-5 py-3.5 border-t border-white/[0.08] shrink-0 flex justify-between items-center bg-white/[0.02]">
+                                                    <div className="px-5 py-3.5 border-t border-black/[0.08] dark:border-white/[0.08] shrink-0 flex justify-between items-center bg-white/[0.02]">
                                                         <p className="text-[10px] text-gray-500 dark:text-white/50">HTML email with branded template</p>
                                                         <button type="submit" disabled={sendingEmail || !creatorData.email}
                                                             className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-neon-green hover:bg-neon-green/90 disabled:opacity-40 disabled:cursor-not-allowed text-black font-black text-[11px] uppercase tracking-wider transition-all active:scale-95 cursor-pointer shadow-[0_0_15px_rgba(57,255,20,0.4)] hover:shadow-[0_0_20px_rgba(57,255,20,0.6)]">
@@ -854,7 +854,7 @@ const CreatorDetailModal = ({
 
                                             {commMode === 'notify' && (
                                                 <form onSubmit={handleSendNotification} className="flex flex-col h-full relative z-10">
-                                                    <div className="px-5 py-4 border-b border-white/[0.08] shrink-0 bg-white/[0.02]">
+                                                    <div className="px-5 py-4 border-b border-black/[0.08] dark:border-white/[0.08] shrink-0 bg-white/[0.02]">
                                                         <div className="flex items-center gap-3">
                                                             <div className="w-9 h-9 rounded-xl bg-amber-500/10 flex items-center justify-center border border-amber-500/20 shadow-sm">
                                                                 <Bell size={14} className="text-amber-400" />
@@ -870,7 +870,7 @@ const CreatorDetailModal = ({
                                                             className="w-full h-full p-4 bg-black/[0.03] dark:bg-white/[0.03] border border-black/10 dark:border-white/[0.1] rounded-2xl outline-none resize-none text-[13px] leading-relaxed text-gray-900 dark:text-white/90 placeholder-black/30 dark:placeholder-white/30 focus:border-neon-green/50 focus:bg-black/[0.05] dark:bg-white/[0.05] transition-all shadow-inner backdrop-blur-sm"
                                                             placeholder="Type the notification body here..." />
                                                     </div>
-                                                    <div className="px-5 py-3.5 border-t border-white/[0.08] shrink-0 flex justify-between items-center bg-white/[0.02]">
+                                                    <div className="px-5 py-3.5 border-t border-black/[0.08] dark:border-white/[0.08] shrink-0 flex justify-between items-center bg-white/[0.02]">
                                                         <p className="text-[10px] text-gray-500 dark:text-white/50">Delivered to in-app notification center</p>
                                                         <button type="submit" disabled={sendingMsg || !messageText.trim()}
                                                             className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-neon-green hover:bg-neon-green/90 disabled:opacity-40 disabled:cursor-not-allowed text-black font-black text-[11px] uppercase tracking-wider transition-all active:scale-95 cursor-pointer shadow-[0_0_15px_rgba(57,255,20,0.4)] hover:shadow-[0_0_20px_rgba(57,255,20,0.6)]">
@@ -884,7 +884,7 @@ const CreatorDetailModal = ({
                                         {/* Live Preview Card (spans 2 cols) */}
                                         <div className="lg:col-span-2 rounded-[1.5rem] border border-black/10 dark:border-white/[0.12] bg-white/[0.04] backdrop-blur-2xl shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] overflow-hidden flex flex-col relative">
                                             <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-neon-blue/40 to-transparent" />
-                                            <div className="px-4 py-3 border-b border-white/[0.08] flex items-center justify-center gap-2 shrink-0 bg-white/[0.02]">
+                                            <div className="px-4 py-3 border-b border-black/[0.08] dark:border-white/[0.08] flex items-center justify-center gap-2 shrink-0 bg-white/[0.02]">
                                                 <div className="w-1.5 h-1.5 rounded-full bg-neon-blue animate-pulse shadow-[0_0_8px_rgba(0,240,255,0.8)]" />
                                                 <span className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 dark:text-white/50">Live Preview</span>
                                             </div>
@@ -896,7 +896,7 @@ const CreatorDetailModal = ({
                                                         <div className="w-full bg-black/[0.05] dark:bg-white/[0.05] border border-black/10 dark:border-white/[0.1] rounded-2xl overflow-hidden mt-4 relative backdrop-blur-md shadow-lg">
                                                             <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-neon-green via-neon-blue to-neon-pink" />
                                                             <div className="p-4 border-b border-white/[0.06] flex gap-3 items-center bg-white/[0.02]">
-                                                                <div className="w-9 h-9 rounded-xl bg-neon-green/10 text-neon-green flex items-center justify-center shrink-0 border border-neon-green/20 shadow-sm">
+                                                                <div className="w-9 h-9 rounded-xl bg-neon-green/10 text-emerald-600 dark:text-neon-green flex items-center justify-center shrink-0 border border-neon-green/20 shadow-sm">
                                                                     <Bell size={15} />
                                                                 </div>
                                                                 <div className="flex-1 min-w-0">
@@ -978,7 +978,7 @@ const CreatorDetailModal = ({
                                                                             className="w-full flex items-center gap-3 p-2 rounded-xl hover:bg-black/[0.04] dark:hover:bg-white/[0.04] text-left transition-colors cursor-pointer group">
                                                                             <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center text-sm bg-gradient-to-br shadow-inner", b.gradient)}>{b.emoji}</div>
                                                                             <div>
-                                                                                <p className="text-[11px] font-bold text-gray-900 dark:text-gray-900 dark:text-white">{b.label}</p>
+                                                                                <p className="text-[11px] font-bold text-gray-900 text-white">{b.label}</p>
                                                                                 <p className="text-[9px] text-gray-500 uppercase tracking-wider">{b.category}</p>
                                                                             </div>
                                                                         </button>
