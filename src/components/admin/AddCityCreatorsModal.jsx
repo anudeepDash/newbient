@@ -71,13 +71,13 @@ const CustomDropdown = ({ value, options, onChange }) => {
             <button 
                 type="button"
                 onClick={() => setIsOpen(!isOpen)}
-                className="w-full h-12 px-4 bg-black/40 border border-white/[0.08] hover:border-neon-blue/50 rounded-xl flex items-center justify-between transition-all"
+                className="w-full h-12 px-4 bg-white dark:bg-black/40 border border-black/[0.08] dark:border-white/[0.08] hover:border-neon-blue/50 rounded-xl flex items-center justify-between transition-all"
             >
                 <div className="flex items-center gap-2">
                     <MapPin size={16} className="text-neon-blue" />
-                    <span className="text-[13px] font-bold text-white">{value}</span>
+                    <span className="text-[13px] font-bold text-gray-900 dark:text-white">{value}</span>
                 </div>
-                <ChevronDown size={14} className={cn("text-white/50 transition-transform", isOpen && "rotate-180")} />
+                <ChevronDown size={14} className={cn("text-gray-500 dark:text-white/50 transition-transform", isOpen && "rotate-180")} />
             </button>
 
             <AnimatePresence>
@@ -87,7 +87,7 @@ const CustomDropdown = ({ value, options, onChange }) => {
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -5 }}
                         transition={{ duration: 0.15 }}
-                        className="absolute top-full left-0 right-0 mt-2 bg-[#0c0e14] border border-white/[0.08] rounded-xl shadow-2xl overflow-hidden"
+                        className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-[#0c0e14] border border-black/[0.08] dark:border-white/[0.08] rounded-xl shadow-2xl overflow-hidden"
                     >
                         <div className="max-h-64 overflow-y-auto no-scrollbar p-1.5 space-y-0.5">
                             {options.map(opt => (
@@ -97,7 +97,7 @@ const CustomDropdown = ({ value, options, onChange }) => {
                                     onClick={() => { onChange(opt); setIsOpen(false); }}
                                     className={cn(
                                         "w-full text-left px-3 py-2.5 rounded-lg text-sm transition-colors",
-                                        value === opt ? "bg-neon-blue/10 text-neon-blue font-bold" : "text-white/70 hover:bg-white/5 hover:text-white"
+                                        value === opt ? "bg-neon-blue/10 text-neon-blue font-bold" : "text-gray-700 dark:text-white/70 hover:bg-black/5 dark:hover:bg-white/5 hover:text-gray-900 dark:text-white"
                                     )}
                                 >
                                     {opt}
@@ -355,31 +355,31 @@ const AddCityCreatorsModal = ({ isOpen = true, onClose, initialCity = 'Bengaluru
             isOpen={isOpen}
             onClose={onClose}
             layoutId="add-city-creators-modal"
-            className="w-full max-w-5xl h-[92vh] sm:h-[90vh] bg-[#0a0c12]/70 backdrop-blur-3xl border border-white/[0.1] rounded-[2rem] sm:rounded-[2.5rem] shadow-[0_24px_80px_-12px_rgba(0,0,0,0.6)] overflow-hidden"
+            className="w-full max-w-5xl h-[92vh] sm:h-[90vh] bg-white/95 dark:bg-[#0a0c12]/70 backdrop-blur-3xl border border-black/10 dark:border-white/[0.1] rounded-[2rem] sm:rounded-[2.5rem] shadow-[0_24px_80px_-12px_rgba(0,0,0,0.6)] overflow-hidden"
             contentClassName="p-0 flex flex-col h-full"
             hideCloseButton={true}
         >
-            <div className="flex flex-col h-full text-white">
+            <div className="flex flex-col h-full text-gray-900 dark:text-white">
                 
                 {/* ── HEADER & TABS ── */}
-                <div className="shrink-0 pt-6 px-6 sm:px-8 border-b border-white/[0.08] relative overflow-hidden backdrop-blur-xl">
+                <div className="shrink-0 pt-6 px-6 sm:px-8 border-b border-black/[0.08] dark:border-white/[0.08] relative overflow-hidden backdrop-blur-xl">
                     <div className="flex items-start justify-between gap-4 mb-6">
                         <div>
                             <div className="flex items-center gap-3">
-                                <h2 className="text-xl sm:text-2xl font-black font-heading tracking-tight text-white uppercase italic">
+                                <h2 className="text-xl sm:text-2xl font-black font-heading tracking-tight text-gray-900 dark:text-white uppercase italic">
                                     Send Group Invites
                                 </h2>
                                 <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
                                     <ShieldCheck size={12} /> Anti-Spam Safe
                                 </span>
                             </div>
-                            <p className="text-xs text-white/50 mt-1">
+                            <p className="text-xs text-gray-500 dark:text-white/50 mt-1">
                                 Send WhatsApp group links naturally via 1-on-1 chats or email to avoid bans.
                             </p>
                         </div>
                         <button
                             onClick={onClose}
-                            className="w-10 h-10 flex items-center justify-center rounded-full bg-white/[0.05] hover:bg-white/[0.1] text-white/60 hover:text-white transition-all cursor-pointer border border-white/[0.05]"
+                            className="w-10 h-10 flex items-center justify-center rounded-full bg-black/[0.05] dark:bg-white/[0.05] hover:bg-black/[0.08] dark:bg-white/[0.1] text-gray-600 dark:text-white/60 hover:text-gray-900 dark:text-white transition-all cursor-pointer border border-black/[0.06] dark:border-white/[0.05]"
                         >
                             <X size={16} strokeWidth={2.5} />
                         </button>
@@ -395,7 +395,7 @@ const AddCityCreatorsModal = ({ isOpen = true, onClose, initialCity = 'Bengaluru
                                     onClick={() => setActiveTab(tab.id)}
                                     className={cn(
                                         "relative pb-4 text-xs font-bold uppercase tracking-widest whitespace-nowrap transition-colors outline-none",
-                                        isActive ? "text-neon-green" : "text-white/40 hover:text-white/70"
+                                        isActive ? "text-neon-green" : "text-gray-400 dark:text-white/40 hover:text-gray-700 dark:text-white/70"
                                     )}
                                 >
                                     <span>{tab.label}</span>
@@ -412,7 +412,7 @@ const AddCityCreatorsModal = ({ isOpen = true, onClose, initialCity = 'Bengaluru
                 </div>
 
                 {/* ── CONTENT AREA ── */}
-                <div className="flex-1 overflow-y-auto min-h-0 bg-white/[0.01]">
+                <div className="flex-1 overflow-y-auto min-h-0 bg-black/[0.01] dark:bg-white/[0.01]">
                     <AnimatePresence mode="wait">
                         
                         {/* TAB 1: AUDIENCE */}
@@ -425,7 +425,7 @@ const AddCityCreatorsModal = ({ isOpen = true, onClose, initialCity = 'Bengaluru
                                 <div className="flex flex-col lg:flex-row gap-6">
                                     {/* City Selector */}
                                     <div className="lg:w-1/3 space-y-2 relative z-50">
-                                        <label className="text-[10px] font-black uppercase tracking-widest text-white/50 flex items-center gap-1.5">
+                                        <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 dark:text-white/50 flex items-center gap-1.5">
                                             <MapPin size={12} className="text-neon-blue" /> Target City Hub
                                         </label>
                                         <CustomDropdown 
@@ -437,9 +437,9 @@ const AddCityCreatorsModal = ({ isOpen = true, onClose, initialCity = 'Bengaluru
                                     
                                     {/* Quick Stats */}
                                     <div className="lg:flex-1 grid grid-cols-3 gap-3">
-                                        <div className="p-4 rounded-xl bg-white/[0.02] border border-white/[0.05] flex flex-col justify-center items-center">
-                                            <span className="text-[10px] font-black uppercase tracking-wider text-white/40">Total</span>
-                                            <div className="text-2xl font-black mt-1 text-white">{stats.total}</div>
+                                        <div className="p-4 rounded-xl bg-black/[0.02] dark:bg-white/[0.02] border border-black/[0.06] dark:border-white/[0.05] flex flex-col justify-center items-center">
+                                            <span className="text-[10px] font-black uppercase tracking-wider text-gray-400 dark:text-white/40">Total</span>
+                                            <div className="text-2xl font-black mt-1 text-gray-900 dark:text-white">{stats.total}</div>
                                         </div>
                                         <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex flex-col justify-center items-center">
                                             <span className="text-[10px] font-black uppercase tracking-wider text-emerald-400/70">Joined</span>
@@ -452,47 +452,47 @@ const AddCityCreatorsModal = ({ isOpen = true, onClose, initialCity = 'Bengaluru
                                     </div>
                                 </div>
 
-                                <div className="space-y-4 pt-4 border-t border-white/[0.05]">
+                                <div className="space-y-4 pt-4 border-t border-black/[0.06] dark:border-white/[0.05]">
                                     {/* Filters & Search */}
                                     <div className="flex flex-wrap items-center justify-between gap-4">
-                                        <div className="flex items-center bg-white/[0.04] p-1 rounded-xl border border-white/[0.05] text-[10px] font-bold">
+                                        <div className="flex items-center bg-black/[0.04] dark:bg-white/[0.04] p-1 rounded-xl border border-black/[0.06] dark:border-white/[0.05] text-[10px] font-bold">
                                             {['all', 'pending', 'sent', 'joined'].map(t => (
                                                 <button
                                                     key={t}
                                                     onClick={() => setStatusFilter(t)}
-                                                    className={cn("px-4 py-2 rounded-lg transition-all capitalize", statusFilter === t ? "bg-white/10 text-white shadow-sm" : "text-white/50 hover:text-white")}
+                                                    className={cn("px-4 py-2 rounded-lg transition-all capitalize", statusFilter === t ? "bg-black/5 dark:bg-white/10 text-gray-900 dark:text-white shadow-sm" : "text-gray-500 dark:text-white/50 hover:text-gray-900 dark:text-white")}
                                                 >
                                                     {t}
                                                 </button>
                                             ))}
                                         </div>
                                         <div className="relative flex-1 max-w-sm">
-                                            <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/40" />
+                                            <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 dark:text-white/40" />
                                             <input
                                                 type="text"
                                                 value={searchQuery}
                                                 onChange={(e) => setSearchQuery(e.target.value)}
                                                 placeholder="Search by name, phone..."
-                                                className="w-full h-11 pl-10 pr-4 bg-black/40 border border-white/[0.08] rounded-xl text-xs font-medium text-white outline-none focus:border-neon-green transition-colors"
+                                                className="w-full h-11 pl-10 pr-4 bg-white dark:bg-black/40 border border-black/[0.08] dark:border-white/[0.08] rounded-xl text-xs font-medium text-gray-900 dark:text-white outline-none focus:border-neon-green transition-colors"
                                             />
                                         </div>
                                     </div>
 
                                     {/* Creators List */}
-                                    <div className="border border-white/[0.08] rounded-2xl overflow-hidden bg-[#0c0e14]">
-                                        <div className="px-5 py-3 border-b border-white/[0.08] flex items-center justify-between bg-white/[0.02]">
+                                    <div className="border border-black/[0.08] dark:border-white/[0.08] rounded-2xl overflow-hidden bg-white dark:bg-[#0c0e14]">
+                                        <div className="px-5 py-3 border-b border-black/[0.08] dark:border-white/[0.08] flex items-center justify-between bg-black/[0.02] dark:bg-white/[0.02]">
                                             <div className="flex items-center gap-3">
-                                                <button onClick={handleToggleSelectAll} className="w-5 h-5 rounded border border-white/20 flex items-center justify-center bg-black/40 text-neon-green hover:border-white/40 transition-colors">
+                                                <button onClick={handleToggleSelectAll} className="w-5 h-5 rounded border border-black/20 dark:border-white/20 flex items-center justify-center bg-white dark:bg-black/40 text-neon-green hover:border-black/40 dark:hover:border-white/40 transition-colors">
                                                     {isAllSelected && <Check size={12} strokeWidth={3} />}
                                                 </button>
-                                                <span className="text-xs font-bold text-white/70">Select All ({filteredCreators.length})</span>
+                                                <span className="text-xs font-bold text-gray-700 dark:text-white/70">Select All ({filteredCreators.length})</span>
                                             </div>
                                             <span className="text-[10px] font-black uppercase text-neon-green">{currentSelectedIds.size} Selected</span>
                                         </div>
                                         
                                         <div className="max-h-[400px] overflow-y-auto p-2 space-y-1">
                                             {filteredCreators.length === 0 ? (
-                                                <div className="py-16 text-center text-white/40 text-xs font-bold">No creators match your filters.</div>
+                                                <div className="py-16 text-center text-gray-400 dark:text-white/40 text-xs font-bold">No creators match your filters.</div>
                                             ) : (
                                                 filteredCreators.map(c => {
                                                     const isSel = currentSelectedIds.has(c.id || c.uid);
@@ -503,15 +503,15 @@ const AddCityCreatorsModal = ({ isOpen = true, onClose, initialCity = 'Bengaluru
                                                     return (
                                                         <div key={c.id || c.uid} className={cn(
                                                             "flex items-center justify-between p-3.5 rounded-xl transition-all cursor-pointer group",
-                                                            isSel ? "bg-white/[0.06] border border-white/10" : "hover:bg-white/[0.02] border border-transparent"
+                                                            isSel ? "bg-black/[0.06] dark:bg-white/[0.06] border border-black/10 dark:border-white/10" : "hover:bg-black/[0.02] dark:bg-white/[0.02] border border-transparent"
                                                         )} onClick={() => handleToggleCreator(c.id || c.uid)}>
                                                             <div className="flex items-center gap-4">
-                                                                <div className={cn("w-5 h-5 rounded border flex items-center justify-center shrink-0 transition-colors", isSel ? "bg-neon-green border-neon-green text-black" : "border-white/20 bg-black/40 text-transparent")}>
+                                                                <div className={cn("w-5 h-5 rounded border flex items-center justify-center shrink-0 transition-colors", isSel ? "bg-neon-green border-neon-green text-black" : "border-black/20 dark:border-white/20 bg-white dark:bg-black/40 text-transparent")}>
                                                                     <Check size={12} strokeWidth={3} />
                                                                 </div>
                                                                 <div>
-                                                                    <p className="text-sm font-bold text-white">{c.name || 'Unknown'}</p>
-                                                                    <p className="text-[10px] font-mono text-white/40 mt-0.5">{formatPhoneForWhatsApp(c.phone) || 'No Phone'}</p>
+                                                                    <p className="text-sm font-bold text-gray-900 dark:text-white">{c.name || 'Unknown'}</p>
+                                                                    <p className="text-[10px] font-mono text-gray-400 dark:text-white/40 mt-0.5">{formatPhoneForWhatsApp(c.phone) || 'No Phone'}</p>
                                                                 </div>
                                                             </div>
                                                             
@@ -520,7 +520,7 @@ const AddCityCreatorsModal = ({ isOpen = true, onClose, initialCity = 'Bengaluru
                                                                 {isSent && (
                                                                     <button 
                                                                         onClick={(e) => { e.stopPropagation(); handleUndoSent(c); }}
-                                                                        className="h-7 px-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-white/50 hover:text-white flex items-center gap-1 text-[10px] font-bold transition-all opacity-0 group-hover:opacity-100"
+                                                                        className="h-7 px-2 rounded-lg bg-black/5 dark:bg-white/5 hover:bg-black/5 dark:hover:bg-white/10 border border-black/10 dark:border-white/10 text-gray-500 dark:text-white/50 hover:text-gray-900 dark:text-white flex items-center gap-1 text-[10px] font-bold transition-all opacity-0 group-hover:opacity-100"
                                                                     >
                                                                         <Undo2 size={10} /> Undo
                                                                     </button>
@@ -564,11 +564,11 @@ const AddCityCreatorsModal = ({ isOpen = true, onClose, initialCity = 'Bengaluru
                             >
                                 <div className="space-y-4">
                                     <div className="flex items-center justify-between">
-                                        <label className="text-xs font-black uppercase tracking-widest text-white/70 flex items-center gap-2">
+                                        <label className="text-xs font-black uppercase tracking-widest text-gray-700 dark:text-white/70 flex items-center gap-2">
                                             <MessageSquare size={14} className="text-neon-pink" /> 
                                             Invite Message Template
                                         </label>
-                                        <button onClick={() => setInviteTemplate(DEFAULT_INVITE_TEMPLATE)} className="text-[10px] font-bold text-white/40 hover:text-white underline">
+                                        <button onClick={() => setInviteTemplate(DEFAULT_INVITE_TEMPLATE)} className="text-[10px] font-bold text-gray-400 dark:text-white/40 hover:text-gray-900 dark:text-white underline">
                                             Reset to Default
                                         </button>
                                     </div>
@@ -576,25 +576,25 @@ const AddCityCreatorsModal = ({ isOpen = true, onClose, initialCity = 'Bengaluru
                                         value={inviteTemplate}
                                         onChange={(e) => setInviteTemplate(e.target.value)}
                                         rows={7}
-                                        className="w-full p-5 bg-black/40 border border-white/[0.1] rounded-2xl text-[13px] text-white outline-none focus:border-neon-pink transition-colors resize-none leading-relaxed shadow-inner"
+                                        className="w-full p-5 bg-white dark:bg-black/40 border border-black/10 dark:border-white/[0.1] rounded-2xl text-[13px] text-gray-900 dark:text-white outline-none focus:border-neon-pink transition-colors resize-none leading-relaxed shadow-inner"
                                         placeholder="Type your message here... Emojis work perfectly!"
                                     />
-                                    <p className="text-[10px] font-bold text-white/50 bg-white/[0.02] inline-block px-3 py-1.5 rounded-lg border border-white/[0.05]">
+                                    <p className="text-[10px] font-bold text-gray-500 dark:text-white/50 bg-black/[0.02] dark:bg-white/[0.02] inline-block px-3 py-1.5 rounded-lg border border-black/[0.06] dark:border-white/[0.05]">
                                         Dynamic Tags: <span className="text-neon-pink ml-1">{"{name}"}</span>, <span className="text-neon-blue mx-1">{"{city}"}</span>, <span className="text-neon-green">{"{groupLink}"}</span>
                                     </p>
                                 </div>
 
-                                <div className="p-5 rounded-2xl bg-black/20 border border-white/[0.08] space-y-4">
-                                    <h4 className="text-[10px] font-black uppercase tracking-widest text-white/50 flex items-center gap-2">
+                                <div className="p-5 rounded-2xl bg-black/20 border border-black/[0.08] dark:border-white/[0.08] space-y-4">
+                                    <h4 className="text-[10px] font-black uppercase tracking-widest text-gray-500 dark:text-white/50 flex items-center gap-2">
                                         <Users size={12} className="text-neon-green" />
                                         Active Group Link for {selectedCity}
                                     </h4>
                                     <div className="flex items-center gap-3">
-                                        <div className="flex-1 bg-black/60 px-4 py-3.5 rounded-xl border border-white/[0.05] font-mono text-xs text-neon-green truncate shadow-inner">
+                                        <div className="flex-1 bg-gray-100 dark:bg-black/60 px-4 py-3.5 rounded-xl border border-black/[0.06] dark:border-white/[0.05] font-mono text-xs text-neon-green truncate shadow-inner">
                                             {currentGroup?.groupUrl || 'No group link configured yet. Check Group Settings.'}
                                         </div>
                                         {currentGroup?.groupUrl && (
-                                            <a href={currentGroup.groupUrl} target="_blank" rel="noopener noreferrer" className="h-11 px-5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/[0.05] text-white font-bold text-[10px] uppercase tracking-wider flex items-center gap-2 transition-colors shrink-0 shadow-sm">
+                                            <a href={currentGroup.groupUrl} target="_blank" rel="noopener noreferrer" className="h-11 px-5 rounded-xl bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/20 border border-black/[0.06] dark:border-white/[0.05] text-gray-900 dark:text-white font-bold text-[10px] uppercase tracking-wider flex items-center gap-2 transition-colors shrink-0 shadow-sm">
                                                 Test Link <ExternalLink size={12} />
                                             </a>
                                         )}
@@ -611,21 +611,21 @@ const AddCityCreatorsModal = ({ isOpen = true, onClose, initialCity = 'Bengaluru
                                 className="p-6 sm:p-8 space-y-8 max-w-4xl mx-auto"
                             >
                                 <div className="text-center space-y-3 pb-4">
-                                    <h3 className="text-3xl font-black font-heading text-white italic tracking-tight">Ready to Dispatch!</h3>
-                                    <p className="text-sm text-white/60">You have carefully selected <strong className="text-neon-green px-1.5 py-0.5 bg-neon-green/10 rounded-md">{currentSelectedIds.size}</strong> creators in <strong className="text-neon-blue">{selectedCity}</strong>.</p>
+                                    <h3 className="text-3xl font-black font-heading text-gray-900 dark:text-white italic tracking-tight">Ready to Dispatch!</h3>
+                                    <p className="text-sm text-gray-600 dark:text-white/60">You have carefully selected <strong className="text-neon-green px-1.5 py-0.5 bg-neon-green/10 rounded-md">{currentSelectedIds.size}</strong> creators in <strong className="text-neon-blue">{selectedCity}</strong>.</p>
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     {/* WhatsApp Queue Option */}
-                                    <div className="p-6 sm:p-8 rounded-[2rem] bg-black/40 border border-white/[0.05] relative overflow-hidden group hover:border-neon-green/30 transition-colors">
+                                    <div className="p-6 sm:p-8 rounded-[2rem] bg-white dark:bg-black/40 border border-black/[0.06] dark:border-white/[0.05] relative overflow-hidden group hover:border-neon-green/30 transition-colors">
                                         <div className="absolute top-0 right-0 p-8 opacity-[0.03] group-hover:opacity-[0.08] transition-opacity"><Play size={96} /></div>
                                         <div className="relative z-10 space-y-5">
                                             <div className="w-14 h-14 rounded-2xl bg-neon-green/10 border border-neon-green/20 text-neon-green flex items-center justify-center shadow-lg shadow-neon-green/10">
                                                 <Phone size={24} />
                                             </div>
                                             <div>
-                                                <h4 className="text-xl font-black text-white tracking-tight">WhatsApp Queue</h4>
-                                                <p className="text-[11px] sm:text-xs text-white/50 mt-2 leading-relaxed">Opens WhatsApp Web 1-by-1 for each creator. 100% safe from bans, highly personal and ensures perfect delivery.</p>
+                                                <h4 className="text-xl font-black text-gray-900 dark:text-white tracking-tight">WhatsApp Queue</h4>
+                                                <p className="text-[11px] sm:text-xs text-gray-500 dark:text-white/50 mt-2 leading-relaxed">Opens WhatsApp Web 1-by-1 for each creator. 100% safe from bans, highly personal and ensures perfect delivery.</p>
                                             </div>
                                             
                                             {isQueueActive ? (
@@ -634,13 +634,13 @@ const AddCityCreatorsModal = ({ isOpen = true, onClose, initialCity = 'Bengaluru
                                                         <p className="text-[10px] font-black uppercase tracking-wider text-neon-green mb-1 flex items-center gap-2">
                                                             <span className="w-1.5 h-1.5 rounded-full bg-neon-green animate-pulse" /> Queue Active ({queueIndex + 1}/{queueCandidates.length})
                                                         </p>
-                                                        <p className="text-sm font-bold text-white truncate">{currentQueueCreator?.name}</p>
+                                                        <p className="text-sm font-bold text-gray-900 dark:text-white truncate">{currentQueueCreator?.name}</p>
                                                     </div>
                                                     <div className="flex gap-3">
                                                         <button onClick={handleQueueNext} className="flex-1 h-12 rounded-xl bg-neon-green text-black font-black text-xs uppercase hover:brightness-110 shadow-[0_0_20px_rgba(57,255,20,0.3)] flex items-center justify-center gap-2 transition-all">
                                                             <Send size={14} /> Send & Next
                                                         </button>
-                                                        <button onClick={handleQueueSkip} className="h-12 px-5 rounded-xl border border-white/10 text-white/70 hover:text-white hover:bg-white/5 flex items-center justify-center transition-colors" title="Skip Creator">
+                                                        <button onClick={handleQueueSkip} className="h-12 px-5 rounded-xl border border-black/10 dark:border-white/10 text-gray-700 dark:text-white/70 hover:text-gray-900 dark:text-white hover:bg-black/5 dark:hover:bg-white/5 flex items-center justify-center transition-colors" title="Skip Creator">
                                                             <SkipForward size={14} />
                                                         </button>
                                                     </div>
@@ -654,15 +654,15 @@ const AddCityCreatorsModal = ({ isOpen = true, onClose, initialCity = 'Bengaluru
                                     </div>
 
                                     {/* Email Blast Option */}
-                                    <div className="p-6 sm:p-8 rounded-[2rem] bg-black/40 border border-white/[0.05] relative overflow-hidden group hover:border-neon-pink/30 transition-colors">
+                                    <div className="p-6 sm:p-8 rounded-[2rem] bg-white dark:bg-black/40 border border-black/[0.06] dark:border-white/[0.05] relative overflow-hidden group hover:border-neon-pink/30 transition-colors">
                                         <div className="absolute top-0 right-0 p-8 opacity-[0.03] group-hover:opacity-[0.08] transition-opacity"><Mail size={96} /></div>
                                         <div className="relative z-10 space-y-5">
                                             <div className="w-14 h-14 rounded-2xl bg-neon-pink/10 border border-neon-pink/20 text-neon-pink flex items-center justify-center shadow-lg shadow-neon-pink/10">
                                                 <Mail size={24} />
                                             </div>
                                             <div>
-                                                <h4 className="text-xl font-black text-white tracking-tight">Email Blast</h4>
-                                                <p className="text-[11px] sm:text-xs text-white/50 mt-2 leading-relaxed">Sends a professional branded HTML email containing the WhatsApp group link. Great for massive bulk dispatches.</p>
+                                                <h4 className="text-xl font-black text-gray-900 dark:text-white tracking-tight">Email Blast</h4>
+                                                <p className="text-[11px] sm:text-xs text-gray-500 dark:text-white/50 mt-2 leading-relaxed">Sends a professional branded HTML email containing the WhatsApp group link. Great for massive bulk dispatches.</p>
                                             </div>
                                             
                                             <button onClick={handleBulkSendEmail} disabled={isEmailSending || currentSelectedIds.size === 0} className="w-full h-12 mt-4 rounded-xl bg-neon-pink/10 border border-neon-pink/30 text-neon-pink font-black text-xs uppercase tracking-wider hover:bg-neon-pink/20 transition-all disabled:opacity-40 flex items-center justify-center gap-2">
@@ -677,11 +677,11 @@ const AddCityCreatorsModal = ({ isOpen = true, onClose, initialCity = 'Bengaluru
                 </div>
                 
                 {/* ── STICKY FOOTER NAVIGATION ── */}
-                <div className="shrink-0 p-5 border-t border-white/[0.08] bg-[#0a0c12]/95 backdrop-blur-3xl flex items-center justify-between z-10 shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
+                <div className="shrink-0 p-5 border-t border-black/[0.08] dark:border-white/[0.08] bg-white/95 dark:bg-[#0a0c12]/95 backdrop-blur-3xl flex items-center justify-between z-10 shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
                     <button 
                         onClick={goToPrevTab} 
                         disabled={activeTab === 'audience'}
-                        className="h-11 px-6 rounded-xl border border-white/[0.08] text-white/70 hover:text-white hover:bg-white/5 font-bold text-xs transition-colors disabled:opacity-0"
+                        className="h-11 px-6 rounded-xl border border-black/[0.08] dark:border-white/[0.08] text-gray-700 dark:text-white/70 hover:text-gray-900 dark:text-white hover:bg-black/5 dark:hover:bg-white/5 font-bold text-xs transition-colors disabled:opacity-0"
                     >
                         &larr; Back
                     </button>
@@ -689,7 +689,7 @@ const AddCityCreatorsModal = ({ isOpen = true, onClose, initialCity = 'Bengaluru
                     <button 
                         onClick={goToNextTab}
                         disabled={activeTab === 'dispatch'}
-                        className="h-11 px-8 rounded-xl bg-white text-black font-black text-xs uppercase tracking-widest hover:bg-gray-200 transition-colors disabled:opacity-0 shadow-[0_0_20px_rgba(255,255,255,0.1)]"
+                        className="h-11 px-8 rounded-xl bg-gray-900 dark:bg-white text-white dark:text-black font-black text-xs uppercase tracking-widest hover:bg-black dark:hover:bg-gray-200 transition-colors disabled:opacity-0 shadow-[0_4px_14px_rgba(0,0,0,0.1)] dark:shadow-[0_0_20px_rgba(255,255,255,0.1)]"
                     >
                         Next Step &rarr;
                     </button>
