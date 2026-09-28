@@ -993,6 +993,29 @@ export default async function handler(req, res) {
                 });
             }
 
+            // Permanently save scraped profile picture to Cloudinary so it doesn't expire
+            if (result.profilePic) {
+                try {
+                    const cloudName = process.env.VITE_CLOUDINARY_CLOUD_NAME || "dgtalrz4n";
+                    const uploadPreset = process.env.VITE_CLOUDINARY_UPLOAD_PRESET || "maw1e4ud";
+                    const data = new URLSearchParams();
+                    data.append("file", result.profilePic);
+                    data.append("upload_preset", uploadPreset);
+                    
+                    const uploadRes = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+                        method: 'POST',
+                        body: data
+                    });
+                    
+                    if (uploadRes.ok) {
+                        const json = await uploadRes.json();
+                        result.profilePic = json.secure_url;
+                    }
+                } catch (e) {
+                    console.warn('[API/CREATOR-JOIN] Failed to permanently save profile pic to Cloudinary:', e.message);
+                }
+            }
+
             const followers = Number(result.followers) || 0;
             const meetsMinimum = minFollowersRequired <= 0 || followers >= minFollowersRequired;
 
