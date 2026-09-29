@@ -425,9 +425,11 @@ const InvoiceGenerator = () => {
                 const canvas = await html2canvas(pages[i], { 
                     scale: 2, 
                     useCORS: true, 
-                    backgroundColor: '#F3F4F6',
+                    backgroundColor: '#ffffff',
                     width: 794,
-                    height: 1123
+                    height: 1123,
+                    scrollY: 0,
+                    scrollX: 0
                 });
                 if (i > 0) pdf.addPage();
                 pdf.addImage(canvas.toDataURL('image/jpeg', 0.95), 'JPEG', 0, 0, 210, 297, undefined, 'FAST');
@@ -1068,7 +1070,7 @@ const InvoiceGenerator = () => {
                                     initial={{ opacity: 0 }} 
                                     animate={{ opacity: 1 }} 
                                     exit={{ opacity: 0 }} 
-                                    className="invoice-page-render w-[794px] h-[1123px] bg-white dark:bg-[#0B0F17] text-gray-900 dark:text-white print:bg-white print:text-black relative flex flex-col p-[12mm] shadow-2xl rounded-[2px] overflow-hidden"
+                                    className="invoice-page-render w-[794px] h-[1123px] bg-white text-gray-900 print:bg-white print:text-black relative flex flex-col p-[12mm] shadow-2xl rounded-[2px] overflow-hidden"
                                     style={{ fontFamily: "'Inter', sans-serif" }}
                                 >
                                      {/* Header - Page 1 or summary */}
@@ -1224,7 +1226,7 @@ const InvoiceGenerator = () => {
                                                     </div>
 
                                                     {/* QR & Authentication Flex Row */}
-                                                    <div className="flex w-full items-end justify-between pt-4 mt-2 border-t border-gray-300/50 dark:border-white/10 print:border-gray-200">
+                                                    <div className="flex w-full items-end justify-between pt-4 mt-2 border-t border-gray-300/50 print:border-gray-200">
                                                         
                                                         {/* QR Code Section */}
                                                         {formData.showUPI && formData.upiId && (
@@ -1238,11 +1240,11 @@ const InvoiceGenerator = () => {
                                                                         className="w-[65px] h-[65px] grayscale contrast-125 mx-auto"
                                                                         crossOrigin="anonymous"
                                                                     />
-                                                                    <p className="text-[6px] font-black text-center mt-1 text-gray-600 dark:text-gray-400 tracking-widest uppercase italic font-bold">Scan to pay</p>
+                                                                    <p className="text-[6px] font-black text-center mt-1 text-gray-600 tracking-widest uppercase italic font-bold">Scan to pay</p>
                                                                 </div>
                                                                 <a 
                                                                     href={`upi://pay?pa=${formData.upiId}&pn=NEWBI&am=${balanceDue}&cu=INR`} 
-                                                                    className="flex items-center justify-center gap-1 w-[85px] h-8 bg-black dark:bg-white text-white dark:text-black rounded-xl text-[7px] font-black uppercase tracking-widest hover:scale-105 active:scale-95 transition-all"
+                                                                    className="flex items-center justify-center gap-1 w-[85px] h-8 bg-black text-white rounded-xl text-[7px] font-black uppercase tracking-widest hover:scale-105 active:scale-95 transition-all"
                                                                     data-html2canvas-ignore="true"
                                                                 >
                                                                     Pay via UPI
@@ -1254,7 +1256,7 @@ const InvoiceGenerator = () => {
                                                         {(formData.showSeal || formData.showSignatures) && (
                                                             <div className="flex items-end relative pb-1 pr-1">
                                                                 {formData.showSeal && (
-                                                                    <div className={formData.showSignatures ? "absolute -left-12 -top-4 pointer-events-none z-10 opacity-80 mix-blend-multiply dark:mix-blend-normal dark:drop-shadow-[0_0_15px_rgba(255,255,255,0.8)] print:mix-blend-multiply print:drop-shadow-none mb-0.5 rotate-[-4deg]" : "pointer-events-none z-10 opacity-80 mix-blend-multiply dark:mix-blend-normal dark:drop-shadow-[0_0_15px_rgba(255,255,255,0.8)] print:mix-blend-multiply print:drop-shadow-none mb-0.5 rotate-[-4deg]"}>
+                                                                    <div className={formData.showSignatures ? "absolute -left-12 -top-4 pointer-events-none z-10 opacity-80 mix-blend-multiply (255,255,255,0.8)] print:mix-blend-multiply print:drop-shadow-none mb-0.5 rotate-[-4deg]" : "pointer-events-none z-10 opacity-80 mix-blend-multiply (255,255,255,0.8)] print:mix-blend-multiply print:drop-shadow-none mb-0.5 rotate-[-4deg]"}>
                                                                         <DocumentSeal className="w-[85px] h-[85px]" />
                                                                     </div>
                                                                 )}
@@ -1262,14 +1264,14 @@ const InvoiceGenerator = () => {
 
                                                                     <div className="z-20 flex flex-col items-center relative space-y-1 w-[150px]">
                                                                     <p className="text-[7.5px] font-black text-gray-500 uppercase tracking-widest mb-1 text-center truncate max-w-[150px]">For {formData.senderName || 'Newbi Entertainment'}</p>
-                                                                    <div className="h-12 w-full flex items-end justify-center relative border-b border-black/20 dark:border-white/20 print:border-black/20 pb-1">
+                                                                    <div className="h-12 w-full flex items-end justify-center relative border-b border-black/20 print:border-black/20 pb-1">
                                                                         {formData.providerSignature ? (
-                                                                            <img src={formData.providerSignature} alt="Provider Signature" className="h-full object-contain mix-blend-multiply dark:mix-blend-screen dark:invert print:mix-blend-multiply print:invert-0 grayscale-0" crossOrigin="anonymous" />
+                                                                            <img src={formData.providerSignature} alt="Provider Signature" className="h-full object-contain mix-blend-multiply print:mix-blend-multiply print:invert-0 grayscale-0" crossOrigin="anonymous" />
                                                                         ) : (
-                                                                            <p className="text-[11px] font-formal italic text-gray-900 dark:text-white print:text-black opacity-40">Authorized Signatory</p>
+                                                                            <p className="text-[11px] font-formal italic text-gray-900 print:text-black opacity-40">Authorized Signatory</p>
                                                                         )}
                                                                     </div>
-                                                                    <p className="text-[7.5px] font-black text-gray-900 dark:text-white print:text-black uppercase tracking-widest leading-none mt-1 text-center truncate max-w-[150px]">Authorized Signatory</p>
+                                                                    <p className="text-[7.5px] font-black text-gray-900 print:text-black uppercase tracking-widest leading-none mt-1 text-center truncate max-w-[150px]">Authorized Signatory</p>
                                                                 </div>
 
                                                                 )}
@@ -1321,7 +1323,7 @@ const InvoiceGenerator = () => {
                 {paginatedPages.map((pageItems, pageIdx) => (
                     <div 
                         key={`pdf-page-${pageIdx}`}
-                        className="invoice-page-render w-[794px] h-[1123px] bg-white dark:bg-[#0B0F17] text-gray-900 dark:text-white print:bg-white print:text-black relative flex flex-col p-[12mm] overflow-hidden"
+                        className="invoice-page-render w-[794px] h-[1123px] bg-white text-gray-900 print:bg-white print:text-black relative flex flex-col p-[12mm] overflow-hidden"
                         style={{ fontFamily: "'Inter', sans-serif" }}
                     >
                         {/* Header */}
