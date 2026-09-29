@@ -778,8 +778,8 @@ const Invoice = () => {
 
                                                 {/* Items Table */}
                                                 {pageItems.length > 0 && (
-                                                    <div className={cn("flex-1 mb-4 overflow-hidden rounded-2xl border border-gray-200 shadow-sm bg-black/20 flex flex-col", !isFirstPage && "mt-4")}>
-                                                        <table className="w-full h-full">
+                                                    <div className={cn("mb-4 overflow-hidden rounded-2xl border border-gray-200 shadow-sm bg-white", !isFirstPage && "mt-4")}>
+                                                        <table className="w-full">
                                                             <thead>
                                                                 <tr className="text-black" style={{ backgroundColor: `${brandColor}66` }}>
                                                                     <th className="py-4 px-6 text-left text-[10px] font-black uppercase tracking-widest border-r border-black/5">SERVICE DESCRIPTION</th>
@@ -803,16 +803,6 @@ const Invoice = () => {
                                                                         <td className="py-2 px-6 text-right text-[11px] font-black leading-relaxed">₹{( (item.qty || 1) * (item.price || 0) ).toLocaleString()}</td>
                                                                     </tr>
                                                                 ))}
-                                                                {/* Filler row to extend borders */}
-                                                                <tr className="h-full">
-                                                                    <td className="border-r border-dashed border-gray-200"></td>
-                                                                    {(displayInvoice.customColumns || []).map(col => (
-                                                                        <td key={`filler-${col.id}`} className="border-r border-dashed border-gray-200"></td>
-                                                                    ))}
-                                                                    <td className="border-r border-dashed border-gray-200"></td>
-                                                                    <td className="border-r border-dashed border-gray-200"></td>
-                                                                    <td></td>
-                                                                </tr>
                                                             </tbody>
                                                         </table>
                                                     </div>
@@ -821,7 +811,7 @@ const Invoice = () => {
                                                 {/* Totals Section & Left Details - Only on Last Page */}
                                                 {/* Totals Section & Left Details - Only on Last Page */}
                                                 {isLastPage && (
-                                                    <div className="mt-auto flex gap-x-8 items-start pt-2 border-t border-gray-200 relative z-10 w-full">
+                                                    <div className="mt-2 flex gap-x-8 items-start pt-2 border-t border-gray-200 relative z-10 w-full">
                                                         {/* Left Column: Payment Details & Notes */}
                                                         <div className="flex-1 space-y-2">
                                                             {/* Payment Details */}
