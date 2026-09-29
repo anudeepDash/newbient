@@ -278,11 +278,13 @@ const Invoice = () => {
                     scale: 2,
                     useCORS: true,
                     logging: false,
-                    backgroundColor: '#F3F4F6',
+                    backgroundColor: '#ffffff',
                     width: 794,
                     height: 1123,
                     windowWidth: 794,
                     windowHeight: 1123,
+                    scrollX: 0,
+                    scrollY: 0,
                     onclone: (clonedDoc) => { clonedDoc.documentElement.classList.remove('dark');
                         const clonedPage = clonedDoc.querySelectorAll('.invoice-page-render')[i];
                         if (clonedPage) {
@@ -336,7 +338,7 @@ const Invoice = () => {
                             scale: 2,
                             useCORS: true,
                             logging: false,
-                            backgroundColor: '#F3F4F6',
+                            backgroundColor: '#ffffff',
                             width: 794,
                             height: 1123,
                             windowWidth: 794,
@@ -730,14 +732,14 @@ const Invoice = () => {
                                                             <img src={currentBrand.path} alt="Company Logo" className="h-20 object-contain" crossOrigin="anonymous" />
                                                         </div>
                                                         <div className="text-right">
-                                                            <h2 className="text-4xl font-black text-gray-600 dark:text-gray-400 tracking-tighter uppercase mb-0">#{displayInvoice.invoiceNumber}</h2>
-                                                            <p className="text-[9px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest leading-none mt-1">INVOICE ID</p>
+                                                            <h2 className="text-4xl font-black text-gray-600 tracking-tighter uppercase mb-0">#{displayInvoice.invoiceNumber}</h2>
+                                                            <p className="text-[9px] font-black text-gray-600 uppercase tracking-widest leading-none mt-1">INVOICE ID</p>
                                                         </div>
                                                     </div>
                                                 ) : (
                                                     <div className="flex justify-between items-center mb-6 border-b border-gray-300 pb-4">
                                                         <img src="/logo_document.png" alt="Newbi Logo" className="w-[100px] object-contain opacity-50" crossOrigin="anonymous" />
-                                                        <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest">Invoice #{displayInvoice.invoiceNumber} — Page {pageIdx + 1}</p>
+                                                        <p className="text-[10px] font-black text-gray-600 uppercase tracking-widest">Invoice #{displayInvoice.invoiceNumber} — Page {pageIdx + 1}</p>
                                                     </div>
                                                 )}
 
@@ -776,7 +778,7 @@ const Invoice = () => {
 
                                                 {/* Items Table */}
                                                 {pageItems.length > 0 && (
-                                                    <div className={cn("mb-4 overflow-hidden rounded-2xl border border-gray-200 shadow-sm bg-black/20 dark:bg-white/20", !isFirstPage && "mt-4")}>
+                                                    <div className={cn("mb-4 overflow-hidden rounded-2xl border border-gray-200 shadow-sm bg-black/20 ", !isFirstPage && "mt-4")}>
                                                         <table className="w-full">
                                                             <thead>
                                                                 <tr className="text-black" style={{ backgroundColor: `${brandColor}66` }}>
@@ -791,7 +793,7 @@ const Invoice = () => {
                                                             </thead>
                                                             <tbody className="divide-y divide-gray-200">
                                                                 {pageItems.map((item, idx) => (
-                                                                    <tr key={idx} className="bg-black/10 dark:bg-white/10">
+                                                                    <tr key={idx} className="bg-black/10 ">
                                                                         <td className="py-2 px-6 text-[11px] font-bold uppercase border-r border-dashed border-gray-200 leading-relaxed font-heading italic">{item.description || "SERVICE"}</td>
                                                                         {(displayInvoice.customColumns || []).map(col => (
                                                                             <td key={col.id} className="py-2 px-4 text-center text-[10px] font-semibold border-r border-dashed border-gray-200 leading-relaxed">{item.customValues?.[col.id] || "-"}</td>
@@ -839,12 +841,12 @@ const Invoice = () => {
                                                         <div className="flex-1 flex flex-col items-end space-y-2">
                                                             {/* Totals Section */}
                                                             <div className="w-full space-y-1.5">
-                                                                <div className="flex justify-between py-2 border-b border-dashed border-gray-300 text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest">
+                                                                <div className="flex justify-between py-2 border-b border-dashed border-gray-300 text-[10px] font-black text-gray-600 uppercase tracking-widest">
                                                                     <span>SUBTOTAL</span>
                                                                     <span className="text-black text-[11px] font-bold italic">₹{subtotal.toLocaleString()}</span>
                                                                 </div>
                                                                 {invoice?.showGst && (
-                                                                    <div className="flex justify-between py-2 border-b border-dashed border-gray-300 text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest text-black">
+                                                                    <div className="flex justify-between py-2 border-b border-dashed border-gray-300 text-[10px] font-black text-gray-600 uppercase tracking-widest text-black">
                                                                         <span>GST ({displayInvoice.gstPercentage}%)</span>
                                                                         <span className="text-black text-[11px] font-bold italic">₹{gstAmount.toLocaleString()}</span>
                                                                     </div>
@@ -855,7 +857,7 @@ const Invoice = () => {
                                                                 </div>
                                                                 {displayInvoice.showAdvance && advancePaid > 0 && (
                                                                     <>
-                                                                        <div className="flex justify-between py-2 border-b border-dashed border-gray-300 text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest mt-1">
+                                                                        <div className="flex justify-between py-2 border-b border-dashed border-gray-300 text-[10px] font-black text-gray-600 uppercase tracking-widest mt-1">
                                                                             <span>ADVANCE PAID</span>
                                                                             <span className="text-black text-[11px] font-bold italic">₹{advancePaid.toLocaleString()}</span>
                                                                         </div>
@@ -866,7 +868,7 @@ const Invoice = () => {
                                                                     </>
                                                                 )}
                                                                 {displayInvoice.paymentLink && (
-                                                                    <a href={displayInvoice.paymentLink} target="_blank" rel="noopener noreferrer" className="mt-2 flex items-center justify-center gap-2 w-full h-11 bg-white dark:bg-black text-gray-900 dark:text-white rounded-xl font-black uppercase tracking-[0.2em] text-[9px] hover:scale-[1.02] active:scale-95 transition-all shadow-xl">
+                                                                    <a href={displayInvoice.paymentLink} target="_blank" rel="noopener noreferrer" className="mt-2 flex items-center justify-center gap-2 w-full h-11 bg-white text-gray-900 rounded-xl font-black uppercase tracking-[0.2em] text-[9px] hover:scale-[1.02] active:scale-95 transition-all shadow-xl">
                                                                         <DollarSign size={14} className="text-neon-blue" />
                                                                         Pay Now Online
                                                                     </a>
@@ -874,7 +876,7 @@ const Invoice = () => {
                                                             </div>
 
                                                             {/* QR & Authentication Flex Row */}
-                                                            <div className="flex w-full items-end justify-between pt-6 mt-4 border-t border-gray-300/50 dark:border-white/10 print:border-gray-200">
+                                                            <div className="flex w-full items-end justify-between pt-6 mt-4 border-t border-gray-300/50 print:border-gray-200">
                                                                 
                                                                 {/* QR Code Section */}
                                                                 {(!invoice || invoice.showUPI !== false) && displayInvoice.upiId && (
@@ -886,11 +888,11 @@ const Invoice = () => {
                                                                                 className="w-[70px] h-[70px] grayscale contrast-125 mx-auto"
                                                                                 crossOrigin="anonymous"
                                                                             />
-                                                                            <p className="text-[6.5px] font-black text-center mt-2 text-gray-600 dark:text-gray-400 tracking-widest uppercase italic font-bold">Scan to pay</p>
+                                                                            <p className="text-[6.5px] font-black text-center mt-2 text-gray-600 tracking-widest uppercase italic font-bold">Scan to pay</p>
                                                                         </div>
                                                                         <a 
                                                                             href={`upi://pay?pa=${displayInvoice.upiId}&pn=NEWBI&am=${toBePaid}&cu=INR`} 
-                                                                            className="flex items-center justify-center gap-1 w-[90px] h-9 bg-black dark:bg-white text-white dark:text-black rounded-xl text-[7.5px] font-black uppercase tracking-widest hover:scale-105 active:scale-95 transition-all"
+                                                                            className="flex items-center justify-center gap-1 w-[90px] h-9 bg-black text-white rounded-xl text-[7.5px] font-black uppercase tracking-widest hover:scale-105 active:scale-95 transition-all"
                                                                             data-html2canvas-ignore="true"
                                                                         >
                                                                             Pay via UPI
@@ -902,7 +904,7 @@ const Invoice = () => {
                                                                 {(displayInvoice.showSeal || displayInvoice.showSignatures) && (
                                                                     <div className="flex items-end relative pb-1 pr-1">
                                                                         {displayInvoice.showSeal && (
-                                                                            <div className={displayInvoice.showSignatures ? "absolute -left-12 -top-4 pointer-events-none z-10 opacity-80 mix-blend-multiply dark:mix-blend-normal dark:drop-shadow-[0_0_15px_rgba(255,255,255,0.8)] print:mix-blend-multiply print:drop-shadow-none rotate-[-4deg]" : "pointer-events-none z-10 opacity-80 mix-blend-multiply dark:mix-blend-normal dark:drop-shadow-[0_0_15px_rgba(255,255,255,0.8)] print:mix-blend-multiply print:drop-shadow-none mb-0.5 rotate-[-4deg]"}>
+                                                                            <div className={displayInvoice.showSignatures ? "absolute -left-12 -top-4 pointer-events-none z-10 opacity-80 mix-blend-multiply (255,255,255,0.8)] print:mix-blend-multiply print:drop-shadow-none rotate-[-4deg]" : "pointer-events-none z-10 opacity-80 mix-blend-multiply (255,255,255,0.8)] print:mix-blend-multiply print:drop-shadow-none mb-0.5 rotate-[-4deg]"}>
                                                                                 <DocumentSeal className="w-[85px] h-[85px]" />
                                                                             </div>
                                                                         )}
@@ -910,14 +912,14 @@ const Invoice = () => {
 
                                                                             <div className="z-20 flex flex-col items-center relative space-y-1 w-[150px]">
                                                                             <p className="text-[7.5px] font-black text-gray-500 uppercase tracking-widest mb-1 text-center truncate max-w-[150px]">For {displayInvoice.senderName || 'Newbi Entertainment'}</p>
-                                                                            <div className="h-12 w-full flex items-end justify-center relative border-b border-black/20 dark:border-white/20 print:border-black/20 pb-1">
+                                                                            <div className="h-12 w-full flex items-end justify-center relative border-b border-black/20 print:border-black/20 pb-1">
                                                                                 {displayInvoice.providerSignature ? (
-                                                                                    <img src={displayInvoice.providerSignature} alt="Provider Signature" className="h-full object-contain mix-blend-multiply dark:mix-blend-screen dark:invert print:mix-blend-multiply print:invert-0 grayscale-0" crossOrigin="anonymous" />
+                                                                                    <img src={displayInvoice.providerSignature} alt="Provider Signature" className="h-full object-contain mix-blend-multiply print:mix-blend-multiply print:invert-0 grayscale-0" crossOrigin="anonymous" />
                                                                                 ) : (
-                                                                                    <p className="text-[11px] font-formal italic text-gray-900 dark:text-white print:text-black opacity-40">Authorized Signatory</p>
+                                                                                    <p className="text-[11px] font-formal italic text-gray-900 print:text-black opacity-40">Authorized Signatory</p>
                                                                                 )}
                                                                             </div>
-                                                                            <p className="text-[7.5px] font-black text-gray-900 dark:text-white print:text-black uppercase tracking-widest leading-none mt-1 text-center truncate max-w-[150px]">Authorized Signatory</p>
+                                                                            <p className="text-[7.5px] font-black text-gray-900 print:text-black uppercase tracking-widest leading-none mt-1 text-center truncate max-w-[150px]">Authorized Signatory</p>
                                                                         </div>
 
                                                                         )}
