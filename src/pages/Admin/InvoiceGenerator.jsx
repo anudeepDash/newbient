@@ -1127,8 +1127,8 @@ const InvoiceGenerator = () => {
 
                                         {/* Items Table */}
                                         {paginatedPages[currentPreviewPage]?.length > 0 && (
-                                            <div className={cn("mb-8 overflow-hidden rounded-2xl border border-gray-300 shadow-sm bg-white", currentPreviewPage > 0 && "mt-4")}>
-                                            <table className="w-full">
+                                            <div className={cn("flex-1 mb-8 overflow-hidden rounded-2xl border border-gray-300 shadow-sm bg-white flex flex-col", currentPreviewPage > 0 && "mt-4")}>
+                                            <table className="w-full h-full">
                                                 <thead>
                                                     <tr className="text-black" style={{ backgroundColor: `${brandColor}66` }}>
                                                         <th className="py-4 px-6 text-left text-[10px] font-black uppercase tracking-widest border-r border-black/5">SERVICE DESCRIPTION</th>
@@ -1152,7 +1152,16 @@ const InvoiceGenerator = () => {
                                                             <td className="py-3 px-6 text-right text-[11px] font-black leading-relaxed text-gray-900">₹{( (item.qty || 1) * (item.price || 0) ).toLocaleString()}</td>
                                                         </tr>
                                                     ))}
-                                                    {/* Items will naturally flow */}
+                                                    {/* Filler row to extend borders */}
+                                                    <tr className="h-full">
+                                                        <td className="border-r border-dashed border-gray-200"></td>
+                                                        {customColumns.map(col => (
+                                                            <td key={`filler-${col.id}`} className="border-r border-dashed border-gray-200"></td>
+                                                        ))}
+                                                        <td className="border-r border-dashed border-gray-200"></td>
+                                                        <td className="border-r border-dashed border-gray-200"></td>
+                                                        <td></td>
+                                                    </tr>
                                                 </tbody>
                                             </table>
                                         </div>
@@ -1377,25 +1386,32 @@ const InvoiceGenerator = () => {
                             )}
 
                             {/* Service Table */}
-                            <div className="flex-1 bg-white/50 border border-gray-200 rounded-3xl overflow-hidden shadow-sm">
-                                <table className="w-full border-collapse">
+                            <div className="flex-1 bg-white/50 border border-gray-200 rounded-3xl overflow-hidden shadow-sm flex flex-col">
+                                <table className="w-full border-collapse h-full">
                                     <thead>
                                         <tr className="border-b border-black/5" style={{ backgroundColor: `${brandColor}66` }}>
-                                            <th className="text-left px-6 py-4 text-[10px] font-black uppercase tracking-widest">Service Description</th>
-                                            <th className="text-center px-4 py-4 text-[10px] font-black uppercase tracking-widest">Qty.</th>
-                                            <th className="text-right px-4 py-4 text-[10px] font-black uppercase tracking-widest">Price</th>
+                                            <th className="text-left px-6 py-4 text-[10px] font-black uppercase tracking-widest border-r border-black/5">Service Description</th>
+                                            <th className="text-center px-4 py-4 text-[10px] font-black uppercase tracking-widest border-r border-black/5">Qty.</th>
+                                            <th className="text-right px-4 py-4 text-[10px] font-black uppercase tracking-widest border-r border-black/5">Price</th>
                                             <th className="text-right px-6 py-4 text-[10px] font-black uppercase tracking-widest">Total</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-black/5">
                                         {pageItems.map((item, idx) => (
                                             <tr key={idx} className="group transition-colors hover:bg-white/60">
-                                                <td className="px-6 py-4 text-[11px] font-bold uppercase leading-relaxed italic">{item.description || "SERVICE"}</td>
-                                                <td className="px-4 py-4 text-center text-[11px] font-black">{item.qty || 1}</td>
-                                                <td className="px-4 py-4 text-right text-[11px] font-black italic">₹{(item.price || 0).toLocaleString()}</td>
+                                                <td className="px-6 py-4 text-[11px] font-bold uppercase border-r border-dashed border-gray-200 leading-relaxed italic">{item.description || "SERVICE"}</td>
+                                                <td className="px-4 py-4 text-center text-[11px] font-black border-r border-dashed border-gray-200">{item.qty || 1}</td>
+                                                <td className="px-4 py-4 text-right text-[11px] font-black italic border-r border-dashed border-gray-200">₹{(item.price || 0).toLocaleString()}</td>
                                                 <td className="px-6 py-4 text-right text-[11px] font-black italic">₹{((item.qty || 1) * (item.price || 0)).toLocaleString()}</td>
                                             </tr>
                                         ))}
+                                        {/* Filler row to extend borders */}
+                                        <tr className="h-full">
+                                            <td className="border-r border-dashed border-gray-200"></td>
+                                            <td className="border-r border-dashed border-gray-200"></td>
+                                            <td className="border-r border-dashed border-gray-200"></td>
+                                            <td></td>
+                                        </tr>
                                     </tbody>
                                 </table>
                             </div>

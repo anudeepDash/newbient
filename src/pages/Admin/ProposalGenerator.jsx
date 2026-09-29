@@ -2224,6 +2224,9 @@ const ProposalGenerator = () => {
         { id: '8', label: 'Attachments', icon: Paperclip, desc: 'Attached Sheets & PDFs', visibilityKey: 'attachments' }
     ];
 
+    // Use 'all' as a special tab ID that shows all sections at once
+    const [viewMode, setViewMode] = useState('all'); // 'all' or a specific tab id
+
 
     // Inline bold/italic formatting
 
@@ -2286,13 +2289,21 @@ const ProposalGenerator = () => {
                     isExpandedPreview && "lg:hidden"
                 )}>
                     <div className="space-y-2">
-                        <p className="text-[9px] font-black text-gray-600 uppercase tracking-widest px-4 mb-4">Navigation</p>
+                        <p className="text-[9px] font-black text-gray-600 uppercase tracking-widest px-4 mb-4">Sections</p>
+                        {/* All Sections button */}
+                        <button onClick={() => { setViewMode('all'); setActiveTab('1'); }} className={cn("w-full p-4 rounded-2xl flex items-center gap-4 transition-all text-left group", viewMode === 'all' ? "bg-white text-black shadow-xl" : "hover:bg-black/5 dark:hover:bg-white/5 text-gray-500 hover:text-gray-900 dark:hover:text-white")}>
+                            <div className={cn("p-2.5 rounded-xl transition-all", viewMode === 'all' ? "bg-white dark:bg-black/20" : "bg-black/5 dark:bg-white/5 group-hover:bg-black/10 dark:group-hover:bg-white/10")}><LayoutGrid size={18} /></div>
+                            <div>
+                                <p className="text-[10px] font-black uppercase tracking-widest leading-none mb-1">All Sections</p>
+                                <p className={cn("text-[9px] font-bold opacity-60 uppercase tracking-tighter", viewMode === 'all' ? "text-black" : "text-gray-600")}>Single Page Editor</p>
+                            </div>
+                        </button>
                         {tabs.map(tab => (
-                            <button key={tab.id} onClick={() => handleTabClick(tab.id)} className={cn("w-full p-4 rounded-2xl flex items-center gap-4 transition-all text-left group", activeTab === tab.id ? "bg-white text-black shadow-xl" : "hover:bg-black/5 dark:hover:bg-white/5 text-gray-500 hover:text-gray-900 dark:hover:text-white")}>
-                                <div className={cn("p-2.5 rounded-xl transition-all", activeTab === tab.id ? "bg-white dark:bg-black/20" : "bg-black/5 dark:bg-white/5 group-hover:bg-black/10 dark:group-hover:bg-white/10")}><tab.icon size={18} /></div>
+                            <button key={tab.id} onClick={() => { setViewMode('tab'); handleTabClick(tab.id); }} className={cn("w-full p-4 rounded-2xl flex items-center gap-4 transition-all text-left group", (viewMode === 'tab' && activeTab === tab.id) ? "bg-white text-black shadow-xl" : "hover:bg-black/5 dark:hover:bg-white/5 text-gray-500 hover:text-gray-900 dark:hover:text-white")}>
+                                <div className={cn("p-2.5 rounded-xl transition-all", (viewMode === 'tab' && activeTab === tab.id) ? "bg-white dark:bg-black/20" : "bg-black/5 dark:bg-white/5 group-hover:bg-black/10 dark:group-hover:bg-white/10")}><tab.icon size={18} /></div>
                                 <div>
                                     <p className="text-[10px] font-black uppercase tracking-widest leading-none mb-1">{tab.label}</p>
-                                    <p className={cn("text-[9px] font-bold opacity-60 uppercase tracking-tighter", activeTab === tab.id ? "text-black" : "text-gray-600")}>{tab.desc}</p>
+                                    <p className={cn("text-[9px] font-bold opacity-60 uppercase tracking-tighter", (viewMode === 'tab' && activeTab === tab.id) ? "text-black" : "text-gray-600")}>{tab.desc}</p>
                                 </div>
                             </button>
                         ))}
@@ -2376,8 +2387,8 @@ const ProposalGenerator = () => {
                         )}
 
                         <AnimatePresence mode="wait">
-                            <motion.div key={activeTab} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.2 }} className={cn(activeTab === 'ai' ? "w-full" : "space-y-16")}>
-                                {activeTab === 'ai' && (
+                            <motion.div key={viewMode === 'all' ? 'all-sections' : activeTab} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.2 }} className={cn((viewMode === 'tab' && activeTab === 'ai') ? "w-full" : "space-y-16")}>
+                                {(viewMode === 'tab' && activeTab === 'ai') && (
                                     <div className="w-full min-h-[60vh] flex flex-col items-center justify-center">
                                         <div className="w-full max-w-2xl space-y-8">
                                             {/* Welcome Hero */}
@@ -2493,7 +2504,7 @@ const ProposalGenerator = () => {
                                         </div>
                                     </div>
                                 )}
-                                {activeTab === '1' && (
+                                {(viewMode === 'all' || activeTab === '1') && (
                                     <div className="space-y-12">
                                         <div className="space-y-4">
                                             <div className="flex justify-between items-center px-2">
@@ -2587,7 +2598,7 @@ const ProposalGenerator = () => {
                                             </div>
                                     </div>
                                 )}
-                                {activeTab === '2' && (
+                                {(viewMode === 'all' || activeTab === '2') && (
                                      <div className="space-y-12">
                                          <div className="grid grid-cols-2 gap-4">
                                              <Input label="Section Title" value={formData.strategyTitle ?? 'EXECUTIVE SUMMARY'} onChange={(e) => setFormData({ ...formData, strategyTitle: e.target.value })} placeholder="EXECUTIVE SUMMARY" />
@@ -2661,7 +2672,7 @@ const ProposalGenerator = () => {
                                          </div>
                                      </div>
                                  )}
-                                 {activeTab === '3' && (
+                                 {(viewMode === 'all' || activeTab === '3') && (
                                      <div className="space-y-12">
                                          <div className="grid grid-cols-2 gap-4">
                                              <Input label="Section Title" value={formData.scopeTitle ?? 'SCOPE OF WORK'} onChange={(e) => setFormData({ ...formData, scopeTitle: e.target.value })} placeholder="SCOPE OF WORK" />
@@ -2683,7 +2694,7 @@ const ProposalGenerator = () => {
                                          </div>
                                      </div>
                                  )}
-                                 {activeTab === '4' && (
+                                 {(viewMode === 'all' || activeTab === '4') && (
                                      <div className="space-y-16">
                                          <div className="grid grid-cols-2 gap-4 px-2">
                                              <Input label="Section Title" value={formData.proposalTitle ?? 'DELIVERABLES'} onChange={(e) => setFormData({ ...formData, proposalTitle: e.target.value })} placeholder="DELIVERABLES" />
@@ -2751,7 +2762,7 @@ const ProposalGenerator = () => {
                                         </div>
                                     </div>
                                 )}
-                                {activeTab === '5' && (
+                                {(viewMode === 'all' || activeTab === '5') && (
                                     <div className="space-y-8">
                                         <div className="flex items-center justify-between px-4">
                                             <div className="flex items-center gap-4">
@@ -3013,7 +3024,7 @@ const ProposalGenerator = () => {
                                         </div>
                                     </div>
                                 )}
-                                {activeTab === '6' && (
+                                {(viewMode === 'all' || activeTab === '6') && (
                                      <div className="flex flex-col gap-8">
                                          <div className="grid grid-cols-2 gap-4 bg-gray-100 dark:bg-zinc-900/20 p-6 border border-black/10 dark:border-white/5 rounded-[2rem]">
                                              <Input label="Section Title" value={formData.commercialsTitle ?? 'COMMERCIAL TERMS'} onChange={(e) => setFormData({ ...formData, commercialsTitle: e.target.value })} placeholder="COMMERCIAL TERMS" />
@@ -3688,7 +3699,7 @@ const ProposalGenerator = () => {
                                      </div>
                                      </div>
                                  )}
-                                {activeTab === '7' && (
+                                {(viewMode === 'all' || activeTab === '7') && (
                                     <div className="space-y-8">
                                         <div className="flex justify-between items-center px-4">
                                             <div className="space-y-1">
@@ -3868,7 +3879,7 @@ const ProposalGenerator = () => {
                                         </div>
                                     </div>
                                 )}
-                                {activeTab === '8' && (
+                                {(viewMode === 'all' || activeTab === '8') && (
                                     <div className="flex flex-col gap-10">
                                         <div className="flex flex-col md:flex-row gap-8">
                                             {/* Upload Card */}
