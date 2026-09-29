@@ -20,6 +20,7 @@ export default function SharedDocumentViewer({
     pdfBlobUrl,
     pdfViewerFailed,
     setPdfViewerFailed,
+    actionPanel,
     children
 }) {
     const title = type === 'invoice' ? 'Tax Invoice' : type === 'agreement' ? 'Service Agreement' : (documentData.campaignName || 'Strategic Quotation & Proposal');
@@ -190,44 +191,98 @@ export default function SharedDocumentViewer({
                                 </div>
                             </div>
 
-                            {/* Enhanced Iframe Viewer */}
-                            <div className="w-full aspect-[1/1.4] sm:aspect-auto sm:h-[800px] bg-[#1a1a1a] relative flex items-center justify-center">
-                                {!pdfViewerFailed ? (
-                                    <iframe 
-                                        src={pdfBlobUrl ? `${pdfBlobUrl}#view=FitH&toolbar=0&navpanes=0&scrollbar=0` : `https://docs.google.com/gview?url=${encodeURIComponent(documentData.fileUrl)}&embedded=true`} 
-                                        className="w-full h-full border-none"
-                                        title={`${title} Document`}
-                                        onError={(e) => {
-                                            console.error("PDF Viewer error:", e);
-                                            setPdfViewerFailed(true);
-                                        }}
-                                        onLoad={(e) => {
-                                            console.log("PDF Viewer loaded");
-                                        }}
-                                    />
-                                ) : (
+                            {/* Enhanced Iframe/Image Viewer */}
+                            <div className="w-full aspect-[1/1.4] sm:aspect-auto sm:h-[800px] bg-[#111] relative flex items-center justify-center p-1 sm:p-2">
+                                {!documentData.fileUrl ? (
                                     <div className="text-center p-8">
                                         <FileText size={48} className="mx-auto text-gray-600 mb-4" />
-                                        <p className="text-sm font-bold text-gray-400 mb-4">The PDF could not be displayed securely inline.</p>
-                                        <a 
-                                            href={documentData.fileUrl}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="px-6 py-3 bg-neon-green text-black rounded-xl font-black uppercase tracking-widest text-[10px] hover:bg-neon-green/90 transition-all inline-block"
-                                        >
-                                            View Original PDF
-                                        </a>
+                                        <p className="text-sm font-bold text-gray-400 mb-4">No document file available.</p>
+                                    </div>
+                                ) : (documentData.fileType === 'pdf' || documentData.fileUrl.toLowerCase().includes('.pdf') || documentData.fileUrl.includes('/raw/upload/')) ? (
+                                    !pdfViewerFailed ? (
+                                        <iframe 
+                                            src={pdfBlobUrl ? `${pdfBlobUrl}#view=FitH&toolbar=0&navpanes=0&scrollbar=0` : `https://docs.google.com/viewer?url=${encodeURIComponent(documentData.fileUrl)}&embedded=true`} 
+                                            className="w-full h-full border border-white/5 rounded-xl bg-white shadow-2xl"
+                                            title={`${title} Document`}
+                                            onError={(e) => {
+                                                console.error("PDF Viewer error:", e);
+                                                if (setPdfViewerFailed) setPdfViewerFailed(true);
+                                            }}
+                                            onLoad={(e) => {
+                                                try {
+                                                    const doc = e.target.contentDocument;
+                                                    if (doc && doc.body && doc.body.innerHTML === '') {
+                                                        if (setPdfViewerFailed && !pdfViewerFailed) setPdfViewerFailed(true);
+                                                    }
+                                                } catch (_) {}
+                                            }}
+                                        />
+                                    ) : (
+                                        <div className="text-center p-8">
+                                            <FileText size={48} className="mx-auto text-gray-600 mb-4" />
+                                            <p className="text-sm font-bold text-gray-400 mb-4">The PDF could not be displayed securely inline.</p>
+                                            <a 
+                                                href={documentData.fileUrl}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="px-6 py-3 bg-neon-green text-black rounded-xl font-black uppercase tracking-widest text-[10px] hover:bg-neon-green/90 transition-all inline-block shadow-[0_0_15px_rgba(57,255,20,0.2)]"
+                                            >
+                                                View Original PDF
+                                            </a>
+                                        </div>
+                                    )
+                                ) : (
+                                    <img
+                                        src={documentData.fileUrl}
+                                        alt="Document Asset"
+                                        className="max-w-full max-h-full object-contain rounded-xl border border-white/10 shadow-2xl bg-white"
+                                    />
+                                )}
+                                
+                                {/* Overlay Proposal Number for Uploaded Docs */}
+                                {documentData.isUploaded && (documentData.proposalNumber || documentData.invoiceNumber || documentData.agreementNumber) && (
+                                    <div className="absolute top-[3%] right-[5%] z-20 pointer-events-none opacity-80 mix-blend-difference text-white">
+                                        <p className="text-[10px] sm:text-[12px] font-black font-mono tracking-[0.2em] uppercase">
+                                            {documentData.proposalNumber || documentData.invoiceNumber || documentData.agreementNumber}
+                                        </p>
                                     </div>
                                 )}
+                            </div>
+
+                            {/* Viewer Footer Note */}
+                            <div className="px-5 py-3 border-t border-white/10 bg-white/[0.01] flex flex-wrap items-center justify-between text-[10px] font-mono text-gray-400 gap-2">
+                                <span>Hosted on Newbi Strategic Cloud Vault</span>
+                                <a
+                                    href={documentData.fileUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-neon-green hover:underline flex items-center gap-1"
+                                >
+                                    Can't see preview? Click here to view
+                                </a>
                             </div>
                         </div>
 
                         {/* Additional Content passed via children */}
                         {children}
+
+                        {/* Action Panel */}
+                        {actionPanel && (
+                            <div className="mt-8 mb-8">
+                                {actionPanel}
+                            </div>
+                        )}
                     </div>
                 ) : (
                     /* Generated Document Viewer */
-                    children
+                    <div className="w-full flex flex-col items-center">
+                        {children}
+                        {actionPanel && (
+                            <div className="mt-8 mb-8 w-full max-w-3xl px-4">
+                                {actionPanel}
+                            </div>
+                        )}
+                    </div>
                 )}
             </main>
         </div>

@@ -22,6 +22,7 @@ import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
+import SharedDocumentViewer from '../components/ui/SharedDocumentViewer';
 import DocumentSeal from '../components/ui/DocumentSeal';
 import SignatureModal from '../components/ui/SignatureModal';
 
@@ -289,42 +290,95 @@ const Agreement = () => {
 
     const paginatedPages = getPaginatedPages();
 
-    return (
-        <div className="min-h-screen bg-[#050505] text-gray-900 dark:text-white font-['Outfit'] selection:bg-white selection:text-black">
-            <style dangerouslySetInnerHTML={{ __html: `
-                @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap');
-                @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400..700&display=swap');
-                @import url('https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,200..900;1,200..900&display=swap');
-                .font-signature { font-family: 'Caveat', cursive; }
-                .font-formal { font-family: 'Crimson Pro', serif; }
-                @media print { .no-print { display: none !important; } .agreement-page-render { margin: 0 !important; box-shadow: none !important; } }
-            `}} />
 
-            <nav className="fixed top-0 left-0 right-0 z-50 bg-white dark:bg-black/60 backdrop-blur-3xl border-b border-black/10 dark:border-white/5 h-20 flex items-center px-4 md:px-6 no-print">
-                <div className="max-w-[1400px] mx-auto w-full flex items-center justify-between">
-                    <div className="flex items-center gap-3 md:gap-6">
-                        <Link to={isAdmin ? "/admin/agreements" : "/"} className="p-2.5 md:p-3 bg-black/5 dark:bg-white/5 rounded-2xl hover:bg-black/10 dark:hover:bg-white/10 border border-black/10 dark:border-white/5 transition-all"><ArrowLeft size={16} /></Link>
-                        <div className="min-w-0 max-w-[120px] xs:max-w-[180px] sm:max-w-none">
-                            <p className="text-[9px] md:text-[10px] font-black text-[#A855F7] uppercase tracking-widest leading-none mb-1 truncate">
-                                {displayAgreement.parties?.secondParty?.name ? `${displayAgreement.parties.secondParty.name} (${displayAgreement.agreementNumber || displayAgreement.id})` : 'Legal Instrument'}
-                            </p>
-                            <div className="flex items-center gap-2">
-                                <div className={cn("w-1.5 h-1.5 rounded-full shrink-0", displayAgreement.status === 'Executed' ? "bg-emerald-500" : "bg-[#A855F7] animate-pulse")} />
-                                <span className="text-[8px] md:text-[9px] font-black text-gray-500 uppercase tracking-widest truncate">{displayAgreement.status}</span>
+    const actionPanel = (
+        <div className="flex flex-col gap-6 w-full max-w-4xl mx-auto p-8 bg-zinc-900/60 backdrop-blur-2xl border border-white/10 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
+            <div className="flex items-center justify-between border-b border-white/10 pb-6">
+                <div>
+                    <h3 className="text-xl font-black uppercase tracking-tight italic text-white mb-1">Contract Status</h3>
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Verify & Authorize Document</p>
+                </div>
+                <div className="flex items-center gap-2 px-4 py-2 bg-[#A855F7]/10 rounded-full border border-[#A855F7]/20">
+                    <div className="w-1.5 h-1.5 rounded-full bg-[#A855F7] animate-pulse" />
+                    <span className="text-[9px] font-black text-[#A855F7] uppercase tracking-widest">Secure Handshake Active</span>
+                </div>
+            </div>
+
+            {displayAgreement.showSignatures && (
+                <div 
+                    onClick={() => setIsSignatureModalOpen(true)}
+                    className="group cursor-pointer bg-[#0a0a0a] border-2 border-dashed border-black/10 dark:border-white/10 rounded-[2.5rem] p-12 flex flex-col items-center justify-center gap-8 hover:bg-white/[0.02] hover:border-[#A855F7]/20 transition-all shadow-2xl relative overflow-hidden"
+                >
+                    {clientSignature ? (
+                        <div className="w-full space-y-8">
+                            <div className="h-40 flex items-center justify-center">
+                                <img src={clientSignature} alt="Client Signature" className="max-h-full object-contain invert" />
+                            </div>
+                            <div className="text-center border-t border-black/10 dark:border-white/5 pt-8 flex items-center justify-center gap-6">
+                                <div className="space-y-1">
+                                    <p className="text-[12px] font-black text-gray-900 dark:text-white uppercase tracking-widest">{signatureName || 'Authorized Signatory'}</p>
+                                    <p className="text-[8px] text-gray-500 uppercase tracking-widest">Signatory Representative</p>
+                                </div>
+                                <button 
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setClientSignature(null);
+                                    }}
+                                    className="p-3 bg-red-500/10 text-red-500 rounded-xl hover:bg-red-500 hover:text-gray-900 dark:hover:text-white transition-all"
+                                >
+                                    <Trash2 size={16} />
+                                </button>
                             </div>
                         </div>
-                    </div>
-                    <div className="flex items-center gap-2 md:gap-4">
-                        <button onClick={() => window.print()} className="p-2.5 md:p-3 bg-black/5 dark:bg-white/5 rounded-2xl hover:bg-black/10 dark:hover:bg-white/10 border border-black/10 dark:border-white/5 hidden sm:block"><Printer size={18} /></button>
-                        <Button onClick={handleDownloadPDF} disabled={isExporting} className="bg-[#A855F7] text-black font-black uppercase tracking-widest text-[9px] md:text-[10px] h-10 md:h-12 px-4 md:px-8 rounded-xl shadow-2xl">
-                            {isExporting ? <RefreshCw className="animate-spin mr-2" size={14} /> : <Download size={14} className="mr-1 md:mr-2" />} <span className="hidden sm:inline">Export PDF</span><span className="sm:hidden">Export</span>
-                        </Button>
-                    </div>
+                    ) : (
+                        <>
+                            <div className="w-24 h-24 bg-black/5 dark:bg-white/5 rounded-full flex items-center justify-center group-hover:scale-110 group-hover:bg-[#A855F7]/10 transition-all duration-500">
+                                <PenTool size={36} className="text-gray-600 dark:text-gray-400 group-hover:text-[#A855F7]" />
+                            </div>
+                            <div className="text-center">
+                                <p className="text-[13px] font-black text-gray-900 dark:text-white uppercase tracking-[0.2em]">Click to sign agreement</p>
+                                <p className="text-[10px] text-gray-500 mt-2 uppercase tracking-[0.3em]">Type, Draw or Upload</p>
+                            </div>
+                        </>
+                    )}
                 </div>
-            </nav>
+            )}
 
-            <main className="pt-24 md:pt-32 pb-32 flex flex-col items-center gap-8 md:gap-12 px-4 md:px-0">
-                <div ref={agreementRef} className="flex flex-col gap-8 md:gap-12 origin-top transition-all" style={{ transform: `scale(${scale})`, marginBottom: `${(scale - 1) * 1123 * paginatedPages.length}px` }}>
+            <div className="pt-6 space-y-6">
+                {(!displayAgreement.showSignatures || clientSignature) && (
+                    <Button 
+                        onClick={() => setIsVerifying(true)}
+                        disabled={displayAgreement.showSignatures && !signatureName.trim()}
+                        className="w-full h-20 bg-[#A855F7] text-black font-black uppercase tracking-[0.3em] text-xs rounded-2xl hover:scale-[1.02] active:scale-95 transition-all shadow-[0_20px_50px_rgba(168,85,247,0.3)]"
+                    >
+                        <Zap size={18} className="mr-3" /> Authorize & Execute Instrument
+                    </Button>
+                )}
+                <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest text-center italic">Digital footprints (IP, UA, Timestamp) will be attached for verification.</p>
+            </div>
+        </div>
+    );
+
+
+    // Adapt displayAgreement to be compatible with SharedDocumentViewer
+    const viewerData = {
+        ...displayAgreement,
+        isUploaded: false, // Agreements are generated right now
+        fileUrl: '' 
+    };
+
+    return (
+        <>
+            <SharedDocumentViewer
+                documentData={viewerData}
+                type="agreement"
+                isAdmin={isAdmin}
+                isExporting={isExporting}
+                onDownloadPDF={handleDownloadPDF}
+                actionPanel={displayAgreement.status !== 'Executed' && !isAdmin ? actionPanel : null}
+            >
+                <div className="w-full flex flex-col items-center gap-12 relative z-10 pb-20 mt-4">
+                    <div ref={agreementRef} className="flex flex-col gap-8 md:gap-12 origin-top transition-all" style={{ transform: `scale(${scale})`, marginBottom: `${(scale - 1) * 1123 * paginatedPages.length}px` }}>
                     {paginatedPages.map((page, idx) => (
                         <div key={idx} className="agreement-page-render w-[794px] h-[1123px] bg-white text-black relative shadow-2xl flex flex-col p-[25mm] rounded-[2px] overflow-hidden font-formal border-[1px] border-black/10">
                             <div className="absolute inset-[5mm] border border-black/5 pointer-events-none" />
@@ -555,19 +609,12 @@ const Agreement = () => {
                             )}
                             <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest text-center italic">Digital footprints (IP, UA, Timestamp) will be attached for verification.</p>
                         </div>
-                    </div>
+                    
+                </div>
                 )}
-                
-                <SignatureModal 
-                    isOpen={isSignatureModalOpen}
-                    onClose={() => setIsSignatureModalOpen(false)}
-                    onSave={(sig, name) => {
-                        setClientSignature(sig);
-                        setSignatureName(name);
-                    }}
-                    initialName={signatureName}
-                />
-            </main>
+            </SharedDocumentViewer>
+            
+            
 
             <AnimatePresence>
                 {isVerifying && (
@@ -606,6 +653,12 @@ const Agreement = () => {
                 )}
             </AnimatePresence>
         </div>
+    );
+};
+
+export default Agreement;
+
+        </>
     );
 };
 
