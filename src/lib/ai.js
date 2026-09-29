@@ -676,6 +676,10 @@ Please apply the instruction to the document and return ONLY the updated JSON.`;
         }
 
         console.log(`[NEWBI AI] ✓ Document revised successfully`);
+        // If it looks like a proposal (has deliverables, items, scopeOfWork), preserve markdown
+        if (parsed.deliverables || parsed.scopeOfWork) {
+            return parsed;
+        }
         return stripHTML(parsed);
     } catch (error) {
         console.warn('[NEWBI AI] ⚠️ Document revision network failed. Applying smart local revision.', error.message);

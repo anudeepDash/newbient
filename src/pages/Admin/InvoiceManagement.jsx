@@ -286,18 +286,17 @@ const InvoiceManagement = () => {
             tabs={vaultTabs}
             accentColor="neon-blue"
             action={
-                <div className="flex flex-wrap items-center gap-2 md:gap-3 w-full md:w-auto">
+                <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-3 w-full md:w-auto">
                     <button
                         onClick={() => setShowQuickUpload(true)}
-                        className="flex-1 md:flex-none h-11 md:h-12 px-4 md:px-6 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white font-black uppercase tracking-widest text-[8px] md:text-[9px] rounded-xl border border-black/10 dark:border-white/5 transition-all flex items-center justify-center gap-2"
+                        className="w-full sm:w-auto bg-white dark:bg-white/10 hover:bg-black/5 dark:hover:bg-neon-blue/20 text-gray-900 dark:text-white hover:text-black dark:hover:text-neon-blue border border-black/10 dark:border-white/15 hover:border-black/20 dark:hover:border-neon-blue/40 font-black font-heading uppercase tracking-widest text-[9px] sm:text-xs h-12 md:h-14 px-5 md:px-7 rounded-xl md:rounded-2xl hover:scale-[1.02] active:scale-95 transition-all shadow-sm dark:shadow-lg flex items-center justify-center gap-2"
                     >
-                        <Upload size={14} /> Quick Upload
+                        <Upload className="h-4 w-4 text-neon-blue" /> Quick Upload
                     </button>
-                    <Link
-                        to="/admin/create-invoice"
-                        className="flex-1 md:flex-none h-11 md:h-12 px-4 md:px-8 bg-neon-blue text-black font-black uppercase tracking-widest text-[9px] md:text-[10px] rounded-xl shadow-[0_4px_12px_rgba(0,209,255,0.2)] hover:shadow-[0_8px_24px_rgba(0,209,255,0.3)] hover:scale-[1.02] transition-all flex items-center justify-center gap-2 md:gap-3 active:scale-95"
-                    >
-                        <Plus size={16} /> New Invoice
+                    <Link to="/admin/create-invoice" className="w-full sm:w-auto">
+                        <button className="w-full sm:w-auto bg-neon-blue text-black font-black font-heading uppercase tracking-widest text-[9px] sm:text-xs h-12 md:h-14 px-6 md:px-10 rounded-xl md:rounded-2xl hover:scale-[1.02] active:scale-95 transition-all shadow-[0_4px_12px_rgba(0,209,255,0.4)] hover:shadow-[0_8px_24px_rgba(0,209,255,0.6)] flex items-center justify-center">
+                            <Plus className="mr-2 h-4 w-4" /> New Invoice
+                        </button>
                     </Link>
                 </div>
             }
