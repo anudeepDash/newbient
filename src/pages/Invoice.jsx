@@ -695,9 +695,10 @@ const Invoice = () => {
                                                             <div className="p-4">
                                                                 <p className="text-xl font-bold mb-3 leading-none">{displayInvoice.senderName || 'Newbi Entertainment'}</p>
                                                                 <div className="text-[11px] text-gray-600 font-semibold space-y-1.5 leading-normal">
+                                                                    {displayInvoice.senderAddress && <p className="whitespace-pre-wrap leading-relaxed max-w-xs">{displayInvoice.senderAddress}</p>}
                                                                     <p>Contact: {displayInvoice.senderContact}</p>
                                                                     <p>Email: {displayInvoice.senderEmail}</p>
-                                                                    {displayInvoice.senderPan && <p>GSTIN: {displayInvoice.senderPan}</p>}
+                                                                    {displayInvoice.senderGst && <p>GSTIN: {displayInvoice.senderGst}</p>}
                                                                 </div>
                                                             </div>
                                                         </div>

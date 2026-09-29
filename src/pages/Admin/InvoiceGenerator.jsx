@@ -83,6 +83,7 @@ const InvoiceGenerator = () => {
             senderContact: savedSender.contact || '+91 00000 00000',
             senderEmail: savedSender.email || 'email@newbi.live',
             senderGst: savedSender.gst || 'XXXXXXXXXXX',
+            senderAddress: savedSender.address || 'Property No. 55, 3rdFloor SAIDULAJAB, Gadaipur, Sainik Farm, New Delhi, Delhi 110030',
             clientName: '',
             clientAddress: '',
             clientGst: '',
@@ -122,10 +123,11 @@ const InvoiceGenerator = () => {
             name: formData.senderName,
             contact: formData.senderContact,
             email: formData.senderEmail,
-            gst: formData.senderGst
+            gst: formData.senderGst,
+            address: formData.senderAddress
         };
         localStorage.setItem('newbi_invoice_sender', JSON.stringify(senderDetails));
-    }, [formData.senderName, formData.senderContact, formData.senderEmail, formData.senderGst]);
+    }, [formData.senderName, formData.senderContact, formData.senderEmail, formData.senderGst, formData.senderAddress]);
 
     const [items, setItems] = useState([
         { id: 1, name: '', description: '', qty: 1, price: 0 }
@@ -667,6 +669,10 @@ const InvoiceGenerator = () => {
                                                     <label className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest px-2">Corporate Email</label>
                                                     <input value={formData.senderEmail} onChange={e => setFormData({...formData, senderEmail: e.target.value})} className="w-full bg-white dark:bg-white border border-black/10 dark:border-white/10 h-14 px-6 rounded-2xl font-bold text-sm text-gray-900 dark:text-white outline-none focus:border-neon-blue/60" />
                                                 </div>
+                                                <div className="space-y-4 md:col-span-2">
+                                                    <label className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest px-2">Entity Address</label>
+                                                    <textarea value={formData.senderAddress} onChange={e => setFormData({...formData, senderAddress: e.target.value})} className="w-full bg-white dark:bg-white border border-black/10 dark:border-white/10 p-6 rounded-2xl font-bold text-sm text-gray-900 dark:text-white outline-none focus:border-neon-blue/60 min-h-[100px]" placeholder="Property No. 55, 3rdFloor SAIDULAJAB, Gadaipur, Sainik Farm, New Delhi, Delhi 110030" />
+                                                </div>
                                             </div>
                                         </div>
 
@@ -1098,6 +1104,7 @@ const InvoiceGenerator = () => {
                                                     <div className="p-6">
                                                         <p className="text-xl font-bold mb-3 leading-none">{formData.senderName || 'Newbi Entertainment'}</p>
                                                         <div className="text-[11px] text-gray-600 font-semibold space-y-1.5 leading-normal">
+                                                            {formData.senderAddress && <p className="whitespace-pre-wrap leading-relaxed max-w-xs">{formData.senderAddress}</p>}
                                                             <p>Contact: {formData.senderContact}</p>
                                                             <p>Email: {formData.senderEmail}</p>
                                                             {formData.senderGst && <p>GSTIN: {formData.senderGst}</p>}
@@ -1350,6 +1357,7 @@ const InvoiceGenerator = () => {
                                         <div className="p-6">
                                             <p className="text-xl font-bold mb-3 leading-none">{formData.senderName || 'Newbi Entertainment'}</p>
                                             <div className="text-[11px] text-gray-600 font-semibold space-y-1.5 leading-normal">
+                                                {formData.senderAddress && <p className="whitespace-pre-wrap leading-relaxed max-w-xs">{formData.senderAddress}</p>}
                                                 <p>Contact: {formData.senderContact}</p>
                                                 <p>Email: {formData.senderEmail}</p>
                                                 {formData.senderGst && <p>GSTIN: {formData.senderGst}</p>}
