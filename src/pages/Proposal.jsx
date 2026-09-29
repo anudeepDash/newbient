@@ -391,6 +391,8 @@ const Proposal = () => {
     const [pdfBlobUrl, setPdfBlobUrl] = useState('');
     const [isLoadingPdf, setIsLoadingPdf] = useState(false);
 
+    const [pdfViewerFailed, setPdfViewerFailed] = useState(false);
+
     useEffect(() => {
         if (displayProposal?.isUploaded && displayProposal?.fileUrl) {
             const isPdf = displayProposal.fileType === 'pdf' || 
@@ -408,7 +410,12 @@ const Proposal = () => {
             }
 
             setIsLoadingPdf(true);
-            fetch(displayProposal.fileUrl)
+            setPdfViewerFailed(false);
+
+            // First try the proxy API which sets correct Content-Type headers
+            const proxyUrl = `/api/proposal-pdf?url=${encodeURIComponent(displayProposal.fileUrl)}&filename=${encodeURIComponent(displayProposal.fileName || `${displayProposal.clientName || 'Proposal'}.pdf`)}`;
+            
+            fetch(proxyUrl)
                 .then(res => {
                     if (!res.ok) throw new Error(`HTTP ${res.status}`);
                     return res.blob();
@@ -420,11 +427,27 @@ const Proposal = () => {
                     setPdfBlobUrl(activeBlobUrl);
                 })
                 .catch(err => {
-                    console.warn('Direct PDF blob load notice, using proxy fallback:', err);
-                    if (isMounted) {
-                        const proxyUrl = `/api/proposal-pdf?url=${encodeURIComponent(displayProposal.fileUrl)}&filename=${encodeURIComponent(displayProposal.fileName || `${displayProposal.clientName || 'Proposal'}.pdf`)}`;
-                        setPdfBlobUrl(proxyUrl);
-                    }
+                    console.warn('Proxy PDF load failed, trying direct fetch:', err);
+                    // Try direct fetch
+                    return fetch(displayProposal.fileUrl)
+                        .then(res => {
+                            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                            return res.blob();
+                        })
+                        .then(blob => {
+                            if (!isMounted) return;
+                            const pdfBlob = new Blob([blob], { type: 'application/pdf' });
+                            activeBlobUrl = URL.createObjectURL(pdfBlob);
+                            setPdfBlobUrl(activeBlobUrl);
+                        })
+                        .catch(err2 => {
+                            console.warn('Direct PDF load also failed, using Google Docs Viewer:', err2);
+                            if (isMounted) {
+                                // Use Google Docs Viewer as ultimate fallback
+                                const gdocsUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(displayProposal.fileUrl)}&embedded=true`;
+                                setPdfBlobUrl(gdocsUrl);
+                            }
+                        });
                 })
                 .finally(() => {
                     if (isMounted) setIsLoadingPdf(false);
@@ -1256,9 +1279,27 @@ const Proposal = () => {
                                 )}
                                 {displayProposal.fileType === 'pdf' || (displayProposal.fileUrl && (displayProposal.fileUrl.toLowerCase().includes('.pdf') || displayProposal.fileUrl.includes('/raw/upload/'))) ? (
                                     <iframe
-                                        src={pdfBlobUrl ? `${pdfBlobUrl}#toolbar=1&navpanes=0` : `${displayProposal.fileUrl}#toolbar=1&navpanes=0`}
+                                        src={pdfViewerFailed 
+                                            ? `https://docs.google.com/viewer?url=${encodeURIComponent(displayProposal.fileUrl)}&embedded=true`
+                                            : (pdfBlobUrl ? `${pdfBlobUrl}#toolbar=1&navpanes=0` : `https://docs.google.com/viewer?url=${encodeURIComponent(displayProposal.fileUrl)}&embedded=true`)}
                                         title={displayProposal.fileName || 'Proposal Document'}
                                         className="w-full h-[650px] sm:h-[850px] md:h-[1000px] rounded-xl border border-white/5 bg-white shadow-2xl"
+                                        onError={() => {
+                                            if (!pdfViewerFailed) {
+                                                setPdfViewerFailed(true);
+                                            }
+                                        }}
+                                        onLoad={(e) => {
+                                            // Check if iframe loaded empty (some browsers show blank for failed loads)
+                                            try {
+                                                const doc = e.target.contentDocument;
+                                                if (doc && doc.body && doc.body.innerHTML === '') {
+                                                    if (!pdfViewerFailed) setPdfViewerFailed(true);
+                                                }
+                                            } catch (_) {
+                                                // Cross-origin, can't check - assume it's working
+                                            }
+                                        }}
                                     />
                                 ) : (
                                     <div className="w-full flex justify-center p-4">
