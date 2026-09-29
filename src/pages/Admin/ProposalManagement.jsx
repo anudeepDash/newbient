@@ -864,6 +864,9 @@ const ProposalManagement = () => {
                             setIsUploadModalOpen(false);
                             setEditingUploadedProposal(null);
                         }}
+                        onSuccess={(id) => {
+                            navigate(`/proposal/${id}`);
+                        }}
                         editingProposal={editingUploadedProposal}
                     />
                 )}

@@ -425,11 +425,7 @@ const InvoiceGenerator = () => {
                 const canvas = await html2canvas(pages[i], { 
                     scale: 2, 
                     useCORS: true, 
-                    backgroundColor: '#ffffff',
-                    width: 794,
-                    height: 1123,
-                    scrollY: 0,
-                    scrollX: 0
+                    backgroundColor: '#ffffff'
                 });
                 if (i > 0) pdf.addPage();
                 pdf.addImage(canvas.toDataURL('image/jpeg', 0.95), 'JPEG', 0, 0, 210, 297, undefined, 'FAST');

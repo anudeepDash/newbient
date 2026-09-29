@@ -11,6 +11,7 @@ import LayoutGrid from 'lucide-react/dist/esm/icons/layout-grid';
 import Settings from 'lucide-react/dist/esm/icons/settings';
 import LogOut from 'lucide-react/dist/esm/icons/log-out';
 import FileText from 'lucide-react/dist/esm/icons/file-text';
+import SharedDocumentViewer from '../components/ui/SharedDocumentViewer';
 import DocumentSeal from '../components/ui/DocumentSeal';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
@@ -600,120 +601,61 @@ const Invoice = () => {
 
     const paginatedPages = getPaginatedPages();
 
-    return (
-        <div className="min-h-screen bg-[#FAFAFA] dark:bg-[#050505] font-sans selection:bg-neon-blue/30 text-gray-900 dark:text-gray-100 flex flex-col lg:flex-row">
-            <style dangerouslySetInnerHTML={{ __html: `
-                @media print {
-                    .fixed-header-nav, .print-hidden { display: none !important; }
-                    body { background: white !important; }
-                    .invoice-page-render { 
-                        margin: 0 !important; 
-                        box-shadow: none !important;
-                        page-break-after: always !important;
-                    }
-                    main { padding: 0 !important; margin: 0 !important; }
-                    input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-                    input[type=number] { -moz-appearance: textfield; }
-                }
-            `}} />
-            
-            {/* Hidden Iframe for Printing */}
-            <iframe ref={printFrameRef} className="fixed -top-[1000px] left-0 pointer-events-none w-0 h-0" title="print-frame" />
 
-            {/* Sidebar / Action Panel */}
-            {!isExporting && (
-                <aside className="print-hidden w-full lg:w-[420px] shrink-0 bg-white dark:bg-[#0A0A0A] border-b lg:border-b-0 lg:border-r border-black/5 dark:border-white/5 flex flex-col h-auto lg:h-screen lg:sticky top-0 z-[100] shadow-[10px_0_40px_rgba(0,0,0,0.03)] dark:shadow-none">
-                    
-                    {/* Top Header inside Sidebar */}
-                    <div className="h-20 px-6 lg:px-8 flex items-center justify-between border-b border-black/5 dark:border-white/5 shrink-0">
-                        <Link to={isAdmin ? "/admin/invoices" : "/"} className="flex items-center gap-3 text-[10px] font-black text-gray-500 hover:text-gray-900 dark:hover:text-white transition-all uppercase tracking-widest">
-                            <ArrowLeft size={16} /> 
-                            {isAdmin ? 'Back to Vault' : 'Home'}
-                        </Link>
-                        {isAdmin && (
-                            <div className="flex items-center gap-4">
-                                <Link to="/admin/system-command" className="text-gray-400 hover:text-neon-blue transition-colors">
-                                    <Settings size={16} />
-                                </Link>
-                                <button onClick={() => useStore.getState().logout()} className="text-gray-400 hover:text-red-500 transition-colors">
-                                    <LogOut size={16} />
-                                </button>
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Invoice Summary */}
-                    <div className="flex-1 overflow-y-auto p-6 lg:p-8 flex flex-col gap-4 lg:gap-6 lg:gap-10 custom-scrollbar">
-                        
-                        {/* Status & Amount */}
-                        <div className="flex flex-col gap-4 lg:gap-6">
-                            <div className="flex flex-wrap items-center gap-3">
-                                <span className={cn("px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest", displayInvoice.status === 'Paid' ? "bg-green-500/10 text-green-600 dark:text-green-400 border border-green-500/20" : "bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border border-yellow-500/20")}>
-                                    {displayInvoice.status || 'Pending'}
-                                </span>
-                                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                                    Due {new Date(displayInvoice.dueDate || Date.now()).toLocaleDateString('en-GB')}
-                                </span>
-                            </div>
-                            
-                            <div>
-                                <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">Total Amount Due</p>
-                                <h2 className="text-4xl lg:text-6xl font-black tracking-tighter" style={{ color: brandColor }}>
-                                    ₹{totalAmount.toLocaleString()}
-                                </h2>
-                            </div>
-                        </div>
-
-                        {/* Client Info */}
-                        <div className="p-6 rounded-[2rem] bg-black/[0.02] dark:bg-white/[0.02] border border-black/5 dark:border-white/5 space-y-6">
-                            <div>
-                                <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2">Invoice To</p>
-                                <p className="font-bold text-base leading-tight mb-1">{displayInvoice.clientName}</p>
-                                <p className="text-xs text-gray-500">{displayInvoice.clientEmail}</p>
-                            </div>
-                            <div className="w-full h-px bg-black/5 dark:bg-white/5" />
-                            <div>
-                                <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2">Invoice By</p>
-                                <p className="font-bold text-base leading-tight mb-1">{displayInvoice.senderName || 'Newbi Entertainment'}</p>
-                                <p className="text-xs text-gray-500">{displayInvoice.senderEmail}</p>
-                            </div>
-                        </div>
-
-                        {/* Actions */}
-                        <div className="flex flex-col gap-3 mt-auto pt-8">
-                            {displayInvoice.status !== 'Paid' && isAdmin && (
-                                <button onClick={handleMarkPaid} className="w-full py-4 bg-neon-blue text-black font-black uppercase tracking-widest text-xs rounded-2xl hover:scale-[1.02] active:scale-[0.98] transition-all shadow-[0_10px_20px_rgba(56,182,255,0.2)] flex items-center justify-center gap-2">
-                                    <DollarSign size={16} /> Mark as Paid
-                                </button>
-                            )}
-                            
-                            {displayInvoice.status !== 'Paid' && displayInvoice.status !== 'Verification Pending' && !isAdmin && (
-                                <button onClick={() => setShowMarkAsPaid(true)} className="w-full py-4 bg-[#39FF14]/10 text-[#39FF14] hover:bg-[#39FF14]/20 border border-[#39FF14]/20 font-black uppercase tracking-widest text-xs rounded-2xl hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2">
-                                    <DollarSign size={16} /> Claim Payment
-                                </button>
-                            )}
-                            
-                            <div className="grid grid-cols-2 gap-3">
-                                <button onClick={handleDownloadPDF} disabled={isExporting} className="w-full py-3.5 bg-gray-900 dark:bg-white text-white dark:text-black font-black uppercase tracking-widest text-[10px] rounded-2xl hover:opacity-90 transition-all flex items-center justify-center gap-2">
-                                    <Download size={14} /> {isExporting ? 'Exporting...' : 'Save PDF'}
-                                </button>
-                                <button onClick={handlePrint} className="w-full py-3.5 bg-black/5 dark:bg-white/5 text-gray-900 dark:text-white font-black uppercase tracking-widest text-[10px] rounded-2xl hover:bg-black/10 dark:hover:bg-white/10 transition-all flex items-center justify-center gap-2 border border-black/5 dark:border-white/5">
-                                    <Printer size={14} /> Print
-                                </button>
-                            </div>
-                        </div>
-
-                    </div>
-                </aside>
+    const actionPanel = (
+        <div className="flex flex-col sm:flex-row gap-4 items-center justify-center p-6 bg-zinc-900/40 backdrop-blur-xl border border-white/10 rounded-2xl">
+            {displayInvoice.status !== 'Paid' && isAdmin && (
+                <button onClick={handleMarkPaid} className="px-8 py-4 bg-neon-blue text-black font-black uppercase tracking-widest text-xs rounded-xl hover:scale-[1.02] active:scale-[0.98] transition-all shadow-[0_10px_20px_rgba(56,182,255,0.2)] flex items-center justify-center gap-2">
+                    <DollarSign size={16} /> Mark as Paid
+                </button>
             )}
+            
+            {displayInvoice.status !== 'Paid' && displayInvoice.status !== 'Verification Pending' && !isAdmin && (
+                <button onClick={() => setShowMarkAsPaid(true)} className="px-8 py-4 bg-[#39FF14]/10 text-[#39FF14] hover:bg-[#39FF14]/20 border border-[#39FF14]/20 font-black uppercase tracking-widest text-xs rounded-xl hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2">
+                    <DollarSign size={16} /> Claim Payment
+                </button>
+            )}
+        </div>
+    );
 
-            {/* Document Viewer Area */}
-            <main className="flex-1 relative overflow-y-auto min-h-[500px] lg:h-screen bg-[#F3F4F6] dark:bg-[#0B0F17] flex items-start justify-center p-4 md:p-8 lg:p-12 custom-scrollbar">
-                {/* Background Pattern */}
-                <div className="absolute inset-0 pointer-events-none opacity-[0.03] dark:opacity-[0.02]" style={{ backgroundImage: "radial-gradient(circle at center, black 1px, transparent 1px)", backgroundSize: "24px 24px" }} />
+
+    // Adapt displayInvoice to be compatible with SharedDocumentViewer
+    const viewerData = {
+        ...displayInvoice,
+        isUploaded: isQuickUpload,
+        fileUrl: displayInvoice.pdfUrl || displayInvoice.fileUrl
+    };
+
+    return (
+        <>
+            <SharedDocumentViewer
+                documentData={viewerData}
+                type="invoice"
+                isAdmin={isAdmin}
+                isExporting={isExporting}
+                onDownloadPDF={handleDownloadPDF}
+                pdfBlobUrl={pdfBlobUrl}
+                actionPanel={(displayInvoice.status !== 'Paid' && (isAdmin || displayInvoice.status !== 'Verification Pending')) ? actionPanel : null}
+            >
+                <style dangerouslySetInnerHTML={{ __html: `
+                    @media print {
+                        .fixed-header-nav, .print-hidden { display: none !important; }
+                        body { background: white !important; }
+                        .invoice-page-render { 
+                            margin: 0 !important; 
+                            box-shadow: none !important;
+                            page-break-after: always !important;
+                        }
+                        main { padding: 0 !important; margin: 0 !important; }
+                    }
+                `}} />
                 
-                {/* Document Pages Wrapper */}
-                <div className="w-full flex flex-col items-center gap-12 relative z-10 pb-20 mt-4" >
+                {/* Hidden Iframe for Printing */}
+                <iframe ref={printFrameRef} className="fixed -top-[1000px] left-0 pointer-events-none w-0 h-0" title="print-frame" />
+
+                {!isQuickUpload && (
+                    <div className="w-full flex flex-col items-center gap-12 relative z-10 pb-20 mt-4">
+                        <div className="w-full flex flex-col items-center gap-12 relative z-10 pb-20 mt-4" >
                     {paginatedPages.map((pageItems, pageIdx) => {
                                     const isLastPage = pageIdx === paginatedPages.length - 1;
                                     const isFirstPage = pageIdx === 0;
@@ -963,15 +905,21 @@ const Invoice = () => {
                                     );
                                 })}
                 </div>
-            </main>
+                    </div>
+                )}
+            </SharedDocumentViewer>
             
-            <MarkAsPaidModal
-                isOpen={showMarkAsPaid}
-                onClose={() => setShowMarkAsPaid(false)}
-                invoice={displayInvoice}
-                onSubmit={handlePaymentClaim}
-            />
-        </div>
+            {/* Mark as Paid Modal */}
+            {showMarkAsPaid && (
+                <MarkAsPaidModal 
+                    isOpen={showMarkAsPaid} 
+                    onClose={() => setShowMarkAsPaid(false)} 
+                    invoiceId={id} 
+                    invoiceData={invoice}
+                    adminAuth={isAdmin}
+                />
+            )}
+        </>
     );
 };
 

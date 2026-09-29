@@ -32,6 +32,8 @@ import Cpu from 'lucide-react/dist/esm/icons/cpu';
 import Eye from 'lucide-react/dist/esm/icons/eye';
 import EyeOff from 'lucide-react/dist/esm/icons/eye-off';
 import { motion, AnimatePresence } from 'framer-motion';
+import SharedDocumentViewer from '../components/ui/SharedDocumentViewer';
+import ProposalDocumentRenderer from '../components/ui/ProposalDocumentRenderer';
 import DocumentSeal from '../components/ui/DocumentSeal';
 import SignaturePad from '../components/ui/SignaturePad';
 import html2canvas from 'html2canvas';
@@ -1110,223 +1112,19 @@ const Proposal = () => {
     const paginatedPages = getPaginatedPages();
 
     return (
-        <div className="min-h-screen bg-[#050505] text-gray-900 dark:text-white selection:bg-neon-green selection:text-black font-['Outfit']">
-            <style dangerouslySetInnerHTML={{ __html: `
-                @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap');
-                @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400..700&display=swap');
-                body { font-family: 'Outfit', sans-serif; }
-                .font-signature { font-family: 'Caveat', cursive; }
-                @media print {
-                    .no-print { display: none !important; }
-                    body { background: white !important; }
-                    .proposal-page-render { margin: 0 !important; box-shadow: none !important; page-break-after: always !important; }
-                }
-            `}} />
-
-            {!isExporting && (
-                <nav className="fixed top-0 left-0 right-0 z-50 bg-white dark:bg-black/60 backdrop-blur-3xl border-b border-black/10 dark:border-white/5 h-20 flex items-center px-6 no-print">
-                    <div className="max-w-[1400px] mx-auto w-full flex items-center justify-between">
-                        <div className="flex items-center gap-3 sm:gap-6">
-                            <Link to={isAdmin ? "/admin/proposals" : "/"} className="p-2.5 sm:p-3 bg-black/5 dark:bg-white/5 rounded-2xl hover:bg-black/10 dark:hover:bg-white/10 transition-all border border-black/10 dark:border-white/5"><ArrowLeft size={16} /></Link>
-                            <div className="min-w-0 max-w-[120px] xs:max-w-[180px] sm:max-w-none">
-                                <p className="text-[9px] sm:text-[10px] font-black text-neon-green uppercase tracking-widest leading-none mb-1 truncate">
-                                    {displayProposal.clientName ? `${displayProposal.clientName} (${displayProposal.proposalNumber || displayProposal.id})` : 'Strategic Quote'}
-                                </p>
-                                <div className="flex items-center gap-2">
-                                    <div className={cn("w-1.5 h-1.5 rounded-full shrink-0", displayProposal.status === 'Accepted' ? "bg-neon-green" : "bg-blue-500 animate-pulse")} />
-                                    <span className="text-[8px] sm:text-[9px] font-black text-gray-500 uppercase tracking-widest truncate">{displayProposal.status || 'DRAFT'}</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div className="flex items-center gap-2 sm:gap-4">
-                            {displayProposal.attachments && displayProposal.attachments.length > 0 && (
-                                <button 
-                                    onClick={() => setIsAttachmentDrawerOpen(true)} 
-                                    className="p-2.5 sm:p-3 bg-neon-green/10 rounded-2xl hover:bg-neon-green/20 border border-neon-green/35 text-neon-green transition-all flex items-center gap-1.5"
-                                    title="View Attachments"
-                                >
-                                    <Paperclip size={16} />
-                                    <span className="text-[9px] font-black tracking-widest font-mono">{(displayProposal.attachments || []).length}</span>
-                                </button>
-                            )}
-                            <button onClick={handleShare} className="p-2.5 sm:p-3 bg-black/5 dark:bg-white/5 rounded-2xl hover:bg-black/10 dark:hover:bg-white/10 border border-black/10 dark:border-white/5 text-gray-600 dark:text-gray-400 hover:text-neon-blue transition-all"><Share2 size={16} /></button>
-                            <button onClick={() => window.print()} className="p-3 bg-black/5 dark:bg-white/5 rounded-2xl hover:bg-black/10 dark:hover:bg-white/10 border border-black/10 dark:border-white/5 hidden sm:block"><Printer size={18} /></button>
-                            <Button onClick={handleDownloadPDF} className="bg-neon-green text-black font-black uppercase tracking-widest text-[9px] sm:text-[10px] h-10 sm:h-12 px-4 sm:px-8 rounded-xl sm:rounded-2xl shadow-[0_10px_30px_rgba(57,255,20,0.3)]">
-                                <Download size={14} className="sm:mr-2" /> <span className="hidden sm:inline">Export PDF</span><span className="sm:hidden">Export</span>
-                            </Button>
-                        </div>
-                    </div>
-                </nav>
-            )}
-
-            <main className="pt-24 sm:pt-32 pb-32 flex flex-col items-center px-4 sm:px-0">
-                {displayProposal.isUploaded && displayProposal.fileUrl ? (
-                    <div className="w-full max-w-5xl mx-auto flex flex-col gap-6 sm:gap-8 px-2 sm:px-4">
-                        {/* Document Header & Metadata Banner */}
-                        <div className="bg-zinc-900/60 backdrop-blur-2xl border border-white/10 rounded-[2rem] p-6 sm:p-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
-                            <div className="flex items-start sm:items-center gap-4 sm:gap-6 min-w-0">
-                                <img 
-                                    src={currentLogo.path} 
-                                    alt={currentLogo.label} 
-                                    className="h-12 sm:h-14 w-auto object-contain shrink-0" 
-                                    crossOrigin="anonymous" 
-                                />
-                                <div className="min-w-0">
-                                    <div className="flex flex-wrap items-center gap-2 mb-1.5">
-                                        <span className="text-[9px] font-black font-mono tracking-widest text-neon-green bg-neon-green/10 px-2.5 py-1 rounded-full border border-neon-green/20">
-                                            {displayProposal.proposalNumber}
-                                        </span>
-                                        <span className="text-[9px] font-black tracking-wider text-neon-blue bg-neon-blue/10 px-2.5 py-1 rounded-full border border-neon-blue/20 flex items-center gap-1">
-                                            <Upload size={10} /> PRE-MADE PROPOSAL
-                                        </span>
-                                        <div className={cn(
-                                            "flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider border",
-                                            displayProposal.status === 'Accepted' ? "bg-neon-green/10 text-neon-green border-neon-green/30" : 
-                                            (displayProposal.status === 'Rejected' ? "bg-red-500/10 text-red-500 border-red-500/30" : 
-                                            "bg-blue-500/10 text-blue-400 border-blue-500/30")
-                                        )}>
-                                            <span className={cn("w-1.5 h-1.5 rounded-full shrink-0", displayProposal.status === 'Accepted' ? "bg-neon-green" : "bg-blue-400 animate-pulse")} />
-                                            {displayProposal.status || 'DRAFT'}
-                                        </div>
-                                    </div>
-                                    <h1 className="text-xl sm:text-2xl md:text-3xl font-black uppercase italic tracking-tight font-heading text-white truncate">
-                                        {displayProposal.campaignName || 'Strategic Quotation & Proposal'}
-                                    </h1>
-                                    <p className="text-xs sm:text-sm font-bold text-gray-400 uppercase tracking-widest mt-1">
-                                        Prepared for <span className="text-white font-black">{displayProposal.clientName}</span>
-                                    </p>
-                                </div>
-                            </div>
-
-                            <div className="flex md:flex-col items-center md:items-end justify-between w-full md:w-auto gap-3 pt-4 md:pt-0 border-t md:border-t-0 border-white/10 shrink-0">
-                                {(displayProposal.dealValue || displayProposal.totalOverride) && (
-                                    <div className="text-left md:text-right">
-                                        <span className="text-[8px] font-black uppercase tracking-widest text-gray-400 block">Commercial Value</span>
-                                        <span className="text-lg sm:text-2xl font-black font-mono text-neon-green">
-                                            ₹{Number(displayProposal.dealValue || displayProposal.totalOverride).toLocaleString('en-IN')}
-                                        </span>
-                                    </div>
-                                )}
-                                <div className="text-left md:text-right">
-                                    <span className="text-[8px] font-black uppercase tracking-widest text-gray-400 block">Date of Issue</span>
-                                    <span className="text-xs font-bold text-gray-300">
-                                        {new Date(displayProposal.createdAt || Date.now()).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Executive Memo / Note if present */}
-                        {displayProposal.coverDescription && (
-                            <div className="p-6 sm:p-7 bg-zinc-900/40 backdrop-blur-xl border border-white/10 rounded-2xl relative overflow-hidden">
-                                <div className="w-1.5 h-full bg-neon-green absolute left-0 top-0" />
-                                <p className="text-[9px] font-black uppercase tracking-[0.3em] text-neon-green mb-2">Executive Memorandum</p>
-                                <div className="text-sm font-medium leading-relaxed text-gray-300">
-                                    {displayProposal.coverDescription}
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Document Viewer Frame & Toolbar */}
-                        <div className="bg-zinc-900/40 backdrop-blur-2xl border border-white/10 rounded-[2rem] overflow-hidden shadow-[0_30px_70px_rgba(0,0,0,0.6)] flex flex-col">
-                            {/* Viewer Top Action Bar */}
-                            <div className="px-5 sm:px-6 py-4 border-b border-white/10 bg-white/[0.02] flex flex-wrap items-center justify-between gap-3">
-                                <div className="flex items-center gap-3 min-w-0">
-                                    <div className="w-9 h-9 rounded-xl bg-neon-green/10 border border-neon-green/30 flex items-center justify-center text-neon-green shrink-0">
-                                        <FileText size={18} />
-                                    </div>
-                                    <div className="min-w-0">
-                                        <p className="text-xs font-bold text-white truncate">
-                                            {displayProposal.fileName || 'Pre-Made Proposal Document'}
-                                        </p>
-                                        <p className="text-[9px] font-mono text-gray-400 uppercase tracking-widest">
-                                            {displayProposal.fileSize || 'Vault Hosted Asset'} • Secure Document
-                                        </p>
-                                    </div>
-                                </div>
-
-                                <div className="flex items-center gap-2">
-                                    <a
-                                        href={pdfBlobUrl || displayProposal.fileUrl}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="px-3.5 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-[10px] font-black uppercase tracking-wider text-gray-200 hover:text-white transition-all flex items-center gap-1.5"
-                                        title="Open in new window"
-                                    >
-                                        <ExternalLink size={13} />
-                                        <span className="hidden sm:inline">Open in New Tab</span>
-                                    </a>
-                                    <button
-                                        onClick={handleDownloadPDF}
-                                        className="px-3.5 py-2 rounded-xl bg-neon-green hover:bg-neon-green/90 text-black text-[10px] font-black uppercase tracking-wider transition-all flex items-center gap-1.5 shadow-[0_0_15px_rgba(57,255,20,0.2)]"
-                                        title="Download document"
-                                    >
-                                        <Download size={13} />
-                                        <span>Download</span>
-                                    </button>
-                                </div>
-                            </div>
-
-                            {/* Document Frame / Render */}
-                            <div className="relative w-full bg-[#111] p-1 sm:p-2 min-h-[600px] sm:min-h-[850px] flex items-center justify-center">
-                                {isLoadingPdf && !pdfBlobUrl && (
-                                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/60 z-10">
-                                        <RefreshCw size={24} className="animate-spin text-neon-green" />
-                                        <p className="text-[10px] font-mono text-neon-green uppercase tracking-widest">
-                                            Decrypting & rendering document...
-                                        </p>
-                                    </div>
-                                )}
-                                {displayProposal.fileType === 'pdf' || (displayProposal.fileUrl && (displayProposal.fileUrl.toLowerCase().includes('.pdf') || displayProposal.fileUrl.includes('/raw/upload/'))) ? (
-                                    <iframe
-                                        src={pdfViewerFailed 
-                                            ? `https://docs.google.com/viewer?url=${encodeURIComponent(displayProposal.fileUrl)}&embedded=true`
-                                            : (pdfBlobUrl ? `${pdfBlobUrl}#toolbar=1&navpanes=0` : `https://docs.google.com/viewer?url=${encodeURIComponent(displayProposal.fileUrl)}&embedded=true`)}
-                                        title={displayProposal.fileName || 'Proposal Document'}
-                                        className="w-full h-[650px] sm:h-[850px] md:h-[1000px] rounded-xl border border-white/5 bg-white shadow-2xl"
-                                        onError={() => {
-                                            if (!pdfViewerFailed) {
-                                                setPdfViewerFailed(true);
-                                            }
-                                        }}
-                                        onLoad={(e) => {
-                                            // Check if iframe loaded empty (some browsers show blank for failed loads)
-                                            try {
-                                                const doc = e.target.contentDocument;
-                                                if (doc && doc.body && doc.body.innerHTML === '') {
-                                                    if (!pdfViewerFailed) setPdfViewerFailed(true);
-                                                }
-                                            } catch (_) {
-                                                // Cross-origin, can't check - assume it's working
-                                            }
-                                        }}
-                                    />
-                                ) : (
-                                    <div className="w-full flex justify-center p-4">
-                                        <img
-                                            src={displayProposal.fileUrl}
-                                            alt="Proposal Document"
-                                            className="max-w-full max-h-[1100px] object-contain rounded-xl border border-white/10 shadow-2xl bg-white"
-                                        />
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Viewer Footer Note */}
-                            <div className="px-5 py-3 border-t border-white/10 bg-white/[0.01] flex items-center justify-between text-[10px] font-mono text-gray-400">
-                                <span>Hosted on Newbi Strategic Cloud Vault</span>
-                                <a
-                                    href={displayProposal.fileUrl}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="text-neon-green hover:underline flex items-center gap-1"
-                                >
-                                    Can't see preview? Click here to view <ExternalLink size={10} />
-                                </a>
-                            </div>
-                        </div>
-
-                        {/* Client Digital Authorization / E-Signature Hub (if enabled) */}
+        <>
+            <SharedDocumentViewer
+                documentData={{...displayProposal, fileUrl: pdfBlobUrl || displayProposal.fileUrl, isUploaded: displayProposal.isUploaded}}
+                type="proposal"
+                isAdmin={isAdmin}
+                isExporting={isExporting}
+                onShare={handleShare}
+                onDownloadPDF={handleDownloadPDF}
+                onOpenAttachments={() => setIsAttachmentDrawerOpen(true)}
+                pdfBlobUrl={pdfBlobUrl}
+                pdfViewerFailed={pdfViewerFailed}
+                setPdfViewerFailed={setPdfViewerFailed}
+                actionPanel={displayProposal.isUploaded && displayProposal.fileUrl ? (<>{/* Client Digital Authorization / E-Signature Hub (if enabled) */}
                         {displayProposal.showSignatures && (
                             <div className="bg-zinc-900/60 backdrop-blur-2xl border border-white/10 rounded-[2.5rem] p-6 sm:p-10 shadow-[0_20px_50px_rgba(0,0,0,0.6)]">
                                 {displayProposal.status === 'Accepted' ? (
@@ -2097,8 +1895,15 @@ const Proposal = () => {
                         </div>
                     ))}
                 </div>
+                </>) : null}
+            >
+                {!displayProposal.isUploaded && (
+                    <div className="w-full flex flex-col items-center gap-12 relative z-10 pb-20 mt-4">
+                        
+                    </div>
                 )}
-            </main>
+            </SharedDocumentViewer>
+            
 
             {/* Hidden container for PDF export — renders all pages for html2canvas */}
             <div className="pdf-export-only fixed -left-[9999px] top-0 pointer-events-none overflow-hidden bg-white">
@@ -2828,3 +2633,4 @@ const Proposal = () => {
 };
 
 export default Proposal;
+
