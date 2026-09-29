@@ -599,16 +599,7 @@ const ProposalManagement = () => {
                                                 <button onClick={() => handleDuplicate(proposal.id)} className="p-2 bg-black/5 dark:bg-white/5 rounded-lg text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"><History size={16} /></button>
                                                 <button onClick={() => handleNativeShare(proposal)} className="p-2 bg-black/5 dark:bg-white/5 rounded-lg text-gray-600 dark:text-gray-400 hover:text-neon-green transition-colors"><Share2 size={16} /></button>
                                                 {proposal.isUploaded ? (
-                                                    <button 
-                                                        onClick={() => {
-                                                            setEditingUploadedProposal(proposal);
-                                                            setIsUploadModalOpen(true);
-                                                        }}
-                                                        className="p-2 bg-black/5 dark:bg-white/5 rounded-lg text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
-                                                        title="Edit Uploaded Proposal"
-                                                    >
-                                                        <Edit size={16} />
-                                                    </button>
+                                                    <Link to={`/admin/edit-proposal/${proposal.id}`} className="p-2 bg-black/5 dark:bg-white/5 rounded-lg text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors" title="Edit Uploaded Proposal"><Edit size={16} /></Link>
                                                 ) : (
                                                     <Link to={`/admin/edit-proposal/${proposal.id}`} className="p-2 bg-black/5 dark:bg-white/5 rounded-lg text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"><Edit size={16} /></Link>
                                                 )}

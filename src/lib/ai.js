@@ -474,15 +474,30 @@ SERVICES WE OFFER:
 - Volunteer Provider & On-ground Staffing
 - Digital Marketing & Social Media Campaigns
 
-RULES:
-- ALL text: plain text, NO HTML
+FORMATTING RULES:
+- Use Markdown formatting for ALL text fields to create rich, structured documents
+- Use "## " for section headers, "### " for sub-headers
+- Use "• " bullet points for list items, each on a separate line
+- Use numbered lists ("1. ", "2. ", "3. ") for sequential steps or terms
+- Use **bold** for emphasis on key phrases and important numbers
+- Use line breaks between paragraphs for readability
 - Make content specific to the user's request — NO generic placeholders
-- scopeOfWork: use "• " bullet points on separate lines
+
+CONTENT RULES:
+- overview: Write 2-3 rich paragraphs with **bold** key highlights. Include section headers if the content is substantial.
+- primaryGoal: A focused paragraph with **bold** emphasis on the main objective
+- scopeOfWork: Use "## " headers to organize into logical sections. Under each header, use "• " bullet points for deliverables. Example:
+  ## Stage & Production Setup
+  • Full stage design and fabrication with premium LED backdrop
+  • Professional sound system (Line Array, 10,000W+)
+  ## Artist Management & Logistics
+  • End-to-end artist travel coordination
+  • Green room and hospitality management
 - deliverables: 3-6 items with timelines like "Phase 1", "Day 1", or "Month 1"
 - items: 3-5 service line items with realistic INR prices (₹5,000 – ₹10,00,000) — this section is the "Estimated Cost"
 - clientRequirements: 2-4 items
-- terms: 4-5 numbered items on separate lines, include "Advance Fee" instead of "activation fee"
-- customPages: optional array of extra pages (e.g. Timeline, Risk Assessment) with title and rich content — include 1-2 if relevant
+- terms: 4-5 numbered items on separate lines ("1. ", "2. "), include "Advance Fee" instead of "activation fee"
+- customPages: optional array of extra pages (e.g. Timeline, Risk Assessment) with title and rich formatted content using ## headers and • bullets — include 1-2 if relevant
 - Return valid JSON matching the schema`,
 
     bulk_proposal: `You are an elite proposal architect and document structurer for Newbi Entertainment, a premium event production, entertainment, and marketing agency in India.
@@ -612,6 +627,11 @@ CRITICAL: Every field must have specific, relevant content based on the request.
         }
 
         console.log(`[NEWBI AI] ✓ ${type} generated successfully`);
+        // For proposals, preserve markdown formatting (bullets, headers, bold)
+        // Only strip actual HTML tags for non-proposal types
+        if (type === 'proposal' || type === 'bulk_proposal') {
+            return parsed;
+        }
         return stripHTML(parsed);
 
     } catch (error) {
