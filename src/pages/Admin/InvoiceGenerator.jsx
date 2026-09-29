@@ -571,7 +571,7 @@ const InvoiceGenerator = () => {
                             <button key={tab.id} onClick={() => handleTabClick(tab.id)} className={cn("w-full p-4 rounded-2xl flex items-center gap-4 transition-all text-left group", activeTab === tab.id ? "bg-white dark:bg-white/10 text-black dark:text-white shadow-lg border border-black/5 dark:border-white/10" : "hover:bg-black/5 dark:hover:bg-white/5 text-gray-500 hover:text-gray-900 dark:hover:text-white")}>
                                 <div className={cn("p-2.5 rounded-xl transition-all", activeTab === tab.id ? "bg-black/5 dark:bg-white/10" : "bg-black/5 dark:bg-white/5 group-hover:bg-black/10 dark:group-hover:bg-white/10")}><tab.icon size={18} /></div>
                                 <div>
-                                    <p className="text-[10px] font-black uppercase tracking-widest leading-none mb-1">{tab.label}</p>
+                                    <p className="text-[10px] font-black uppercase tracking-widest leading-tight mb-1">{tab.label}</p>
                                     <p className={cn("text-[9px] font-bold opacity-60 uppercase tracking-tighter", activeTab === tab.id ? "text-gray-700 dark:text-gray-300" : "text-gray-500 dark:text-gray-400")}>{tab.desc}</p>
                                 </div>
                             </button>
@@ -1081,7 +1081,7 @@ const InvoiceGenerator = () => {
                                             </div>
                                             <div className="text-right">
                                                 <h2 className="text-4xl font-black text-gray-900 tracking-tighter uppercase mb-0">#{formData.invoiceNumber}</h2>
-                                                <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest leading-none mt-1">INVOICE ID</p>
+                                                <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest leading-tight mt-1">INVOICE ID</p>
                                             </div>
                                         </div>
                                     ) : (
@@ -1263,7 +1263,7 @@ const InvoiceGenerator = () => {
                                                                 {formData.showSignatures && (
 
                                                                     <div className="z-20 flex flex-col items-center relative space-y-1 w-[150px]">
-                                                                    <p className="text-[7.5px] font-black text-gray-500 uppercase tracking-widest mb-1 text-center truncate max-w-[150px]">For {formData.senderName || 'Newbi Entertainment'}</p>
+                                                                    <p className="text-[7.5px] font-black text-gray-500 uppercase tracking-widest mb-1 text-center whitespace-nowrap">For {formData.senderName || 'Newbi Entertainment'}</p>
                                                                     <div className="h-12 w-full flex items-end justify-center relative border-b border-black/20 print:border-black/20 pb-1">
                                                                         {formData.providerSignature ? (
                                                                             <img src={formData.providerSignature} alt="Provider Signature" className="h-full object-contain mix-blend-multiply print:mix-blend-multiply print:invert-0 grayscale-0" crossOrigin="anonymous" />
@@ -1271,7 +1271,7 @@ const InvoiceGenerator = () => {
                                                                             <p className="text-[11px] font-formal italic text-gray-900 print:text-black opacity-40">Authorized Signatory</p>
                                                                         )}
                                                                     </div>
-                                                                    <p className="text-[7.5px] font-black text-gray-900 print:text-black uppercase tracking-widest leading-none mt-1 text-center truncate max-w-[150px]">Authorized Signatory</p>
+                                                                    <p className="text-[7.5px] font-black text-gray-900 print:text-black uppercase tracking-widest leading-tight mt-1 text-center whitespace-nowrap">Authorized Signatory</p>
                                                                 </div>
 
                                                                 )}
@@ -1334,7 +1334,7 @@ const InvoiceGenerator = () => {
                                 </div>
                                 <div className="text-right">
                                     <h2 className="text-4xl font-black text-gray-600 tracking-tighter uppercase mb-0">#{formData.invoiceNumber}</h2>
-                                    <p className="text-[9px] font-black text-gray-600 uppercase tracking-widest leading-none mt-1">INVOICE ID</p>
+                                    <p className="text-[9px] font-black text-gray-600 uppercase tracking-widest leading-tight mt-1">INVOICE ID</p>
                                 </div>
                             </div>
                         ) : (
@@ -1458,7 +1458,7 @@ const InvoiceGenerator = () => {
                                                     {formData.showSignatures && (
 
                                                         <div className="z-20 flex flex-col items-center relative space-y-1 w-[150px]">
-                                                        <p className="text-[7.5px] font-black text-gray-500 uppercase tracking-widest mb-1 text-center truncate max-w-[150px]">For {formData.senderName || 'Newbi Entertainment'}</p>
+                                                        <p className="text-[7.5px] font-black text-gray-500 uppercase tracking-widest mb-1 text-center whitespace-nowrap">For {formData.senderName || 'Newbi Entertainment'}</p>
                                                         <div className="h-12 w-full flex items-end justify-center relative border-b border-black/20 pb-1">
                                                             {formData.providerSignature ? (
                                                                 <img src={formData.providerSignature} alt="Signature" className="h-full object-contain mix-blend-multiply grayscale-0" crossOrigin="anonymous" />
@@ -1466,7 +1466,7 @@ const InvoiceGenerator = () => {
                                                                 <p className="text-[11px] font-formal italic text-gray-900 opacity-40">Authorized Signatory</p>
                                                             )}
                                                         </div>
-                                                        <p className="text-[7.5px] font-black text-gray-900 uppercase tracking-widest leading-none mt-1 text-center truncate max-w-[150px]">Authorized Signatory</p>
+                                                        <p className="text-[7.5px] font-black text-gray-900 uppercase tracking-widest leading-tight mt-1 text-center whitespace-nowrap">Authorized Signatory</p>
                                                     </div>
 
                                                     )}

@@ -733,7 +733,7 @@ const Invoice = () => {
                                                         </div>
                                                         <div className="text-right">
                                                             <h2 className="text-4xl font-black text-gray-600 tracking-tighter uppercase mb-0">#{displayInvoice.invoiceNumber}</h2>
-                                                            <p className="text-[9px] font-black text-gray-600 uppercase tracking-widest leading-none mt-1">INVOICE ID</p>
+                                                            <p className="text-[9px] font-black text-gray-600 uppercase tracking-widest leading-tight mt-1">INVOICE ID</p>
                                                         </div>
                                                     </div>
                                                 ) : (
@@ -793,7 +793,7 @@ const Invoice = () => {
                                                             </thead>
                                                             <tbody className="divide-y divide-gray-200">
                                                                 {pageItems.map((item, idx) => (
-                                                                    <tr key={idx} className="bg-black/10 ">
+                                                                    <tr key={idx} className="hover:bg-black/5 transition-colors">
                                                                         <td className="py-2 px-6 text-[11px] font-bold uppercase border-r border-dashed border-gray-200 leading-relaxed font-heading italic">{item.description || "SERVICE"}</td>
                                                                         {(displayInvoice.customColumns || []).map(col => (
                                                                             <td key={col.id} className="py-2 px-4 text-center text-[10px] font-semibold border-r border-dashed border-gray-200 leading-relaxed">{item.customValues?.[col.id] || "-"}</td>
@@ -911,7 +911,7 @@ const Invoice = () => {
                                                                         {displayInvoice.showSignatures && (
 
                                                                             <div className="z-20 flex flex-col items-center relative space-y-1 w-[150px]">
-                                                                            <p className="text-[7.5px] font-black text-gray-500 uppercase tracking-widest mb-1 text-center truncate max-w-[150px]">For {displayInvoice.senderName || 'Newbi Entertainment'}</p>
+                                                                            <p className="text-[7.5px] font-black text-gray-500 uppercase tracking-widest mb-1 text-center whitespace-nowrap">For {displayInvoice.senderName || 'Newbi Entertainment'}</p>
                                                                             <div className="h-12 w-full flex items-end justify-center relative border-b border-black/20 print:border-black/20 pb-1">
                                                                                 {displayInvoice.providerSignature ? (
                                                                                     <img src={displayInvoice.providerSignature} alt="Provider Signature" className="h-full object-contain mix-blend-multiply print:mix-blend-multiply print:invert-0 grayscale-0" crossOrigin="anonymous" />
@@ -919,7 +919,7 @@ const Invoice = () => {
                                                                                     <p className="text-[11px] font-formal italic text-gray-900 print:text-black opacity-40">Authorized Signatory</p>
                                                                                 )}
                                                                             </div>
-                                                                            <p className="text-[7.5px] font-black text-gray-900 print:text-black uppercase tracking-widest leading-none mt-1 text-center truncate max-w-[150px]">Authorized Signatory</p>
+                                                                            <p className="text-[7.5px] font-black text-gray-900 print:text-black uppercase tracking-widest leading-tight mt-1 text-center whitespace-nowrap">Authorized Signatory</p>
                                                                         </div>
 
                                                                         )}

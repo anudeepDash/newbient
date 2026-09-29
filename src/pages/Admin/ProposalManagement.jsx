@@ -406,15 +406,11 @@ const ProposalManagement = () => {
 
                                         <div className="flex flex-wrap items-center gap-2 pt-6 border-t border-black/10 dark:border-white/5">
                                              {proposal.isUploaded ? (
-                                                 <button 
-                                                     onClick={() => {
-                                                         setEditingUploadedProposal(proposal);
-                                                         setIsUploadModalOpen(true);
-                                                     }}
-                                                     className="flex-1 min-w-[25%] py-3 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all border border-black/10 dark:border-white/5"
-                                                 >
-                                                     Edit
-                                                 </button>
+                                                 <Link to={`/admin/edit-proposal/${proposal.id}`} className="flex-1 min-w-[25%]">
+                                                     <button className="w-full py-3 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all border border-black/10 dark:border-white/5">
+                                                         Edit
+                                                     </button>
+                                                 </Link>
                                              ) : (
                                                  <Link to={`/admin/edit-proposal/${proposal.id}`} className="flex-1 min-w-[25%]">
                                                      <button className="w-full py-3 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all border border-black/10 dark:border-white/5">
@@ -540,16 +536,7 @@ const ProposalManagement = () => {
                                                          <button onClick={() => handleDuplicate(proposal.id)} className="p-2 text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors"><History size={18} /></button>
                                                          <button onClick={() => handleNativeShare(proposal)} className="p-2 text-gray-500 hover:text-neon-green transition-colors"><Share2 size={18} /></button>
                                                          {proposal.isUploaded ? (
-                                                             <button 
-                                                                 onClick={() => {
-                                                                     setEditingUploadedProposal(proposal);
-                                                                     setIsUploadModalOpen(true);
-                                                                 }}
-                                                                 className="p-2 text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors"
-                                                                 title="Edit Uploaded Proposal"
-                                                             >
-                                                                 <Edit size={18} />
-                                                             </button>
+                                                             <Link to={`/admin/edit-proposal/${proposal.id}`} className="p-2 text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors" title="Edit Uploaded Proposal"><Edit size={18} /></Link>
                                                          ) : (
                                                              <Link to={`/admin/edit-proposal/${proposal.id}`} className="p-2 text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors"><Edit size={18} /></Link>
                                                          )}
