@@ -29,8 +29,9 @@ import FileSpreadsheet from 'lucide-react/dist/esm/icons/file-spreadsheet';
 import FolderOpen from 'lucide-react/dist/esm/icons/folder-open';
 import Globe from 'lucide-react/dist/esm/icons/globe';
 import Smartphone from 'lucide-react/dist/esm/icons/smartphone';
-import CheckCircle2 from 'lucide-react/dist/esm/icons/check-circle-2';
+import Upload from 'lucide-react/dist/esm/icons/upload';
 import AgreementEmailModal from '../../components/admin/AgreementEmailModal';
+import UploadAgreementModal from '../../components/admin/UploadAgreementModal';
 import { useStore } from '../../lib/store';
 import { useStoreSubscription } from '../../hooks/useStoreSubscription';
 import { Card } from '../../components/ui/Card';
@@ -52,6 +53,8 @@ const ContractManagement = () => {
     const [activeAnalyticsTab, setActiveAnalyticsTab] = useState('email');
     const [sharingAgreement, setSharingAgreement] = useState(null);
     const [emailModalAgreement, setEmailModalAgreement] = useState(null);
+    const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+    const [editingUploadedAgreement, setEditingUploadedAgreement] = useState(null);
 
     const getDeviceDetails = (ua) => {
         if (!ua) return { browser: 'Browser', os: 'OS', type: 'Device' };
@@ -182,9 +185,22 @@ const ContractManagement = () => {
             tabs={vaultTabs}
             accentColor="neon-purple"
             action={
-                <Link to="/admin/agreements/new" className="w-full md:w-auto">
-                    <Button className="w-full md:w-auto bg-neon-purple text-black font-black uppercase tracking-widest text-[10px] sm:text-xs h-12 px-8 rounded-xl hover:scale-105 transition-all shadow-[0_4px_12px_rgba(168,85,247,0.4)]"><Plus className="mr-2 h-4 w-4" /> New Contract</Button>
-                </Link>
+                <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-3 w-full md:w-auto">
+                    <button 
+                        onClick={() => {
+                            setEditingUploadedAgreement(null);
+                            setIsUploadModalOpen(true);
+                        }}
+                        className="w-full sm:w-auto bg-white dark:bg-white/10 hover:bg-black/5 dark:hover:bg-neon-purple/20 text-gray-900 dark:text-white hover:text-black dark:hover:text-neon-purple border border-black/10 dark:border-white/15 hover:border-black/20 dark:hover:border-neon-purple/40 font-black font-heading uppercase tracking-widest text-[9px] sm:text-xs h-12 md:h-14 px-5 md:px-7 rounded-xl md:rounded-2xl hover:scale-[1.02] active:scale-95 transition-all shadow-sm dark:shadow-lg flex items-center justify-center gap-2"
+                    >
+                        <Upload className="h-4 w-4 text-neon-purple" /> Upload Contract
+                    </button>
+                    <Link to="/admin/agreements/new" className="w-full sm:w-auto">
+                        <Button className="w-full sm:w-auto bg-neon-purple text-black font-black uppercase tracking-widest text-[10px] sm:text-xs h-12 md:h-14 px-6 md:px-10 rounded-xl md:rounded-2xl hover:scale-[1.02] active:scale-95 transition-all shadow-[0_4px_12px_rgba(168,85,247,0.4)] flex items-center justify-center">
+                            <Plus className="mr-2 h-4 w-4" /> New Contract
+                        </Button>
+                    </Link>
+                </div>
             }
         >
             <style dangerouslySetInnerHTML={{ __html: `@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap');.scrollbar-hide::-webkit-scrollbar{display:none}.scrollbar-hide{-ms-overflow-style:none;scrollbar-width:none}` }} />
@@ -225,6 +241,11 @@ const ContractManagement = () => {
                                             <div className="flex justify-between items-start mb-6">
                                                 <div className="flex items-center gap-2">
                                                     <span className="text-[10px] font-black font-mono tracking-widest text-neon-purple bg-neon-purple/10 px-3 py-1 rounded-full border border-neon-purple/20">{a.agreementNumber}</span>
+                                                    {a.isUploaded && (
+                                                        <span className="text-[9px] font-black tracking-wider text-neon-purple bg-neon-purple/10 px-2 py-0.5 rounded-full border border-neon-purple/20 flex items-center gap-1">
+                                                            <Upload size={10} /> PRE-MADE
+                                                        </span>
+                                                    )}
                                                     <div className={cn("w-2 h-2 rounded-full animate-pulse", a.status === 'Executed' ? 'bg-emerald-500' : a.status === 'Final' ? 'bg-blue-500' : 'bg-gray-600')} />
                                                 </div>
                                                 <div className="flex items-center gap-2">
@@ -239,10 +260,33 @@ const ContractManagement = () => {
                                             </div>
                                             <h3 className="text-xl md:text-2xl font-black tracking-tighter uppercase italic text-gray-900 dark:text-white mb-2 leading-none">{a.parties?.secondParty?.name || 'Untitled'}</h3>
                                             <p className="text-gray-500 text-[10px] font-bold uppercase tracking-widest flex items-center gap-2 mb-2"><Scale size={12} /> {a.template || a.type || 'Service Agreement'}</p>
-                                            <p className="text-gray-600 text-[10px] font-bold uppercase tracking-widest flex items-center gap-2 mb-8"><Calendar size={12} /> {a.effectiveDate ? new Date(a.effectiveDate).toLocaleDateString() : 'No date'}</p>
+                                            <div className="flex items-center justify-between text-gray-500 text-[10px] font-bold uppercase tracking-widest mb-8">
+                                                <span className="flex items-center gap-1.5"><Calendar size={12} /> {a.effectiveDate ? new Date(a.effectiveDate).toLocaleDateString() : 'No date'}</span>
+                                                {a.commercials?.totalValue && (
+                                                    <span className="text-neon-purple font-mono font-black">
+                                                        {a.commercials.currency || 'INR'} {a.commercials.totalValue}
+                                                    </span>
+                                                )}
+                                            </div>
                                         </div>
                                         <div className="flex flex-wrap items-center gap-2 pt-6 border-t border-black/10 dark:border-white/5">
-                                            <Link to={`/admin/agreements/edit/${a.id}`} className="flex-1 min-w-[25%]"><button className="w-full py-3 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-[10px] font-black uppercase tracking-widest rounded-xl border border-black/10 dark:border-white/5">Edit</button></Link>
+                                            {a.isUploaded ? (
+                                                <button 
+                                                    onClick={() => {
+                                                        setEditingUploadedAgreement(a);
+                                                        setIsUploadModalOpen(true);
+                                                    }}
+                                                    className="flex-1 min-w-[25%] py-3 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-[10px] font-black uppercase tracking-widest rounded-xl border border-black/10 dark:border-white/5"
+                                                >
+                                                    Edit
+                                                </button>
+                                            ) : (
+                                                <Link to={`/admin/agreements/edit/${a.id}`} className="flex-1 min-w-[25%]">
+                                                    <button className="w-full py-3 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-[10px] font-black uppercase tracking-widest rounded-xl border border-black/10 dark:border-white/5">
+                                                        Edit
+                                                    </button>
+                                                </Link>
+                                            )}
                                             <button onClick={() => handleNativeShare(a)} className="flex-1 min-w-[25%] py-3 bg-neon-purple/10 hover:bg-neon-purple/20 text-neon-purple text-[10px] font-black uppercase tracking-widest rounded-xl border border-neon-purple/10 flex items-center justify-center gap-2"><Share2 size={12} /> Share</button>
                                             <button
                                                 onClick={() => setEmailModalAgreement(a)}
@@ -257,10 +301,26 @@ const ContractManagement = () => {
                                 </motion.div>
                             ))}
                             {filtered.length === 0 && (
-                                <div className="col-span-full py-20 text-center border-2 border-dashed border-black/10 dark:border-white/5 rounded-[3rem]">
+                                <div className="col-span-full py-20 text-center border-2 border-dashed border-black/10 dark:border-white/5 rounded-[3rem] p-8 flex flex-col items-center justify-center">
                                     <Scale className="mx-auto text-gray-800 mb-6" size={64} />
                                     <h3 className="text-xl font-black text-gray-600 uppercase italic">No Contracts Found</h3>
-                                    <p className="text-gray-700 text-xs font-bold uppercase tracking-widest mt-2">Deploy your first contract from the generator.</p>
+                                    <p className="text-gray-700 text-xs font-bold uppercase tracking-widest mt-2 mb-6">Deploy your first contract or host a pre-made agreement.</p>
+                                    <div className="flex flex-wrap items-center justify-center gap-3">
+                                        <button
+                                            onClick={() => {
+                                                setEditingUploadedAgreement(null);
+                                                setIsUploadModalOpen(true);
+                                            }}
+                                            className="px-6 py-3 bg-white dark:bg-white/10 hover:bg-black/5 dark:hover:bg-neon-purple/20 text-gray-900 dark:text-white hover:text-black dark:hover:text-neon-purple border border-black/10 dark:border-white/10 hover:border-black/20 dark:hover:border-neon-purple/40 font-black text-xs uppercase tracking-widest rounded-xl transition-all flex items-center gap-2"
+                                        >
+                                            <Upload size={14} className="text-neon-purple" /> Upload Pre-Made Contract
+                                        </button>
+                                        <Link to="/admin/agreements/new">
+                                            <button className="px-6 py-3 bg-neon-purple text-black font-black text-xs uppercase tracking-widest rounded-xl transition-all flex items-center gap-2">
+                                                <Plus size={14} /> New Contract
+                                            </button>
+                                        </Link>
+                                    </div>
                                 </div>
                             )}
                         </motion.div>
@@ -272,7 +332,7 @@ const ContractManagement = () => {
                                     <tbody className="divide-y divide-white/5">
                                         {filtered.map(a => (
                                             <tr key={a.id} className="group hover:bg-white/[0.02] transition-colors">
-                                                <td className="p-6 md:p-8"><div className="flex items-center gap-4"><div className="w-10 h-10 rounded-xl bg-neon-purple/10 flex items-center justify-center text-neon-purple"><Scale size={20} /></div><div><div className="text-xs font-black uppercase tracking-widest">{a.agreementNumber}</div><div className="text-[10px] font-bold text-gray-500 uppercase mt-0.5">CONTRACT</div></div></div></td>
+                                                <td className="p-6 md:p-8"><div className="flex items-center gap-4"><div className="w-10 h-10 rounded-xl bg-neon-purple/10 flex items-center justify-center text-neon-purple"><Scale size={20} /></div><div><div className="text-xs font-black uppercase tracking-widest flex items-center gap-2">{a.agreementNumber}{a.isUploaded && <span className="text-[8px] font-black tracking-wider text-neon-purple bg-neon-purple/10 px-1.5 py-0.5 rounded border border-neon-purple/20">PRE-MADE</span>}</div><div className="text-[10px] font-bold text-gray-500 uppercase mt-0.5">CONTRACT</div></div></div></td>
                                                 <td className="p-6 md:p-8 text-sm font-black uppercase tracking-tight">{a.parties?.secondParty?.name}</td>
                                                 <td className="p-6 md:p-8 text-[10px] font-bold text-gray-600 dark:text-gray-400 uppercase">{a.template || a.type || 'Service'}</td>
                                                 <td className="p-6 md:p-8 text-[10px] font-bold text-gray-500 uppercase tracking-widest">{a.effectiveDate ? new Date(a.effectiveDate).toLocaleDateString() : '—'}</td>
@@ -282,7 +342,20 @@ const ContractManagement = () => {
                                                     <button onClick={() => setEmailModalAgreement(a)} className="p-2 text-gray-500 hover:text-neon-purple" title="Email Contract"><Mail size={18} /></button>
                                                     <button onClick={() => handleNativeShare(a)} className="p-2 text-gray-500 hover:text-neon-purple"><Share2 size={18} /></button>
                                                     <button onClick={() => handleDuplicate(a.id)} className="p-2 text-gray-500 hover:text-gray-900 dark:hover:text-white"><History size={18} /></button>
-                                                    <Link to={`/admin/agreements/edit/${a.id}`} className="p-2 text-gray-500 hover:text-gray-900 dark:hover:text-white"><Edit size={18} /></Link>
+                                                    {a.isUploaded ? (
+                                                        <button 
+                                                            onClick={() => {
+                                                                setEditingUploadedAgreement(a);
+                                                                setIsUploadModalOpen(true);
+                                                            }}
+                                                            className="p-2 text-gray-500 hover:text-neon-purple"
+                                                            title="Edit Contract"
+                                                        >
+                                                            <Edit size={18} />
+                                                        </button>
+                                                    ) : (
+                                                        <Link to={`/admin/agreements/edit/${a.id}`} className="p-2 text-gray-500 hover:text-gray-900 dark:hover:text-white" title="Edit Contract"><Edit size={18} /></Link>
+                                                    )}
                                                     {user?.role !== 'editor' && user?.role !== 'content_admin' && (
                                                         <>
                                                             <button onClick={() => setSelectedAnalytics(a)} className="p-2 text-gray-500 hover:text-neon-purple transition-colors"><Activity size={18} /></button>
@@ -305,7 +378,14 @@ const ContractManagement = () => {
                                                         <Scale size={20} />
                                                     </div>
                                                     <div>
-                                                        <div className="text-xs font-black uppercase tracking-widest text-gray-900 dark:text-white">{a.agreementNumber}</div>
+                                                        <div className="text-xs font-black uppercase tracking-widest text-gray-900 dark:text-white flex items-center gap-1.5">
+                                                            {a.agreementNumber}
+                                                            {a.isUploaded && (
+                                                                <span className="text-[8px] font-black tracking-wider text-neon-purple bg-neon-purple/10 px-1.5 py-0.5 rounded border border-neon-purple/20">
+                                                                    PRE-MADE
+                                                                </span>
+                                                            )}
+                                                        </div>
                                                         <div className="text-[10px] font-bold text-gray-500 uppercase mt-0.5">CONTRACT</div>
                                                     </div>
                                                 </div>
@@ -331,7 +411,19 @@ const ContractManagement = () => {
                                                 <button onClick={() => setEmailModalAgreement(a)} className="p-2 bg-black/5 dark:bg-white/5 rounded-lg text-gray-600 dark:text-gray-400 hover:text-neon-purple" title="Email Contract"><Mail size={16} /></button>
                                                 <button onClick={() => handleNativeShare(a)} className="p-2 bg-black/5 dark:bg-white/5 rounded-lg text-gray-600 dark:text-gray-400 hover:text-neon-purple"><Share2 size={16} /></button>
                                                 <button onClick={() => handleDuplicate(a.id)} className="p-2 bg-black/5 dark:bg-white/5 rounded-lg text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"><History size={16} /></button>
-                                                <Link to={`/admin/agreements/edit/${a.id}`} className="p-2 bg-black/5 dark:bg-white/5 rounded-lg text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"><Edit size={16} /></Link>
+                                                {a.isUploaded ? (
+                                                    <button 
+                                                        onClick={() => {
+                                                            setEditingUploadedAgreement(a);
+                                                            setIsUploadModalOpen(true);
+                                                        }}
+                                                        className="p-2 bg-black/5 dark:bg-white/5 rounded-lg text-gray-600 dark:text-gray-400 hover:text-neon-purple"
+                                                    >
+                                                        <Edit size={16} />
+                                                    </button>
+                                                ) : (
+                                                    <Link to={`/admin/agreements/edit/${a.id}`} className="p-2 bg-black/5 dark:bg-white/5 rounded-lg text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"><Edit size={16} /></Link>
+                                                )}
                                                 {user?.role !== 'editor' && user?.role !== 'content_admin' && (
                                                     <>
                                                         <button onClick={() => setSelectedAnalytics(a)} className="p-2 bg-black/5 dark:bg-white/5 rounded-lg text-gray-600 dark:text-gray-400 hover:text-neon-purple transition-colors"><Activity size={16} /></button>
@@ -561,6 +653,23 @@ const ContractManagement = () => {
                         onClose={() => setEmailModalAgreement(null)}
                         agreement={emailModalAgreement}
                         onSend={handleDispatchEmail}
+                    />
+                )}
+            </AnimatePresence>
+
+            {/* Upload Pre-Made Contract Modal */}
+            <AnimatePresence>
+                {isUploadModalOpen && (
+                    <UploadAgreementModal
+                        isOpen={isUploadModalOpen}
+                        onClose={() => {
+                            setIsUploadModalOpen(false);
+                            setEditingUploadedAgreement(null);
+                        }}
+                        onSuccess={(id) => {
+                            navigate(`/agreement/${id}`);
+                        }}
+                        editingAgreement={editingUploadedAgreement}
                     />
                 )}
             </AnimatePresence>

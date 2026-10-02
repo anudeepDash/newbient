@@ -67,9 +67,20 @@ import { cn } from '../../lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import AdminDashboardLink from '../../components/admin/AdminDashboardLink';
 import StudioRichEditor, { MultiPageRichEditor } from '../../components/ui/StudioRichEditor';
-import CompanyProfileManager from '../../components/admin/CompanyProfileManager';
 import { generateFullDocument, reviseDocument, refineFieldContent } from '../../lib/ai';
 import DocumentSeal from '../../components/ui/DocumentSeal';
+import ProposalDocumentRenderer from '../../components/ui/ProposalDocumentRenderer';
+import { DEFAULT_V2_PROPOSAL_DATA, getV2PaginatedPages, normalizeProposalData } from '../../lib/proposalTemplateV2';
+import {
+    V2CoverEditor,
+    V2StrategyEditor,
+    V2BlueprintEditor,
+    V2DeliverablesEditor,
+    V2PricingEditor,
+    V2DeepDiveEditor,
+    V2ClosingEditor,
+    ToggleSwitch
+} from '../../components/admin/V2ProposalEditorSections';
 
 // Markdown-like formatting toolbar for textareas — defined outside to prevent remount on parent re-render
 
@@ -1027,56 +1038,13 @@ const ProposalGenerator = () => {
         { id: 'marketing', label: 'Newbi Marketing', path: '/logo_marketing.png', color: '#FF0055' }
     ];
 
-    const [singleFormData, setSingleFormData] = useState({
-        clientName: '',
-        clientAddress: '',
-        campaignName: '',
-        campaignDuration: '',
+    const [singleFormData, setSingleFormData] = useState(() => ({
+        ...DEFAULT_V2_PROPOSAL_DATA,
         proposalNumber: `NBQ-${Math.floor(1000 + Math.random() * 9000)}`,
-        coverDescription: 'This comprehensive commercial instrument details the strategic execution architecture and deployment framework proposed by Newbi Entertainment for the success of your upcoming mission.',
-        overview: '',
-        primaryGoal: '',
-        numericTargets: '',
-        audienceAge: '',
-        audienceLocation: '',
-        audienceInterests: '',
-        selectedChannels: [],
-        contentCount: { reels: 0, posts: 0, stories: 0 },
-        deliverables: [{ id: 1, item: '', qty: '', timeline: '' }],
-        clientRequirements: [{ id: 1, description: '' }],
-        scopeOfWork: '',
-        terms: '1. 50% Advance Fee required.\n2. Balance on delivery.\n3. Taxes as applicable (18% GST).\n4. Quote valid for 14 days.',
-        paymentDetails: 'Account Name: YOUR NAME\nAccount Number: 0000000000\nIFSC: YOUR000000\nUPI: yourname@upi',
-        gstRate: 18,
-        advanceRequested: 50,
-        showGst: true,
-        showPaymentDetails: true,
-        showSeal: false,
-        showSignatures: false,
-        signatureType: 'handwritten', // 'handwritten' | 'digital' | 'typed'
-        providerSignature: '',
-        clientSignature: '',
-        senderName: 'Authorized Signatory',
-        senderDesignation: 'Director of Operations',
-        status: 'Draft',
-        hiddenFields: [],
-        selectedLogo: 'entertainment',
-        customPages: [],
-        totalOverride: null,
-        totalSourceColumn: 'price',
-        hideTotalColumn: false,
-        strategyTitle: 'EXECUTIVE SUMMARY',
-        strategySub: 'STRATEGIC OUTLINE',
-        scopeTitle: 'SCOPE OF WORK',
-        scopeSub: 'RESOURCE DELIVERABLES',
-        proposalTitle: 'DELIVERABLES',
-        proposalSub: 'PROJECT INVENTORY',
-        inventoryTitle: 'RESOURCE INVENTORY',
-        inventorySub: 'COMMERCIALS BREAKDOWN',
-        commercialsTitle: 'COMMERCIAL TERMS',
-        commercialsSub: 'SETTLEMENT & SIGN-OFF',
-        attachments: []
-    });
+        templateVersion: 'v2',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+    }));
 
     const [singleItems, setSingleItems] = useState([
         { id: 1, description: 'Project Phase 01: Initial Strategic Planning', qty: 1, unit: 'Phase', price: 0 }
@@ -1135,8 +1103,10 @@ const ProposalGenerator = () => {
                     navigate(`/admin/proposals?edit=${id}`, { replace: true });
                     return;
                 }
+                const isExistingV2 = proposal.templateVersion === 'v2' || Boolean(proposal.whatsInside || proposal.blueprintSteps || proposal.deliverablesTable);
+                const loadedProposal = isExistingV2 ? normalizeProposalData(proposal) : proposal;
                 setSingleFormData({ 
-                    ...proposal, 
+                    ...loadedProposal, 
                     hiddenFields: proposal.hiddenFields || [], 
                     selectedLogo: proposal.selectedLogo || 'entertainment',
                     hideTotalColumn: proposal.hideTotalColumn || false,
@@ -1275,7 +1245,12 @@ const ProposalGenerator = () => {
         </button>
     );
 
+    const isV2 = formData.templateVersion === 'v2' || Boolean(formData.whatsInside || formData.blueprintSteps || formData.deliverablesTable);
+
     const getPaginatedPages = () => {
+        if (isV2) {
+            return getV2PaginatedPages(formData);
+        }
         const pages = [];
 
         const insertCustomPagesFor = (placement) => {
@@ -2212,7 +2187,17 @@ const ProposalGenerator = () => {
         );
     };
 
-    const tabs = [
+    const tabs = isV2 ? [
+        { id: 'ai', label: 'AI Studio', icon: Sparkles, desc: 'AI Generator & Chat' },
+        { id: '1', label: 'Cover & Index', icon: FileText, desc: 'Cover, Pill & Index Cards' },
+        { id: '2', label: 'Strategy & Objectives', icon: Target, desc: 'Executive Summary & Anchor Markets' },
+        { id: '3', label: 'Execution Blueprint', icon: ClipboardList, desc: 'Process & Blueprint Steps' },
+        { id: '4', label: 'Deliverables Table', icon: Layers, desc: 'Per-City Scope & Notes' },
+        { id: '5', label: 'Pricing & Commercials', icon: Briefcase, desc: 'Pricing Structure & Inclusions' },
+        { id: '6', label: 'City Deep-Dive', icon: Building2, desc: 'Primary Hub Management' },
+        { id: '7', label: 'Closing & Signatures', icon: ShieldCheck, desc: 'Next Steps & Digital Signatures' },
+        { id: '8', label: 'Attachments & Extras', icon: Paperclip, desc: 'Attached Sheets & PDFs' }
+    ] : [
         { id: 'ai', label: 'AI Studio', icon: Sparkles, desc: 'AI Generator & Chat' },
         { id: '1', label: 'Cover Page', icon: FileText, desc: 'Identity & Title', visibilityKey: 'cover' },
         { id: '2', label: 'Strategy', icon: Target, desc: 'Strategic Framework', visibilityKey: 'strategy' },
@@ -2505,6 +2490,9 @@ const ProposalGenerator = () => {
                                     </div>
                                 )}
                                 {(viewMode === 'all' || activeTab === '1') && (
+                                    isV2 ? (
+                                        <V2CoverEditor formData={formData} setFormData={setFormData} logoOptions={logoOptions} />
+                                    ) : (
                                     <div className="space-y-12">
                                         <div className="space-y-4">
                                             <div className="flex justify-between items-center px-2">
@@ -2597,8 +2585,12 @@ const ProposalGenerator = () => {
                                                 </div>
                                             </div>
                                     </div>
+                                    )
                                 )}
                                 {(viewMode === 'all' || activeTab === '2') && (
+                                    isV2 ? (
+                                        <V2StrategyEditor formData={formData} setFormData={setFormData} />
+                                    ) : (
                                      <div className="space-y-12">
                                          <div className="grid grid-cols-2 gap-4">
                                              <Input label="Section Title" value={formData.strategyTitle ?? 'EXECUTIVE SUMMARY'} onChange={(e) => setFormData({ ...formData, strategyTitle: e.target.value })} placeholder="EXECUTIVE SUMMARY" />
@@ -2671,8 +2663,12 @@ const ProposalGenerator = () => {
                                              </div>
                                          </div>
                                      </div>
+                                     )
                                  )}
                                  {(viewMode === 'all' || activeTab === '3') && (
+                                     isV2 ? (
+                                         <V2BlueprintEditor formData={formData} setFormData={setFormData} />
+                                     ) : (
                                      <div className="space-y-12">
                                          <div className="grid grid-cols-2 gap-4">
                                              <Input label="Section Title" value={formData.scopeTitle ?? 'SCOPE OF WORK'} onChange={(e) => setFormData({ ...formData, scopeTitle: e.target.value })} placeholder="SCOPE OF WORK" />
@@ -2693,8 +2689,12 @@ const ProposalGenerator = () => {
                                              </div>
                                          </div>
                                      </div>
+                                     )
                                  )}
                                  {(viewMode === 'all' || activeTab === '4') && (
+                                     isV2 ? (
+                                         <V2DeliverablesEditor formData={formData} setFormData={setFormData} />
+                                     ) : (
                                      <div className="space-y-16">
                                          <div className="grid grid-cols-2 gap-4 px-2">
                                              <Input label="Section Title" value={formData.proposalTitle ?? 'DELIVERABLES'} onChange={(e) => setFormData({ ...formData, proposalTitle: e.target.value })} placeholder="DELIVERABLES" />
@@ -2761,8 +2761,12 @@ const ProposalGenerator = () => {
                                             </div>
                                         </div>
                                     </div>
+                                    )
                                 )}
                                 {(viewMode === 'all' || activeTab === '5') && (
+                                    isV2 ? (
+                                        <V2PricingEditor formData={formData} setFormData={setFormData} />
+                                    ) : (
                                     <div className="space-y-8">
                                         <div className="flex items-center justify-between px-4">
                                             <div className="flex items-center gap-4">
@@ -3023,8 +3027,12 @@ const ProposalGenerator = () => {
                                             </div>
                                         </div>
                                     </div>
+                                    )
                                 )}
                                 {(viewMode === 'all' || activeTab === '6') && (
+                                    isV2 ? (
+                                        <V2DeepDiveEditor formData={formData} setFormData={setFormData} />
+                                    ) : (
                                      <div className="flex flex-col gap-8">
                                          <div className="grid grid-cols-2 gap-4 bg-gray-100 dark:bg-zinc-900/20 p-6 border border-black/10 dark:border-white/5 rounded-[2rem]">
                                              <Input label="Section Title" value={formData.commercialsTitle ?? 'COMMERCIAL TERMS'} onChange={(e) => setFormData({ ...formData, commercialsTitle: e.target.value })} placeholder="COMMERCIAL TERMS" />
@@ -3698,8 +3706,12 @@ const ProposalGenerator = () => {
                                          </div>
                                      </div>
                                      </div>
+                                     )
                                  )}
                                 {(viewMode === 'all' || activeTab === '7') && (
+                                    isV2 ? (
+                                        <V2ClosingEditor formData={formData} setFormData={setFormData} />
+                                    ) : (
                                     <div className="space-y-8">
                                         <div className="flex justify-between items-center px-4">
                                             <div className="space-y-1">
@@ -3878,6 +3890,7 @@ const ProposalGenerator = () => {
                                             )}
                                         </div>
                                     </div>
+                                    )
                                 )}
                                 {(viewMode === 'all' || activeTab === '8') && (
                                     <div className="flex flex-col gap-10">
@@ -4239,6 +4252,22 @@ const ProposalGenerator = () => {
                                 left: 0
                             }}>
                                 <AnimatePresence mode="wait">
+                                {isV2 ? (
+                                    <motion.div key={currentPreviewPage} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                                        {paginatedPages[currentPreviewPage] && (
+                                            <ProposalDocumentRenderer
+                                                page={paginatedPages[currentPreviewPage]}
+                                                pageIdx={currentPreviewPage}
+                                                totalPages={paginatedPages.length}
+                                                formData={normalizeProposalData(formData)}
+                                                currentLogo={currentLogo}
+                                                isHidden={isHidden}
+                                                renderContent={renderContent}
+                                                isExporting={false}
+                                            />
+                                        )}
+                                    </motion.div>
+                                ) : (
                                 <motion.div key={currentPreviewPage} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="proposal-page-render w-[794px] h-[1123px] bg-white text-black relative flex flex-col p-[15mm] shadow-2xl rounded-[2px] overflow-hidden">
                                     <div className={cn("flex justify-between items-end mb-8 pb-4 border-b-2 border-black", currentPreviewPage > 0 && "mb-4 pb-2 opacity-40 border-gray-200")}>
                                         <div className="flex flex-col gap-6 items-start">
@@ -4651,6 +4680,7 @@ const ProposalGenerator = () => {
                                         <p className="text-black">Page {currentPreviewPage + 1} of {paginatedPages.length}</p>
                                     </div>
                                 </motion.div>
+                                )}
                             </AnimatePresence>
                             </div>
                         </div>

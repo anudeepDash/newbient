@@ -14,9 +14,12 @@ import Mail from 'lucide-react/dist/esm/icons/mail';
 import Building2 from 'lucide-react/dist/esm/icons/building-2';
 import Trash2 from 'lucide-react/dist/esm/icons/trash-2';
 import Eye from 'lucide-react/dist/esm/icons/eye';
+import PenTool from 'lucide-react/dist/esm/icons/pen-tool';
 import { useStore } from '../../lib/store';
 import { cn } from '../../lib/utils';
 import { Button } from '../ui/Button';
+import SignatureModal from '../ui/SignatureModal';
+import { generateNextProposalNumber, embedProposalNumberInPdf } from '../../lib/pdfStampUtils';
 
 const logoOptions = [
     { id: 'entertainment', label: 'Newbi Entertainment', path: '/logo_document.png', color: '#39FF14' },
@@ -39,6 +42,10 @@ const UploadProposalModal = ({ isOpen, onClose, editingProposal = null, onSucces
     const [status, setStatus] = useState('Draft');
     const [showSignatures, setShowSignatures] = useState(true);
     const [showSeal, setShowSeal] = useState(true);
+
+    const [ourSignature, setOurSignature] = useState(null);
+    const [isSignatureModalOpen, setIsSignatureModalOpen] = useState(false);
+
     const [coverDescription, setCoverDescription] = useState('');
     const [uploading, setUploading] = useState(false);
     const [uploadProgress, setUploadProgress] = useState('');
@@ -59,6 +66,7 @@ const UploadProposalModal = ({ isOpen, onClose, editingProposal = null, onSucces
             setStatus(editingProposal.status || 'Draft');
             setShowSignatures(editingProposal.showSignatures !== false);
             setShowSeal(editingProposal.showSeal !== false);
+            setOurSignature(editingProposal.ourSignature || null);
             setCoverDescription(editingProposal.coverDescription || '');
             setFile(editingProposal.fileUrl ? {
                 name: editingProposal.fileName || 'Uploaded Proposal Document',
@@ -67,8 +75,8 @@ const UploadProposalModal = ({ isOpen, onClose, editingProposal = null, onSucces
                 isExisting: true
             } : null);
         } else {
-            const randomNum = `NBQ-${Math.floor(1000 + Math.random() * 9000)}`;
-            setProposalNumber(randomNum);
+            const nextProposalNum = generateNextProposalNumber(useStore.getState().proposals);
+            setProposalNumber(nextProposalNum);
             setClientName('');
             setCampaignName('');
             setDealValue('');
@@ -163,13 +171,33 @@ const UploadProposalModal = ({ isOpen, onClose, editingProposal = null, onSucces
             let fileSize = editingProposal?.fileSize || '';
             let fileType = editingProposal?.fileType || 'pdf';
 
+            const targetPropNum = proposalNumber.trim() || generateNextProposalNumber(useStore.getState().proposals);
+
             // If a new physical file is provided, upload it using fast direct streaming
             if (file && !file.isExisting) {
-                setUploadProgress('Initiating fast upload to Vault CDN...');
-                setUploadPercent(5);
+                let fileToUpload = file;
+                const isPdf = file.type === 'application/pdf' || file.name?.toLowerCase().endsWith('.pdf');
 
-                const result = await uploadProposalFile(file, (percent) => {
-                    setUploadPercent(percent);
+                if (isPdf) {
+                    setUploadProgress('Embedding proposal number across document pages...');
+                    setUploadPercent(10);
+                    try {
+                        const arrayBuffer = await file.arrayBuffer();
+                        const modifiedBytes = await embedProposalNumberInPdf(arrayBuffer, targetPropNum, {
+                            ourSignature,
+                            senderName: 'Newbi Entertainment & Marketing LLP'
+                        });
+                        fileToUpload = new File([modifiedBytes], file.name, { type: 'application/pdf' });
+                    } catch (pdfErr) {
+                        console.warn('Could not pre-embed proposal number, will upload original file:', pdfErr);
+                    }
+                }
+
+                setUploadProgress('Initiating fast upload to Vault CDN...');
+                setUploadPercent(20);
+
+                const result = await uploadProposalFile(fileToUpload, (percent) => {
+                    setUploadPercent(Math.max(20, percent));
                     if (percent < 100) {
                         setUploadProgress(`Uploading proposal: ${percent}%`);
                     } else {
@@ -184,6 +212,29 @@ const UploadProposalModal = ({ isOpen, onClose, editingProposal = null, onSucces
                 fileName = result.fileName || file.name;
                 fileSize = formatBytes(result.fileSize || file.size);
                 fileType = result.fileType || 'pdf';
+            } else if (editingProposal?.fileUrl && targetPropNum !== editingProposal.proposalNumber) {
+                // If proposal number was changed on an existing file, re-embed and update the hosted file
+                try {
+                    setUploadProgress('Updating embedded proposal number across document pages...');
+                    setUploadPercent(20);
+                    const resp = await fetch(editingProposal.fileUrl);
+                    if (resp.ok) {
+                        const ab = await resp.arrayBuffer();
+                        const modifiedBytes = await embedProposalNumberInPdf(ab, targetPropNum, {
+                            ourSignature,
+                            senderName: 'Newbi Entertainment & Marketing LLP'
+                        });
+                        const fileToUpload = new File([modifiedBytes], fileName || 'proposal.pdf', { type: 'application/pdf' });
+                        const result = await uploadProposalFile(fileToUpload, (percent) => {
+                            setUploadPercent(Math.max(20, percent));
+                        });
+                        if (result?.url) {
+                            fileUrl = result.url;
+                        }
+                    }
+                } catch (reErr) {
+                    console.warn('Could not re-embed proposal number on existing file:', reErr);
+                }
             }
 
             setUploadPercent(100);
@@ -191,7 +242,7 @@ const UploadProposalModal = ({ isOpen, onClose, editingProposal = null, onSucces
 
             const proposalData = {
                 clientName: clientName.trim(),
-                proposalNumber: proposalNumber.trim() || `NBQ-${Math.floor(1000 + Math.random() * 9000)}`,
+                proposalNumber: targetPropNum,
                 campaignName: campaignName.trim(),
                 dealValue: dealValue ? String(dealValue).trim() : '',
                 totalOverride: dealValue ? Number(dealValue) : null,
@@ -200,6 +251,7 @@ const UploadProposalModal = ({ isOpen, onClose, editingProposal = null, onSucces
                 status,
                 showSignatures,
                 showSeal,
+            ourSignature,
                 coverDescription: coverDescription.trim(),
                 isUploaded: true,
                 fileUrl,
@@ -533,6 +585,39 @@ const UploadProposalModal = ({ isOpen, onClose, editingProposal = null, onSucces
                                 className="w-5 h-5 accent-neon-green rounded cursor-pointer"
                             />
                         </div>
+
+                        <div className="flex flex-col gap-3 py-1 border-t border-white/5 pt-3 mt-2">
+                            <div>
+                                <p className="text-xs font-bold text-white">Pre-Signed Executive Authorization (Our Side)</p>
+                                <p className="text-[10px] text-gray-500">Apply Newbi executive signature before sending to client for execution.</p>
+                            </div>
+                            
+                            <div 
+                                onClick={() => setIsSignatureModalOpen(true)}
+                                className="h-16 border-2 border-dashed border-white/15 hover:border-neon-green/40 bg-white/[0.02] rounded-xl flex items-center justify-center cursor-pointer transition-all p-2 w-full max-w-[240px]"
+                            >
+                                {ourSignature ? (
+                                    <img src={ourSignature} alt="Our Signature" className="max-h-full object-contain filter invert" />
+                                ) : (
+                                    <div className="flex flex-col items-center gap-1 text-gray-500 hover:text-neon-green transition-colors">
+                                        <PenTool size={16} />
+                                        <p className="text-[9px] font-bold uppercase tracking-widest">
+                                            Click to Draw Signature
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
+                            {ourSignature && (
+                                <button 
+                                    type="button" 
+                                    onClick={(e) => { e.stopPropagation(); setOurSignature(null); }}
+                                    className="text-[9px] text-red-500 uppercase tracking-widest font-bold self-start mt-1 hover:underline"
+                                >
+                                    Remove Signature
+                                </button>
+                            )}
+                        </div>
+
                     </div>
 
                     {/* Optional Executive Note */}
@@ -610,8 +695,19 @@ const UploadProposalModal = ({ isOpen, onClose, editingProposal = null, onSucces
                         </div>
                     </div>
                 </div>
+            
             </motion.div>
-        </div>,
+
+            <SignatureModal 
+                isOpen={isSignatureModalOpen}
+                onClose={() => setIsSignatureModalOpen(false)}
+                onSave={(data) => {
+                    setOurSignature(data);
+                    setIsSignatureModalOpen(false);
+                }}
+            />
+        </div>
+,
         document.body
     );
 };

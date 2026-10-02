@@ -33,6 +33,7 @@ import Eye from 'lucide-react/dist/esm/icons/eye';
 import EyeOff from 'lucide-react/dist/esm/icons/eye-off';
 import { motion, AnimatePresence } from 'framer-motion';
 import DocumentSeal from '../components/ui/DocumentSeal';
+import SharedDocumentViewer from '../components/ui/SharedDocumentViewer';
 import SignaturePad from '../components/ui/SignaturePad';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
@@ -44,6 +45,8 @@ import { Button } from '../components/ui/Button';
 import { cn } from '../lib/utils';
 import SignatureModal from '../components/ui/SignatureModal';
 import NotificationBell from '../components/NotificationBell';
+import { getV2PaginatedPages, normalizeProposalData } from '../lib/proposalTemplateV2';
+import ProposalDocumentRenderer from '../components/ui/ProposalDocumentRenderer';
 
 const isHtmlEmpty = (html) => {
     if (!html) return true;
@@ -389,78 +392,36 @@ const Proposal = () => {
     };
 
     const [pdfBlobUrl, setPdfBlobUrl] = useState('');
-    const [isLoadingPdf, setIsLoadingPdf] = useState(false);
-
-    const [pdfViewerFailed, setPdfViewerFailed] = useState(false);
 
     useEffect(() => {
-        if (displayProposal?.isUploaded && displayProposal?.fileUrl) {
-            const isPdf = displayProposal.fileType === 'pdf' || 
-                          displayProposal.fileUrl.toLowerCase().includes('.pdf') || 
-                          displayProposal.fileUrl.includes('/raw/upload/');
-
-            if (!isPdf) return;
-
-            let isMounted = true;
-            let activeBlobUrl = null;
-
-            if (displayProposal.fileUrl.startsWith('blob:') || displayProposal.fileUrl.startsWith('data:')) {
-                setPdfBlobUrl(displayProposal.fileUrl);
-                return;
-            }
-
-            setIsLoadingPdf(true);
-            setPdfViewerFailed(false);
-
-            // First try the proxy API which sets correct Content-Type headers
-            const proxyUrl = `/api/proposal-pdf?url=${encodeURIComponent(displayProposal.fileUrl)}&filename=${encodeURIComponent(displayProposal.fileName || `${displayProposal.clientName || 'Proposal'}.pdf`)}`;
-            
-            fetch(proxyUrl)
-                .then(res => {
-                    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-                    return res.blob();
-                })
-                .then(blob => {
-                    if (!isMounted) return;
-                    const pdfBlob = new Blob([blob], { type: 'application/pdf' });
-                    activeBlobUrl = URL.createObjectURL(pdfBlob);
-                    setPdfBlobUrl(activeBlobUrl);
-                })
-                .catch(err => {
-                    console.warn('Proxy PDF load failed, trying direct fetch:', err);
-                    // Try direct fetch
-                    return fetch(displayProposal.fileUrl)
-                        .then(res => {
-                            if (!res.ok) throw new Error(`HTTP ${res.status}`);
-                            return res.blob();
-                        })
-                        .then(blob => {
-                            if (!isMounted) return;
-                            const pdfBlob = new Blob([blob], { type: 'application/pdf' });
-                            activeBlobUrl = URL.createObjectURL(pdfBlob);
-                            setPdfBlobUrl(activeBlobUrl);
-                        })
-                        .catch(err2 => {
-                            console.warn('Direct PDF load also failed, using Google Docs Viewer:', err2);
-                            if (isMounted) {
-                                // Use Google Docs Viewer as ultimate fallback
-                                const gdocsUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(displayProposal.fileUrl)}&embedded=true`;
-                                setPdfBlobUrl(gdocsUrl);
-                            }
-                        });
-                })
-                .finally(() => {
-                    if (isMounted) setIsLoadingPdf(false);
-                });
-
-            return () => {
-                isMounted = false;
-                if (activeBlobUrl) {
-                    URL.revokeObjectURL(activeBlobUrl);
+        if (displayProposal?.fileUrl) {
+            if (displayProposal.fileUrl.startsWith('data:application/pdf;base64,')) {
+                try {
+                    const base64Parts = displayProposal.fileUrl.split(',');
+                    const base64Data = base64Parts[1];
+                    const binaryStr = atob(base64Data);
+                    const len = binaryStr.length;
+                    const bytes = new Uint8Array(len);
+                    for (let i = 0; i < len; i++) {
+                        bytes[i] = binaryStr.charCodeAt(i);
+                    }
+                    const blob = new Blob([bytes], { type: 'application/pdf' });
+                    const blobUrl = URL.createObjectURL(blob);
+                    setPdfBlobUrl(blobUrl);
+                    return () => {
+                        URL.revokeObjectURL(blobUrl);
+                    };
+                } catch (err) {
+                    console.error("Error parsing base64 PDF URL:", err);
+                    setPdfBlobUrl(displayProposal.fileUrl);
                 }
-            };
+            } else {
+                setPdfBlobUrl(displayProposal.fileUrl);
+            }
+        } else {
+            setPdfBlobUrl('');
         }
-    }, [displayProposal?.isUploaded, displayProposal?.fileUrl, displayProposal?.fileType, displayProposal?.fileName, displayProposal?.clientName]);
+    }, [displayProposal?.fileUrl]);
 
     useEffect(() => {
         if (user?.email && !verificationEmail) {
@@ -557,10 +518,10 @@ const Proposal = () => {
     const computedTotal = subtotal + (displayProposal.showGst ? (subtotal * (displayProposal.gstRate || 18)) / 100 : 0);
     const totalAmount = hasOverride ? (overrideBase + gstAmount) : computedTotal;
 
-    const handleDownloadPDF = async () => {
+    const handleDownloadPDF = async (blobUrl) => {
         if (displayProposal.isUploaded && displayProposal.fileUrl) {
             const a = document.createElement('a');
-            a.href = pdfBlobUrl || displayProposal.fileUrl;
+            a.href = (typeof blobUrl === 'string' && blobUrl) ? blobUrl : (pdfBlobUrl || displayProposal.fileUrl);
             a.download = displayProposal.fileName || `${displayProposal.clientName || 'Proposal'}-${displayProposal.proposalNumber || 'Quote'}.pdf`;
             a.target = '_blank';
             a.rel = 'noopener noreferrer';
@@ -619,6 +580,27 @@ const Proposal = () => {
         
         setIsSubmitting(true);
         try {
+            // If user hasn't hand-drawn a signature, generate a clean cursive signature canvas image
+            let effectiveSignature = clientSignature;
+            if (!effectiveSignature && signatureName.trim()) {
+                try {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = 600;
+                    canvas.height = 180;
+                    const ctx = canvas.getContext('2d');
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    ctx.fillStyle = '#000000';
+                    ctx.font = 'italic 52px "Caveat", "Dancing Script", cursive, sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(signatureName.trim(), canvas.width / 2, canvas.height / 2);
+                    effectiveSignature = canvas.toDataURL('image/png');
+                    setClientSignature(effectiveSignature);
+                } catch (canvasErr) {
+                    console.warn("Could not generate cursive signature canvas:", canvasErr);
+                }
+            }
+
             const deviceMetadata = {
                 ua: navigator.userAgent,
                 platform: navigator.platform,
@@ -629,23 +611,36 @@ const Proposal = () => {
                 timestamp: new Date().toISOString()
             };
 
-            await updateProposalStatus(id, 'Accepted');
-            await useStore.getState().updateProposal(id, {
-                status: 'Accepted',
-                approvalMetadata: {
-                    signedBy: signatureName,
-                    clientSignature: clientSignature,
-                    signedAt: new Date().toISOString(),
-                    ip: ipAddress,
-                    email: verificationEmail,
-                    device: deviceMetadata,
-                    footprint: {
-                        browser: navigator.userAgent.split(' ').slice(-1)[0],
-                        os: navigator.platform,
-                        res: `${window.screen.width}x${window.screen.height}`
-                    }
+            const approvalMetadata = {
+                signedBy: signatureName.trim(),
+                clientSignature: effectiveSignature || null,
+                signedAt: new Date().toISOString(),
+                ip: ipAddress,
+                email: verificationEmail.trim(),
+                device: deviceMetadata,
+                footprint: {
+                    browser: navigator.userAgent.split(' ').slice(-1)[0],
+                    os: navigator.platform,
+                    res: `${window.screen.width}x${window.screen.height}`
                 }
-            });
+            };
+
+            const updates = {
+                status: 'Accepted',
+                clientSignature: effectiveSignature || null,
+                approvalMetadata
+            };
+
+            // 1. Immediately update local component state for instant UI update
+            setLocalProposal(prev => ({
+                ...(prev || displayProposal),
+                ...updates
+            }));
+
+            // 2. Persist to Firestore & Zustand store
+            await updateProposalStatus(id, 'Accepted');
+            await useStore.getState().updateProposal(id, updates);
+
             setIsVerifying(false);
             useStore.getState().addToast('Proposal signed and accepted successfully!', 'success');
         } catch (error) {
@@ -908,7 +903,12 @@ const Proposal = () => {
             .replace(/_(.*?)_/g, '<em class="italic">$1</em>');
     };
 
+    const isV2Proposal = displayProposal.templateVersion === 'v2' || Boolean(displayProposal.whatsInside || displayProposal.blueprintSteps || displayProposal.deliverablesTable);
+
     const getPaginatedPages = () => {
+        if (isV2Proposal) {
+            return getV2PaginatedPages(displayProposal);
+        }
         const pages = [];
 
         const insertCustomPagesFor = (placement) => {
@@ -1109,418 +1109,196 @@ const Proposal = () => {
 
     const paginatedPages = getPaginatedPages();
 
-    return (
-        <div className="min-h-screen bg-[#050505] text-gray-900 dark:text-white selection:bg-neon-green selection:text-black font-['Outfit']">
-            <style dangerouslySetInnerHTML={{ __html: `
-                @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap');
-                @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400..700&display=swap');
-                body { font-family: 'Outfit', sans-serif; }
-                .font-signature { font-family: 'Caveat', cursive; }
-                @media print {
-                    .no-print { display: none !important; }
-                    body { background: white !important; }
-                    .proposal-page-render { margin: 0 !important; box-shadow: none !important; page-break-after: always !important; }
-                }
-            `}} />
+    const viewerData = {
+        ...displayProposal,
+        isUploaded: Boolean(displayProposal.isUploaded && displayProposal.fileUrl),
+        fileUrl: displayProposal.fileUrl
+    };
 
-            {!isExporting && (
-                <nav className="fixed top-0 left-0 right-0 z-50 bg-white dark:bg-black/60 backdrop-blur-3xl border-b border-black/10 dark:border-white/5 h-20 flex items-center px-6 no-print">
-                    <div className="max-w-[1400px] mx-auto w-full flex items-center justify-between">
-                        <div className="flex items-center gap-3 sm:gap-6">
-                            <Link to={isAdmin ? "/admin/proposals" : "/"} className="p-2.5 sm:p-3 bg-black/5 dark:bg-white/5 rounded-2xl hover:bg-black/10 dark:hover:bg-white/10 transition-all border border-black/10 dark:border-white/5"><ArrowLeft size={16} /></Link>
-                            <div className="min-w-0 max-w-[120px] xs:max-w-[180px] sm:max-w-none">
-                                <p className="text-[9px] sm:text-[10px] font-black text-neon-green uppercase tracking-widest leading-none mb-1 truncate">
-                                    {displayProposal.clientName ? `${displayProposal.clientName} (${displayProposal.proposalNumber || displayProposal.id})` : 'Strategic Quote'}
-                                </p>
-                                <div className="flex items-center gap-2">
-                                    <div className={cn("w-1.5 h-1.5 rounded-full shrink-0", displayProposal.status === 'Accepted' ? "bg-neon-green" : "bg-blue-500 animate-pulse")} />
-                                    <span className="text-[8px] sm:text-[9px] font-black text-gray-500 uppercase tracking-widest truncate">{displayProposal.status || 'DRAFT'}</span>
-                                </div>
-                            </div>
+    const actionPanel = displayProposal.showSignatures ? (
+        <div className="bg-zinc-900/60 backdrop-blur-2xl border border-white/10 rounded-2xl p-5 shadow-xl">
+            {displayProposal.status === 'Accepted' ? (
+                <div className="space-y-4">
+                    <div className="flex items-center gap-3 p-3 bg-neon-green/10 border border-neon-green/30 rounded-xl">
+                        <div className="w-10 h-10 rounded-xl bg-neon-green/20 flex items-center justify-center text-neon-green shrink-0">
+                            <ShieldCheck size={22} />
                         </div>
-                        <div className="flex items-center gap-2 sm:gap-4">
-                            {displayProposal.attachments && displayProposal.attachments.length > 0 && (
-                                <button 
-                                    onClick={() => setIsAttachmentDrawerOpen(true)} 
-                                    className="p-2.5 sm:p-3 bg-neon-green/10 rounded-2xl hover:bg-neon-green/20 border border-neon-green/35 text-neon-green transition-all flex items-center gap-1.5"
-                                    title="View Attachments"
-                                >
-                                    <Paperclip size={16} />
-                                    <span className="text-[9px] font-black tracking-widest font-mono">{(displayProposal.attachments || []).length}</span>
-                                </button>
-                            )}
-                            <button onClick={handleShare} className="p-2.5 sm:p-3 bg-black/5 dark:bg-white/5 rounded-2xl hover:bg-black/10 dark:hover:bg-white/10 border border-black/10 dark:border-white/5 text-gray-600 dark:text-gray-400 hover:text-neon-blue transition-all"><Share2 size={16} /></button>
-                            <button onClick={() => window.print()} className="p-3 bg-black/5 dark:bg-white/5 rounded-2xl hover:bg-black/10 dark:hover:bg-white/10 border border-black/10 dark:border-white/5 hidden sm:block"><Printer size={18} /></button>
-                            <Button onClick={handleDownloadPDF} className="bg-neon-green text-black font-black uppercase tracking-widest text-[9px] sm:text-[10px] h-10 sm:h-12 px-4 sm:px-8 rounded-xl sm:rounded-2xl shadow-[0_10px_30px_rgba(57,255,20,0.3)]">
-                                <Download size={14} className="sm:mr-2" /> <span className="hidden sm:inline">Export PDF</span><span className="sm:hidden">Export</span>
-                            </Button>
+                        <div>
+                            <h4 className="text-sm font-black uppercase italic tracking-tight text-white">
+                                Authorized & Locked
+                            </h4>
+                            <p className="text-[9px] text-gray-300 font-bold uppercase tracking-widest">
+                                Acceptance Recorded
+                            </p>
                         </div>
                     </div>
-                </nav>
-            )}
 
-            <main className="pt-24 sm:pt-32 pb-32 flex flex-col items-center px-4 sm:px-0">
-                {displayProposal.isUploaded && displayProposal.fileUrl ? (
-                    <div className="w-full max-w-5xl mx-auto flex flex-col gap-6 sm:gap-8 px-2 sm:px-4">
-                        {/* Document Header & Metadata Banner */}
-                        <div className="bg-zinc-900/60 backdrop-blur-2xl border border-white/10 rounded-[2rem] p-6 sm:p-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
-                            <div className="flex items-start sm:items-center gap-4 sm:gap-6 min-w-0">
-                                <img 
-                                    src={currentLogo.path} 
-                                    alt={currentLogo.label} 
-                                    className="h-12 sm:h-14 w-auto object-contain shrink-0" 
-                                    crossOrigin="anonymous" 
+                    <div className="p-4 bg-black/40 border border-white/10 rounded-xl space-y-3">
+                        <div>
+                            <span className="text-[8px] font-black uppercase tracking-widest text-gray-400 block mb-0.5">
+                                Signatory
+                            </span>
+                            <p className="text-sm font-black text-white">
+                                {displayProposal.approvalMetadata?.signedBy || displayProposal.clientName}
+                            </p>
+                        </div>
+
+                        <div className="h-20 border border-dashed border-white/10 rounded-lg bg-white/[0.02] flex items-center justify-center p-2">
+                            {displayProposal.approvalMetadata?.clientSignature ? (
+                                <img
+                                    src={displayProposal.approvalMetadata?.clientSignature}
+                                    alt="Client Signature"
+                                    className="max-h-full object-contain filter invert"
                                 />
-                                <div className="min-w-0">
-                                    <div className="flex flex-wrap items-center gap-2 mb-1.5">
-                                        <span className="text-[9px] font-black font-mono tracking-widest text-neon-green bg-neon-green/10 px-2.5 py-1 rounded-full border border-neon-green/20">
-                                            {displayProposal.proposalNumber}
-                                        </span>
-                                        <span className="text-[9px] font-black tracking-wider text-neon-blue bg-neon-blue/10 px-2.5 py-1 rounded-full border border-neon-blue/20 flex items-center gap-1">
-                                            <Upload size={10} /> PRE-MADE PROPOSAL
-                                        </span>
-                                        <div className={cn(
-                                            "flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider border",
-                                            displayProposal.status === 'Accepted' ? "bg-neon-green/10 text-neon-green border-neon-green/30" : 
-                                            (displayProposal.status === 'Rejected' ? "bg-red-500/10 text-red-500 border-red-500/30" : 
-                                            "bg-blue-500/10 text-blue-400 border-blue-500/30")
-                                        )}>
-                                            <span className={cn("w-1.5 h-1.5 rounded-full shrink-0", displayProposal.status === 'Accepted' ? "bg-neon-green" : "bg-blue-400 animate-pulse")} />
-                                            {displayProposal.status || 'DRAFT'}
-                                        </div>
-                                    </div>
-                                    <h1 className="text-xl sm:text-2xl md:text-3xl font-black uppercase italic tracking-tight font-heading text-white truncate">
-                                        {displayProposal.campaignName || 'Strategic Quotation & Proposal'}
-                                    </h1>
-                                    <p className="text-xs sm:text-sm font-bold text-gray-400 uppercase tracking-widest mt-1">
-                                        Prepared for <span className="text-white font-black">{displayProposal.clientName}</span>
-                                    </p>
-                                </div>
-                            </div>
-
-                            <div className="flex md:flex-col items-center md:items-end justify-between w-full md:w-auto gap-3 pt-4 md:pt-0 border-t md:border-t-0 border-white/10 shrink-0">
-                                {(displayProposal.dealValue || displayProposal.totalOverride) && (
-                                    <div className="text-left md:text-right">
-                                        <span className="text-[8px] font-black uppercase tracking-widest text-gray-400 block">Commercial Value</span>
-                                        <span className="text-lg sm:text-2xl font-black font-mono text-neon-green">
-                                            ₹{Number(displayProposal.dealValue || displayProposal.totalOverride).toLocaleString('en-IN')}
-                                        </span>
-                                    </div>
-                                )}
-                                <div className="text-left md:text-right">
-                                    <span className="text-[8px] font-black uppercase tracking-widest text-gray-400 block">Date of Issue</span>
-                                    <span className="text-xs font-bold text-gray-300">
-                                        {new Date(displayProposal.createdAt || Date.now()).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
-                                    </span>
-                                </div>
-                            </div>
+                            ) : (
+                                <p className="text-2xl font-signature text-neon-green">
+                                    {displayProposal.approvalMetadata?.signedBy || displayProposal.clientName}
+                                </p>
+                            )}
                         </div>
 
-                        {/* Executive Memo / Note if present */}
-                        {displayProposal.coverDescription && (
-                            <div className="p-6 sm:p-7 bg-zinc-900/40 backdrop-blur-xl border border-white/10 rounded-2xl relative overflow-hidden">
-                                <div className="w-1.5 h-full bg-neon-green absolute left-0 top-0" />
-                                <p className="text-[9px] font-black uppercase tracking-[0.3em] text-neon-green mb-2">Executive Memorandum</p>
-                                <div className="text-sm font-medium leading-relaxed text-gray-300">
-                                    {displayProposal.coverDescription}
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Document Viewer Frame & Toolbar */}
-                        <div className="bg-zinc-900/40 backdrop-blur-2xl border border-white/10 rounded-[2rem] overflow-hidden shadow-[0_30px_70px_rgba(0,0,0,0.6)] flex flex-col">
-                            {/* Viewer Top Action Bar */}
-                            <div className="px-5 sm:px-6 py-4 border-b border-white/10 bg-white/[0.02] flex flex-wrap items-center justify-between gap-3">
-                                <div className="flex items-center gap-3 min-w-0">
-                                    <div className="w-9 h-9 rounded-xl bg-neon-green/10 border border-neon-green/30 flex items-center justify-center text-neon-green shrink-0">
-                                        <FileText size={18} />
-                                    </div>
-                                    <div className="min-w-0">
-                                        <p className="text-xs font-bold text-white truncate">
-                                            {displayProposal.fileName || 'Pre-Made Proposal Document'}
-                                        </p>
-                                        <p className="text-[9px] font-mono text-gray-400 uppercase tracking-widest">
-                                            {displayProposal.fileSize || 'Vault Hosted Asset'} • Secure Document
-                                        </p>
-                                    </div>
-                                </div>
-
-                                <div className="flex items-center gap-2">
-                                    <a
-                                        href={pdfBlobUrl || displayProposal.fileUrl}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="px-3.5 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-[10px] font-black uppercase tracking-wider text-gray-200 hover:text-white transition-all flex items-center gap-1.5"
-                                        title="Open in new window"
-                                    >
-                                        <ExternalLink size={13} />
-                                        <span className="hidden sm:inline">Open in New Tab</span>
-                                    </a>
-                                    <button
-                                        onClick={handleDownloadPDF}
-                                        className="px-3.5 py-2 rounded-xl bg-neon-green hover:bg-neon-green/90 text-black text-[10px] font-black uppercase tracking-wider transition-all flex items-center gap-1.5 shadow-[0_0_15px_rgba(57,255,20,0.2)]"
-                                        title="Download document"
-                                    >
-                                        <Download size={13} />
-                                        <span>Download</span>
-                                    </button>
-                                </div>
-                            </div>
-
-                            {/* Document Frame / Render */}
-                            <div className="relative w-full bg-[#111] p-1 sm:p-2 min-h-[600px] sm:min-h-[850px] flex items-center justify-center">
-                                {isLoadingPdf && !pdfBlobUrl && (
-                                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/60 z-10">
-                                        <RefreshCw size={24} className="animate-spin text-neon-green" />
-                                        <p className="text-[10px] font-mono text-neon-green uppercase tracking-widest">
-                                            Decrypting & rendering document...
-                                        </p>
-                                    </div>
-                                )}
-                                {displayProposal.fileType === 'pdf' || (displayProposal.fileUrl && (displayProposal.fileUrl.toLowerCase().includes('.pdf') || displayProposal.fileUrl.includes('/raw/upload/'))) ? (
-                                    <iframe
-                                        src={pdfViewerFailed 
-                                            ? `https://docs.google.com/viewer?url=${encodeURIComponent(displayProposal.fileUrl)}&embedded=true`
-                                            : (pdfBlobUrl ? `${pdfBlobUrl}#toolbar=1&navpanes=0` : `https://docs.google.com/viewer?url=${encodeURIComponent(displayProposal.fileUrl)}&embedded=true`)}
-                                        title={displayProposal.fileName || 'Proposal Document'}
-                                        className="w-full h-[650px] sm:h-[850px] md:h-[1000px] rounded-xl border border-white/5 bg-white shadow-2xl"
-                                        onError={() => {
-                                            if (!pdfViewerFailed) {
-                                                setPdfViewerFailed(true);
-                                            }
-                                        }}
-                                        onLoad={(e) => {
-                                            // Check if iframe loaded empty (some browsers show blank for failed loads)
-                                            try {
-                                                const doc = e.target.contentDocument;
-                                                if (doc && doc.body && doc.body.innerHTML === '') {
-                                                    if (!pdfViewerFailed) setPdfViewerFailed(true);
-                                                }
-                                            } catch (_) {
-                                                // Cross-origin, can't check - assume it's working
-                                            }
-                                        }}
-                                    />
-                                ) : (
-                                    <div className="w-full flex justify-center p-4">
-                                        <img
-                                            src={displayProposal.fileUrl}
-                                            alt="Proposal Document"
-                                            className="max-w-full max-h-[1100px] object-contain rounded-xl border border-white/10 shadow-2xl bg-white"
-                                        />
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Viewer Footer Note */}
-                            <div className="px-5 py-3 border-t border-white/10 bg-white/[0.01] flex items-center justify-between text-[10px] font-mono text-gray-400">
-                                <span>Hosted on Newbi Strategic Cloud Vault</span>
-                                <a
-                                    href={displayProposal.fileUrl}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="text-neon-green hover:underline flex items-center gap-1"
-                                >
-                                    Can't see preview? Click here to view <ExternalLink size={10} />
-                                </a>
-                            </div>
-                        </div>
-
-                        {/* Client Digital Authorization / E-Signature Hub (if enabled) */}
-                        {displayProposal.showSignatures && (
-                            <div className="bg-zinc-900/60 backdrop-blur-2xl border border-white/10 rounded-[2.5rem] p-6 sm:p-10 shadow-[0_20px_50px_rgba(0,0,0,0.6)]">
-                                {displayProposal.status === 'Accepted' ? (
-                                    <div className="space-y-6">
-                                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-5 bg-neon-green/10 border border-neon-green/30 rounded-2xl">
-                                            <div className="flex items-center gap-3.5">
-                                                <div className="w-12 h-12 rounded-xl bg-neon-green/20 flex items-center justify-center text-neon-green shrink-0">
-                                                    <ShieldCheck size={26} />
-                                                </div>
-                                                <div>
-                                                    <h4 className="text-base sm:text-lg font-black uppercase italic tracking-tight text-white">
-                                                        Proposal Formally Authorized & Locked
-                                                    </h4>
-                                                    <p className="text-[10px] text-gray-300 font-bold uppercase tracking-widest mt-0.5">
-                                                        Legally binding acceptance recorded on Newbi Vault
-                                                    </p>
-                                                </div>
-                                            </div>
-                                            <span className="text-[9px] font-mono font-black uppercase px-3 py-1.5 rounded-full bg-neon-green text-black tracking-widest shadow-[0_0_15px_rgba(57,255,20,0.4)]">
-                                                VERIFIED ACCEPTANCE
-                                            </span>
-                                        </div>
-
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center pt-2">
-                                            <div className="p-6 bg-black/40 border border-white/10 rounded-2xl space-y-4">
-                                                <div>
-                                                    <span className="text-[9px] font-black uppercase tracking-widest text-gray-400 block mb-1">
-                                                        Client Signatory
-                                                    </span>
-                                                    <p className="text-xl font-black text-white">
-                                                        {displayProposal.approvalMetadata?.signedBy || displayProposal.clientName}
-                                                    </p>
-                                                </div>
-
-                                                <div className="h-28 border border-dashed border-white/10 rounded-xl bg-white/[0.02] flex items-center justify-center p-3">
-                                                    {displayProposal.approvalMetadata?.clientSignature ? (
-                                                        <img
-                                                            src={displayProposal.approvalMetadata?.clientSignature}
-                                                            alt="Client Signature"
-                                                            className="max-h-full object-contain filter invert"
-                                                        />
-                                                    ) : (
-                                                        <p className="text-3xl font-signature text-neon-green">
-                                                            {displayProposal.approvalMetadata?.signedBy || displayProposal.clientName}
-                                                        </p>
-                                                    )}
-                                                </div>
-
-                                                <div className="grid grid-cols-2 gap-2 text-[9px] font-mono text-gray-400 pt-2 border-t border-white/5">
-                                                    <div>
-                                                        <span className="text-gray-500 block">SIGNED AT</span>
-                                                        <span className="text-gray-200">
-                                                            {displayProposal.approvalMetadata?.signedAt ? new Date(displayProposal.approvalMetadata.signedAt).toLocaleString() : 'Recorded'}
-                                                        </span>
-                                                    </div>
-                                                    <div>
-                                                        <span className="text-gray-500 block">SIGNER IP</span>
-                                                        <span className="text-gray-200">
-                                                            {displayProposal.approvalMetadata?.ip || 'Protected'}
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            <div className="flex flex-col items-center justify-center p-6 bg-black/40 border border-white/10 rounded-2xl relative">
-                                                {displayProposal.showSeal && (
-                                                    <div className="my-3">
-                                                        <DocumentSeal type="proposal" date={displayProposal.approvalMetadata?.signedAt} />
-                                                    </div>
-                                                )}
-                                                <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest text-center mt-2">
-                                                    Authorized on behalf of {displayProposal.clientName}
-                                                </p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <div className="space-y-6">
-                                        <div className="flex items-center gap-3 border-b border-white/10 pb-5">
-                                            <div className="w-10 h-10 rounded-xl bg-neon-green/10 border border-neon-green/30 flex items-center justify-center text-neon-green">
-                                                <PenTool size={20} />
-                                            </div>
-                                            <div>
-                                                <h3 className="text-xl sm:text-2xl font-black uppercase italic tracking-tight font-heading text-white">
-                                                    Official Authorization & Sign-Off
-                                                </h3>
-                                                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-0.5">
-                                                    Formal digital acceptance of quotation terms & deliverables
-                                                </p>
-                                            </div>
-                                        </div>
-
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                            <div className="space-y-4">
-                                                <div>
-                                                    <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 block mb-1.5">
-                                                        Signatory Full Name <span className="text-neon-green">*</span>
-                                                    </label>
-                                                    <input
-                                                        type="text"
-                                                        value={signatureName}
-                                                        onChange={(e) => setSignatureName(e.target.value)}
-                                                        placeholder="Enter authorized representative name..."
-                                                        className="w-full h-13 bg-white/5 border border-white/10 rounded-xl px-4 text-sm font-bold text-white placeholder:text-gray-600 outline-none focus:border-neon-green/50 transition-colors"
-                                                    />
-                                                </div>
-
-                                                <div>
-                                                    <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 block mb-1.5">
-                                                        Signatory Business Email <span className="text-neon-green">*</span>
-                                                    </label>
-                                                    <input
-                                                        type="email"
-                                                        value={verificationEmail}
-                                                        onChange={(e) => setVerificationEmail(e.target.value)}
-                                                        placeholder="representative@company.com"
-                                                        className="w-full h-13 bg-white/5 border border-white/10 rounded-xl px-4 text-sm font-bold text-white placeholder:text-gray-600 outline-none focus:border-neon-green/50 transition-colors"
-                                                    />
-                                                </div>
-                                            </div>
-
-                                            <div className="space-y-3">
-                                                <div className="flex items-center justify-between">
-                                                    <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">
-                                                        Signature Canvas / Preview
-                                                    </label>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setIsSignatureModalOpen(true)}
-                                                        className="text-[9px] font-black uppercase tracking-wider text-neon-green hover:underline flex items-center gap-1"
-                                                    >
-                                                        <PenTool size={11} /> {clientSignature ? 'Redraw Signature' : 'Draw Digital Pen Signature'}
-                                                    </button>
-                                                </div>
-
-                                                <div 
-                                                    onClick={() => setIsSignatureModalOpen(true)}
-                                                    className="h-28 border-2 border-dashed border-white/15 hover:border-neon-green/40 bg-white/[0.02] rounded-xl flex items-center justify-center cursor-pointer transition-all p-3"
-                                                >
-                                                    {clientSignature ? (
-                                                        <img src={clientSignature} alt="Signature" className="max-h-full object-contain filter invert" />
-                                                    ) : signatureName.trim() ? (
-                                                        <p className="text-3xl sm:text-4xl font-signature text-neon-green select-none">
-                                                            {signatureName}
-                                                        </p>
-                                                    ) : (
-                                                        <p className="text-xs font-bold text-gray-500 uppercase tracking-widest">
-                                                            Click to Draw Signature or Type Name
-                                                        </p>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <p className="text-[10px] text-gray-400 font-medium leading-relaxed pt-2">
-                                            By clicking Authorize, you verify that you possess authorized power to commit {displayProposal.clientName || 'your organization'} to the scope and commercials detailed in this proposal.
-                                        </p>
-
-                                        <div className="flex flex-col sm:flex-row items-center gap-3 pt-2">
-                                            <Button
-                                                onClick={handleApproveProposal}
-                                                disabled={isSubmitting || !signatureName.trim()}
-                                                className="w-full sm:flex-1 h-14 bg-neon-green hover:bg-neon-green/90 text-black font-black uppercase tracking-[0.2em] text-xs rounded-xl shadow-[0_0_25px_rgba(57,255,20,0.35)] transition-all flex items-center justify-center gap-2 disabled:opacity-50"
-                                            >
-                                                {isSubmitting ? (
-                                                    <>
-                                                        <RefreshCw size={16} className="animate-spin" />
-                                                        <span>Recording Acceptance...</span>
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <ShieldCheck size={16} />
-                                                        <span>Authorize Strategic Proposal</span>
-                                                    </>
-                                                )}
-                                            </Button>
-
-                                            <button
-                                                type="button"
-                                                onClick={handleRefuseProposal}
-                                                disabled={isSubmitting}
-                                                className="w-full sm:w-auto px-6 h-14 bg-white/5 hover:bg-red-500/10 text-gray-400 hover:text-red-400 border border-white/10 hover:border-red-500/20 text-xs font-black uppercase tracking-wider rounded-xl transition-all disabled:opacity-50"
-                                            >
-                                                Decline Proposal
-                                            </button>
-                                        </div>
-                                    </div>
-                                )}
+                        {displayProposal.approvalMetadata?.signedAt && (
+                            <div className="text-[9px] font-mono text-gray-400 pt-2 border-t border-white/5 flex justify-between">
+                                <span className="text-gray-500">SIGNED</span>
+                                <span>{new Date(displayProposal.approvalMetadata.signedAt).toLocaleDateString()}</span>
                             </div>
                         )}
                     </div>
-                ) : (
+                </div>
+            ) : (
+                <div className="space-y-4">
+                    <div className="border-b border-white/10 pb-3">
+                        <h3 className="text-sm font-black uppercase italic tracking-tight font-heading text-white">
+                            Authorization & Sign-Off
+                        </h3>
+                        <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest mt-0.5">
+                            Digital Acceptance
+                        </p>
+                    </div>
+
+                    <div className="space-y-3">
+                        <div>
+                            <label className="text-[9px] font-black uppercase tracking-widest text-gray-400 block mb-1">
+                                Full Name <span className="text-neon-green">*</span>
+                            </label>
+                            <input
+                                type="text"
+                                value={signatureName}
+                                onChange={(e) => setSignatureName(e.target.value)}
+                                placeholder="Authorized name..."
+                                className="w-full h-10 bg-white/5 border border-white/10 rounded-xl px-3 text-xs font-bold text-white placeholder:text-gray-600 outline-none focus:border-neon-green/50 transition-colors"
+                            />
+                        </div>
+
+                        <div>
+                            <label className="text-[9px] font-black uppercase tracking-widest text-gray-400 block mb-1">
+                                Business Email <span className="text-neon-green">*</span>
+                            </label>
+                            <input
+                                type="email"
+                                value={verificationEmail}
+                                onChange={(e) => setVerificationEmail(e.target.value)}
+                                placeholder="name@company.com"
+                                className="w-full h-10 bg-white/5 border border-white/10 rounded-xl px-3 text-xs font-bold text-white placeholder:text-gray-600 outline-none focus:border-neon-green/50 transition-colors"
+                            />
+                        </div>
+
+                        <div>
+                            <div className="flex items-center justify-between mb-1">
+                                <label className="text-[9px] font-black uppercase tracking-widest text-gray-400">
+                                    Signature
+                                </label>
+                                <button
+                                    type="button"
+                                    onClick={() => setIsSignatureModalOpen(true)}
+                                    className="text-[8px] font-black uppercase tracking-wider text-neon-green hover:underline flex items-center gap-1"
+                                >
+                                    <PenTool size={10} /> {clientSignature ? 'Redraw' : 'Draw'}
+                                </button>
+                            </div>
+
+                            <div 
+                                onClick={() => setIsSignatureModalOpen(true)}
+                                className="h-16 border-2 border-dashed border-white/15 hover:border-neon-green/40 bg-white/[0.02] rounded-xl flex items-center justify-center cursor-pointer transition-all p-2"
+                            >
+                                {clientSignature ? (
+                                    <img src={clientSignature} alt="Signature" className="max-h-full object-contain filter invert" />
+                                ) : signatureName.trim() ? (
+                                    <p className="text-2xl font-signature text-neon-green select-none">
+                                        {signatureName}
+                                    </p>
+                                ) : (
+                                    <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">
+                                        Click to Draw
+                                    </p>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="flex flex-col gap-2 pt-2">
+                        <Button
+                            onClick={handleApproveProposal}
+                            disabled={isSubmitting || !signatureName.trim()}
+                            className="w-full h-11 bg-neon-green hover:bg-neon-green/90 text-black font-black uppercase tracking-widest text-[10px] rounded-xl shadow-[0_0_15px_rgba(57,255,20,0.3)] transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                        >
+                            {isSubmitting ? (
+                                <>
+                                    <RefreshCw size={14} className="animate-spin" />
+                                    <span>Recording...</span>
+                                </>
+                            ) : (
+                                <>
+                                    <ShieldCheck size={14} />
+                                    <span>Authorize Proposal</span>
+                                </>
+                            )}
+                        </Button>
+
+                        <button
+                            type="button"
+                            onClick={handleRefuseProposal}
+                            disabled={isSubmitting}
+                            className="w-full h-9 bg-white/5 hover:bg-red-500/10 text-gray-400 hover:text-red-400 border border-white/10 hover:border-red-500/20 text-[9px] font-black uppercase tracking-widest rounded-xl transition-all disabled:opacity-50"
+                        >
+                            Decline Proposal
+                        </button>
+                    </div>
+                </div>
+            )}
+        </div>
+    ) : null;
+
+    return (
+        <>
+            <SharedDocumentViewer
+                documentData={viewerData}
+                type="proposal"
+                isAdmin={isAdmin}
+                isExporting={isExporting}
+                onShare={handleShare}
+                onDownloadPDF={handleDownloadPDF}
+                pdfBlobUrl={pdfBlobUrl}
+                onOpenAttachments={displayProposal.attachments?.length > 0 ? () => setIsAttachmentDrawerOpen(true) : null}
+                actionPanel={actionPanel}
+            >
+                {!displayProposal.isUploaded && (
                 <div ref={proposalRef} className="flex flex-col gap-8 sm:gap-16 origin-top transition-transform duration-500" style={{ transform: `scale(${scale})`, marginBottom: `${(scale - 1) * 1123 * paginatedPages.length}px` }}>
                     {paginatedPages.map((page, idx) => (
+                        isV2Proposal ? (
+                            <ProposalDocumentRenderer
+                                key={idx}
+                                page={page}
+                                pageIdx={idx}
+                                totalPages={paginatedPages.length}
+                                formData={normalizeProposalData(displayProposal)}
+                                currentLogo={currentLogo}
+                                isHidden={isHidden}
+                                renderContent={renderContent}
+                                isExporting={isExporting}
+                                signatureArea={null}
+                            />
+                        ) : (
                         <div key={idx} className="proposal-page-render w-[794px] h-[1123px] bg-white text-black relative shadow-[0_60px_120px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col p-[15mm] rounded-[2px]">
                             {/* Header Logic */}
                             <div className={cn("flex justify-between items-end mb-8 pb-4 border-b-2 border-black", idx > 0 && "mb-4 pb-2 opacity-40 border-gray-200")}>
@@ -2095,14 +1873,28 @@ const Proposal = () => {
                                 <p className="w-1/3 text-right text-black">Page {idx + 1} of {paginatedPages.length}</p>
                             </div>
                         </div>
+                        )
                     ))}
                 </div>
                 )}
-            </main>
+            </SharedDocumentViewer>
 
             {/* Hidden container for PDF export — renders all pages for html2canvas */}
             <div className="pdf-export-only fixed -left-[9999px] top-0 pointer-events-none overflow-hidden bg-white">
                 {paginatedPages.map((page, idx) => (
+                    isV2Proposal ? (
+                        <ProposalDocumentRenderer
+                            key={idx}
+                            page={page}
+                            pageIdx={idx}
+                            totalPages={paginatedPages.length}
+                            formData={normalizeProposalData(displayProposal)}
+                            currentLogo={currentLogo}
+                            isHidden={isHidden}
+                            renderContent={renderContent}
+                            isExporting={true}
+                        />
+                    ) : (
                     <div key={idx} className="proposal-page-render w-[794px] h-[1123px] bg-white text-black relative flex flex-col p-[15mm] mb-10">
                         <div className={cn("flex justify-between items-end mb-8 pb-4 border-b-2 border-black", idx > 0 && "mb-4 pb-2 opacity-40 border-gray-200")}>
                             <div className="flex flex-col gap-6 items-start">
@@ -2577,6 +2369,7 @@ const Proposal = () => {
                             <p className="w-1/3 text-right text-black">Page {idx + 1} of {paginatedPages.length}</p>
                         </div>
                     </div>
+                    )
                 ))}
             </div>
 
@@ -2823,7 +2616,7 @@ const Proposal = () => {
                     </div>
                 )}
             </AnimatePresence>
-        </div>
+        </>
     );
 };
 

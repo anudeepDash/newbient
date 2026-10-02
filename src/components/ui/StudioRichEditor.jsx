@@ -460,18 +460,18 @@ const StudioRichEditor = ({
     return (
         <div className={cn("space-y-2 group", className)}>
             {label && (
-                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1 block">
+                <label className="text-[11px] font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider pl-1 mb-1.5 block">
                     {label}
                 </label>
             )}
             
             <div className={cn(
-                "relative bg-white dark:bg-black/40 border transition-all duration-500 rounded-[2rem]",
-                isFocused ? focusBorderClass : "border-black/10 dark:border-white/5"
+                "relative bg-white dark:bg-black/40 border transition-all duration-300 rounded-2xl",
+                isFocused ? focusBorderClass : "border-black/[0.1] dark:border-white/[0.1] hover:border-black/20 dark:hover:border-white/20"
             )}>
                 {/* Toolbar */}
                 <div className={cn(
-                    "flex items-center flex-wrap gap-2.5 p-2.5 border-b border-black/10 dark:border-white/5 bg-gray-100 dark:bg-zinc-900/40 backdrop-blur-xl rounded-t-[2rem] justify-between",
+                    "flex items-center flex-wrap gap-2 p-3 border-b border-black/10 dark:border-white/[0.08] bg-gray-50 dark:bg-black/60 rounded-t-2xl justify-between",
                     (showTableSelector || showStyleDropdown) ? "relative z-30" : "relative z-10"
                 )}>
                     <div className="flex items-center flex-wrap gap-2.5">

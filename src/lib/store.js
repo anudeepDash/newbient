@@ -83,7 +83,10 @@ const uploadBase64ToStorage = async (base64String, path) => {
             const uploadedFile = await res.json();
             return uploadedFile.secure_url;
         } catch (cloudinaryError) {
-            console.error("Cloudinary fallback also failed:", cloudinaryError);
+            console.warn("Storage upload failed, preserving base64 asset locally:", cloudinaryError);
+            if (base64String.length < 800000) {
+                return base64String;
+            }
             throw new Error(`Upload failed for file asset. Original storage error: ${e.message}. Cloudinary fallback error: ${cloudinaryError.message}`);
         }
     }
@@ -450,6 +453,85 @@ export const useStore = create((set, get) => ({
             };
 
             // 90s max timeout
+            xhr.timeout = 90000;
+            xhr.send(formData);
+        });
+    },
+
+    // Dedicated Blazing-Fast Agreement & Contract Vault Upload Utility with Real-time Progress Tracking
+    uploadAgreementFile: async (file, onProgress = null) => {
+        if (!file) return null;
+
+        const maxMb = 35;
+        if (file.size > maxMb * 1024 * 1024) {
+            throw new Error(`File is too large. Please select a contract document under ${maxMb}MB.`);
+        }
+
+        const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || "dgtalrz4n";
+        const uploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET || "maw1e4ud";
+        const rawExtension = file.name?.split('.').pop()?.toLowerCase() || 'pdf';
+        const isPdf = file.type === 'application/pdf' || rawExtension === 'pdf';
+        const isImage = file.type?.startsWith('image/') || ['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg'].includes(rawExtension);
+
+        const resourceType = isImage ? 'image' : 'raw';
+
+        let uploadFileName = file.name;
+        if (isPdf) {
+            const cleanBase = file.name.replace(/\.[^/.]+$/, '').replace(/[^a-zA-Z0-9_-]/g, '_');
+            const uniqueToken = Math.random().toString(36).substring(2, 8);
+            uploadFileName = `${cleanBase || 'contract'}_${uniqueToken}.doc`;
+        }
+
+        const formData = new FormData();
+        formData.append("file", file, uploadFileName);
+        formData.append("upload_preset", uploadPreset);
+        formData.append("cloud_name", cloudName);
+
+        return await new Promise((resolve, reject) => {
+            const xhr = new XMLHttpRequest();
+            xhr.open("POST", `https://api.cloudinary.com/v1_1/${cloudName}/${resourceType}/upload`, true);
+
+            xhr.upload.onprogress = (event) => {
+                if (event.lengthComputable && event.total > 0) {
+                    const percent = Math.min(99, Math.round((event.loaded / event.total) * 100));
+                    if (onProgress) onProgress(percent);
+                }
+            };
+
+            xhr.onload = () => {
+                if (xhr.status >= 200 && xhr.status < 300) {
+                    try {
+                        const res = JSON.parse(xhr.responseText);
+                        if (res.secure_url) {
+                            if (onProgress) onProgress(100);
+                            resolve({
+                                url: res.secure_url,
+                                fileName: file.name,
+                                fileSize: file.size,
+                                fileType: isPdf ? 'pdf' : rawExtension
+                            });
+                            return;
+                        }
+                    } catch (parseErr) {
+                        console.warn("Error parsing upload response:", parseErr);
+                    }
+                }
+                try {
+                    const errObj = JSON.parse(xhr.responseText);
+                    reject(new Error(errObj.error?.message || `Upload failed with status ${xhr.status}`));
+                } catch {
+                    reject(new Error(`Upload failed with status ${xhr.status}`));
+                }
+            };
+
+            xhr.onerror = () => {
+                reject(new Error("Network connection error during contract upload. Please check your connection."));
+            };
+
+            xhr.ontimeout = () => {
+                reject(new Error("Contract upload timed out. Please check your network."));
+            };
+
             xhr.timeout = 90000;
             xhr.send(formData);
         });
@@ -2034,9 +2116,15 @@ export const useStore = create((set, get) => ({
         }
 
         await updateDoc(doc(db, 'proposals', id), processed);
+        set(state => ({
+            proposals: (state.proposals || []).map(p => p.id === id ? { ...p, ...processed } : p)
+        }));
     },
     updateProposalStatus: async (id, status) => {
         await updateDoc(doc(db, 'proposals', id), { status });
+        set(state => ({
+            proposals: (state.proposals || []).map(p => p.id === id ? { ...p, status } : p)
+        }));
     },
     deleteProposal: async (id) => {
         await deleteDoc(doc(db, 'proposals', id));
@@ -3218,16 +3306,21 @@ export const useStore = create((set, get) => ({
 
     // Campaigns / Gigs
     addCampaign: async (campaign) => {
-        const docRef = await addDoc(collection(db, 'campaigns'), {
+        const cleanedData = {
             ...campaign,
+            brand: campaign.brand || '',
+            brandLogo: campaign.brandLogo || '',
+            totalSpots: (campaign.totalSpots !== undefined && campaign.totalSpots !== '' && campaign.totalSpots !== null) ? Number(campaign.totalSpots) : null,
+            spotsLeft: (campaign.spotsLeft !== undefined && campaign.spotsLeft !== '' && campaign.spotsLeft !== null) ? Number(campaign.spotsLeft) : null,
             minInstagramFollowers: campaign.minInstagramFollowers || 0,
             thumbnail: campaign.thumbnail || '',
             tasks: campaign.tasks || [], // Store tasks directly in campaign structure for now
             createdAt: new Date().toISOString()
-        });
+        };
+        const docRef = await addDoc(collection(db, 'campaigns'), cleanedData);
 
         if (campaign.status === 'Open') {
-            notifyMatchingCreatorsOfCampaign({ ...campaign, id: docRef.id }, get().creators);
+            notifyMatchingCreatorsOfCampaign({ ...cleanedData, id: docRef.id }, get().creators);
         }
         return docRef.id;
     },
@@ -3242,7 +3335,15 @@ export const useStore = create((set, get) => ({
             console.error("Error fetching previous campaign status:", err);
         }
 
-        await updateDoc(doc(db, 'campaigns', id), updates);
+        const cleanedUpdates = { ...updates };
+        if (cleanedUpdates.totalSpots !== undefined) {
+            cleanedUpdates.totalSpots = (cleanedUpdates.totalSpots !== '' && cleanedUpdates.totalSpots !== null) ? Number(cleanedUpdates.totalSpots) : null;
+        }
+        if (cleanedUpdates.spotsLeft !== undefined) {
+            cleanedUpdates.spotsLeft = (cleanedUpdates.spotsLeft !== '' && cleanedUpdates.spotsLeft !== null) ? Number(cleanedUpdates.spotsLeft) : null;
+        }
+
+        await updateDoc(doc(db, 'campaigns', id), cleanedUpdates);
 
         if (updates.status === 'Open' && prevStatus !== 'Open') {
             try {
@@ -3260,14 +3361,23 @@ export const useStore = create((set, get) => ({
     },
 
     // Task Submission & Review (Dynamic Task System)
-    submitTaskProof: async (campaignId, taskId, creatorUid, { contentLink, proofUrl }) => {
+    submitTaskProof: async (campaignId, taskId, creatorUid, options = {}) => {
+        const contentLink = typeof options === 'string' ? options : (options?.contentLink || '');
+        const proofUrl = typeof options === 'object' && options !== null ? (options?.proofUrl || '') : (arguments[4] || '');
+
         const { campaigns } = get();
-        const campaign = campaigns.find(c => c.id === campaignId);
+        let campaign = (campaigns || []).find(c => c.id === campaignId);
+        if (!campaign) {
+            const snap = await getDoc(doc(db, 'campaigns', campaignId));
+            if (snap.exists()) {
+                campaign = { id: snap.id, ...snap.data() };
+            }
+        }
         if (!campaign) throw new Error("Campaign not found");
 
-        const updatedTasks = campaign.tasks.map(t => {
+        const updatedTasks = (campaign.tasks || []).map(t => {
             if (t.id === taskId) {
-                const submissions = t.submissions || {};
+                const submissions = { ...(t.submissions || {}) };
                 submissions[creatorUid] = {
                     status: 'submitted',
                     contentLink: contentLink || '',
@@ -3277,25 +3387,50 @@ export const useStore = create((set, get) => ({
                     rejectionReason: ''
                 };
                 // Also add to legacy completedBy for backward compat
-                const completedBy = t.completedBy || [];
-                if (!completedBy.includes(creatorUid)) {
-                    return { ...t, submissions, completedBy: [...completedBy, creatorUid] };
-                }
-                return { ...t, submissions };
+                const completedBy = Array.from(new Set([...(t.completedBy || []), creatorUid]));
+                return { ...t, submissions, completedBy };
             }
             return t;
         });
+
+        // 1. Optimistically update local Zustand store so UI updates immediately
+        set(state => ({
+            campaigns: (state.campaigns || []).map(c => 
+                c.id === campaignId ? { ...c, tasks: updatedTasks } : c
+            )
+        }));
+
+        // 2. Persist to Firestore
         await updateDoc(doc(db, 'campaigns', campaignId), { tasks: updatedTasks });
+    },
+
+    // Alias for submitTaskProof with flexible argument support
+    submitTask: async (campaignId, taskId, creatorUid, contentLinkOrOptions, maybeProofUrl) => {
+        const payload = typeof contentLinkOrOptions === 'object' && contentLinkOrOptions !== null
+            ? contentLinkOrOptions
+            : { contentLink: contentLinkOrOptions || '', proofUrl: maybeProofUrl || '' };
+        return await get().submitTaskProof(campaignId, taskId, creatorUid, payload);
+    },
+
+    uploadTaskProof: async (file) => {
+        if (!file) return '';
+        return await get().uploadToCloudinary(file);
     },
 
     reviewTaskSubmission: async (campaignId, taskId, creatorUid, status, rejectionReason = '') => {
         const { campaigns } = get();
-        const campaign = campaigns.find(c => c.id === campaignId);
+        let campaign = (campaigns || []).find(c => c.id === campaignId);
+        if (!campaign) {
+            const snap = await getDoc(doc(db, 'campaigns', campaignId));
+            if (snap.exists()) {
+                campaign = { id: snap.id, ...snap.data() };
+            }
+        }
         if (!campaign) throw new Error("Campaign not found");
 
-        const updatedTasks = campaign.tasks.map(t => {
+        const updatedTasks = (campaign.tasks || []).map(t => {
             if (t.id === taskId) {
-                const submissions = t.submissions || {};
+                const submissions = { ...(t.submissions || {}) };
                 if (submissions[creatorUid]) {
                     submissions[creatorUid] = {
                         ...submissions[creatorUid],
@@ -3305,16 +3440,24 @@ export const useStore = create((set, get) => ({
                     };
                 }
                 // Sync with legacy arrays
-                const verifiedBy = t.verifiedBy || [];
+                let verifiedBy = Array.from(t.verifiedBy || []);
                 if (status === 'approved' && !verifiedBy.includes(creatorUid)) {
-                    return { ...t, submissions, verifiedBy: [...verifiedBy, creatorUid] };
+                    verifiedBy = [...verifiedBy, creatorUid];
                 } else if (status === 'rejected') {
-                    return { ...t, submissions, verifiedBy: verifiedBy.filter(uid => uid !== creatorUid) };
+                    verifiedBy = verifiedBy.filter(uid => uid !== creatorUid);
                 }
-                return { ...t, submissions };
+                return { ...t, submissions, verifiedBy };
             }
             return t;
         });
+
+        // Optimistically update local Zustand store
+        set(state => ({
+            campaigns: (state.campaigns || []).map(c => 
+                c.id === campaignId ? { ...c, tasks: updatedTasks } : c
+            )
+        }));
+
         await updateDoc(doc(db, 'campaigns', campaignId), { tasks: updatedTasks });
     },
 

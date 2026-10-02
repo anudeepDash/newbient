@@ -79,12 +79,12 @@ const SignaturePad = ({ onSave, onClear }) => {
 
     return (
         <div className="space-y-4">
-            <div className="relative bg-white border-2 border-black/10 rounded-2xl overflow-hidden shadow-inner cursor-crosshair">
+            <div className="relative bg-black/5 dark:bg-white/5 border-2 border-black/10 dark:border-white/10 hover:border-neon-green/30 rounded-2xl overflow-hidden shadow-inner cursor-crosshair transition-all">
                 <canvas
                     ref={canvasRef}
                     width={500}
                     height={200}
-                    className="w-full h-[160px] sm:h-[200px] touch-none"
+                    className="w-full h-[160px] sm:h-[200px] touch-none dark:invert"
                     onMouseDown={startDrawing}
                     onMouseMove={draw}
                     onMouseUp={stopDrawing}

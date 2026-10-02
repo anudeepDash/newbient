@@ -46,6 +46,8 @@
     @apply antialiased;
     background-color: var(--bg-primary);
     transition: background-color 0.3s ease;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-text-size-adjust: 100%;
   }
 
   body {
@@ -53,6 +55,34 @@
     background-color: var(--bg-primary);
     color: var(--text-primary);
     transition: background-color 0.3s ease, color 0.3s ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Eliminate 300ms tap delay & double-tap zoom hitching on iOS Safari */
+  button, a, [role="button"], input, select, textarea, .tappable {
+    touch-action: manipulation;
+  }
+
+  /* Prevent iOS Safari long-press text selection / callout on buttons & interactive badges */
+  button, [role="button"], .tab, .pill, .chip, .badge {
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+  }
+
+  /* Prevent iOS Safari auto-zooming when focusing inputs under 16px */
+  @media (pointer: coarse) {
+    input, textarea, select {
+      font-size: 16px !important;
+    }
+  }
+
+  /* Suppress sticky hover on touch devices (iOS Safari) and provide crisp active response */
+  @media (hover: none) and (pointer: coarse) {
+    button:active, a:active, [role="button"]:active {
+      transform: scale(0.985);
+      transition: transform 80ms ease-out;
+    }
   }
 
   @media (max-width: 768px) {
@@ -463,25 +493,27 @@
 /* Campaign Briefing Content - High Contrast Light & Dark */
 .campaign-briefing-content,
 .campaign-briefing-content * {
-  color: inherit !important;
+  color: inherit;
 }
 .campaign-briefing-content {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  color: #1f2937 !important; /* dark slate in light mode */
-  line-height: 1.7;
+  color: #374151 !important;
+  line-height: 1.75;
 }
 .dark .campaign-briefing-content {
-  color: #e4e4e7 !important; /* zinc-200 in dark mode */
+  color: #d4d4d8 !important;
 }
+.campaign-briefing-content > *:first-child { margin-top: 0 !important; }
+.campaign-briefing-content > *:last-child { margin-bottom: 0 !important; }
 .campaign-briefing-content h1,
 .campaign-briefing-content h2,
 .campaign-briefing-content h3,
 .campaign-briefing-content h4 {
   font-weight: 800;
   color: #111827 !important;
-  margin-top: 1.25rem;
-  margin-bottom: 0.5rem;
-  letter-spacing: -0.01em;
+  margin-top: 2rem;
+  margin-bottom: 1rem;
+  letter-spacing: -0.02em;
 }
 .dark .campaign-briefing-content h1,
 .dark .campaign-briefing-content h2,
@@ -490,35 +522,49 @@
   color: #ffffff !important;
 }
 .campaign-briefing-content p {
-  margin-bottom: 0.75rem;
-  line-height: 1.7;
-  color: #374151 !important;
-}
-.dark .campaign-briefing-content p {
-  color: #d4d4d8 !important;
+  margin-bottom: 1.25rem;
 }
 .campaign-briefing-content strong,
 .campaign-briefing-content b {
-  font-weight: 700;
+  font-weight: 800;
   color: #111827 !important;
 }
 .dark .campaign-briefing-content strong,
 .dark .campaign-briefing-content b {
-  color: #f4f4f5 !important;
+  color: #ffffff !important;
 }
 .campaign-briefing-content ul {
-  list-style-type: disc !important;
-  padding-left: 1.25rem !important;
-  margin-top: 0.5rem !important;
-  margin-bottom: 0.75rem !important;
+  list-style: none !important;
+  padding-left: 0 !important;
+  margin-top: 1rem !important;
+  margin-bottom: 1.5rem !important;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
 }
 .campaign-briefing-content li {
-  margin-bottom: 0.4rem;
+  position: relative;
+  padding-left: 1.5rem;
   line-height: 1.6;
-  color: #4b5563 !important;
 }
-.dark .campaign-briefing-content li {
-  color: #d4d4d8 !important;
+.campaign-briefing-content li::before {
+  content: "✦";
+  position: absolute;
+  left: 0.25rem;
+  top: 0.05rem;
+  color: #10b981;
+  font-size: 0.8rem;
+}
+.dark .campaign-briefing-content li::before {
+  color: #39FF14;
+}
+.campaign-briefing-content a {
+  color: #10b981 !important;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.dark .campaign-briefing-content a {
+  color: #39FF14 !important;
 }
 
 /* Editor specific styles for interactive image formatting */
@@ -1252,4 +1298,4 @@
 
 
 
-
+

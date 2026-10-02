@@ -759,6 +759,7 @@ const CreatorDashboard = () => {
                 if (
                     !(c.title || '').toLowerCase().includes(q) &&
                     !(c.description || '').toLowerCase().includes(q) &&
+                    !(c.brand || '').toLowerCase().includes(q) &&
                     !(c.targetCity || '').toLowerCase().includes(q) &&
                     !(c.reward || '').toLowerCase().includes(q)
                 ) return false;

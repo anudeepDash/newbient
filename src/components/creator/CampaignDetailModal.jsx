@@ -6,10 +6,10 @@ import {
     Target, Ban, Camera, Video, Eye, Layers, Globe, Youtube, Twitter, 
     Calendar, CheckCircle2, Clock, MessageCircle, ChevronLeft, ChevronDown, 
     ExternalLink, FileText, Check, X, AlertTriangle, Sparkles,
-    RefreshCw, AlertCircle, Lock, Pencil, User, Phone
+    RefreshCw, AlertCircle, Lock, Pencil, User, Phone, Flame, Share2
 } from 'lucide-react';
 import { useStore } from '../../lib/store';
-import { cn, normalizePhoneNumber } from '../../lib/utils';
+import { cn, normalizePhoneNumber, getCampaignSpotsInfo } from '../../lib/utils';
 import { extractSocialUsername, hasDisallowedLink } from '../../lib/socialUtils';
 import { PREDEFINED_CITIES } from '../../lib/constants';
 import StudioSelect from '../ui/StudioSelect';
@@ -17,6 +17,8 @@ import LoadingSpinner from '../ui/LoadingSpinner';
 import { Input } from '../ui/Input';
 import TaskSubmissionModal from '../ui/TaskSubmissionModal';
 import EditCreatorModal from './EditCreatorModal';
+import TaskActionLinks from './TaskActionLinks';
+import { linkifyContent, extractTaskActionLinks, cleanTaskDescription, getTaskGoogleFormUrl } from '../../lib/taskLinks';
 
 const TASK_TYPES = {
     content_post: { label: 'Content Post', icon: Camera, color: 'text-pink-400' },
@@ -47,12 +49,27 @@ const PLATFORMS = {
     other: { label: 'Other', icon: Globe },
 };
 
+const FormattedTaskDescription = ({ description, actionLinks = [] }) => {
+    if (!description) return null;
+    const cleaned = cleanTaskDescription(description, actionLinks);
+    if (!cleaned || !cleaned.trim()) return null;
+    const linkified = linkifyContent(cleaned);
+
+    return (
+        <div
+            className="campaign-briefing-content text-xs sm:text-[13px] text-gray-700 dark:text-zinc-300 leading-relaxed break-words font-normal mb-1.5"
+            dangerouslySetInnerHTML={{ __html: linkified }}
+        />
+    );
+};
+
 const CampaignDetailModal = ({ 
-    campaign, 
+    campaign: initialCampaign, 
     onClose, 
     initialTaskId = null 
 }) => {
-    const { user, authInitialized, creators, addCreator, updateCreator, setAuthModal, resolveCreatorProfile } = useStore();
+    const { user, authInitialized, campaigns, creators, addCreator, updateCreator, setAuthModal, resolveCreatorProfile } = useStore();
+    const campaign = (campaigns || []).find(c => c.id === initialCampaign?.id) || initialCampaign;
 
     const [profile, setProfile] = useState(null);
     const [isVerifying, setIsVerifying] = useState(false);
@@ -153,33 +170,87 @@ const CampaignDetailModal = ({
         };
     }, []);
 
+    const currentUid = user?.uid || profile?.uid || profile?.id;
     // Check if user is already joined or shortlisted
     const isJoined = profile && (profile.joinedCampaigns || []).includes(campaign?.id);
     const isShortlisted = profile && (profile.shortlistedCampaigns || []).includes(campaign?.id);
+    const spotsInfo = getCampaignSpotsInfo(campaign, creators);
     const campaignTasks = campaign?.tasks || [];
     const requiredTasks = campaignTasks.filter(t => t.priority !== 'optional');
 
     const getSubmissionStatus = (task, uid) => {
-        const sub = task.submissions?.[uid];
+        if (!task) return 'not_started';
+        const targetUid = uid || currentUid;
+        if (!targetUid) return 'not_started';
+        const sub = task.submissions?.[targetUid];
         if (sub) return sub.status;
-        if ((task.verifiedBy || []).includes(uid)) return 'approved';
-        if ((task.completedBy || []).includes(uid)) return 'submitted';
+        if ((task.verifiedBy || []).includes(targetUid)) return 'approved';
+        if ((task.completedBy || []).includes(targetUid)) return 'submitted';
         return 'not_started';
     };
 
-    const approvedTotal = campaignTasks.filter(t => getSubmissionStatus(t, user?.uid) === 'approved').length;
+    const approvedTotal = campaignTasks.filter(t => getSubmissionStatus(t, currentUid) === 'approved').length;
     const progress = campaignTasks.length > 0 ? (approvedTotal / campaignTasks.length) * 100 : 0;
-    const isFullyComplete = requiredTasks.length > 0 && requiredTasks.every(t => getSubmissionStatus(t, user?.uid) === 'approved');
+    const isFullyComplete = requiredTasks.length > 0 && requiredTasks.every(t => getSubmissionStatus(t, currentUid) === 'approved');
+
+    const [copiedTaskId, setCopiedTaskId] = useState(null);
+
+    const handleShareTask = async (e, task) => {
+        if (e) {
+            e.stopPropagation();
+            e.preventDefault();
+        }
+        const directUrl = `${window.location.origin}/campaign/${campaign.id}?taskId=${task.id}`;
+        if (navigator.share) {
+            try {
+                await navigator.share({
+                    title: `${task.title} - ${campaign.title}`,
+                    text: `Deliverable task: ${task.title} for ${campaign.title} on Newbi`,
+                    url: directUrl
+                });
+                return;
+            } catch (err) {
+                if (err.name === 'AbortError') return;
+            }
+        }
+        if (navigator.clipboard) {
+            await navigator.clipboard.writeText(directUrl);
+            setCopiedTaskId(task.id);
+            useStore.getState().addToast("Task link copied to clipboard!", 'success');
+            setTimeout(() => setCopiedTaskId(null), 2200);
+        }
+    };
+
+    const scrollToApply = (e) => {
+        if (e) {
+            e.stopPropagation();
+            e.preventDefault();
+        }
+        const el = document.getElementById('campaign-apply-section');
+        if (el) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            el.classList.add('ring-2', 'ring-emerald-500', 'dark:ring-neon-green', 'ring-offset-2', 'rounded-2xl', 'transition-all');
+            setTimeout(() => {
+                el.classList.remove('ring-2', 'ring-emerald-500', 'dark:ring-neon-green', 'ring-offset-2');
+            }, 2000);
+        }
+    };
 
     // Handle initial taskId if provided
     useEffect(() => {
         if (initialTaskId && campaignTasks.length > 0) {
             const targetTask = campaignTasks.find(t => t.id === initialTaskId);
-            if (targetTask && isJoined) {
+            if (targetTask) {
                 setSelectedTask(targetTask);
+                setTimeout(() => {
+                    const el = document.getElementById(`task-${targetTask.id}`);
+                    if (el) {
+                        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                }, 350);
             }
         }
-    }, [initialTaskId, campaignTasks, isJoined]);
+    }, [initialTaskId, campaignTasks]);
 
     const minFollowers = Number(campaign?.minInstagramFollowers || 0);
 
@@ -334,6 +405,10 @@ const CampaignDetailModal = ({
             return useStore.getState().addToast("Please verify your Instagram eligibility before applying.", 'error');
         }
 
+        if (spotsInfo.hasSpots && spotsInfo.isFull) {
+            return useStore.getState().addToast("This campaign has reached full capacity. No spots left.", 'error');
+        }
+
         const phoneToValidate = form.phone || profile?.phone;
         const normPhone = normalizePhoneNumber(phoneToValidate);
         if (normPhone && creators) {
@@ -397,6 +472,11 @@ const CampaignDetailModal = ({
 
     // Task submission handler
     const handleTaskSubmit = async (taskId, contentLink, proofFile) => {
+        const creatorUid = user?.uid || profile?.uid || profile?.id;
+        if (!creatorUid) {
+            useStore.getState().addToast("Please sign in or apply to the campaign first.", 'error');
+            return;
+        }
         if (!contentLink && !proofFile) {
             useStore.getState().addToast("Please provide a content link or upload proof.", 'error');
             return;
@@ -406,13 +486,37 @@ const CampaignDetailModal = ({
             let proofUrl = '';
             if (proofFile) {
                 useStore.getState().addToast("Uploading proof file...", 'info');
-                proofUrl = await useStore.getState().uploadTaskProof(proofFile, user.uid, campaign.id, taskId);
+                if (typeof useStore.getState().uploadTaskProof === 'function') {
+                    proofUrl = await useStore.getState().uploadTaskProof(proofFile, creatorUid, campaign.id, taskId);
+                } else if (typeof useStore.getState().uploadToCloudinary === 'function') {
+                    proofUrl = await useStore.getState().uploadToCloudinary(proofFile);
+                }
             }
-            await useStore.getState().submitTask(campaign.id, taskId, user.uid, contentLink, proofUrl);
+            const submitFn = useStore.getState().submitTask || useStore.getState().submitTaskProof;
+            if (!submitFn) {
+                throw new Error("Task submission service not available");
+            }
+            await submitFn(campaign.id, taskId, creatorUid, { 
+                contentLink: contentLink || '', 
+                proofUrl: proofUrl || '' 
+            });
+
+            // Auto-join campaign if profile exists and hasn't joined yet
+            if (profile && !(profile.joinedCampaigns || []).includes(campaign.id)) {
+                const updatedJoined = [...(profile.joinedCampaigns || []), campaign.id];
+                try {
+                    await updateCreator(creatorUid, { joinedCampaigns: updatedJoined });
+                    setProfile(prev => ({ ...(prev || {}), joinedCampaigns: updatedJoined }));
+                } catch (e) {
+                    console.warn("Could not auto-join campaign upon task submission:", e);
+                }
+            }
+
             useStore.getState().addToast("Task submitted successfully! Brand will review.", 'success');
             setSelectedTask(null);
         } catch (error) {
-            useStore.getState().addToast("Submission failed. Please try again.", 'error');
+            console.error("Task submission error:", error);
+            useStore.getState().addToast(error?.message || "Submission failed. Please try again.", 'error');
         } finally {
             setIsSubmitting(false);
         }
@@ -463,6 +567,17 @@ const CampaignDetailModal = ({
             >
                 {/* Floating Glassmorphic Action & Close Buttons */}
                 <div className="absolute top-3.5 right-3.5 sm:top-6 sm:right-6 flex items-center gap-2 z-30">
+                    {!isJoined && (
+                        <button 
+                            type="button"
+                            onClick={scrollToApply}
+                            className="h-9 sm:h-11 px-3 sm:px-4 rounded-full bg-emerald-500/15 hover:bg-emerald-500/25 dark:bg-neon-green/15 dark:hover:bg-neon-green/25 backdrop-blur-xl border border-emerald-500/30 dark:border-neon-green/30 text-emerald-700 dark:text-neon-green flex items-center gap-1.5 font-bold text-xs transition-all duration-200 shadow-xl active:scale-95 cursor-pointer font-mono uppercase tracking-wider"
+                            title="Apply to Campaign"
+                        >
+                            <Zap size={13} className="fill-current text-emerald-600 dark:text-neon-green" />
+                            <span className="text-[11px] sm:text-xs font-black">Apply Now</span>
+                        </button>
+                    )}
                     {profile && (
                         <button 
                             type="button"
@@ -542,7 +657,19 @@ const CampaignDetailModal = ({
 
                         {/* Floating Hero Content Overlay - Positioned cleanly above the stat cards (Desktop only) */}
                         <div className="hidden sm:flex absolute bottom-3 md:bottom-4 left-8 right-8 z-20 flex-col justify-end">
-                            <div className="flex items-center gap-2 mb-2.5">
+                            <div className="flex items-center gap-2 mb-2.5 flex-wrap">
+                                {(campaign.brand || campaign.brandLogo) && (
+                                    <div className="flex items-center gap-2 px-3 py-1 rounded-xl bg-black/60 backdrop-blur-xl border border-white/15 text-white shadow-lg">
+                                        {campaign.brandLogo && (
+                                            <img src={campaign.brandLogo} alt="" className="w-4 h-4 rounded object-contain shrink-0" />
+                                        )}
+                                        {campaign.brand && (
+                                            <span className="text-[10px] font-black uppercase tracking-widest text-neon-green font-mono">
+                                                {campaign.brand}
+                                            </span>
+                                        )}
+                                    </div>
+                                )}
                                 <div className="p-2 rounded-xl bg-black/60 backdrop-blur-xl border border-white/15 text-neon-green shadow-lg">
                                     <Instagram size={15} />
                                 </div>
@@ -561,7 +688,19 @@ const CampaignDetailModal = ({
                     <div className="px-3.5 sm:px-8 pb-6 sm:pb-8 space-y-5 sm:space-y-8 flex-1 relative z-20">
                         {/* Mobile Title & Badges Section */}
                         <div className="sm:hidden pt-2 space-y-2">
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 flex-wrap">
+                                {(campaign.brand || campaign.brandLogo) && (
+                                    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-black/[0.04] dark:bg-white/[0.06] border border-black/[0.08] dark:border-white/[0.1]">
+                                        {campaign.brandLogo && (
+                                            <img src={campaign.brandLogo} alt="" className="w-3.5 h-3.5 rounded object-contain shrink-0" />
+                                        )}
+                                        {campaign.brand && (
+                                            <span className="text-[10px] font-black uppercase tracking-wider text-emerald-600 dark:text-neon-green">
+                                                {campaign.brand}
+                                            </span>
+                                        )}
+                                    </div>
+                                )}
                                 <div className="p-1.5 rounded-xl bg-black/[0.04] dark:bg-white/[0.06] border border-black/[0.08] dark:border-white/[0.1] text-emerald-600 dark:text-neon-green shadow-xs">
                                     <Instagram size={13} />
                                 </div>
@@ -595,20 +734,61 @@ const CampaignDetailModal = ({
                                     <span>{value}</span>
                                 </div>
                             ))}
+
+                            {spotsInfo.hasSpots && (
+                                <div
+                                    className={cn(
+                                        "flex items-center gap-2 px-3.5 py-2 rounded-full border text-xs font-semibold transition-all",
+                                        spotsInfo.isFull
+                                            ? "bg-red-500/10 border-red-500/30 text-red-500"
+                                            : spotsInfo.spotsLeft <= 5
+                                                ? "bg-amber-500/10 border-amber-500/30 text-amber-600 dark:text-amber-400"
+                                                : "bg-black/[0.04] dark:bg-white/[0.04] border-black/10 dark:border-white/10 text-gray-700 dark:text-zinc-300"
+                                    )}
+                                >
+                                    <Flame size={12} className={spotsInfo.isFull ? "text-red-500" : spotsInfo.spotsLeft <= 5 ? "text-amber-500 fill-amber-500" : "text-gray-500"} />
+                                    <span className="text-gray-500 dark:text-zinc-500 text-[10px] uppercase tracking-widest font-mono mr-0.5">Spots</span>
+                                    <span>
+                                        {spotsInfo.isFull ? '0 Left (Campaign Full)' : `${spotsInfo.spotsLeft} Left${spotsInfo.totalSpots ? ` (${spotsInfo.totalSpots} Total)` : ''}`}
+                                    </span>
+                                </div>
+                            )}
+
+                            {/* Subtle Apply Now Action Pill */}
+                            {!isJoined ? (
+                                <button
+                                    type="button"
+                                    onClick={scrollToApply}
+                                    className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-emerald-500/10 hover:bg-emerald-500/20 dark:bg-neon-green/10 dark:hover:bg-neon-green/20 border border-emerald-500/30 dark:border-neon-green/30 text-emerald-700 dark:text-neon-green text-xs font-bold font-mono uppercase tracking-wider transition-all active:scale-95 cursor-pointer sm:ml-auto shadow-2xs"
+                                >
+                                    <Zap size={12} className="fill-current text-emerald-600 dark:text-neon-green" />
+                                    <span>Apply Now</span>
+                                </button>
+                            ) : (
+                                <div className="flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-emerald-500/10 border border-emerald-500/25 text-emerald-600 dark:text-neon-green text-xs font-bold font-mono sm:ml-auto">
+                                    <CheckCircle2 size={13} />
+                                    <span>Applied</span>
+                                </div>
+                            )}
                         </div>
 
                         {/* ── Divider ── */}
                         <div className="border-t border-black/5 dark:border-white/[0.06]" />
 
                         {/* ── Campaign Briefing ── */}
-                        <section className="space-y-5">
-                            <h2 className="text-[11px] font-black uppercase tracking-[0.2em] text-gray-500 dark:text-zinc-500 font-mono">
-                                Campaign Brief
-                            </h2>
-                            <div
-                                className="campaign-briefing-content text-[15px] sm:text-base leading-[1.75] text-gray-800 dark:text-zinc-200 font-normal"
-                                dangerouslySetInnerHTML={{ __html: campaign.description || 'No briefing provided.' }}
-                            />
+                        <section className="relative rounded-xl sm:rounded-2xl bg-white dark:bg-[#0c0e14] border border-black/10 dark:border-white/10 shadow-xs overflow-hidden">
+                            <div className="p-4 sm:p-5 space-y-3">
+                                <div className="flex items-center gap-2 pb-2 border-b border-black/5 dark:border-white/5">
+                                    <FileText size={16} className="text-emerald-600 dark:text-neon-green" />
+                                    <h2 className="text-[11px] font-black uppercase tracking-widest text-gray-900 dark:text-white font-mono">
+                                        Campaign Brief & Guidelines
+                                    </h2>
+                                </div>
+                                <div
+                                    className="campaign-briefing-content text-[13px] sm:text-[14px] leading-relaxed text-gray-700 dark:text-zinc-300 font-normal"
+                                    dangerouslySetInnerHTML={{ __html: linkifyContent(campaign.description || 'No briefing provided.') }}
+                                />
+                            </div>
                         </section>
 
                         {/* ── Divider ── */}
@@ -616,92 +796,134 @@ const CampaignDetailModal = ({
 
                         {/* ── Deliverables ── */}
                         {campaignTasks.length > 0 && (
-                            <section className="space-y-5">
-                                <div className="flex items-center justify-between">
-                                    <h2 className="text-[11px] font-black uppercase tracking-[0.2em] text-gray-500 dark:text-zinc-500 font-mono">
-                                        Deliverables
-                                    </h2>
-                                    <span className="text-[10px] text-gray-500 dark:text-zinc-600 font-mono">
-                                        {requiredTasks.length} required · {campaignTasks.length - requiredTasks.length} optional
-                                    </span>
+                            <section className="space-y-4">
+                                <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-2.5">
+                                    <div>
+                                        <h2 className="text-xs font-black uppercase tracking-wider text-gray-900 dark:text-white font-mono">
+                                            Deliverables & Tasks
+                                        </h2>
+                                        <p className="text-xs text-gray-500 dark:text-zinc-400 mt-0.5">
+                                            {requiredTasks.length} required · {campaignTasks.length - requiredTasks.length} optional
+                                        </p>
+                                    </div>
+                                    <div className="flex items-center gap-2.5">
+                                        <div className="h-1.5 w-20 bg-black/5 dark:bg-white/5 rounded-full overflow-hidden">
+                                            <div 
+                                                className="h-full bg-neon-green rounded-full transition-all" 
+                                                style={{ width: `${progress}%` }}
+                                            />
+                                        </div>
+                                        <span className="text-[10px] font-mono font-bold text-gray-500 dark:text-zinc-400">
+                                            {approvedTotal}/{campaignTasks.length} Done
+                                        </span>
+                                    </div>
                                 </div>
 
-                                <div className="space-y-2">
+                                <div className="space-y-3">
                                     {campaignTasks.map((task, idx) => {
                                         const typeInfo = resolveTaskType(task);
                                         const TypeIcon = typeInfo.icon;
                                         const platInfo = PLATFORMS[task.platform] || PLATFORMS.other;
-                                        const status = getSubmissionStatus(task, user?.uid);
+                                        const status = getSubmissionStatus(task, currentUid);
+                                        const actionLinks = extractTaskActionLinks(task);
 
                                         return (
                                             <div
                                                 key={task.id || idx}
-                                                onClick={() => isJoined && setSelectedTask(task)}
+                                                id={`task-${task.id}`}
+                                                onClick={() => setSelectedTask(task)}
                                                 className={cn(
-                                                    "group flex items-start gap-4 p-4 rounded-2xl border transition-all duration-200",
-                                                    isJoined ? "cursor-pointer" : "",
-                                                    status === 'approved'
-                                                        ? "bg-emerald-50 dark:bg-neon-green/[0.05] border-emerald-200 dark:border-neon-green/20 hover:border-emerald-300 dark:hover:border-neon-green/40"
-                                                        : status === 'submitted'
-                                                        ? "bg-amber-50 dark:bg-amber-500/[0.05] border-amber-200 dark:border-amber-500/20 hover:border-amber-300 dark:hover:border-amber-500/40"
-                                                        : "bg-black/[0.02] dark:bg-white/[0.02] border-black/[0.06] dark:border-white/[0.06] hover:border-black/[0.14] dark:hover:border-white/[0.14] hover:bg-black/[0.04] dark:hover:bg-white/[0.04]"
+                                                    "group relative flex flex-col p-3.5 sm:p-4 rounded-xl sm:rounded-2xl bg-white dark:bg-[#0c0e14] border transition-all duration-200 cursor-pointer hover:shadow-md active:scale-[0.99]",
+                                                    task.priority === 'required'
+                                                        ? "border-black/10 dark:border-white/10 hover:border-emerald-500/40 dark:hover:border-neon-green/40"
+                                                        : "border-black/5 dark:border-white/5 opacity-90"
                                                 )}
                                             >
-                                                {/* Status circle */}
-                                                <div className={cn(
-                                                    "w-9 h-9 rounded-xl flex items-center justify-center shrink-0 mt-0.5",
-                                                    status === 'approved' ? "bg-emerald-100 dark:bg-neon-green/20 text-emerald-600 dark:text-neon-green" :
-                                                    status === 'submitted' ? "bg-amber-100 dark:bg-amber-500/20 text-amber-500 dark:text-amber-400" :
-                                                    "bg-black/[0.06] dark:bg-white/[0.06] text-gray-500 dark:text-zinc-400"
-                                                )}>
-                                                    {status === 'approved' ? <CheckCircle2 size={18} /> : <TypeIcon size={17} />}
+                                                {/* Top row: Task Number + Title + Share Task + Requirement badge */}
+                                                <div className="flex items-center justify-between gap-3 mb-2">
+                                                    <div className="flex items-center gap-2 min-w-0">
+                                                        <span className="w-5 h-5 rounded-md bg-black/5 dark:bg-white/10 font-mono text-[10px] font-bold text-gray-500 dark:text-zinc-400 flex items-center justify-center shrink-0">
+                                                            {idx + 1}
+                                                        </span>
+                                                        <h3 className="text-sm sm:text-[15px] font-bold text-gray-900 dark:text-white leading-tight truncate">
+                                                            {task.title}
+                                                        </h3>
+                                                    </div>
+                                                    <div className="flex items-center gap-1.5 shrink-0">
+                                                        {/* Direct Share Task Button */}
+                                                        <button
+                                                            type="button"
+                                                            onClick={(e) => handleShareTask(e, task)}
+                                                            className="px-2 py-1 rounded-md bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-gray-600 dark:text-zinc-300 hover:text-gray-900 dark:hover:text-white text-[10px] font-black uppercase font-mono tracking-wider flex items-center gap-1 transition-all active:scale-95 shadow-2xs"
+                                                            title="Share direct task link"
+                                                        >
+                                                            {copiedTaskId === task.id ? (
+                                                                <>
+                                                                    <Check size={11} className="text-emerald-500 stroke-[3]" />
+                                                                    <span className="text-emerald-500 font-bold">Copied!</span>
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <Share2 size={11} />
+                                                                    <span className="hidden sm:inline">Share</span>
+                                                                </>
+                                                            )}
+                                                        </button>
+
+                                                        <span className={cn(
+                                                            "text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded font-mono",
+                                                            task.priority === 'required' 
+                                                                ? "bg-emerald-500/10 text-emerald-700 dark:text-neon-green border border-emerald-500/20 dark:border-neon-green/30" 
+                                                                : "bg-black/5 dark:bg-white/5 text-gray-500"
+                                                        )}>
+                                                            {task.priority === 'required' ? 'Required' : 'Optional'}
+                                                        </span>
+                                                    </div>
                                                 </div>
 
-                                                <div className="flex-1 min-w-0">
-                                                    <div className="flex items-start justify-between gap-3">
-                                                        <div>
-                                                            <p className="text-sm font-semibold text-gray-900 dark:text-white leading-snug">
-                                                                {task.title}
-                                                            </p>
-                                                            <div className="flex flex-wrap items-center gap-2 mt-1.5">
-                                                                <span className="text-[10px] text-zinc-500 font-mono">
-                                                                    {platInfo.label} · {typeInfo.label}
-                                                                </span>
-                                                                {task.priority === 'required' && (
-                                                                    <span className="text-[9px] font-bold text-neon-green/80 uppercase tracking-wider">
-                                                                        Required
-                                                                    </span>
-                                                                )}
-                                                                {task.deadline && (
-                                                                    <span className="text-[9px] font-bold text-zinc-500 flex items-center gap-1">
-                                                                        <Clock size={9} />
-                                                                        {new Date(task.deadline).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
-                                                                    </span>
-                                                                )}
-                                                            </div>
-                                                        </div>
-                                                        <div className="shrink-0 flex items-center gap-2">
-                                                            {isJoined && (
-                                                                <span className={cn(
-                                                                    "text-[9px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full border font-mono",
-                                                                    status === 'approved' ? "text-emerald-700 dark:text-neon-green border-emerald-300 dark:border-neon-green/30 bg-emerald-100 dark:bg-neon-green/10" :
-                                                                    status === 'submitted' ? "text-amber-600 dark:text-amber-400 border-amber-300 dark:border-amber-500/30 bg-amber-100 dark:bg-amber-500/10" :
-                                                                    "text-gray-500 dark:text-zinc-500 border-black/10 dark:border-white/10 bg-black/[0.04] dark:bg-white/[0.04]"
-                                                                )}>
-                                                                    {status === 'not_started' ? 'Pending' : status.replace('_', ' ')}
-                                                                </span>
-                                                            )}
-                                                            {isJoined && (
-                                                                <ArrowRight size={14} className="text-gray-400 dark:text-zinc-600 group-hover:text-gray-700 dark:group-hover:text-zinc-300 group-hover:translate-x-0.5 transition-all" />
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                    {task.description && (
-                                                        <div
-                                                            className="campaign-briefing-content text-xs mt-2 text-zinc-500 leading-relaxed"
-                                                            dangerouslySetInnerHTML={{ __html: task.description }}
-                                                        />
+                                                {/* Meta tags: Platform, Type, Deadline */}
+                                                <div className="flex flex-wrap items-center gap-1.5 mb-2.5">
+                                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-black/[0.03] dark:bg-white/[0.04] border border-black/5 dark:border-white/5 text-[10px] font-mono text-gray-600 dark:text-zinc-400">
+                                                        <TypeIcon size={11} /> {platInfo.label} · {typeInfo.label}
+                                                    </span>
+                                                    {task.deadline && (
+                                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 text-[10px] font-mono font-bold">
+                                                            <Clock size={10} /> Due {new Date(task.deadline).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+                                                        </span>
                                                     )}
+                                                </div>
+
+                                                {/* Description (cleaned of duplicate URL lines) + Mobile Action Links */}
+                                                <div>
+                                                    <FormattedTaskDescription description={task.description} actionLinks={actionLinks} />
+                                                    <TaskActionLinks 
+                                                        task={task} 
+                                                        links={actionLinks} 
+                                                    />
+                                                </div>
+
+                                                {/* Bottom: Status bar */}
+                                                <div className="mt-3 pt-2.5 border-t border-black/5 dark:border-white/5 flex items-center justify-between">
+                                                    <div className="flex items-center gap-2">
+                                                        <div className={cn(
+                                                            "w-2 h-2 rounded-full",
+                                                            status === 'approved' ? "bg-neon-green" :
+                                                            status === 'submitted' ? "bg-amber-400" :
+                                                            "bg-gray-300 dark:bg-zinc-600"
+                                                        )} />
+                                                        <span className={cn(
+                                                            "text-[10px] font-bold uppercase tracking-wider font-mono",
+                                                            status === 'approved' ? "text-neon-green" :
+                                                            status === 'submitted' ? "text-amber-500" :
+                                                            "text-gray-500 dark:text-zinc-400"
+                                                        )}>
+                                                            {status === 'not_started' ? 'Pending Action' : status.replace('_', ' ')}
+                                                        </span>
+                                                    </div>
+                                                    <div className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-zinc-500 group-hover:text-neon-green transition-colors font-mono">
+                                                        <span>{status === 'approved' ? 'View Details' : 'Complete Task'}</span>
+                                                        <ArrowRight size={12} className="group-hover:translate-x-0.5 transition-transform" />
+                                                    </div>
                                                 </div>
                                             </div>
                                         );
@@ -714,7 +936,7 @@ const CampaignDetailModal = ({
                         <div className="border-t border-black/5 dark:border-white/[0.06]" />
 
                         {/* ── Application / Status Panel ── */}
-                        <section className="space-y-5 pb-2">
+                        <section id="campaign-apply-section" className="space-y-5 pb-2">
                             {isJoined ? (
                                 /* ── Already joined view ── */
                                 <div className="space-y-5">
@@ -869,27 +1091,37 @@ const CampaignDetailModal = ({
                                                         </div>
                                                     </div>
 
-                                                    {/* Ineligibility notice */}
-                                                    {!isEligible && (
+                                                    {/* Ineligibility or Capacity notice */}
+                                                    {spotsInfo.hasSpots && spotsInfo.isFull ? (
+                                                        <div className="flex items-center gap-2 text-rose-400 text-sm">
+                                                            <AlertCircle size={14} className="shrink-0" />
+                                                            <span>All {spotsInfo.totalSpots ? `${spotsInfo.totalSpots} ` : ''}creator spots have been claimed for this campaign.</span>
+                                                        </div>
+                                                    ) : !isEligible ? (
                                                         <div className="flex items-center gap-2 text-rose-400 text-sm">
                                                             <AlertCircle size={14} className="shrink-0" />
                                                             <span>Requires {minFollowers.toLocaleString()} followers to apply</span>
                                                         </div>
-                                                    )}
+                                                    ) : null}
 
                                                     {/* Apply CTA */}
                                                     <button
                                                         type="button"
                                                         onClick={handleJoin}
-                                                        disabled={isJoining || !isEligible}
+                                                        disabled={isJoining || !isEligible || (spotsInfo.hasSpots && spotsInfo.isFull)}
                                                         className={cn(
                                                             "w-full h-14 sm:h-[56px] rounded-2xl font-black text-[15px] sm:text-base tracking-wide transition-all flex items-center justify-center gap-2.5",
-                                                            isEligible && !isJoining
+                                                            isEligible && !isJoining && !(spotsInfo.hasSpots && spotsInfo.isFull)
                                                                 ? "bg-neon-green text-black hover:bg-emerald-400 active:scale-[0.99] cursor-pointer shadow-[0_0_40px_rgba(57,255,20,0.25)]"
                                                                 : "bg-black/[0.04] dark:bg-white/[0.04] text-gray-400 dark:text-zinc-600 cursor-not-allowed border border-black/[0.08] dark:border-white/[0.08]"
                                                         )}
                                                     >
-                                                        {isJoining ? <LoadingSpinner size="xs" color="#000000" /> : (
+                                                        {isJoining ? <LoadingSpinner size="xs" color="#000000" /> : (spotsInfo.hasSpots && spotsInfo.isFull) ? (
+                                                            <>
+                                                                <Lock size={18} />
+                                                                All Spots Claimed (Full)
+                                                            </>
+                                                        ) : (
                                                             <>
                                                                 <Zap size={18} className="fill-current" />
                                                                 Apply Now
@@ -1242,9 +1474,9 @@ const CampaignDetailModal = ({
             <AnimatePresence>
                 {selectedTask && (
                     <TaskSubmissionModal 
-                        task={selectedTask}
+                        task={campaign?.tasks?.find(t => t.id === selectedTask.id) || selectedTask}
                         campaignId={campaign.id}
-                        profileUid={user?.uid}
+                        profileUid={currentUid}
                         onClose={() => setSelectedTask(null)}
                         isSubmitting={isSubmitting}
                         onSubmit={handleTaskSubmit}

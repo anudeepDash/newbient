@@ -611,7 +611,7 @@ const Invoice = () => {
             )}
             
             {displayInvoice.status !== 'Paid' && displayInvoice.status !== 'Verification Pending' && !isAdmin && (
-                <button onClick={() => setShowMarkAsPaid(true)} className="px-8 py-4 bg-[#39FF14]/10 text-[#39FF14] hover:bg-[#39FF14]/20 border border-[#39FF14]/20 font-black uppercase tracking-widest text-xs rounded-xl hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2">
+                <button onClick={() => setShowMarkAsPaid(true)} className="px-8 py-4 bg-[#00D1FF]/10 text-[#00D1FF] hover:bg-[#00D1FF]/20 border border-[#00D1FF]/20 font-black uppercase tracking-widest text-xs rounded-xl hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2">
                     <DollarSign size={16} /> Claim Payment
                 </button>
             )}
