@@ -4,6 +4,7 @@ import FilterSearchBar from '../../design-system/controls/FilterSearchBar';
 import { useStore } from '../../lib/store';
 import { useStoreSubscription } from '../../hooks/useStoreSubscription';
 import Trophy from 'lucide-react/dist/esm/icons/trophy';
+import Gift from 'lucide-react/dist/esm/icons/gift';
 import { notifySpecificUser, notifyAllUsers } from '../../lib/notificationTriggers';
 import { PREDEFINED_CITIES } from '../../lib/constants';
 import { Card } from '../../components/ui/Card';
@@ -38,6 +39,7 @@ import GripVertical from 'lucide-react/dist/esm/icons/grip-vertical';
 import Calendar from 'lucide-react/dist/esm/icons/calendar';
 import Star from 'lucide-react/dist/esm/icons/star';
 import Link2 from 'lucide-react/dist/esm/icons/link-2';
+import Ticket from 'lucide-react/dist/esm/icons/ticket';
 import FileText from 'lucide-react/dist/esm/icons/file-text';
 import Video from 'lucide-react/dist/esm/icons/video';
 import Camera from 'lucide-react/dist/esm/icons/camera';
@@ -63,10 +65,12 @@ import Lock from 'lucide-react/dist/esm/icons/lock';
 import Unlock from 'lucide-react/dist/esm/icons/unlock';
 import CheckCircle2 from 'lucide-react/dist/esm/icons/check-circle-2';
 import Settings from 'lucide-react/dist/esm/icons/settings';
+import Briefcase from 'lucide-react/dist/esm/icons/briefcase';
+import Flame from 'lucide-react/dist/esm/icons/flame';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { motion, AnimatePresence } from 'framer-motion';
 
-import { cn } from '../../lib/utils';
+import { cn, getCampaignSpotsInfo } from '../../lib/utils';
 import LivePreview from '../../components/admin/LivePreview';
 import StudioDatePicker from '../../components/ui/StudioDatePicker';
 import StudioSelect from '../../components/ui/StudioSelect';
@@ -147,7 +151,9 @@ const StatCard = ({ icon, label, value, color, description, compact = false }) =
     );
 };
 
-const CampaignBadgeCard = ({ campaign, onSelect, onEdit, onDelete, updateCampaign, onCopyLink, isUpdating }) => (
+const CampaignBadgeCard = ({ campaign, onSelect, onEdit, onDelete, updateCampaign, onCopyLink, isUpdating, creators = [] }) => {
+    const spotsInfo = getCampaignSpotsInfo(campaign, creators);
+    return (
     <motion.div 
         layoutId={`campaign-card-${campaign.id}`}
         onClick={onSelect}
@@ -165,7 +171,18 @@ const CampaignBadgeCard = ({ campaign, onSelect, onEdit, onDelete, updateCampaig
                         </div>
                     </div>
                 )}
-                <div className="absolute top-3 right-3">
+                <div className="absolute top-3 right-3 flex items-center gap-1.5">
+                    {spotsInfo.hasSpots && (
+                        <span className={cn(
+                            "px-2.5 py-1 rounded-xl text-[8px] font-black uppercase tracking-widest border backdrop-blur-md flex items-center gap-1 font-mono shadow-md",
+                            spotsInfo.isFull 
+                                ? "bg-red-500/20 text-red-500 border-red-500/30" 
+                                : "bg-amber-500/20 text-amber-500 dark:text-amber-400 border-amber-500/30"
+                        )}>
+                            <Flame size={9} className="fill-current" />
+                            {spotsInfo.isFull ? '0 Left' : `${spotsInfo.spotsLeft} Left`}
+                        </span>
+                    )}
                     <StatusPill status={campaign.status} />
                 </div>
             </div>
@@ -173,7 +190,21 @@ const CampaignBadgeCard = ({ campaign, onSelect, onEdit, onDelete, updateCampaig
 
         <div className="flex-1 flex flex-col px-1 relative z-10">
             <div className="mb-5">
-                <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-2">Campaign</p>
+                <div className="flex items-center justify-between gap-2 mb-2">
+                    <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Campaign</p>
+                    {(campaign.brand || campaign.brandLogo) && (
+                        <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 max-w-[180px]">
+                            {campaign.brandLogo && (
+                                <img src={campaign.brandLogo} alt={campaign.brand || 'Brand'} className="w-3.5 h-3.5 rounded object-contain shrink-0" />
+                            )}
+                            {campaign.brand && (
+                                <span className="text-[9px] font-black uppercase tracking-wider text-emerald-600 dark:text-neon-green truncate">
+                                    {campaign.brand}
+                                </span>
+                            )}
+                        </div>
+                    )}
+                </div>
                 <h3 className="text-xl font-heading font-black text-gray-900 dark:text-white tracking-tight leading-tight group-hover:text-neon-green transition-colors duration-300 line-clamp-2">
                     {campaign.title}
                 </h3>
@@ -188,6 +219,17 @@ const CampaignBadgeCard = ({ campaign, onSelect, onEdit, onDelete, updateCampaig
                     <div className="flex items-center gap-2 text-neon-blue text-[10px] font-black uppercase tracking-widest bg-neon-blue/10 px-3 py-1.5 rounded-full border border-neon-blue/20 w-fit">
                         <Layers size={12} />
                         <span>{campaign.targetCollege}</span>
+                    </div>
+                )}
+                {spotsInfo.hasSpots && (
+                    <div className={cn(
+                        "flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full border w-fit",
+                        spotsInfo.isFull 
+                            ? "text-red-500 bg-red-500/10 border-red-500/20" 
+                            : "text-amber-600 dark:text-amber-400 bg-amber-500/10 border-amber-500/20"
+                    )}>
+                        <Users size={12} />
+                        <span>{spotsInfo.isFull ? '0 SPOTS LEFT (FULL)' : `${spotsInfo.spotsLeft} / ${spotsInfo.totalSpots || '∞'} SPOTS LEFT`}</span>
                     </div>
                 )}
                 <div className="flex items-center gap-2 text-yellow-600 dark:text-yellow-500 text-[10px] font-black uppercase tracking-widest bg-yellow-500/10 px-3 py-1.5 rounded-full border border-yellow-500/20 w-fit">
@@ -273,10 +315,13 @@ const CampaignBadgeCard = ({ campaign, onSelect, onEdit, onDelete, updateCampaig
             </div>
         </div>
     </motion.div>
-);
+    );
+};
 
 
-const CampaignListItem = ({ campaign, idx, onSelect, onEdit, onDelete, updateCampaign, onCopyLink, isUpdating }) => (
+const CampaignListItem = ({ campaign, idx, onSelect, onEdit, onDelete, updateCampaign, onCopyLink, isUpdating, creators = [] }) => {
+    const spotsInfo = getCampaignSpotsInfo(campaign, creators);
+    return (
     <motion.div
         initial={{ opacity: 0, x: -10 }}
         animate={{ opacity: 1, x: 0 }}
@@ -296,7 +341,21 @@ const CampaignListItem = ({ campaign, idx, onSelect, onEdit, onDelete, updateCam
         </div>
         
         <div className="flex-1 w-full sm:w-auto">
-            <h4 className="text-base font-heading font-black text-gray-900 dark:text-white tracking-tight group-hover:text-neon-green transition-colors truncate mb-1">{campaign.title}</h4>
+            <div className="flex items-center gap-2 mb-1">
+                {(campaign.brand || campaign.brandLogo) && (
+                    <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 shrink-0 max-w-[140px]">
+                        {campaign.brandLogo && (
+                            <img src={campaign.brandLogo} alt="" className="w-3.5 h-3.5 rounded object-contain shrink-0" />
+                        )}
+                        {campaign.brand && (
+                            <span className="text-[8px] font-black uppercase text-emerald-600 dark:text-neon-green truncate">
+                                {campaign.brand}
+                            </span>
+                        )}
+                    </div>
+                )}
+                <h4 className="text-base font-heading font-black text-gray-900 dark:text-white tracking-tight group-hover:text-neon-green transition-colors truncate">{campaign.title}</h4>
+            </div>
             <div className="flex flex-wrap items-center gap-3">
                 <p className="text-[9px] text-gray-500 font-black tracking-widest flex items-center gap-1.5 uppercase">
                     <MapPin size={10} className="text-neon-pink" /> {campaign.targetCity}
@@ -314,10 +373,22 @@ const CampaignListItem = ({ campaign, idx, onSelect, onEdit, onDelete, updateCam
             </div>
         </div>
 
-        <div className="w-40 hidden md:block">
-            <span className="text-[9px] font-black uppercase tracking-widest text-gray-500 bg-black/5 dark:bg-white/5 border border-black/[0.08] dark:border-white/[0.08] px-3 py-1.5 rounded-full group-hover:bg-black/10 dark:group-hover:bg-white/10 transition-colors">
-                Campaign
-            </span>
+        <div className="w-44 hidden md:block">
+            {spotsInfo.hasSpots ? (
+                <span className={cn(
+                    "text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full border inline-flex items-center gap-1.5",
+                    spotsInfo.isFull 
+                        ? "text-red-500 bg-red-500/10 border-red-500/20" 
+                        : "text-amber-600 dark:text-amber-400 bg-amber-500/10 border-amber-500/20"
+                )}>
+                    <Users size={10} />
+                    {spotsInfo.isFull ? '0 Spots Left (Full)' : `${spotsInfo.spotsLeft} Spots Left`}
+                </span>
+            ) : (
+                <span className="text-[9px] font-black uppercase tracking-widest text-gray-500 bg-black/5 dark:bg-white/5 border border-black/[0.08] dark:border-white/[0.08] px-3 py-1.5 rounded-full group-hover:bg-black/10 dark:group-hover:bg-white/10 transition-colors">
+                    Campaign
+                </span>
+            )}
         </div>
 
         <div className="w-32 hidden lg:block text-right pr-8">
@@ -392,7 +463,8 @@ const CampaignListItem = ({ campaign, idx, onSelect, onEdit, onDelete, updateCam
             <ChevronRight size={16} />
         </button>
     </motion.div>
-);
+    );
+};
 
 const StatusPill = ({ status }) => {
     const config = {
@@ -447,7 +519,7 @@ const getPageNumbers = (currentPage, totalPages) => {
 
 const CampaignManager = ({ isEmbedded = false }) => {
     useStoreSubscription(['campaigns', 'creators']);
-    const { campaigns, addCampaign, updateCampaign, deleteCampaign, user, uploadToCloudinary } = useStore();
+    const { campaigns, creators, addCampaign, updateCampaign, deleteCampaign, user, uploadToCloudinary } = useStore();
     const navigate = useNavigate();
     const location = useLocation();
     const params = useParams();
@@ -457,6 +529,7 @@ const CampaignManager = ({ isEmbedded = false }) => {
     const expandedCampaignId = location.pathname.includes('/manage/') ? params.id : null;
     const [isUpdating, setIsUpdating] = useState(false);
     const [isUploading, setIsUploading] = useState(false);
+    const [isUploadingBrandLogo, setIsUploadingBrandLogo] = useState(false);
     const [isUploadingTaskAsset, setIsUploadingTaskAsset] = useState(false);
     const [modalTab, setModalTab] = useState('applicants'); 
     const [rejectionModal, setRejectionModal] = useState(null); 
@@ -477,6 +550,10 @@ const CampaignManager = ({ isEmbedded = false }) => {
 
     const [formData, setFormData] = useState({
         title: '',
+        brand: '',
+        brandLogo: '',
+        totalSpots: '',
+        spotsLeft: '',
         description: '',
         targetCity: 'Any',
         reward: '',
@@ -495,6 +572,7 @@ const CampaignManager = ({ isEmbedded = false }) => {
     const filteredCampaigns = useMemo(() => {
         return campaigns.filter(c =>
             (c.title || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (c.brand || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
             (c.targetCity || '').toLowerCase().includes(searchTerm.toLowerCase())
         );
     }, [campaigns, searchTerm]);
@@ -532,6 +610,10 @@ const CampaignManager = ({ isEmbedded = false }) => {
             if (campaign) {
                 setFormData({ 
                     ...campaign, 
+                    brand: campaign.brand || '',
+                    brandLogo: campaign.brandLogo || '',
+                    totalSpots: campaign.totalSpots !== undefined && campaign.totalSpots !== null ? String(campaign.totalSpots) : '',
+                    spotsLeft: campaign.spotsLeft !== undefined && campaign.spotsLeft !== null ? String(campaign.spotsLeft) : '',
                     targetCollege: campaign.targetCollege || 'Any',
                     tasks: (campaign.tasks || []).map((t, i) => ({
                         ...t,
@@ -556,6 +638,10 @@ const CampaignManager = ({ isEmbedded = false }) => {
     const resetForm = () => {
         setFormData({ 
             title: '', 
+            brand: '',
+            brandLogo: '',
+            totalSpots: '',
+            spotsLeft: '',
             description: '', 
             targetCity: 'Any', 
             targetCollege: 'Any',
@@ -583,6 +669,44 @@ const CampaignManager = ({ isEmbedded = false }) => {
             useStore.getState().addToast("Couldn't upload the image. Please try again.", 'error');
         } finally {
             setIsUploading(false);
+        }
+    };
+
+    const handleBrandLogoChange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        setIsUploadingBrandLogo(true);
+        try {
+            const url = await uploadToCloudinary(file);
+            setFormData(prev => ({ ...prev, brandLogo: url }));
+            useStore.getState().addToast("Brand logo uploaded!", 'success');
+        } catch (error) {
+            useStore.getState().addToast("Couldn't upload brand logo. Please try again.", 'error');
+        } finally {
+            setIsUploadingBrandLogo(false);
+        }
+    };
+
+    const handleBrandLogoPaste = async (e) => {
+        const items = (e.clipboardData || e.originalEvent?.clipboardData)?.items;
+        if (!items) return;
+        for (let index in items) {
+            const item = items[index];
+            if (item.kind === 'file' && item.type.startsWith('image/')) {
+                const file = item.getAsFile();
+                setIsUploadingBrandLogo(true);
+                try {
+                    const url = await uploadToCloudinary(file);
+                    setFormData(prev => ({ ...prev, brandLogo: url }));
+                    useStore.getState().addToast("Brand logo pasted from clipboard!", 'success');
+                } catch (error) {
+                    useStore.getState().addToast("Couldn't upload the pasted logo.", 'error');
+                } finally {
+                    setIsUploadingBrandLogo(false);
+                }
+                e.preventDefault();
+                break;
+            }
         }
     };
 
@@ -874,147 +998,335 @@ const CampaignManager = ({ isEmbedded = false }) => {
                                 exit={{ opacity: 0, y: -30 }}
                                 className="max-w-6xl mx-auto"
                             >
-                                <div className="flex justify-between items-center mb-10">
-                                    <div className="flex items-center gap-6">
-                                        <button onClick={resetForm} className="w-12 h-12 rounded-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 flex items-center justify-center hover:bg-white hover:text-black transition-all">
-                                            <ArrowLeft size={20} />
-                                        </button>
-                                        <h2 className="text-3xl font-black uppercase italic tracking-tighter text-gray-900 dark:text-white">
-                                            {editingId ? 'EDIT' : 'NEW'} <span className="text-neon-blue">CAMPAIGN DETAILS</span>
+                                <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-6">
+                                    <div className="flex flex-col gap-2">
+                                        <div className="flex items-center gap-2 text-[11px] font-black uppercase tracking-widest text-gray-500">
+                                            <button onClick={resetForm} className="hover:text-neon-green transition-colors">CAMPAIGNS</button>
+                                            <span className="text-gray-300 dark:text-gray-700">/</span>
+                                            <span className="text-gray-900 dark:text-white">{editingId ? 'EDIT' : 'CREATE'}</span>
+                                        </div>
+                                        <h2 className="text-3xl md:text-4xl font-heading font-black tracking-tight text-gray-900 dark:text-white">
+                                            {editingId ? 'Edit Campaign' : 'New Campaign'}
                                         </h2>
                                     </div>
                                     <div className="fixed md:relative bottom-0 left-0 right-0 z-50 flex items-center justify-center md:justify-end gap-4 bg-white/95 dark:bg-[#0c0e14]/95 md:bg-transparent backdrop-blur-2xl md:backdrop-blur-none border-t border-black/[0.08] dark:border-white/[0.08] md:border-none p-4 md:p-0 shadow-sm md:shadow-none">
-                                        <button onClick={resetForm} className="text-[10px] font-black text-gray-500 hover:text-gray-900 dark:hover:text-white uppercase tracking-widest transition-colors">Discard</button>
+                                        <button onClick={resetForm} className="px-4 py-2 text-[11px] font-black text-gray-500 hover:text-gray-900 dark:hover:text-white uppercase tracking-widest transition-colors">Discard</button>
                                         <button 
                                             onClick={handleSubmit} 
                                             disabled={isDeploying || isUploading}
-                                            className="h-12 px-6 rounded-xl bg-neon-green text-black font-black uppercase tracking-wider text-xs hover:bg-emerald-400 active:scale-95 transition-all shadow-[0_0_20px_rgba(57,255,20,0.25)] flex items-center justify-center gap-3 min-w-[140px] flex-1 md:flex-none"
+                                            className="h-14 px-8 rounded-2xl bg-neon-green text-black font-black uppercase tracking-widest text-sm hover:bg-emerald-400 active:scale-95 transition-all shadow-[0_0_20px_rgba(57,255,20,0.3)] flex items-center justify-center gap-3 min-w-[160px] flex-1 md:flex-none"
                                         >
-                                            {isDeploying ? <LoadingSpinner size="xs" color="black" /> : 'SAVE'}
+                                            {isDeploying ? <LoadingSpinner size="sm" color="black" /> : (editingId ? 'SAVE CHANGES' : 'CREATE CAMPAIGN')}
                                         </button>
                                     </div>
                                 </div>
 
                                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
                                     <div className="lg:col-span-7 space-y-6">
-                                        <Card className="p-5 md:p-6 bg-white dark:bg-[#0c0e14] border border-black/[0.08] dark:border-white/[0.08] rounded-2xl shadow-sm dark:shadow-none space-y-6">
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                                                <div className="space-y-1.5">
-                                                    <label className="text-[9px] sm:text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">TITLE</label>
-                                                    <Input required value={formData.title} onChange={e => setFormData({ ...formData, title: e.target.value })} placeholder="e.g. Summer Brand Rush" className="w-full h-12 bg-white dark:bg-black/40 border border-black/[0.1] dark:border-white/[0.08] focus:border-neon-green/80 rounded-xl px-4 text-sm font-medium text-gray-900 dark:text-white outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-white/20" />
+                                        <Card className="p-0 bg-white dark:bg-[#0c0e14] border border-black/[0.08] dark:border-white/[0.08] rounded-3xl shadow-sm dark:shadow-none overflow-hidden">
+                                            {/* Section 1: Brand Identity */}
+                                            <div className="p-6 md:p-8 space-y-6">
+                                                <div className="flex items-center gap-3 pb-4 border-b border-black/[0.05] dark:border-white/[0.05]">
+                                                    <div className="w-8 h-8 rounded-full bg-neon-green/10 flex items-center justify-center">
+                                                        <Briefcase size={16} className="text-neon-green" />
+                                                    </div>
+                                                    <h3 className="text-sm font-black uppercase tracking-widest text-gray-900 dark:text-white">Brand Identity</h3>
                                                 </div>
-                                                <div className="space-y-1.5">
-                                                    <label className="text-[9px] sm:text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Target Location</label>
-                                                    <StudioSelect
-                                                        value={formData.targetCity}
-                                                        options={[
-                                                            { value: 'Any', label: 'UNIVERSAL (NATIONAL)' },
-                                                            ...PREDEFINED_CITIES.map(c => ({ value: c, label: c.toUpperCase() }))
-                                                        ]}
-                                                        onChange={val => setFormData({ ...formData, targetCity: val })}
-                                                        className="h-12 border-black/[0.1] dark:border-white/[0.08] rounded-xl text-sm bg-white dark:bg-black/40"
-                                                        accentColor="neon-green"
-                                                    />
-                                                </div>
-                                            </div>
-
-                                            <div className="space-y-1.5">
-                                                <label className="text-[9px] sm:text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Target College / University</label>
-                                                <Input value={formData.targetCollege} onChange={e => setFormData({ ...formData, targetCollege: e.target.value })} placeholder="e.g. Delhi University, IIT (or 'Any' for all colleges)" className="w-full h-12 bg-white dark:bg-black/40 border border-black/[0.1] dark:border-white/[0.08] focus:border-neon-green/80 rounded-xl px-4 text-sm font-medium text-gray-900 dark:text-white outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-white/20" />
-                                            </div>
-
-                                            <div className="space-y-1.5">
-                                                <label className="text-[9px] sm:text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">CAMPAIGN IMAGE (OR CTRL+V)</label>
-                                                <div className="flex gap-3 items-center">
-                                                    {formData.thumbnail && (
-                                                        <div className="w-16 h-16 rounded-xl overflow-hidden border border-black/[0.08] dark:border-white/[0.08] shrink-0">
-                                                            <img src={formData.thumbnail} alt="Preview" className="w-full h-full object-cover" />
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                    <div className="space-y-1.5">
+                                                        <label className="text-[11px] font-black text-gray-700 dark:text-gray-300 uppercase tracking-widest mb-1.5 flex items-center gap-1.5">BRAND NAME</label>
+                                                        <Input value={formData.brand} onChange={e => setFormData({ ...formData, brand: e.target.value })} placeholder="e.g. Red Bull, Nike, Spotify" className="w-full h-14 bg-white dark:bg-black/40 border border-black/[0.1] dark:border-white/[0.08] focus:border-neon-green/80 rounded-xl px-4 text-sm font-medium text-gray-900 dark:text-white outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-white/20" />
+                                                    </div>
+                                                    <div className="space-y-1.5">
+                                                        <label className="text-[11px] font-black text-gray-700 dark:text-gray-300 uppercase tracking-widest mb-1.5">BRAND LOGO (OR CTRL+V)</label>
+                                                        <div className="flex gap-3 items-center">
+                                                            {formData.brandLogo && (
+                                                                <div className="relative w-14 h-14 rounded-xl overflow-hidden border border-black/[0.08] dark:border-white/[0.08] shrink-0 bg-white dark:bg-zinc-800 p-1 flex items-center justify-center group/logo">
+                                                                    <img src={formData.brandLogo} alt="Logo" className="w-full h-full object-contain" />
+                                                                    <button type="button" onClick={() => setFormData({ ...formData, brandLogo: '' })} className="absolute inset-0 bg-black/70 opacity-0 group-hover/logo:opacity-100 flex items-center justify-center text-white text-xs font-bold transition-opacity" title="Remove logo">✕</button>
+                                                                </div>
+                                                            )}
+                                                            <div className="flex-1 flex gap-2">
+                                                                <Input value={formData.brandLogo} onChange={e => setFormData({ ...formData, brandLogo: e.target.value })} onPaste={handleBrandLogoPaste} placeholder="LOGO URL OR PASTE" className="flex-1 h-14 bg-white dark:bg-black/40 border border-black/[0.1] dark:border-white/[0.08] focus:border-neon-green/80 rounded-xl px-4 text-sm font-medium text-gray-900 dark:text-white outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-white/20" />
+                                                                <label className="w-14 h-14 bg-white dark:bg-black/40 border-2 border-dashed border-black/[0.1] dark:border-white/[0.08] hover:border-neon-green/80 rounded-xl transition-all cursor-pointer flex items-center justify-center group shrink-0" title="Upload Brand Logo">
+                                                                    <input type="file" className="hidden" onChange={handleBrandLogoChange} accept="image/*" />
+                                                                    {isUploadingBrandLogo ? <LoadingSpinner size="xs" color="#39ff14" /> : <Upload size={18} className="text-gray-400 group-hover:text-neon-green transition-colors" />}
+                                                                </label>
+                                                            </div>
                                                         </div>
-                                                    )}
-                                                    <div className="flex-1 flex gap-3">
-                                                        <Input 
-                                                            value={formData.thumbnail} 
-                                                            onChange={e => setFormData({ ...formData, thumbnail: e.target.value })} 
-                                                            onPaste={handlePaste}
-                                                            placeholder="ASSET URL OR PASTE IMAGE" 
-                                                            className="flex-1 h-12 bg-white dark:bg-black/40 border border-black/[0.1] dark:border-white/[0.08] focus:border-neon-green/80 rounded-xl px-4 text-sm font-medium text-gray-900 dark:text-white outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-white/20" 
-                                                        />
-                                                        <label className="w-16 h-12 bg-white dark:bg-black/40 border-2 border-dashed border-black/[0.1] dark:border-white/[0.08] hover:border-neon-green/80 rounded-xl transition-all cursor-pointer flex flex-col items-center justify-center group shrink-0">
-                                                            <input type="file" className="hidden" onChange={handleFileChange} accept="image/*" />
-                                                            <ImageIcon size={18} className="text-gray-400 group-hover:text-neon-green transition-colors" />
-                                                        </label>
                                                     </div>
                                                 </div>
                                             </div>
 
-                                            <StudioRichEditor 
-                                                label="DESCRIPTION"
-                                                required
-                                                value={formData.description}
-                                                onChange={val => setFormData({ ...formData, description: val })}
-                                                placeholder="Describe the campaign requirements and goals..."
-                                                minHeight="180px"
-                                            />
-
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                                                <div className="space-y-1.5">
-                                                    <label className="text-[9px] sm:text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">REWARDS</label>
-                                                    <Input required value={formData.reward} onChange={e => setFormData({ ...formData, reward: e.target.value })} placeholder="e.g. ₹5,000 + Products" className="w-full h-12 bg-white dark:bg-black/40 border border-black/[0.1] dark:border-white/[0.08] focus:border-neon-green/80 rounded-xl px-4 text-sm font-medium text-gray-900 dark:text-white outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-white/20" />
+                                            {/* Section 2: Campaign Info */}
+                                            <div className="p-6 md:p-8 space-y-6 bg-black/[0.02] dark:bg-white/[0.02] border-t border-black/[0.05] dark:border-white/[0.05]">
+                                                <div className="flex items-center gap-3 pb-4 border-b border-black/[0.05] dark:border-white/[0.05]">
+                                                    <div className="w-8 h-8 rounded-full bg-neon-green/10 flex items-center justify-center">
+                                                        <FileText size={16} className="text-neon-green" />
+                                                    </div>
+                                                    <h3 className="text-sm font-black uppercase tracking-widest text-gray-900 dark:text-white">Campaign Info</h3>
+                                                </div>
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                                    <div className="space-y-1.5">
+                                                        <label className="text-[11px] font-black text-gray-700 dark:text-gray-300 uppercase tracking-widest mb-1.5">TITLE</label>
+                                                        <Input required value={formData.title} onChange={e => setFormData({ ...formData, title: e.target.value })} placeholder="e.g. Summer Brand Rush" className="w-full h-14 bg-white dark:bg-black/40 border border-black/[0.1] dark:border-white/[0.08] focus:border-neon-green/80 rounded-xl px-4 text-sm font-medium text-gray-900 dark:text-white outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-white/20" />
+                                                    </div>
+                                                    <div className="space-y-1.5">
+                                                        <label className="text-[11px] font-black text-gray-700 dark:text-gray-300 uppercase tracking-widest mb-1.5">Target Location</label>
+                                                        <StudioSelect value={formData.targetCity} options={[{ value: 'Any', label: 'UNIVERSAL (NATIONAL)' }, ...PREDEFINED_CITIES.map(c => ({ value: c, label: c.toUpperCase() }))]} onChange={val => setFormData({ ...formData, targetCity: val })} className="h-14 border-black/[0.1] dark:border-white/[0.08] rounded-xl text-sm bg-white dark:bg-black/40" accentColor="neon-green" />
+                                                    </div>
                                                 </div>
                                                 <div className="space-y-1.5">
-                                                    <label className="text-[9px] sm:text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">MINIMUM FOLLOWERS</label>
-                                                    <Input type="number" required value={formData.minInstagramFollowers} onChange={e => setFormData({ ...formData, minInstagramFollowers: parseInt(e.target.value) })} placeholder="e.g. 5000" className="w-full h-12 bg-white dark:bg-black/40 border border-black/[0.1] dark:border-white/[0.08] focus:border-neon-green/80 rounded-xl px-4 text-sm font-medium text-gray-900 dark:text-white outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-white/20" />
+                                                    <label className="text-[11px] font-black text-gray-700 dark:text-gray-300 uppercase tracking-widest mb-1.5">Target College / University</label>
+                                                    <Input value={formData.targetCollege} onChange={e => setFormData({ ...formData, targetCollege: e.target.value })} placeholder="e.g. Delhi University, IIT (or 'Any' for all colleges)" className="w-full h-14 bg-white dark:bg-black/40 border border-black/[0.1] dark:border-white/[0.08] focus:border-neon-green/80 rounded-xl px-4 text-sm font-medium text-gray-900 dark:text-white outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-white/20" />
                                                 </div>
                                             </div>
 
-                                            <div className="space-y-1.5">
-                                                <label className="text-[9px] sm:text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">WHATSAPP GROUP LINK</label>
-                                                <Input value={formData.whatsappLink} onChange={e => setFormData({ ...formData, whatsappLink: e.target.value })} placeholder="https://chat.whatsapp.com/..." className="w-full h-12 bg-white dark:bg-black/40 border border-black/[0.1] dark:border-white/[0.08] focus:border-neon-green/80 rounded-xl px-4 text-sm font-medium text-gray-900 dark:text-white outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-white/20" />
-                                            </div>
-
-                                            <div className={cn(
-                                                "p-5 rounded-2xl border flex items-center justify-between transition-all duration-300", 
-                                                formData.isPinned ? "bg-neon-green/5 border-neon-green/30" : "bg-white dark:bg-black/40 border-black/[0.08] dark:border-white/[0.08]"
-                                            )}>
-                                                <div className="flex items-center gap-4">
-                                                    <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300", formData.isPinned ? "bg-neon-green text-black" : "bg-black/5 dark:bg-white/5 text-gray-500")}>
-                                                        <Star size={18} className={cn(formData.isPinned && "fill-current")} />
+                                            {/* Section 3: Campaign Media */}
+                                            <div className="p-6 md:p-8 space-y-6 border-t border-black/[0.05] dark:border-white/[0.05]">
+                                                <div className="flex items-center gap-3 pb-4 border-b border-black/[0.05] dark:border-white/[0.05]">
+                                                    <div className="w-8 h-8 rounded-full bg-neon-green/10 flex items-center justify-center">
+                                                        <ImageIcon size={16} className="text-neon-green" />
                                                     </div>
-                                                    <div>
-                                                        <h4 className="text-gray-900 dark:text-white text-sm font-black uppercase tracking-widest italic leading-tight">PIN TO TOP</h4>
-                                                        <p className="text-[10px] text-gray-500 mt-0.5 uppercase font-bold tracking-widest">SHOW AT THE TOP OF THE LIST</p>
+                                                    <h3 className="text-sm font-black uppercase tracking-widest text-gray-900 dark:text-white">Campaign Media</h3>
+                                                </div>
+                                                <div className="space-y-1.5">
+                                                    <label className="text-[11px] font-black text-gray-700 dark:text-gray-300 uppercase tracking-widest mb-1.5">CAMPAIGN IMAGE (OR CTRL+V)</label>
+                                                    <div className="flex gap-3 items-center">
+                                                        {formData.thumbnail && (
+                                                            <div className="w-14 h-14 rounded-xl overflow-hidden border border-black/[0.08] dark:border-white/[0.08] shrink-0">
+                                                                <img src={formData.thumbnail} alt="Preview" className="w-full h-full object-cover" />
+                                                            </div>
+                                                        )}
+                                                        <div className="flex-1 flex gap-3">
+                                                            <Input value={formData.thumbnail} onChange={e => setFormData({ ...formData, thumbnail: e.target.value })} onPaste={handlePaste} placeholder="ASSET URL OR PASTE IMAGE" className="flex-1 h-14 bg-white dark:bg-black/40 border border-black/[0.1] dark:border-white/[0.08] focus:border-neon-green/80 rounded-xl px-4 text-sm font-medium text-gray-900 dark:text-white outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-white/20" />
+                                                            <label className="w-14 h-14 bg-white dark:bg-black/40 border-2 border-dashed border-black/[0.1] dark:border-white/[0.08] hover:border-neon-green/80 rounded-xl transition-all cursor-pointer flex flex-col items-center justify-center group shrink-0">
+                                                                <input type="file" className="hidden" onChange={handleFileChange} accept="image/*" />
+                                                                <ImageIcon size={18} className="text-gray-400 group-hover:text-neon-green transition-colors" />
+                                                            </label>
+                                                        </div>
                                                     </div>
                                                 </div>
-                                                <button 
-                                                    type="button" 
-                                                    onClick={() => setFormData({ ...formData, isPinned: !formData.isPinned })} 
-                                                    className={cn("w-12 h-6 rounded-full relative transition-all border", formData.isPinned ? "bg-neon-green border-neon-green" : "bg-white dark:bg-black/40 border-black/10 dark:border-white/10")}
-                                                >
-                                                    <div className={cn("absolute top-0.5 w-4 h-4 rounded-full transition-all shadow-sm", formData.isPinned ? "right-1 bg-black" : "left-1 bg-gray-400")} />
-                                                </button>
+                                                <StudioRichEditor label="DESCRIPTION" required value={formData.description} onChange={val => setFormData({ ...formData, description: val })} placeholder="Describe the campaign requirements and goals..." minHeight="180px" />
+                                            </div>
+
+                                            {/* Section 4: Compensation & Reach */}
+                                            <div className="p-6 md:p-8 space-y-6 bg-black/[0.02] dark:bg-white/[0.02] border-t border-black/[0.05] dark:border-white/[0.05]">
+                                                <div className="flex items-center gap-3 pb-4 border-b border-black/[0.05] dark:border-white/[0.05]">
+                                                    <div className="w-8 h-8 rounded-full bg-neon-green/10 flex items-center justify-center">
+                                                        <Gift size={16} className="text-neon-green" />
+                                                    </div>
+                                                    <h3 className="text-sm font-black uppercase tracking-widest text-gray-900 dark:text-white">Compensation & Reach</h3>
+                                                </div>
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                                    <div className="space-y-1.5">
+                                                        <label className="text-[11px] font-black text-gray-700 dark:text-gray-300 uppercase tracking-widest mb-1.5">REWARDS</label>
+                                                        <Input required value={formData.reward} onChange={e => setFormData({ ...formData, reward: e.target.value })} placeholder="e.g. ₹5,000 + Products" className="w-full h-14 bg-white dark:bg-black/40 border border-black/[0.1] dark:border-white/[0.08] focus:border-neon-green/80 rounded-xl px-4 text-sm font-medium text-gray-900 dark:text-white outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-white/20" />
+                                                    </div>
+                                                    <div className="space-y-1.5">
+                                                        <label className="text-[11px] font-black text-gray-700 dark:text-gray-300 uppercase tracking-widest mb-1.5">MINIMUM FOLLOWERS</label>
+                                                        <Input type="number" required value={formData.minInstagramFollowers} onChange={e => setFormData({ ...formData, minInstagramFollowers: parseInt(e.target.value) })} placeholder="e.g. 5000" className="w-full h-14 bg-white dark:bg-black/40 border border-black/[0.1] dark:border-white/[0.08] focus:border-neon-green/80 rounded-xl px-4 text-sm font-medium text-gray-900 dark:text-white outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-white/20" />
+                                                    </div>
+                                                </div>
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                                    <div className="space-y-1.5">
+                                                        <label className="text-[11px] font-black text-gray-700 dark:text-gray-300 uppercase tracking-widest mb-1.5">TOTAL SPOTS</label>
+                                                        <Input type="number" min="0" value={formData.totalSpots} onChange={e => setFormData({ ...formData, totalSpots: e.target.value })} placeholder="e.g. 50 (or leave blank for unlimited)" className="w-full h-14 bg-white dark:bg-black/40 border border-black/[0.1] dark:border-white/[0.08] focus:border-neon-green/80 rounded-xl px-4 text-sm font-medium text-gray-900 dark:text-white outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-white/20" />
+                                                    </div>
+                                                    <div className="space-y-1.5">
+                                                        <label className="text-[11px] font-black text-gray-700 dark:text-gray-300 uppercase tracking-widest mb-1.5">SPOTS LEFT (OVERRIDE)</label>
+                                                        <Input type="number" min="0" value={formData.spotsLeft} onChange={e => setFormData({ ...formData, spotsLeft: e.target.value })} placeholder={formData.totalSpots ? `Auto-calculated (${Math.max(0, Number(formData.totalSpots) - (editingId ? (creators.filter(c => (c.joinedCampaigns || []).includes(editingId)).length) : 0))} left)` : "Auto-calculated if blank"} className="w-full h-14 bg-white dark:bg-black/40 border border-black/[0.1] dark:border-white/[0.08] focus:border-neon-green/80 rounded-xl px-4 text-sm font-medium text-gray-900 dark:text-white outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-white/20" />
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Section 5: Settings */}
+                                            <div className="p-6 md:p-8 space-y-6 border-t border-black/[0.05] dark:border-white/[0.05]">
+                                                <div className="flex items-center gap-3 pb-4 border-b border-black/[0.05] dark:border-white/[0.05]">
+                                                    <div className="w-8 h-8 rounded-full bg-neon-green/10 flex items-center justify-center">
+                                                        <Settings size={16} className="text-neon-green" />
+                                                    </div>
+                                                    <h3 className="text-sm font-black uppercase tracking-widest text-gray-900 dark:text-white">Settings</h3>
+                                                </div>
+                                                <div className="space-y-1.5">
+                                                    <label className="text-[11px] font-black text-gray-700 dark:text-gray-300 uppercase tracking-widest mb-1.5">WHATSAPP GROUP LINK</label>
+                                                    <Input value={formData.whatsappLink} onChange={e => setFormData({ ...formData, whatsappLink: e.target.value })} placeholder="https://chat.whatsapp.com/..." className="w-full h-14 bg-white dark:bg-black/40 border border-black/[0.1] dark:border-white/[0.08] focus:border-neon-green/80 rounded-xl px-4 text-sm font-medium text-gray-900 dark:text-white outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-white/20" />
+                                                </div>
+                                                <div className={cn("p-5 rounded-2xl border flex items-center justify-between transition-all duration-300", formData.isPinned ? "bg-neon-green/5 border-neon-green/30" : "bg-white dark:bg-black/40 border-black/[0.08] dark:border-white/[0.08]")}>
+                                                    <div className="flex items-center gap-4">
+                                                        <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300", formData.isPinned ? "bg-neon-green text-black" : "bg-black/5 dark:bg-white/5 text-gray-500")}>
+                                                            <Star size={18} className={cn(formData.isPinned && "fill-current")} />
+                                                        </div>
+                                                        <div>
+                                                            <h4 className="text-gray-900 dark:text-white text-sm font-black uppercase tracking-widest italic leading-tight">PIN TO TOP</h4>
+                                                            <p className="text-[10px] text-gray-500 mt-0.5 uppercase font-bold tracking-widest">SHOW AT THE TOP OF THE LIST</p>
+                                                        </div>
+                                                    </div>
+                                                    <button type="button" onClick={() => setFormData({ ...formData, isPinned: !formData.isPinned })} className={cn("w-12 h-6 rounded-full relative transition-all border", formData.isPinned ? "bg-neon-green border-neon-green" : "bg-white dark:bg-black/40 border-black/10 dark:border-white/10")}>
+                                                        <div className={cn("absolute top-0.5 w-4 h-4 rounded-full transition-all shadow-sm", formData.isPinned ? "right-1 bg-black" : "left-1 bg-gray-400")} />
+                                                    </button>
+                                                </div>
                                             </div>
                                         </Card>
                                     </div>
 
                                     <div className="lg:col-span-5 space-y-6 lg:sticky lg:top-32 h-fit">
                                         <LivePreview type="campaign" data={formData} />
-                                        <Card className="p-5 md:p-6 bg-white dark:bg-[#0c0e14] border border-black/[0.08] dark:border-white/[0.08] rounded-2xl shadow-sm dark:shadow-none">
-                                            <div className="flex items-center justify-between mb-6">
-                                                <h3 className="text-sm font-heading font-black text-gray-900 dark:text-white uppercase tracking-tight flex items-center gap-2">
-                                                    <Zap size={16} className="text-neon-green" /> TASKS
-                                                </h3>
-                                                <button type="button" onClick={() => setFormData({ ...formData, tasks: [...formData.tasks, { id: Date.now().toString(), title: '', description: '', taskType: 'custom', platform: 'instagram', priority: 'required', creativeAssets: [], creativeLinks: [], submissions: {} }] })} className="h-9 px-4 rounded-xl bg-white dark:bg-white/5 border border-black/10 dark:border-white/10 text-xs font-bold uppercase tracking-wider hover:border-black/20 dark:hover:border-white/20 transition-all text-gray-800 dark:text-zinc-200">
-                                                    + Add Task
-                                                </button>
+                                        <Card className="p-0 bg-white dark:bg-[#0c0e14] border border-black/[0.08] dark:border-white/[0.08] rounded-3xl shadow-sm dark:shadow-none overflow-hidden">
+                                            <div className="p-5 md:p-6 bg-black/[0.02] dark:bg-white/[0.02] border-b border-black/[0.05] dark:border-white/[0.05]">
+                                                <div className="flex items-center justify-between mb-5">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-8 h-8 rounded-full bg-neon-green/10 flex items-center justify-center">
+                                                            <Zap size={16} className="text-neon-green" />
+                                                        </div>
+                                                        <h3 className="text-sm font-black uppercase tracking-widest text-gray-900 dark:text-white flex items-center gap-2">
+                                                            Deliverables
+                                                            <span className="bg-black/10 dark:bg-white/10 text-gray-900 dark:text-white px-2 py-0.5 rounded-full text-[10px] font-mono">
+                                                                {formData.tasks.length}
+                                                            </span>
+                                                        </h3>
+                                                    </div>
+                                                </div>
+                                                
+                                                <div className="grid grid-cols-3 gap-2">
+                                                    <button 
+                                                        type="button" 
+                                                        onClick={() => setFormData(prev => ({
+                                                            ...prev, 
+                                                            tasks: [...prev.tasks, { 
+                                                                id: Date.now().toString(), 
+                                                                title: `Deliverable ${prev.tasks.length + 1}`, 
+                                                                description: '', 
+                                                                taskType: 'custom', 
+                                                                platform: 'instagram', 
+                                                                priority: 'required', 
+                                                                googleFormLink: '',
+                                                                googleFormLabel: '',
+                                                                ticketLink: '',
+                                                                ticketLabel: '',
+                                                                creativeLink: '',
+                                                                creativeLabel: '',
+                                                                referencePostUrl: '',
+                                                                referencePostLabel: '',
+                                                                taskLinks: [],
+                                                                creativeAssets: [], 
+                                                                creativeLinks: [], 
+                                                                submissions: {} 
+                                                            }] 
+                                                        }))} 
+                                                        className="col-span-3 h-11 rounded-xl bg-neon-green text-black font-black uppercase tracking-widest text-[11px] hover:bg-emerald-400 transition-all flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(57,255,20,0.2)] active:scale-95"
+                                                    >
+                                                        <Plus size={14} className="stroke-[3]" />
+                                                        <span>Add Custom Deliverable</span>
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            const count = formData.tasks.filter(t => t.taskType === 'story' || (t.title || '').toLowerCase().includes('story')).length + 1;
+                                                            setFormData(prev => ({
+                                                                ...prev,
+                                                                tasks: [...prev.tasks, {
+                                                                    id: Date.now().toString(),
+                                                                    title: `Instagram Story ${count}`,
+                                                                    description: '',
+                                                                    taskType: 'story',
+                                                                    platform: 'instagram',
+                                                                    priority: 'required',
+                                                                    googleFormLink: '',
+                                                                    googleFormLabel: '',
+                                                                    ticketLink: '',
+                                                                    ticketLabel: 'Add this ticket link (Story Sticker)',
+                                                                    creativeLink: '',
+                                                                    creativeLabel: '',
+                                                                    referencePostUrl: '',
+                                                                    referencePostLabel: 'Repost this poster',
+                                                                    taskLinks: [],
+                                                                    creativeAssets: [],
+                                                                    creativeLinks: [],
+                                                                    submissions: {}
+                                                                }]
+                                                            }));
+                                                        }}
+                                                        className="h-9 rounded-xl bg-white dark:bg-black/40 border border-black/10 dark:border-white/10 hover:border-neon-green/50 hover:bg-neon-green/5 text-gray-700 dark:text-gray-300 text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-1.5 active:scale-95"
+                                                    >
+                                                        <Eye size={12} /> + Story
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            const count = formData.tasks.filter(t => t.taskType === 'reel' || (t.title || '').toLowerCase().includes('reel')).length + 1;
+                                                            setFormData(prev => ({
+                                                                ...prev,
+                                                                tasks: [...prev.tasks, {
+                                                                    id: Date.now().toString(),
+                                                                    title: `Instagram Reel ${count}`,
+                                                                    description: '',
+                                                                    taskType: 'reel',
+                                                                    platform: 'instagram',
+                                                                    priority: 'required',
+                                                                    googleFormLink: '',
+                                                                    googleFormLabel: '',
+                                                                    ticketLink: '',
+                                                                    ticketLabel: '',
+                                                                    creativeLink: '',
+                                                                    creativeLabel: '',
+                                                                    referencePostUrl: '',
+                                                                    referencePostLabel: 'Audio Track / Reel to Remix',
+                                                                    taskLinks: [],
+                                                                    creativeAssets: [],
+                                                                    creativeLinks: [],
+                                                                    submissions: {}
+                                                                }]
+                                                            }));
+                                                        }}
+                                                        className="h-9 rounded-xl bg-white dark:bg-black/40 border border-black/10 dark:border-white/10 hover:border-neon-green/50 hover:bg-neon-green/5 text-gray-700 dark:text-gray-300 text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-1.5 active:scale-95"
+                                                    >
+                                                        <Video size={12} /> + Reel
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            const count = formData.tasks.filter(t => t.taskType === 'content_post' || (t.title || '').toLowerCase().includes('post')).length + 1;
+                                                            setFormData(prev => ({
+                                                                ...prev,
+                                                                tasks: [...prev.tasks, {
+                                                                    id: Date.now().toString(),
+                                                                    title: `Instagram Feed Post ${count}`,
+                                                                    description: '',
+                                                                    taskType: 'content_post',
+                                                                    platform: 'instagram',
+                                                                    priority: 'required',
+                                                                    googleFormLink: '',
+                                                                    googleFormLabel: '',
+                                                                    ticketLink: '',
+                                                                    ticketLabel: '',
+                                                                    creativeLink: '',
+                                                                    creativeLabel: '',
+                                                                    referencePostUrl: '',
+                                                                    referencePostLabel: 'Reference Post',
+                                                                    taskLinks: [],
+                                                                    creativeAssets: [],
+                                                                    creativeLinks: [],
+                                                                    submissions: {}
+                                                                }]
+                                                            }));
+                                                        }}
+                                                        className="h-9 rounded-xl bg-white dark:bg-black/40 border border-black/10 dark:border-white/10 hover:border-neon-green/50 hover:bg-neon-green/5 text-gray-700 dark:text-gray-300 text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-1.5 active:scale-95"
+                                                    >
+                                                        <Camera size={12} /> + Post
+                                                    </button>
+                                                </div>
                                             </div>
-
-                                            <div className="space-y-4 max-h-[700px] overflow-y-auto custom-scrollbar pr-1">
+                                            
+                                            <div className="p-5 md:p-6 space-y-4 max-h-[600px] overflow-y-auto custom-scrollbar">
                                                 {formData.tasks.map((task, index) => (
                                                     <TaskEditorCard 
                                                         key={task.id}
                                                         task={task}
                                                         index={index}
                                                         totalTasks={formData.tasks.length}
+                                                        campaignId={editingId || expandedCampaignId}
+                                                        onCopyTaskLink={(editingId || expandedCampaignId) ? (tId) => handleCopyTaskLink(editingId || expandedCampaignId, tId) : null}
                                                         onUpdate={handleUpdateTask}
                                                         onRemove={handleRemoveTask}
                                                         onMoveUp={handleMoveTaskUp}
@@ -1099,6 +1411,7 @@ const CampaignManager = ({ isEmbedded = false }) => {
                                                         >
                                                             <CampaignBadgeCard 
                                                                 campaign={campaign} 
+                                                                creators={creators}
                                                                 onSelect={() => navigate('/admin/campaigns/manage/' + campaign.id)}
                                                                 onEdit={() => handleEdit(campaign)}
                                                                 onDelete={handleDeleteCampaign}
@@ -1130,6 +1443,7 @@ const CampaignManager = ({ isEmbedded = false }) => {
                                             <CampaignListItem 
                                                 key={campaign.id}
                                                 campaign={campaign}
+                                                creators={creators}
                                                 idx={idx}
                                                 onSelect={() => navigate('/admin/campaigns/manage/' + campaign.id)}
                                                 onEdit={() => handleEdit(campaign)}
@@ -1277,7 +1591,7 @@ const CampaignManager = ({ isEmbedded = false }) => {
                         <div className="fixed inset-0 z-[300] flex items-center justify-center p-4">
                             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/60 dark:bg-black/90 backdrop-blur-md" onClick={() => setRejectionModal(null)} />
                             <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="relative bg-white dark:bg-[#0A0A0A] border border-black/10 dark:border-white/10 rounded-[2.5rem] p-10 max-w-lg w-full shadow-2xl z-10">
-                                <h3 className="text-xl font-black uppercase italic tracking-tighter text-gray-900 dark:text-white mb-6">REJECTION FEEDBACK</h3>
+                                <h3 className="text-xl font-black uppercase tracking-tight text-gray-900 dark:text-white mb-6">REJECTION FEEDBACK</h3>
                                 <textarea value={rejectionReason} onChange={(e) => setRejectionReason(e.target.value)} placeholder="Provide specific reasons for rejection..." className="w-full h-40 bg-gray-50 dark:bg-black border border-black/10 dark:border-white/10 rounded-2xl p-6 text-sm text-gray-900 dark:text-white focus:border-red-500/50 outline-none transition-all resize-none mb-6 placeholder:text-gray-400 dark:placeholder:text-gray-600" />
                                 <div className="flex gap-4">
                                     <button onClick={() => setRejectionModal(null)} className="flex-1 h-14 rounded-xl border border-black/10 dark:border-white/10 text-[10px] font-black uppercase tracking-widest text-gray-700 dark:text-gray-300 hover:bg-black/5 dark:hover:bg-white/5 transition-all">Cancel</button>
@@ -1308,6 +1622,7 @@ const CampaignDetailView = ({ campaignId, onClose, onEdit, onToggleShortlist, on
 
     const appliedCreators = creators.filter(c => (c.joinedCampaigns || []).includes(campaign.id));
     const approvedCreators = appliedCreators.filter(c => (c.shortlistedCampaigns || []).includes(campaign.id));
+    const spotsInfo = getCampaignSpotsInfo(campaign, creators);
 
     return (
         <motion.div 
@@ -1380,8 +1695,22 @@ const CampaignDetailView = ({ campaignId, onClose, onEdit, onToggleShortlist, on
 
                         <div className="space-y-3 flex-1 min-w-0">
                             <div>
-                                <div className="flex items-center gap-2 text-neon-green font-black tracking-widest text-[9px] uppercase mb-1">
-                                    <Target size={12} /> CAMPAIGN BRIEF
+                                <div className="flex items-center gap-2 mb-1 flex-wrap">
+                                    <span className="flex items-center gap-1.5 text-neon-green font-black tracking-widest text-[9px] uppercase">
+                                        <Target size={12} /> CAMPAIGN BRIEF
+                                    </span>
+                                    {(campaign.brand || campaign.brandLogo) && (
+                                        <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10">
+                                            {campaign.brandLogo && (
+                                                <img src={campaign.brandLogo} alt="" className="w-3.5 h-3.5 rounded object-contain shrink-0" />
+                                            )}
+                                            {campaign.brand && (
+                                                <span className="text-[9px] font-black uppercase tracking-wider text-emerald-600 dark:text-neon-green">
+                                                    {campaign.brand}
+                                                </span>
+                                            )}
+                                        </div>
+                                    )}
                                 </div>
                                 <h1 className="text-2xl sm:text-4xl font-heading font-black text-gray-900 dark:text-white tracking-tight leading-tight">
                                     {campaign.title}
@@ -1403,6 +1732,16 @@ const CampaignDetailView = ({ campaignId, onClose, onEdit, onToggleShortlist, on
                                 <span className="flex items-center gap-1.5 bg-purple-500/10 border border-purple-500/20 px-3 py-1.5 rounded-full text-purple-600 dark:text-purple-400">
                                     <Users size={12} /> {campaign.minInstagramFollowers ? `${campaign.minInstagramFollowers}+ FOLLOWERS REQ.` : 'ANY FOLLOWERS'}
                                 </span>
+                                {spotsInfo.hasSpots && (
+                                    <span className={cn(
+                                        "flex items-center gap-1.5 px-3 py-1.5 rounded-full border",
+                                        spotsInfo.isFull 
+                                            ? "bg-red-500/10 border-red-500/20 text-red-500" 
+                                            : "bg-amber-500/10 border-amber-500/20 text-amber-600 dark:text-amber-400"
+                                    )}>
+                                        <Users size={12} /> {spotsInfo.isFull ? '0 SPOTS LEFT (FULL)' : `${spotsInfo.spotsLeft} SPOTS LEFT`} ({appliedCreators.length} APPLIED{spotsInfo.totalSpots ? ` / ${spotsInfo.totalSpots} TOTAL` : ''})
+                                    </span>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -1530,6 +1869,25 @@ const CampaignDetailView = ({ campaignId, onClose, onEdit, onToggleShortlist, on
                                             </button>
                                         </div>
 
+                                        {task.googleFormLink && (
+                                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3.5 rounded-2xl bg-purple-500/[0.06] dark:bg-purple-500/[0.12] border border-purple-500/20 text-xs">
+                                                <div className="flex items-center gap-2.5 min-w-0">
+                                                    <FileText size={15} className="text-purple-500 shrink-0" />
+                                                    <div className="min-w-0">
+                                                        <div className="flex items-center gap-1.5">
+                                                            <span className="font-black uppercase tracking-wider text-[10px] font-mono text-purple-700 dark:text-purple-300">Google Form Submission:</span>
+                                                            <span className="text-[9px] px-1.5 py-0.2 rounded bg-purple-500/20 text-purple-700 dark:text-purple-200 font-mono">New Tab (File Upload)</span>
+                                                        </div>
+                                                        <span className="font-mono text-[11px] text-gray-600 dark:text-zinc-300 truncate block mt-0.5">{task.googleFormLink}</span>
+                                                    </div>
+                                                </div>
+                                                <a href={task.googleFormLink} target="_blank" rel="noopener noreferrer" className="shrink-0 h-8 px-3 bg-purple-600 hover:bg-purple-500 text-white rounded-xl text-[10px] font-black uppercase font-mono flex items-center justify-center gap-1.5 shadow-xs transition-all active:scale-95">
+                                                    <span>Open Form</span>
+                                                    <ExternalLink size={11} />
+                                                </a>
+                                            </div>
+                                        )}
+
                                         {task.description && (
                                             <div className="text-gray-700 dark:text-gray-300 text-sm font-medium leading-relaxed prose prose-invert max-w-none bg-gray-50 dark:bg-black/20 p-5 rounded-2xl border border-black/[0.08] dark:border-white/[0.08]" dangerouslySetInnerHTML={{ __html: task.description }} />
                                         )}
@@ -1615,11 +1973,30 @@ const CampaignDetailView = ({ campaignId, onClose, onEdit, onToggleShortlist, on
 
 /* --- Task Editor Sub-component --- */
 
-const TaskEditorCard = React.memo(({ task, index, totalTasks, onUpdate, onRemove, onMoveUp, onMoveDown, onUploadCreative, isUploading }) => {
+const TaskEditorCard = React.memo(({ task, index, totalTasks, campaignId, onCopyTaskLink, onUpdate, onRemove, onMoveUp, onMoveDown, onUploadCreative, isUploading }) => {
     const [isExpanded, setIsExpanded] = useState(true);
 
     const TaskTypeIcon = getTaskTypeIcon(task.taskType);
     const PlatformIcon = getPlatformIcon(task.platform);
+
+    const taskLinks = task.taskLinks || [];
+
+    const handleAddCustomLink = () => {
+        const next = [...taskLinks, { id: Date.now().toString(), label: '', url: '' }];
+        onUpdate(index, 'taskLinks', next);
+    };
+
+    const handleUpdateCustomLink = (linkIdx, field, val) => {
+        const next = [...taskLinks];
+        next[linkIdx] = { ...next[linkIdx], [field]: val };
+        onUpdate(index, 'taskLinks', next);
+    };
+
+    const handleRemoveCustomLink = (linkIdx) => {
+        const next = [...taskLinks];
+        next.splice(linkIdx, 1);
+        onUpdate(index, 'taskLinks', next);
+    };
 
     return (
         <motion.div
@@ -1627,85 +2004,311 @@ const TaskEditorCard = React.memo(({ task, index, totalTasks, onUpdate, onRemove
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.98 }}
             layout
-            className="bg-white dark:bg-[#0c0e14] border border-black/[0.08] dark:border-white/[0.08] rounded-2xl relative group overflow-hidden shadow-sm dark:shadow-none"
+            className="bg-white dark:bg-[#0c0e14] border border-black/10 dark:border-white/10 rounded-2xl relative group overflow-hidden shadow-sm hover:shadow-md transition-all"
         >
-            <div className={cn("absolute top-0 left-0 w-full h-0.5", task.priority === 'required' ? 'bg-neon-green' : 'bg-black/10 dark:bg-white/10')} />
+            <div className={cn("absolute top-0 left-0 w-full h-1", task.priority === 'required' ? 'bg-neon-green' : 'bg-black/10 dark:border-white/10')} />
 
-            <div className="flex items-center gap-4 flex-wrap p-4 md:p-5 cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 transition-colors" onClick={() => setIsExpanded(!isExpanded)}>
-                <div className="flex items-center gap-3 shrink-0">
-                    <div className="flex flex-col gap-1">
-                        <button type="button" onClick={e => { e.stopPropagation(); onMoveUp(index); }} disabled={index === 0} className="text-gray-400 hover:text-gray-900 dark:hover:text-white disabled:opacity-20 transition-colors"><ArrowUp size={12} /></button>
-                        <button type="button" onClick={e => { e.stopPropagation(); onMoveDown(index); }} disabled={index === totalTasks - 1} className="text-gray-400 hover:text-gray-900 dark:hover:text-white disabled:opacity-20 transition-colors"><ArrowDown size={12} /></button>
+            {/* Task Card Summary Bar (Mobile Friendly) */}
+            <div className="flex items-center gap-2.5 p-3 sm:p-4 cursor-pointer hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition-colors" onClick={() => setIsExpanded(!isExpanded)}>
+                <div className="flex flex-col items-center justify-center gap-0.5 shrink-0 text-gray-400 hover:text-gray-600 transition-colors" onClick={e => e.stopPropagation()}>
+                    <button type="button" onClick={() => onMoveUp(index)} disabled={index === 0} className="disabled:opacity-20 hover:text-neon-green p-0.5"><ChevronUp size={13} strokeWidth={2.5} /></button>
+                    <button type="button" onClick={() => onMoveDown(index)} disabled={index === totalTasks - 1} className="disabled:opacity-20 hover:text-neon-green p-0.5"><ChevronDown size={13} strokeWidth={2.5} /></button>
+                </div>
+                
+                <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border shadow-xs", task.priority === 'required' ? "bg-neon-green/10 border-neon-green/30 text-emerald-600 dark:text-neon-green" : "bg-white dark:bg-[#1a1d24] border-black/10 dark:border-white/10 text-gray-500")}>
+                    <TaskTypeIcon size={18} strokeWidth={2.5} />
+                </div>
+
+                <div className="flex-1 min-w-0 flex flex-col justify-center">
+                    <div className="flex items-center gap-1.5 mb-0.5">
+                        <h4 className="text-sm font-heading font-black text-gray-900 dark:text-white uppercase tracking-tight truncate">
+                            {task.title || `Task ${index + 1}`}
+                        </h4>
+                        {task.priority === 'required' && (
+                            <span className="px-1.5 py-0.2 bg-neon-green/20 text-emerald-700 dark:text-neon-green rounded text-[8px] font-black uppercase tracking-widest shrink-0 font-mono">
+                                REQ
+                            </span>
+                        )}
                     </div>
-                    <div className="w-10 h-10 rounded-xl bg-neon-green/10 border border-neon-green/20 flex items-center justify-center">
-                        <TaskTypeIcon size={16} className="text-emerald-700 dark:text-neon-green" />
+                    <div className="flex items-center gap-2 text-[10px] font-mono text-gray-500 dark:text-gray-400 flex-wrap">
+                        <span className="flex items-center gap-1 uppercase"><PlatformIcon size={11} /> {task.platform || 'Instagram'}</span>
+                        {task.deadline && (
+                            <span className="flex items-center gap-1">
+                                <Clock size={10} /> {new Date(task.deadline).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+                            </span>
+                        )}
+                        {(task.googleFormLink || task.ticketLink || task.referencePostUrl || (task.taskLinks && task.taskLinks.length > 0)) && (
+                            <span className="text-emerald-600 dark:text-neon-green font-bold flex items-center gap-0.5">
+                                · Links Configured
+                            </span>
+                        )}
                     </div>
                 </div>
 
-                <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-3">
-                        <p className="text-sm font-heading font-black text-gray-900 dark:text-white uppercase tracking-tight truncate">{task.title || `Task ${index + 1}`}</p>
-                        {task.priority === 'required' && <span className="px-2 py-0.5 bg-emerald-500/15 text-emerald-700 dark:text-neon-green border border-emerald-500/20 dark:border-neon-green/20 rounded-full text-[9px] font-black uppercase tracking-widest">MANDATORY</span>}
+                <div className="flex items-center gap-1.5 shrink-0" onClick={e => e.stopPropagation()}>
+                    {campaignId && task.id && (
+                        <button
+                            type="button"
+                            onClick={() => onCopyTaskLink?.(task.id)}
+                            className="w-8 h-8 rounded-lg bg-black/5 dark:bg-white/5 hover:bg-neon-green hover:text-black text-gray-500 transition-all flex items-center justify-center"
+                            title="Share direct task link"
+                        >
+                            <Share2 size={13} />
+                        </button>
+                    )}
+                    <button type="button" onClick={() => onRemove(index)} className="w-8 h-8 rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all flex items-center justify-center" title="Delete Task">
+                        <Trash2 size={14} />
+                    </button>
+                    <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center transition-all bg-black/5 dark:bg-white/5 text-gray-500", isExpanded && "bg-black/10 dark:bg-white/10")}>
+                        <ChevronDown size={16} className={cn("transition-transform duration-300", isExpanded && "rotate-180")} />
                     </div>
-                    <div className="flex items-center gap-2 mt-1">
-                        <PlatformIcon size={12} className="text-gray-500" />
-                        <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest">{task.platform}</span>
-                    </div>
-                </div>
-
-                <div className="flex items-center gap-3 shrink-0" onClick={e => e.stopPropagation()}>
-                    <button type="button" onClick={() => onRemove(index)} className="w-10 h-10 rounded-xl bg-white dark:bg-white/5 border border-black/10 dark:border-white/10 text-red-500 hover:border-red-500/30 hover:bg-red-500/10 transition-all flex items-center justify-center"><Trash2 size={14} /></button>
-                    <ChevronDown size={16} className={cn("text-gray-500 transition-transform duration-300", isExpanded && "rotate-180")} />
                 </div>
             </div>
 
             <AnimatePresence>
                 {isExpanded && (
                     <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
-                        <div className="px-5 pb-6 space-y-5 border-t border-black/[0.08] dark:border-white/[0.08] pt-5">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="space-y-1.5">
-                                    <label className="text-[9px] sm:text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Task Title</label>
-                                    <Input required value={task.title} onChange={e => onUpdate(index, 'title', e.target.value)} placeholder="e.g. Instagram Reel" className="w-full h-12 bg-white dark:bg-black/40 border border-black/[0.1] dark:border-white/[0.08] focus:border-neon-green/80 rounded-xl px-4 text-sm font-medium text-gray-900 dark:text-white outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-white/20" />
+                        <div className="p-5 md:p-6 space-y-8 border-t border-black/[0.08] dark:border-white/[0.08] bg-black/[0.015] dark:bg-white/[0.015]">
+                            
+                            {/* ① Basic Info */}
+                            <div className="space-y-4">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <span className="text-neon-green font-black font-mono">①</span>
+                                    <h5 className="text-[11px] font-black uppercase tracking-widest text-gray-900 dark:text-white">Basic Info</h5>
+                                    <div className="flex-1 h-px bg-black/5 dark:bg-white/5 ml-2"></div>
                                 </div>
                                 <div className="space-y-1.5">
-                                    <label className="text-[9px] sm:text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Platform</label>
-                                    <StudioSelect value={task.platform || 'instagram'} options={PLATFORMS.map(p => ({ value: p.value, label: p.label.toUpperCase() }))} onChange={val => onUpdate(index, 'platform', val)} className="h-12 border-black/[0.1] dark:border-white/[0.08] rounded-xl text-sm bg-white dark:bg-black/40" accentColor="neon-green" />
+                                    <label className="text-[10px] font-black text-gray-700 dark:text-gray-300 uppercase tracking-widest block">Task Title</label>
+                                    <Input required value={task.title} onChange={e => onUpdate(index, 'title', e.target.value)} placeholder="e.g. Instagram Story 1" className="w-full h-12 bg-white dark:bg-black/40 border border-black/[0.1] dark:border-white/[0.08] focus:border-neon-green/80 rounded-xl px-4 text-sm font-medium text-gray-900 dark:text-white outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-white/20" />
                                 </div>
-                                <div className="space-y-1.5">
-                                    <label className="text-[9px] sm:text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Task Deadline</label>
-                                    <StudioDatePicker 
-                                        value={task.deadline} 
-                                        onChange={val => onUpdate(index, 'deadline', val)} 
-                                        className="w-full h-12 bg-white dark:bg-black/40 border border-black/[0.1] dark:border-white/[0.08] focus:border-neon-green/80 rounded-xl px-4 text-sm font-medium text-gray-900 dark:text-white outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-white/20"
-                                        placeholder="Set deadline"
-                                    />
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-1.5">
+                                        <label className="text-[10px] font-black text-gray-700 dark:text-gray-300 uppercase tracking-widest block">Platform</label>
+                                        <StudioSelect value={task.platform || 'instagram'} options={PLATFORMS.map(p => ({ value: p.value, label: p.label.toUpperCase() }))} onChange={val => onUpdate(index, 'platform', val)} className="h-12 border-black/[0.1] dark:border-white/[0.08] rounded-xl text-sm bg-white dark:bg-black/40" accentColor="neon-green" />
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        <label className="text-[10px] font-black text-gray-700 dark:text-gray-300 uppercase tracking-widest block">Task Format</label>
+                                        <StudioSelect value={task.taskType || 'custom'} options={TASK_TYPES.map(t => ({ value: t.value, label: t.label.toUpperCase() }))} onChange={val => onUpdate(index, 'taskType', val)} className="h-12 border-black/[0.1] dark:border-white/[0.08] rounded-xl text-sm bg-white dark:bg-black/40" accentColor="neon-green" />
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-1.5">
+                                        <label className="text-[10px] font-black text-gray-700 dark:text-gray-300 uppercase tracking-widest block">Deadline</label>
+                                        <StudioDatePicker value={task.deadline} onChange={val => onUpdate(index, 'deadline', val)} className="w-full h-12 bg-white dark:bg-black/40 border border-black/[0.1] dark:border-white/[0.08] focus:border-neon-green/80 rounded-xl px-4 text-sm font-medium text-gray-900 dark:text-white outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-white/20" placeholder="Set deadline" />
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        <label className="text-[10px] font-black text-gray-700 dark:text-gray-300 uppercase tracking-widest block">Requirement</label>
+                                        <div className="flex gap-2">
+                                            <button type="button" onClick={() => onUpdate(index, 'priority', 'required')} className={cn("flex-1 h-12 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all", task.priority === 'required' ? "bg-neon-green text-black" : "bg-white dark:bg-black/40 border border-black/10 dark:border-white/10 text-gray-500")}>Mandatory</button>
+                                            <button type="button" onClick={() => onUpdate(index, 'priority', 'optional')} className={cn("flex-1 h-12 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all", task.priority === 'optional' ? "bg-black text-white dark:bg-white dark:text-black" : "bg-white dark:bg-black/40 border border-black/10 dark:border-white/10 text-gray-500")}>Optional</button>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
 
-                            <StudioRichEditor label="Task Description" value={task.description} onChange={val => onUpdate(index, 'description', val)} placeholder="Describe what the creator should do..." minHeight="120px" />
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                                <div className="space-y-1.5">
-                                    <label className="text-[9px] sm:text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Target Priority</label>
-                                    <div className="flex gap-2">
-                                        {['required', 'optional'].map(p => (
-                                            <button key={p} type="button" onClick={() => onUpdate(index, 'priority', p)} className={cn("flex-1 h-12 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all", task.priority === p ? "bg-black text-white dark:bg-white dark:text-black border-transparent shadow-sm" : "bg-white dark:bg-[#0c0e14] border-black/[0.08] dark:border-white/[0.08] text-gray-600 dark:text-gray-400 hover:border-black/20 dark:hover:border-white/20")}>{p}</button>
-                                        ))}
+                            {/* ② Action Links & Buttons */}
+                            <div className="space-y-4">
+                                <div className="flex items-center justify-between pt-1">
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-neon-green font-black font-mono">②</span>
+                                        <h5 className="text-[11px] font-black uppercase tracking-widest text-gray-900 dark:text-white">
+                                            Action Links & Buttons
+                                        </h5>
                                     </div>
+                                    <span className="text-[9px] text-gray-500 font-mono hidden sm:inline">
+                                        1-tap Copy & Open buttons on mobile
+                                    </span>
                                 </div>
-                                <div className="space-y-1.5">
-                                    <label className="text-[9px] sm:text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Asset Delivery (Optional)</label>
-                                    <div className="flex flex-wrap gap-2">
+
+                                <div className="space-y-3 bg-black/[0.02] dark:bg-white/[0.02] p-3.5 sm:p-4 rounded-2xl border border-black/5 dark:border-white/5">
+                                    {/* Google Form Link (Deliverable Submission & File Upload) */}
+                                    <div className="p-3 rounded-xl bg-purple-500/[0.04] dark:bg-purple-500/[0.08] border border-purple-500/30 dark:border-purple-400/40 space-y-2">
+                                        <div className="flex items-center justify-between">
+                                            <label className="text-[10px] font-black uppercase tracking-wider text-purple-700 dark:text-purple-300 flex items-center gap-1.5 font-mono">
+                                                <FileText size={13} className="text-purple-500" />
+                                                Google Form Link (Deliverable Submission & File Upload)
+                                            </label>
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-purple-500/20 text-purple-700 dark:text-purple-300">
+                                                    Opens in New Tab
+                                                </span>
+                                                {task.googleFormLink && (
+                                                    <a href={task.googleFormLink} target="_blank" rel="noopener noreferrer" className="text-[10px] text-purple-600 dark:text-purple-300 hover:underline flex items-center gap-1 font-mono">
+                                                        <span>Test Form</span> <ExternalLink size={10} />
+                                                    </a>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                            <div>
+                                                <span className="text-[9px] text-gray-400 font-mono uppercase block mb-1">Button Label (Optional)</span>
+                                                <Input 
+                                                    value={task.googleFormLabel || ''} 
+                                                    onChange={e => onUpdate(index, 'googleFormLabel', e.target.value)} 
+                                                    placeholder="e.g. Submit via Google Form" 
+                                                    className="w-full h-10 bg-white dark:bg-[#0c0e14] border border-black/10 dark:border-white/10 rounded-lg px-3 text-xs text-gray-900 dark:text-white" 
+                                                />
+                                            </div>
+                                            <div>
+                                                <span className="text-[9px] text-gray-400 font-mono uppercase block mb-1">Google Form URL</span>
+                                                <Input 
+                                                    value={task.googleFormLink || ''} 
+                                                    onChange={e => onUpdate(index, 'googleFormLink', e.target.value)} 
+                                                    placeholder="https://forms.gle/... or docs.google.com/forms/..." 
+                                                    className="w-full h-10 bg-white dark:bg-[#0c0e14] border border-black/10 dark:border-white/10 rounded-lg px-3 text-xs text-gray-900 dark:text-white font-mono" 
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* 1. Ticket Link Sticker (e.g. BookMyShow / Event link) */}
+                                    <div className="p-3 rounded-xl bg-white dark:bg-[#0c0e14] border border-black/10 dark:border-white/10 space-y-2">
+                                        <div className="flex items-center justify-between">
+                                            <label className="text-[10px] font-black uppercase tracking-wider text-emerald-700 dark:text-neon-green flex items-center gap-1.5 font-mono">
+                                                <Ticket size={13} className="text-emerald-500" />
+                                                1. Ticket Link (Story Sticker)
+                                            </label>
+                                            {task.ticketLink && (
+                                                <a href={task.ticketLink} target="_blank" rel="noopener noreferrer" className="text-[10px] text-emerald-600 dark:text-neon-green hover:underline flex items-center gap-1 font-mono">
+                                                    <span>Test Link</span> <ExternalLink size={10} />
+                                                </a>
+                                            )}
+                                        </div>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                            <div>
+                                                <span className="text-[9px] text-gray-400 font-mono uppercase block mb-1">Button / Sticker Text</span>
+                                                <Input 
+                                                    value={task.ticketLabel || ''} 
+                                                    onChange={e => onUpdate(index, 'ticketLabel', e.target.value)} 
+                                                    placeholder="e.g. Add this ticket link (Story Sticker)" 
+                                                    className="w-full h-10 bg-black/[0.02] dark:bg-white/[0.04] border border-black/10 dark:border-white/10 rounded-lg px-3 text-xs text-gray-900 dark:text-white" 
+                                                />
+                                            </div>
+                                            <div>
+                                                <span className="text-[9px] text-gray-400 font-mono uppercase block mb-1">Destination URL</span>
+                                                <Input 
+                                                    value={task.ticketLink || ''} 
+                                                    onChange={e => onUpdate(index, 'ticketLink', e.target.value)} 
+                                                    placeholder="https://in.bookmyshow.com/..." 
+                                                    className="w-full h-10 bg-black/[0.02] dark:bg-white/[0.04] border border-black/10 dark:border-white/10 rounded-lg px-3 text-xs text-gray-900 dark:text-white font-mono" 
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* 2. Repost Poster / Creative Asset (e.g. Instagram poster or Drive assets) */}
+                                    <div className="p-3 rounded-xl bg-white dark:bg-[#0c0e14] border border-black/10 dark:border-white/10 space-y-2">
+                                        <div className="flex items-center justify-between">
+                                            <label className="text-[10px] font-black uppercase tracking-wider text-purple-600 dark:text-purple-400 flex items-center gap-1.5 font-mono">
+                                                <Instagram size={13} className="text-purple-500" />
+                                                2. Repost Poster / Creative Asset
+                                            </label>
+                                            {task.referencePostUrl && (
+                                                <a href={task.referencePostUrl} target="_blank" rel="noopener noreferrer" className="text-[10px] text-purple-500 hover:underline flex items-center gap-1 font-mono">
+                                                    <span>Open Post</span> <ExternalLink size={10} />
+                                                </a>
+                                            )}
+                                        </div>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                            <div>
+                                                <span className="text-[9px] text-gray-400 font-mono uppercase block mb-1">Button Display Text</span>
+                                                <Input 
+                                                    value={task.referencePostLabel || ''} 
+                                                    onChange={e => onUpdate(index, 'referencePostLabel', e.target.value)} 
+                                                    placeholder="e.g. Repost this poster / Official Post" 
+                                                    className="w-full h-10 bg-black/[0.02] dark:bg-white/[0.04] border border-black/10 dark:border-white/10 rounded-lg px-3 text-xs text-gray-900 dark:text-white" 
+                                                />
+                                            </div>
+                                            <div>
+                                                <span className="text-[9px] text-gray-400 font-mono uppercase block mb-1">Post or Asset URL</span>
+                                                <Input 
+                                                    value={task.referencePostUrl || ''} 
+                                                    onChange={e => onUpdate(index, 'referencePostUrl', e.target.value)} 
+                                                    placeholder="https://www.instagram.com/p/... or Drive URL" 
+                                                    className="w-full h-10 bg-black/[0.02] dark:bg-white/[0.04] border border-black/10 dark:border-white/10 rounded-lg px-3 text-xs text-gray-900 dark:text-white font-mono" 
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* 3. Additional Custom Links */}
+                                    {taskLinks.map((clink, cIdx) => (
+                                        <div key={clink.id || cIdx} className="p-3 rounded-xl bg-white dark:bg-[#0c0e14] border border-black/10 dark:border-white/10 space-y-2">
+                                            <div className="flex items-center justify-between">
+                                                <label className="text-[10px] font-black uppercase tracking-wider text-gray-500 flex items-center gap-1.5 font-mono">
+                                                    <Link2 size={13} className="text-gray-400" />
+                                                    Custom Link #{cIdx + 1}
+                                                </label>
+                                                <button type="button" onClick={() => handleRemoveCustomLink(cIdx)} className="text-[10px] font-bold text-red-500 hover:text-red-600 flex items-center gap-1 font-mono">
+                                                    <X size={12} /> Remove
+                                                </button>
+                                            </div>
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                                <Input 
+                                                    value={clink.label || ''} 
+                                                    onChange={e => handleUpdateCustomLink(cIdx, 'label', e.target.value)} 
+                                                    placeholder="Button Label (e.g. Guidelines PDF)" 
+                                                    className="w-full h-10 bg-black/[0.02] dark:bg-white/[0.04] border border-black/10 dark:border-white/10 rounded-lg px-3 text-xs" 
+                                                />
+                                                <Input 
+                                                    value={clink.url || ''} 
+                                                    onChange={e => handleUpdateCustomLink(cIdx, 'url', e.target.value)} 
+                                                    placeholder="https://..." 
+                                                    className="w-full h-10 bg-black/[0.02] dark:bg-white/[0.04] border border-black/10 dark:border-white/10 rounded-lg px-3 text-xs font-mono" 
+                                                />
+                                            </div>
+                                        </div>
+                                    ))}
+
+                                    <button 
+                                        type="button" 
+                                        onClick={handleAddCustomLink} 
+                                        className="w-full h-9 rounded-xl border border-dashed border-black/20 dark:border-white/20 hover:border-neon-green/60 hover:text-emerald-600 dark:hover:text-neon-green text-[11px] font-bold font-mono transition-all flex items-center justify-center gap-1.5 text-gray-500"
+                                    >
+                                        <Plus size={13} /> Add Another Link
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* ③ Task Instructions (Separate from Links) */}
+                            <div className="space-y-3 pt-2">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-neon-green font-black font-mono">③</span>
+                                        <h5 className="text-[11px] font-black uppercase tracking-widest text-gray-900 dark:text-white">
+                                            Task Instructions & Rules
+                                        </h5>
+                                    </div>
+                                    <span className="text-[9px] text-gray-400 font-mono hidden sm:inline">
+                                        Different from links above
+                                    </span>
+                                </div>
+                                <p className="text-[11px] text-gray-500 dark:text-zinc-400">
+                                    Write instructions, mention tags, and rules here. The action links configured above will appear as direct 1-tap mobile buttons.
+                                </p>
+                                <StudioRichEditor 
+                                    label="" 
+                                    value={task.description} 
+                                    onChange={val => onUpdate(index, 'description', val)} 
+                                    placeholder="e.g. Post 1 story with the ticket link sticker, tag @newbi.live, and keep it live for 24 hours..." 
+                                    minHeight="100px" 
+                                />
+
+                                {/* Creative Image Upload */}
+                                <div className="space-y-1.5 pt-2">
+                                    <label className="text-[10px] font-black text-gray-700 dark:text-gray-300 uppercase tracking-widest block">
+                                        Creative Assets / Reference Images (Optional)
+                                    </label>
+                                    <div className="flex flex-wrap gap-2.5 items-center">
                                         {(task.creativeAssets || []).map((url, i) => (
-                                            <div key={i} className="relative w-12 h-12 rounded-lg overflow-hidden border border-black/[0.08] dark:border-white/[0.08]">
+                                            <div key={i} className="relative w-14 h-14 rounded-xl overflow-hidden border border-black/[0.08] dark:border-white/[0.08] group/asset">
                                                 <img src={url} alt="" className="w-full h-full object-cover" />
-                                                <button type="button" onClick={() => { const na = [...task.creativeAssets]; na.splice(i,1); onUpdate(index, 'creativeAssets', na); }} className="absolute inset-0 bg-white/80 dark:bg-black/60 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center text-red-500"><XCircle size={14} /></button>
+                                                <button type="button" onClick={() => { const na = [...task.creativeAssets]; na.splice(i,1); onUpdate(index, 'creativeAssets', na); }} className="absolute inset-0 bg-black/60 opacity-0 group-hover/asset:opacity-100 transition-opacity flex items-center justify-center text-white"><XCircle size={18} /></button>
                                             </div>
                                         ))}
-                                        <label className="w-12 h-12 rounded-lg border-2 border-dashed border-black/[0.1] dark:border-white/[0.08] flex items-center justify-center cursor-pointer hover:border-neon-green/80 transition-all bg-white dark:bg-black/40">
+                                        <label className="w-14 h-14 rounded-xl border-2 border-dashed border-black/[0.1] dark:border-white/[0.1] flex flex-col items-center justify-center cursor-pointer hover:border-neon-green hover:text-neon-green transition-all bg-white dark:bg-black/40 text-gray-400">
                                             <input type="file" className="hidden" onChange={e => onUploadCreative(index, e)} />
-                                            <Plus size={14} className="text-gray-400" />
+                                            {isUploading ? <LoadingSpinner size="xs" color="#39ff14" /> : <Plus size={18} />}
                                         </label>
                                     </div>
                                 </div>

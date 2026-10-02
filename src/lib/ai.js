@@ -9,6 +9,7 @@
 
 import { auth } from './firebase';
 import { useStore } from './store';
+import { DEFAULT_V2_PROPOSAL_DATA } from './proposalTemplateV2';
 
 // ── Newbi Error System ──────────────────────────────────────────────────
 export const ERROR_CODES = {
@@ -161,48 +162,22 @@ const getAbsoluteFailproofMock = (type, userPrompt) => {
     }
     
     if (type === 'proposal' || type === 'bulk_proposal') {
-        // Extract any bullet points or lines from user prompt if pre-generated
-        const lines = userPrompt.split('\n').map(l => l.trim()).filter(l => l.length > 5);
-        const hasCustomScope = lines.length >= 3;
-        
-        const dynamicScope = hasCustomScope 
-            ? `## 1. STRATEGIC OVERVIEW & OBJECTIVES\n${lines.slice(0, 2).map(l => `• ${l.replace(/^[•\-\*\d\.\)]\s*/, '')}`).join('\n')}\n\n## 2. PRODUCTION & EXECUTION FRAMEWORK\n${lines.slice(2).map(l => `• ${l.replace(/^[•\-\*\d\.\)]\s*/, '')}`).join('\n')}`
-            : `## 1. STRATEGIC FRAMEWORK & PLANNING\n• Comprehensive concept development and strategic alignment tailored for ${clientName}\n• High-impact creative direction, brand integration, and audience journey mapping\n\n## 2. TECHNICAL PRODUCTION & DEPLOYMENT\n• State-of-the-art Sound, Stage, Intelligent Lighting, and LED Screen AV architecture\n• Full technical rider fulfillment, backstage management, and on-ground operational staffing\n\n## 3. AUDIENCE EXPERIENCE & LOGISTICS\n• Seamless guest flow, artist hospitality, and VIP protocol management\n• Post-event performance telemetry, media reporting, and stakeholder impact review`;
-
         return {
+            ...DEFAULT_V2_PROPOSAL_DATA,
+            templateVersion: 'v2',
             clientName: clientName,
             clientAddress: "Corporate Headquarters, Commercial Business District, India",
             campaignName: campaignTitle,
-            campaignDuration: "Scheduled Execution",
-            coverDescription: `A comprehensive strategic proposal detailing the elite event production, artist management, and strategic marketing architecture curated by Newbi Entertainment for ${clientName}.`,
-            overview: `Our objective is to deliver an unforgettable brand landmark for ${clientName} through world-class production standards, meticulous artist curation, and flawless execution.`,
-            primaryGoal: `Elevate brand equity and maximize audience engagement through premium entertainment production.`,
-            scopeOfWork: dynamicScope,
-            deliverables: [
-                { item: "Comprehensive Event Production & Stage Design", qty: "1 Suite", timeline: "Phase 1" },
-                { item: "Artist Curation, Logistics & Hospitality Suite", qty: "1 Package", timeline: "Show Day" },
-                { item: "On-ground Staffing & Operations Management", qty: "1 Team", timeline: "Phase 2" },
-                { item: "Digital Media & Brand Campaign Integration", qty: "1 Campaign", timeline: "Pre/Post Show" }
+            campaignDuration: "Scheduled Execution 2026–27",
+            introParagraph: `NewBi Entertainment & Marketing LLP is pleased to present this comprehensive strategic promotion and execution proposal for ${campaignTitle}, curated exclusively for ${clientName}. Our approach combines targeted community engagement, multi-channel influencer networks, and rigorous on-ground execution.`,
+            preparedForText: `This quotation has been prepared exclusively for ${clientName}, in connection with ${campaignTitle}. All figures and scope items are indicative and open to discussion ahead of final sign-off.`,
+            executiveParagraphs: [
+                `This proposal outlines the strategic marketing and execution plan NewBi will deliver for ${campaignTitle} presented by ${clientName}. NewBi is an entertainment and youth marketing company connecting high-value audience segments with premium cultural and live experiences.`,
+                `Through a calibrated combination of fan community engagement, creator marketing, and targeted campus outreach, our primary objective is to maximize brand equity and attendance across all designated target markets.`
             ],
-            clientRequirements: [
-                { description: "High-resolution brand assets, logo guidelines, and marketing collateral" },
-                { description: "Designated single point of contact (SPOC) for operational approvals" },
-                { description: "Timely sign-off on venue access and production schedule" }
-            ],
-            items: [
-                { description: "Master Event Production (Sound, Stage, AV & Lighting)", qty: 1, unit: "Setup", price: 175000 },
-                { description: "Artist & Talent Hospitality Logistics Suite", qty: 1, unit: "Package", price: 95000 },
-                { description: "Creative Direction, Crew & Operational Management", qty: 1, unit: "Event", price: 65000 },
-                { description: "Brand Engagement & Strategic Digital Campaign", qty: 1, unit: "Campaign", price: 45000 }
-            ],
-            terms: "1. 50% Advance Fee required upon proposal confirmation to initiate mobilization.\n2. 40% due prior to on-ground production commencement.\n3. 10% balance settlement within 7 days of successful event conclusion.\n4. All quotations exclude 18% GST (taxes applicable as per statutory norms).\n5. Proposal remains valid for 14 calendar days from issuance.",
-            customPages: [
-                {
-                    title: "TECHNICAL & SAFETY PROTOCOL",
-                    subtitle: "PRODUCTION SPECIFICATIONS",
-                    content: `### Safety & Production Standards\n• All electrical and rigging setups strictly adhere to national safety guidelines.\n• Dedicated on-ground safety officer and emergency medical responders stationed throughout setup and show hours.\n• Redundant backup generator and secondary audio channels provisioned for 100% reliability.`
-                }
-            ]
+            primaryObjectiveText: `To build a highly engaged audience base and manage end-to-end promotional rollout for ${campaignTitle}, supporting scalable conversions across all target cities.`,
+            whyThisApproachText: `Audience demographics respond significantly higher to peer-to-peer amplification and creator-led storytelling than to legacy advertising. By leading with organic communities and layering regional on-ground outreach, the campaign drives active engagement and real ticket conversions.`,
+            closingText: `We would welcome the opportunity to walk ${clientName} through this strategic plan in detail and finalize city scope, creator tier mix, and commercial allocations against your project schedule.`
         };
     }
 
@@ -399,34 +374,100 @@ const stripHTML = (obj) => {
 
 const SCHEMAS = {
     proposal: {
-        clientName: "string — Client/company name",
+        templateVersion: "string — MUST be 'v2'",
+        clientName: "string — Client entity name (e.g. 'ITW Playworks')",
+        clientSubtitle: "string — In association with or division (e.g. 'In association with Playworx')",
         clientAddress: "string — Full business address",
-        campaignName: "string — Project, Event, or Mission title",
-        campaignDuration: "string — e.g. '3 Months' or 'Oct 15-20, 2024'",
-        coverDescription: "string — 2-3 sentence cover summary, plain text only",
-        overview: "string — Executive summary or strategic vision, plain text only",
-        primaryGoal: "string — Primary objective of the project, plain text only",
-        scopeOfWork: "string — Scope with bullet points, each on new line starting with •",
-        deliverables: [{ item: "string", qty: "string", timeline: "string" }],
-        clientRequirements: [{ description: "string" }],
-        items: [{ description: "string — Service line item", qty: "number", unit: "string", price: "number — INR price (Estimated Cost)" }],
-        terms: "string — Numbered terms on separate lines",
-        customPages: "[{ title: 'string — Page title', subtitle: 'string — Optional subtitle', content: 'string — Page body content with markdown formatting' }] — Optional extra pages the AI deems useful"
+        campaignName: "string — Project Specification title (e.g. 'Sonu Nigam Revolution')",
+        campaignSubtitle: "string — Project Subtitle (e.g. 'India Tour 2026–27')",
+        campaignDuration: "string — Duration (e.g. 'OCT 26 – MAR 27')",
+        introParagraph: "string — 2-4 sentences executive introduction on cover page",
+        whatsInside: [{ num: "string — '01'", title: "string — Section title" }],
+        preparedForText: "string — Formal statement of exclusivity and confidentiality",
+        classification: "string — 'Strategic Commercial'",
+        strategySub: "string — 'STRATEGIC OUTLINE'",
+        strategyTitle: "string — 'Executive Summary'",
+        executiveParagraphs: ["string — Paragraph 1", "string — Paragraph 2"],
+        primaryObjectiveTitle: "string — 'PRIMARY OBJECTIVE'",
+        primaryObjectiveText: "string — Core campaign objective",
+        anchorMarketsTitle: "string — 'KEY ANCHOR MARKETS'",
+        anchorMarkets: ["string — 6 to 9 target cities/markets"],
+        anchorMarketsCaption: "string — Caption explaining the anchor markets",
+        whyThisApproachTitle: "string — 'WHY THIS APPROACH'",
+        whyThisApproachText: "string — Strategic rationale for audience activation",
+        blueprintSub: "string — 'HOW WE\\'LL EXECUTE'",
+        blueprintTitle: "string — 'Process & Execution Blueprint'",
+        blueprintSteps: [{ number: "string — '01'", title: "string — Step title", bullets: ["string — Action 1", "string — Action 2"] }],
+        deliverablesSub: "string — 'SCOPE SUMMARY'",
+        deliverablesTitle: "string — 'Per City Deliverables'",
+        deliverablesTable: [{ id: "number", deliverable: "string", qty: "string", timeline: "string" }],
+        deliverablesIndicativeNote: "string — Note explaining deliverables",
+        cityNoteTitle: "string — 'NOTE ON PRIMARY HUB'",
+        cityNoteText: "string — Explanatory note on primary hub management",
+        commercialsSub: "string — 'COMMERCIALS'",
+        commercialsTitle: "string — '04 · Pricing Structure'",
+        commercialsSubtitle: "string — Subtitle regarding indicative scaling",
+        pricingTable: [{ id: "number", package: "string", scope: "string", price: "string — e.g. '₹1,50,000 / city'" }],
+        whatsIncludedTitle: "string — 'WHAT\\'S INCLUDED'",
+        whatsIncludedText: "string — Scope inclusions overview",
+        paymentScalingTitle: "string — 'PAYMENT & SCALING'",
+        paymentScalingText: "string — Payment milestone schedule and terms",
+        deepDiveSub: "string — 'CITY DEEP-DIVE · PRIMARY HUB'",
+        deepDiveTitle: "string — '05 · Primary Hub Management'",
+        deepDiveIntro: "string — Context for primary market",
+        deepDiveSubsections: [{ badge: "string — '5.1'", title: "string", bullets: ["string", "string"] }],
+        closingSub: "string — 'CLOSING'",
+        closingTitle: "string — '06 · Next Steps'",
+        closingText: "string — Closing invitation and next steps",
+        preparedBy: "string — 'NewBi Entertainment & Marketing LLP'"
     },
     bulk_proposal: {
-        clientName: "string — Client or company name",
+        templateVersion: "string — MUST be 'v2'",
+        clientName: "string — Client entity name",
+        clientSubtitle: "string — In association with or division",
         clientAddress: "string — Full business address",
-        campaignName: "string — Project, Event, or Mission title",
-        campaignDuration: "string — e.g. '3 Months' or 'Oct 15-20, 2024'",
-        coverDescription: "string — 2-3 sentence executive cover summary, plain text only",
-        overview: "string — Strategic overview and executive summary, plain text only",
-        primaryGoal: "string — Primary objective of the project/event, plain text only",
-        scopeOfWork: "string — MANDATORY. Comprehensive scope of work using clean Markdown headings (## Header) for each major phase/section and bullet points (• ) ONLY for lists under headers.",
-        deliverables: [{ item: "string", qty: "string", timeline: "string" }],
-        clientRequirements: [{ description: "string" }],
-        items: [{ description: "string — Service line item", qty: "number", unit: "string", price: "number — INR price (Estimated Cost)" }],
-        terms: "string — Numbered terms on separate lines",
-        customPages: "[{ title: 'string — Page title', subtitle: 'string — Optional subtitle', content: 'string — Page body content with markdown formatting' }] — Extra distinct sections (e.g. Technical Rider, Artist Lineup, Timeline)"
+        campaignName: "string — Project Specification title",
+        campaignSubtitle: "string — Project Subtitle",
+        campaignDuration: "string — Duration",
+        introParagraph: "string — Executive introduction on cover page",
+        whatsInside: [{ num: "string", title: "string" }],
+        preparedForText: "string — Exclusivity and confidentiality text",
+        classification: "string — 'Strategic Commercial'",
+        strategySub: "string — 'STRATEGIC OUTLINE'",
+        strategyTitle: "string — 'Executive Summary'",
+        executiveParagraphs: ["string — Paragraph 1", "string — Paragraph 2"],
+        primaryObjectiveTitle: "string — 'PRIMARY OBJECTIVE'",
+        primaryObjectiveText: "string — Core campaign objective",
+        anchorMarketsTitle: "string — 'KEY ANCHOR MARKETS'",
+        anchorMarkets: ["string"],
+        anchorMarketsCaption: "string",
+        whyThisApproachTitle: "string — 'WHY THIS APPROACH'",
+        whyThisApproachText: "string",
+        blueprintSub: "string — 'HOW WE\\'LL EXECUTE'",
+        blueprintTitle: "string — 'Process & Execution Blueprint'",
+        blueprintSteps: [{ number: "string", title: "string", bullets: ["string"] }],
+        deliverablesSub: "string — 'SCOPE SUMMARY'",
+        deliverablesTitle: "string — 'Per City Deliverables'",
+        deliverablesTable: [{ id: "number", deliverable: "string", qty: "string", timeline: "string" }],
+        deliverablesIndicativeNote: "string",
+        cityNoteTitle: "string",
+        cityNoteText: "string",
+        commercialsSub: "string — 'COMMERCIALS'",
+        commercialsTitle: "string — '04 · Pricing Structure'",
+        commercialsSubtitle: "string",
+        pricingTable: [{ id: "number", package: "string", scope: "string", price: "string" }],
+        whatsIncludedTitle: "string — 'WHAT\\'S INCLUDED'",
+        whatsIncludedText: "string",
+        paymentScalingTitle: "string — 'PAYMENT & SCALING'",
+        paymentScalingText: "string",
+        deepDiveSub: "string — 'CITY DEEP-DIVE · PRIMARY HUB'",
+        deepDiveTitle: "string — '05 · Primary Hub Management'",
+        deepDiveIntro: "string",
+        deepDiveSubsections: [{ badge: "string", title: "string", bullets: ["string"] }],
+        closingSub: "string — 'CLOSING'",
+        closingTitle: "string — '06 · Next Steps'",
+        closingText: "string",
+        preparedBy: "string — 'NewBi Entertainment & Marketing LLP'"
     },
     contract: {
         parties: {
@@ -465,63 +506,34 @@ const today = new Date().toISOString().split('T')[0];
 const dueDate = new Date(Date.now() + 15*24*60*60*1000).toISOString().split('T')[0];
 
 const SYSTEM_PROMPTS = {
-    proposal: `You are an elite proposal writer for Newbi Entertainment, a premium event production, entertainment, and marketing agency in India. Generate polished, client-ready business proposals.
+    proposal: `You are an elite proposal writer and strategic consultant for Newbi Entertainment, a premier entertainment, youth marketing, and event production agency in India.
+Generate an 8-page master executive strategic quotation proposal following the modern Newbi v2 standard.
 
-SERVICES WE OFFER:
-- Event Production & Management (Sound, Stage, Lighting, AV)
-- Artist Logistics (Hospitality, Travel, Backstage)
-- Event Consultation & Strategic Planning
-- Volunteer Provider & On-ground Staffing
-- Digital Marketing & Social Media Campaigns
+MUST RETURN JSON MATCHING THE SCHEMA WITH "templateVersion": "v2":
+- Page 1 Cover: clientName, clientSubtitle, campaignName, campaignSubtitle, campaignDuration, introParagraph, whatsInside (list of 6 sections), preparedForText, classification ("Strategic Commercial").
+- Page 2 Strategy: strategySub ("STRATEGIC OUTLINE"), strategyTitle ("Executive Summary"), executiveParagraphs (2 rich paragraphs), primaryObjectiveTitle ("PRIMARY OBJECTIVE"), primaryObjectiveText, anchorMarketsTitle ("KEY ANCHOR MARKETS"), anchorMarkets (6-9 cities/markets), anchorMarketsCaption, whyThisApproachTitle ("WHY THIS APPROACH"), whyThisApproachText.
+- Pages 3 & 4 Blueprint: blueprintSub ("HOW WE'LL EXECUTE"), blueprintTitle ("Process & Execution Blueprint"), blueprintSteps (4 to 5 numbered steps, each with title and 2-3 bullet items).
+- Page 5 Scope Deliverables: deliverablesSub ("SCOPE SUMMARY"), deliverablesTitle ("Per City Deliverables"), deliverablesTable (array of deliverables with id, deliverable, qty, timeline), deliverablesIndicativeNote, cityNoteTitle, cityNoteText.
+- Page 6 Commercials: commercialsSub ("COMMERCIALS"), commercialsTitle ("04 · Pricing Structure"), commercialsSubtitle, pricingTable (packages with package, scope, price in INR), whatsIncludedTitle ("WHAT'S INCLUDED"), whatsIncludedText, paymentScalingTitle ("PAYMENT & SCALING"), paymentScalingText.
+- Page 7 Deep Dive: deepDiveSub ("CITY DEEP-DIVE · PRIMARY HUB"), deepDiveTitle ("05 · Primary Hub Management"), deepDiveIntro, deepDiveSubsections (array of 2-3 subsections with badge like '5.1', title, and bullets).
+- Page 8 Closing: closingSub ("CLOSING"), closingTitle ("06 · Next Steps"), closingText, preparedBy ("NewBi Entertainment & Marketing LLP").
 
-FORMATTING RULES:
-- Use Markdown formatting for ALL text fields to create rich, structured documents
-- Use "## " for section headers, "### " for sub-headers
-- Use "• " bullet points for list items, each on a separate line
-- Use numbered lists ("1. ", "2. ", "3. ") for sequential steps or terms
-- Use **bold** for emphasis on key phrases and important numbers
-- Use line breaks between paragraphs for readability
-- Make content specific to the user's request — NO generic placeholders
+Ensure tone is authoritative, corporate, and tailored to the client's industry and scale. Return ONLY valid JSON.`,
 
-CONTENT RULES:
-- overview: Write 2-3 rich paragraphs with **bold** key highlights. Include section headers if the content is substantial.
-- primaryGoal: A focused paragraph with **bold** emphasis on the main objective
-- scopeOfWork: Use "## " headers to organize into logical sections. Under each header, use "• " bullet points for deliverables. Example:
-  ## Stage & Production Setup
-  • Full stage design and fabrication with premium LED backdrop
-  • Professional sound system (Line Array, 10,000W+)
-  ## Artist Management & Logistics
-  • End-to-end artist travel coordination
-  • Green room and hospitality management
-- deliverables: 3-6 items with timelines like "Phase 1", "Day 1", or "Month 1"
-- items: 3-5 service line items with realistic INR prices (₹5,000 – ₹10,00,000) — this section is the "Estimated Cost"
-- clientRequirements: 2-4 items
-- terms: 4-5 numbered items on separate lines ("1. ", "2. "), include "Advance Fee" instead of "activation fee"
-- customPages: optional array of extra pages (e.g. Timeline, Risk Assessment) with title and rich formatted content using ## headers and • bullets — include 1-2 if relevant
-- Return valid JSON matching the schema`,
+    bulk_proposal: `You are an elite proposal architect and document structurer for Newbi Entertainment, India.
+The user is providing pre-generated proposal text, a comprehensive brief, raw unformatted draft, meeting notes, or pasted proposal document.
+Parse and extract all information into the 8-page master executive strategic quotation proposal following the Newbi v2 standard with "templateVersion": "v2".
 
-    bulk_proposal: `You are an elite proposal architect and document structurer for Newbi Entertainment, a premium event production, entertainment, and marketing agency in India.
-
-The user is providing pre-generated proposal text, a comprehensive brief, raw unformatted draft, meeting notes, or pasted proposal document. Your objective is to parse this pre-generated text and automatically extract, map, structure, and synthesize all content into ONE complete, polished, client-ready proposal document.
-
-SERVICES & EXPERTISE WE OFFER:
-- Event Production & Management (Sound, Stage, Lighting, AV, LED Screens)
-- Artist Logistics & Hospitality (Travel, Backstage, Green Room)
-- Event Consultation & Strategic Planning
-- Volunteer & On-ground Operations Staffing
-- Digital Marketing & Social Media Influencer Campaigns
-
-RULES:
-- ALL text: plain text / markdown where specified, NO HTML tags
-- Extract/infer identity: clientName, clientAddress, campaignName, campaignDuration, coverDescription, overview, primaryGoal
-- scopeOfWork: MANDATORY. Organize the project scope into clean, professional sections using Markdown headers (## Header). Use bullet points (• ) ONLY for actual list items under headers. Elevate phrasing to sound premium and authoritative.
-- deliverables: Extract 3-8 key deliverables with item name, qty, and timeline.
-- items: Extract all financial/service line items with realistic INR prices (Estimated Cost), quantity, and unit. If prices are mentioned in the text, preserve them; if not, estimate realistic Indian market pricing.
-- clientRequirements: Extract 2-5 client prerequisites or responsibilities.
-- terms: Extract 4-6 numbered terms and payment conditions (e.g., 50% Advance Fee, balance on delivery, 18% GST).
-- customPages: If the pre-generated text has additional distinct sections (e.g., Timeline, Technical Requirements, Artist Roster, Risk Management), package them cleanly into customPages with title, subtitle, and rich content.
-- Elevate and polish the phrasing to make it executive-grade while strictly retaining all facts, figures, specifics, and requirements provided.
-- Return ONLY valid JSON matching the schema.`,
+Extract/map:
+- clientName, clientSubtitle, campaignName, campaignSubtitle, campaignDuration, introParagraph
+- whatsInside (6 sections)
+- executiveParagraphs, primaryObjectiveText, anchorMarkets, whyThisApproachText
+- blueprintSteps (numbered steps with bullets)
+- deliverablesTable (deliverable, qty, timeline)
+- pricingTable (package, scope, price)
+- deepDiveSubsections (sections with badge, title, bullets)
+- closingText
+Return ONLY valid JSON matching the schema.`,
 
     contract: `You are an expert legal drafter for Newbi Entertainment, a premium entertainment & marketing company in India.
     

@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import useDynamicMeta from '../hooks/useDynamicMeta';
+import useBodyScrollLock from '../hooks/useBodyScrollLock';
 import ProfilePanel from '../components/ProfilePanel';
 import NotificationBell from '../components/NotificationBell';
 import PastClients from '../components/home/PastClients';
@@ -97,6 +98,7 @@ const CreatorLanding = () => {
     const [isScrolled, setIsScrolled] = useState(false);
 
     const [resolvedCreator, setResolvedCreator] = useState(null);
+    useBodyScrollLock(isMenuOpen);
 
     useEffect(() => {
         const handleScroll = () => {
@@ -241,7 +243,7 @@ const CreatorLanding = () => {
     ];
 
     return (
-        <div className="min-h-screen bg-[#fafafa] dark:bg-[#08090d] text-gray-900 dark:text-white selection:bg-neon-green selection:text-black font-heading transition-colors duration-300 relative overflow-x-hidden">
+        <div className="min-h-[100dvh] bg-[#fafafa] dark:bg-[#08090d] text-gray-900 dark:text-white selection:bg-neon-green selection:text-black font-heading transition-colors duration-300 relative overflow-x-hidden" style={{ WebkitTapHighlightColor: 'transparent' }}>
 
             {/* Ambient Background Effects */}
             <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
@@ -250,11 +252,17 @@ const CreatorLanding = () => {
             </div>
 
             {/* ===== FLOATING NAVBAR ===== */}
-            <div className="fixed top-4 left-4 right-4 z-50 max-w-7xl mx-auto md:left-8 md:right-8 lg:left-12 lg:right-12">
-                <header className="w-full h-16 bg-white/90 dark:bg-[#0C1017]/90 backdrop-blur-md border border-black/5 dark:border-white/10 rounded-2xl px-5 md:px-7 flex items-center justify-between shadow-lg shadow-black/[0.03] dark:shadow-black/40 transition-colors duration-300 transform-gpu">
+            <div 
+                className="fixed left-4 right-4 z-50 max-w-7xl mx-auto md:left-8 md:right-8 lg:left-12 lg:right-12"
+                style={{ top: 'calc(env(safe-area-inset-top, 0px) + 0.75rem)' }}
+            >
+                <header 
+                    className="w-full h-16 bg-white/90 dark:bg-[#0C1017]/90 backdrop-blur-md border border-black/5 dark:border-white/10 rounded-2xl px-4 sm:px-6 md:px-7 flex items-center justify-between shadow-lg shadow-black/[0.03] dark:shadow-black/40 transition-colors duration-300 transform-gpu"
+                    style={{ WebkitBackdropFilter: 'blur(12px)' }}
+                >
                     {/* Brand Logo */}
                     <div className="flex items-center gap-3">
-                        <Link to="/creator" className="flex items-center gap-2 group">
+                        <Link to="/creator" className="flex items-center gap-2 group" style={{ touchAction: 'manipulation' }}>
                             <img 
                                 src={isDark ? newbiCreatorsLogoDark : newbiCreatorsLogoLight} 
                                 alt="Newbi Creators" 
@@ -278,7 +286,8 @@ const CreatorLanding = () => {
                         <button
                             onClick={toggleTheme}
                             aria-label="Toggle theme"
-                            className="w-10 h-10 rounded-xl bg-gray-100 dark:bg-white/5 border border-gray-200/70 dark:border-white/10 text-gray-700 dark:text-zinc-300 hover:text-black dark:hover:text-white flex items-center justify-center transition-colors"
+                            className="w-10 h-10 rounded-xl bg-gray-100 dark:bg-white/5 border border-gray-200/70 dark:border-white/10 text-gray-700 dark:text-zinc-300 hover:text-black dark:hover:text-white flex items-center justify-center transition-colors active:scale-95"
+                            style={{ touchAction: 'manipulation' }}
                         >
                             {isDark ? <Sun size={17} className="text-amber-400" /> : <Moon size={17} className="text-gray-700" />}
                         </button>
@@ -286,7 +295,7 @@ const CreatorLanding = () => {
                         <div className="hidden md:flex items-center gap-2">
                             <Link 
                                 to="/" 
-                                className="h-10 px-3.5 rounded-xl bg-gray-100 dark:bg-white/5 border border-gray-200/70 dark:border-white/10 text-gray-700 dark:text-zinc-300 font-bold uppercase tracking-wider text-[10px] hover:bg-gray-200 dark:hover:bg-white/10 transition-colors flex items-center gap-1.5"
+                                className="h-10 px-3.5 rounded-xl bg-gray-100 dark:bg-white/5 border border-gray-200/70 dark:border-white/10 text-gray-700 dark:text-zinc-300 font-bold uppercase tracking-wider text-[10px] hover:bg-gray-200 dark:hover:bg-white/10 transition-colors flex items-center gap-1.5 active:scale-95"
                             >
                                 <ArrowLeft size={12} className="text-neon-green" />
                                 <span>newbi.live</span>
@@ -305,7 +314,7 @@ const CreatorLanding = () => {
                                     {!user && (
                                         <button 
                                             onClick={() => useStore.getState().setAuthModal(true)} 
-                                            className="h-10 px-3.5 rounded-xl bg-gray-100 dark:bg-white/5 border border-gray-200/70 dark:border-white/10 text-gray-800 dark:text-white font-bold uppercase tracking-wider text-[10px] hover:bg-gray-200 dark:hover:bg-white/10 transition-colors"
+                                            className="h-10 px-3.5 rounded-xl bg-gray-100 dark:bg-white/5 border border-gray-200/70 dark:border-white/10 text-gray-800 dark:text-white font-bold uppercase tracking-wider text-[10px] hover:bg-gray-200 dark:hover:bg-white/10 transition-colors active:scale-95"
                                         >
                                             Sign In
                                         </button>
@@ -324,7 +333,7 @@ const CreatorLanding = () => {
                         <NotificationBell />
 
                         {user ? (
-                            <div className="flex items-center cursor-pointer" onClick={() => setIsProfileOpen(true)}>
+                            <div className="flex items-center cursor-pointer active:scale-95" onClick={() => setIsProfileOpen(true)}>
                                 <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-zinc-800 border border-gray-300 dark:border-white/10 flex items-center justify-center font-black text-xs text-gray-800 dark:text-white shadow-sm overflow-hidden">
                                     {activeCreator?.profilePicture ? (
                                         <img src={activeCreator.profilePicture} alt="" className="w-full h-full object-cover" />
@@ -338,7 +347,8 @@ const CreatorLanding = () => {
                         {/* Mobile Menu Button */}
                         <button 
                             onClick={() => setIsMenuOpen(!isMenuOpen)} 
-                            className="p-2 lg:hidden rounded-xl bg-gray-100 dark:bg-white/5 border border-gray-200/70 dark:border-white/10 text-gray-800 dark:text-white outline-none"
+                            className="p-2 lg:hidden rounded-xl bg-gray-100 dark:bg-white/5 border border-gray-200/70 dark:border-white/10 text-gray-800 dark:text-white outline-none active:scale-95"
+                            style={{ touchAction: 'manipulation' }}
                         >
                             {isMenuOpen ? <X size={17} /> : <Menu size={17} />}
                         </button>
@@ -353,9 +363,23 @@ const CreatorLanding = () => {
                         initial={{ opacity: 0, scale: 0.96 }}
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.96 }}
-                        className="fixed inset-0 z-[100] lg:hidden bg-white/95 dark:bg-black/95 backdrop-blur-md flex flex-col justify-between px-6 pt-24 pb-12 overflow-y-auto transform-gpu"
+                        className="fixed inset-0 z-[100] lg:hidden bg-white/95 dark:bg-black/95 backdrop-blur-md flex flex-col justify-between px-6 overflow-y-auto transform-gpu"
+                        style={{
+                            WebkitBackdropFilter: 'blur(16px)',
+                            paddingTop: 'calc(env(safe-area-inset-top, 0px) + 5rem)',
+                            paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 2rem)',
+                            WebkitOverflowScrolling: 'touch',
+                            overscrollBehavior: 'contain'
+                        }}
                     >
-                        <button onClick={() => setIsMenuOpen(false)} className="absolute top-6 right-6 p-3 rounded-full bg-gray-100 dark:bg-white/10 text-gray-800 dark:text-white">
+                        <button 
+                            onClick={() => setIsMenuOpen(false)} 
+                            className="absolute right-6 p-3 rounded-full bg-gray-100 dark:bg-white/10 text-gray-800 dark:text-white active:scale-95"
+                            style={{ 
+                                top: 'calc(env(safe-area-inset-top, 0px) + 1.25rem)',
+                                touchAction: 'manipulation'
+                            }}
+                        >
                             <X size={20} />
                         </button>
                         
@@ -379,7 +403,8 @@ const CreatorLanding = () => {
                                     key={item.href}
                                     href={item.href} 
                                     onClick={() => setIsMenuOpen(false)} 
-                                    className="block p-4 rounded-2xl text-xl font-black text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-white/5 transition-colors"
+                                    className="block p-4 rounded-2xl text-xl font-black text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-white/5 active:bg-gray-200 dark:active:bg-white/10 transition-colors"
+                                    style={{ touchAction: 'manipulation' }}
                                 >
                                     {item.label}
                                 </a>
@@ -391,7 +416,8 @@ const CreatorLanding = () => {
                                 <Link 
                                     to="/creator-dashboard" 
                                     onClick={() => setIsMenuOpen(false)} 
-                                    className="w-full h-12 bg-neon-green text-black flex items-center justify-center gap-2 rounded-xl font-black uppercase tracking-wider text-xs"
+                                    className="w-full h-12 bg-neon-green text-black flex items-center justify-center gap-2 rounded-xl font-black uppercase tracking-wider text-xs active:scale-95"
+                                    style={{ touchAction: 'manipulation' }}
                                 >
                                     <LayoutDashboard size={14} /> Open Creator Dashboard
                                 </Link>
@@ -400,14 +426,16 @@ const CreatorLanding = () => {
                                     <Link 
                                         to="/creator/join" 
                                         onClick={() => setIsMenuOpen(false)} 
-                                        className="w-full h-12 bg-neon-green text-black flex items-center justify-center gap-2 rounded-xl font-black uppercase tracking-wider text-xs"
+                                        className="w-full h-12 bg-neon-green text-black flex items-center justify-center gap-2 rounded-xl font-black uppercase tracking-wider text-xs active:scale-95"
+                                        style={{ touchAction: 'manipulation' }}
                                     >
                                         Apply as Creator
                                     </Link>
                                     {!user && (
                                         <button 
                                             onClick={() => { useStore.getState().setAuthModal(true); setIsMenuOpen(false); }} 
-                                            className="w-full h-12 rounded-xl bg-gray-100 dark:bg-white/10 text-gray-900 dark:text-white font-bold uppercase tracking-wider text-xs"
+                                            className="w-full h-12 rounded-xl bg-gray-100 dark:bg-white/10 text-gray-900 dark:text-white font-bold uppercase tracking-wider text-xs active:scale-95"
+                                            style={{ touchAction: 'manipulation' }}
                                         >
                                             Sign In
                                         </button>
@@ -417,7 +445,8 @@ const CreatorLanding = () => {
                             <Link 
                                 to="/" 
                                 onClick={() => setIsMenuOpen(false)} 
-                                className="w-full h-12 bg-gray-100 dark:bg-white/5 text-gray-800 dark:text-zinc-300 flex items-center justify-center gap-2 rounded-xl font-bold uppercase tracking-wider text-xs"
+                                className="w-full h-12 bg-gray-100 dark:bg-white/5 text-gray-800 dark:text-zinc-300 flex items-center justify-center gap-2 rounded-xl font-bold uppercase tracking-wider text-xs active:scale-95"
+                                style={{ touchAction: 'manipulation' }}
                             >
                                 <ArrowLeft size={14} /> Back to newbi.live
                             </Link>
@@ -430,7 +459,10 @@ const CreatorLanding = () => {
             <main className="relative z-10">
 
                 {/* 1. HERO SECTION (Apple-esque Minimalist) */}
-                <section className="relative min-h-[92vh] flex flex-col items-center justify-center pt-32 pb-16 md:pt-40 md:pb-24 overflow-hidden">
+                <section 
+                    className="relative min-h-[85svh] md:min-h-[90svh] flex flex-col items-center justify-center pb-16 md:pb-24 overflow-hidden"
+                    style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 6.5rem)' }}
+                >
                     <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-12 w-full flex flex-col items-center">
                         
                         {/* Center Column: Hero Narrative */}
@@ -472,7 +504,8 @@ const CreatorLanding = () => {
                                 {isActualCreator ? (
                                     <button 
                                         onClick={() => navigate('/creator-dashboard')}
-                                        className="h-14 px-8 rounded-full bg-gray-900 dark:bg-white hover:bg-black dark:hover:bg-gray-100 text-white dark:text-black font-semibold text-[15px] transition-all flex items-center justify-center gap-2 shadow-sm hover:scale-105 active:scale-95 group w-full sm:w-auto"
+                                        className="h-14 px-8 rounded-full bg-gray-900 dark:bg-white sm:hover:bg-black dark:sm:hover:bg-gray-100 text-white dark:text-black font-semibold text-[15px] transition-all flex items-center justify-center gap-2 shadow-sm sm:hover:scale-105 active:scale-95 group w-full sm:w-auto"
+                                        style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
                                     >
                                         <span>Open Dashboard</span>
                                         <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
@@ -481,14 +514,16 @@ const CreatorLanding = () => {
                                     <>
                                         <button 
                                             onClick={() => navigate('/creator/join')}
-                                            className="h-14 px-8 rounded-full bg-neon-green hover:bg-[#a8ff6f] text-black font-semibold text-[15px] transition-all flex items-center justify-center gap-2 shadow-[0_4px_14px_rgba(57,255,20,0.2)] hover:shadow-[0_6px_20px_rgba(57,255,20,0.3)] hover:scale-105 active:scale-95 group w-full sm:w-auto"
+                                            className="h-14 px-8 rounded-full bg-neon-green sm:hover:bg-[#a8ff6f] text-black font-semibold text-[15px] transition-all flex items-center justify-center gap-2 shadow-[0_4px_14px_rgba(57,255,20,0.2)] sm:hover:shadow-[0_6px_20px_rgba(57,255,20,0.3)] sm:hover:scale-105 active:scale-95 group w-full sm:w-auto"
+                                            style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
                                         >
                                             <span>Apply as Creator</span>
                                             <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
                                         </button>
                                         <a 
                                             href="#advantages"
-                                            className="h-14 px-8 rounded-full bg-gray-100 dark:bg-white/[0.05] hover:bg-gray-200 dark:hover:bg-white/[0.1] border border-transparent dark:border-white/[0.05] text-gray-900 dark:text-white font-semibold text-[15px] transition-all flex items-center justify-center gap-2 w-full sm:w-auto"
+                                            className="h-14 px-8 rounded-full bg-gray-100 dark:bg-white/[0.05] sm:hover:bg-gray-200 dark:sm:hover:bg-white/[0.1] border border-transparent dark:border-white/[0.05] text-gray-900 dark:text-white font-semibold text-[15px] transition-all flex items-center justify-center gap-2 w-full sm:w-auto active:scale-95"
+                                            style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
                                         >
                                             <span>Explore Perks</span>
                                         </a>
@@ -563,7 +598,7 @@ const CreatorLanding = () => {
                         {activeCampaigns.length > 0 ? (
                             <HorizontalCarousel autoScroll={true} className="pb-6 -mx-5 px-5 sm:mx-0 sm:px-0 gap-6 lg:gap-8 md:grid md:grid-cols-2 lg:grid-cols-3 md:overflow-visible">
                                 {activeCampaigns.map((camp, idx) => (
-                                    <div key={camp.id || idx} className="shrink-0 w-[85vw] sm:w-[400px] md:w-auto snap-center">
+                                    <div key={camp.id || idx} className="shrink-0 w-[85vw] sm:w-[400px] md:w-auto snap-start">
                                         <CampaignCard
                                             campaign={camp}
                                             profile={activeCreator}
@@ -662,7 +697,7 @@ const CreatorLanding = () => {
                                     whileInView={{ opacity: 1, y: 0 }}
                                     viewport={{ once: true }}
                                     transition={{ delay: i * 0.1 }}
-                                    className="shrink-0 w-[85vw] sm:w-[350px] lg:w-auto snap-center relative p-8 sm:p-9 rounded-[2rem] bg-white dark:bg-[#0C0E14] border border-gray-200/80 dark:border-white/[0.08] hover:border-neon-green/40 dark:hover:border-neon-green/40 transition-all duration-300 shadow-sm hover:shadow-[0_12px_40px_rgba(0,0,0,0.08)] dark:hover:shadow-[0_0_50px_rgba(57,255,20,0.07)] hover:-translate-y-1.5 flex flex-col justify-between group overflow-hidden"
+                                    className="shrink-0 w-[85vw] sm:w-[350px] lg:w-auto snap-start relative p-8 sm:p-9 rounded-[2rem] bg-white dark:bg-[#0C0E14] border border-gray-200/80 dark:border-white/[0.08] hover:border-neon-green/40 dark:hover:border-neon-green/40 transition-all duration-300 shadow-sm hover:shadow-[0_12px_40px_rgba(0,0,0,0.08)] dark:hover:shadow-[0_0_50px_rgba(57,255,20,0.07)] hover:-translate-y-1.5 flex flex-col justify-between group overflow-hidden"
                                 >
                                     {/* Subtle Top Accent Glow */}
                                     <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-neon-green/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
@@ -737,7 +772,7 @@ const CreatorLanding = () => {
                                     whileInView={{ opacity: 1, y: 0 }}
                                     viewport={{ once: true }}
                                     transition={{ delay: i * 0.1 }}
-                                    className="shrink-0 w-[80vw] sm:w-[280px] md:w-auto snap-center relative p-7 rounded-3xl bg-white dark:bg-zinc-900/30 border border-gray-200 dark:border-white/5 hover:border-gray-300 dark:hover:border-white/15 transition-all flex flex-col justify-between overflow-hidden shadow-sm dark:shadow-none group"
+                                    className="shrink-0 w-[80vw] sm:w-[280px] md:w-auto snap-start relative p-7 rounded-3xl bg-white dark:bg-zinc-900/30 border border-gray-200 dark:border-white/5 hover:border-gray-300 dark:hover:border-white/15 transition-all flex flex-col justify-between overflow-hidden shadow-sm dark:shadow-none group"
                                 >
                                     <div className="space-y-4">
                                         <div className="flex items-center justify-between">
@@ -781,7 +816,7 @@ const CreatorLanding = () => {
                                     whileInView={{ opacity: 1, y: 0 }}
                                     viewport={{ once: true }}
                                     transition={{ delay: i * 0.08 }}
-                                    className="shrink-0 w-[85vw] sm:w-[340px] md:w-auto snap-center p-7 rounded-3xl bg-white dark:bg-zinc-900/30 border border-gray-200 dark:border-white/5 hover:border-gray-300 dark:hover:border-white/10 transition-all shadow-sm dark:shadow-none space-y-3 group"
+                                    className="shrink-0 w-[85vw] sm:w-[340px] md:w-auto snap-start p-7 rounded-3xl bg-white dark:bg-zinc-900/30 border border-gray-200 dark:border-white/5 hover:border-gray-300 dark:hover:border-white/10 transition-all shadow-sm dark:shadow-none space-y-3 group"
                                 >
                                     <div className="w-10 h-10 rounded-xl bg-black/[0.03] dark:bg-white/[0.04] border border-black/[0.06] dark:border-white/[0.08] flex items-center justify-center text-gray-800 dark:text-zinc-200 group-hover:text-neon-green group-hover:border-neon-green/40 transition-all">
                                         <p.icon size={18} strokeWidth={1.8} />
@@ -830,7 +865,7 @@ const CreatorLanding = () => {
                                         whileInView={{ opacity: 1, y: 0 }}
                                         viewport={{ once: true }}
                                         transition={{ delay: i * 0.08 }}
-                                        className="shrink-0 w-[85vw] sm:w-[360px] md:w-auto snap-center p-7 rounded-3xl bg-white dark:bg-zinc-900/40 border border-gray-200 dark:border-white/5 hover:border-gray-300 dark:hover:border-white/15 transition-all shadow-sm dark:shadow-none flex flex-col justify-between group"
+                                        className="shrink-0 w-[85vw] sm:w-[360px] md:w-auto snap-start p-7 rounded-3xl bg-white dark:bg-zinc-900/40 border border-gray-200 dark:border-white/5 hover:border-gray-300 dark:hover:border-white/15 transition-all shadow-sm dark:shadow-none flex flex-col justify-between group"
                                     >
                                         <div className="space-y-4">
                                             <div className="flex items-center justify-between">
@@ -903,7 +938,8 @@ const CreatorLanding = () => {
                                 >
                                     <button 
                                         onClick={() => setOpenFaq(openFaq === i ? null : i)}
-                                        className="w-full p-5 sm:p-6 text-left flex items-center justify-between gap-4 hover:bg-gray-50 dark:hover:bg-white/[0.02] transition-colors"
+                                        className="w-full p-5 sm:p-6 text-left flex items-center justify-between gap-4 hover:bg-gray-50 dark:hover:bg-white/[0.02] active:bg-gray-100 dark:active:bg-white/[0.05] transition-colors active:scale-[0.99]"
+                                        style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
                                     >
                                         <span className="text-sm sm:text-base font-black text-gray-900 dark:text-white">
                                             {faq.q}
@@ -969,6 +1005,7 @@ const CreatorLanding = () => {
                                         <button
                                             onClick={() => navigate('/creator-dashboard')}
                                             className="h-11 sm:h-12 px-7 rounded-xl bg-neon-green hover:bg-white text-black font-bold uppercase tracking-wider text-xs transition-all inline-flex items-center gap-2 shadow-sm hover:shadow-md hover:-translate-y-0.5 active:translate-y-0"
+                                            style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
                                         >
                                             <LayoutDashboard size={14} />
                                             <span>Enter Creator Dashboard</span>
@@ -978,6 +1015,7 @@ const CreatorLanding = () => {
                                         <button
                                             onClick={() => navigate('/creator/join')}
                                             className="h-11 sm:h-12 px-7 rounded-xl bg-neon-green hover:bg-white text-black font-bold uppercase tracking-wider text-xs transition-all inline-flex items-center gap-2 shadow-sm hover:shadow-md hover:-translate-y-0.5 active:translate-y-0"
+                                            style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
                                         >
                                             <span>Apply as Creator for Free</span>
                                             <ArrowRight size={14} />
@@ -1000,7 +1038,8 @@ const CreatorLanding = () => {
                             initial={{ y: 100, opacity: 0 }}
                             animate={{ y: 0, opacity: 1 }}
                             exit={{ y: 100, opacity: 0 }}
-                            className="fixed bottom-6 left-5 z-50 pointer-events-auto md:hidden"
+                            className="fixed left-5 z-50 pointer-events-auto md:hidden"
+                            style={{ bottom: 'calc(env(safe-area-inset-bottom, 0px) + 1.25rem)' }}
                         >
                             <div
                                 className="relative bg-white/80 dark:bg-[#12151c]/80 border border-black/5 dark:border-white/10 rounded-full p-1.5 shadow-[0_8px_30px_rgba(0,0,0,0.12)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.5)] flex items-center justify-center transition-all duration-300 transform-gpu"
@@ -1008,6 +1047,7 @@ const CreatorLanding = () => {
                             >
                                 <button
                                     onClick={() => navigate('/')}
+                                    style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
                                     className={cn(
                                         "rounded-full transition-all duration-300 ease-out flex items-center justify-center active:scale-95 overflow-hidden h-10",
                                         !isScrolled 
@@ -1033,7 +1073,8 @@ const CreatorLanding = () => {
                             initial={{ y: 100, opacity: 0 }}
                             animate={{ y: 0, opacity: 1 }}
                             exit={{ y: 100, opacity: 0 }}
-                            className="fixed bottom-6 right-5 z-50 pointer-events-auto md:hidden"
+                            className="fixed right-5 z-50 pointer-events-auto md:hidden"
+                            style={{ bottom: 'calc(env(safe-area-inset-bottom, 0px) + 1.25rem)' }}
                         >
                             <div
                                 className="relative bg-white/80 dark:bg-[#12151c]/80 border border-black/5 dark:border-white/10 rounded-full p-1.5 shadow-[0_8px_30px_rgba(0,0,0,0.12)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.5)] flex items-center justify-center transition-all duration-300 transform-gpu"
@@ -1041,6 +1082,7 @@ const CreatorLanding = () => {
                             >
                                 <button
                                     onClick={() => navigate(isActualCreator ? '/creator-dashboard' : '/creator/join')}
+                                    style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
                                     className={cn(
                                         "rounded-full transition-all duration-300 ease-out flex items-center justify-center active:scale-95 overflow-hidden h-10",
                                         !isScrolled 

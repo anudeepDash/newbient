@@ -207,10 +207,11 @@ const CreatorPassCard = ({
                     style={{
                         rotateX,
                         rotateY,
-                        transformStyle: "preserve-3d"
+                        transformStyle: "preserve-3d",
+                        WebkitTapHighlightColor: "transparent",
                     }}
                     className={cn(
-                        "relative w-full aspect-[1.6/1] min-h-[200px] sm:min-h-[240px] rounded-[20px] sm:rounded-[24px] overflow-hidden transition-colors duration-300",
+                        "relative w-full aspect-[1.6/1] min-h-[200px] sm:min-h-[240px] rounded-[20px] sm:rounded-[24px] overflow-hidden transition-colors duration-300 touch-pan-y",
                         "bg-white dark:bg-[#111318]",
                         "border border-black/[0.06] dark:border-white/[0.06]",
                         "shadow-[0_2px_20px_rgba(0,0,0,0.06)] dark:shadow-[0_4px_40px_rgba(0,0,0,0.4)]"
@@ -315,7 +316,7 @@ const CreatorPassCard = ({
                                 <button
                                     type="button"
                                     onClick={() => navigate('/creator-dashboard')}
-                                    className="h-7 px-3 rounded-lg bg-gray-900 dark:bg-white text-white dark:text-black font-bold text-[9px] sm:text-[10px] uppercase tracking-wider transition-all flex items-center gap-1 active:scale-95 group/btn"
+                                    className="h-7 px-3 rounded-lg bg-gray-900 dark:bg-white text-white dark:text-black font-bold text-[9px] sm:text-[10px] uppercase tracking-wider transition-all flex items-center gap-1 active:scale-95 group/btn touch-manipulation"
                                 >
                                     <LayoutDashboard size={10} />
                                     <span>Dashboard</span>
@@ -325,7 +326,7 @@ const CreatorPassCard = ({
                                 <button
                                     type="button"
                                     onClick={() => navigate('/creator/join')}
-                                    className="h-7 px-3 rounded-lg bg-neon-green text-black font-bold text-[9px] sm:text-[10px] uppercase tracking-wider transition-all flex items-center gap-1 active:scale-95 group/btn"
+                                    className="h-7 px-3 rounded-lg bg-neon-green text-black font-bold text-[9px] sm:text-[10px] uppercase tracking-wider transition-all flex items-center gap-1 active:scale-95 group/btn touch-manipulation"
                                 >
                                     <span>Claim Pass</span>
                                     <ArrowRight size={10} className="group-hover/btn:translate-x-0.5 transition-transform" />

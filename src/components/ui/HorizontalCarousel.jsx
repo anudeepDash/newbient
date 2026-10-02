@@ -8,11 +8,12 @@ export function HorizontalCarousel({ children, className, autoScroll = false, au
     const [canScrollLeft, setCanScrollLeft] = useState(false);
     const [canScrollRight, setCanScrollRight] = useState(true);
     const [isHovered, setIsHovered] = useState(false);
+    const isTouchingRef = useRef(false);
 
     const checkScroll = () => {
         if (scrollRef.current) {
             const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current;
-            setCanScrollLeft(scrollLeft > 0);
+            setCanScrollLeft(scrollLeft > 5);
             setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 10);
         }
     };
@@ -26,8 +27,13 @@ export function HorizontalCarousel({ children, className, autoScroll = false, au
     useEffect(() => {
         if (!autoScroll) return;
         
+        // On touch screens (iPhone Safari), do not auto-scroll to avoid interrupting user gesture & reading
+        const isTouch = typeof window !== 'undefined' && 
+            (window.matchMedia?.('(pointer: coarse)').matches || 'ontouchstart' in window);
+        if (isTouch) return;
+        
         const interval = setInterval(() => {
-            if (isHovered) return;
+            if (isHovered || isTouchingRef.current) return;
             
             if (scrollRef.current) {
                 const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current;
@@ -46,7 +52,7 @@ export function HorizontalCarousel({ children, className, autoScroll = false, au
                     behavior: 'smooth'
                 });
                 
-                setTimeout(checkScroll, 300);
+                setTimeout(checkScroll, 350);
             }
         }, autoScrollInterval);
 
@@ -60,8 +66,7 @@ export function HorizontalCarousel({ children, className, autoScroll = false, au
                 left: direction === 'left' ? -scrollAmount : scrollAmount,
                 behavior: 'smooth'
             });
-            // Update state slightly after scroll starts to prevent flickering
-            setTimeout(checkScroll, 300);
+            setTimeout(checkScroll, 350);
         }
     };
 
@@ -70,36 +75,42 @@ export function HorizontalCarousel({ children, className, autoScroll = false, au
             className="relative group"
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
-            onTouchStart={() => setIsHovered(true)}
+            onTouchStart={() => {
+                isTouchingRef.current = true;
+                setIsHovered(true);
+            }}
             onTouchEnd={() => {
-                setTimeout(() => setIsHovered(false), 2000); // Resume auto-scroll after a short delay
+                isTouchingRef.current = false;
+                setTimeout(() => setIsHovered(false), 2000);
             }}
         >
-            {/* Left Nav Button */}
+            {/* Left Nav Button - Desktop fine pointers only */}
             {canScrollLeft && (
                 <button
                     type="button"
                     onClick={() => scroll('left')}
-                    className="absolute left-2 sm:-left-4 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-white dark:bg-black/90 border border-gray-200 dark:border-white/10 text-gray-800 dark:text-white shadow-lg flex items-center justify-center opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-opacity hover:scale-105"
+                    className="hidden md:flex absolute left-2 sm:-left-4 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-white dark:bg-black/90 border border-gray-200 dark:border-white/10 text-gray-800 dark:text-white shadow-lg items-center justify-center opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-opacity hover:scale-105 active:scale-95"
+                    style={{ WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}
                     aria-label="Scroll left"
                 >
                     <ChevronLeft size={20} />
                 </button>
             )}
 
-            {/* Right Nav Button */}
+            {/* Right Nav Button - Desktop fine pointers only */}
             {canScrollRight && (
                 <button
                     type="button"
                     onClick={() => scroll('right')}
-                    className="absolute right-2 sm:-right-4 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-white dark:bg-black/90 border border-gray-200 dark:border-white/10 text-gray-800 dark:text-white shadow-lg flex items-center justify-center opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-opacity hover:scale-105"
+                    className="hidden md:flex absolute right-2 sm:-right-4 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-white dark:bg-black/90 border border-gray-200 dark:border-white/10 text-gray-800 dark:text-white shadow-lg items-center justify-center opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-opacity hover:scale-105 active:scale-95"
+                    style={{ WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}
                     aria-label="Scroll right"
                 >
                     <ChevronRight size={20} />
                 </button>
             )}
 
-            {/* Scroll Container */}
+            {/* Scroll Container with native iOS Safari momentum scrolling and vertical passthrough */}
             <div
                 ref={scrollRef}
                 onScroll={checkScroll}
@@ -107,6 +118,13 @@ export function HorizontalCarousel({ children, className, autoScroll = false, au
                     "flex overflow-x-auto snap-x snap-mandatory carousel-scrollbar",
                     className
                 )}
+                style={{
+                    WebkitOverflowScrolling: 'touch',
+                    touchAction: 'pan-y',
+                    overscrollBehaviorX: 'contain',
+                    scrollPaddingLeft: '1.25rem',
+                    scrollPaddingInlineStart: '1.25rem'
+                }}
             >
                 {children}
             </div>

@@ -23,6 +23,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import DocumentSeal from '../components/ui/DocumentSeal';
+import SharedDocumentViewer from '../components/ui/SharedDocumentViewer';
 import SignatureModal from '../components/ui/SignatureModal';
 
 const inlineFmt = (t) => t.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').replace(/\*(.+?)\*/g, '<em>$1</em>');
@@ -223,7 +224,59 @@ const Agreement = () => {
         </div>
     );
 
-    const handleDownloadPDF = async () => {
+    const [pdfBlobUrl, setPdfBlobUrl] = useState('');
+
+    useEffect(() => {
+        if (displayAgreement?.fileUrl) {
+            if (displayAgreement.fileUrl.startsWith('data:application/pdf;base64,')) {
+                try {
+                    const base64Parts = displayAgreement.fileUrl.split(',');
+                    const base64Data = base64Parts[1];
+                    const binaryStr = atob(base64Data);
+                    const len = binaryStr.length;
+                    const bytes = new Uint8Array(len);
+                    for (let i = 0; i < len; i++) {
+                        bytes[i] = binaryStr.charCodeAt(i);
+                    }
+                    const blob = new Blob([bytes], { type: 'application/pdf' });
+                    const blobUrl = URL.createObjectURL(blob);
+                    setPdfBlobUrl(blobUrl);
+                    return () => {
+                        URL.revokeObjectURL(blobUrl);
+                    };
+                } catch (err) {
+                    console.error("Error parsing base64 PDF URL:", err);
+                    setPdfBlobUrl(displayAgreement.fileUrl);
+                }
+            } else {
+                setPdfBlobUrl(displayAgreement.fileUrl);
+            }
+        } else {
+            setPdfBlobUrl('');
+        }
+    }, [displayAgreement?.fileUrl]);
+
+    useEffect(() => {
+        if (displayAgreement) {
+            if (!signatureName && (displayAgreement.parties?.secondParty?.name || displayAgreement.clientName)) {
+                setSignatureName(displayAgreement.parties?.secondParty?.name || displayAgreement.clientName);
+            }
+        }
+    }, [displayAgreement]);
+
+    const handleDownloadPDF = async (blobUrl) => {
+        if (displayAgreement.isUploaded && displayAgreement.fileUrl) {
+            const a = document.createElement('a');
+            a.href = (typeof blobUrl === 'string' && blobUrl) ? blobUrl : (pdfBlobUrl || displayAgreement.fileUrl);
+            a.download = displayAgreement.fileName || `Newbi-Agreement-${displayAgreement.agreementNumber || 'Contract'}.pdf`;
+            a.target = '_blank';
+            a.rel = 'noopener noreferrer';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            return;
+        }
+
         setIsExporting(true);
         const originalScale = scale;
         setScale(1);
@@ -253,15 +306,26 @@ const Agreement = () => {
         setIsSubmitting(true);
         try {
             const metadata = {
-                signedBy: signatureName,
+                signedBy: signatureName.trim(),
                 signedAt: new Date().toISOString(),
                 ip: ipAddress,
-                email: verificationEmail,
+                email: verificationEmail.trim(),
                 userAgent: navigator.userAgent,
                 clientSignature: clientSignature
             };
-            await updateAgreement(id, { status: 'Executed', approvalMetadata: metadata });
+            await updateAgreement(id, { 
+                status: 'Executed', 
+                approvalMetadata: metadata,
+                clientSignature: clientSignature || null
+            });
+            setDisplayAgreement(prev => ({
+                ...prev,
+                status: 'Executed',
+                approvalMetadata: metadata,
+                clientSignature: clientSignature || null
+            }));
             setIsVerifying(false);
+            useStore.getState().addToast('Instrument officially signed & executed!', 'success');
         } catch (error) {
             console.error(error);
             useStore.getState().addToast('Signing failed. Please try again or contact support.', 'error');
@@ -289,42 +353,181 @@ const Agreement = () => {
 
     const paginatedPages = getPaginatedPages();
 
-    return (
-        <div className="min-h-screen bg-[#050505] text-gray-900 dark:text-white font-['Outfit'] selection:bg-white selection:text-black">
-            <style dangerouslySetInnerHTML={{ __html: `
-                @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap');
-                @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400..700&display=swap');
-                @import url('https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,200..900;1,200..900&display=swap');
-                .font-signature { font-family: 'Caveat', cursive; }
-                .font-formal { font-family: 'Crimson Pro', serif; }
-                @media print { .no-print { display: none !important; } .agreement-page-render { margin: 0 !important; box-shadow: none !important; } }
-            `}} />
+    const viewerData = {
+        ...displayAgreement,
+        isUploaded: Boolean(displayAgreement.isUploaded && displayAgreement.fileUrl),
+        fileUrl: displayAgreement.fileUrl,
+        clientName: displayAgreement.parties?.secondParty?.name || displayAgreement.clientName,
+        clientEmail: displayAgreement.parties?.secondParty?.email || displayAgreement.clientEmail,
+        senderName: displayAgreement.parties?.firstParty?.name || 'Newbi Entertainment',
+        senderEmail: displayAgreement.parties?.firstParty?.email || 'legal@newbi.live',
+        amount: displayAgreement.commercials?.totalValue,
+        clientSignature: displayAgreement.approvalMetadata?.clientSignature || displayAgreement.clientSignature,
+        ourSignature: displayAgreement.providerSignature || displayAgreement.ourSignature,
+        coverDescription: displayAgreement.coverDescription || displayAgreement.details?.purpose || '',
+    };
 
-            <nav className="fixed top-0 left-0 right-0 z-50 bg-white dark:bg-black/60 backdrop-blur-3xl border-b border-black/10 dark:border-white/5 h-20 flex items-center px-4 md:px-6 no-print">
-                <div className="max-w-[1400px] mx-auto w-full flex items-center justify-between">
-                    <div className="flex items-center gap-3 md:gap-6">
-                        <Link to={isAdmin ? "/admin/agreements" : "/"} className="p-2.5 md:p-3 bg-black/5 dark:bg-white/5 rounded-2xl hover:bg-black/10 dark:hover:bg-white/10 border border-black/10 dark:border-white/5 transition-all"><ArrowLeft size={16} /></Link>
-                        <div className="min-w-0 max-w-[120px] xs:max-w-[180px] sm:max-w-none">
-                            <p className="text-[9px] md:text-[10px] font-black text-[#A855F7] uppercase tracking-widest leading-none mb-1 truncate">
-                                {displayAgreement.parties?.secondParty?.name ? `${displayAgreement.parties.secondParty.name} (${displayAgreement.agreementNumber || displayAgreement.id})` : 'Legal Instrument'}
+    const actionPanel = (displayAgreement.showSignatures || displayAgreement.showSeal) ? (
+        <div className="space-y-4">
+            {displayAgreement.status === 'Executed' ? (
+                <div className="space-y-4">
+                    <div className="flex items-center gap-3 p-3 bg-[#A855F7]/10 border border-[#A855F7]/30 rounded-xl">
+                        <div className="w-10 h-10 rounded-xl bg-[#A855F7]/20 flex items-center justify-center text-[#A855F7] shrink-0">
+                            <ShieldCheck size={22} />
+                        </div>
+                        <div>
+                            <h4 className="text-sm font-black uppercase italic tracking-tight text-white">
+                                Executed & Sealed
+                            </h4>
+                            <p className="text-[9px] text-gray-300 font-bold uppercase tracking-widest">
+                                Legal Handshake Recorded
                             </p>
-                            <div className="flex items-center gap-2">
-                                <div className={cn("w-1.5 h-1.5 rounded-full shrink-0", displayAgreement.status === 'Executed' ? "bg-emerald-500" : "bg-[#A855F7] animate-pulse")} />
-                                <span className="text-[8px] md:text-[9px] font-black text-gray-500 uppercase tracking-widest truncate">{displayAgreement.status}</span>
-                            </div>
                         </div>
                     </div>
-                    <div className="flex items-center gap-2 md:gap-4">
-                        <button onClick={() => window.print()} className="p-2.5 md:p-3 bg-black/5 dark:bg-white/5 rounded-2xl hover:bg-black/10 dark:hover:bg-white/10 border border-black/10 dark:border-white/5 hidden sm:block"><Printer size={18} /></button>
-                        <Button onClick={handleDownloadPDF} disabled={isExporting} className="bg-[#A855F7] text-black font-black uppercase tracking-widest text-[9px] md:text-[10px] h-10 md:h-12 px-4 md:px-8 rounded-xl shadow-2xl">
-                            {isExporting ? <RefreshCw className="animate-spin mr-2" size={14} /> : <Download size={14} className="mr-1 md:mr-2" />} <span className="hidden sm:inline">Export PDF</span><span className="sm:hidden">Export</span>
+
+                    <div className="p-4 bg-black/40 border border-white/10 rounded-xl space-y-3">
+                        <div>
+                            <span className="text-[8px] font-black uppercase tracking-widest text-gray-400 block mb-0.5">
+                                Signatory
+                            </span>
+                            <p className="text-sm font-black text-white">
+                                {displayAgreement.approvalMetadata?.signedBy || displayAgreement.parties?.secondParty?.name || 'Authorized Signatory'}
+                            </p>
+                        </div>
+
+                        <div className="h-20 border border-dashed border-white/10 rounded-lg bg-white/[0.02] flex items-center justify-center p-2">
+                            {displayAgreement.approvalMetadata?.clientSignature || displayAgreement.clientSignature ? (
+                                <img
+                                    src={displayAgreement.approvalMetadata?.clientSignature || displayAgreement.clientSignature}
+                                    alt="Client Signature"
+                                    className="max-h-full object-contain filter invert"
+                                />
+                            ) : (
+                                <p className="text-2xl font-signature text-[#A855F7]">
+                                    {displayAgreement.approvalMetadata?.signedBy || displayAgreement.parties?.secondParty?.name || 'Authorized Signatory'}
+                                </p>
+                            )}
+                        </div>
+
+                        {displayAgreement.approvalMetadata?.signedAt && (
+                            <div className="text-[9px] font-mono text-gray-400 pt-2 border-t border-white/5 flex justify-between">
+                                <span className="text-gray-500">EXECUTED</span>
+                                <span>{new Date(displayAgreement.approvalMetadata.signedAt).toLocaleDateString()}</span>
+                            </div>
+                        )}
+
+                        {displayAgreement.approvalMetadata?.ip && (
+                            <div className="text-[8px] font-mono text-gray-500 flex justify-between">
+                                <span>AUDIT IP</span>
+                                <span className="text-gray-400">{displayAgreement.approvalMetadata.ip}</span>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            ) : (
+                <div className="space-y-4">
+                    <div className="border-b border-white/10 pb-3">
+                        <h3 className="text-sm font-black uppercase italic tracking-tight font-heading text-white">
+                            Execution & Sign-Off
+                        </h3>
+                        <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest mt-0.5">
+                            Digital Legal Acceptance
+                        </p>
+                    </div>
+
+                    <div className="space-y-3">
+                        <div>
+                            <label className="text-[9px] font-black uppercase tracking-widest text-gray-400 block mb-1">
+                                Full Name <span className="text-[#A855F7]">*</span>
+                            </label>
+                            <input
+                                type="text"
+                                value={signatureName}
+                                onChange={(e) => setSignatureName(e.target.value)}
+                                placeholder="Authorized signatory name..."
+                                className="w-full h-10 bg-white/5 border border-white/10 rounded-xl px-3 text-xs font-bold text-white placeholder:text-gray-600 outline-none focus:border-[#A855F7]/50 transition-colors"
+                            />
+                        </div>
+
+                        <div>
+                            <label className="text-[9px] font-black uppercase tracking-widest text-gray-400 block mb-1">
+                                Signature <span className="text-[#A855F7]">*</span>
+                            </label>
+                            
+                            {clientSignature ? (
+                                <div className="p-3 bg-white/[0.03] border border-white/10 rounded-xl space-y-2">
+                                    <div className="h-16 flex items-center justify-center bg-black/40 rounded-lg p-2 border border-white/5">
+                                        <img src={clientSignature} alt="Signature" className="max-h-full object-contain filter invert" />
+                                    </div>
+                                    <div className="flex justify-between items-center pt-1">
+                                        <button
+                                            type="button"
+                                            onClick={() => setIsSignatureModalOpen(true)}
+                                            className="text-[9px] font-bold uppercase tracking-wider text-[#A855F7] hover:underline"
+                                        >
+                                            Change Signature
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setClientSignature(null)}
+                                            className="text-[9px] font-bold uppercase tracking-wider text-red-400 hover:underline"
+                                        >
+                                            Clear
+                                        </button>
+                                    </div>
+                                </div>
+                            ) : (
+                                <button
+                                    type="button"
+                                    onClick={() => setIsSignatureModalOpen(true)}
+                                    className="w-full h-16 border-2 border-dashed border-white/15 hover:border-[#A855F7]/50 bg-white/[0.02] hover:bg-white/[0.04] rounded-xl flex flex-col items-center justify-center gap-1 text-gray-400 hover:text-white transition-all group"
+                                >
+                                    <PenTool size={16} className="group-hover:text-[#A855F7] transition-colors" />
+                                    <span className="text-[9px] font-black uppercase tracking-widest group-hover:text-[#A855F7] transition-colors">
+                                        Adopt / Draw Signature
+                                    </span>
+                                </button>
+                            )}
+                        </div>
+
+                        <Button
+                            type="button"
+                            onClick={() => setIsVerifying(true)}
+                            disabled={isSubmitting || !signatureName.trim()}
+                            className="w-full h-11 bg-[#A855F7] hover:bg-[#A855F7]/90 text-black font-black uppercase tracking-widest text-[10px] rounded-xl shadow-[0_0_15px_rgba(168,85,247,0.3)] transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                        >
+                            {isSubmitting ? (
+                                <>
+                                    <RefreshCw size={14} className="animate-spin" />
+                                    <span>Executing...</span>
+                                </>
+                            ) : (
+                                <>
+                                    <ShieldCheck size={14} />
+                                    <span>Authorize & Execute Instrument</span>
+                                </>
+                            )}
                         </Button>
                     </div>
                 </div>
-            </nav>
+            )}
+        </div>
+    ) : null;
 
-            <main className="pt-24 md:pt-32 pb-32 flex flex-col items-center gap-8 md:gap-12 px-4 md:px-0">
-                <div ref={agreementRef} className="flex flex-col gap-8 md:gap-12 origin-top transition-all" style={{ transform: `scale(${scale})`, marginBottom: `${(scale - 1) * 1123 * paginatedPages.length}px` }}>
+    return (
+        <>
+            <SharedDocumentViewer
+                documentData={viewerData}
+                type="agreement"
+                isAdmin={isAdmin}
+                isExporting={isExporting}
+                onDownloadPDF={handleDownloadPDF}
+                pdfBlobUrl={pdfBlobUrl}
+                actionPanel={actionPanel}
+            >
+                {!displayAgreement.isUploaded && (
+                    <>
+                        <div ref={agreementRef} className="flex flex-col gap-8 md:gap-12 origin-top transition-all" style={{ transform: `scale(${scale})`, marginBottom: `${(scale - 1) * 1123 * paginatedPages.length}px` }}>
                     {paginatedPages.map((page, idx) => (
                         <div key={idx} className="agreement-page-render w-[794px] h-[1123px] bg-white text-black relative shadow-2xl flex flex-col p-[25mm] rounded-[2px] overflow-hidden font-formal border-[1px] border-black/10">
                             <div className="absolute inset-[5mm] border border-black/5 pointer-events-none" />
@@ -557,6 +760,8 @@ const Agreement = () => {
                         </div>
                     </div>
                 )}
+            </>
+        )}
                 
                 <SignatureModal 
                     isOpen={isSignatureModalOpen}
@@ -567,7 +772,7 @@ const Agreement = () => {
                     }}
                     initialName={signatureName}
                 />
-            </main>
+            </SharedDocumentViewer>
 
             <AnimatePresence>
                 {isVerifying && (
@@ -605,7 +810,7 @@ const Agreement = () => {
                     </div>
                 )}
             </AnimatePresence>
-        </div>
+        </>
     );
 };
 

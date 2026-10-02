@@ -17,8 +17,10 @@ import {
     Twitter, 
     Globe, 
     Star, 
-    CheckCircle2 
+    CheckCircle2,
+    Flame
 } from 'lucide-react';
+import { getCampaignSpotsInfo } from '../lib/utils';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { PREDEFINED_CITIES } from '../lib/constants';
@@ -35,9 +37,9 @@ const PLATFORMS = {
 };
 
 const LiveCampaigns = () => {
-    useStoreSubscription(['campaigns']);
+    useStoreSubscription(['campaigns', 'creators']);
     const navigate = useNavigate();
-    const { campaigns, user, resolveCreatorProfile, updateCreator, setAuthModal } = useStore();
+    const { campaigns, creators, user, resolveCreatorProfile, updateCreator, setAuthModal } = useStore();
     
     const [profile, setProfile] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
@@ -61,6 +63,12 @@ const LiveCampaigns = () => {
         }
         if (!profile) {
             setSelectedCampaignForModal(campaign);
+            return;
+        }
+
+        const spotsInfo = getCampaignSpotsInfo(campaign, creators);
+        if (spotsInfo.isFull) {
+            useStore.getState().addToast("Sorry, this campaign has reached maximum capacity!", 'error');
             return;
         }
 
@@ -117,7 +125,8 @@ const LiveCampaigns = () => {
 
         return visible.filter(camp => {
             const matchesSearch = camp.title?.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                                  camp.description?.toLowerCase().includes(searchQuery.toLowerCase());
+                                  camp.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                                  camp.brand?.toLowerCase().includes(searchQuery.toLowerCase());
             
             const matchesPlatform = selectedPlatform === 'all' || 
                                     (camp.platform || 'instagram').toLowerCase() === selectedPlatform.toLowerCase();
@@ -236,6 +245,7 @@ const LiveCampaigns = () => {
                             {filteredCampaigns.map((camp) => {
                                 const platInfo = PLATFORMS[camp.platform?.toLowerCase()] || PLATFORMS.instagram;
                                 const PlatIcon = platInfo.icon;
+                                const spotsInfo = getCampaignSpotsInfo(camp, creators);
 
                                 return (
                                     <motion.div
@@ -255,6 +265,19 @@ const LiveCampaigns = () => {
                                                     <MapPin size={12} /> {camp.targetCity || 'Universal'}
                                                 </span>
                                                 <div className="flex items-center gap-2">
+                                                    {spotsInfo.hasSpots && (
+                                                        <span className={cn(
+                                                            "px-3 py-1.5 rounded-full backdrop-blur-md text-[9px] font-black uppercase tracking-widest border shadow-xl flex items-center gap-1",
+                                                            spotsInfo.isFull
+                                                                ? "bg-red-500/20 text-red-500 border-red-500/30"
+                                                                : spotsInfo.spotsLeft <= 5
+                                                                ? "bg-amber-500/20 text-amber-400 border-amber-500/30 animate-pulse"
+                                                                : "bg-neon-blue/20 text-neon-blue border-neon-blue/30"
+                                                        )}>
+                                                            <Flame size={11} className={spotsInfo.isFull ? "text-red-500" : spotsInfo.spotsLeft <= 5 ? "text-amber-400" : "text-neon-blue"} />
+                                                            {spotsInfo.isFull ? 'Full' : `${spotsInfo.spotsLeft} Left`}
+                                                        </span>
+                                                    )}
                                                     {camp.status && camp.status.toLowerCase() !== 'open' && (
                                                         <span className={cn(
                                                             "px-3 py-1.5 rounded-full backdrop-blur-md text-[9px] font-black uppercase tracking-widest border shadow-xl",
@@ -274,6 +297,26 @@ const LiveCampaigns = () => {
 
                                         <div className="p-6 sm:p-8 flex-1 flex flex-col justify-between space-y-6 sm:space-y-8 bg-gradient-to-b from-transparent to-zinc-950/40">
                                             <div className="space-y-4">
+                                                {/* Brand Identity Chip */}
+                                                {camp.brand && (
+                                                    <div className="flex items-center gap-2">
+                                                        {camp.brandLogo ? (
+                                                            <img 
+                                                                src={camp.brandLogo} 
+                                                                alt={camp.brand} 
+                                                                className="w-5 h-5 rounded-full object-cover border border-black/10 dark:border-white/20 shrink-0 bg-white"
+                                                            />
+                                                        ) : (
+                                                            <div className="w-5 h-5 rounded-full bg-neon-blue/20 border border-neon-blue/30 flex items-center justify-center text-[9px] font-black text-neon-blue shrink-0">
+                                                                {camp.brand.charAt(0).toUpperCase()}
+                                                            </div>
+                                                        )}
+                                                        <span className="text-[10px] font-black tracking-widest uppercase text-neon-blue truncate">
+                                                            {camp.brand}
+                                                        </span>
+                                                    </div>
+                                                )}
+
                                                 <h3 className="text-2xl font-black uppercase italic tracking-tight text-gray-900 dark:text-white group-hover:text-neon-blue transition-colors line-clamp-2 pr-2 leading-none">{camp.title}</h3>
                                                 <p className="text-gray-600 dark:text-gray-400 text-xs font-medium leading-relaxed line-clamp-2">{camp.description || 'Exclusive brand mission requiring verified creator fulfillment and professional engagement deliverables.'}</p>
                                                 
@@ -281,6 +324,20 @@ const LiveCampaigns = () => {
                                                     <span className="px-3.5 py-1.5 rounded-xl bg-gray-200/60 dark:bg-white/[0.03] border border-black/10 dark:border-white/5 text-[9px] font-black uppercase tracking-widest text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
                                                         <Users size={12} className="text-neon-blue" /> Min. {Number(camp.minInstagramFollowers || 0).toLocaleString()} Followers
                                                     </span>
+
+                                                    {spotsInfo.hasSpots && (
+                                                        <span className={cn(
+                                                            "px-3.5 py-1.5 rounded-xl border text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5",
+                                                            spotsInfo.isFull 
+                                                                ? "bg-red-500/10 border-red-500/20 text-red-500" 
+                                                                : spotsInfo.spotsLeft <= 5
+                                                                ? "bg-amber-500/10 border-amber-500/20 text-amber-500 dark:text-amber-400"
+                                                                : "bg-gray-200/60 dark:bg-white/[0.03] border-black/10 dark:border-white/5 text-gray-700 dark:text-gray-300"
+                                                        )}>
+                                                            <Flame size={12} className={spotsInfo.isFull ? "text-red-500" : spotsInfo.spotsLeft <= 5 ? "text-amber-500" : "text-neon-blue"} />
+                                                            {spotsInfo.isFull ? 'Capacity Full' : `${spotsInfo.spotsLeft} / ${spotsInfo.totalSpots} Spots Left`}
+                                                        </span>
+                                                    )}
                                                 </div>
                                             </div>
 
@@ -305,6 +362,22 @@ const LiveCampaigns = () => {
                                                                 <span className="px-3.5 py-2 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-neon-green border border-emerald-500/20 font-black uppercase text-[10px] tracking-wider flex items-center gap-1.5 font-mono">
                                                                     <CheckCircle2 size={12} className="stroke-[2.5]" />
                                                                     <span>Applied</span>
+                                                                </span>
+                                                                <Button 
+                                                                    onClick={() => setSelectedCampaignForModal(camp)}
+                                                                    className="h-11 px-4 rounded-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-gray-700 dark:text-gray-300 font-bold uppercase tracking-wider text-[10px] hover:bg-black/10 dark:hover:bg-white/10"
+                                                                >
+                                                                    <span>Brief</span>
+                                                                </Button>
+                                                            </div>
+                                                        );
+                                                    }
+
+                                                    if (spotsInfo.isFull) {
+                                                        return (
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="px-3.5 py-2 rounded-full bg-red-500/10 text-red-500 border border-red-500/20 font-black uppercase text-[10px] tracking-wider font-mono">
+                                                                    Full Capacity
                                                                 </span>
                                                                 <Button 
                                                                     onClick={() => setSelectedCampaignForModal(camp)}

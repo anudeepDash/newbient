@@ -10,11 +10,18 @@ import {
     Camera, 
     Upload, 
     ExternalLink, 
-    AlertCircle 
+    AlertCircle,
+    Share2,
+    Check,
+    ChevronDown,
+    FileText
 } from 'lucide-react';
 import { Button } from './Button';
 import { LoadingSpinner } from './LoadingSpinner';
 import { cn } from '../../lib/utils';
+import { useStore } from '../../lib/store';
+import TaskActionLinks from '../creator/TaskActionLinks';
+import { linkifyContent, extractTaskActionLinks, cleanTaskDescription, getTaskGoogleFormUrl } from '../../lib/taskLinks';
 
 const getSubmissionStatus = (task, uid) => {
     const sub = task.submissions?.[uid];
@@ -22,6 +29,20 @@ const getSubmissionStatus = (task, uid) => {
     if ((task.verifiedBy || []).includes(uid)) return 'approved';
     if ((task.completedBy || []).includes(uid)) return 'submitted';
     return 'not_started';
+};
+
+const FormattedTaskDescription = ({ description, actionLinks = [] }) => {
+    if (!description) return null;
+    const cleaned = cleanTaskDescription(description, actionLinks);
+    if (!cleaned) return null;
+    const linkified = linkifyContent(cleaned);
+
+    return (
+        <div
+            className="article-content text-xs sm:text-[13px] text-gray-700 dark:text-zinc-300 leading-relaxed break-words font-normal"
+            dangerouslySetInnerHTML={{ __html: linkified }}
+        />
+    );
 };
 
 const TaskSubmissionModal = ({ 
@@ -37,17 +58,46 @@ const TaskSubmissionModal = ({
     const [contentLink, setContentLink] = useState('');
     const [proofFile, setProofFile] = useState(null);
     const [copiedCaption, setCopiedCaption] = useState(false);
+    const [copiedShare, setCopiedShare] = useState(false);
+    const [showManualForm, setShowManualForm] = useState(false);
     const [currentSlide, setCurrentSlide] = useState(0);
 
     const status = getSubmissionStatus(task, profileUid);
     const submission = task.submissions?.[profileUid];
     const isDeadlinePassed = task.deadline && new Date(task.deadline) < new Date();
+    const googleFormUrl = getTaskGoogleFormUrl(task);
     
     const TypeInfo = taskTypes[task.taskType] || taskTypes.custom;
     const PlatInfo = platforms[task.platform] || platforms.other;
     
     const creativeAssets = task.creativeAssets || [];
     const creativeLinks = task.creativeLinks || [];
+
+    const handleShareTask = async (e) => {
+        if (e) {
+            e.stopPropagation();
+            e.preventDefault();
+        }
+        const directUrl = `${window.location.origin}/campaign/${campaignId}?taskId=${task.id}`;
+        if (navigator.share) {
+            try {
+                await navigator.share({
+                    title: `${task.title}`,
+                    text: `Deliverable task: ${task.title} on Newbi`,
+                    url: directUrl
+                });
+                return;
+            } catch (err) {
+                if (err.name === 'AbortError') return;
+            }
+        }
+        if (navigator.clipboard) {
+            await navigator.clipboard.writeText(directUrl);
+            setCopiedShare(true);
+            useStore.getState().addToast("Task link copied to clipboard!", 'success');
+            setTimeout(() => setCopiedShare(false), 2200);
+        }
+    };
 
     const handleCopy = () => {
         if (!task.captionScript) return;
@@ -71,15 +121,35 @@ const TaskSubmissionModal = ({
                 initial={{ scale: 0.95, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, y: 20 }}
                 className="relative w-full max-w-4xl bg-white dark:bg-[#0a0a0a] border border-black/10 dark:border-white/10 rounded-2xl sm:rounded-[2rem] md:rounded-[3rem] shadow-[0_50px_100px_rgba(0,0,0,0.8)] overflow-hidden flex flex-col md:flex-row max-h-[92vh] sm:max-h-[90vh]"
             >
-                {/* Floating Close Button - Globally Accessible on Mobile & Desktop */}
-                <button 
-                    onClick={onClose} 
-                    className="absolute top-3.5 right-3.5 md:top-8 md:right-8 w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-white/90 dark:bg-black/70 hover:bg-white dark:hover:bg-black/90 backdrop-blur-xl border border-black/10 dark:border-white/20 flex items-center justify-center text-gray-800 dark:text-white transition-all shadow-xl active:scale-95 z-50 group"
-                    aria-label="Close"
-                >
-                    <X size={16} className="md:hidden group-hover:rotate-90 transition-transform duration-200" />
-                    <X size={18} className="hidden md:block group-hover:rotate-90 transition-transform duration-200" />
-                </button>
+                {/* Floating Top Controls: Share Task + Close Button */}
+                <div className="absolute top-3.5 right-3.5 md:top-8 md:right-8 flex items-center gap-2 z-50">
+                    <button 
+                        type="button"
+                        onClick={handleShareTask}
+                        className="h-9 sm:h-11 px-3 sm:px-4 rounded-full bg-white/90 dark:bg-black/70 hover:bg-white dark:hover:bg-black/90 backdrop-blur-xl border border-black/10 dark:border-white/20 flex items-center gap-1.5 text-xs font-bold font-mono text-gray-800 dark:text-white transition-all shadow-xl active:scale-95"
+                        title="Share direct task link"
+                    >
+                        {copiedShare ? (
+                            <>
+                                <Check size={14} className="text-emerald-500 stroke-[3]" />
+                                <span className="text-emerald-500 font-black">Copied!</span>
+                            </>
+                        ) : (
+                            <>
+                                <Share2 size={14} />
+                                <span className="hidden sm:inline">Share Task</span>
+                            </>
+                        )}
+                    </button>
+                    <button 
+                        onClick={onClose} 
+                        className="w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-white/90 dark:bg-black/70 hover:bg-white dark:hover:bg-black/90 backdrop-blur-xl border border-black/10 dark:border-white/20 flex items-center justify-center text-gray-800 dark:text-white transition-all shadow-xl active:scale-95 group"
+                        aria-label="Close"
+                    >
+                        <X size={16} className="md:hidden group-hover:rotate-90 transition-transform duration-200" />
+                        <X size={18} className="hidden md:block group-hover:rotate-90 transition-transform duration-200" />
+                    </button>
+                </div>
 
                 {/* Left Side: Creative & Guidelines */}
                 <div className="flex-1 md:w-1/2 p-4 sm:p-6 md:p-12 overflow-y-auto custom-scrollbar border-b md:border-b-0 md:border-r border-black/10 dark:border-white/10">
@@ -106,10 +176,16 @@ const TaskSubmissionModal = ({
                             )}
                         </div>
 
-                        <div className="space-y-2 sm:space-y-3">
-                            <h4 className="text-[10px] font-black text-gray-600 dark:text-zinc-400 uppercase tracking-widest font-mono">Campaign Brief</h4>
-                            <div className="article-content text-xs sm:text-sm text-gray-600 dark:text-gray-300 font-normal leading-relaxed" dangerouslySetInnerHTML={{ __html: task.description }} />
-                        </div>
+                        {(() => {
+                            const actionLinks = extractTaskActionLinks(task).filter(l => l.type !== 'google_form');
+                            return (
+                                <div className="space-y-2">
+                                    <h4 className="text-[10px] font-black text-gray-600 dark:text-zinc-400 uppercase tracking-widest font-mono">Campaign Brief</h4>
+                                    <FormattedTaskDescription description={task.description} actionLinks={actionLinks} />
+                                    <TaskActionLinks task={task} links={actionLinks} isJoined={true} />
+                                </div>
+                            );
+                        })()}
 
                         {creativeAssets.length > 0 && (
                             <div className="space-y-3 sm:space-y-4">
@@ -200,42 +276,142 @@ const TaskSubmissionModal = ({
                                         </div>
                                     )}
 
-                                    <div className="space-y-8">
-                                        <div className="space-y-3">
-                                            <label className="text-[10px] font-black text-gray-600 uppercase tracking-widest flex items-center gap-2">
-                                                <Link2 size={12} className="text-emerald-600 dark:text-neon-green" /> Social Link
-                                            </label>
-                                            <input 
-                                                type="url"
-                                                value={contentLink}
-                                                onChange={e => setContentLink(e.target.value)}
-                                                placeholder="Paste your post link here..."
-                                                className="w-full h-11 sm:h-14 bg-white dark:bg-black/40 border border-black/10 dark:border-white/10 rounded-xl sm:rounded-2xl px-4 sm:px-6 text-xs sm:text-sm font-bold text-gray-900 dark:text-white focus:border-neon-green transition-all"
-                                            />
-                                        </div>
+                                    {googleFormUrl ? (
+                                        <div className="space-y-6">
+                                            {/* Highlighted Google Form Primary Submission Card */}
+                                            <div className="p-5 sm:p-6 rounded-2xl sm:rounded-3xl bg-gradient-to-br from-purple-500/[0.12] via-indigo-500/[0.08] to-purple-500/[0.04] dark:from-purple-500/[0.22] dark:via-indigo-500/[0.15] dark:to-purple-500/[0.08] border-2 border-purple-500/40 dark:border-purple-400/50 shadow-xl relative overflow-hidden">
+                                                <div className="flex items-center gap-2 mb-3">
+                                                    <span className="px-2.5 py-1 rounded-full bg-purple-500/20 border border-purple-500/30 text-purple-700 dark:text-purple-300 text-[10px] font-black uppercase tracking-wider font-mono">
+                                                        ⚡ Official Submission Form
+                                                    </span>
+                                                    <span className="px-2 py-0.5 rounded-full bg-black/10 dark:bg-white/10 text-gray-600 dark:text-zinc-400 text-[9px] font-mono">
+                                                        New Tab (File Upload)
+                                                    </span>
+                                                </div>
 
-                                        <div className="space-y-2 sm:space-y-3">
-                                            <label className="text-[10px] font-black text-gray-600 dark:text-zinc-400 uppercase tracking-widest flex items-center gap-1.5 font-mono">
-                                                <Camera size={12} className="text-emerald-600 dark:text-neon-green" /> Proof Screenshot
-                                            </label>
-                                            <label className="w-full h-24 sm:h-32 bg-white dark:bg-black/40 border border-dashed border-black/10 dark:border-white/10 rounded-xl sm:rounded-2xl flex flex-col items-center justify-center cursor-pointer hover:border-neon-green/30 transition-all group p-3 text-center">
-                                                <input type="file" className="hidden" accept="image/*" onChange={e => setProofFile(e.target.files[0])} />
-                                                <Upload size={20} className="sm:hidden text-gray-500 group-hover:text-neon-green transition-colors mb-1.5" />
-                                                <Upload size={24} className="hidden sm:block text-gray-500 group-hover:text-neon-green transition-colors mb-2" />
-                                                <span className="text-[10px] font-bold text-gray-600 dark:text-zinc-400 uppercase tracking-wider group-hover:text-gray-900 dark:group-hover:text-white transition-colors truncate max-w-full px-2 font-mono">
-                                                    {proofFile ? proofFile.name : 'Choose Performance Proof'}
-                                                </span>
-                                            </label>
-                                        </div>
+                                                <h4 className="text-base sm:text-lg font-black font-heading uppercase tracking-tight text-gray-900 dark:text-white mb-2">
+                                                    Submit Deliverables via Google Form
+                                                </h4>
 
-                                        <Button 
-                                            onClick={() => onSubmit(task.id, contentLink, proofFile)}
-                                            disabled={isSubmitting || (!contentLink && !proofFile)}
-                                            className="w-full h-12 sm:h-14 md:h-16 rounded-xl sm:rounded-2xl bg-black text-white hover:bg-neutral-800 dark:bg-white dark:text-black dark:hover:bg-neon-green dark:hover:text-black text-xs sm:text-sm font-black font-heading uppercase tracking-wider shadow-xl transition-all disabled:opacity-50"
-                                        >
-                                            {isSubmitting ? <LoadingSpinner size="xs" color="#000000" /> : status === 'rejected' ? 'Re-verify Submission' : 'Submit Performance'}
-                                        </Button>
-                                    </div>
+                                                <p className="text-xs text-gray-600 dark:text-zinc-300 leading-relaxed mb-6 font-normal">
+                                                    Please upload your screenshots, proof files, and deliverable links using the official Google Form below. Because the form contains file upload questions, it opens in a new tab where you are signed into your Google account.
+                                                </p>
+
+                                                <a
+                                                    href={googleFormUrl}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="w-full h-12 sm:h-14 md:h-16 rounded-xl sm:rounded-2xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-black font-heading text-xs sm:text-sm uppercase tracking-wider shadow-xl flex items-center justify-center gap-2 transition-all active:scale-95"
+                                                >
+                                                    <span>Open Google Form in New Tab</span>
+                                                    <ExternalLink size={16} />
+                                                </a>
+
+                                                <div className="mt-5 pt-5 border-t border-purple-500/20 flex flex-col sm:flex-row items-center justify-between gap-3">
+                                                    <div className="text-[11px] text-gray-500 dark:text-zinc-400 font-mono text-center sm:text-left">
+                                                        <span>Already submitted in Google Form?</span>
+                                                        <p className="text-[10px] text-gray-400 dark:text-zinc-500">Notify the brand to begin verification</p>
+                                                    </div>
+                                                    <Button
+                                                        type="button"
+                                                        onClick={() => onSubmit(task.id, googleFormUrl || 'google_form_submitted', null)}
+                                                        disabled={isSubmitting || status === 'submitted'}
+                                                        className="w-full sm:w-auto h-11 px-5 rounded-xl bg-purple-500/20 hover:bg-purple-500/30 text-purple-700 dark:text-purple-300 border border-purple-500/40 text-[11px] font-black uppercase font-mono tracking-wider transition-all disabled:opacity-50"
+                                                    >
+                                                        {isSubmitting ? <LoadingSpinner size="xs" /> : status === 'submitted' ? 'Marked as Submitted' : 'Mark Task as Submitted'}
+                                                    </Button>
+                                                </div>
+                                            </div>
+
+                                            {/* Collapsible Alternative Manual Submission */}
+                                            <div className="border border-black/10 dark:border-white/10 rounded-2xl p-4 bg-black/[0.02] dark:bg-white/[0.02]">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setShowManualForm(!showManualForm)}
+                                                    className="w-full flex items-center justify-between text-left text-xs font-bold text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors"
+                                                >
+                                                    <span>Or submit proof manually via Newbient</span>
+                                                    <ChevronDown size={14} className={cn("transition-transform duration-200", showManualForm && "rotate-180")} />
+                                                </button>
+
+                                                {showManualForm && (
+                                                    <div className="space-y-6 mt-4 pt-4 border-t border-black/5 dark:border-white/5">
+                                                        <div className="space-y-3">
+                                                            <label className="text-[10px] font-black text-gray-600 uppercase tracking-widest flex items-center gap-2">
+                                                                <Link2 size={12} className="text-emerald-600 dark:text-neon-green" /> Social Link
+                                                            </label>
+                                                            <input 
+                                                                type="url"
+                                                                value={contentLink}
+                                                                onChange={e => setContentLink(e.target.value)}
+                                                                placeholder="Paste your post link here..."
+                                                                className="w-full h-11 sm:h-14 bg-white dark:bg-black/40 border border-black/10 dark:border-white/10 rounded-xl sm:rounded-2xl px-4 sm:px-6 text-xs sm:text-sm font-bold text-gray-900 dark:text-white focus:border-neon-green transition-all"
+                                                            />
+                                                        </div>
+
+                                                        <div className="space-y-2 sm:space-y-3">
+                                                            <label className="text-[10px] font-black text-gray-600 dark:text-zinc-400 uppercase tracking-widest flex items-center gap-1.5 font-mono">
+                                                                <Camera size={12} className="text-emerald-600 dark:text-neon-green" /> Proof Screenshot
+                                                            </label>
+                                                            <label className="w-full h-24 sm:h-32 bg-white dark:bg-black/40 border border-dashed border-black/10 dark:border-white/10 rounded-xl sm:rounded-2xl flex flex-col items-center justify-center cursor-pointer hover:border-neon-green/30 transition-all group p-3 text-center">
+                                                                <input type="file" className="hidden" accept="image/*" onChange={e => setProofFile(e.target.files[0])} />
+                                                                <Upload size={20} className="sm:hidden text-gray-500 group-hover:text-neon-green transition-colors mb-1.5" />
+                                                                <Upload size={24} className="hidden sm:block text-gray-500 group-hover:text-neon-green transition-colors mb-2" />
+                                                                <span className="text-[10px] font-bold text-gray-600 dark:text-zinc-400 uppercase tracking-wider group-hover:text-gray-900 dark:group-hover:text-white transition-colors truncate max-w-full px-2 font-mono">
+                                                                    {proofFile ? proofFile.name : 'Choose Performance Proof'}
+                                                                </span>
+                                                            </label>
+                                                        </div>
+
+                                                        <Button 
+                                                            onClick={() => onSubmit(task.id, contentLink, proofFile)}
+                                                            disabled={isSubmitting || (!contentLink && !proofFile)}
+                                                            className="w-full h-12 sm:h-14 rounded-xl sm:rounded-2xl bg-black text-white hover:bg-neutral-800 dark:bg-white dark:text-black dark:hover:bg-neon-green dark:hover:text-black text-xs sm:text-sm font-black font-heading uppercase tracking-wider shadow-xl transition-all disabled:opacity-50"
+                                                        >
+                                                            {isSubmitting ? <LoadingSpinner size="xs" color="#000000" /> : status === 'rejected' ? 'Re-verify Submission' : 'Submit Performance'}
+                                                        </Button>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-8">
+                                            <div className="space-y-3">
+                                                <label className="text-[10px] font-black text-gray-600 uppercase tracking-widest flex items-center gap-2">
+                                                    <Link2 size={12} className="text-emerald-600 dark:text-neon-green" /> Social Link
+                                                </label>
+                                                <input 
+                                                    type="url"
+                                                    value={contentLink}
+                                                    onChange={e => setContentLink(e.target.value)}
+                                                    placeholder="Paste your post link here..."
+                                                    className="w-full h-11 sm:h-14 bg-white dark:bg-black/40 border border-black/10 dark:border-white/10 rounded-xl sm:rounded-2xl px-4 sm:px-6 text-xs sm:text-sm font-bold text-gray-900 dark:text-white focus:border-neon-green transition-all"
+                                                />
+                                            </div>
+
+                                            <div className="space-y-2 sm:space-y-3">
+                                                <label className="text-[10px] font-black text-gray-600 dark:text-zinc-400 uppercase tracking-widest flex items-center gap-1.5 font-mono">
+                                                    <Camera size={12} className="text-emerald-600 dark:text-neon-green" /> Proof Screenshot
+                                                </label>
+                                                <label className="w-full h-24 sm:h-32 bg-white dark:bg-black/40 border border-dashed border-black/10 dark:border-white/10 rounded-xl sm:rounded-2xl flex flex-col items-center justify-center cursor-pointer hover:border-neon-green/30 transition-all group p-3 text-center">
+                                                    <input type="file" className="hidden" accept="image/*" onChange={e => setProofFile(e.target.files[0])} />
+                                                    <Upload size={20} className="sm:hidden text-gray-500 group-hover:text-neon-green transition-colors mb-1.5" />
+                                                    <Upload size={24} className="hidden sm:block text-gray-500 group-hover:text-neon-green transition-colors mb-2" />
+                                                    <span className="text-[10px] font-bold text-gray-600 dark:text-zinc-400 uppercase tracking-wider group-hover:text-gray-900 dark:group-hover:text-white transition-colors truncate max-w-full px-2 font-mono">
+                                                        {proofFile ? proofFile.name : 'Choose Performance Proof'}
+                                                    </span>
+                                                </label>
+                                            </div>
+
+                                            <Button 
+                                                onClick={() => onSubmit(task.id, contentLink, proofFile)}
+                                                disabled={isSubmitting || (!contentLink && !proofFile)}
+                                                className="w-full h-12 sm:h-14 md:h-16 rounded-xl sm:rounded-2xl bg-black text-white hover:bg-neutral-800 dark:bg-white dark:text-black dark:hover:bg-neon-green dark:hover:text-black text-xs sm:text-sm font-black font-heading uppercase tracking-wider shadow-xl transition-all disabled:opacity-50"
+                                            >
+                                                {isSubmitting ? <LoadingSpinner size="xs" color="#000000" /> : status === 'rejected' ? 'Re-verify Submission' : 'Submit Performance'}
+                                            </Button>
+                                        </div>
+                                    )}
                                 </>
                             )}
                         </div>

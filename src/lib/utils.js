@@ -104,4 +104,50 @@ export function normalizePhoneNumber(phone) {
     return digits.length >= 10 ? digits.slice(-10) : digits;
 }
 
+export function getCampaignSpotsInfo(campaign, creators = []) {
+    if (!campaign) {
+        return {
+            hasSpots: false,
+            totalSpots: null,
+            spotsLeft: null,
+            appliedCount: 0,
+            isFull: false
+        };
+    }
+
+    const appliedCount = Array.isArray(creators)
+        ? creators.filter(c => (c.joinedCampaigns || []).includes(campaign.id)).length
+        : (campaign.appliedCount || 0);
+
+    const hasExplicitSpotsLeft = campaign.spotsLeft !== undefined && campaign.spotsLeft !== '' && campaign.spotsLeft !== null && !isNaN(Number(campaign.spotsLeft));
+    const hasTotalSpots = campaign.totalSpots !== undefined && campaign.totalSpots !== '' && campaign.totalSpots !== null && !isNaN(Number(campaign.totalSpots)) && Number(campaign.totalSpots) > 0;
+
+    if (!hasExplicitSpotsLeft && !hasTotalSpots) {
+        return {
+            hasSpots: false,
+            totalSpots: null,
+            spotsLeft: null,
+            appliedCount,
+            isFull: false
+        };
+    }
+
+    const totalSpots = hasTotalSpots ? Number(campaign.totalSpots) : null;
+    let spotsLeft;
+
+    if (hasExplicitSpotsLeft) {
+        spotsLeft = Math.max(0, Number(campaign.spotsLeft));
+    } else {
+        spotsLeft = Math.max(0, totalSpots - appliedCount);
+    }
+
+    return {
+        hasSpots: true,
+        totalSpots,
+        spotsLeft,
+        appliedCount,
+        isFull: spotsLeft <= 0
+    };
+}
+
 

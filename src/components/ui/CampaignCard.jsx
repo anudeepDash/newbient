@@ -1,9 +1,12 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Instagram, FileText, ArrowRight, Zap, MapPin, Users, Award, CheckCircle2 } from 'lucide-react';
-import { cn } from '../../lib/utils';
+import { Instagram, FileText, ArrowRight, Zap, MapPin, Users, Award, CheckCircle2, Flame } from 'lucide-react';
+import { useStore } from '../../lib/store';
+import { cn, getCampaignSpotsInfo } from '../../lib/utils';
 
 const CampaignCard = ({ campaign, profile, type, onOpenMission }) => {
+    const creators = useStore(state => state.creators);
+    const spotsInfo = getCampaignSpotsInfo(campaign, creators);
     const hasJoined = Boolean(profile && (profile.joinedCampaigns || []).includes(campaign.id));
     const isJoined = type === 'joined' || hasJoined;
     const isShortlisted = profile && (profile.shortlistedCampaigns || []).includes(campaign.id);
@@ -39,7 +42,8 @@ const CampaignCard = ({ campaign, profile, type, onOpenMission }) => {
             animate={{ opacity: 1, y: 0 }}
             whileTap={{ scale: 0.985 }}
             onClick={() => onOpenMission(campaign)}
-            className="relative group cursor-pointer rounded-3xl overflow-hidden flex flex-col h-full bg-white dark:bg-[#0c0e14] border border-gray-200 dark:border-white/[0.07] shadow-[0_8px_40px_rgba(0,0,0,0.08)] dark:shadow-[0_8px_40px_rgba(0,0,0,0.6)] hover:border-neon-green/40 dark:hover:border-white/[0.15] hover:shadow-[0_16px_60px_rgba(0,0,0,0.12)] dark:hover:shadow-[0_16px_60px_rgba(0,0,0,0.8)] transition-all duration-500"
+            style={{ WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}
+            className="relative group cursor-pointer rounded-3xl overflow-hidden flex flex-col h-full bg-white dark:bg-[#0c0e14] border border-gray-200 dark:border-white/[0.07] shadow-[0_8px_40px_rgba(0,0,0,0.08)] dark:shadow-[0_8px_40px_rgba(0,0,0,0.6)] hover:border-neon-green/40 dark:hover:border-white/[0.15] hover:shadow-[0_16px_60px_rgba(0,0,0,0.12)] dark:hover:shadow-[0_16px_60px_rgba(0,0,0,0.8)] transition-all duration-500 select-none"
         >
             {/* Glowing Progress Strip */}
             {isJoined && (
@@ -54,26 +58,33 @@ const CampaignCard = ({ campaign, profile, type, onOpenMission }) => {
             )}
 
             {/* ── Hero Image Block with seamless mask fade ── */}
-            <div className="relative w-full aspect-video shrink-0 overflow-hidden">
+            <div className="relative w-full aspect-video shrink-0 overflow-hidden transform-gpu">
                 {/* Mask layer — image only, not the badges */}
                 <div
-                    className="absolute inset-0 pointer-events-none"
+                    className="absolute inset-0 pointer-events-none transform-gpu"
                     style={{
                         WebkitMaskImage: 'linear-gradient(to bottom, rgba(0,0,0,1) 40%, transparent 100%)',
                         maskImage: 'linear-gradient(to bottom, rgba(0,0,0,1) 40%, transparent 100%)',
+                        WebkitTransform: 'translate3d(0, 0, 0)',
                     }}
                 >
                     {campaign.thumbnail ? (
                         <>
-                            {/* Ambient aura */}
+                            {/* Ambient aura - desktop only to prevent Safari on iPhone GPU memory exhaustion */}
                             <div
-                                className="absolute -inset-8 bg-cover bg-center blur-xl opacity-80 scale-110 transform-gpu"
-                                style={{ backgroundImage: `url(${campaign.thumbnail})` }}
+                                className="hidden sm:block absolute -inset-8 bg-cover bg-center blur-xl opacity-80 scale-110 transform-gpu"
+                                style={{ 
+                                    backgroundImage: `url(${campaign.thumbnail})`,
+                                    WebkitTransform: 'translate3d(0, 0, 0)',
+                                }}
                             />
                             <img
                                 src={campaign.thumbnail}
                                 alt={campaign.title}
-                                className="relative z-10 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                                loading="lazy"
+                                decoding="async"
+                                className="relative z-10 w-full h-full object-cover sm:group-hover:scale-105 transition-transform duration-700"
+                                style={{ WebkitTransform: 'translateZ(0)' }}
                             />
                             {/* Radial edge vignette */}
                             <div className="absolute inset-0 z-10 bg-[radial-gradient(ellipse_at_center,_transparent_50%,_rgba(0,0,0,0.4)_100%)]" />
@@ -93,58 +104,105 @@ const CampaignCard = ({ campaign, profile, type, onOpenMission }) => {
                     </div>
                 </div>
 
-                {/* Status badge top-right */}
-                {isJoined && (
-                    <div className="absolute top-3.5 right-3.5 z-20 flex items-center gap-1.5">
-                        {hasNewTasks && (
-                            <motion.span
-                                animate={{ scale: [1, 1.08, 1] }}
-                                transition={{ repeat: Infinity, duration: 2 }}
-                                className="px-2 py-0.5 bg-amber-500/20 border border-amber-500/30 rounded-lg text-[8px] font-black uppercase tracking-widest text-amber-400 flex items-center gap-1 backdrop-blur-sm transform-gpu"
-                            >
-                                <Zap size={8} className="fill-current" /> New
-                            </motion.span>
-                        )}
+                {/* Status & Spots badge top-right */}
+                <div className="absolute top-3.5 right-3.5 z-20 flex items-center gap-1.5">
+                    {spotsInfo.hasSpots && !isFullyComplete && (
                         <span className={cn(
-                            'px-2.5 py-1 rounded-xl text-[8px] font-black uppercase tracking-widest border backdrop-blur-sm transform-gpu flex items-center gap-1.5 font-mono shadow-lg',
-                            isFullyComplete
-                                ? 'bg-neon-green/20 text-neon-green border-neon-green/30'
-                                : isShortlisted
-                                    ? 'bg-neon-green/15 text-neon-green border-neon-green/20'
-                                    : 'bg-black/5 dark:bg-white/5 text-gray-500 dark:text-zinc-400 border-black/10 dark:border-white/10'
+                            'px-2.5 py-1 rounded-xl text-[8px] font-black uppercase tracking-widest border backdrop-blur-sm transform-gpu flex items-center gap-1 font-mono shadow-lg',
+                            spotsInfo.isFull 
+                                ? 'bg-red-500/20 text-red-400 border-red-500/30'
+                                : spotsInfo.spotsLeft <= 5
+                                    ? 'bg-amber-500/20 text-amber-300 border-amber-500/30 animate-pulse'
+                                    : 'bg-black/60 text-white border-white/15'
                         )}>
-                            <span className={cn('w-1.5 h-1.5 rounded-full', isFullyComplete || isShortlisted ? 'bg-neon-green animate-pulse' : 'bg-gray-400 dark:bg-zinc-500')} />
-                            {statusLabel}
+                            <Flame size={9} className={spotsInfo.isFull ? "text-red-400" : "text-amber-400 fill-amber-400"} />
+                            {spotsInfo.isFull ? '0 Left' : `${spotsInfo.spotsLeft} Left`}
                         </span>
-                    </div>
-                )}
+                    )}
+
+                    {isJoined && (
+                        <>
+                            {hasNewTasks && (
+                                <motion.span
+                                    animate={{ scale: [1, 1.08, 1] }}
+                                    transition={{ repeat: Infinity, duration: 2 }}
+                                    className="px-2 py-0.5 bg-amber-500/20 border border-amber-500/30 rounded-lg text-[8px] font-black uppercase tracking-widest text-amber-400 flex items-center gap-1 backdrop-blur-sm transform-gpu"
+                                >
+                                    <Zap size={8} className="fill-current" /> New
+                                </motion.span>
+                            )}
+                            <span className={cn(
+                                'px-2.5 py-1 rounded-xl text-[8px] font-black uppercase tracking-widest border backdrop-blur-sm transform-gpu flex items-center gap-1.5 font-mono shadow-lg',
+                                isFullyComplete
+                                    ? 'bg-neon-green/20 text-neon-green border-neon-green/30'
+                                    : isShortlisted
+                                        ? 'bg-neon-green/15 text-neon-green border-neon-green/20'
+                                        : 'bg-black/5 dark:bg-white/5 text-gray-500 dark:text-zinc-400 border-black/10 dark:border-white/10'
+                            )}>
+                                <span className={cn('w-1.5 h-1.5 rounded-full', isFullyComplete || isShortlisted ? 'bg-neon-green animate-pulse' : 'bg-gray-400 dark:bg-zinc-500')} />
+                                {statusLabel}
+                            </span>
+                        </>
+                    )}
+                </div>
             </div>
 
             {/* ── Card Body (dark glass) ── */}
             <div className="flex flex-col flex-1 px-5 pt-4 pb-5 relative z-10">
-                {/* Ambient photo colour spill into body */}
+                {/* Ambient photo colour spill into body (desktop only to prevent Safari GPU memory pressure) */}
                 {campaign.thumbnail && (
                     <div
-                        className="absolute top-0 inset-x-0 h-32 bg-cover bg-center blur-2xl opacity-20 pointer-events-none transform-gpu -z-0"
-                        style={{ backgroundImage: `url(${campaign.thumbnail})` }}
+                        className="hidden sm:block absolute top-0 inset-x-0 h-32 bg-cover bg-center blur-2xl opacity-20 pointer-events-none transform-gpu -z-0"
+                        style={{ 
+                            backgroundImage: `url(${campaign.thumbnail})`,
+                            WebkitTransform: 'translate3d(0, 0, 0)'
+                        }}
                     />
                 )}
 
-                {/* Followers pill */}
-                <div className="flex items-center justify-between mb-4 relative z-10">
+                {/* Followers pill & Spots row */}
+                <div className="flex items-center justify-between mb-4 relative z-10 gap-2">
                     <span className="px-2.5 py-1 rounded-lg bg-black/[0.02] dark:bg-white/[0.04] border border-black/[0.06] dark:border-white/[0.07] text-[9px] font-black uppercase tracking-widest text-gray-600 dark:text-zinc-400 flex items-center gap-1.5 font-mono">
                         <Users size={9} className="text-neon-green" />
                         {Number(campaign.minInstagramFollowers || 0).toLocaleString()}+ FLW
                     </span>
-                    {isJoined && (
+                    {spotsInfo.hasSpots ? (
+                        <span className={cn(
+                            "px-2 py-0.5 rounded-lg border text-[9px] font-mono font-bold flex items-center gap-1 shrink-0",
+                            spotsInfo.isFull 
+                                ? "bg-red-500/10 text-red-500 border-red-500/20"
+                                : spotsInfo.spotsLeft <= 5 
+                                    ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20" 
+                                    : "bg-black/[0.02] dark:bg-white/[0.04] text-gray-600 dark:text-zinc-400 border-black/[0.06] dark:border-white/[0.07]"
+                        )}>
+                            <Flame size={10} className={spotsInfo.isFull ? "text-red-500" : "text-amber-500 fill-amber-500"} />
+                            {spotsInfo.isFull ? '0 spots left' : `${spotsInfo.spotsLeft} ${spotsInfo.spotsLeft === 1 ? 'spot' : 'spots'} left`}
+                        </span>
+                    ) : isJoined ? (
                         <span className="text-[9px] font-mono font-bold text-gray-500 dark:text-zinc-500">
                             {approvedTotal}/{campaignTasks.length} done
                         </span>
-                    )}
+                    ) : null}
                 </div>
 
-                {/* Title & Description */}
+                {/* Title & Brand & Description */}
                 <div className="flex-1 mb-5 relative z-10">
+                    {(campaign.brand || campaign.brandLogo) && (
+                        <div className="flex items-center gap-1.5 mb-1.5">
+                            {campaign.brandLogo && (
+                                <img 
+                                    src={campaign.brandLogo} 
+                                    alt={campaign.brand || 'Brand'} 
+                                    className="w-4 h-4 rounded object-contain bg-white dark:bg-zinc-800 p-0.5 border border-black/10 dark:border-white/10 shrink-0" 
+                                />
+                            )}
+                            {campaign.brand && (
+                                <span className="text-[10px] font-black uppercase tracking-widest text-emerald-600 dark:text-neon-green truncate">
+                                    {campaign.brand}
+                                </span>
+                            )}
+                        </div>
+                    )}
                     <h3 className="text-lg font-black font-heading mb-2 text-gray-900 dark:text-white tracking-tight group-hover:text-emerald-600 dark:group-hover:text-neon-green transition-colors duration-300 leading-snug">
                         {campaign.title}
                     </h3>
